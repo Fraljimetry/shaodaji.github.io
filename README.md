@@ -103,3 +103,7 @@ Official documentation:
 - https://docs.github.com/pages/quickstart
 - https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
 - https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site
+
+
+## v4 portrait fix
+The homepage now uses a fixed 270×270 square portrait and versioned image/CSS filenames to prevent stale cache reuse.

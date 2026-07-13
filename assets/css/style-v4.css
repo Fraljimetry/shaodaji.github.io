@@ -152,9 +152,9 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 }
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.55fr);
+  grid-template-columns: minmax(0, 1fr) 270px;
   align-items: center;
-  gap: clamp(2.7rem, 6vw, 5rem);
+  gap: clamp(2.8rem, 6vw, 5rem);
 }
 .hero-grid > div { min-width: 0; }
 .hero h1 {
@@ -202,17 +202,19 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 .button.secondary:hover { background: var(--surface); }
 
 .portrait-frame {
-  width: min(100%, 280px);
+  width: 270px;
   margin: 0;
   justify-self: end;
 }
 .portrait-frame img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
+  display: block;
+  width: 270px;
+  height: 270px;
+  max-width: none;
   object-fit: cover;
-  object-position: 50% 50%;
+  object-position: center;
   border: 1px solid #cbd3d9;
-  border-radius: 0.8rem;
+  border-radius: 1rem;
   box-shadow: var(--shadow);
 }
 .portrait-caption {
@@ -489,8 +491,12 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 
   .hero-grid { gap: 2.7rem; }
   .portrait-frame {
-    width: min(68vw, 245px);
+    width: 240px;
     justify-self: start;
+  }
+  .portrait-frame img {
+    width: 240px;
+    height: 240px;
   }
   .cards { grid-template-columns: 1fr 1fr; }
   .feature-math { min-height: 205px; }
@@ -528,7 +534,11 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   .hero { padding: 3.7rem 0; }
   .hero h1 { font-size: clamp(3rem, 16vw, 4.25rem); }
   .hero-actions .button { flex: 1 1 10rem; }
-  .portrait-frame { width: min(72vw, 230px); }
+  .portrait-frame { width: 220px; }
+  .portrait-frame img {
+    width: 220px;
+    height: 220px;
+  }
 
   .section { padding: 3.7rem 0; }
   .section.compact { padding: 3rem 0; }
