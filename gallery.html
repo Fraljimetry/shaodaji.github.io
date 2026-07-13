@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mathematical visualization and calligraphy by Shaoda Ji.">
+  <title>Gallery | Shaoda Ji</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style-v15.css">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('shaoda-theme');
+        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body data-title-en="Gallery | Shaoda Ji" data-title-zh="图集｜汲绍达" data-description-en="Mathematical visualization and calligraphy by Shaoda Ji." data-description-zh="汲绍达的数学可视化与书法作品。">
+<a class="skip-link" href="#main" data-en="Skip to content" data-zh="跳到正文">Skip to content</a>
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="index.html" aria-label="Shaoda Ji homepage">
+      <span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span>
+    </a>
+    <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html" data-en="Home" data-zh="首页">Home</a><a href="research.html" data-en="Research" data-zh="研究">Research</a><a href="teaching.html" data-en="Teaching" data-zh="教学">Teaching</a><a href="notes.html" data-en="Notes" data-zh="笔记">Notes</a><a href="cv.html" data-en="CV" data-zh="简历">CV</a><a href="gallery.html" aria-current="page" data-en="Gallery" data-zh="图集">Gallery</a></nav>
+    <div class="nav-controls">
+      <button class="control-button" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span class="control-icon" data-theme-icon aria-hidden="true">☾</span><span class="control-label" data-theme-label>Dark</span>
+      </button>
+      <button class="control-button" type="button" data-language-toggle aria-label="切换到简体中文" title="切换到简体中文">
+        <span class="control-icon" aria-hidden="true">文</span><span class="control-label" data-language-label>中文</span>
+      </button>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-en="Menu" data-zh="菜单">Menu</button>
+    </div>
+  </div>
+</header>
+<main id="main"><header class="page-hero"><div class="container">
+  <p class="page-kicker" data-en="Gallery" data-zh="图集">Gallery</p>
+  <h1 data-en="Visualization and calligraphy" data-zh="可视化与书法">Visualization and calligraphy</h1>
+  <p data-en="A small collection of mathematical images and handwritten work." data-zh="收录数学图像与手写作品的小型图集。">A small collection of mathematical images and handwritten work.</p>
+</div></header>
+<section class="section gallery-section section-rule" id="visualization"><div class="container">
+  <div class="section-head"><p class="page-kicker" data-en="Visualization" data-zh="可视化">Visualization</p><h2 data-en="Mandelbrot Set" data-zh="曼德博集合">Mandelbrot Set</h2><p data-en="A mathematical visualization generated with my graphing calculator." data-zh="使用我的绘图计算器生成的数学可视化。">A mathematical visualization generated with my graphing calculator.</p></div>
+  <article class="gallery-entry">
+    <a class="gallery-media" href="assets/img/gallery-mandelbrot.webp" aria-label="Open the Mandelbrot set image"><img src="assets/img/gallery-mandelbrot.webp" width="1000" height="994" loading="lazy" alt="Mandelbrot set rendered in orange and black" data-alt-en="Mandelbrot set rendered in orange and black" data-alt-zh="以橙色与黑色呈现的曼德博集合"></a>
+    <div class="gallery-copy"><h3 data-en="Mandelbrot Set" data-zh="曼德博集合">Mandelbrot Set</h3><p data-en="This rendering comes from the iteration z&lt;sub&gt;n+1&lt;/sub&gt; = z&lt;sub&gt;n&lt;/sub&gt;&lt;sup&gt;2&lt;/sup&gt; + c. A simple recurrence produces a boundary with intricate, self-similar structure at every scale." data-zh="这幅图像来自迭代 z&lt;sub&gt;n+1&lt;/sub&gt; = z&lt;sub&gt;n&lt;/sub&gt;&lt;sup&gt;2&lt;/sup&gt; + c。一个简单的递推在边界处产生了任意尺度下都极其复杂、具有自相似性的结构。">This rendering comes from the iteration z<sub>n+1</sub> = z<sub>n</sub><sup>2</sup> + c. A simple recurrence produces a boundary with intricate, self-similar structure at every scale.</p><p data-en="The image was produced in the complex-number mode of my graphing calculator." data-zh="图像由我的绘图计算器在复数模式下生成。">The image was produced in the complex-number mode of my graphing calculator.</p></div>
+  </article>
+</div></section>
+<section class="section gallery-section section-rule" id="calligraphy"><div class="container">
+  <div class="section-head"><p class="page-kicker" data-en="Calligraphy" data-zh="书法">Calligraphy</p><h2 data-en="A Moonlit Night on the Spring River" data-zh="春江花月夜">A Moonlit Night on the Spring River</h2><p data-en="A handwritten transcription of the celebrated poem by Zhang Ruoxu." data-zh="张若虚名篇《春江花月夜》的手书作品。">A handwritten transcription of the celebrated poem by Zhang Ruoxu.</p></div>
+  <article class="gallery-entry gallery-entry-wide">
+    <a class="gallery-media" href="assets/img/gallery-chunjiang-huayueye.webp" aria-label="Open the calligraphy image"><img src="assets/img/gallery-chunjiang-huayueye.webp" width="2200" height="1143" loading="lazy" alt="Chinese calligraphy of A Moonlit Night on the Spring River by Zhang Ruoxu" data-alt-en="Chinese calligraphy of A Moonlit Night on the Spring River by Zhang Ruoxu" data-alt-zh="张若虚《春江花月夜》书法作品"></a>
+    <div class="gallery-copy"><h3 data-en="A Moonlit Night on the Spring River · Zhang Ruoxu" data-zh="《春江花月夜》· 张若虚">A Moonlit Night on the Spring River · Zhang Ruoxu</h3><p data-en="This long horizontal work transcribes the Tang-dynasty poem in vertical columns. The photograph has been cropped tightly around the calligraphy sheet so the writing, spacing, and movement of the brush remain the focus." data-zh="这件横幅作品以竖列书写唐代诗人张若虚的《春江花月夜》。照片已紧贴书法纸张裁切，去除下方杂物，使字势、行距与运笔成为画面的中心。">This long horizontal work transcribes the Tang-dynasty poem in vertical columns. The photograph has been cropped tightly around the calligraphy sheet so the writing, spacing, and movement of the brush remain the focus.</p></div>
+  </article>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container footer-grid">
+  <div>© <span data-year></span> Shaoda Ji</div>
+  <div class="footer-links">
+    <a href="mailto:frankjiiiiiiii@gmail.com" data-en="Email" data-zh="邮件">Email</a>
+    <a href="https://math.washington.edu/people/shaoda-ji" data-en="UW profile" data-zh="华大主页">UW profile</a>
+    <a href="https://space.bilibili.com/355884223" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</a>
+  </div>
+</div></footer>
+<script src="assets/js/main-v15.js"></script>
+</body></html>

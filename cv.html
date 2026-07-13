@@ -1,21 +1,65 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Curriculum vitae of Shaoda Ji."><title>CV | Shaoda Ji</title>
-<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/css/style-v4.css">
-</head><body>
-<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header"><div class="nav-wrap"><a class="brand" href="index.html"><span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span></a><button class="menu-button" aria-expanded="false" aria-controls="site-nav">Menu</button><nav id="site-nav" class="nav-links"><a href="index.html">Home</a><a href="research.html">Research</a><a href="teaching.html">Teaching</a><a href="notes.html">Notes</a><a href="cv.html" aria-current="page">CV</a></nav></div></header>
-<main id="main">
-<header class="page-hero"><div class="container"><p class="page-kicker">Curriculum vitae</p><h1>Academic background</h1><p>PhD student in mathematics at the University of Washington. Expected completion: 2030.</p></div></header>
+<html lang="en" data-theme="light" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Curriculum vitae of Shaoda Ji.">
+  <title>CV | Shaoda Ji</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style-v15.css">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('shaoda-theme');
+        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body data-title-en="CV | Shaoda Ji" data-title-zh="简历｜汲绍达" data-description-en="Curriculum vitae of Shaoda Ji." data-description-zh="汲绍达的学术简历。">
+<a class="skip-link" href="#main" data-en="Skip to content" data-zh="跳到正文">Skip to content</a>
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="index.html" aria-label="Shaoda Ji homepage">
+      <span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span>
+    </a>
+    <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html" data-en="Home" data-zh="首页">Home</a><a href="research.html" data-en="Research" data-zh="研究">Research</a><a href="teaching.html" data-en="Teaching" data-zh="教学">Teaching</a><a href="notes.html" data-en="Notes" data-zh="笔记">Notes</a><a href="cv.html" aria-current="page" data-en="CV" data-zh="简历">CV</a><a href="gallery.html" data-en="Gallery" data-zh="图集">Gallery</a></nav>
+    <div class="nav-controls">
+      <button class="control-button" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span class="control-icon" data-theme-icon aria-hidden="true">☾</span><span class="control-label" data-theme-label>Dark</span>
+      </button>
+      <button class="control-button" type="button" data-language-toggle aria-label="切换到简体中文" title="切换到简体中文">
+        <span class="control-icon" aria-hidden="true">文</span><span class="control-label" data-language-label>中文</span>
+      </button>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-en="Menu" data-zh="菜单">Menu</button>
+    </div>
+  </div>
+</header>
+<main id="main"><header class="page-hero"><div class="container">
+  <p class="page-kicker" data-en="Curriculum vitae" data-zh="学术简历">Curriculum vitae</p>
+  <h1 data-en="Academic background" data-zh="学术背景">Academic background</h1>
+  <p data-en="PhD student in mathematics at the University of Washington. Expected completion: 2030." data-zh="华盛顿大学数学博士生，预计于 2030 年完成学业。">PhD student in mathematics at the University of Washington. Expected completion: 2030.</p>
+</div></header>
 <section class="section compact section-rule"><div class="container cv-layout">
-  <div><object class="pdf-frame" data="files/Shaoda_Ji_CV.pdf" type="application/pdf"><p>Your browser cannot display the PDF. <a href="files/Shaoda_Ji_CV.pdf">Download the CV instead.</a></p></object></div>
+  <div><object class="pdf-frame" data="files/Shaoda_Ji_CV.pdf" type="application/pdf"><p data-en="Your browser cannot display the PDF. &lt;a href=&quot;files/Shaoda_Ji_CV.pdf&quot;&gt;Download the CV instead.&lt;/a&gt;" data-zh="您的浏览器无法显示 PDF。&lt;a href=&quot;files/Shaoda_Ji_CV.pdf&quot;&gt;请改为下载简历。&lt;/a&gt;">Your browser cannot display the PDF. <a href="files/Shaoda_Ji_CV.pdf">Download the CV instead.</a></p></object></div>
   <aside class="cv-aside">
-    <div class="card"><span class="meta">Current</span><h3>University of Washington</h3><p>PhD in Mathematics<br>Expected 2030</p></div>
-    <div class="card"><span class="meta">Research</span><h3>Interests</h3><p>Geometric analysis, differential geometry, and partial differential equations.</p></div>
-    <div class="card"><a class="button primary" style="width:100%" href="files/Shaoda_Ji_CV.pdf" download>Download PDF</a></div>
+    <div class="card"><span class="meta" data-en="Current" data-zh="当前">Current</span><h3 data-en="University of Washington" data-zh="华盛顿大学">University of Washington</h3><p data-en="PhD in Mathematics&lt;br&gt;Expected 2030" data-zh="数学博士&lt;br&gt;预计 2030 年毕业">PhD in Mathematics<br>Expected 2030</p></div>
+    <div class="card"><span class="meta" data-en="Research" data-zh="研究">Research</span><h3 data-en="Interests" data-zh="研究兴趣">Interests</h3><p data-en="Geometric analysis, differential geometry, and partial differential equations." data-zh="几何分析、微分几何与偏微分方程。">Geometric analysis, differential geometry, and partial differential equations.</p></div>
+    <div class="card"><a href="files/Shaoda_Ji_CV.pdf" class="button primary" style="width:100%" download data-en="Download PDF" data-zh="下载 PDF">Download PDF</a></div>
   </aside>
 </div></section>
 </main>
-<footer class="site-footer"><div class="container footer-grid"><div>© <span data-year></span> Shaoda Ji</div><div class="footer-links"><a href="mailto:frankjiiiiiiii@gmail.com">Email</a><a href="https://math.washington.edu/people/shaoda-ji">UW profile</a></div></div></footer><script src="assets/js/main.js"></script>
+<footer class="site-footer"><div class="container footer-grid">
+  <div>© <span data-year></span> Shaoda Ji</div>
+  <div class="footer-links">
+    <a href="mailto:frankjiiiiiiii@gmail.com" data-en="Email" data-zh="邮件">Email</a>
+    <a href="https://math.washington.edu/people/shaoda-ji" data-en="UW profile" data-zh="华大主页">UW profile</a>
+    <a href="https://space.bilibili.com/355884223" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</a>
+  </div>
+</div></footer>
+<script src="assets/js/main-v15.js"></script>
 </body></html>

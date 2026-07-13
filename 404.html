@@ -1,1 +1,52 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found | Shaoda Ji</title><link rel="stylesheet" href="assets/css/style-v4.css"><link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml"></head><body><main class="page-hero"><div class="narrow"><p class="page-kicker">404</p><h1>Page not found</h1><p>The requested page does not exist.</p><a class="button primary" href="index.html">Return home</a></div></main></body></html>
+<!doctype html>
+<html lang="en" data-theme="light" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The requested page was not found.">
+  <title>Page not found | Shaoda Ji</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style-v15.css">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('shaoda-theme');
+        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body data-title-en="Page not found | Shaoda Ji" data-title-zh="页面未找到｜汲绍达" data-description-en="The requested page was not found." data-description-zh="请求的页面不存在。">
+<a class="skip-link" href="#main" data-en="Skip to content" data-zh="跳到正文">Skip to content</a>
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="index.html" aria-label="Shaoda Ji homepage">
+      <span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span>
+    </a>
+    <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html" data-en="Home" data-zh="首页">Home</a><a href="research.html" data-en="Research" data-zh="研究">Research</a><a href="teaching.html" data-en="Teaching" data-zh="教学">Teaching</a><a href="notes.html" data-en="Notes" data-zh="笔记">Notes</a><a href="cv.html" data-en="CV" data-zh="简历">CV</a><a href="gallery.html" data-en="Gallery" data-zh="图集">Gallery</a></nav>
+    <div class="nav-controls">
+      <button class="control-button" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span class="control-icon" data-theme-icon aria-hidden="true">☾</span><span class="control-label" data-theme-label>Dark</span>
+      </button>
+      <button class="control-button" type="button" data-language-toggle aria-label="切换到简体中文" title="切换到简体中文">
+        <span class="control-icon" aria-hidden="true">文</span><span class="control-label" data-language-label>中文</span>
+      </button>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-en="Menu" data-zh="菜单">Menu</button>
+    </div>
+  </div>
+</header>
+<main id="main"><section class="page-hero"><div class="narrow"><p class="page-kicker" data-en="404" data-zh="404">404</p><h1 data-en="Page not found" data-zh="页面未找到">Page not found</h1><p data-en="The requested page does not exist." data-zh="请求的页面不存在。">The requested page does not exist.</p><a href="index.html" class="button primary" data-en="Return home" data-zh="返回首页">Return home</a></div></section></main>
+<footer class="site-footer"><div class="container footer-grid">
+  <div>© <span data-year></span> Shaoda Ji</div>
+  <div class="footer-links">
+    <a href="mailto:frankjiiiiiiii@gmail.com" data-en="Email" data-zh="邮件">Email</a>
+    <a href="https://math.washington.edu/people/shaoda-ji" data-en="UW profile" data-zh="华大主页">UW profile</a>
+    <a href="https://space.bilibili.com/355884223" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</a>
+  </div>
+</div></footer>
+<script src="assets/js/main-v15.js"></script>
+</body></html>

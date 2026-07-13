@@ -1,56 +1,81 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light" data-lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Research interests and mathematical writing by Shaoda Ji.">
   <title>Research | Shaoda Ji</title>
-  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/css/style-v4.css">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style-v15.css">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('shaoda-theme');
+        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
 </head>
-<body>
-<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header"><div class="nav-wrap">
-  <a class="brand" href="index.html"><span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span></a>
-  <button class="menu-button" aria-expanded="false" aria-controls="site-nav">Menu</button>
-  <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html">Home</a><a href="research.html" aria-current="page">Research</a><a href="teaching.html">Teaching</a><a href="notes.html">Notes</a><a href="cv.html">CV</a></nav>
+<body data-title-en="Research | Shaoda Ji" data-title-zh="研究｜汲绍达" data-description-en="Research interests and mathematical writing by Shaoda Ji." data-description-zh="汲绍达的研究方向与数学论文。">
+<a class="skip-link" href="#main" data-en="Skip to content" data-zh="跳到正文">Skip to content</a>
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="index.html" aria-label="Shaoda Ji homepage">
+      <span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span>
+    </a>
+    <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html" data-en="Home" data-zh="首页">Home</a><a href="research.html" aria-current="page" data-en="Research" data-zh="研究">Research</a><a href="teaching.html" data-en="Teaching" data-zh="教学">Teaching</a><a href="notes.html" data-en="Notes" data-zh="笔记">Notes</a><a href="cv.html" data-en="CV" data-zh="简历">CV</a><a href="gallery.html" data-en="Gallery" data-zh="图集">Gallery</a></nav>
+    <div class="nav-controls">
+      <button class="control-button" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span class="control-icon" data-theme-icon aria-hidden="true">☾</span><span class="control-label" data-theme-label>Dark</span>
+      </button>
+      <button class="control-button" type="button" data-language-toggle aria-label="切换到简体中文" title="切换到简体中文">
+        <span class="control-icon" aria-hidden="true">文</span><span class="control-label" data-language-label>中文</span>
+      </button>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-en="Menu" data-zh="菜单">Menu</button>
+    </div>
+  </div>
+</header>
+<main id="main"><header class="page-hero"><div class="container">
+  <p class="page-kicker" data-en="Research" data-zh="研究">Research</p>
+  <h1 data-en="Geometry through analysis" data-zh="以分析研究几何">Geometry through analysis</h1>
+  <p data-en="My interests center on geometric analysis, differential geometry, and partial differential equations, with particular enthusiasm for manifolds, minimal surfaces, and ways to visualize geometric structure." data-zh="我的兴趣集中在几何分析、微分几何与偏微分方程，尤其关注流形、极小曲面以及几何结构的可视化。">My interests center on geometric analysis, differential geometry, and partial differential equations, with particular enthusiasm for manifolds, minimal surfaces, and ways to visualize geometric structure.</p>
 </div></header>
-<main id="main">
-  <header class="page-hero"><div class="container">
-    <p class="page-kicker">Research</p><h1>Geometry through analysis</h1>
-    <p>My interests center on geometric analysis, differential geometry, and partial differential equations, with particular enthusiasm for manifolds, minimal surfaces, and ways to visualize geometric structure.</p>
-  </div></header>
-
-  <section class="section compact section-rule"><div class="container">
-    <div class="cards">
-      <article class="card"><span class="meta">Area</span><h3>Geometric analysis</h3><p>Analytic methods for geometric questions, including curvature, variational problems, and geometric PDE.</p></article>
-      <article class="card"><span class="meta">Area</span><h3>Differential geometry</h3><p>Local and global geometry of manifolds, with emphasis on geometric intuition and computation.</p></article>
-      <article class="card"><span class="meta">Area</span><h3>Partial differential equations</h3><p>Classical PDE techniques and their role in geometry, including elliptic and variational equations.</p></article>
-    </div>
-  </div></section>
-
-  <section class="section section-rule"><div class="container">
-    <div class="section-head"><h2>Publication</h2><p>Published mathematical work.</p></div>
-    <article class="feature">
-      <div class="feature-math"><div class="feature-formula">f(x+y) + f(x−y) = 2f(x)f(y)</div></div>
-      <div>
-        <span class="eyebrow">Published paper · September 2023</span>
-        <h3>Defining Cosine Function with D’Alembert’s Functional Equation</h3>
-        <p>This paper replaces a continuity assumption with more elementary conditions. It uses monotonicity, zeros, density, and Hamel-basis counterexamples to characterize the solution and give an elementary definition of the cosine function on the real line.</p>
-        <p class="item-meta"><em>Studies in College Mathematics</em>, Vol. 26, No. 5, pp. 77–79. DOI: 10.3969/j.issn.1008-1399.2023.05.025.</p>
-        <div class="feature-links"><a class="button primary" href="files/Defining_Cosine_Function_with_DAlemberts_Functional_Equation.pdf">Read the paper</a></div>
-      </div>
-    </article>
-  </div></section>
-
-  <section class="section section-rule"><div class="container">
-    <div class="section-head"><h2>Research background</h2><p>Selected projects and directed study.</p></div>
-    <div class="timeline">
-      <article class="timeline-item"><h3>Minimal surfaces</h3><p>Surveyed recent developments in minimal surface theory, beginning with work on stable minimal hypersurfaces and related literature.</p><p class="item-meta">2024</p></article>
-      <article class="timeline-item"><h3>Directed Reading Program, UC Berkeley</h3><p>Studied <em>A Course in Minimal Surfaces</em> by Colding and Minicozzi, with discussions in Riemannian geometry and PDE and a final presentation.</p><p class="item-meta">2024</p></article>
-      <article class="timeline-item"><h3>Partial differential equations</h3><p>Worked through nonhomogeneous wave equations, Duhamel’s principle, Green functions for the Laplace equation, and a variational form of the p-Laplace equation.</p><p class="item-meta">2023</p></article>
-      <article class="timeline-item"><h3>Differential geometry</h3><p>Studied geodesics on spheres and in the upper half-plane, supported by geometric visualizations.</p><p class="item-meta">2022</p></article>
-    </div>
-  </div></section>
+<section class="section compact section-rule"><div class="container"><div class="cards">
+  <article class="card"><span class="meta" data-en="Area" data-zh="方向">Area</span><h3 data-en="Geometric analysis" data-zh="几何分析">Geometric analysis</h3><p data-en="Analytic methods for geometric questions, including curvature, variational problems, and geometric PDE." data-zh="用分析方法研究几何问题，包括曲率、变分问题与几何偏微分方程。">Analytic methods for geometric questions, including curvature, variational problems, and geometric PDE.</p></article>
+  <article class="card"><span class="meta" data-en="Area" data-zh="方向">Area</span><h3 data-en="Differential geometry" data-zh="微分几何">Differential geometry</h3><p data-en="Local and global geometry of manifolds, with emphasis on geometric intuition and computation." data-zh="研究流形的局部与整体几何，重视几何直觉与具体计算。">Local and global geometry of manifolds, with emphasis on geometric intuition and computation.</p></article>
+  <article class="card"><span class="meta" data-en="Area" data-zh="方向">Area</span><h3 data-en="Partial differential equations" data-zh="偏微分方程">Partial differential equations</h3><p data-en="Classical PDE techniques and their role in geometry, including elliptic and variational equations." data-zh="经典偏微分方程方法及其在几何中的作用，包括椭圆型方程与变分方程。">Classical PDE techniques and their role in geometry, including elliptic and variational equations.</p></article>
+</div></div></section>
+<section class="section section-rule"><div class="container">
+  <div class="section-head"><h2 data-en="Publication" data-zh="论文">Publication</h2><p data-en="Published mathematical work." data-zh="已发表的数学工作。">Published mathematical work.</p></div>
+  <article class="feature"><div class="feature-math"><div class="feature-formula">f(x+y) + f(x−y) = 2f(x)f(y)</div></div><div>
+    <span class="eyebrow" data-en="Published paper · September 2023" data-zh="已发表论文 · 2023 年 9 月">Published paper · September 2023</span>
+    <h3 data-en="Defining Cosine Function with D’Alembert’s Functional Equation" data-zh="利用 D’Alembert 函数方程定义余弦函数">Defining Cosine Function with D’Alembert’s Functional Equation</h3>
+    <p data-en="This paper replaces a continuity assumption with more elementary conditions. It uses monotonicity, zeros, density, and Hamel-basis counterexamples to characterize the solution and give an elementary definition of the cosine function on the real line." data-zh="本文用更初等的条件替代连续性假设，并结合单调性、零点、稠密性与 Hamel 基反例刻画方程的解，从而在实直线上给出余弦函数的初等定义。">This paper replaces a continuity assumption with more elementary conditions. It uses monotonicity, zeros, density, and Hamel-basis counterexamples to characterize the solution and give an elementary definition of the cosine function on the real line.</p>
+    <p class="item-meta" data-en="&lt;em&gt;Studies in College Mathematics&lt;/em&gt;, Vol. 26, No. 5, pp. 77–79. DOI: 10.3969/j.issn.1008-1399.2023.05.025." data-zh="《高等数学研究》第 26 卷第 5 期，第 77–79 页。DOI：10.3969/j.issn.1008-1399.2023.05.025。"><em>Studies in College Mathematics</em>, Vol. 26, No. 5, pp. 77–79. DOI: 10.3969/j.issn.1008-1399.2023.05.025.</p>
+    <div class="feature-links"><a href="files/Defining_Cosine_Function_with_DAlemberts_Functional_Equation.pdf" class="button primary" data-en="Read the paper" data-zh="阅读论文">Read the paper</a></div>
+  </div></article>
+</div></section>
+<section class="section section-rule"><div class="container">
+  <div class="section-head"><h2 data-en="Research background" data-zh="研究经历">Research background</h2><p data-en="Selected projects and directed study." data-zh="部分项目与指导阅读经历。">Selected projects and directed study.</p></div>
+  <div class="timeline">
+    <article class="timeline-item"><h3 data-en="Minimal surfaces" data-zh="极小曲面">Minimal surfaces</h3><p data-en="Surveyed recent developments in minimal surface theory, beginning with work on stable minimal hypersurfaces and related literature." data-zh="从稳定极小超曲面及相关文献出发，梳理极小曲面理论的近期进展。">Surveyed recent developments in minimal surface theory, beginning with work on stable minimal hypersurfaces and related literature.</p><p class="item-meta">2024</p></article>
+    <article class="timeline-item"><h3 data-en="Directed Reading Program, UC Berkeley" data-zh="加州大学伯克利分校指导阅读项目">Directed Reading Program, UC Berkeley</h3><p data-en="Studied &lt;em&gt;A Course in Minimal Surfaces&lt;/em&gt; by Colding and Minicozzi, with discussions in Riemannian geometry and PDE and a final presentation." data-zh="研读 Colding 与 Minicozzi 的 &lt;em&gt;A Course in Minimal Surfaces&lt;/em&gt;，讨论黎曼几何与偏微分方程，并完成结题报告。">Studied <em>A Course in Minimal Surfaces</em> by Colding and Minicozzi, with discussions in Riemannian geometry and PDE and a final presentation.</p><p class="item-meta">2024</p></article>
+    <article class="timeline-item"><h3 data-en="Partial differential equations" data-zh="偏微分方程">Partial differential equations</h3><p data-en="Worked through nonhomogeneous wave equations, Duhamel’s principle, Green functions for the Laplace equation, and a variational form of the p-Laplace equation." data-zh="学习非齐次波动方程、Duhamel 原理、Laplace 方程的 Green 函数以及 p-Laplace 方程的变分形式。">Worked through nonhomogeneous wave equations, Duhamel’s principle, Green functions for the Laplace equation, and a variational form of the p-Laplace equation.</p><p class="item-meta">2023</p></article>
+    <article class="timeline-item"><h3 data-en="Differential geometry" data-zh="微分几何">Differential geometry</h3><p data-en="Studied geodesics on spheres and in the upper half-plane, supported by geometric visualizations." data-zh="研究球面与上半平面中的测地线，并辅以几何可视化。">Studied geodesics on spheres and in the upper half-plane, supported by geometric visualizations.</p><p class="item-meta">2022</p></article>
+  </div>
+</div></section>
 </main>
-<footer class="site-footer"><div class="container footer-grid"><div>© <span data-year></span> Shaoda Ji</div><div class="footer-links"><a href="mailto:frankjiiiiiiii@gmail.com">Email</a><a href="https://math.washington.edu/people/shaoda-ji">UW profile</a></div></div></footer>
-<script src="assets/js/main.js"></script>
+<footer class="site-footer"><div class="container footer-grid">
+  <div>© <span data-year></span> Shaoda Ji</div>
+  <div class="footer-links">
+    <a href="mailto:frankjiiiiiiii@gmail.com" data-en="Email" data-zh="邮件">Email</a>
+    <a href="https://math.washington.edu/people/shaoda-ji" data-en="UW profile" data-zh="华大主页">UW profile</a>
+    <a href="https://space.bilibili.com/355884223" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</a>
+  </div>
+</div></footer>
+<script src="assets/js/main-v15.js"></script>
 </body></html>

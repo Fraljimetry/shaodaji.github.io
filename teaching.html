@@ -1,42 +1,93 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Teaching and mathematics outreach by Shaoda Ji."><title>Teaching | Shaoda Ji</title>
-<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/css/style-v4.css">
-</head><body>
-<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header"><div class="nav-wrap"><a class="brand" href="index.html"><span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span></a><button class="menu-button" aria-expanded="false" aria-controls="site-nav">Menu</button><nav id="site-nav" class="nav-links"><a href="index.html">Home</a><a href="research.html">Research</a><a href="teaching.html" aria-current="page">Teaching</a><a href="notes.html">Notes</a><a href="cv.html">CV</a></nav></div></header>
-<main id="main">
-<header class="page-hero"><div class="container"><p class="page-kicker">Teaching</p><h1>Mathematics at the board and online</h1><p>I enjoy making abstract mathematics concrete through calculation, diagrams, careful pacing, and discussion.</p></div></header>
-
-<section class="section compact section-rule"><div class="container">
-  <article class="feature">
-    <div class="feature-math"><div class="feature-formula">dy/dx</div></div>
-    <div><span class="eyebrow">University of Washington</span><h3>Math 124 — Differential Calculus</h3><p>Teaching experience in the first course of the single-variable calculus sequence, including limits, derivatives, linear approximation, and applications of differentiation.</p><p>This section is designed to hold course-related writings over time rather than a single attachment.</p><ul class="list-clean"><li><div class="item-title">Where Do Complex Numbers Come From?</div><div class="item-meta">Selected writing for Math 124 · September 2025 · 3 pages · PDF · <a href="files/Where_Do_Complex_Numbers_Come_From.pdf">Open</a> · <a href="files/Where_Do_Complex_Numbers_Come_From.pdf" download>Download</a></div></li><li><div class="item-title">The Method of Infinitesimal Analysis</div><div class="item-meta">Selected writing for Math 124 · PDF · <a href="files/The_Method_of_Infinitesimal_Analysis.pdf">Open</a> · <a href="files/The_Method_of_Infinitesimal_Analysis.pdf" download>Download</a></div></li></ul></div>
-  </article>
-</div></section>
-
-<section class="section compact section-rule"><div class="container">
-  <article class="feature">
-    <div class="feature-math"><div class="feature-formula">∫ f(x) dx</div></div>
-    <div><span class="eyebrow">University of Washington</span><h3>Math 125 — Integral Calculus</h3><p>Teaching experience in the second course of the single-variable calculus sequence, including definite and indefinite integrals, the Fundamental Theorem of Calculus, techniques of integration, and applications.</p><p>This section can grow into a small collection of course materials as new writings are added.</p><ul class="list-clean"><li><div class="item-title">Two Trigonometric Integrals</div><div class="item-meta">Selected writing for Math 125 · PDF · <a href="files/Two_Trigonometric_Integrals.pdf">Open</a> · <a href="files/Two_Trigonometric_Integrals.pdf" download>Download</a></div></li></ul></div>
-  </article>
-</div></section>
-
-<section class="section compact section-rule"><div class="container">
-  <article class="feature">
-    <div class="feature-math"><div class="feature-formula">A𝐱 = 𝐛</div></div>
-    <div><span class="eyebrow">University of Washington</span><h3>Math 208 — Matrix Algebra</h3><p>Teaching experience with matrices, systems of linear equations, linear transformations, determinants, eigenvalues, and the algebraic structure underlying finite-dimensional linear systems.</p><p>This course section is set up the same way, so additional files can be added here in the future.</p><ul class="list-clean"><li><div class="item-title">Course materials</div><div class="item-meta">Additional notes or handouts for Math 208 can be added here later.</div></li></ul></div>
-  </article>
-</div></section>
-
-<section class="section section-rule"><div class="container"><div class="section-head"><h2>Online mathematics</h2><p>A long-running archive of short lectures and informal mathematical exploration.</p></div>
-  <div class="feature">
-    <div class="feature-math"><div class="feature-formula">Fraljimetry<br><span style="font-size:.65em;color:#c8d8e4">mathematics in short form</span></div></div>
-    <div><span class="eyebrow">Bilibili</span><h3>Undergraduate and graduate mathematics videos</h3><p>I have published around 3,000 videos organized into more than 50 albums, covering course material, mathematical ideas, and research-oriented study. The channel has more than 30,000 followers.</p><div class="feature-links"><a class="button primary" href="https://space.bilibili.com/355884223">Visit the channel</a></div></div>
+<html lang="en" data-theme="light" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Teaching and mathematics outreach by Shaoda Ji.">
+  <title>Teaching | Shaoda Ji</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style-v15.css">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('shaoda-theme');
+        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body data-title-en="Teaching | Shaoda Ji" data-title-zh="教学｜汲绍达" data-description-en="Teaching and mathematics outreach by Shaoda Ji." data-description-zh="汲绍达的数学教学与传播。">
+<a class="skip-link" href="#main" data-en="Skip to content" data-zh="跳到正文">Skip to content</a>
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="index.html" aria-label="Shaoda Ji homepage">
+      <span class="brand-mark">SJ</span><span class="brand-text">Shaoda Ji</span>
+    </a>
+    <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html" data-en="Home" data-zh="首页">Home</a><a href="research.html" data-en="Research" data-zh="研究">Research</a><a href="teaching.html" aria-current="page" data-en="Teaching" data-zh="教学">Teaching</a><a href="notes.html" data-en="Notes" data-zh="笔记">Notes</a><a href="cv.html" data-en="CV" data-zh="简历">CV</a><a href="gallery.html" data-en="Gallery" data-zh="图集">Gallery</a></nav>
+    <div class="nav-controls">
+      <button class="control-button" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span class="control-icon" data-theme-icon aria-hidden="true">☾</span><span class="control-label" data-theme-label>Dark</span>
+      </button>
+      <button class="control-button" type="button" data-language-toggle aria-label="切换到简体中文" title="切换到简体中文">
+        <span class="control-icon" aria-hidden="true">文</span><span class="control-label" data-language-label>中文</span>
+      </button>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-en="Menu" data-zh="菜单">Menu</button>
+    </div>
   </div>
+</header>
+<main id="main"><header class="page-hero"><div class="container">
+  <p class="page-kicker" data-en="Teaching" data-zh="教学">Teaching</p>
+  <h1 data-en="Mathematics at the board and online" data-zh="课堂与线上数学">Mathematics at the board and online</h1>
+  <p data-en="I enjoy making abstract mathematics concrete through calculation, diagrams, careful pacing, and discussion." data-zh="我喜欢通过计算、图示、细致的节奏与讨论，把抽象数学变得具体可感。">I enjoy making abstract mathematics concrete through calculation, diagrams, careful pacing, and discussion.</p>
+</div></header>
+<section class="section compact section-rule"><div class="container"><article class="feature">
+  <div class="feature-math"><div class="feature-formula">dy/dx</div></div><div>
+    <span class="eyebrow" data-en="University of Washington" data-zh="华盛顿大学">University of Washington</span><h3 data-en="Math 124 — Differential Calculus" data-zh="Math 124 — 微分学">Math 124 — Differential Calculus</h3>
+    <p data-en="Teaching experience in the first course of the single-variable calculus sequence, including limits, derivatives, linear approximation, and applications of differentiation." data-zh="单变量微积分第一门课程，内容包括极限、导数、线性近似与微分应用。">Teaching experience in the first course of the single-variable calculus sequence, including limits, derivatives, linear approximation, and applications of differentiation.</p>
+    <p data-en="This section is designed to hold course-related writings over time rather than a single attachment." data-zh="本栏目用于长期收录与课程相关的多份写作，而不是只对应一个附件。">This section is designed to hold course-related writings over time rather than a single attachment.</p>
+    <ul class="list-clean">
+      <li><div class="item-title" data-en="Where Do Complex Numbers Come From?" data-zh="复数从何而来？">Where Do Complex Numbers Come From?</div><div class="item-meta"><span data-en="Selected writing for Math 124 · September 2025 · 3 pages · PDF" data-zh="Math 124 选读 · 2025 年 9 月 · 3 页 · PDF">Selected writing for Math 124 · September 2025 · 3 pages · PDF</span> · <a href="files/Where_Do_Complex_Numbers_Come_From.pdf" data-en="Open" data-zh="打开">Open</a> · <a href="files/Where_Do_Complex_Numbers_Come_From.pdf" download data-en="Download" data-zh="下载">Download</a></div></li>
+      <li><div class="item-title" data-en="The Method of Infinitesimal Analysis" data-zh="无穷小分析法">The Method of Infinitesimal Analysis</div><div class="item-meta"><span data-en="Selected writing for Math 124 · PDF" data-zh="Math 124 选读 · PDF">Selected writing for Math 124 · PDF</span> · <a href="files/The_Method_of_Infinitesimal_Analysis.pdf" data-en="Open" data-zh="打开">Open</a> · <a href="files/The_Method_of_Infinitesimal_Analysis.pdf" download data-en="Download" data-zh="下载">Download</a></div></li>
+    </ul>
+  </div>
+</article></div></section>
+<section class="section compact section-rule"><div class="container"><article class="feature">
+  <div class="feature-math"><div class="feature-formula">∫ f(x) dx</div></div><div>
+    <span class="eyebrow" data-en="University of Washington" data-zh="华盛顿大学">University of Washington</span><h3 data-en="Math 125 — Integral Calculus" data-zh="Math 125 — 积分学">Math 125 — Integral Calculus</h3>
+    <p data-en="Teaching experience in the second course of the single-variable calculus sequence, including definite and indefinite integrals, the Fundamental Theorem of Calculus, techniques of integration, and applications." data-zh="单变量微积分第二门课程，内容包括定积分与不定积分、微积分基本定理、积分技巧与应用。">Teaching experience in the second course of the single-variable calculus sequence, including definite and indefinite integrals, the Fundamental Theorem of Calculus, techniques of integration, and applications.</p>
+    <p data-en="This section can grow into a small collection of course materials as new writings are added." data-zh="随着新写作加入，本栏目可以逐步扩展为一组课程材料。">This section can grow into a small collection of course materials as new writings are added.</p>
+    <ul class="list-clean"><li><div class="item-title" data-en="Two Trigonometric Integrals" data-zh="两个三角积分">Two Trigonometric Integrals</div><div class="item-meta"><span data-en="Selected writing for Math 125 · PDF" data-zh="Math 125 选读 · PDF">Selected writing for Math 125 · PDF</span> · <a href="files/Two_Trigonometric_Integrals.pdf" data-en="Open" data-zh="打开">Open</a> · <a href="files/Two_Trigonometric_Integrals.pdf" download data-en="Download" data-zh="下载">Download</a></div></li></ul>
+  </div>
+</article></div></section>
+<section class="section compact section-rule"><div class="container"><article class="feature">
+  <div class="feature-math"><div class="feature-formula">A𝐱 = 𝐛</div></div><div>
+    <span class="eyebrow" data-en="University of Washington" data-zh="华盛顿大学">University of Washington</span><h3 data-en="Math 208 — Matrix Algebra" data-zh="Math 208 — 矩阵代数">Math 208 — Matrix Algebra</h3>
+    <p data-en="Teaching experience with matrices, systems of linear equations, linear transformations, determinants, eigenvalues, and the algebraic structure underlying finite-dimensional linear systems." data-zh="课程内容包括矩阵、线性方程组、线性变换、行列式、特征值，以及有限维线性系统背后的代数结构。">Teaching experience with matrices, systems of linear equations, linear transformations, determinants, eigenvalues, and the algebraic structure underlying finite-dimensional linear systems.</p>
+    <p data-en="This course section is set up the same way, so additional files can be added here in the future." data-zh="本栏目采用同样的结构，今后可以继续添加多份课程文件。">This course section is set up the same way, so additional files can be added here in the future.</p>
+    <ul class="list-clean"><li><div class="item-title" data-en="Course materials" data-zh="课程材料">Course materials</div><div class="item-meta" data-en="Additional notes or handouts for Math 208 can be added here later." data-zh="今后可在此添加 Math 208 的笔记或讲义。">Additional notes or handouts for Math 208 can be added here later.</div></li></ul>
+  </div>
+</article></div></section>
+<section class="section section-rule"><div class="container">
+  <div class="section-head"><h2 data-en="Online mathematics" data-zh="线上数学">Online mathematics</h2><p data-en="A long-running archive of short lectures and informal mathematical exploration." data-zh="长期积累的短讲与非正式数学探索档案。">A long-running archive of short lectures and informal mathematical exploration.</p></div>
+  <div class="feature"><div class="feature-math"><div class="feature-formula">Fraljimetry<br><span style="font-size:.65em;color:#c8d8e4" data-en="mathematics in short form" data-zh="数学短讲">mathematics in short form</span></div></div><div>
+    <span class="eyebrow" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</span><h3 data-en="Undergraduate and graduate mathematics videos" data-zh="本科与研究生数学视频">Undergraduate and graduate mathematics videos</h3>
+    <p data-en="I have published around 3,000 videos organized into more than 50 albums, covering course material, mathematical ideas, and research-oriented study. The channel has more than 30,000 followers." data-zh="我已发布约 3,000 个视频，整理为 50 多个合集，内容涵盖课程材料、数学思想与研究导向的学习；频道关注者超过 3 万。">I have published around 3,000 videos organized into more than 50 albums, covering course material, mathematical ideas, and research-oriented study. The channel has more than 30,000 followers.</p>
+    <div class="feature-links"><a href="https://space.bilibili.com/355884223" class="button primary" data-en="Visit the channel" data-zh="访问频道">Visit the channel</a></div>
+  </div></div>
 </div></section>
-<section class="section section-rule"><div class="narrow prose"><h2>Teaching philosophy</h2><p>I want students to see the mathematical object before they become buried in notation. Pictures, explicit computations, and carefully chosen examples can reveal the structure behind a definition without sacrificing rigor.</p><p>My goal is to help students move between three views of a problem: geometric intuition, symbolic calculation, and proof.</p><div class="note"><strong>Course materials:</strong> Public notes and selected expository writing will continue to be added here as they are prepared for wider use.</div></div></section>
+<section class="section section-rule"><div class="narrow prose"><h2 data-en="Teaching philosophy" data-zh="教学理念">Teaching philosophy</h2><p data-en="I want students to see the mathematical object before they become buried in notation. Pictures, explicit computations, and carefully chosen examples can reveal the structure behind a definition without sacrificing rigor." data-zh="我希望学生在被符号淹没之前，先看见数学对象本身。图像、具体计算和精心选择的例子，可以在不牺牲严谨性的前提下揭示定义背后的结构。">I want students to see the mathematical object before they become buried in notation. Pictures, explicit computations, and carefully chosen examples can reveal the structure behind a definition without sacrificing rigor.</p><p data-en="My goal is to help students move between three views of a problem: geometric intuition, symbolic calculation, and proof." data-zh="我的目标是帮助学生在几何直觉、符号计算与证明这三种视角之间自由切换。">My goal is to help students move between three views of a problem: geometric intuition, symbolic calculation, and proof.</p><div class="note"><strong data-en="Course materials:" data-zh="课程材料：">Course materials:</strong> <span data-en="Public notes and selected expository writing will continue to be added here as they are prepared for wider use." data-zh="面向公开使用整理完成后，我会继续在此加入笔记与精选阐释性写作。">Public notes and selected expository writing will continue to be added here as they are prepared for wider use.</span></div></div></section>
 </main>
-<footer class="site-footer"><div class="container footer-grid"><div>© <span data-year></span> Shaoda Ji</div><div class="footer-links"><a href="mailto:frankjiiiiiiii@gmail.com">Email</a><a href="research.html">Research</a></div></div></footer><script src="assets/js/main.js"></script>
+<footer class="site-footer"><div class="container footer-grid">
+  <div>© <span data-year></span> Shaoda Ji</div>
+  <div class="footer-links">
+    <a href="mailto:frankjiiiiiiii@gmail.com" data-en="Email" data-zh="邮件">Email</a>
+    <a href="https://math.washington.edu/people/shaoda-ji" data-en="UW profile" data-zh="华大主页">UW profile</a>
+    <a href="https://space.bilibili.com/355884223" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</a>
+  </div>
+</div></footer>
+<script src="assets/js/main-v15.js"></script>
 </body></html>
