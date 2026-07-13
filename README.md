@@ -91,6 +91,7 @@ Common edits:
 - Visual design and alignment: `assets/css/style.css`
 - Profile image: `assets/img/shaoda-ji.webp`
 - CV PDF: `files/Shaoda_Ji_CV.pdf`
+- Published paper: `files/Defining_Cosine_Function_with_DAlemberts_Functional_Equation.pdf`
 
 Keep the same filenames when replacing the photograph or CV, and the existing links will continue to work.
 
@@ -107,3 +108,7 @@ Official documentation:
 
 ## v4 portrait fix
 The homepage now uses a fixed 270×270 square portrait and versioned image/CSS filenames to prevent stale cache reuse.
+
+
+## v5 research update
+The research page and homepage now feature the 2023 publication “Defining Cosine Function with D’Alembert’s Functional Equation.” The Gaussian-curvature work remains only on the Notes page.
