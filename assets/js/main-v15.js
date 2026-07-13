@@ -45,6 +45,7 @@
       if (meta) meta.content = next === 'zh' ? body.dataset.descriptionZh : body.dataset.descriptionEn;
     }
     updateDynamicControls();
+    if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise();
     if (persist) safeStore('shaoda-language', next);
   }
 
