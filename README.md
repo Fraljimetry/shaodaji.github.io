@@ -94,9 +94,9 @@ Common edits:
 
 Keep the same filenames when replacing the photograph or CV, and the existing links will continue to work.
 
-## Optional custom domain
+## Current custom domain
 
-After the GitHub Pages address works, you can buy a domain such as `shaodaji.com`. Add it under **Settings → Pages → Custom domain**, then configure the DNS records with your domain registrar. Enable **Enforce HTTPS** after GitHub verifies the domain.
+This package already includes a root-level `CNAME` file for `shaodaji.cc`. Keep that file in the repository root so GitHub Pages continues to serve the site at `https://shaodaji.cc`. The Cloudflare DNS records and GitHub Pages custom-domain setting must remain configured for the same domain.
 
 Official documentation:
 

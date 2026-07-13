@@ -152,7 +152,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 }
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(270px, 0.75fr);
+  grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.55fr);
   align-items: center;
   gap: clamp(2.7rem, 6vw, 5rem);
 }
@@ -202,7 +202,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 .button.secondary:hover { background: var(--surface); }
 
 .portrait-frame {
-  width: min(100%, 330px);
+  width: min(100%, 255px);
   margin: 0;
   justify-self: end;
 }
@@ -210,7 +210,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
-  object-position: 50% 26%;
+  object-position: 50% 50%;
   border: 1px solid #cbd3d9;
   border-radius: 0.8rem;
   box-shadow: var(--shadow);
@@ -489,7 +489,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 
   .hero-grid { gap: 2.7rem; }
   .portrait-frame {
-    width: min(75vw, 330px);
+    width: min(68vw, 245px);
     justify-self: start;
   }
   .cards { grid-template-columns: 1fr 1fr; }
@@ -528,7 +528,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   .hero { padding: 3.7rem 0; }
   .hero h1 { font-size: clamp(3rem, 16vw, 4.25rem); }
   .hero-actions .button { flex: 1 1 10rem; }
-  .portrait-frame { width: min(82vw, 315px); }
+  .portrait-frame { width: min(72vw, 235px); }
 
   .section { padding: 3.7rem 0; }
   .section.compact { padding: 3rem 0; }
