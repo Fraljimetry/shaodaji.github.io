@@ -202,13 +202,13 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 .button.secondary:hover { background: var(--surface); }
 
 .portrait-frame {
-  width: min(100%, 255px);
+  width: min(100%, 280px);
   margin: 0;
   justify-self: end;
 }
 .portrait-frame img {
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   object-position: 50% 50%;
   border: 1px solid #cbd3d9;
@@ -528,7 +528,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   .hero { padding: 3.7rem 0; }
   .hero h1 { font-size: clamp(3rem, 16vw, 4.25rem); }
   .hero-actions .button { flex: 1 1 10rem; }
-  .portrait-frame { width: min(72vw, 235px); }
+  .portrait-frame { width: min(72vw, 230px); }
 
   .section { padding: 3.7rem 0; }
   .section.compact { padding: 3rem 0; }
