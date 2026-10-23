@@ -71,6 +71,7 @@ const themeButton = el('theme-button');
 const themeIcon = el('theme-icon');
 const themeLabel = el('theme-label');
 const leftToggle = el('left-toggle');
+const bothPanelsToggle = el('both-panels-toggle');
 const rightToggle = el('right-toggle');
 const selectionCard = el('selection-card');
 const selectionHelp = el('selection-help');
@@ -743,7 +744,7 @@ function refreshOcrUI() {
   const has = Boolean(currentOcrResult?.latex);
   ocrResult.classList.toggle('is-hidden', !has);
   ocrPageChip.textContent = has ? String(currentOcrResult.page || '—') : '—';
-  ocrLatexPreview.textContent = has ? currentOcrResult.latex : '';
+  ocrLatexPreview.value = has ? currentOcrResult.latex : '';
   if (ocrSourceBadge) {
     const source = has ? (currentOcrResult.source || 'image') : '';
     ocrSourceBadge.textContent = !has ? '—' : source === 'vector' ? t('PDF vector', 'PDF 矢量') : t('Image OCR', '图像 OCR');
@@ -1047,6 +1048,156 @@ function latexifyVectorText(text) {
     .trim();
 }
 
+function vectorOperatorName(text) {
+  const value = String(text || '').trim();
+  return ['sup','inf','lim','max','min'].includes(value) ? value : null;
+}
+
+function vectorRows(tokens, tolerance) {
+  const rows = [];
+  for (const token of [...tokens].sort((a, b) => (a.centerY - b.centerY) || (a.left - b.left))) {
+    let row = rows.find((candidate) => Math.abs(candidate.centerY - token.centerY) <= tolerance);
+    if (!row) {
+      row = { tokens: [], centerY: token.centerY };
+      rows.push(row);
+    }
+    row.tokens.push(token);
+    row.centerY = median(row.tokens.map((item) => item.centerY));
+  }
+  for (const row of rows) {
+    row.tokens.sort((a, b) => a.left - b.left);
+    row.left = Math.min(...row.tokens.map((item) => item.left));
+    row.right = Math.max(...row.tokens.map((item) => item.right));
+    row.top = Math.min(...row.tokens.map((item) => item.top));
+    row.bottom = Math.max(...row.tokens.map((item) => item.bottom));
+    row.width = row.right - row.left;
+    row.height = row.bottom - row.top;
+  }
+  return rows.sort((a, b) => a.centerY - b.centerY);
+}
+
+function vectorRowSegments(row, baseHeight) {
+  const groups = [];
+  let group = [];
+  let previous = null;
+  const flush = () => {
+    if (!group.length) return;
+    const segment = {
+      tokens: group,
+      left: Math.min(...group.map((item) => item.left)),
+      right: Math.max(...group.map((item) => item.right)),
+      top: Math.min(...group.map((item) => item.top)),
+      bottom: Math.max(...group.map((item) => item.bottom))
+    };
+    segment.width = segment.right - segment.left;
+    segment.centerX = (segment.left + segment.right) / 2;
+    segment.centerY = median(group.map((item) => item.centerY));
+    groups.push(segment);
+    group = [];
+  };
+  for (const token of row.tokens) {
+    const gap = previous ? token.left - previous.right : 0;
+    if (previous && gap > Math.max(baseHeight * 0.72, previous.height * 0.9)) flush();
+    group.push(token);
+    previous = token;
+  }
+  flush();
+  return groups;
+}
+
+function vectorSegmentWithScripts(segment, pool, baseHeight, excluded = new Set()) {
+  const result = [...segment.tokens];
+  for (const token of pool) {
+    if (result.includes(token) || excluded.has(token) || token.height >= baseHeight * 0.82) continue;
+    if (token.left < segment.left - baseHeight * 0.18 || token.left > segment.right + baseHeight * 0.90) continue;
+    if (token.centerY < segment.top - baseHeight * 0.75 || token.centerY > segment.bottom + baseHeight * 0.90) continue;
+    const nearBase = segment.tokens.some((base) => token.left >= base.left - baseHeight * 0.08 && token.left <= base.right + baseHeight * 0.92);
+    if (nearBase) result.push(token);
+  }
+  return [...new Set(result)];
+}
+
+function vectorTokenLatex(token) {
+  if (token.syntheticLatex) return token.syntheticLatex;
+  const raw = String(token.text || '').trim();
+  const operator = vectorOperatorName(raw);
+  if (operator) return `\\${operator}`;
+  const namedOperators = new Set(['Area','Vol','div','grad','curl','det','tr','rank','Ric','Scal','Hess','supp','dist','diam']);
+  if (namedOperators.has(raw)) return `\\operatorname{${raw}}`;
+  const standardFunctions = new Set(['sin','cos','tan','cot','sec','csc','sinh','cosh','tanh','log','ln','exp']);
+  if (standardFunctions.has(raw)) return `\\${raw}`;
+  return latexifyVectorText(raw);
+}
+
+function normalizeVectorDelimiters(latex) {
+  let barOpen = true;
+  let out = '';
+  for (let i = 0; i < latex.length; i += 1) {
+    const ch = latex[i];
+    if (ch !== '|') { out += ch; continue; }
+    out += barOpen ? '\\lvert ' : '\\rvert ';
+    barOpen = !barOpen;
+  }
+  return out
+    .replace(/\\lvert\s+/g, '\\lvert ')
+    .replace(/\\rvert\s+/g, '\\rvert ')
+    .replace(/\s+(?=[,.;:)\]])/g, '')
+    .replace(/([([{])\s+/g, '$1')
+    .replace(/\s+(?=[_^]\{)/g, '')
+    .replace(/}\s+\(/g, '}(')
+    .replace(/\s*\\(le|ge|ne|approx|cong|sim|equiv|in|notin|cap|cup|to|mapsto)\s*/g, ' \\$1 ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function parseVectorInline(tokens, baseHeight, overrides = new Map()) {
+  if (!tokens.length) return '';
+  const usable = [...tokens].sort((a, b) => (a.left - b.left) || (a.centerY - b.centerY));
+  const localMaxHeight = Math.max(...usable.map((token) => token.syntheticLatex ? baseHeight : token.height));
+  const localLargeHeights = usable.filter((token) => token.syntheticLatex || token.height >= localMaxHeight * 0.72).map((token) => token.syntheticLatex ? baseHeight : token.height);
+  const referenceHeight = median(localLargeHeights) || baseHeight || localMaxHeight;
+  const large = usable.filter((token) => token.syntheticLatex || token.height >= referenceHeight * 0.74);
+  const localCenter = median((large.length ? large : usable).map((token) => token.centerY));
+  const bases = usable.filter((token) => token.syntheticLatex || token.height >= referenceHeight * 0.72 || Math.abs(token.centerY - localCenter) <= referenceHeight * 0.24);
+  const scripts = usable.filter((token) => !bases.includes(token));
+  const attachments = new Map();
+  for (const script of scripts) {
+    const candidates = bases.filter((base) => {
+      if (base.syntheticLatex) return false;
+      const horizontal = script.left >= base.left - baseHeight * 0.08 && script.left <= base.right + baseHeight * 0.95;
+      const vertical = Math.abs(script.centerY - base.centerY) >= referenceHeight * 0.13;
+      return horizontal && vertical;
+    }).sort((a, b) => {
+      const da = Math.abs(script.left - a.right) + Math.abs(script.centerY - a.centerY) * 0.25;
+      const db = Math.abs(script.left - b.right) + Math.abs(script.centerY - b.centerY) * 0.25;
+      return da - db;
+    });
+    const target = candidates[0];
+    if (!target) continue;
+    const kind = script.centerY < target.centerY ? 'super' : 'sub';
+    if (!attachments.has(target)) attachments.set(target, { sub: [], super: [] });
+    attachments.get(target)[kind].push(script);
+  }
+
+  let latex = '';
+  let previousRight = null;
+  for (const base of bases.sort((a, b) => a.left - b.left)) {
+    let value = overrides.get(base) || vectorTokenLatex(base);
+    if (!value) continue;
+    const attached = attachments.get(base);
+    if (attached?.sub?.length) value += `_{${parseVectorInline(attached.sub, referenceHeight * 0.78)}}`;
+    if (attached?.super?.length) value += `^{${parseVectorInline(attached.super, referenceHeight * 0.78)}}`;
+    if (previousRight !== null) {
+      const gap = base.left - previousRight;
+      const wordLike = /^[A-Za-z]/.test(base.text || '') && /[A-Za-z]$/.test(latex);
+      if (gap > referenceHeight * 0.48 || (wordLike && gap > referenceHeight * 0.16)) latex += ' ';
+    }
+    latex += value;
+    previousRight = Math.max(previousRight ?? base.right, base.right);
+  }
+  return normalizeVectorDelimiters(latex);
+}
+
 function extractVectorFormulaFromLayer(ocrLayer, selectionRect) {
   const textLayer = vectorTextLayerForOcrLayer(ocrLayer);
   if (!textLayer) return null;
@@ -1072,59 +1223,117 @@ function extractVectorFormulaFromLayer(ocrLayer, selectionRect) {
       bottom: r.bottom - layerRect.top,
       width: r.width,
       height: r.height,
+      centerX: (r.left + r.right) / 2 - layerRect.left,
       centerY: (r.top + r.bottom) / 2 - layerRect.top
     });
   }
   if (!tokens.length) return null;
-  const maxHeight = Math.max(...tokens.map((token) => token.height));
-  const baseCandidates = tokens.filter((token) => token.height >= maxHeight * 0.72);
-  const baselineBottom = median(baseCandidates.map((token) => token.bottom));
-  const baseHeight = median(baseCandidates.map((token) => token.height)) || maxHeight;
-  tokens.sort((a, b) => (a.left - b.left) || (a.top - b.top));
 
-  let latex = '';
-  let plain = '';
-  let previousRight = null;
-  let scriptType = null;
-  let scriptBuffer = '';
-  const flushScript = () => {
-    if (!scriptBuffer) return;
-    latex += scriptType === 'super' ? `^{${scriptBuffer}}` : `_{${scriptBuffer}}`;
-    scriptBuffer = '';
-    scriptType = null;
+  const maxHeight = Math.max(...tokens.map((token) => token.height));
+  const baseCandidates = tokens.filter((token) => token.height >= maxHeight * 0.68);
+  const baseHeight = median(baseCandidates.map((token) => token.height)) || maxHeight;
+  const largeRows = vectorRows(baseCandidates, Math.max(2, baseHeight * 0.30));
+  const rowScore = (row) => {
+    const joined = row.tokens.map((token) => token.text).join(' ');
+    const relationBoost = /[=<>≤≥≈≅≠]/.test(joined) ? baseHeight * 5 : 0;
+    const operatorBoost = row.tokens.some((token) => vectorOperatorName(token.text)) ? baseHeight * 4 : 0;
+    const sizeBoost = median(row.tokens.map((token) => token.height)) * row.tokens.length * 0.28;
+    return row.width + row.tokens.length * baseHeight * 0.2 + relationBoost + operatorBoost + sizeBoost;
   };
-  for (const token of tokens) {
-    const small = token.height < baseHeight * 0.84;
-    const below = token.bottom > baselineBottom + baseHeight * 0.10;
-    const above = token.bottom < baselineBottom - baseHeight * 0.16;
-    const type = small && below ? 'sub' : small && above ? 'super' : 'base';
-    const converted = latexifyVectorText(token.text);
-    if (!converted) continue;
-    if (type !== 'base') {
-      if (scriptType && scriptType !== type) flushScript();
-      scriptType = type;
-      scriptBuffer += converted;
-      plain += token.text;
-      previousRight = Math.max(previousRight ?? token.right, token.right);
-      continue;
+  const mainRow = largeRows.sort((a, b) => rowScore(b) - rowScore(a))[0];
+  if (!mainRow) return null;
+  const mainCenter = mainRow.centerY;
+  const consumed = new Set();
+  const overrides = new Map();
+
+  // Large operators such as sup/inf/lim carry their limits beneath them. Find
+  // the nearest lower row segment whose center is aligned with the operator.
+  const allRows = vectorRows(tokens.filter((token) => !mainRow.tokens.includes(token)), Math.max(2, baseHeight * 0.32));
+  for (const op of mainRow.tokens.filter((token) => vectorOperatorName(token.text))) {
+    let best = null;
+    for (const row of allRows) {
+      if (row.centerY <= op.centerY + baseHeight * 0.18 || row.centerY > op.centerY + baseHeight * 2.1) continue;
+      for (const segment of vectorRowSegments(row, baseHeight)) {
+        const centerDistance = Math.abs(segment.centerX - op.centerX);
+        const aligned = centerDistance <= Math.max(baseHeight * 1.35, segment.width * 0.38);
+        if (!aligned) continue;
+        const score = (row.centerY - op.centerY) + centerDistance * 0.35;
+        if (!best || score < best.score) best = { segment, score };
+      }
     }
-    flushScript();
-    if (previousRight !== null) {
-      const gap = token.left - previousRight;
-      if (gap > baseHeight * 0.34 && !/^[,.;:)\]}]/.test(converted)) latex += ' ';
-      if (gap > baseHeight * 0.34) plain += ' ';
+    if (best) {
+      const lowerTokens = vectorSegmentWithScripts(best.segment, tokens, baseHeight, consumed);
+      lowerTokens.forEach((token) => consumed.add(token));
+      const lower = parseVectorInline(lowerTokens, baseHeight * 0.82);
+      if (lower) overrides.set(op, `\\${vectorOperatorName(op.text)}_{${lower}}`);
     }
-    latex += converted;
-    plain += token.text;
-    previousRight = token.right;
   }
-  flushScript();
-  latex = latex.replace(/\s+/g, ' ').trim();
-  plain = plain.replace(/\s+/g, ' ').trim();
-  if (!latex || plain.length < 1) return null;
-  // Avoid calling a whole prose paragraph a formula merely because the box touched text.
-  const mathSignal = /[=<>≤≥∫∑√∂∇∩∪∞_^]|\\(?:le|ge|cap|cup|partial|nabla|sqrt|frac|operatorname)/.test(latex);
-  const compactEnough = tokens.length <= 28 && plain.length <= 220;
+
+  // Reserve small glyphs attached to the main row before searching for
+  // stacked fractions. Otherwise a superscript such as |A_i|^2 can be
+  // mistaken for a fraction numerator.
+  const reservedMainScripts = tokens.filter((token) => {
+    if (mainRow.tokens.includes(token) || consumed.has(token) || token.height >= baseHeight * 0.82) return false;
+    return mainRow.tokens.some((base) => token.left >= base.left - baseHeight * 0.08 && token.left <= base.right + baseHeight * 0.92 && Math.abs(token.centerY - base.centerY) <= baseHeight * 1.15);
+  });
+
+  // Infer stacked fractions from an upper and lower segment that share the
+  // same horizontal footprint around the main baseline. PDF text layers do
+  // not expose the drawn fraction bar, so geometry is the reliable signal.
+  const residualRows = vectorRows(tokens.filter((token) => !mainRow.tokens.includes(token) && !consumed.has(token) && !reservedMainScripts.includes(token)), Math.max(2, baseHeight * 0.30));
+  const upper = [];
+  const lower = [];
+  for (const row of residualRows) {
+    for (const segment of vectorRowSegments(row, baseHeight)) {
+      if (segment.centerY < mainCenter - baseHeight * 0.18) upper.push(segment);
+      else if (segment.centerY > mainCenter + baseHeight * 0.18) lower.push(segment);
+    }
+  }
+  const usedLower = new Set();
+  const syntheticFractions = [];
+  for (const numerator of upper) {
+    let best = null;
+    for (const denominator of lower) {
+      if (usedLower.has(denominator)) continue;
+      const overlap = Math.max(0, Math.min(numerator.right, denominator.right) - Math.max(numerator.left, denominator.left));
+      const minWidth = Math.max(1, Math.min(numerator.width, denominator.width));
+      const centerDistance = Math.abs(numerator.centerX - denominator.centerX);
+      const aligned = overlap / minWidth >= 0.20 || centerDistance <= Math.max(baseHeight * 0.65, Math.max(numerator.width, denominator.width) * 0.34);
+      if (!aligned) continue;
+      if (denominator.centerY - numerator.centerY > baseHeight * 2.3) continue;
+      const score = centerDistance + Math.abs(numerator.width - denominator.width) * 0.15;
+      if (!best || score < best.score) best = { denominator, score };
+    }
+    if (!best) continue;
+    usedLower.add(best.denominator);
+    const numeratorTokens = vectorSegmentWithScripts(numerator, tokens, baseHeight, consumed);
+    const denominatorTokens = vectorSegmentWithScripts(best.denominator, tokens, baseHeight, consumed);
+    numeratorTokens.forEach((token) => consumed.add(token));
+    denominatorTokens.forEach((token) => consumed.add(token));
+    const topLatex = parseVectorInline(numeratorTokens, baseHeight * 0.86);
+    const bottomLatex = parseVectorInline(denominatorTokens, baseHeight * 0.86);
+    if (!topLatex || !bottomLatex) continue;
+    syntheticFractions.push({
+      syntheticLatex: `\\frac{${topLatex}}{${bottomLatex}}`,
+      text: `${numerator.tokens.map((token) => token.text).join('')}/${best.denominator.tokens.map((token) => token.text).join('')}`,
+      left: Math.min(numerator.left, best.denominator.left),
+      right: Math.max(numerator.right, best.denominator.right),
+      top: numerator.top,
+      bottom: best.denominator.bottom,
+      width: Math.max(numerator.right, best.denominator.right) - Math.min(numerator.left, best.denominator.left),
+      height: baseHeight,
+      centerX: (numerator.centerX + best.denominator.centerX) / 2,
+      centerY: mainCenter
+    });
+  }
+
+  const mainTokens = [...mainRow.tokens, ...syntheticFractions];
+  const remainingScripts = tokens.filter((token) => !mainRow.tokens.includes(token) && !consumed.has(token));
+  const latex = parseVectorInline([...mainTokens, ...remainingScripts], baseHeight, overrides).replace(/\s+/g, ' ').trim();
+  const plain = tokens.sort((a, b) => (a.top - b.top) || (a.left - b.left)).map((token) => token.text).join(' ').replace(/\s+/g, ' ').trim();
+  if (!latex || !plain) return null;
+  const mathSignal = /[=<>≤≥∫∑√∂∇∩∪∞_^]|\\(?:le|ge|cap|cup|partial|nabla|sqrt|frac|sup|inf|lim|operatorname|lvert|rvert)/.test(latex);
+  const compactEnough = tokens.length <= 36 && plain.length <= 260;
   if (!mathSignal && !compactEnough) return null;
   return { latex, text: plain, tokenCount: tokens.length };
 }
@@ -2164,7 +2373,14 @@ pageNote.addEventListener('input', () => {
 });
 
 
-copyOcrLatex.addEventListener('click', () => copyPlainText(currentOcrResult?.latex, copyOcrLatex));
+copyOcrLatex.addEventListener('click', () => copyPlainText(ocrLatexPreview?.value || currentOcrResult?.latex, copyOcrLatex));
+ocrLatexPreview?.addEventListener('input', () => {
+  if (!currentOcrResult) return;
+  currentOcrResult.latex = ocrLatexPreview.value;
+  const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
+  if (match) match.latex = currentOcrResult.latex;
+  persistDocumentState();
+});
 ocrToNote.addEventListener('click', addOcrToPageNote);
 clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
@@ -2217,6 +2433,17 @@ rightToggle.addEventListener('click', () => {
   setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
 });
 
+function toggleBothSidePanels() {
+  if (matchMedia('(max-width: 860px)').matches) return;
+  const bothClosed = shell.classList.contains('left-collapsed') && shell.classList.contains('right-collapsed');
+  shell.classList.toggle('left-collapsed', !bothClosed);
+  shell.classList.toggle('right-collapsed', !bothClosed);
+  if (pdfDoc) persistDocumentState();
+  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
+}
+
+bothPanelsToggle?.addEventListener('click', toggleBothSidePanels);
+
 document.addEventListener('keydown', (event) => {
   const target = event.target;
   const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
@@ -2227,6 +2454,7 @@ document.addEventListener('keydown', (event) => {
     else shell.classList.remove('left-collapsed');
     searchInput.focus(); return;
   }
+  if (!typing && event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
   if (!typing && pdfDoc && event.key.toLowerCase() === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setOcrMode(!ocrMode); return; }
   if (!typing && pdfDoc && event.key === 'ArrowLeft') goToPage(currentPage - 1);
   if (!typing && pdfDoc && event.key === 'ArrowRight') goToPage(currentPage + 1);

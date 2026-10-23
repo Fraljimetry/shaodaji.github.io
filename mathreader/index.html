@@ -99,6 +99,7 @@
       <div class="reader-toolbar" id="reader-toolbar">
         <div class="toolbar-group">
           <button class="tool-button sidebar-toggle" type="button" id="left-toggle" aria-label="Toggle document navigation" title="Toggle document navigation">☰</button>
+          <button class="tool-button sidebar-toggle both-panels-toggle" type="button" id="both-panels-toggle" data-en-title="Toggle both side panels · B" data-zh-title="同时展开/收起两侧栏 · B" aria-label="Toggle both side panels · B" title="Toggle both side panels · B">⇔</button>
           <button class="tool-button" type="button" id="prev-page" disabled aria-label="Previous page" title="Previous page">←</button>
           <div class="page-control">
             <input id="page-number" type="number" min="1" value="1" disabled aria-label="Page number">
@@ -250,8 +251,8 @@
         <div class="ocr-result is-hidden" id="ocr-result">
           <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
-          <label data-en="Extracted LaTeX" data-zh="提取出的 LaTeX">Extracted LaTeX</label>
-          <pre id="ocr-latex-preview"></pre>
+          <label data-en="Extracted LaTeX · editable" data-zh="提取出的 LaTeX · 可编辑">Extracted LaTeX · editable</label>
+          <textarea id="ocr-latex-preview" class="ocr-latex-editor" rows="4" spellcheck="false" aria-label="Extracted LaTeX"></textarea>
           <div class="ocr-actions">
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
@@ -311,6 +312,7 @@
           <div><dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
           <div><dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
           <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle formula extraction" data-zh="矩形公式提取">Rectangle formula extraction</dd></div>
+          <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
         </dl>
       </section>
     </aside>
