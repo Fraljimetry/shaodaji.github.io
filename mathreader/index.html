@@ -118,7 +118,7 @@
           <button class="welcome-open" type="button" id="welcome-open" data-en="Open PDF" data-zh="打开 PDF">Open PDF</button>
           <p class="drop-hint" data-en="or drop a PDF anywhere in this window" data-zh="或将 PDF 拖入此窗口">or drop a PDF anywhere in this window</p>
           <div class="welcome-features">
-            <span data-en="Document outline" data-zh="文档目录">Document outline</span>
+            <span data-en="Selectable PDF text" data-zh="可选择 PDF 文本">Selectable PDF text</span>
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
@@ -129,7 +129,10 @@
           <div class="pdf-pane primary-pane" id="primary-pane">
             <div class="pane-label"><span data-en="Reading" data-zh="当前阅读">Reading</span><span id="primary-page-label"></span></div>
             <div class="canvas-wrap" id="primary-canvas-wrap">
-              <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
+              <div class="page-surface" id="primary-page-surface">
+                <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
+                <div class="textLayer" id="primary-text-layer" aria-label="Selectable PDF text"></div>
+              </div>
             </div>
           </div>
 
@@ -143,7 +146,10 @@
               </div>
             </div>
             <div class="canvas-wrap reference-canvas-wrap" id="reference-canvas-wrap">
-              <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
+              <div class="page-surface" id="reference-page-surface">
+                <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
+                <div class="textLayer" id="reference-text-layer" aria-label="Selectable pinned PDF text"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -158,6 +164,26 @@
     </section>
 
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <section class="workspace-section selection-section">
+        <div class="panel-heading">
+          <span data-en="Selection" data-zh="选区">Selection</span>
+          <span class="page-chip" id="selection-page-chip">—</span>
+        </div>
+        <p class="workspace-copy" id="selection-help" data-en="Drag across text on the PDF. MathReader will expose the PDF text and a best-effort LaTeX form here." data-zh="在 PDF 上拖选文字。MathReader 会在这里显示 PDF 文本以及尽力转换的 LaTeX。">Drag across text on the PDF. MathReader will expose the PDF text and a best-effort LaTeX form here.</p>
+        <div class="selection-card is-hidden" id="selection-card">
+          <label data-en="PDF text" data-zh="PDF 文本">PDF text</label>
+          <pre id="selection-text-preview"></pre>
+          <label><span data-en="LaTeX" data-zh="LaTeX">LaTeX</span> <span class="beta-badge">β</span></label>
+          <pre id="selection-latex-preview"></pre>
+          <div class="selection-actions">
+            <button class="secondary-action" type="button" id="copy-selection-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
+            <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
+            <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+          </div>
+          <p class="selection-caveat" data-en="LaTeX β is reconstructed from the PDF text layer. It handles symbols and simple scripts, but complex fractions, matrices, roots, and other two-dimensional formulas still require Math OCR." data-zh="LaTeX β 基于 PDF 文本层重建，可处理符号和简单上下标；复杂分式、矩阵、根式等二维公式仍需要 Math OCR。">LaTeX β is reconstructed from the PDF text layer. It handles symbols and simple scripts, but complex fractions, matrices, roots, and other two-dimensional formulas still require Math OCR.</p>
+        </div>
+      </section>
+
       <section class="workspace-section">
         <div class="panel-heading">
           <span data-en="Page note" data-zh="页注">Page note</span>
@@ -186,6 +212,14 @@
       </section>
     </aside>
   </main>
+
+  <div class="selection-toolbar is-hidden" id="selection-toolbar" role="toolbar" aria-label="Selected PDF text actions">
+    <span class="selection-toolbar-label" id="selection-toolbar-label">Selection</span>
+    <button type="button" id="floating-copy-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
+    <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
+    <button type="button" id="floating-add-note" data-en="Note" data-zh="页注">Note</button>
+    <button type="button" id="floating-pin-page" data-en="Pin page" data-zh="固定页">Pin page</button>
+  </div>
 
   <div class="drop-overlay is-hidden" id="drop-overlay" aria-hidden="true">
     <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>

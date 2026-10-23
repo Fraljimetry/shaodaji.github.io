@@ -13,6 +13,10 @@ const primaryPane = el('primary-pane');
 const referencePane = el('reference-pane');
 const canvas = el('pdf-canvas');
 const referenceCanvas = el('reference-canvas');
+const primaryPageSurface = el('primary-page-surface');
+const referencePageSurface = el('reference-page-surface');
+const primaryTextLayer = el('primary-text-layer');
+const referenceTextLayer = el('reference-text-layer');
 const primaryCanvasWrap = el('primary-canvas-wrap');
 const referenceCanvasWrap = el('reference-canvas-wrap');
 const pageNumberInput = el('page-number');
@@ -53,6 +57,20 @@ const languageButton = el('language-button');
 const themeButton = el('theme-button');
 const leftToggle = el('left-toggle');
 const rightToggle = el('right-toggle');
+const selectionCard = el('selection-card');
+const selectionHelp = el('selection-help');
+const selectionPageChip = el('selection-page-chip');
+const selectionTextPreview = el('selection-text-preview');
+const selectionLatexPreview = el('selection-latex-preview');
+const copySelectionText = el('copy-selection-text');
+const copySelectionLatex = el('copy-selection-latex');
+const selectionToNote = el('selection-to-note');
+const selectionToolbar = el('selection-toolbar');
+const selectionToolbarLabel = el('selection-toolbar-label');
+const floatingCopyText = el('floating-copy-text');
+const floatingCopyLatex = el('floating-copy-latex');
+const floatingAddNote = el('floating-add-note');
+const floatingPinPage = el('floating-pin-page');
 
 let pdfjsLib = null;
 let pdfDoc = null;
@@ -70,6 +88,8 @@ let textCache = new Map();
 let pdfModulePromise = null;
 let noteTimer = null;
 let resizeTimer = null;
+let selectionTimer = null;
+let currentSelection = null;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -127,6 +147,7 @@ function applyLanguage(lang, persist = true) {
   updateReferenceStatus();
   updateZoomLabel();
   renderBookmarks();
+  refreshSelectionUI();
   if (persist) safeSet('shaoda-language', next);
 }
 
@@ -205,6 +226,158 @@ function updateZoomLabel() {
   else zoomLabel.textContent = `${Math.round(zoomScale * 100)}%`;
 }
 
+
+function nodeElement(node) {
+  if (!node) return null;
+  return node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+}
+
+function selectionLayerForNode(node) {
+  return nodeElement(node)?.closest?.('.textLayer') || null;
+}
+
+const latexSymbolMap = new Map(Object.entries({
+  'α':'\\alpha ','β':'\\beta ','γ':'\\gamma ','δ':'\\delta ','ε':'\\varepsilon ','ϵ':'\\epsilon ','ζ':'\\zeta ','η':'\\eta ','θ':'\\theta ','ϑ':'\\vartheta ','ι':'\\iota ','κ':'\\kappa ','λ':'\\lambda ','μ':'\\mu ','ν':'\\nu ','ξ':'\\xi ','π':'\\pi ','ϖ':'\\varpi ','ρ':'\\rho ','ϱ':'\\varrho ','σ':'\\sigma ','ς':'\\varsigma ','τ':'\\tau ','υ':'\\upsilon ','φ':'\\phi ','ϕ':'\\varphi ','χ':'\\chi ','ψ':'\\psi ','ω':'\\omega ',
+  'Γ':'\\Gamma ','Δ':'\\Delta ','Θ':'\\Theta ','Λ':'\\Lambda ','Ξ':'\\Xi ','Π':'\\Pi ','Σ':'\\Sigma ','Υ':'\\Upsilon ','Φ':'\\Phi ','Ψ':'\\Psi ','Ω':'\\Omega ',
+  'ℝ':'\\mathbb{R}','ℤ':'\\mathbb{Z}','ℕ':'\\mathbb{N}','ℚ':'\\mathbb{Q}','ℂ':'\\mathbb{C}','ℙ':'\\mathbb{P}',
+  '∂':'\\partial ','∇':'\\nabla ','∞':'\\infty ','∫':'\\int ','∬':'\\iint ','∭':'\\iiint ','∮':'\\oint ','∑':'\\sum ','∏':'\\prod ','√':'\\sqrt{}',
+  '≤':' \\le ','≥':' \\ge ','≠':' \\ne ','≈':' \\approx ','≅':' \\cong ','∼':' \\sim ','≡':' \\equiv ','∝':' \\propto ',
+  '∈':' \\in ','∉':' \\notin ','∋':' \\ni ','⊂':' \\subset ','⊆':' \\subseteq ','⊊':' \\subsetneq ','⊃':' \\supset ','⊇':' \\supseteq ','∪':' \\cup ','∩':' \\cap ',
+  '→':' \\to ','←':' \\leftarrow ','↔':' \\leftrightarrow ','⇒':' \\Rightarrow ','⇐':' \\Leftarrow ','⇔':' \\Leftrightarrow ','↦':' \\mapsto ',
+  '±':' \\pm ','∓':' \\mp ','×':' \\times ','·':' \\cdot ','∘':' \\circ ','⊗':' \\otimes ','⊕':' \\oplus ','∧':' \\wedge ','∨':' \\vee ','¬':'\\neg ',
+  '∀':'\\forall ','∃':'\\exists ','∅':'\\varnothing ','∥':'\\parallel ','⊥':'\\perp ','∠':'\\angle ','ℓ':'\\ell ','′':"'",'″':"''",'°':'^{\\circ}','…':'\\ldots '
+}));
+
+const superscriptMap = new Map(Object.entries({'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','⁺':'+','⁻':'-','⁼':'=','⁽':'(','⁾':')','ⁿ':'n','ⁱ':'i'}));
+const subscriptMap = new Map(Object.entries({'₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9','₊':'+','₋':'-','₌':'=','₍':'(','₎':')','ₐ':'a','ₑ':'e','ₕ':'h','ᵢ':'i','ⱼ':'j','ₖ':'k','ₗ':'l','ₘ':'m','ₙ':'n','ₒ':'o','ₚ':'p','ᵣ':'r','ₛ':'s','ₜ':'t','ᵤ':'u','ᵥ':'v','ₓ':'x'}));
+
+function pdfTextToLatex(source) {
+  const text = String(source || '').normalize('NFC').replace(/\u00ad/g, '').replace(/\r\n?/g, '\n');
+  let out = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (superscriptMap.has(ch)) {
+      let group = '';
+      while (i < text.length && superscriptMap.has(text[i])) { group += superscriptMap.get(text[i]); i += 1; }
+      i -= 1; out += `^{${group}}`; continue;
+    }
+    if (subscriptMap.has(ch)) {
+      let group = '';
+      while (i < text.length && subscriptMap.has(text[i])) { group += subscriptMap.get(text[i]); i += 1; }
+      i -= 1; out += `_{${group}}`; continue;
+    }
+    if (latexSymbolMap.has(ch)) { out += latexSymbolMap.get(ch); continue; }
+    if (ch === '−' || ch === '–') { out += '-'; continue; }
+    if (ch === ' ') { out += ' '; continue; }
+    if (ch === '%') { out += '\\%'; continue; }
+    if (ch === '#') { out += '\\#'; continue; }
+    if (ch === '&') { out += '\\&'; continue; }
+    if (ch === '$') { out += '\\$'; continue; }
+    out += ch;
+  }
+  return out
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ +\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\\([A-Za-z]+) +(?=[,.;:!?)}\]])/g, '\\$1')
+    .trim();
+}
+
+function refreshSelectionUI() {
+  if (!selectionCard || !selectionHelp) return;
+  const has = Boolean(currentSelection?.text);
+  selectionCard.classList.toggle('is-hidden', !has);
+  selectionHelp.classList.toggle('is-hidden', has);
+  selectionPageChip.textContent = has ? String(currentSelection.page) : '—';
+  if (!has) return;
+  selectionTextPreview.textContent = currentSelection.text;
+  selectionLatexPreview.textContent = currentSelection.latex;
+  selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
+}
+
+function hideSelectionToolbar() {
+  selectionToolbar.classList.add('is-hidden');
+}
+
+function positionSelectionToolbar(rect) {
+  selectionToolbar.classList.remove('is-hidden');
+  const margin = 8;
+  const toolbarRect = selectionToolbar.getBoundingClientRect();
+  let left = rect.left + rect.width / 2 - toolbarRect.width / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - toolbarRect.width - margin));
+  let top = rect.top - toolbarRect.height - margin;
+  if (top < 64) top = Math.min(window.innerHeight - toolbarRect.height - margin, rect.bottom + margin);
+  selectionToolbar.style.left = `${Math.round(left)}px`;
+  selectionToolbar.style.top = `${Math.round(top)}px`;
+}
+
+function capturePdfSelection() {
+  clearTimeout(selectionTimer);
+  selectionTimer = setTimeout(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) { hideSelectionToolbar(); return; }
+    const range = sel.getRangeAt(0);
+    const startLayer = selectionLayerForNode(range.startContainer);
+    const endLayer = selectionLayerForNode(range.endContainer);
+    if (!startLayer || startLayer !== endLayer) { hideSelectionToolbar(); return; }
+    const text = sel.toString().replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').trim();
+    if (!text) { hideSelectionToolbar(); return; }
+    const page = Number(startLayer.dataset.page || 0);
+    if (!page) { hideSelectionToolbar(); return; }
+    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer === referenceTextLayer ? 'reference' : 'primary' };
+    refreshSelectionUI();
+    const rect = range.getBoundingClientRect();
+    if (rect.width || rect.height) positionSelectionToolbar(rect);
+  }, 20);
+}
+
+async function copyPlainText(text, button = null) {
+  const value = String(text || '');
+  if (!value) return;
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+    else throw new Error('clipboard unavailable');
+  } catch (_) {
+    const area = document.createElement('textarea');
+    area.value = value; area.setAttribute('readonly', ''); area.style.position = 'fixed'; area.style.opacity = '0';
+    document.body.append(area); area.select(); document.execCommand('copy'); area.remove();
+  }
+  if (button) {
+    const old = button.textContent;
+    button.textContent = t('Copied', '已复制');
+    setTimeout(() => { button.textContent = old; }, 900);
+  }
+}
+
+function addSelectionToPageNote() {
+  if (!pdfDoc || !currentSelection?.text) return;
+  const page = currentSelection.page;
+  const quoted = currentSelection.text.split('\n').map((line) => `> ${line}`).join('\n');
+  const existing = notes[String(page)] || '';
+  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${quoted}`;
+  safeSet(stateKey('notes'), JSON.stringify(notes));
+  if (page === currentPage) pageNote.value = notes[String(page)];
+  noteSaveState.textContent = t('Saved locally', '已保存到本地');
+}
+
+async function renderSelectableText(page, viewport, layer, surface, pageNum) {
+  surface.style.width = `${viewport.width}px`;
+  surface.style.height = `${viewport.height}px`;
+  layer.style.width = `${viewport.width}px`;
+  layer.style.height = `${viewport.height}px`;
+  layer.style.setProperty('--scale-factor', String(viewport.scale));
+  layer.style.setProperty('--total-scale-factor', String(viewport.scale));
+  layer.dataset.page = String(pageNum);
+  layer.replaceChildren();
+  try {
+    const textContent = await page.getTextContent({ includeMarkedContent: true });
+    const textLayer = new pdfjsLib.TextLayer({ textContentSource: textContent, container: layer, viewport });
+    await textLayer.render();
+  } catch (error) {
+    console.warn('MathReader text layer unavailable for page', pageNum, error);
+  }
+}
+
 async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   if (!pdfDoc) return;
   const page = await pdfDoc.getPage(pageNum);
@@ -225,6 +398,10 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   }
   scale = Math.max(.35, Math.min(scale, 4));
   const viewport = page.getViewport({ scale });
+  const targetTextLayer = kind === 'reference' ? referenceTextLayer : primaryTextLayer;
+  const targetSurface = kind === 'reference' ? referencePageSurface : primaryPageSurface;
+  targetSurface.style.width = `${viewport.width}px`;
+  targetSurface.style.height = `${viewport.height}px`;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const context = targetCanvas.getContext('2d', { alpha: false });
   targetCanvas.width = Math.floor(viewport.width * dpr);
@@ -236,7 +413,10 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   if (kind === 'reference' && referenceRenderTask) referenceRenderTask.cancel();
   const task = page.render(renderContext);
   if (kind === 'primary') primaryRenderTask = task; else referenceRenderTask = task;
-  try { await task.promise; } catch (error) { if (error?.name !== 'RenderingCancelledException') throw error; }
+  try {
+    await task.promise;
+    await renderSelectableText(page, viewport, targetTextLayer, targetSurface, pageNum);
+  } catch (error) { if (error?.name !== 'RenderingCancelledException') throw error; }
 }
 
 async function renderCurrentPage() {
@@ -261,6 +441,8 @@ async function goToPage(page) {
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   if (next === currentPage) return;
   currentPage = next;
+  hideSelectionToolbar();
+  window.getSelection()?.removeAllRanges();
   await renderCurrentPage();
 }
 
@@ -415,6 +597,9 @@ async function openPdfFile(file) {
     currentFileName = file.name;
     currentFileKey = `${file.name}:${file.size}:${file.lastModified || 0}`;
     textCache = new Map();
+    currentSelection = null;
+    refreshSelectionUI();
+    hideSelectionToolbar();
     loadDocumentState();
     documentTitle.textContent = file.name;
     pageCount.textContent = pdfDoc.numPages;
@@ -492,6 +677,20 @@ pageNote.addEventListener('input', () => {
   }, 250);
 });
 
+
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
+copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
+copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
+selectionToNote.addEventListener('click', addSelectionToPageNote);
+floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
+floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
+floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });
+floatingPinPage.addEventListener('click', () => { if (currentSelection?.page) setPinnedPage(currentSelection.page); hideSelectionToolbar(); });
+document.addEventListener('selectionchange', capturePdfSelection);
+primaryCanvasWrap.addEventListener('scroll', hideSelectionToolbar, { passive: true });
+referenceCanvasWrap.addEventListener('scroll', hideSelectionToolbar, { passive: true });
+
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
 
@@ -520,7 +719,7 @@ document.addEventListener('keydown', (event) => {
   }
   if (!typing && pdfDoc && event.key === 'ArrowLeft') goToPage(currentPage - 1);
   if (!typing && pdfDoc && event.key === 'ArrowRight') goToPage(currentPage + 1);
-  if (event.key === 'Escape') { shell.classList.remove('mobile-left-open','mobile-right-open'); }
+  if (event.key === 'Escape') { shell.classList.remove('mobile-left-open','mobile-right-open'); hideSelectionToolbar(); window.getSelection()?.removeAllRanges(); }
 });
 
 let dragDepth = 0;
@@ -541,4 +740,5 @@ window.addEventListener('resize', () => {
 applyTheme(root.dataset.theme, false);
 applyLanguage(root.dataset.lang, false);
 updateReferenceStatus();
+refreshSelectionUI();
 renderBookmarks();
