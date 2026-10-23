@@ -149,7 +149,7 @@ let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
-let mathOcrEngineMode = 'auto';
+let mathOcrEngineMode = 'official';
 let currentOcrResult = null;
 let ocrHistory = [];
 let continuousScrollTop = 0;
@@ -172,7 +172,7 @@ let outlineMode = 'none';
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v1', 'auto');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v2', 'official');
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v2';
 const LEGACY_DISPLAY_PREFS_KEY = 'mathreader-display-v1';
@@ -837,21 +837,26 @@ function setOcrMode(active) {
 }
 
 function normalizedOcrEngineMode(value) {
-  return ['auto','webgpu','wasm'].includes(value) ? value : 'auto';
+  return ['official','webgpu','wasm'].includes(value) ? value : 'official';
 }
 
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
-  const webgpuAvailable = Boolean(navigator.gpu);
-  const accurateGpu = [
-    { device: 'webgpu', dtype: 'q4f16', label: 'WebGPU · q4f16 · accurate' },
-    { device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4' }
-  ];
-  if (mode === 'webgpu') return accurateGpu;
-  if (mode === 'wasm') return [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }];
-  return webgpuAvailable
-    ? [...accurateGpu, { device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }]
-    : [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }];
+  if (mode === 'webgpu') {
+    return [
+      { device: 'webgpu', dtype: 'q4f16', label: 'WebGPU · q4f16', official: false },
+      { device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4', official: false }
+    ];
+  }
+  if (mode === 'wasm') {
+    return [
+      { device: 'wasm', dtype: 'q4', label: 'CPU/WASM · q4', official: false },
+      { device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8', official: false }
+    ];
+  }
+  // Match the model card's browser example first: no forced device or dtype.
+  // Transformers.js therefore uses its normal browser defaults (WASM, q8).
+  return [{ device: null, dtype: null, label: 'Official browser default · WASM/q8', official: true }];
 }
 
 function updateOcrCapability(extra = '') {
@@ -877,7 +882,7 @@ function friendlyOcrError(error, backend = null) {
   if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
   if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the Nougat-LaTeX browser fallback model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用浏览器版 Nougat-LaTeX 备用模型。');
   if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The image-OCR preprocessor rejected the selected region. Reload the page; if this persists, report the exact message.', '图像 OCR 预处理拒绝了框选区域。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
-  if (/scale|dequant|onnx|session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize. Try the other OCR Engine mode and press Reload engine.`, `${backend?.label || 'ONNX'} 引擎初始化失败。请切换另一种识别引擎模式，然后点击“重新加载引擎”。`);
+  if (/scale|dequant|onnx|session|can't create a session|cannot create.*session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize. Recommended mode now follows the model card's official browser path (WASM/q8). Reload the engine; use WebGPU only as an experimental alternative.`, `${backend?.label || 'ONNX'} 引擎初始化失败。推荐模式现已按模型卡的官方浏览器路径（WASM/q8）加载。请重新加载引擎；WebGPU 仅作为实验性备选。`);
   return raw || t('Image OCR fallback failed to initialize.', '图像 OCR 备用引擎初始化失败。');
 }
 
@@ -894,20 +899,22 @@ async function ensureMathOcrPipeline() {
       const backend = plan[index];
       try {
         setOcrStatus(t(`Initializing ${backend.label}…`, `正在初始化 ${backend.label}……`), true);
-        const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, {
-          device: backend.device,
-          dtype: backend.dtype,
-          progress_callback: (info) => {
-            if (!info) return;
-            if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
-              const raw = Number(info.progress);
-              const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
-              setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${Math.round(percent)}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${Math.round(percent)}%`), true);
-            } else if (info.status === 'initiate' || info.status === 'download') {
-              setOcrStatus(t(`First image-only use: downloading Nougat-LaTeX for ${backend.label}…`, `首次图像识别：正在下载 ${backend.label} 的 Nougat-LaTeX 公式模型……`), true);
-            }
+        const progress_callback = (info) => {
+          if (!info) return;
+          if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
+            const raw = Number(info.progress);
+            const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
+            setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${Math.round(percent)}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${Math.round(percent)}%`), true);
+          } else if (info.status === 'initiate' || info.status === 'download') {
+            setOcrStatus(t(`First image-only use: downloading Nougat-LaTeX for ${backend.label}…`, `首次图像识别：正在下载 ${backend.label} 的 Nougat-LaTeX 公式模型……`), true);
           }
-        });
+        };
+        const options = { progress_callback };
+        if (!backend.official) {
+          options.device = backend.device;
+          options.dtype = backend.dtype;
+        }
+        const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, options);
         mathOcrPipeline = pipe;
         mathOcrBackend = backend;
         updateOcrCapability();
@@ -1780,8 +1787,10 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   } catch (error) {
     console.error(error);
     const friendly = friendlyOcrError(error, mathOcrBackend);
-    setOcrStatus(friendly);
-    showError(friendly);
+    const technical = String(error?.message || error || '').replace(/\s+/g, ' ').trim();
+    const detail = technical && technical !== friendly ? `${friendly} · ${t('Technical', '技术信息')}: ${technical.slice(0, 280)}` : friendly;
+    setOcrStatus(detail);
+    showError(detail);
   } finally {
     mathOcrLoading = false;
   }
@@ -2890,7 +2899,7 @@ brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(bri
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 96); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v1', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image fallback preference changed. It will load only when a selected formula has no usable PDF text.', '图像备用引擎偏好已更改。只有框选公式没有可用 PDF 原生文本时才会加载。')); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v2', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image fallback preference changed. It will load only when a selected formula has no usable PDF text.', '图像备用引擎偏好已更改。只有框选公式没有可用 PDF 原生文本时才会加载。')); });
 ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
 mathOcrButton.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton.addEventListener('click', () => setPinnedPage(currentPage));

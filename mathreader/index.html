@@ -239,9 +239,9 @@
           <label>
             <span data-en="Image OCR fallback" data-zh="图像 OCR 备用引擎">Image OCR fallback</span>
             <select id="ocr-engine-mode">
-              <option value="auto" data-en="Automatic · accuracy first" data-zh="自动 · 准确性优先">Automatic · accuracy first</option>
-              <option value="webgpu" data-en="WebGPU" data-zh="WebGPU">WebGPU</option>
-              <option value="wasm" data-en="Compatibility · CPU" data-zh="兼容模式 · CPU">Compatibility · CPU</option>
+              <option value="official" data-en="Recommended · official CPU" data-zh="推荐 · 官方 CPU 路径">Recommended · official CPU</option>
+              <option value="webgpu" data-en="WebGPU · experimental" data-zh="WebGPU · 实验性">WebGPU · experimental</option>
+              <option value="wasm" data-en="CPU · explicit quantized" data-zh="CPU · 显式量化">CPU · explicit quantized</option>
             </select>
           </label>
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
