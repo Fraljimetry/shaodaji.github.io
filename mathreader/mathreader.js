@@ -1154,22 +1154,39 @@ function parseVectorInline(tokens, baseHeight, overrides = new Map()) {
   if (!tokens.length) return '';
   const usable = [...tokens].sort((a, b) => (a.left - b.left) || (a.centerY - b.centerY));
   const localMaxHeight = Math.max(...usable.map((token) => token.syntheticLatex ? baseHeight : token.height));
-  const localLargeHeights = usable.filter((token) => token.syntheticLatex || token.height >= localMaxHeight * 0.72).map((token) => token.syntheticLatex ? baseHeight : token.height);
+  const localLargeHeights = usable
+    .filter((token) => token.syntheticLatex || token.height >= localMaxHeight * 0.76)
+    .map((token) => token.syntheticLatex ? baseHeight : token.height);
   const referenceHeight = median(localLargeHeights) || baseHeight || localMaxHeight;
-  const large = usable.filter((token) => token.syntheticLatex || token.height >= referenceHeight * 0.74);
+  const large = usable.filter((token) => token.syntheticLatex || token.height >= referenceHeight * 0.80);
   const localCenter = median((large.length ? large : usable).map((token) => token.centerY));
-  const bases = usable.filter((token) => token.syntheticLatex || token.height >= referenceHeight * 0.72 || Math.abs(token.centerY - localCenter) <= referenceHeight * 0.24);
+
+  // A glyph can be fairly large and still be a script in TeX.  Classify it
+  // from BOTH size and vertical displacement instead of size alone.  This is
+  // crucial for ordinary PDF text layers where u_i and |A_i|^2 often expose
+  // the i/2 at roughly 70–80% of the parent glyph height.
+  const bases = usable.filter((token) => {
+    if (token.syntheticLatex) return true;
+    const verticalOffset = Math.abs(token.centerY - localCenter);
+    if (verticalOffset <= referenceHeight * 0.22) return true;
+    return token.height >= referenceHeight * 0.88 && verticalOffset <= referenceHeight * 0.42;
+  });
   const scripts = usable.filter((token) => !bases.includes(token));
   const attachments = new Map();
   for (const script of scripts) {
     const candidates = bases.filter((base) => {
       if (base.syntheticLatex) return false;
-      const horizontal = script.left >= base.left - baseHeight * 0.08 && script.left <= base.right + baseHeight * 0.95;
-      const vertical = Math.abs(script.centerY - base.centerY) >= referenceHeight * 0.13;
+      const horizontal = script.left >= base.left - referenceHeight * 0.10 && script.left <= base.right + referenceHeight * 1.05;
+      const vertical = Math.abs(script.centerY - base.centerY) >= referenceHeight * 0.10;
       return horizontal && vertical;
     }).sort((a, b) => {
-      const da = Math.abs(script.left - a.right) + Math.abs(script.centerY - a.centerY) * 0.25;
-      const db = Math.abs(script.left - b.right) + Math.abs(script.centerY - b.centerY) * 0.25;
+      // Prefer the closest glyph immediately to the left.  This avoids a
+      // subscript i attaching to the gradient symbol instead of to u.
+      const scriptAnchor = script.left;
+      const aRightPenalty = a.right <= scriptAnchor + referenceHeight * 0.18 ? 0 : referenceHeight * 0.9;
+      const bRightPenalty = b.right <= scriptAnchor + referenceHeight * 0.18 ? 0 : referenceHeight * 0.9;
+      const da = Math.abs(scriptAnchor - a.right) + Math.abs(script.centerY - a.centerY) * 0.20 + aRightPenalty;
+      const db = Math.abs(scriptAnchor - b.right) + Math.abs(script.centerY - b.centerY) * 0.20 + bRightPenalty;
       return da - db;
     });
     const target = candidates[0];
@@ -1179,18 +1196,63 @@ function parseVectorInline(tokens, baseHeight, overrides = new Map()) {
     attachments.get(target)[kind].push(script);
   }
 
-  let latex = '';
-  let previousRight = null;
-  for (const base of bases.sort((a, b) => a.left - b.left)) {
+  const orderedBases = bases.sort((a, b) => a.left - b.left);
+  const renderBase = (base) => {
     let value = overrides.get(base) || vectorTokenLatex(base);
-    if (!value) continue;
     const attached = attachments.get(base);
     if (attached?.sub?.length) value += `_{${parseVectorInline(attached.sub, referenceHeight * 0.78)}}`;
     if (attached?.super?.length) value += `^{${parseVectorInline(attached.super, referenceHeight * 0.78)}}`;
+    return value;
+  };
+
+  let latex = '';
+  let previousRight = null;
+  for (let index = 0; index < orderedBases.length; index += 1) {
+    const base = orderedBases[index];
+    const raw = String(base.text || '').trim();
+    let value = renderBase(base);
+    if (!value) continue;
+
+    // PDF text layers expose the radical sign and its radicand as separate
+    // glyphs, but not the radical bar as a semantic object.  When a radical
+    // starts a local segment, bind the following same-row glyphs to it until
+    // a hard relation/delimiter or a genuinely large gap.  In stacked
+    // fractions this function is called on the denominator segment, so the
+    // rule reconstructs sqrt{1+|grad u_i|^2} without swallowing the numerator.
+    if (raw === '√' || value === '\\sqrt{}') {
+      const radicand = [];
+      let lastRight = base.right;
+      let cursor = index + 1;
+      for (; cursor < orderedBases.length; cursor += 1) {
+        const next = orderedBases[cursor];
+        const nextRaw = String(next.text || '').trim();
+        const gap = next.left - lastRight;
+        if (/^(?:=|≤|≥|<|>|≈|≠|,|;)$/.test(nextRaw)) break;
+        if (gap > referenceHeight * 0.78 && radicand.length) break;
+        radicand.push(next);
+        lastRight = next.right;
+      }
+      if (radicand.length) {
+        const first = radicand[0];
+        const last = radicand[radicand.length - 1];
+        // Carry scripts belonging to radicand bases into the recursive parse;
+        // otherwise u_i and |grad u_i|^2 lose their i/2 when the radical
+        // groups the same-row base glyphs.
+        const radicandTokens = usable.filter((token) => token !== base
+          && token.left >= first.left - referenceHeight * 0.12
+          && token.right <= last.right + referenceHeight * 0.36
+          && token.centerY >= localCenter - referenceHeight * 0.82
+          && token.centerY <= localCenter + referenceHeight * 0.82);
+        value = `\\sqrt{${parseVectorInline(radicandTokens, referenceHeight, overrides)}}`;
+        index = cursor - 1;
+      }
+    }
+
     if (previousRight !== null) {
       const gap = base.left - previousRight;
       const wordLike = /^[A-Za-z]/.test(base.text || '') && /[A-Za-z]$/.test(latex);
-      if (gap > referenceHeight * 0.48 || (wordLike && gap > referenceHeight * 0.16)) latex += ' ';
+      const controlWordBoundary = /^[A-Za-z]/.test(base.text || '') && /\\[A-Za-z]+$/.test(latex);
+      if (controlWordBoundary || gap > referenceHeight * 0.48 || (wordLike && gap > referenceHeight * 0.16)) latex += ' ';
     }
     latex += value;
     previousRight = Math.max(previousRight ?? base.right, base.right);
