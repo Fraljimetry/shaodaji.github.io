@@ -145,7 +145,7 @@
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
-          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula extraction uses embedded PDF vector text first. For scanned/image-only formulas, the fallback image model runs in your browser; the selected formula image is not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。公式提取会优先使用 PDF 原生矢量文本。对于扫描件或纯图像公式，备用图像模型在浏览器本地运行；框选的公式图像不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula extraction uses embedded PDF vector text first. For scanned/image-only formulas, the fallback image model runs in your browser; the selected formula image is not uploaded to this website.</p>
+          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available as a fast fallback. Formula images are processed in your browser and are not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。矩形公式默认使用本地图像 OCR，并保留 PDF 矢量提取作为快速备用路径。公式图像在浏览器内处理，不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available as a fast fallback. Formula images are processed in your browser and are not uploaded to this website.</p>
         </section>
 
         <div class="pdf-workspace is-hidden" id="pdf-workspace">
@@ -234,10 +234,17 @@
           <span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses Texify, a browser-compatible formula-to-LaTeX model. MathReader rejects obvious non-formula and repeated-token outputs instead of presenting them as LaTeX." data-zh="在公式周围拖出矩形。MathReader 会优先依据 PDF 原生文字与字形几何关系重建 LaTeX；只有框内没有可用原生文本时才使用图像 OCR；备用模型使用专门的 Texify 公式转 LaTeX，并会拒绝明显的非公式或重复输出。">Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses Texify, a browser-compatible formula-to-LaTeX model. MathReader rejects obvious non-formula and repeated-token outputs instead of presenting them as LaTeX.</p>
+        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs." data-zh="在公式周围拖出矩形。默认使用 Texify 图像 OCR，因为它更适合二维数学排版；对于含文本层的 PDF，PDF 矢量提取仍作为快速本地备用与对照路径。">Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs.</p>
         <div class="ocr-engine-controls">
           <label>
-            <span data-en="Image OCR fallback" data-zh="图像 OCR 备用引擎">Image OCR fallback</span>
+            <span data-en="Default extraction" data-zh="默认提取方式">Default extraction</span>
+            <select id="formula-extraction-mode">
+              <option value="image" data-en="Image OCR · recommended" data-zh="图像 OCR · 推荐">Image OCR · recommended</option>
+              <option value="vector" data-en="PDF vector · fast" data-zh="PDF 矢量 · 快速">PDF vector · fast</option>
+            </select>
+          </label>
+          <label>
+            <span data-en="Image OCR engine" data-zh="图像 OCR 引擎">Image OCR engine</span>
             <select id="ocr-engine-mode">
               <option value="official" data-en="Recommended · Texify CPU" data-zh="推荐 · Texify CPU">Recommended · Texify CPU</option>
               <option value="webgpu" data-en="Texify · WebGPU q4f16" data-zh="Texify · WebGPU q4f16">Texify · WebGPU q4f16</option>
@@ -247,7 +254,12 @@
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
-        <div class="ocr-status" id="ocr-status" data-en="Ready · PDF vector extraction is primary. Image OCR uses Texify with Transformers.js 4.3.1 and loads only for scanned/image-only formulas or explicit comparison." data-zh="就绪 · 优先使用 PDF 矢量公式提取。图像 OCR 使用 Texify + Transformers.js 4.3.1，仅在扫描件、纯图像公式或显式对照时加载。">Ready · PDF vector extraction is primary. Image OCR uses Texify with Transformers.js 4.3.1 and loads only for scanned/image-only formulas or explicit comparison.</div>
+        <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available as a fast fallback." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量保留为快速备用路径。">Ready · Image OCR is the default formula extractor. PDF vector remains available as a fast fallback.</div>
+        <div class="ocr-processing is-hidden" id="ocr-processing" role="status" aria-live="polite" aria-atomic="true">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="ocr-processing-copy"><strong data-en="Processing formula" data-zh="正在处理公式">Processing formula</strong><span id="ocr-processing-text">Preparing image…</span></span>
+          <span class="ocr-processing-time" id="ocr-processing-time">0.0 s</span>
+        </div>
         <div class="ocr-result is-hidden" id="ocr-result">
           <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
@@ -257,9 +269,10 @@
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
             <button class="secondary-action is-hidden" type="button" id="try-image-ocr" data-en="Try image OCR" data-zh="尝试图像 OCR">Try image OCR</button>
+            <button class="secondary-action is-hidden" type="button" id="try-pdf-vector" data-en="Try PDF vector" data-zh="尝试 PDF 矢量">Try PDF vector</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
-          <p class="selection-caveat" data-en="PDF vector is the primary draft for text-bearing PDFs. Image OCR is an independent fallback/comparison, not an automatic correction of a structurally wrong vector result; either result may need manual editing." data-zh="对于含文本层的 PDF，PDF 矢量是主要草稿。图像 OCR 是独立的备用/对照方案，并不会自动纠正结构错误的矢量结果；两种结果都可能需要人工编辑。">PDF-vector results preserve embedded mathematical text and simple script geometry; image OCR remains a fallback for scanned formulas and should be checked carefully.</p>
+          <p class="selection-caveat" data-en="Image OCR is the default for formula rectangles. PDF vector is faster and deterministic when embedded text is clean, and is used automatically if image OCR fails. Both outputs remain editable and should be checked before reuse." data-zh="矩形公式默认使用图像 OCR。若 PDF 原生文本干净，PDF 矢量更快且确定性更高；当图像 OCR 失败时会自动使用它。两种结果都可编辑，复用前应核对。">Image OCR is the default for formula rectangles. PDF vector is faster and deterministic when embedded text is clean, and is used automatically if image OCR fails. Both outputs remain editable and should be checked before reuse.</p>
         </div>
         <div class="ocr-history-block">
           <div class="panel-heading ocr-history-heading"><span data-en="Recent formula extraction" data-zh="最近公式提取">Recent formula extraction</span><span class="count-badge" id="ocr-history-count">0</span></div>
@@ -284,11 +297,11 @@
             <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
             <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
           </div>
-          <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction: embedded PDF glyph geometry is preferred, with image OCR only as a fallback for image-only regions." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”：优先依据 PDF 原生字形几何重建，仅对纯图像区域使用图像 OCR 备用方案。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction: embedded PDF glyph geometry is preferred, with image OCR only as a fallback for image-only regions.</p>
+          <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”；默认使用图像 OCR，并保留 PDF 矢量作为快速备用路径。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback.</p>
         </div>
       </section>
 
-      <section class="workspace-section">
+      <section class="workspace-section" id="note-section">
         <div class="panel-heading">
           <span data-en="Page note" data-zh="页注">Page note</span>
           <span class="page-chip" id="note-page-chip">—</span>
@@ -313,6 +326,12 @@
           <div><dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
           <div><dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
           <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle formula extraction" data-zh="矩形公式提取">Rectangle formula extraction</dd></div>
+          <div><dt><kbd>C</kbd></dt><dd data-en="Open Contents" data-zh="打开目录">Open Contents</dd></div>
+          <div><dt><kbd>H</kbd></dt><dd data-en="Open History" data-zh="打开历史">Open History</dd></div>
+          <div><dt><kbd>S</kbd></dt><dd data-en="Open Saved pages" data-zh="打开收藏页">Open Saved pages</dd></div>
+          <div><dt><kbd>D</kbd></dt><dd data-en="Open Display settings" data-zh="打开显示设置">Open Display settings</dd></div>
+          <div><dt><kbd>N</kbd></dt><dd data-en="Open page note" data-zh="打开页注">Open page note</dd></div>
+          <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>
           <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
         </dl>
       </section>

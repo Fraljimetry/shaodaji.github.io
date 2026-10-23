@@ -74,6 +74,7 @@ const themeLabel = el('theme-label');
 const leftToggle = el('left-toggle');
 const bothPanelsToggle = el('both-panels-toggle');
 const rightToggle = el('right-toggle');
+const rightSidebar = el('right-sidebar');
 const selectionCard = el('selection-card');
 const selectionHelp = el('selection-help');
 const selectionPageChip = el('selection-page-chip');
@@ -100,6 +101,7 @@ const ocrLatexPreview = el('ocr-latex-preview');
 const copyOcrLatex = el('copy-ocr-latex');
 const ocrToNote = el('ocr-to-note');
 const tryImageOcrButton = el('try-image-ocr');
+const tryPdfVectorButton = el('try-pdf-vector');
 const clearOcrResultButton = el('clear-ocr-result');
 const ocrHistoryList = el('ocr-history-list');
 const ocrHistoryEmpty = el('ocr-history-empty');
@@ -107,6 +109,10 @@ const ocrHistoryCount = el('ocr-history-count');
 const ocrEngineSelect = el('ocr-engine-mode');
 const ocrRetryButton = el('ocr-retry');
 const ocrCapability = el('ocr-capability');
+const formulaExtractionSelect = el('formula-extraction-mode');
+const ocrProcessing = el('ocr-processing');
+const ocrProcessingText = el('ocr-processing-text');
+const ocrProcessingTime = el('ocr-processing-time');
 const resetDisplay = el('reset-display');
 const flowSingle = el('flow-single');
 const flowContinuous = el('flow-continuous');
@@ -151,6 +157,12 @@ let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
 let mathOcrEngineMode = 'official';
+let formulaExtractionMode = 'image';
+let ocrProcessingStartedAt = 0;
+let ocrProcessingTimer = null;
+let readerWidthObserver = null;
+let readerWidthTimer = null;
+let lastObservedReaderWidth = 0;
 let currentOcrResult = null;
 let ocrHistory = [];
 let continuousScrollTop = 0;
@@ -174,6 +186,7 @@ const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
 mathOcrEngineMode = safeGet('mathreader-ocr-engine-v4', 'official');
+formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v2';
 const LEGACY_DISPLAY_PREFS_KEY = 'mathreader-display-v1';
@@ -370,7 +383,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 6,
+    version: 7,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -618,9 +631,10 @@ function loadDocumentState(cachedSession = null) {
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
-    // v54 outline locations include an in-page ratio. Older cached detected
-    // outlines only knew the page number, so discard them once and rescan.
-    if (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio)))) inferredOutline = [];
+    // v59 tightens inferred-outline filtering so formula lines are not mistaken
+    // for section headings. Rebuild any pre-v7 inferred outline once, and also
+    // discard older entries that lack an in-page ratio.
+    if (Number(session.version || 0) < 7 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     if (Number(session.version || 0) >= 4) {
       shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
@@ -745,6 +759,29 @@ function setOcrStatus(message, working = false) {
   if (!ocrStatus) return;
   ocrStatus.textContent = message;
   ocrStatus.classList.toggle('is-working', working);
+  if (working && ocrProcessing && !ocrProcessing.classList.contains('is-hidden') && ocrProcessingText) {
+    ocrProcessingText.textContent = message;
+  }
+}
+
+function setOcrProcessing(active, message = '') {
+  if (!ocrProcessing) return;
+  clearInterval(ocrProcessingTimer);
+  ocrProcessingTimer = null;
+  ocrProcessing.classList.toggle('is-hidden', !active);
+  if (!active) {
+    ocrProcessingStartedAt = 0;
+    if (ocrProcessingTime) ocrProcessingTime.textContent = '0.0 s';
+    return;
+  }
+  ocrProcessingStartedAt = performance.now();
+  if (ocrProcessingText) ocrProcessingText.textContent = message || t('Preparing formula image…', '正在准备公式图像……');
+  const updateTime = () => {
+    if (!ocrProcessingStartedAt || !ocrProcessingTime) return;
+    ocrProcessingTime.textContent = `${((performance.now() - ocrProcessingStartedAt) / 1000).toFixed(1)} s`;
+  };
+  updateTime();
+  ocrProcessingTimer = setInterval(updateTime, 100);
 }
 
 function normalizeOcrLatex(value) {
@@ -762,6 +799,7 @@ function normalizeOcrLatex(value) {
   // bare LaTeX for tightly cropped formula images.
   const blocks = [];
   for (const match of text.matchAll(/\\\[([\s\S]*?)\\\]/g)) blocks.push(match[1].trim());
+  for (const match of text.matchAll(/\\\(([\s\S]*?)\\\)/g)) blocks.push(match[1].trim());
   for (const match of text.matchAll(/\$\$([\s\S]*?)\$\$/g)) blocks.push(match[1].trim());
   if (!blocks.length) {
     for (const match of text.matchAll(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g)) blocks.push(match[1].trim());
@@ -791,6 +829,10 @@ function refreshOcrUI() {
   if (tryImageOcrButton) {
     const source = has ? (currentOcrResult.source || 'image') : '';
     tryImageOcrButton.classList.toggle('is-hidden', !has || source !== 'vector' || !currentOcrResult?.preview);
+  }
+  if (tryPdfVectorButton) {
+    const source = has ? (currentOcrResult.source || 'image') : '';
+    tryPdfVectorButton.classList.toggle('is-hidden', !has || source !== 'image' || !currentOcrResult?.vectorAlternative);
   }
   if (has && currentOcrResult.preview) {
     ocrPreview.src = currentOcrResult.preview;
@@ -849,11 +891,11 @@ function setOcrMode(active) {
   if (ocrMode) {
     hideSelectionToolbar();
     window.getSelection()?.removeAllRanges();
-    setOcrStatus(t('Drag around one formula. PDF vector extraction will be tried first; press Esc to cancel.', '请框选一个公式。会先尝试 PDF 矢量提取；按 Esc 取消。'), true);
+    setOcrStatus(formulaExtractionMode === 'image' ? t('Drag around one formula. Image OCR is the default; press Esc to cancel.', '请框选一个公式。默认使用图像 OCR；按 Esc 取消。') : t('Drag around one formula. PDF vector extraction is selected; press Esc to cancel.', '请框选一个公式。当前选择 PDF 矢量提取；按 Esc 取消。')); 
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
   } else if (!mathOcrLoading) {
-    setOcrStatus(mathOcrBackend ? t(`PDF vector primary · image fallback ready · ${mathOcrBackend.label}`, `PDF 矢量优先 · 图像备用引擎就绪 · ${mathOcrBackend.label}`) : t('Ready. Choose Extract formula and draw around one formula.', '就绪。点击“提取公式”并框选一个公式。'));
+    setOcrStatus(mathOcrBackend ? t(`Image OCR default · ${mathOcrBackend.label} ready · PDF vector fallback available`, `默认图像 OCR · ${mathOcrBackend.label} 已就绪 · PDF 矢量备用可用`) : t('Ready. Image OCR is the default formula extractor.', '就绪。默认使用图像 OCR 提取公式。')); 
   }
 }
 
@@ -879,7 +921,8 @@ function updateOcrCapability(extra = '') {
   if (!ocrCapability) return;
   const gpu = Boolean(navigator.gpu);
   const engine = mathOcrBackend ? mathOcrBackend.label : t('not loaded', '尚未加载');
-  const base = t(`PDF vector: primary · ${TRANSFORMERS_RUNTIME} · Image fallback GPU: ${gpu ? 'available' : 'unavailable'} · Active image engine: ${engine}`, `PDF 矢量：主路径 · ${TRANSFORMERS_RUNTIME} · 图像备用 GPU：${gpu ? '可用' : '不可用'} · 当前图像引擎：${engine}`);
+  const method = formulaExtractionMode === 'image' ? t('Image OCR default', '默认图像 OCR') : t('PDF vector default', '默认 PDF 矢量');
+  const base = t(`${method} · ${TRANSFORMERS_RUNTIME} · GPU: ${gpu ? 'available' : 'unavailable'} · Active image engine: ${engine}`, `${method} · ${TRANSFORMERS_RUNTIME} · GPU：${gpu ? '可用' : '不可用'} · 当前图像引擎：${engine}`);
   ocrCapability.textContent = extra ? `${base} · ${extra}` : base;
 }
 
@@ -996,17 +1039,21 @@ function formulaInkBounds(canvas) {
   return maxX >= minX && maxY >= minY ? { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 } : null;
 }
 
-function normalizeFormulaCropForOcr(crop) {
+function normalizeFormulaCropForOcr(crop, variant = 'tight') {
   const bounds = formulaInkBounds(crop) || { left: 0, top: 0, width: crop.width, height: crop.height };
-  const sourcePad = Math.max(4, Math.round(Math.max(bounds.width, bounds.height) * 0.045));
+  const padRatio = variant === 'relaxed' ? 0.115 : 0.055;
+  const sourcePad = Math.max(5, Math.round(Math.max(bounds.width, bounds.height) * padRatio));
   const sx = Math.max(0, bounds.left - sourcePad);
   const sy = Math.max(0, bounds.top - sourcePad);
   const sw = Math.min(crop.width - sx, bounds.width + sourcePad * 2);
   const sh = Math.min(crop.height - sy, bounds.height + sourcePad * 2);
-  // Keep the selected formula's aspect ratio intact and remove excessive
-  // surrounding whitespace before handing the image to Texify's processor.
-  const maxSide = 1400;
-  const scale = Math.min(1, maxSide / Math.max(1, sw, sh));
+  // Texify's processor accepts variable-size formula images. Preserve the
+  // formula aspect ratio, remove irrelevant whitespace, and upscale small
+  // selections so fine scripts/radicals do not disappear before encoding.
+  const longSide = Math.max(1, sw, sh);
+  const minLongSide = variant === 'relaxed' ? 760 : 900;
+  const maxLongSide = 1440;
+  const scale = Math.min(maxLongSide / longSide, Math.max(1, minLongSide / longSide));
   const dw = Math.max(1, Math.round(sw * scale));
   const dh = Math.max(1, Math.round(sh * scale));
   const out = document.createElement('canvas');
@@ -1775,80 +1822,91 @@ function cropSelectedFormula(sourceCanvas, layer, rect) {
   return crop;
 }
 
+async function runImageFormulaRecognition(crop) {
+  const pipe = await ensureMathOcrPipeline();
+  mathOcrLoading = true;
+  const generation = {
+    max_new_tokens: 384,
+    num_beams: 2,
+    early_stopping: true,
+    do_sample: false,
+    repetition_penalty: 1.04
+  };
+
+  async function onePass(variant) {
+    const prepared = normalizeFormulaCropForOcr(crop, variant);
+    const inputImage = await prepareMathOcrInput(prepared);
+    const output = await pipe(inputImage, generation);
+    const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
+    const rawLatex = normalizeOcrLatex(raw);
+    const latex = repairOcrLatex(rawLatex);
+    const penalty = latexStructuralPenalty(rawLatex);
+    const assessment = assessImageOcrResult(raw, latex);
+    return { raw, rawLatex, latex, penalty, assessment, variant };
+  }
+
+  setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
+  let best = await onePass('tight');
+  // The stress corpus contains long nested fractions, matrices, and radical
+  // stacks. A slightly wider crop can rescue context when the tight pass is
+  // structurally suspicious, but we do not pay for a second inference on clean
+  // results because that would make every extraction feel unnecessarily slow.
+  if (!best.assessment.ok || best.penalty >= 8) {
+    setOcrStatus(t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……'), true);
+    const alternate = await onePass('relaxed');
+    const score = (item) => item.penalty + item.assessment.reasons.length * 40 + (item.latex ? 0 : 1000);
+    if (score(alternate) < score(best)) best = alternate;
+  }
+  if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
+  requireUsableImageOcr(best.raw, best.latex);
+  return best;
+}
+
+function commitFormulaResult(item, statusMessage = '') {
+  currentOcrResult = item;
+  ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 12);
+  refreshOcrUI();
+  persistDocumentState();
+  if (statusMessage) setOcrStatus(statusMessage);
+}
+
 async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRect = null) {
   if (!crop || !page) return;
   setOcrMode(false);
-  mathOcrLoading = true;
-  setOcrStatus(t('Preparing selected formula…', '正在准备框选公式……'), true);
   const preview = crop.toDataURL('image/png');
+  const vector = ocrLayer && selectionRect ? extractVectorFormulaFromLayer(ocrLayer, selectionRect) : null;
+
+  if (formulaExtractionMode === 'vector' && vector?.latex) {
+    commitFormulaResult(
+      { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
+      t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
+    );
+    return;
+  }
+
+  mathOcrLoading = true;
+  setOcrProcessing(true, t('Preparing formula image…', '正在准备公式图像……'));
   try {
-    const vector = ocrLayer && selectionRect ? extractVectorFormulaFromLayer(ocrLayer, selectionRect) : null;
-    if (vector?.latex) {
-      const item = { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text };
-      currentOcrResult = item;
-      ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex))].slice(0, 12);
-      refreshOcrUI();
-      persistDocumentState();
-      setOcrStatus(t('Formula extracted from embedded PDF text and glyph geometry · no image OCR used.', '已依据 PDF 原生文本与字形几何提取公式 · 未使用图像 OCR。'));
-      return;
-    }
-    setOcrStatus(t('No usable embedded formula text in this rectangle · switching to image OCR fallback…', '框内没有可用的原生公式文本 · 正在切换到图像 OCR 备用方案……'), true);
-    const pipe = await ensureMathOcrPipeline();
-    mathOcrLoading = true;
-    setOcrStatus(t('Recognizing image-only formula locally…', '正在本地识别图像公式……'), true);
-    const normalizedCrop = normalizeFormulaCropForOcr(crop);
-    const inputImage = await prepareMathOcrInput(normalizedCrop);
-    const accurateGeneration = {
-      max_new_tokens: 320,
-      num_beams: 3,
-      early_stopping: true,
-      do_sample: false,
-      repetition_penalty: 1.04
-    };
-    let output = await pipe(inputImage, accurateGeneration);
-    let raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
-    let rawLatex = normalizeOcrLatex(raw);
-    let penalty = latexStructuralPenalty(rawLatex);
-    let latex = repairOcrLatex(rawLatex);
-    // A second pass is only paid for when the first raw result is structurally
-    // suspicious (unbalanced braces / token loops / common degeneration). The
-    // alternate pass uses the exact selected crop, which sometimes works better
-    // for compact expressions than the aspect-preserving normalization.
-    if (penalty >= 8) {
-      setOcrStatus(t('First OCR pass looked structurally unstable; retrying with an alternate crop…', '第一次识别结果结构不稳定；正在使用备用裁图重试……'), true);
-      const alternateImage = await prepareMathOcrInput(crop);
-      const alternateOutput = await pipe(alternateImage, {
-        max_new_tokens: 320,
-        num_beams: 3,
-        early_stopping: true,
-        do_sample: false,
-        repetition_penalty: 1.04
-      });
-      const alternateRaw = Array.isArray(alternateOutput) ? alternateOutput[0]?.generated_text : alternateOutput?.generated_text;
-      const alternateRawLatex = normalizeOcrLatex(alternateRaw);
-      const alternatePenalty = latexStructuralPenalty(alternateRawLatex);
-      const alternateLatex = repairOcrLatex(alternateRawLatex);
-      if (alternateLatex && alternatePenalty < penalty) {
-        rawLatex = alternateRawLatex;
-        latex = alternateLatex;
-        penalty = alternatePenalty;
-      }
-    }
-    if (!latex) throw new Error(t('The model returned no LaTeX for this region.', '模型没有为该区域返回 LaTeX。'));
-    requireUsableImageOcr(raw, latex);
-    const item = { page, kind, latex, preview, created: Date.now(), quality: penalty === 0 ? 'clean' : 'review', source: 'image' };
-    currentOcrResult = item;
-    ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex))].slice(0, 12);
-    refreshOcrUI();
-    persistDocumentState();
-    setOcrStatus(penalty === 0 ? t('Image OCR fallback complete · structure check passed.', '图像 OCR 备用识别完成 · 结构检查通过。') : t('Image OCR fallback complete, but the structure still needs review.', '图像 OCR 备用识别完成，但结构仍需人工核对。'));
+    const result = await runImageFormulaRecognition(crop);
+    const item = { page, kind, latex: result.latex, preview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image', vectorAlternative: vector?.latex || null, vectorAlternativeText: vector?.text || null };
+    commitFormulaResult(item, result.penalty === 0
+      ? t('Image OCR complete · structure check passed.', '图像 OCR 完成 · 结构检查通过。')
+      : t('Image OCR complete · review the editable LaTeX before reuse.', '图像 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
   } catch (error) {
     console.error(error);
-    const detail = detailedOcrError(error, mathOcrBackend);
-    setOcrStatus(detail);
-    showError(detail);
+    if (vector?.latex) {
+      commitFormulaResult(
+        { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector-fallback', source: 'vector', extractedText: vector.text },
+        t('Image OCR failed or was rejected · PDF vector fallback was used instead.', '图像 OCR 失败或未通过质量检查 · 已改用 PDF 矢量备用结果。')
+      );
+    } else {
+      const detail = detailedOcrError(error, mathOcrBackend);
+      setOcrStatus(detail);
+      showError(detail);
+    }
   } finally {
     mathOcrLoading = false;
+    setOcrProcessing(false);
   }
 }
 
@@ -1875,24 +1933,13 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
   if (!crop || !page) return;
   mathOcrLoading = true;
   const imagePreview = preview || crop.toDataURL('image/png');
+  setOcrProcessing(true, t('Preparing image OCR comparison…', '正在准备图像 OCR 对照……'));
   try {
-    setOcrStatus(t('Running image OCR as an independent comparison…', '正在运行图像 OCR 作为独立对照……'), true);
-    const pipe = await ensureMathOcrPipeline();
-    const normalizedCrop = normalizeFormulaCropForOcr(crop);
-    const inputImage = await prepareMathOcrInput(normalizedCrop);
-    const output = await pipe(inputImage, { max_new_tokens: 320, num_beams: 3, early_stopping: true, do_sample: false, repetition_penalty: 1.04 });
-    const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
-    const rawLatex = normalizeOcrLatex(raw);
-    const latex = repairOcrLatex(rawLatex);
-    const penalty = latexStructuralPenalty(rawLatex);
-    if (!latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
-    requireUsableImageOcr(raw, latex);
-    const item = { page, kind, latex, preview: imagePreview, created: Date.now(), quality: penalty === 0 ? 'clean' : 'review', source: 'image' };
-    currentOcrResult = item;
-    ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 12);
-    refreshOcrUI();
-    persistDocumentState();
-    setOcrStatus(penalty === 0 ? t('Image OCR comparison complete.', '图像 OCR 对照完成。') : t('Image OCR comparison complete · structure still needs review.', '图像 OCR 对照完成 · 结构仍需人工核对。'));
+    const result = await runImageFormulaRecognition(crop);
+    const item = { page, kind, latex: result.latex, preview: imagePreview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image' };
+    commitFormulaResult(item, result.penalty === 0
+      ? t('Image OCR comparison complete.', '图像 OCR 对照完成。')
+      : t('Image OCR comparison complete · review the editable LaTeX.', '图像 OCR 对照完成 · 请核对可编辑 LaTeX。'));
   } catch (error) {
     console.error(error);
     const detail = detailedOcrError(error, mathOcrBackend);
@@ -1900,6 +1947,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
     showError(detail);
   } finally {
     mathOcrLoading = false;
+    setOcrProcessing(false);
   }
 }
 
@@ -2423,6 +2471,42 @@ async function renderCurrentPage() {
   catch (error) { showError(t('This page could not be rendered.', '此页面无法渲染。')); console.error(error); }
 }
 
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+async function stabilizeFitWidthLayout() {
+  if (!pdfDoc || zoomMode !== 'fit-width') return;
+  // Cached-session restore can apply sidebar state and continuous placeholders
+  // before the final grid width has settled. Re-run fit-width after two layout
+  // frames so early pages cannot keep a stale oversized scale.
+  await nextFrame();
+  await nextFrame();
+  if (!pdfDoc || zoomMode !== 'fit-width') return;
+  if (readingFlow === 'continuous') {
+    const anchor = captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 };
+    await buildContinuousDocument({ restore: true, anchor });
+  } else {
+    await renderCurrentPage();
+  }
+}
+
+function scheduleReaderWidthReflow() {
+  if (!pdfDoc || zoomMode === 'custom') return;
+  clearTimeout(readerWidthTimer);
+  readerWidthTimer = setTimeout(async () => {
+    if (!pdfDoc || zoomMode === 'custom') return;
+    const width = Math.round(primaryCanvasWrap?.clientWidth || 0);
+    if (width < 180) return;
+    if (lastObservedReaderWidth && Math.abs(width - lastObservedReaderWidth) < 2) return;
+    lastObservedReaderWidth = width;
+    const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : null;
+    if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
+    else await renderCurrentPage();
+    await renderReferencePage();
+  }, 140);
+}
+
 async function renderReferencePage() {
   updateReferenceStatus();
   const hasReference = Boolean(pdfDoc && pinnedPage);
@@ -2541,6 +2625,30 @@ function isMathEnvironmentLabel(text) {
   return /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|proof)\b/i.test(text.trim());
 }
 
+
+function isLikelyFormulaHeading(text) {
+  const value = String(text || '').trim();
+  if (!value || isKnownHeading(value)) return false;
+  // Strong equation/operator signals are far more likely to be display math
+  // than document structure.
+  if (/[=≤≥≠≈∫∑∏√∂∇⋃⋂∞±×·^_]|(?:\b(?:lim|sup|inf)\b.*[→∞])/u.test(value)) return true;
+  const remainder = value
+    .replace(/^\s*(?:§\s*)?\d+(?:\.\d+){0,4}[.)]?\s*/, '')
+    .replace(/^\s*[A-Z][.)]\s*/, '')
+    .trim();
+  const asciiWords = remainder.match(/[A-Za-z]{3,}/g) || [];
+  const hanChars = remainder.match(/\p{Script=Han}/gu) || [];
+  const tokens = remainder.split(/\s+/).filter(Boolean);
+  const shortVariableTokens = tokens.filter((token) => /^[\p{L}\p{N}πρσφθμνξωαβγδκηλ]+$/u.test(token) && [...token].length <= 2).length;
+  const symbolCount = (remainder.match(/[+\-*\/(){}[\],:;|]/g) || []).length;
+  const digitCount = (remainder.match(/\d/g) || []).length;
+  const letterCount = (remainder.match(/\p{L}/gu) || []).length;
+  if (headingNumberDepth(value) !== null && asciiWords.length < 2 && hanChars.length < 2) return true;
+  if (tokens.length >= 1 && shortVariableTokens / tokens.length >= 0.6 && asciiWords.length < 2 && hanChars.length < 2) return true;
+  if (symbolCount >= 2 && asciiWords.length < 2 && hanChars.length < 2) return true;
+  if (digitCount > 0 && digitCount >= Math.max(2, letterCount) && asciiWords.length < 2) return true;
+  return false;
+}
 function headingDepthFromStyle(line, bodySize) {
   const numbered = headingNumberDepth(line.text);
   if (numbered !== null) return numbered;
@@ -2614,6 +2722,7 @@ async function detectOutlineFromTypography() {
       const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(text);
       if (!known && numberedDepth === null && !styleHeading) continue;
       if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
+      if (isLikelyFormulaHeading(text)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
 
       const repetition = repeatMap.get(line.normalized);
@@ -2845,6 +2954,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     pdfWorkspace.classList.remove('is-hidden');
     renderBookmarks();
     await Promise.all([renderOutline(), renderCurrentPage()]);
+    await stabilizeFitWidthLayout();
     await renderReferencePage();
     updateReferenceStatus();
     if (cacheBlob) await cacheOpenedPdf(meta, cacheBlob);
@@ -2956,7 +3066,15 @@ brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(bri
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 96); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image fallback preference changed. It will load only when a selected formula has no usable PDF text.', '图像备用引擎偏好已更改。只有框选公式没有可用 PDF 原生文本时才会加载。')); });
+formulaExtractionSelect?.addEventListener('change', () => {
+  formulaExtractionMode = formulaExtractionSelect.value === 'vector' ? 'vector' : 'image';
+  safeSet('mathreader-formula-method-v1', formulaExtractionMode);
+  updateOcrCapability();
+  setOcrStatus(formulaExtractionMode === 'image'
+    ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
+    : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
+});
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image OCR engine preference changed. It will load on the next image extraction.', '图像 OCR 引擎偏好已更改，将在下一次图像提取时加载。')); });
 ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
 mathOcrButton.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton.addEventListener('click', () => setPinnedPage(currentPage));
@@ -2990,6 +3108,20 @@ ocrLatexPreview?.addEventListener('input', () => {
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
 tryImageOcrButton?.addEventListener('click', tryImageOcrForCurrentResult);
+tryPdfVectorButton?.addEventListener('click', () => {
+  if (!currentOcrResult?.vectorAlternative) return;
+  const item = {
+    page: currentOcrResult.page,
+    kind: currentOcrResult.kind,
+    latex: currentOcrResult.vectorAlternative,
+    preview: currentOcrResult.preview,
+    created: Date.now(),
+    quality: 'vector-comparison',
+    source: 'vector',
+    extractedText: currentOcrResult.vectorAlternativeText || null
+  };
+  commitFormulaResult(item, t('PDF vector comparison loaded.', '已载入 PDF 矢量对照结果。'));
+});
 clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
@@ -3056,6 +3188,33 @@ function toggleBothSidePanels() {
 
 bothPanelsToggle?.addEventListener('click', toggleBothSidePanels);
 
+function openLeftPanelShortcut(panelId, focusTarget = null) {
+  activatePanel(panelId);
+  if (matchMedia('(max-width: 860px)').matches) {
+    shell.classList.add('mobile-left-open');
+    shell.classList.remove('mobile-right-open');
+  } else {
+    shell.classList.remove('left-collapsed');
+  }
+  if (focusTarget) setTimeout(() => focusTarget.focus?.(), 40);
+  if (pdfDoc) persistDocumentState();
+}
+
+function openRightSectionShortcut(sectionId, focusTarget = null) {
+  if (matchMedia('(max-width: 860px)').matches) {
+    shell.classList.add('mobile-right-open');
+    shell.classList.remove('mobile-left-open');
+  } else {
+    shell.classList.remove('right-collapsed');
+  }
+  const section = document.getElementById(sectionId);
+  setTimeout(() => {
+    if (rightSidebar && section) rightSidebar.scrollTo({ top: Math.max(0, section.offsetTop - 8), behavior: 'smooth' });
+    focusTarget?.focus?.();
+  }, 40);
+  if (pdfDoc) persistDocumentState();
+}
+
 document.addEventListener('keydown', (event) => {
   const target = event.target;
   const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
@@ -3067,6 +3226,12 @@ document.addEventListener('keydown', (event) => {
     searchInput.focus(); return;
   }
   if (!typing && event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
+  if (!typing && event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('outline-panel'); return; }
+  if (!typing && event.key.toLowerCase() === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('history-panel'); return; }
+  if (!typing && event.key.toLowerCase() === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('bookmarks-panel'); return; }
+  if (!typing && event.key.toLowerCase() === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('display-section'); return; }
+  if (!typing && event.key.toLowerCase() === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('note-section', pageNote); return; }
+  if (!typing && pdfDoc && event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setPinnedPage(currentPage); return; }
   if (!typing && pdfDoc && event.key.toLowerCase() === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setOcrMode(!ocrMode); return; }
   if (!typing && pdfDoc && event.key === 'ArrowLeft') goToPage(currentPage - 1);
   if (!typing && pdfDoc && event.key === 'ArrowRight') goToPage(currentPage + 1);
@@ -3088,9 +3253,22 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => { if (pdfDoc && zoomMode !== 'custom') { renderCurrentPage(); renderReferencePage(); } }, 180);
 });
 
+if ('ResizeObserver' in window && primaryCanvasWrap) {
+  readerWidthObserver = new ResizeObserver(() => scheduleReaderWidthReflow());
+  readerWidthObserver.observe(primaryCanvasWrap);
+}
+
+window.addEventListener('pageshow', () => {
+  if (pdfDoc && zoomMode === 'fit-width') setTimeout(() => stabilizeFitWidthLayout(), 60);
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && pdfDoc && zoomMode === 'fit-width') setTimeout(() => stabilizeFitWidthLayout(), 80);
+});
+
 loadDisplayPreferences();
 mathOcrEngineMode = normalizedOcrEngineMode(mathOcrEngineMode);
 if (ocrEngineSelect) ocrEngineSelect.value = mathOcrEngineMode;
+if (formulaExtractionSelect) formulaExtractionSelect.value = formulaExtractionMode;
 applyTheme(root.dataset.theme, false);
 applyLanguage(root.dataset.lang, false);
 applyPageDisplay({ persist: false });
