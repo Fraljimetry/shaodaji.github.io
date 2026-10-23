@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MathReader — a PDF reader designed for mathematical papers, notes, formulas, and references.">
+  <meta name="theme-color" content="#fbfaf7">
+  <title>MathReader | Shaoda Ji</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="mathreader.css">
+  <script>
+    (() => {
+      try {
+        const theme = localStorage.getItem('shaoda-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#reader-stage" data-en="Skip to reader" data-zh="跳到阅读器">Skip to reader</a>
+
+  <header class="app-header">
+    <div class="brand-group">
+      <a class="brand-mark" href="../research.html" aria-label="Back to Shaoda Ji research page">SJ</a>
+      <div class="product-name">
+        <strong>MathReader</strong>
+        <span data-en="for mathematical reading" data-zh="数学阅读器">for mathematical reading</span>
+      </div>
+    </div>
+
+    <div class="document-title" id="document-title" data-en="No PDF open" data-zh="尚未打开 PDF">No PDF open</div>
+
+    <div class="header-actions">
+      <button class="icon-button" type="button" id="open-button" data-en-title="Open PDF" data-zh-title="打开 PDF" aria-label="Open PDF">Open</button>
+      <button class="icon-button" type="button" id="theme-button" aria-label="Switch theme" title="Switch theme">◐</button>
+      <button class="icon-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文">🌐</button>
+      <a class="icon-button home-link" href="../research.html" data-en="Research" data-zh="研究">Research</a>
+    </div>
+  </header>
+
+  <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
+
+  <main class="reader-shell" id="reader-shell">
+    <aside class="sidebar sidebar-left" id="left-sidebar" aria-label="Document navigation">
+      <div class="sidebar-tabs" role="tablist" aria-label="Document tools">
+        <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录">Contents</button>
+        <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索">Search</button>
+        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Saved" data-zh="收藏">Saved</button>
+      </div>
+
+      <section class="sidebar-panel is-active" id="outline-panel">
+        <div class="panel-heading">
+          <span data-en="Document structure" data-zh="文档结构">Document structure</span>
+          <span class="count-badge" id="outline-count">0</span>
+        </div>
+        <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
+        <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
+      </section>
+
+      <section class="sidebar-panel" id="search-panel">
+        <form class="search-form" id="search-form">
+          <label for="search-input" data-en="Search this PDF" data-zh="搜索此 PDF">Search this PDF</label>
+          <div class="search-row">
+            <input id="search-input" type="search" autocomplete="off" placeholder="theorem, curvature, Ricci…">
+            <button type="submit" data-en="Find" data-zh="查找">Find</button>
+          </div>
+        </form>
+        <div class="search-status" id="search-status" aria-live="polite"></div>
+        <div class="search-results" id="search-results"></div>
+      </section>
+
+      <section class="sidebar-panel" id="bookmarks-panel">
+        <div class="panel-heading">
+          <span data-en="Bookmarks" data-zh="书签">Bookmarks</span>
+          <button class="text-button" id="add-bookmark" type="button" disabled data-en="+ Current page" data-zh="+ 当前页">+ Current page</button>
+        </div>
+        <div class="bookmark-list" id="bookmark-list"></div>
+        <div class="empty-panel" id="bookmark-empty" data-en="Bookmark pages you want to return to." data-zh="收藏需要再次查看的页面。">Bookmark pages you want to return to.</div>
+      </section>
+    </aside>
+
+    <section class="reader-main" id="reader-stage">
+      <div class="reader-toolbar" id="reader-toolbar">
+        <div class="toolbar-group">
+          <button class="tool-button sidebar-toggle" type="button" id="left-toggle" aria-label="Toggle document navigation" title="Toggle document navigation">☰</button>
+          <button class="tool-button" type="button" id="prev-page" disabled aria-label="Previous page" title="Previous page">←</button>
+          <div class="page-control">
+            <input id="page-number" type="number" min="1" value="1" disabled aria-label="Page number">
+            <span>/</span>
+            <span id="page-count">0</span>
+          </div>
+          <button class="tool-button" type="button" id="next-page" disabled aria-label="Next page" title="Next page">→</button>
+        </div>
+
+        <div class="toolbar-group toolbar-center">
+          <button class="tool-button" type="button" id="zoom-out" disabled aria-label="Zoom out" title="Zoom out">−</button>
+          <button class="zoom-label" type="button" id="zoom-label" disabled title="Reset to fit width">Fit width</button>
+          <button class="tool-button" type="button" id="zoom-in" disabled aria-label="Zoom in" title="Zoom in">+</button>
+          <button class="tool-button text-tool" type="button" id="fit-page" disabled data-en="Fit page" data-zh="适合页面">Fit page</button>
+        </div>
+
+        <div class="toolbar-group toolbar-right">
+          <button class="tool-button text-tool" type="button" id="pin-page" disabled data-en="Pin page" data-zh="固定此页">Pin page</button>
+          <button class="tool-button sidebar-toggle" type="button" id="right-toggle" aria-label="Toggle workspace" title="Toggle workspace">▤</button>
+        </div>
+      </div>
+
+      <div class="reader-viewport" id="reader-viewport">
+        <section class="welcome" id="welcome">
+          <div class="welcome-emblem" aria-hidden="true">∫</div>
+          <p class="welcome-kicker">MathReader</p>
+          <h1 data-en="A PDF reader designed for mathematics." data-zh="为数学阅读而设计的 PDF 阅读器。">A PDF reader designed for mathematics.</h1>
+          <p class="welcome-copy" data-en="Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website." data-zh="在本地阅读 PDF，把参考页面固定在当前证明旁边，搜索全文并保存阅读位置；PDF 不会上传到本网站。">Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website.</p>
+          <button class="welcome-open" type="button" id="welcome-open" data-en="Open PDF" data-zh="打开 PDF">Open PDF</button>
+          <p class="drop-hint" data-en="or drop a PDF anywhere in this window" data-zh="或将 PDF 拖入此窗口">or drop a PDF anywhere in this window</p>
+          <div class="welcome-features">
+            <span data-en="Document outline" data-zh="文档目录">Document outline</span>
+            <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
+            <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
+          </div>
+          <p class="privacy-note" data-en="Your PDF stays in your browser. Notes, bookmarks, and reading position are stored locally on this device." data-zh="PDF 仅保留在浏览器中；页注、书签与阅读位置只保存在本设备。">Your PDF stays in your browser. Notes, bookmarks, and reading position are stored locally on this device.</p>
+        </section>
+
+        <div class="pdf-workspace is-hidden" id="pdf-workspace">
+          <div class="pdf-pane primary-pane" id="primary-pane">
+            <div class="pane-label"><span data-en="Reading" data-zh="当前阅读">Reading</span><span id="primary-page-label"></span></div>
+            <div class="canvas-wrap" id="primary-canvas-wrap">
+              <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
+            </div>
+          </div>
+
+          <div class="pdf-pane reference-pane is-hidden" id="reference-pane">
+            <div class="pane-label reference-label">
+              <span><span data-en="Pinned reference" data-zh="固定参考">Pinned reference</span> · <span id="reference-page-label"></span></span>
+              <div class="reference-controls">
+                <button type="button" id="reference-prev" aria-label="Previous pinned page">←</button>
+                <button type="button" id="reference-next" aria-label="Next pinned page">→</button>
+                <button type="button" id="unpin-page" aria-label="Close pinned reference">×</button>
+              </div>
+            </div>
+            <div class="canvas-wrap reference-canvas-wrap" id="reference-canvas-wrap">
+              <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="loading-overlay is-hidden" id="loading-overlay" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
+          <span id="loading-text" data-en="Opening PDF…" data-zh="正在打开 PDF…">Opening PDF…</span>
+        </div>
+
+        <div class="error-banner is-hidden" id="error-banner" role="alert"></div>
+      </div>
+    </section>
+
+    <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <section class="workspace-section">
+        <div class="panel-heading">
+          <span data-en="Page note" data-zh="页注">Page note</span>
+          <span class="page-chip" id="note-page-chip">—</span>
+        </div>
+        <textarea id="page-note" disabled data-en-placeholder="Write a note tied to this page…" data-zh-placeholder="记录与此页关联的笔记……" placeholder="Write a note tied to this page…"></textarea>
+        <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
+      </section>
+
+      <section class="workspace-section">
+        <div class="panel-heading"><span data-en="Reference view" data-zh="参考视图">Reference view</span></div>
+        <p class="workspace-copy" data-en="Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading." data-zh="固定当前页面后继续阅读其他位置；固定页会始终保留在当前证明旁边。">Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading.</p>
+        <div class="reference-card" id="reference-card">
+          <span class="reference-status" id="reference-status" data-en="No page pinned" data-zh="尚未固定页面">No page pinned</span>
+          <button class="secondary-action" type="button" id="pin-from-sidebar" disabled data-en="Pin current page" data-zh="固定当前页">Pin current page</button>
+        </div>
+      </section>
+
+      <section class="workspace-section shortcuts">
+        <div class="panel-heading"><span data-en="Shortcuts" data-zh="快捷键">Shortcuts</span></div>
+        <dl>
+          <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
+          <div><dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
+          <div><dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </main>
+
+  <div class="drop-overlay is-hidden" id="drop-overlay" aria-hidden="true">
+    <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>
+  </div>
+
+  <script type="module" src="mathreader.js"></script>
+</body>
+</html>
