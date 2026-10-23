@@ -23,6 +23,7 @@ const primaryTextLayer = el('primary-text-layer');
 const referenceTextLayer = el('reference-text-layer');
 const primaryCanvasWrap = el('primary-canvas-wrap');
 const referenceCanvasWrap = el('reference-canvas-wrap');
+const continuousStack = el('continuous-stack');
 const pageNumberInput = el('page-number');
 const pageCount = el('page-count');
 const prevPage = el('prev-page');
@@ -31,6 +32,7 @@ const zoomIn = el('zoom-in');
 const zoomOut = el('zoom-out');
 const zoomLabel = el('zoom-label');
 const fitPage = el('fit-page');
+const flowButton = el('flow-button');
 const pinPageButton = el('pin-page');
 const pinFromSidebar = el('pin-from-sidebar');
 const referenceStatus = el('reference-status');
@@ -63,7 +65,10 @@ const loadingText = el('loading-text');
 const errorBanner = el('error-banner');
 const dropOverlay = el('drop-overlay');
 const languageButton = el('language-button');
+const languageLabel = el('language-label');
 const themeButton = el('theme-button');
+const themeIcon = el('theme-icon');
+const themeLabel = el('theme-label');
 const leftToggle = el('left-toggle');
 const rightToggle = el('right-toggle');
 const selectionCard = el('selection-card');
@@ -94,6 +99,20 @@ const clearOcrResultButton = el('clear-ocr-result');
 const ocrHistoryList = el('ocr-history-list');
 const ocrHistoryEmpty = el('ocr-history-empty');
 const ocrHistoryCount = el('ocr-history-count');
+const ocrEngineSelect = el('ocr-engine-mode');
+const ocrRetryButton = el('ocr-retry');
+const ocrCapability = el('ocr-capability');
+const resetDisplay = el('reset-display');
+const flowSingle = el('flow-single');
+const flowContinuous = el('flow-continuous');
+const pageToneSelect = el('page-tone');
+const brightnessRange = el('brightness-range');
+const brightnessValue = el('brightness-value');
+const contrastRange = el('contrast-range');
+const contrastValue = el('contrast-value');
+const gapRange = el('gap-range');
+const gapValue = el('gap-value');
+const pageShadow = el('page-shadow');
 
 let pdfjsLib = null;
 let pdfDoc = null;
@@ -125,12 +144,112 @@ let ocrDrag = null;
 let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
+let mathOcrBackend = null;
+let mathOcrEngineMode = 'auto';
 let currentOcrResult = null;
 let ocrHistory = [];
+let continuousScrollTop = 0;
+let continuousObserver = null;
+let continuousGeneration = 0;
+let continuousPageNodes = new Map();
+let continuousScrollTimer = null;
+let readingFlow = 'single';
+let pageTone = 'auto';
+let displayBrightness = 96;
+let displayContrast = 96;
+let displayGap = 20;
+let displayShadow = true;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v1', 'auto');
+
+const DISPLAY_PREFS_KEY = 'mathreader-display-v1';
+const clamp = (value, min, max, fallback) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+};
+
+function loadDisplayPreferences() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(DISPLAY_PREFS_KEY, 'null')); } catch (_) { saved = null; }
+  if (saved && typeof saved === 'object') {
+    readingFlow = saved.flow === 'continuous' ? 'continuous' : 'single';
+    pageTone = ['auto','original','soft-dark','warm'].includes(saved.tone) ? saved.tone : 'auto';
+    displayBrightness = clamp(saved.brightness, 70, 115, 96);
+    displayContrast = clamp(saved.contrast, 80, 120, 96);
+    displayGap = clamp(saved.gap, 8, 44, 20);
+    displayShadow = saved.shadow !== false;
+  }
+}
+
+function persistDisplayPreferences() {
+  safeSet(DISPLAY_PREFS_KEY, JSON.stringify({
+    flow: readingFlow,
+    tone: pageTone,
+    brightness: displayBrightness,
+    contrast: displayContrast,
+    gap: displayGap,
+    shadow: displayShadow
+  }));
+}
+
+function resolvedPageTone() {
+  if (pageTone === 'auto') return root.dataset.theme === 'dark' ? 'soft-dark' : 'original';
+  return pageTone;
+}
+
+function updateDisplayControls() {
+  flowSingle?.classList.toggle('is-active', readingFlow === 'single');
+  flowContinuous?.classList.toggle('is-active', readingFlow === 'continuous');
+  if (pageToneSelect) pageToneSelect.value = pageTone;
+  if (brightnessRange) brightnessRange.value = String(displayBrightness);
+  if (contrastRange) contrastRange.value = String(displayContrast);
+  if (gapRange) gapRange.value = String(displayGap);
+  if (pageShadow) pageShadow.checked = displayShadow;
+  if (brightnessValue) brightnessValue.textContent = `${displayBrightness}%`;
+  if (contrastValue) contrastValue.textContent = `${displayContrast}%`;
+  if (gapValue) gapValue.textContent = `${displayGap} px`;
+  if (flowButton) flowButton.textContent = readingFlow === 'continuous' ? t('Single page', '单页阅读') : t('Continuous', '连续阅读');
+}
+
+function applyPageDisplay({ persist = true } = {}) {
+  root.dataset.pageTone = resolvedPageTone();
+  root.dataset.pageShadow = displayShadow ? 'on' : 'off';
+  root.style.setProperty('--pdf-brightness', String(displayBrightness / 100));
+  root.style.setProperty('--pdf-contrast', String(displayContrast / 100));
+  root.style.setProperty('--continuous-gap', `${displayGap}px`);
+  updateDisplayControls();
+  if (persist) persistDisplayPreferences();
+}
+
+async function setReadingFlow(flow, { persist = true, render = true } = {}) {
+  const next = flow === 'continuous' ? 'continuous' : 'single';
+  const changed = readingFlow !== next;
+  if (readingFlow === 'continuous') continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
+  readingFlow = next;
+  primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
+  primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
+  continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
+  if (next === 'single') clearContinuousObserver();
+  applyOcrModeToSurfaces();
+  updateDisplayControls();
+  if (persist) persistDisplayPreferences();
+  if (pdfDoc && render && (changed || next === 'continuous')) await renderCurrentPage();
+  if (pdfDoc) persistDocumentState();
+}
+
+function resetDisplayPreferences() {
+  readingFlow = 'single';
+  pageTone = 'auto';
+  displayBrightness = 96;
+  displayContrast = 96;
+  displayGap = 20;
+  displayShadow = true;
+  applyPageDisplay();
+  setReadingFlow('single', { persist: true, render: true });
+}
 
 
 function idbRequest(request) {
@@ -237,6 +356,7 @@ function snapshotSession() {
     notes,
     scrollByPage,
     referenceScrollByPage,
+    continuousScrollTop,
     selection: currentSelection,
     ocrResult: currentOcrResult,
     ocrHistory,
@@ -365,6 +485,24 @@ async function ensurePdfJs() {
   }
 }
 
+function updateHeaderControls() {
+  const lang = root.dataset.lang === 'zh' ? 'zh' : 'en';
+  const theme = root.dataset.theme === 'dark' ? 'dark' : 'light';
+  if (languageLabel) languageLabel.textContent = lang === 'zh' ? 'EN' : '中文';
+  if (languageButton) {
+    const text = lang === 'zh' ? 'Switch to English' : '切换到简体中文';
+    languageButton.title = text;
+    languageButton.setAttribute('aria-label', text);
+  }
+  if (themeIcon) themeIcon.textContent = theme === 'dark' ? '☀' : '☾';
+  if (themeLabel) themeLabel.textContent = theme === 'dark' ? t('Light', '浅色') : t('Dark', '深色');
+  if (themeButton) {
+    const text = theme === 'dark' ? t('Switch to light mode', '切换到浅色模式') : t('Switch to dark mode', '切换到深色模式');
+    themeButton.title = text;
+    themeButton.setAttribute('aria-label', text);
+  }
+}
+
 function applyLanguage(lang, persist = true) {
   const next = lang === 'zh' ? 'zh' : 'en';
   root.dataset.lang = next;
@@ -380,13 +518,13 @@ function applyLanguage(lang, persist = true) {
     node.title = value;
     node.setAttribute('aria-label', value);
   });
-  languageButton.textContent = next === 'zh' ? 'EN' : '🌐';
-  languageButton.title = next === 'zh' ? 'Switch to English' : '切换到简体中文';
-  languageButton.setAttribute('aria-label', languageButton.title);
+  updateHeaderControls();
   document.title = next === 'zh' ? 'MathReader｜汲绍达' : 'MathReader | Shaoda Ji';
   if (!pdfDoc) documentTitle.textContent = t('No PDF open', '尚未打开 PDF');
   updateReferenceStatus();
   updateZoomLabel();
+  updateDisplayControls();
+  updateOcrCapability();
   renderBookmarks();
   renderLocalLibrary();
   refreshSelectionUI();
@@ -397,9 +535,8 @@ function applyLanguage(lang, persist = true) {
 function applyTheme(theme, persist = true) {
   const next = theme === 'dark' ? 'dark' : 'light';
   root.dataset.theme = next;
-  themeButton.textContent = next === 'dark' ? '☀' : '◐';
-  themeButton.title = next === 'dark' ? t('Switch to light mode', '切换到浅色模式') : t('Switch to dark mode', '切换到深色模式');
-  themeButton.setAttribute('aria-label', themeButton.title);
+  updateHeaderControls();
+  applyPageDisplay({ persist: false });
   if (persist) safeSet('shaoda-theme', next);
 }
 
@@ -412,6 +549,7 @@ function loadDocumentState(cachedSession = null) {
   notes = {};
   scrollByPage = {};
   referenceScrollByPage = {};
+  continuousScrollTop = 0;
   currentSelection = null;
   currentOcrResult = null;
   ocrHistory = [];
@@ -438,6 +576,7 @@ function loadDocumentState(cachedSession = null) {
     zoomScale = Number.isFinite(savedScale) ? Math.min(Math.max(.35, savedScale), 4) : 1.2;
     scrollByPage = session.scrollByPage && typeof session.scrollByPage === 'object' ? session.scrollByPage : {};
     referenceScrollByPage = session.referenceScrollByPage && typeof session.referenceScrollByPage === 'object' ? session.referenceScrollByPage : {};
+    continuousScrollTop = Number.isFinite(Number(session.continuousScrollTop)) ? Math.max(0, Number(session.continuousScrollTop)) : 0;
     currentSelection = session.selection?.text ? session.selection : null;
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
@@ -512,7 +651,7 @@ async function touchCachedPdf(record) {
 }
 
 function enableReaderControls(enabled) {
-  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,fitPage,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark].forEach((node) => node.disabled = !enabled);
+  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,fitPage,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark].forEach((node) => node.disabled = !enabled);
 }
 
 function updateNavigationState() {
@@ -605,21 +744,29 @@ function refreshOcrUI() {
   }
 }
 
+function allOcrLayers() {
+  return [...document.querySelectorAll('.ocr-select-layer')];
+}
+
 function resetOcrBoxes() {
-  for (const layer of [primaryOcrLayer, referenceOcrLayer]) {
-    if (!layer) continue;
+  for (const layer of allOcrLayers()) {
     layer.classList.remove('is-selecting');
     const box = layer.querySelector('.ocr-selection-box');
     if (box) box.removeAttribute('style');
   }
 }
 
+function applyOcrModeToSurfaces() {
+  primaryPageSurface?.classList.toggle('ocr-mode', ocrMode && readingFlow === 'single');
+  referencePageSurface?.classList.toggle('ocr-mode', ocrMode && Boolean(pinnedPage));
+  continuousStack?.querySelectorAll('.continuous-page-surface').forEach((surface) => surface.classList.toggle('ocr-mode', ocrMode && readingFlow === 'continuous'));
+}
+
 function setOcrMode(active) {
   ocrMode = Boolean(active && pdfDoc);
   mathOcrButton?.classList.toggle('is-active', ocrMode);
   mathOcrButton?.setAttribute('aria-pressed', ocrMode ? 'true' : 'false');
-  primaryPageSurface?.classList.toggle('ocr-mode', ocrMode);
-  referencePageSurface?.classList.toggle('ocr-mode', ocrMode && Boolean(pinnedPage));
+  applyOcrModeToSurfaces();
   resetOcrBoxes();
   ocrDrag = null;
   if (ocrMode) {
@@ -629,34 +776,96 @@ function setOcrMode(active) {
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
   } else if (!mathOcrLoading) {
-    setOcrStatus(t('Ready. Choose Math OCR to select a formula region.', '就绪。点击公式 OCR 后框选公式区域。'));
+    setOcrStatus(mathOcrBackend ? t(`OCR engine ready · ${mathOcrBackend.label}`, `公式 OCR 引擎就绪 · ${mathOcrBackend.label}`) : t('Ready. Choose Math OCR to select a formula region.', '就绪。点击公式 OCR 后框选公式区域。'));
   }
+}
+
+function normalizedOcrEngineMode(value) {
+  return ['auto','webgpu','wasm'].includes(value) ? value : 'auto';
+}
+
+function currentOcrPlan() {
+  const mode = normalizedOcrEngineMode(mathOcrEngineMode);
+  const webgpuAvailable = Boolean(navigator.gpu);
+  if (mode === 'webgpu') return [{ device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4' }];
+  if (mode === 'wasm') return [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }];
+  return webgpuAvailable
+    ? [{ device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4' }, { device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }]
+    : [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }];
+}
+
+function updateOcrCapability(extra = '') {
+  if (!ocrCapability) return;
+  const gpu = Boolean(navigator.gpu);
+  const engine = mathOcrBackend ? mathOcrBackend.label : t('not loaded', '尚未加载');
+  const base = t(`Browser GPU: ${gpu ? 'available' : 'unavailable'} · Active engine: ${engine}`, `浏览器 GPU：${gpu ? '可用' : '不可用'} · 当前引擎：${engine}`);
+  ocrCapability.textContent = extra ? `${base} · ${extra}` : base;
+}
+
+async function disposeMathOcrPipeline() {
+  try { await mathOcrPipeline?.dispose?.(); } catch (_) {}
+  mathOcrPipeline = null;
+  mathOcrBackend = null;
+  mathOcrModulePromise = null;
+  updateOcrCapability();
+}
+
+function friendlyOcrError(error, backend = null) {
+  const raw = String(error?.message || error || '').trim();
+  const lower = raw.toLowerCase();
+  if (/out of memory|allocation|memory/.test(lower)) return t('The OCR model ran out of browser memory. Close other heavy tabs or switch OCR Engine to Compatibility · CPU.', '公式 OCR 模型的浏览器内存不足。请关闭其他占用较大的标签页，或将识别引擎切换到“兼容模式 · CPU”。');
+  if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
+  if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。');
+  if (/scale|dequant|onnx|session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize. Try the other OCR Engine mode and press Reload engine.`, `${backend?.label || 'ONNX'} 引擎初始化失败。请切换另一种识别引擎模式，然后点击“重新加载引擎”。`);
+  return raw || t('Math OCR failed to initialize.', '公式 OCR 初始化失败。');
 }
 
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
-  if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
   mathOcrLoading = true;
   setOcrStatus(t('Loading the local Math OCR engine…', '正在加载本地公式 OCR 引擎……'), true);
   try {
+    if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
     const { pipeline } = await mathOcrModulePromise;
-    mathOcrPipeline = await pipeline('image-to-text', MATH_OCR_MODEL, {
-      dtype: 'q4',
-      progress_callback: (info) => {
-        if (!info) return;
-        if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
-          const raw = Number(info.progress);
-          const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
-          setOcrStatus(t(`Downloading Math OCR model… ${Math.round(percent)}%`, `正在下载公式 OCR 模型…… ${Math.round(percent)}%`), true);
-        } else if (info.status === 'initiate' || info.status === 'download') {
-          setOcrStatus(t('Downloading Math OCR model for first use…', '首次使用：正在下载公式 OCR 模型……'), true);
+    const plan = currentOcrPlan();
+    let lastError = null;
+    for (let index = 0; index < plan.length; index += 1) {
+      const backend = plan[index];
+      try {
+        setOcrStatus(t(`Initializing ${backend.label}…`, `正在初始化 ${backend.label}……`), true);
+        const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, {
+          device: backend.device,
+          dtype: backend.dtype,
+          progress_callback: (info) => {
+            if (!info) return;
+            if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
+              const raw = Number(info.progress);
+              const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
+              setOcrStatus(t(`Downloading Math OCR model (${backend.label})… ${Math.round(percent)}%`, `正在下载公式 OCR 模型（${backend.label}）…… ${Math.round(percent)}%`), true);
+            } else if (info.status === 'initiate' || info.status === 'download') {
+              setOcrStatus(t(`First use: downloading Math OCR model for ${backend.label}…`, `首次使用：正在下载 ${backend.label} 公式 OCR 模型……`), true);
+            }
+          }
+        });
+        mathOcrPipeline = pipe;
+        mathOcrBackend = backend;
+        updateOcrCapability();
+        setOcrStatus(t(`OCR engine ready · ${backend.label}`, `公式 OCR 引擎就绪 · ${backend.label}`));
+        return pipe;
+      } catch (error) {
+        console.warn('MathReader OCR backend failed', backend, error);
+        lastError = error;
+        if (index + 1 < plan.length) {
+          setOcrStatus(t(`${backend.label} failed. Trying ${plan[index + 1].label}…`, `${backend.label} 失败。正在尝试 ${plan[index + 1].label}……`), true);
         }
       }
-    });
-    return mathOcrPipeline;
+    }
+    throw lastError || new Error('Math OCR engine unavailable');
   } catch (error) {
-    mathOcrModulePromise = null;
     mathOcrPipeline = null;
+    mathOcrBackend = null;
+    mathOcrModulePromise = null;
+    updateOcrCapability(t('load failed', '加载失败'));
     throw error;
   } finally {
     mathOcrLoading = false;
@@ -710,8 +919,9 @@ async function recognizeMathCrop(crop, page, kind) {
     setOcrStatus(t('Math OCR complete. Check the LaTeX before reuse.', '公式 OCR 完成。复用前请核对 LaTeX。'));
   } catch (error) {
     console.error(error);
-    setOcrStatus(t('Math OCR could not complete. Check the network for the first model download, then try again.', '公式 OCR 未能完成。首次模型下载需要网络连接，请检查后重试。'));
-    showError(error?.message || t('Math OCR failed.', '公式 OCR 失败。'));
+    const friendly = friendlyOcrError(error, mathOcrBackend);
+    setOcrStatus(friendly);
+    showError(friendly);
   } finally {
     mathOcrLoading = false;
   }
@@ -756,7 +966,8 @@ function updateOcrSelectionBox(layer, start, current) {
 }
 
 function bindOcrLayer(layer) {
-  if (!layer) return;
+  if (!layer || layer.dataset.boundOcr === '1') return;
+  layer.dataset.boundOcr = '1';
   layer.addEventListener('pointerdown', (event) => {
     if (!ocrMode || mathOcrLoading) return;
     if (event.button !== undefined && event.button !== 0) return;
@@ -783,9 +994,9 @@ function bindOcrLayer(layer) {
       setOcrStatus(t('Selection cancelled. Drag a larger rectangle around a formula.', '已取消框选。请在公式周围拖出更大的矩形框。'));
       return;
     }
-    const kind = layer.dataset.kind === 'reference' ? 'reference' : 'primary';
-    const page = kind === 'reference' ? pinnedPage : currentPage;
-    const sourceCanvas = kind === 'reference' ? referenceCanvas : canvas;
+    const kind = layer.dataset.kind || 'primary';
+    const page = Number(layer.dataset.page || (kind === 'reference' ? pinnedPage : currentPage));
+    const sourceCanvas = kind === 'reference' ? referenceCanvas : kind === 'continuous' ? layer.closest('.continuous-page-surface')?.querySelector('canvas') : canvas;
     const crop = cropSelectedFormula(sourceCanvas, layer, drag.rect);
     resetOcrBoxes();
     recognizeMathCrop(crop, page, kind);
@@ -891,7 +1102,7 @@ function capturePdfSelection() {
     if (!text) { hideSelectionToolbar(); return; }
     const page = Number(startLayer.dataset.page || 0);
     if (!page) { hideSelectionToolbar(); return; }
-    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer === referenceTextLayer ? 'reference' : 'primary' };
+    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary') };
     refreshSelectionUI();
     persistDocumentState();
     const rect = range.getBoundingClientRect();
@@ -928,7 +1139,7 @@ function addSelectionToPageNote() {
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
 }
 
-async function renderSelectableText(page, viewport, layer, surface, pageNum) {
+async function renderSelectableText(page, viewport, layer, surface, pageNum, kind = 'primary') {
   surface.style.width = `${viewport.width}px`;
   surface.style.height = `${viewport.height}px`;
   layer.style.width = `${viewport.width}px`;
@@ -936,6 +1147,7 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum) {
   layer.style.setProperty('--scale-factor', String(viewport.scale));
   layer.style.setProperty('--total-scale-factor', String(viewport.scale));
   layer.dataset.page = String(pageNum);
+  layer.dataset.kind = kind;
   layer.replaceChildren();
   try {
     const textContent = await page.getTextContent({ includeMarkedContent: true });
@@ -946,25 +1158,25 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum) {
   }
 }
 
-async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
-  if (!pdfDoc) return;
-  const page = await pdfDoc.getPage(pageNum);
-  const baseViewport = page.getViewport({ scale: 1 });
+function pageScale(baseViewport, wrap, kind = 'primary') {
   let scale;
   if (kind === 'reference') {
-    const maxWidth = Math.max(180, wrap.clientWidth - 38);
-    scale = maxWidth / baseViewport.width;
+    scale = Math.max(180, wrap.clientWidth - 38) / baseViewport.width;
   } else if (zoomMode === 'fit-width') {
-    const maxWidth = Math.max(220, wrap.clientWidth - 46);
-    scale = maxWidth / baseViewport.width;
+    scale = Math.max(220, wrap.clientWidth - 46) / baseViewport.width;
   } else if (zoomMode === 'fit-page') {
     const maxWidth = Math.max(220, wrap.clientWidth - 46);
     const maxHeight = Math.max(220, wrap.clientHeight - 46);
     scale = Math.min(maxWidth / baseViewport.width, maxHeight / baseViewport.height);
-  } else {
-    scale = zoomScale;
-  }
-  scale = Math.max(.35, Math.min(scale, 4));
+  } else scale = zoomScale;
+  return Math.max(.35, Math.min(scale, 4));
+}
+
+async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
+  if (!pdfDoc) return;
+  const page = await pdfDoc.getPage(pageNum);
+  const baseViewport = page.getViewport({ scale: 1 });
+  const scale = pageScale(baseViewport, wrap, kind);
   const viewport = page.getViewport({ scale });
   const targetTextLayer = kind === 'reference' ? referenceTextLayer : primaryTextLayer;
   const targetSurface = kind === 'reference' ? referencePageSurface : primaryPageSurface;
@@ -983,7 +1195,10 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   if (kind === 'primary') primaryRenderTask = task; else referenceRenderTask = task;
   try {
     await task.promise;
-    await renderSelectableText(page, viewport, targetTextLayer, targetSurface, pageNum);
+    await renderSelectableText(page, viewport, targetTextLayer, targetSurface, pageNum, kind);
+    const ocrLayer = kind === 'reference' ? referenceOcrLayer : primaryOcrLayer;
+    ocrLayer.dataset.page = String(pageNum);
+    ocrLayer.dataset.kind = kind;
     const saved = (kind === 'reference' ? referenceScrollByPage : scrollByPage)[String(pageNum)];
     if (saved) {
       wrap.scrollTop = Number(saved.top) || 0;
@@ -995,9 +1210,137 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   } catch (error) { if (error?.name !== 'RenderingCancelledException') throw error; }
 }
 
+function clearContinuousObserver() {
+  continuousObserver?.disconnect();
+  continuousObserver = null;
+  continuousPageNodes.clear();
+}
+
+async function renderContinuousPage(pageNum, generation) {
+  if (!pdfDoc || generation !== continuousGeneration) return;
+  const record = continuousPageNodes.get(pageNum);
+  if (!record || record.rendering || record.rendered) return;
+  record.rendering = true;
+  try {
+    const page = await pdfDoc.getPage(pageNum);
+    if (generation !== continuousGeneration) return;
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = pageScale(baseViewport, primaryCanvasWrap, 'primary');
+    const viewport = page.getViewport({ scale });
+    const { surface, canvas: pageCanvas, textLayer, ocrLayer } = record;
+    surface.style.width = `${viewport.width}px`;
+    surface.style.height = `${viewport.height}px`;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const ctx = pageCanvas.getContext('2d', { alpha: false });
+    pageCanvas.width = Math.floor(viewport.width * dpr);
+    pageCanvas.height = Math.floor(viewport.height * dpr);
+    pageCanvas.style.width = `${viewport.width}px`;
+    pageCanvas.style.height = `${viewport.height}px`;
+    await page.render({ canvasContext: ctx, viewport, transform: dpr === 1 ? null : [dpr,0,0,dpr,0,0] }).promise;
+    if (generation !== continuousGeneration) return;
+    await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
+    ocrLayer.dataset.page = String(pageNum);
+    ocrLayer.dataset.kind = 'continuous';
+    surface.classList.remove('is-placeholder');
+    surface.removeAttribute('data-placeholder-label');
+    surface.classList.toggle('ocr-mode', ocrMode);
+    record.rendered = true;
+  } catch (error) {
+    console.warn('Continuous page render failed', pageNum, error);
+  } finally {
+    record.rendering = false;
+  }
+}
+
+function updateCurrentPageFromContinuousScroll() {
+  if (readingFlow !== 'continuous' || !pdfDoc || !continuousPageNodes.size) return;
+  const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+  const anchor = wrapRect.top + Math.min(140, wrapRect.height * .24);
+  let bestPage = currentPage;
+  let bestDistance = Infinity;
+  for (const [pageNum, record] of continuousPageNodes) {
+    const rect = record.frame.getBoundingClientRect();
+    if (rect.bottom < wrapRect.top || rect.top > wrapRect.bottom) continue;
+    const distance = Math.abs(rect.top - anchor);
+    if (distance < bestDistance) { bestDistance = distance; bestPage = pageNum; }
+  }
+  if (bestPage !== currentPage) {
+    currentPage = bestPage;
+    updateNavigationState();
+  }
+}
+
+async function buildContinuousDocument({ restore = false } = {}) {
+  if (!pdfDoc || !continuousStack) return;
+  const generation = ++continuousGeneration;
+  clearContinuousObserver();
+  continuousStack.replaceChildren();
+  const first = await pdfDoc.getPage(Math.min(currentPage, pdfDoc.numPages));
+  if (generation !== continuousGeneration) return;
+  const base = first.getViewport({ scale: 1 });
+  const scale = pageScale(base, primaryCanvasWrap, 'primary');
+  const estimateWidth = base.width * scale;
+  const estimateHeight = base.height * scale;
+  for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
+    const frame = document.createElement('section');
+    frame.className = 'continuous-page-frame';
+    frame.dataset.page = String(pageNum);
+    const label = document.createElement('div');
+    label.className = 'continuous-page-number';
+    label.dataset.en = `Page ${pageNum}`;
+    label.dataset.zh = `第 ${pageNum} 页`;
+    label.textContent = t(label.dataset.en, label.dataset.zh);
+    const surface = document.createElement('div');
+    surface.className = 'page-surface continuous-page-surface is-placeholder';
+    surface.dataset.placeholderLabel = t(`Page ${pageNum}`, `第 ${pageNum} 页`);
+    surface.style.width = `${estimateWidth}px`;
+    surface.style.height = `${estimateHeight}px`;
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.setAttribute('aria-label', t(`PDF page ${pageNum}`, `PDF 第 ${pageNum} 页`));
+    const textLayer = document.createElement('div');
+    textLayer.className = 'textLayer';
+    textLayer.dataset.page = String(pageNum);
+    textLayer.dataset.kind = 'continuous';
+    const ocrLayer = document.createElement('div');
+    ocrLayer.className = 'ocr-select-layer';
+    ocrLayer.dataset.kind = 'continuous';
+    ocrLayer.dataset.page = String(pageNum);
+    const box = document.createElement('div');
+    box.className = 'ocr-selection-box';
+    ocrLayer.append(box);
+    bindOcrLayer(ocrLayer);
+    surface.append(pageCanvas, textLayer, ocrLayer);
+    frame.append(label, surface);
+    continuousStack.append(frame);
+    continuousPageNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, ocrLayer, rendered: false, rendering: false });
+  }
+  continuousObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const pageNum = Number(entry.target.dataset.page);
+      if (pageNum) renderContinuousPage(pageNum, generation);
+    }
+  }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
+  for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
+  requestAnimationFrame(() => {
+    if (generation !== continuousGeneration) return;
+    if (restore && continuousScrollTop > 0) primaryCanvasWrap.scrollTop = continuousScrollTop;
+    else {
+      const target = continuousPageNodes.get(currentPage)?.frame;
+      if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
+    }
+    updateCurrentPageFromContinuousScroll();
+  });
+}
+
 async function renderCurrentPage() {
   if (!pdfDoc) return;
   updateNavigationState();
+  if (readingFlow === 'continuous') {
+    try { await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0 }); }
+    catch (error) { showError(t('Continuous reading could not be rendered.', '无法渲染连续阅读模式。')); console.error(error); }
+    return;
+  }
   try { await renderPage(currentPage, canvas, primaryCanvasWrap, 'primary'); }
   catch (error) { showError(t('This page could not be rendered.', '此页面无法渲染。')); console.error(error); }
 }
@@ -1015,11 +1358,24 @@ async function renderReferencePage() {
 async function goToPage(page) {
   if (!pdfDoc) return;
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
-  if (next === currentPage) return;
+  const changed = next !== currentPage;
   currentPage = next;
   hideSelectionToolbar();
   window.getSelection()?.removeAllRanges();
-  await renderCurrentPage();
+  if (readingFlow === 'continuous') {
+    updateNavigationState();
+    const record = continuousPageNodes.get(next);
+    if (!record) await buildContinuousDocument();
+    const target = continuousPageNodes.get(next)?.frame;
+    if (target) {
+      await renderContinuousPage(next, continuousGeneration);
+      target.scrollIntoView({ block: 'start', behavior: 'auto' });
+      primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop - 8);
+    }
+    persistDocumentState();
+    return;
+  }
+  if (changed) await renderCurrentPage(); else updateNavigationState();
 }
 
 function setPinnedPage(page) {
@@ -1179,6 +1535,8 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     documentTitle.textContent = meta.name;
     pageCount.textContent = pdfDoc.numPages;
     enableReaderControls(true);
+    applyPageDisplay({ persist: false });
+    await setReadingFlow(readingFlow, { persist: false, render: false });
     welcome.classList.add('is-hidden');
     welcomeRecent.classList.add('is-hidden');
     pdfWorkspace.classList.remove('is-hidden');
@@ -1247,7 +1605,8 @@ async function changeZoom(delta) {
   if (zoomMode !== 'custom') {
     const page = await pdfDoc.getPage(currentPage);
     const baseViewport = page.getViewport({ scale: 1 });
-    const renderedWidth = canvas.getBoundingClientRect().width;
+    const visibleCanvas = readingFlow === 'continuous' ? continuousPageNodes.get(currentPage)?.canvas : canvas;
+    const renderedWidth = visibleCanvas?.getBoundingClientRect().width || canvas.getBoundingClientRect().width;
     zoomScale = renderedWidth > 0 ? renderedWidth / baseViewport.width : 1.2;
   }
   zoomMode = 'custom';
@@ -1285,6 +1644,17 @@ zoomIn.addEventListener('click', () => changeZoom(.15));
 zoomOut.addEventListener('click', () => changeZoom(-.15));
 zoomLabel.addEventListener('click', () => setFitMode('fit-width'));
 fitPage.addEventListener('click', () => setFitMode('fit-page'));
+flowButton.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
+flowSingle?.addEventListener('click', () => setReadingFlow('single'));
+flowContinuous?.addEventListener('click', () => setReadingFlow('continuous'));
+resetDisplay?.addEventListener('click', resetDisplayPreferences);
+pageToneSelect?.addEventListener('change', () => { pageTone = pageToneSelect.value; applyPageDisplay(); });
+brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 96); applyPageDisplay(); });
+contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 96); applyPageDisplay(); });
+gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
+pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v1', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Engine preference changed. Choose Math OCR to load it.', '识别引擎偏好已更改。点击公式 OCR 后会加载新引擎。')); });
+ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
 mathOcrButton.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton.addEventListener('click', () => setPinnedPage(currentPage));
 pinFromSidebar.addEventListener('click', () => setPinnedPage(currentPage));
@@ -1326,8 +1696,14 @@ document.addEventListener('selectionchange', capturePdfSelection);
 primaryCanvasWrap.addEventListener('scroll', () => {
   hideSelectionToolbar();
   if (!pdfDoc) return;
-  scrollByPage[String(currentPage)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
-  persistDocumentState();
+  if (readingFlow === 'continuous') {
+    continuousScrollTop = primaryCanvasWrap.scrollTop;
+    clearTimeout(continuousScrollTimer);
+    continuousScrollTimer = setTimeout(() => { updateCurrentPageFromContinuousScroll(); persistDocumentState(); }, 80);
+  } else {
+    scrollByPage[String(currentPage)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
+    persistDocumentState();
+  }
 }, { passive: true });
 referenceCanvasWrap.addEventListener('scroll', () => {
   hideSelectionToolbar();
@@ -1385,8 +1761,14 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => { if (pdfDoc && zoomMode !== 'custom') { renderCurrentPage(); renderReferencePage(); } }, 180);
 });
 
+loadDisplayPreferences();
+mathOcrEngineMode = normalizedOcrEngineMode(mathOcrEngineMode);
+if (ocrEngineSelect) ocrEngineSelect.value = mathOcrEngineMode;
 applyTheme(root.dataset.theme, false);
 applyLanguage(root.dataset.lang, false);
+applyPageDisplay({ persist: false });
+setReadingFlow(readingFlow, { persist: false, render: false });
+updateOcrCapability();
 updateReferenceStatus();
 refreshSelectionUI();
 refreshOcrUI();

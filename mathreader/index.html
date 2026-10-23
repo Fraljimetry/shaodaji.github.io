@@ -36,8 +36,8 @@
 
     <div class="header-actions">
       <button class="icon-button" type="button" id="open-button" data-en-title="Open PDF" data-zh-title="打开 PDF" aria-label="Open PDF">Open</button>
-      <button class="icon-button" type="button" id="theme-button" aria-label="Switch theme" title="Switch theme">◐</button>
-      <button class="icon-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文">🌐</button>
+      <button class="icon-button language-button" type="button" id="theme-button" aria-label="Switch to dark mode" title="Switch to dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
+      <button class="icon-button language-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文"><span aria-hidden="true">🌐</span><span id="language-label">中文</span></button>
       <a class="icon-button home-link" href="../tools.html" data-en="Tools" data-zh="工具">Tools</a>
     </div>
   </header>
@@ -112,6 +112,7 @@
           <button class="zoom-label" type="button" id="zoom-label" disabled title="Reset to fit width">Fit width</button>
           <button class="tool-button" type="button" id="zoom-in" disabled aria-label="Zoom in" title="Zoom in">+</button>
           <button class="tool-button text-tool" type="button" id="fit-page" disabled data-en="Fit page" data-zh="适合页面">Fit page</button>
+          <button class="tool-button text-tool" type="button" id="flow-button" disabled data-en="Continuous" data-zh="连续阅读">Continuous</button>
         </div>
 
         <div class="toolbar-group toolbar-right">
@@ -154,6 +155,7 @@
                 <div class="textLayer" id="primary-text-layer" aria-label="Selectable PDF text"></div>
                 <div class="ocr-select-layer" id="primary-ocr-layer" data-kind="primary" aria-label="Math OCR rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
+              <div class="continuous-stack is-hidden" id="continuous-stack" aria-label="Continuous PDF pages"></div>
             </div>
           </div>
 
@@ -186,12 +188,63 @@
     </section>
 
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <section class="workspace-section display-section" id="display-section">
+        <div class="panel-heading">
+          <span data-en="Display" data-zh="显示">Display</span>
+          <button class="text-button" type="button" id="reset-display" data-en="Reset" data-zh="重置">Reset</button>
+        </div>
+        <div class="display-setting">
+          <span class="display-label" data-en="Reading flow" data-zh="阅读方式">Reading flow</span>
+          <div class="segmented-control" role="group" aria-label="Reading flow">
+            <button type="button" id="flow-single" data-en="Single page" data-zh="单页">Single page</button>
+            <button type="button" id="flow-continuous" data-en="Continuous" data-zh="连续">Continuous</button>
+          </div>
+        </div>
+        <label class="display-setting">
+          <span class="display-label" data-en="Page appearance" data-zh="页面外观">Page appearance</span>
+          <select id="page-tone">
+            <option value="auto" data-en="Match theme" data-zh="跟随主题">Match theme</option>
+            <option value="original" data-en="Original paper" data-zh="原始白纸">Original paper</option>
+            <option value="soft-dark" data-en="Soft dark" data-zh="柔和暗色">Soft dark</option>
+            <option value="warm" data-en="Warm paper" data-zh="暖色纸张">Warm paper</option>
+          </select>
+        </label>
+        <label class="display-setting range-setting">
+          <span class="display-label"><span data-en="Brightness" data-zh="亮度">Brightness</span><output id="brightness-value">96%</output></span>
+          <input id="brightness-range" type="range" min="70" max="115" step="1" value="96">
+        </label>
+        <label class="display-setting range-setting">
+          <span class="display-label"><span data-en="Contrast" data-zh="对比度">Contrast</span><output id="contrast-value">96%</output></span>
+          <input id="contrast-range" type="range" min="80" max="120" step="1" value="96">
+        </label>
+        <label class="display-setting range-setting">
+          <span class="display-label"><span data-en="Page spacing" data-zh="页面间距">Page spacing</span><output id="gap-value">20 px</output></span>
+          <input id="gap-range" type="range" min="8" max="44" step="2" value="20">
+        </label>
+        <label class="toggle-setting">
+          <input id="page-shadow" type="checkbox" checked>
+          <span data-en="Page shadow" data-zh="页面阴影">Page shadow</span>
+        </label>
+        <p class="display-note" data-en="Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter Math OCR crops." data-zh="柔和暗色会使用灰白文字而非纯白，以降低眩光。显示滤镜不会改变 Math OCR 使用的原始裁图。">Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter Math OCR crops.</p>
+      </section>
       <section class="workspace-section ocr-section" id="ocr-section">
         <div class="panel-heading">
           <span data-en="Math OCR" data-zh="公式 OCR">Math OCR</span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
         <p class="workspace-copy" id="ocr-help" data-en="Choose Math OCR, then drag a rectangle around one formula on either PDF page. The crop is recognized locally in your browser and returned as LaTeX." data-zh="点击公式 OCR，然后在任一 PDF 页面上拖出矩形框选一个公式。裁图会在浏览器本地识别并返回 LaTeX。">Choose Math OCR, then drag a rectangle around one formula on either PDF page. The crop is recognized locally in your browser and returned as LaTeX.</p>
+        <div class="ocr-engine-controls">
+          <label>
+            <span data-en="Engine" data-zh="识别引擎">Engine</span>
+            <select id="ocr-engine-mode">
+              <option value="auto" data-en="Automatic · WebGPU preferred" data-zh="自动 · 优先 WebGPU">Automatic · WebGPU preferred</option>
+              <option value="webgpu" data-en="WebGPU" data-zh="WebGPU">WebGPU</option>
+              <option value="wasm" data-en="Compatibility · CPU" data-zh="兼容模式 · CPU">Compatibility · CPU</option>
+            </select>
+          </label>
+          <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
+        </div>
+        <div class="ocr-capability" id="ocr-capability"></div>
         <div class="ocr-status" id="ocr-status" data-en="Ready. The recognition model loads only when you use Math OCR." data-zh="就绪。只有首次使用公式 OCR 时才会加载识别模型。">Ready. The recognition model loads only when you use Math OCR.</div>
         <div class="ocr-result is-hidden" id="ocr-result">
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>

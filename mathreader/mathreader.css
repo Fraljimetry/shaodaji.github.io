@@ -117,3 +117,49 @@ html[data-theme="dark"] .textLayer ::selection{background:rgba(121,188,228,.42)}
 html[data-theme="dark"] .ocr-preview-wrap{background:#fff}
 @media(max-width:860px){.ocr-tool-button{display:inline-flex}.ocr-section{padding-top:10px}}
 .ocr-history-block{margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}.ocr-history-heading{margin-bottom:5px}.ocr-history-list{display:flex;flex-direction:column;gap:5px}.ocr-history-item{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);cursor:pointer;text-align:left}.ocr-history-item:hover{border-color:var(--accent);background:var(--surface-soft)}.ocr-history-item strong{display:block;color:var(--accent);font-size:9px;text-transform:uppercase;letter-spacing:.05em}.ocr-history-item code{display:block;overflow:hidden;margin-top:3px;color:var(--ink);font-size:9px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
+
+/* v43 reading modes and display controls */
+:root{
+  --pdf-brightness:.96;
+  --pdf-contrast:.96;
+  --continuous-gap:20px;
+  --reader-page-shadow:0 8px 30px rgba(0,0,0,.23);
+}
+html[data-theme="dark"]{
+  --ink:#cfd6db;
+  --heading:#d8e1e6;
+  --muted:#96a4ae;
+}
+.language-button{gap:6px}.language-button #language-label{font-size:11px;font-weight:750}
+.display-section{padding-top:12px}.display-setting{display:grid;gap:6px;margin:8px 0 11px}.display-label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--heading);font-size:10px;font-weight:750}.display-setting select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);outline:none;font-size:10px}.display-setting select:focus{border-color:var(--accent)}.range-setting input[type="range"]{width:100%;accent-color:var(--accent)}.range-setting output{color:var(--muted);font-size:9px;font-weight:700}.segmented-control{display:grid;grid-template-columns:1fr 1fr;gap:4px}.segmented-control button{min-height:30px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);cursor:pointer;font-size:10px;font-weight:700}.segmented-control button.is-active{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-soft)}.toggle-setting{display:flex;align-items:center;gap:7px;margin:7px 0 9px;color:var(--ink);font-size:10px}.toggle-setting input{accent-color:var(--accent)}.display-note{margin:8px 0 0;color:var(--muted);font-size:9px;line-height:1.5}
+
+.page-surface{box-shadow:var(--reader-page-shadow)}
+.page-surface canvas{filter:brightness(var(--pdf-brightness)) contrast(var(--pdf-contrast))}
+html[data-page-tone="soft-dark"] .page-surface{background:#2b2c2b}
+html[data-page-tone="soft-dark"] .page-surface canvas{filter:invert(.82) hue-rotate(180deg) brightness(var(--pdf-brightness)) contrast(var(--pdf-contrast)) saturate(.82)}
+html[data-page-tone="warm"] .page-surface{background:#f1e8d5}
+html[data-page-tone="warm"] .page-surface canvas{filter:sepia(.18) saturate(.82) brightness(var(--pdf-brightness)) contrast(var(--pdf-contrast))}
+html[data-page-shadow="off"]{--reader-page-shadow:none}
+
+.canvas-wrap.continuous-mode{display:block;padding:18px;scroll-behavior:smooth}
+.continuous-stack{display:flex;min-width:100%;flex-direction:column;align-items:center;gap:var(--continuous-gap);padding:0;margin:0 auto}
+.continuous-page-frame{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;scroll-margin-top:10px}
+.continuous-page-number{align-self:flex-start;margin-left:2px;padding:2px 6px;border-radius:999px;color:var(--muted);background:var(--surface);font-size:9px;font-weight:750;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.continuous-page-surface{min-height:180px}
+.continuous-page-surface.is-placeholder{display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);background:var(--surface-soft);font-size:11px}
+.continuous-page-surface.is-placeholder::after{content:attr(data-placeholder-label)}
+.continuous-page-surface canvas{display:block}
+.continuous-page-surface .textLayer,.continuous-page-surface .ocr-select-layer{position:absolute}
+
+@media(max-width:860px){.language-button #language-label{display:none}.canvas-wrap.continuous-mode{padding:12px}.display-section{padding-top:10px}}
+
+
+/* v43 OCR backend diagnostics */
+.ocr-engine-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:7px;margin:0 0 7px}.ocr-engine-controls label{display:grid;gap:4px;color:var(--heading);font-size:9px;font-weight:750}.ocr-engine-controls select{width:100%;min-width:0;padding:6px 7px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);outline:none;font-size:9px}.ocr-engine-controls select:focus{border-color:var(--accent)}.ocr-capability{margin:-1px 0 7px;color:var(--muted);font-size:9px;line-height:1.45}.ocr-capability strong{color:var(--heading)}
+.continuous-page-surface.ocr-mode .ocr-select-layer{pointer-events:auto}.continuous-page-surface.ocr-mode .textLayer{pointer-events:none}
+html[data-page-tone="soft-dark"] .reader-main{background:#17191a}
+html[data-page-tone="soft-dark"] .page-surface,html[data-page-tone="soft-dark"] .continuous-page-surface{background:#252728}
+html[data-page-tone="soft-dark"] .page-surface canvas,html[data-page-tone="soft-dark"] .continuous-page-surface canvas{filter:invert(.86) hue-rotate(180deg) saturate(.72) brightness(var(--pdf-brightness)) contrast(var(--pdf-contrast))}
+html[data-page-tone="warm"] .reader-main{background:#d8d1c2}
+html[data-theme="dark"] .icon-button,html[data-theme="dark"] .tool-button,html[data-theme="dark"] .zoom-label{font-weight:650}
+@media(max-width:520px){.ocr-engine-controls{grid-template-columns:1fr}.ocr-engine-controls .text-button{justify-self:start}}
