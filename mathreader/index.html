@@ -234,20 +234,20 @@
           <span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses browser-compatible Nougat Small and may return scientific Markdown; MathReader extracts the formula block when possible." data-zh="在公式周围拖出矩形。MathReader 会优先依据 PDF 原生文字与字形几何关系重建 LaTeX；只有框内没有可用原生文本时才使用图像 OCR。">Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses browser-compatible Nougat Small and may return scientific Markdown; MathReader extracts the formula block when possible.</p>
+        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses Texify, a browser-compatible formula-to-LaTeX model. MathReader rejects obvious non-formula and repeated-token outputs instead of presenting them as LaTeX." data-zh="在公式周围拖出矩形。MathReader 会优先依据 PDF 原生文字与字形几何关系重建 LaTeX；只有框内没有可用原生文本时才使用图像 OCR；备用模型使用专门的 Texify 公式转 LaTeX，并会拒绝明显的非公式或重复输出。">Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses Texify, a browser-compatible formula-to-LaTeX model. MathReader rejects obvious non-formula and repeated-token outputs instead of presenting them as LaTeX.</p>
         <div class="ocr-engine-controls">
           <label>
             <span data-en="Image OCR fallback" data-zh="图像 OCR 备用引擎">Image OCR fallback</span>
             <select id="ocr-engine-mode">
-              <option value="official" data-en="Recommended · compatible CPU" data-zh="推荐 · 兼容 CPU">Recommended · compatible CPU</option>
-              <option value="webgpu" data-en="WebGPU · fp16 experimental" data-zh="WebGPU · fp16 实验性">WebGPU · fp16 experimental</option>
-              <option value="wasm" data-en="CPU · q8 explicit" data-zh="CPU · q8 显式">CPU · q8 explicit</option>
+              <option value="official" data-en="Recommended · Texify CPU" data-zh="推荐 · Texify CPU">Recommended · Texify CPU</option>
+              <option value="webgpu" data-en="Texify · WebGPU q4f16" data-zh="Texify · WebGPU q4f16">Texify · WebGPU q4f16</option>
+              <option value="wasm" data-en="Texify · CPU q8" data-zh="Texify · CPU q8">Texify · CPU q8</option>
             </select>
           </label>
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
-        <div class="ocr-status" id="ocr-status" data-en="Ready · PDF vector extraction is primary. Image OCR uses Transformers.js 4.3.1 and loads only for scanned/image-only formulas." data-zh="就绪 · 优先使用 PDF 矢量公式提取。图像 OCR 使用 Transformers.js 4.3.1，仅在扫描件或纯图像公式时加载。">Ready · PDF vector extraction is primary. Image OCR uses Transformers.js 4.3.1 and loads only for scanned/image-only formulas.</div>
+        <div class="ocr-status" id="ocr-status" data-en="Ready · PDF vector extraction is primary. Image OCR uses Texify with Transformers.js 4.3.1 and loads only for scanned/image-only formulas or explicit comparison." data-zh="就绪 · 优先使用 PDF 矢量公式提取。图像 OCR 使用 Texify + Transformers.js 4.3.1，仅在扫描件、纯图像公式或显式对照时加载。">Ready · PDF vector extraction is primary. Image OCR uses Texify with Transformers.js 4.3.1 and loads only for scanned/image-only formulas or explicit comparison.</div>
         <div class="ocr-result is-hidden" id="ocr-result">
           <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
