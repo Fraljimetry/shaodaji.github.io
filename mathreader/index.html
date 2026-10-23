@@ -19,6 +19,13 @@
       } catch (_) {}
     })();
   </script>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#reader-stage" data-en="Skip to reader" data-zh="跳到阅读器">Skip to reader</a>
@@ -35,7 +42,7 @@
     <div class="document-title" id="document-title" data-en="No PDF open" data-zh="尚未打开 PDF">No PDF open</div>
 
     <div class="header-actions">
-      <button class="icon-button" type="button" id="open-button" data-en-title="Open PDF" data-zh-title="打开 PDF" aria-label="Open PDF">Open</button>
+      <button class="icon-button" type="button" id="open-button" data-en-title="Open PDF · O" data-zh-title="打开 PDF · O" aria-label="Open PDF · O">Open</button>
       <button class="icon-button language-button" type="button" id="theme-button" aria-label="Switch to dark mode" title="Switch to dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
       <button class="icon-button language-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文"><span aria-hidden="true">🌐</span><span id="language-label">中文</span></button>
       <a class="icon-button home-link" href="../tools.html" data-en="Tools" data-zh="工具">Tools</a>
@@ -203,8 +210,8 @@
         <div class="display-setting">
           <span class="display-label" data-en="Reading flow" data-zh="阅读方式">Reading flow</span>
           <div class="segmented-control" role="group" aria-label="Reading flow">
-            <button type="button" id="flow-single" data-en="Single page" data-zh="单页">Single page</button>
             <button type="button" id="flow-continuous" data-en="Continuous" data-zh="连续">Continuous</button>
+            <button type="button" id="flow-single" data-en="Single page" data-zh="单页">Single page</button>
           </div>
         </div>
         <label class="display-setting">
@@ -283,6 +290,7 @@
         <div class="ocr-history-block">
           <div class="panel-heading ocr-history-heading"><span data-en="Recent formula extraction" data-zh="最近公式提取">Recent formula extraction</span><span class="count-badge" id="ocr-history-count">0</span></div>
           <div class="ocr-history-list" id="ocr-history-list"></div>
+          <button class="ocr-history-toggle is-hidden" type="button" id="ocr-history-toggle" data-en="More" data-zh="更多">More</button>
           <div class="empty-panel" id="ocr-history-empty" data-en="Extracted formulas from this PDF will be remembered here." data-zh="这份 PDF 中提取过的公式会保存在这里。">Extracted formulas from this PDF will be remembered here.</div>
         </div>
       </section>
@@ -312,7 +320,9 @@
           <span data-en="Page note" data-zh="页注">Page note</span>
           <span class="page-chip" id="note-page-chip">—</span>
         </div>
-        <textarea id="page-note" disabled data-en-placeholder="Write a note tied to this page…" data-zh-placeholder="记录与此页关联的笔记……" placeholder="Write a note tied to this page…"></textarea>
+        <textarea id="page-note" disabled data-en-placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX." data-zh-placeholder="记录与此页关联的笔记……可用 \(...\) 或 \[...\] 输入 LaTeX。" placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX."></textarea>
+        <p class="note-latex-help" data-en="LaTeX is supported in notes: use \(...\) inline or \[...\] for display math." data-zh="页注支持 LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">LaTeX is supported in notes: use \(...\) inline or \[...\] for display math.</p>
+        <div class="note-preview is-hidden" id="note-preview" aria-label="Page note LaTeX preview"></div>
         <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
       </section>
 

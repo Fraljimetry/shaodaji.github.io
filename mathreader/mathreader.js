@@ -43,6 +43,7 @@ const referencePrev = el('reference-prev');
 const referenceNext = el('reference-next');
 const unpinPage = el('unpin-page');
 const pageNote = el('page-note');
+const notePreview = el('note-preview');
 const notePageChip = el('note-page-chip');
 const noteSaveState = el('note-save-state');
 const addBookmark = el('add-bookmark');
@@ -108,6 +109,7 @@ const clearOcrResultButton = el('clear-ocr-result');
 const ocrHistoryList = el('ocr-history-list');
 const ocrHistoryEmpty = el('ocr-history-empty');
 const ocrHistoryCount = el('ocr-history-count');
+const ocrHistoryToggle = el('ocr-history-toggle');
 const ocrEngineSelect = el('ocr-engine-mode');
 const ocrRetryButton = el('ocr-retry');
 const ocrCapability = el('ocr-capability');
@@ -168,6 +170,9 @@ let lastObservedReaderWidth = 0;
 let fitWidthStabilizing = false;
 let currentOcrResult = null;
 let ocrHistory = [];
+let ocrHistoryExpanded = false;
+let ocrCropProcessingOverlay = null;
+let notePreviewTimer = null;
 let continuousScrollTop = 0;
 let continuousSavedAnchor = null;
 let continuousLayoutWidth = 0;
@@ -671,12 +676,15 @@ function stateKey(kind) {
   return currentFileKey ? `mathreader:${currentFileKey}:${kind}` : null;
 }
 
+const BOOKMARK_COLORS = ['red','blue','green','yellow','purple'];
+function normalizedBookmarkColor(value) { return BOOKMARK_COLORS.includes(value) ? value : 'blue'; }
 function normalizeBookmarks(items) {
   return (Array.isArray(items) ? items : []).filter((item) => item && Number(item.page) >= 1).map((item, index) => ({
     id: item.id || `bm-${Number(item.created) || Date.now()}-${index}`,
     page: Number(item.page),
     title: typeof item.title === 'string' ? item.title : '',
     note: typeof item.note === 'string' ? item.note : '',
+    color: normalizedBookmarkColor(item.color),
     created: Number(item.created) || Date.now()
   }));
 }
@@ -691,6 +699,7 @@ function loadDocumentState(cachedSession = null) {
   currentSelection = null;
   currentOcrResult = null;
   ocrHistory = [];
+  ocrHistoryExpanded = false;
   inferredOutline = [];
   outlineMode = 'none';
   zoomMode = 'fit-width';
@@ -727,7 +736,7 @@ function loadDocumentState(cachedSession = null) {
     }
     currentSelection = session.selection?.text ? session.selection : null;
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
-    ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
+    ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
@@ -825,7 +834,7 @@ function updateNavigationState() {
   primaryPageLabel.textContent = t(`Page ${currentPage}`, `第 ${currentPage} 页`);
   notePageChip.textContent = String(currentPage);
   pageNote.disabled = false;
-  pageNote.value = notes[String(currentPage)] || '';
+  pageNote.value = notes[String(currentPage)] || ''; scheduleNotePreview();
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
   persistDocumentState();
 }
@@ -861,6 +870,10 @@ function setOcrStatus(message, working = false) {
   if (working && ocrProcessing && !ocrProcessing.classList.contains('is-hidden') && ocrProcessingText) {
     ocrProcessingText.textContent = message;
   }
+  if (working && ocrCropProcessingOverlay) {
+    const label = ocrCropProcessingOverlay.querySelector('.ocr-crop-processing-label');
+    if (label) label.textContent = t('Processing…', '处理中…');
+  }
 }
 
 function setOcrProcessing(active, message = '') {
@@ -877,7 +890,12 @@ function setOcrProcessing(active, message = '') {
   if (ocrProcessingText) ocrProcessingText.textContent = message || t('Preparing formula image…', '正在准备公式图像……');
   const updateTime = () => {
     if (!ocrProcessingStartedAt || !ocrProcessingTime) return;
-    ocrProcessingTime.textContent = `${((performance.now() - ocrProcessingStartedAt) / 1000).toFixed(1)} s`;
+    const elapsed = ((performance.now() - ocrProcessingStartedAt) / 1000).toFixed(1);
+    ocrProcessingTime.textContent = `${elapsed} s`;
+    if (ocrCropProcessingOverlay) {
+      const label = ocrCropProcessingOverlay.querySelector('.ocr-crop-processing-label');
+      if (label) label.textContent = `${t('Processing', '处理中')}… ${elapsed} s`;
+    }
   };
   updateTime();
   ocrProcessingTimer = setInterval(updateTime, 100);
@@ -965,11 +983,13 @@ function refreshOcrUI() {
   ocrHistoryList.replaceChildren();
   ocrHistoryCount.textContent = String(ocrHistory.length);
   ocrHistoryEmpty.classList.toggle('is-hidden', ocrHistory.length > 0);
-  for (const item of ocrHistory.slice(0, 12)) {
+  const visibleHistory = ocrHistory.slice(0, ocrHistoryExpanded ? 10 : 3);
+  for (const item of visibleHistory) {
     if (!item?.latex) continue;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'ocr-history-item';
+    button.title = t('Click to reopen · double-click to copy LaTeX', '单击重新打开 · 双击复制 LaTeX');
     const label = document.createElement('strong');
     label.textContent = t(`Page ${item.page || '?'}`, `第 ${item.page || '?'} 页`);
     const code = document.createElement('code');
@@ -980,7 +1000,20 @@ function refreshOcrUI() {
       refreshOcrUI();
       persistDocumentState();
     });
+    button.addEventListener('dblclick', async (event) => {
+      event.preventDefault();
+      await copyPlainText(item.latex);
+      button.classList.add('is-copied');
+      setOcrStatus(t('LaTeX copied from recent extraction.', '已从最近公式提取中复制 LaTeX。'));
+      setTimeout(() => button.classList.remove('is-copied'), 700);
+    });
     ocrHistoryList.append(button);
+  }
+  if (ocrHistoryToggle) {
+    const canToggle = ocrHistory.length > 3;
+    ocrHistoryToggle.classList.toggle('is-hidden', !canToggle);
+    ocrHistoryToggle.textContent = ocrHistoryExpanded ? t('Less', '收起') : t(`More (${Math.min(7, Math.max(0, ocrHistory.length - 3))})`, `更多 (${Math.min(7, Math.max(0, ocrHistory.length - 3))})`);
+    ocrHistoryToggle.setAttribute('aria-expanded', ocrHistoryExpanded ? 'true' : 'false');
   }
 }
 
@@ -994,6 +1027,26 @@ function resetOcrBoxes() {
     const box = layer.querySelector('.ocr-selection-box');
     if (box) box.removeAttribute('style');
   }
+}
+
+function showOcrCropProcessing(layer, rect) {
+  hideOcrCropProcessing();
+  if (!layer || !rect) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'ocr-crop-processing';
+  overlay.style.left = `${rect.left}px`;
+  overlay.style.top = `${rect.top}px`;
+  overlay.style.width = `${Math.max(54, rect.width)}px`;
+  overlay.style.height = `${Math.max(32, rect.height)}px`;
+  const spinner = document.createElement('span'); spinner.className = 'spinner'; spinner.setAttribute('aria-hidden','true');
+  const label = document.createElement('span'); label.className = 'ocr-crop-processing-label'; label.textContent = t('Processing…', '处理中…');
+  overlay.append(spinner, label);
+  layer.append(overlay);
+  ocrCropProcessingOverlay = overlay;
+}
+function hideOcrCropProcessing() {
+  ocrCropProcessingOverlay?.remove();
+  ocrCropProcessingOverlay = null;
 }
 
 function applyOcrModeToSurfaces() {
@@ -1997,6 +2050,12 @@ function cropCanvasRows(canvas, band) {
 function looksMultilineLatex(value) {
   return /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}|\\\\/.test(String(value || ''));
 }
+function latexVisualRowCount(value) {
+  const text = String(value || '');
+  const rowBreaks = (text.match(/\\\\/g) || []).length;
+  if (/\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(text)) return Math.max(1, rowBreaks + 1);
+  return rowBreaks ? rowBreaks + 1 : 1;
+}
 
 async function runImageFormulaRecognition(crop) {
   const pipe = await ensureMathOcrPipeline();
@@ -2028,7 +2087,7 @@ async function runImageFormulaRecognition(crop) {
   // the first line. When the crop has clean horizontal row bands and no tall
   // matrix/cases delimiter, recognize each row and rebuild an aligned block.
   const bands = formulaRowBands(crop);
-  if (bands.length >= 2 && !looksMultilineLatex(best.latex)) {
+  if (bands.length >= 2 && latexVisualRowCount(best.latex) < bands.length) {
     const lines = [];
     let rowFailure = false;
     for (let i = 0; i < bands.length; i += 1) {
@@ -2058,7 +2117,7 @@ async function runImageFormulaRecognition(crop) {
 }
 function commitFormulaResult(item, statusMessage = '') {
   currentOcrResult = item;
-  ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 12);
+  ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 10);
   refreshOcrUI();
   persistDocumentState();
   if (statusMessage) setOcrStatus(statusMessage);
@@ -2075,6 +2134,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
+    hideOcrCropProcessing();
     return;
   }
 
@@ -2101,6 +2161,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
+    hideOcrCropProcessing();
   }
 }
 
@@ -2163,7 +2224,7 @@ function addOcrToPageNote() {
   const existing = notes[String(page)] || '';
   notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
   persistDocumentState();
-  if (page === currentPage) pageNote.value = notes[String(page)];
+  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
 }
 
@@ -2228,6 +2289,7 @@ function bindOcrLayer(layer) {
     const sourceCanvas = kind === 'reference' ? referenceCanvas : kind === 'continuous' ? layer.closest('.continuous-page-surface')?.querySelector('canvas') : canvas;
     const crop = cropSelectedFormula(sourceCanvas, layer, drag.rect);
     resetOcrBoxes();
+    showOcrCropProcessing(layer, drag.rect);
     recognizeMathCrop(crop, page, kind, layer, drag.rect);
   };
   layer.addEventListener('pointerup', (event) => finish(event, false));
@@ -2411,7 +2473,7 @@ function addSelectionToPageNote() {
   const existing = notes[String(page)] || '';
   notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${quoted}`;
   persistDocumentState();
-  if (page === currentPage) pageNote.value = notes[String(page)];
+  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
 }
 
@@ -3146,6 +3208,22 @@ async function searchPdf(query) {
   }
 }
 
+function scheduleNotePreview() {
+  clearTimeout(notePreviewTimer);
+  notePreviewTimer = setTimeout(renderNotePreview, 180);
+}
+async function renderNotePreview() {
+  if (!notePreview) return;
+  const value = String(pageNote?.value || '').trim();
+  notePreview.classList.toggle('is-hidden', !value);
+  if (!value) { notePreview.replaceChildren(); return; }
+  try { window.MathJax?.typesetClear?.([notePreview]); } catch (_) {}
+  notePreview.textContent = value;
+  if (window.MathJax?.typesetPromise) {
+    try { await window.MathJax.typesetPromise([notePreview]); } catch (error) { console.warn('MathReader note MathJax preview failed', error); }
+  }
+}
+
 function formatBookmarkTime(timestamp) {
   if (!timestamp) return '';
   try {
@@ -3160,7 +3238,7 @@ function renderBookmarks() {
   bookmarkEmpty.classList.toggle('is-hidden', bookmarks.length > 0);
   bookmarks.sort((a,b) => a.page - b.page || a.created - b.created);
   for (const bookmark of bookmarks) {
-    const row = document.createElement('div'); row.className = 'bookmark-item';
+    const row = document.createElement('div'); row.className = 'bookmark-item'; row.dataset.color = normalizedBookmarkColor(bookmark.color);
     const main = document.createElement('div'); main.className = 'bookmark-main';
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bookmark-jump';
     const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`);
@@ -3180,12 +3258,23 @@ function renderBookmarks() {
       const editor = document.createElement('div'); editor.className = 'bookmark-editor';
       const titleInput = document.createElement('input'); titleInput.value = bookmark.title || ''; titleInput.placeholder = t('Bookmark title', '书签标题');
       const noteInput = document.createElement('textarea'); noteInput.value = bookmark.note || ''; noteInput.placeholder = t('What is this bookmark for?', '这个书签用于记录什么？');
+      let draftColor = normalizedBookmarkColor(bookmark.color);
+      const colorWrap = document.createElement('div'); colorWrap.className = 'bookmark-color-picker';
+      const colorLabel = document.createElement('span'); colorLabel.textContent = t('Color', '颜色'); colorWrap.append(colorLabel);
+      const swatches = document.createElement('div'); swatches.className = 'bookmark-color-swatches';
+      for (const color of BOOKMARK_COLORS) {
+        const swatch = document.createElement('button'); swatch.type = 'button'; swatch.className = 'bookmark-color-swatch'; swatch.dataset.color = color;
+        swatch.classList.toggle('is-active', color === draftColor); swatch.title = color; swatch.setAttribute('aria-label', t(`${color} bookmark`, `${color} 书签`));
+        swatch.addEventListener('click', () => { draftColor = color; swatches.querySelectorAll('.bookmark-color-swatch').forEach((node) => node.classList.toggle('is-active', node.dataset.color === color)); });
+        swatches.append(swatch);
+      }
+      colorWrap.append(swatches);
       const actions = document.createElement('div'); actions.className = 'bookmark-editor-actions';
       const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = t('Cancel', '取消'); cancel.addEventListener('click', () => { editingBookmarkId = null; renderBookmarks(); });
       const save = document.createElement('button'); save.type = 'button'; save.className = 'save'; save.textContent = t('Save', '保存'); save.addEventListener('click', () => {
-        bookmark.title = titleInput.value.trim(); bookmark.note = noteInput.value.trim(); editingBookmarkId = null; persistDocumentState(); renderBookmarks();
+        bookmark.title = titleInput.value.trim(); bookmark.note = noteInput.value.trim(); bookmark.color = draftColor; editingBookmarkId = null; persistDocumentState(); renderBookmarks();
       });
-      actions.append(cancel, save); editor.append(titleInput, noteInput, actions); row.append(editor);
+      actions.append(cancel, save); editor.append(titleInput, noteInput, colorWrap, actions); row.append(editor);
       setTimeout(() => titleInput.focus(), 0);
     }
     bookmarkList.append(row);
@@ -3196,7 +3285,7 @@ function addCurrentBookmark() {
   if (!pdfDoc) return;
   const existing = bookmarks.find((item) => item.page === currentPage);
   if (existing) { editingBookmarkId = existing.id; renderBookmarks(); return; }
-  const item = { id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, page: currentPage, title: '', note: '', created: Date.now() };
+  const item = { id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, page: currentPage, title: '', note: '', color: 'blue', created: Date.now() };
   bookmarks.push(item); editingBookmarkId = item.id;
   persistDocumentState(); renderBookmarks();
 }
@@ -3345,6 +3434,7 @@ zoomIn.addEventListener('click', () => changeZoom(.15));
 zoomOut.addEventListener('click', () => changeZoom(-.15));
 zoomLabel.addEventListener('click', () => setFitMode('fit-width'));
 fitPage.addEventListener('click', () => setFitMode('fit-page'));
+ocrHistoryToggle?.addEventListener('click', () => { ocrHistoryExpanded = !ocrHistoryExpanded; refreshOcrUI(); });
 flowButton.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
 flowSingle?.addEventListener('click', () => setReadingFlow('single'));
 flowContinuous?.addEventListener('click', () => setReadingFlow('continuous'));
@@ -3378,6 +3468,7 @@ searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState()
 pageNote.addEventListener('input', () => {
   if (!pdfDoc) return;
   notes[String(currentPage)] = pageNote.value;
+  scheduleNotePreview();
   noteSaveState.textContent = t('Saving…', '正在保存……');
   clearTimeout(noteTimer);
   noteTimer = setTimeout(() => {
@@ -3560,6 +3651,7 @@ document.addEventListener('visibilitychange', () => {
 loadDisplayPreferences();
 loadSearchPreferences();
 setupWorkspaceCollapsibles();
+scheduleNotePreview();
 mathOcrEngineMode = normalizedOcrEngineMode(mathOcrEngineMode);
 if (ocrEngineSelect) ocrEngineSelect.value = mathOcrEngineMode;
 if (formulaExtractionSelect) formulaExtractionSelect.value = formulaExtractionMode;
