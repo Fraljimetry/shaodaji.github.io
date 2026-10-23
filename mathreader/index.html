@@ -25,7 +25,7 @@
 
   <header class="app-header">
     <div class="brand-group">
-      <a class="brand-mark" href="../research.html" aria-label="Back to Shaoda Ji research page">SJ</a>
+      <a class="brand-mark" href="../index.html" aria-label="Shaoda Ji homepage">SJ</a>
       <div class="product-name">
         <strong>MathReader</strong>
         <span data-en="for mathematical reading" data-zh="数学阅读器">for mathematical reading</span>
@@ -38,7 +38,7 @@
       <button class="icon-button" type="button" id="open-button" data-en-title="Open PDF" data-zh-title="打开 PDF" aria-label="Open PDF">Open</button>
       <button class="icon-button" type="button" id="theme-button" aria-label="Switch theme" title="Switch theme">◐</button>
       <button class="icon-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文">🌐</button>
-      <a class="icon-button home-link" href="../research.html" data-en="Research" data-zh="研究">Research</a>
+      <a class="icon-button home-link" href="../tools.html" data-en="Tools" data-zh="工具">Tools</a>
     </div>
   </header>
 
@@ -50,6 +50,7 @@
         <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录">Contents</button>
         <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索">Search</button>
         <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Saved" data-zh="收藏">Saved</button>
+        <button class="sidebar-tab" type="button" data-panel="history-panel" data-en="History" data-zh="历史">History</button>
       </div>
 
       <section class="sidebar-panel is-active" id="outline-panel">
@@ -81,6 +82,16 @@
         <div class="bookmark-list" id="bookmark-list"></div>
         <div class="empty-panel" id="bookmark-empty" data-en="Bookmark pages you want to return to." data-zh="收藏需要再次查看的页面。">Bookmark pages you want to return to.</div>
       </section>
+
+      <section class="sidebar-panel" id="history-panel">
+        <div class="panel-heading">
+          <span data-en="Local library" data-zh="本地资料库">Local library</span>
+          <span class="count-badge" id="history-count">0</span>
+        </div>
+        <p class="history-explainer" data-en="PDFs and reading sessions cached on this device." data-zh="缓存在本设备上的 PDF 与阅读现场。">PDFs and reading sessions cached on this device.</p>
+        <div class="history-list" id="history-list"></div>
+        <div class="empty-panel" id="history-empty" data-en="Open a PDF once and MathReader will remember it here." data-zh="打开一次 PDF 后，MathReader 会把它记在这里。">Open a PDF once and MathReader will remember it here.</div>
+      </section>
     </aside>
 
     <section class="reader-main" id="reader-stage">
@@ -104,6 +115,7 @@
         </div>
 
         <div class="toolbar-group toolbar-right">
+          <button class="tool-button text-tool ocr-tool-button" type="button" id="math-ocr-button" disabled data-en="Math OCR" data-zh="公式 OCR">Math OCR</button>
           <button class="tool-button text-tool" type="button" id="pin-page" disabled data-en="Pin page" data-zh="固定此页">Pin page</button>
           <button class="tool-button sidebar-toggle" type="button" id="right-toggle" aria-label="Toggle workspace" title="Toggle workspace">▤</button>
         </div>
@@ -117,12 +129,20 @@
           <p class="welcome-copy" data-en="Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website." data-zh="在本地阅读 PDF，把参考页面固定在当前证明旁边，搜索全文并保存阅读位置；PDF 不会上传到本网站。">Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website.</p>
           <button class="welcome-open" type="button" id="welcome-open" data-en="Open PDF" data-zh="打开 PDF">Open PDF</button>
           <p class="drop-hint" data-en="or drop a PDF anywhere in this window" data-zh="或将 PDF 拖入此窗口">or drop a PDF anywhere in this window</p>
+          <section class="welcome-recent is-hidden" id="welcome-recent" aria-label="Recent documents">
+            <div class="welcome-recent-heading">
+              <strong data-en="Recent on this device" data-zh="本设备最近阅读">Recent on this device</strong>
+              <span data-en="Reopens locally — no file picker needed" data-zh="本地直接重新打开，无需再次选文件">Reopens locally — no file picker needed</span>
+            </div>
+            <div class="welcome-recent-list" id="welcome-recent-list"></div>
+          </section>
           <div class="welcome-features">
             <span data-en="Selectable PDF text" data-zh="可选择 PDF 文本">Selectable PDF text</span>
+            <span data-en="Rectangle Math OCR → LaTeX" data-zh="矩形 Math OCR → LaTeX">Rectangle Math OCR → LaTeX</span>
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
-          <p class="privacy-note" data-en="Your PDF stays in your browser. Notes, bookmarks, and reading position are stored locally on this device." data-zh="PDF 仅保留在浏览器中；页注、书签与阅读位置只保存在本设备。">Your PDF stays in your browser. Notes, bookmarks, and reading position are stored locally on this device.</p>
+          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Math OCR runs in your browser; first use downloads a quantized recognition model, but your selected formula image is not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。Math OCR 在浏览器内运行；首次使用会下载量化识别模型，但框选的公式图像不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Math OCR runs in your browser; first use downloads a quantized recognition model, but your selected formula image is not uploaded to this website.</p>
         </section>
 
         <div class="pdf-workspace is-hidden" id="pdf-workspace">
@@ -132,6 +152,7 @@
               <div class="page-surface" id="primary-page-surface">
                 <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
                 <div class="textLayer" id="primary-text-layer" aria-label="Selectable PDF text"></div>
+                <div class="ocr-select-layer" id="primary-ocr-layer" data-kind="primary" aria-label="Math OCR rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
             </div>
           </div>
@@ -149,6 +170,7 @@
               <div class="page-surface" id="reference-page-surface">
                 <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
                 <div class="textLayer" id="reference-text-layer" aria-label="Selectable pinned PDF text"></div>
+                <div class="ocr-select-layer" id="reference-ocr-layer" data-kind="reference" aria-label="Math OCR rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
             </div>
           </div>
@@ -164,6 +186,31 @@
     </section>
 
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <section class="workspace-section ocr-section" id="ocr-section">
+        <div class="panel-heading">
+          <span data-en="Math OCR" data-zh="公式 OCR">Math OCR</span>
+          <span class="page-chip" id="ocr-page-chip">—</span>
+        </div>
+        <p class="workspace-copy" id="ocr-help" data-en="Choose Math OCR, then drag a rectangle around one formula on either PDF page. The crop is recognized locally in your browser and returned as LaTeX." data-zh="点击公式 OCR，然后在任一 PDF 页面上拖出矩形框选一个公式。裁图会在浏览器本地识别并返回 LaTeX。">Choose Math OCR, then drag a rectangle around one formula on either PDF page. The crop is recognized locally in your browser and returned as LaTeX.</p>
+        <div class="ocr-status" id="ocr-status" data-en="Ready. The recognition model loads only when you use Math OCR." data-zh="就绪。只有首次使用公式 OCR 时才会加载识别模型。">Ready. The recognition model loads only when you use Math OCR.</div>
+        <div class="ocr-result is-hidden" id="ocr-result">
+          <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
+          <label data-en="Recognized LaTeX" data-zh="识别出的 LaTeX">Recognized LaTeX</label>
+          <pre id="ocr-latex-preview"></pre>
+          <div class="ocr-actions">
+            <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
+            <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+            <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
+          </div>
+          <p class="selection-caveat" data-en="Formula recognition is machine-generated and should be checked before reuse, especially for dense matrices, long multiline expressions, or unusual notation." data-zh="公式识别结果由模型生成，复用前应核对；对于密集矩阵、较长多行公式或非常用记号尤其如此。">Formula recognition is machine-generated and should be checked before reuse, especially for dense matrices, long multiline expressions, or unusual notation.</p>
+        </div>
+        <div class="ocr-history-block">
+          <div class="panel-heading ocr-history-heading"><span data-en="Recent Math OCR" data-zh="最近公式 OCR">Recent Math OCR</span><span class="count-badge" id="ocr-history-count">0</span></div>
+          <div class="ocr-history-list" id="ocr-history-list"></div>
+          <div class="empty-panel" id="ocr-history-empty" data-en="Recognized formulas from this PDF will be remembered here." data-zh="这份 PDF 中识别过的公式会保存在这里。">Recognized formulas from this PDF will be remembered here.</div>
+        </div>
+      </section>
+
       <section class="workspace-section selection-section">
         <div class="panel-heading">
           <span data-en="Selection" data-zh="选区">Selection</span>
@@ -208,6 +255,7 @@
           <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
           <div><dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
           <div><dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
+          <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle Math OCR" data-zh="矩形公式 OCR">Rectangle Math OCR</dd></div>
         </dl>
       </section>
     </aside>

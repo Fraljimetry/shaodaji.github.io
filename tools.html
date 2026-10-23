@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mathematical software and interactive tools by Shaoda Ji.">
+  <title>Tools | Shaoda Ji</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style-v15.css">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('shaoda-theme');
+        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const lang = localStorage.getItem('shaoda-language') || 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.lang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      } catch (_) {}
+    })();
+  </script>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      chtml: { scale: 1 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body data-title-en="Tools | Shaoda Ji" data-title-zh="工具｜汲绍达" data-description-en="Mathematical software and interactive tools by Shaoda Ji." data-description-zh="汲绍达开发的数学软件与交互工具。">
+<a class="skip-link" href="#main" data-en="Skip to content" data-zh="跳到正文">Skip to content</a>
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="index.html" aria-label="Shaoda Ji homepage">
+      <span class="brand-mark">SJ</span><span class="brand-text" data-en="Shaoda Ji" data-zh="汲绍达">Shaoda Ji</span>
+    </a>
+    <nav id="site-nav" class="nav-links" aria-label="Main navigation"><a href="index.html" data-en="Home" data-zh="首页">Home</a><a href="research.html" data-en="Research" data-zh="研究">Research</a><a href="teaching.html" data-en="Teaching" data-zh="教学">Teaching</a><a href="notes.html" data-en="Notes" data-zh="笔记">Notes</a><a href="tools.html" aria-current="page" data-en="Tools" data-zh="工具">Tools</a><a href="cv.html" data-en="CV" data-zh="简历">CV</a><a href="gallery.html" data-en="Gallery" data-zh="图集">Gallery</a></nav>
+    <div class="nav-controls">
+      <button class="control-button" type="button" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode"><span class="control-icon" data-theme-icon aria-hidden="true">☾</span><span class="control-label" data-theme-label>Dark</span></button>
+      <button class="control-button" type="button" data-language-toggle aria-label="切换到简体中文" title="切换到简体中文"><span class="control-icon" aria-hidden="true">🌐</span><span class="control-label" data-language-label>中文</span></button>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-en="Menu" data-zh="菜单">Menu</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<header class="page-hero"><div class="container">
+  <p class="page-kicker" data-en="Tools" data-zh="工具">Tools</p>
+  <h1 data-en="Mathematical tools for reading and exploration" data-zh="面向数学阅读与探索的工具">Mathematical tools for reading and exploration</h1>
+  <p data-en="Small, focused software for mathematical work. The tools are designed to remain useful without turning the reading or thinking process into a general-purpose productivity interface." data-zh="面向数学工作的轻量专用软件。这些工具强调直接服务于阅读、计算与思考，而不是把数学工作变成通用生产力软件界面。">Small, focused software for mathematical work. The tools are designed to remain useful without turning the reading or thinking process into a general-purpose productivity interface.</p>
+</div></header>
+<section class="section section-rule"><div class="container">
+  <article class="feature">
+    <div class="feature-math"><div class="feature-formula math-tex">\[\int_X f\,\mathrm{d}\mu\]</div></div>
+    <div>
+      <span class="eyebrow" data-en="Reading · notation · local Math OCR" data-zh="阅读 · 记号 · 本地 Math OCR">Reading · notation · local Math OCR</span>
+      <h3 data-en="MathReader" data-zh="MathReader 数学阅读器">MathReader</h3>
+      <p data-en="A local-first PDF reader built for mathematical papers and notes. Select embedded PDF text, keep reference pages beside the current proof, preserve reading history on your device, and draw a rectangle around a formula to extract LaTeX with in-browser Math OCR." data-zh="面向数学论文与讲义的本地优先 PDF 阅读器。可选择 PDF 原生文本、把参考页面固定在当前证明旁、在本设备保存完整阅读历史，并可用矩形框选公式，通过浏览器内 Math OCR 提取 LaTeX。">A local-first PDF reader built for mathematical papers and notes. Select embedded PDF text, keep reference pages beside the current proof, preserve reading history on your device, and draw a rectangle around a formula to extract LaTeX with in-browser Math OCR.</p>
+      <div class="feature-links"><a href="mathreader/" class="button primary" data-en="Open MathReader" data-zh="打开 MathReader">Open MathReader</a></div>
+    </div>
+  </article>
+</div></section>
+<section class="section section-rule"><div class="container">
+  <div class="section-head"><h2 data-en="Design principle" data-zh="设计原则">Design principle</h2><p data-en="Tools should stay mathematically specific, quiet, and inspectable." data-zh="工具应保持数学专用、克制，并让用户能够检查其结果。">Tools should stay mathematically specific, quiet, and inspectable.</p></div>
+  <div class="cards">
+    <article class="card"><span class="meta" data-en="Local first" data-zh="本地优先">Local first</span><h3 data-en="Keep work on the device" data-zh="工作保留在本设备">Keep work on the device</h3><p data-en="Reader history, notes, cached PDFs, and Math OCR inputs stay local whenever the browser permits it." data-zh="在浏览器允许的范围内，阅读历史、笔记、缓存 PDF 与 Math OCR 输入都保留在本设备。">Reader history, notes, cached PDFs, and Math OCR inputs stay local whenever the browser permits it.</p></article>
+    <article class="card"><span class="meta" data-en="Mathematical" data-zh="数学专用">Mathematical</span><h3 data-en="Work with formulas and references" data-zh="围绕公式与引用工作">Work with formulas and references</h3><p data-en="The interface is organized around pages, formulas, notation, proof references, and reusable LaTeX rather than generic document editing." data-zh="界面围绕页面、公式、记号、证明引用与可复用 LaTeX 组织，而不是通用文档编辑。">The interface is organized around pages, formulas, notation, proof references, and reusable LaTeX rather than generic document editing.</p></article>
+    <article class="card"><span class="meta" data-en="Expandable" data-zh="可扩展">Expandable</span><h3 data-en="More tools can live here" data-zh="未来工具可继续加入">More tools can live here</h3><p data-en="This section is intentionally independent of Research so future mathematical utilities can be added without changing the structure of the academic pages." data-zh="该栏目与 Research 独立，今后可以继续加入数学工具，而无需改变学术页面的结构。">This section is intentionally independent of Research so future mathematical utilities can be added without changing the structure of the academic pages.</p></article>
+  </div>
+</div></section>
+</main>
+<footer class="site-footer"><div class="container footer-grid">
+  <div data-en="© <span data-year></span> Shaoda Ji" data-zh="© <span data-year></span> 汲绍达">© <span data-year></span> Shaoda Ji</div>
+  <div class="footer-links"><a href="mailto:frankjiiiiiiii@gmail.com" data-en="Email" data-zh="邮件">Email</a><a href="https://math.washington.edu/people/shaoda-ji" data-en="UW profile" data-zh="华大主页">UW profile</a><a href="https://space.bilibili.com/355884223" data-en="Bilibili" data-zh="哔哩哔哩">Bilibili</a></div>
+</div></footer>
+<script src="assets/js/main-v15.js"></script>
+</body></html>
