@@ -55,6 +55,7 @@ const welcomeRecentList = el('welcome-recent-list');
 const outlineList = el('outline-list');
 const outlineEmpty = el('outline-empty');
 const outlineCount = el('outline-count');
+const outlineSource = el('outline-source');
 const searchForm = el('search-form');
 const searchInput = el('search-input');
 const searchStatus = el('search-status');
@@ -159,6 +160,8 @@ let displayBrightness = 96;
 let displayContrast = 96;
 let displayGap = 20;
 let displayShadow = true;
+let inferredOutline = [];
+let outlineMode = 'none';
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -360,6 +363,7 @@ function snapshotSession() {
     selection: currentSelection,
     ocrResult: currentOcrResult,
     ocrHistory,
+    inferredOutline,
     searchQuery: searchInput?.value || '',
     ui: {
       activePanel: activePanelId(),
@@ -525,6 +529,7 @@ function applyLanguage(lang, persist = true) {
   updateZoomLabel();
   updateDisplayControls();
   updateOcrCapability();
+  updateOutlineSource();
   renderBookmarks();
   renderLocalLibrary();
   refreshSelectionUI();
@@ -553,6 +558,8 @@ function loadDocumentState(cachedSession = null) {
   currentSelection = null;
   currentOcrResult = null;
   ocrHistory = [];
+  inferredOutline = [];
+  outlineMode = 'none';
   zoomMode = 'fit-width';
   zoomScale = 1.2;
   searchInput.value = '';
@@ -580,6 +587,7 @@ function loadDocumentState(cachedSession = null) {
     currentSelection = session.selection?.text ? session.selection : null;
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
+    inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
     shell.classList.toggle('right-collapsed', Boolean(session.ui?.rightCollapsed));
@@ -816,6 +824,7 @@ function friendlyOcrError(error, backend = null) {
   if (/out of memory|allocation|memory/.test(lower)) return t('The OCR model ran out of browser memory. Close other heavy tabs or switch OCR Engine to Compatibility · CPU.', '公式 OCR 模型的浏览器内存不足。请关闭其他占用较大的标签页，或将识别引擎切换到“兼容模式 · CPU”。');
   if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
   if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader now uses the TexTeller3 browser model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 现已改用浏览器版 TexTeller3 模型。');
+  if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The OCR image preprocessor rejected the selected region. MathReader expected a single-channel grayscale formula crop. Reload the page; if this persists, report the exact message.', '公式 OCR 图像预处理拒绝了框选区域。MathReader 应将公式裁图转换为单通道灰度图。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
   if (/scale|dequant|onnx|session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize. Try the other OCR Engine mode and press Reload engine.`, `${backend?.label || 'ONNX'} 引擎初始化失败。请切换另一种识别引擎模式，然后点击“重新加载引擎”。`);
   return raw || t('Math OCR failed to initialize.', '公式 OCR 初始化失败。');
 }
@@ -872,6 +881,16 @@ async function ensureMathOcrPipeline() {
   }
 }
 
+
+async function prepareMathOcrInput(canvas) {
+  if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
+  const { RawImage } = await mathOcrModulePromise;
+  if (!RawImage?.fromCanvas) throw new Error('Math OCR image utilities are unavailable.');
+  const image = RawImage.fromCanvas(canvas);
+  image.grayscale();
+  return image;
+}
+
 function cropSelectedFormula(sourceCanvas, layer, rect) {
   const layerRect = layer.getBoundingClientRect();
   const canvasRect = sourceCanvas.getBoundingClientRect();
@@ -907,7 +926,8 @@ async function recognizeMathCrop(crop, page, kind) {
     const pipe = await ensureMathOcrPipeline();
     mathOcrLoading = true;
     setOcrStatus(t('Recognizing formula locally…', '正在本地识别公式……'), true);
-    const output = await pipe(crop, { max_new_tokens: 384 });
+    const inputImage = await prepareMathOcrInput(crop);
+    const output = await pipe(inputImage, { max_new_tokens: 384 });
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const latex = normalizeOcrLatex(raw);
     if (!latex) throw new Error(t('The model returned no LaTeX for this region.', '模型没有为该区域返回 LaTeX。'));
@@ -1401,37 +1421,223 @@ function flattenOutline(items, depth = 0, output = []) {
   return output;
 }
 
+function updateOutlineSource() {
+  if (!outlineSource) return;
+  outlineSource.classList.toggle('is-hidden', outlineMode === 'none');
+  if (outlineMode === 'embedded') {
+    outlineSource.textContent = t('Embedded PDF outline', 'PDF 嵌入式目录');
+  } else if (outlineMode === 'inferred') {
+    outlineSource.textContent = t('Detected outline · inferred from page typography and numbering', '自动检测目录 · 根据页面字号与编号推断');
+  } else {
+    outlineSource.textContent = '';
+  }
+}
+
+function normalizedHeadingText(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
+}
+
+function weightedMedianFont(samples) {
+  const values = samples
+    .filter((sample) => Number.isFinite(sample.size) && sample.size > 3 && sample.size < 80 && sample.weight > 0)
+    .sort((a, b) => a.size - b.size);
+  if (!values.length) return 10;
+  const total = values.reduce((sum, sample) => sum + sample.weight, 0);
+  let acc = 0;
+  for (const sample of values) {
+    acc += sample.weight;
+    if (acc >= total / 2) return sample.size;
+  }
+  return values[values.length - 1].size;
+}
+
+function headingNumberDepth(text) {
+  const match = text.match(/^\s*(?:§\s*)?(\d+(?:\.\d+){0,4})[.)]?\s+\S/);
+  if (!match) return null;
+  return Math.min(3, match[1].split('.').length - 1);
+}
+
+function isKnownHeading(text) {
+  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|appendix(?:\s+[A-Z0-9]+)?|contents)$/i.test(text.trim());
+}
+
+function isMathEnvironmentLabel(text) {
+  return /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|proof)\b/i.test(text.trim());
+}
+
+function headingDepthFromStyle(line, bodySize) {
+  const numbered = headingNumberDepth(line.text);
+  if (numbered !== null) return numbered;
+  if (/^appendix\b/i.test(line.text)) return 0;
+  const ratio = line.size / Math.max(1, bodySize);
+  if (ratio >= 1.55) return 0;
+  if (ratio >= 1.30) return 1;
+  return 2;
+}
+
+async function detectOutlineFromTypography() {
+  const pages = [];
+  const fontSamples = [];
+  const repeatMap = new Map();
+  const maxPages = Math.min(pdfDoc.numPages, 600);
+
+  for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 1 });
+    const content = await page.getTextContent();
+    const items = [];
+    for (const item of content.items || []) {
+      const text = normalizedHeadingText(item.str);
+      if (!text) continue;
+      const tr = item.transform || [1, 0, 0, 1, 0, 0];
+      const size = Math.max(1, Math.hypot(Number(tr[0]) || 0, Number(tr[1]) || 0) || Number(item.height) || 1);
+      const x = Number(tr[4]) || 0;
+      const y = Number(tr[5]) || 0;
+      items.push({ text, size, x, y, width: Number(item.width) || 0, fontName: item.fontName || '' });
+      fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
+    }
+    items.sort((a, b) => Math.abs(b.y - a.y) > 1.5 ? b.y - a.y : a.x - b.x);
+    const lines = [];
+    for (const item of items) {
+      let line = lines.find((candidate) => Math.abs(candidate.y - item.y) <= Math.max(1.8, item.size * 0.22));
+      if (!line) {
+        line = { page: pageNum, y: item.y, x: item.x, items: [], size: item.size, pageHeight: viewport.height };
+        lines.push(line);
+      }
+      line.items.push(item);
+      line.size = Math.max(line.size, item.size);
+      line.x = Math.min(line.x, item.x);
+    }
+    for (const line of lines) {
+      line.items.sort((a, b) => a.x - b.x);
+      line.text = normalizedHeadingText(line.items.map((item) => item.text).join(' '));
+      line.normalized = line.text.toLocaleLowerCase().replace(/\d+/g, '#').replace(/[^\p{L}#]+/gu, ' ').trim();
+      if (line.normalized) {
+        const key = line.normalized;
+        const record = repeatMap.get(key) || { pages: new Set(), top: 0, bottom: 0 };
+        record.pages.add(pageNum);
+        if (line.y > viewport.height * 0.88) record.top += 1;
+        if (line.y < viewport.height * 0.10) record.bottom += 1;
+        repeatMap.set(key, record);
+      }
+    }
+    pages.push(lines);
+  }
+
+  const bodySize = weightedMedianFont(fontSamples);
+  const candidates = [];
+  for (const lines of pages) {
+    for (const line of lines) {
+      const text = line.text;
+      if (!text || text.length < 2 || text.length > 125) continue;
+      const words = text.split(/\s+/).filter(Boolean);
+      if (words.length > 18) continue;
+      const numberedDepth = headingNumberDepth(text);
+      const known = isKnownHeading(text);
+      const ratio = line.size / Math.max(1, bodySize);
+      const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(text);
+      if (!known && numberedDepth === null && !styleHeading) continue;
+      if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
+      if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
+
+      const repetition = repeatMap.get(line.normalized);
+      const repeatedOn = repetition?.pages?.size || 0;
+      const likelyRunningHeader = repeatedOn >= 3 && repeatedOn >= Math.max(3, Math.ceil(maxPages * 0.25)) && ((repetition?.top || 0) + (repetition?.bottom || 0) >= repeatedOn * 0.7);
+      if (likelyRunningHeader) continue;
+
+      candidates.push({
+        title: text,
+        page: line.page,
+        depth: headingDepthFromStyle(line, bodySize),
+        size: Number(line.size.toFixed(2)),
+        y: line.y
+      });
+    }
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const candidate of candidates.sort((a, b) => a.page - b.page || b.y - a.y)) {
+    const key = `${candidate.page}:${candidate.title.toLocaleLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(candidate);
+  }
+  return deduped.slice(0, 240);
+}
+
+function renderInferredOutline(entries) {
+  outlineList.replaceChildren();
+  outlineCount.textContent = String(entries.length);
+  outlineEmpty.classList.toggle('is-hidden', entries.length > 0);
+  if (!entries.length) {
+    outlineMode = 'none';
+    updateOutlineSource();
+    outlineEmpty.textContent = t('No reliable document headings were detected.', '未检测到足够可靠的文档标题。');
+    return;
+  }
+  outlineMode = 'inferred';
+  updateOutlineSource();
+  for (const entry of entries) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'outline-item';
+    button.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
+    button.textContent = entry.title;
+    button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
+    button.addEventListener('click', () => goToPage(entry.page));
+    outlineList.append(button);
+  }
+}
+
 async function renderOutline() {
   outlineList.replaceChildren();
+  outlineMode = 'none';
+  updateOutlineSource();
   if (!pdfDoc) return;
   try {
     const outline = await pdfDoc.getOutline();
     const flat = flattenOutline(outline);
-    outlineCount.textContent = flat.length;
-    outlineEmpty.classList.toggle('is-hidden', flat.length > 0);
-    if (!flat.length) {
-      outlineEmpty.textContent = t('This PDF does not contain an embedded outline.', '此 PDF 没有嵌入式目录。');
+    if (flat.length) {
+      outlineMode = 'embedded';
+      updateOutlineSource();
+      outlineCount.textContent = flat.length;
+      outlineEmpty.classList.add('is-hidden');
+      for (const { item, depth } of flat) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'outline-item';
+        button.dataset.depth = String(depth);
+        button.textContent = item.title || t('Untitled', '未命名');
+        button.addEventListener('click', async () => {
+          try {
+            let dest = item.dest;
+            if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
+            if (!Array.isArray(dest)) return;
+            const pageIndex = await pdfDoc.getPageIndex(dest[0]);
+            await goToPage(pageIndex + 1);
+          } catch (error) { console.error(error); }
+        });
+        outlineList.append(button);
+      }
       return;
     }
-    for (const { item, depth } of flat) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'outline-item';
-      button.dataset.depth = String(depth);
-      button.textContent = item.title || t('Untitled', '未命名');
-      button.addEventListener('click', async () => {
-        try {
-          let dest = item.dest;
-          if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
-          if (!Array.isArray(dest)) return;
-          const pageIndex = await pdfDoc.getPageIndex(dest[0]);
-          await goToPage(pageIndex + 1);
-        } catch (error) { console.error(error); }
-      });
-      outlineList.append(button);
+
+    outlineEmpty.classList.remove('is-hidden');
+    outlineEmpty.textContent = t('No embedded outline. Detecting document structure…', '没有嵌入式目录，正在自动检测文档结构……');
+    if (!inferredOutline.length) {
+      inferredOutline = await detectOutlineFromTypography();
+      persistDocumentState();
     }
+    renderInferredOutline(inferredOutline);
   } catch (error) {
-    outlineEmpty.textContent = t('The document outline could not be read.', '无法读取文档目录。');
+    outlineMode = 'none';
+    updateOutlineSource();
+    outlineEmpty.classList.remove('is-hidden');
+    outlineEmpty.textContent = t('The document outline could not be read or detected.', '无法读取或自动检测文档目录。');
     console.error(error);
   }
 }
