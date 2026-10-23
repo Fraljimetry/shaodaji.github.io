@@ -1,7 +1,7 @@
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
 const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
-const MATH_OCR_MODEL = 'onnx-community/TexTeller-ONNX';
+const MATH_OCR_MODEL = 'onnx-community/TexTeller3-ONNX';
 const LOCAL_DB_NAME = 'mathreader-local-v1';
 const LOCAL_DB_VERSION = 1;
 
@@ -815,7 +815,7 @@ function friendlyOcrError(error, backend = null) {
   const lower = raw.toLowerCase();
   if (/out of memory|allocation|memory/.test(lower)) return t('The OCR model ran out of browser memory. Close other heavy tabs or switch OCR Engine to Compatibility · CPU.', '公式 OCR 模型的浏览器内存不足。请关闭其他占用较大的标签页，或将识别引擎切换到“兼容模式 · CPU”。');
   if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
-  if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。');
+  if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader now uses the TexTeller3 browser model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 现已改用浏览器版 TexTeller3 模型。');
   if (/scale|dequant|onnx|session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize. Try the other OCR Engine mode and press Reload engine.`, `${backend?.label || 'ONNX'} 引擎初始化失败。请切换另一种识别引擎模式，然后点击“重新加载引擎”。`);
   return raw || t('Math OCR failed to initialize.', '公式 OCR 初始化失败。');
 }
@@ -823,7 +823,7 @@ function friendlyOcrError(error, backend = null) {
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
   mathOcrLoading = true;
-  setOcrStatus(t('Loading the local Math OCR engine…', '正在加载本地公式 OCR 引擎……'), true);
+  setOcrStatus(t('Loading the local Math OCR engine (TexTeller3)…', '正在加载本地公式 OCR 引擎（TexTeller3）……'), true);
   try {
     if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
     const { pipeline } = await mathOcrModulePromise;
@@ -843,7 +843,7 @@ async function ensureMathOcrPipeline() {
               const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
               setOcrStatus(t(`Downloading Math OCR model (${backend.label})… ${Math.round(percent)}%`, `正在下载公式 OCR 模型（${backend.label}）…… ${Math.round(percent)}%`), true);
             } else if (info.status === 'initiate' || info.status === 'download') {
-              setOcrStatus(t(`First use: downloading Math OCR model for ${backend.label}…`, `首次使用：正在下载 ${backend.label} 公式 OCR 模型……`), true);
+              setOcrStatus(t(`First use: downloading the TexTeller3 Math OCR model for ${backend.label}…`, `首次使用：正在下载 ${backend.label} 的 TexTeller3 公式 OCR 模型……`), true);
             }
           }
         });

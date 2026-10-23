@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">MathReader tool icon</title>
+  <desc id="desc">An abstract academic icon combining a document with a magnifying glass.</desc>
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff" stop-opacity="0.96"/>
+      <stop offset="100%" stop-color="#dbe8f4" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ecf6ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#adc7de" stop-opacity="0.78"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" fill-rule="evenodd">
+    <path d="M73 38h67l27 27v111c0 11-9 20-20 20H73c-11 0-20-9-20-20V58c0-11 9-20 20-20Z" fill="url(#panel)" opacity="0.96"/>
+    <path d="M140 38v29h27" stroke="#e8f4ff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+    <path d="M87 93h47M87 116h47M87 139h35" stroke="#7aa4c2" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+    <circle cx="148" cy="145" r="34" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.95" stroke-width="10"/>
+    <path d="m172 169 23 23" stroke="#f7fbff" stroke-width="11" stroke-linecap="round"/>
+    <circle cx="148" cy="145" r="18" stroke="#6e97b7" stroke-width="7" opacity="0.8"/>
+  </g>
+</svg>
