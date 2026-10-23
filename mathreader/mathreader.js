@@ -1045,12 +1045,13 @@ function latexifyVectorText(text) {
     .replace(/\s+([,.;:)\]])/g, '$1')
     .replace(/([(\[])\s+/g, '$1')
     .replace(/\s{2,}/g, ' ')
+    .replace(/^\\(?:cap|cup)\s+/, '')
     .trim();
 }
 
 function vectorOperatorName(text) {
   const value = String(text || '').trim();
-  return ['sup','inf','lim','max','min'].includes(value) ? value : null;
+  return ['sup','inf','lim','limsup','liminf','max','min'].includes(value) ? value : null;
 }
 
 function vectorLimitOperatorInfo(token) {
@@ -1121,7 +1122,7 @@ function vectorRowSegments(row, baseHeight) {
 
 function vectorTokenFromRect(text, r, layerRect) {
   return {
-    text,
+    text: cleanPdfGlyphText(text),
     left: r.left - layerRect.left,
     right: r.right - layerRect.left,
     top: r.top - layerRect.top,
@@ -1188,6 +1189,7 @@ function dominantVectorHeight(tokens) {
 
 function mergeVectorGlyphWords(tokens, baseHeight) {
   if (!tokens.length) return [];
+  tokens = tokens.map((token) => ({ ...token, text: cleanPdfGlyphText(token.text) }));
   const rows = vectorRows(tokens, Math.max(1.5, baseHeight * 0.22));
   const merged = [];
   const canMergeChar = (text) => /^[A-Za-z0-9]$/.test(text);
@@ -1233,7 +1235,7 @@ function vectorSegmentWithScripts(segment, pool, baseHeight, excluded = new Set(
   for (const token of pool) {
     if (result.includes(token) || excluded.has(token) || token.height >= baseHeight * 0.84) continue;
     if (token.left < segment.left - baseHeight * 0.18 || token.left > segment.right + baseHeight * 0.95) continue;
-    if (token.centerY < segment.top - baseHeight * 0.82 || token.centerY > segment.bottom + baseHeight * 0.95) continue;
+    if (token.centerY < segment.top - baseHeight * 0.62 || token.centerY > segment.bottom + baseHeight * 0.62) continue;
     const nearBase = segment.tokens.some((base) => token.left >= base.left - baseHeight * 0.10 && token.left <= base.right + baseHeight * 1.0);
     if (nearBase) result.push(token);
   }
@@ -1242,13 +1244,14 @@ function vectorSegmentWithScripts(segment, pool, baseHeight, excluded = new Set(
 
 function vectorTokenLatex(token) {
   if (token.syntheticLatex) return token.syntheticLatex;
-  const raw = String(token.text || '').trim();
+  const raw = cleanPdfGlyphText(String(token.text || '')).trim();
   const operator = vectorOperatorName(raw);
   if (operator) return `\\${operator}`;
-  const namedOperators = new Set(['Area','Vol','div','grad','curl','det','tr','rank','Ric','Ricci','Scal','Hess','supp','dist','diam']);
+  const namedOperators = new Set(['Area','Vol','div','grad','curl','det','tr','rank','Ric','Ricci','Scal','Hess','supp','dist','diam','Rot','Res','Cov','Pf','Log','arg']);
   if (namedOperators.has(raw)) return `\\operatorname{${raw}}`;
   const standardFunctions = new Set(['sin','cos','tan','cot','sec','csc','sinh','cosh','tanh','log','ln','exp']);
   if (standardFunctions.has(raw)) return `\\${raw}`;
+  if (raw === 'd') return '\\,\\mathrm{d}';
   if (/^d[A-Za-z]$/.test(raw)) return `\\,\\mathrm{d}${raw.slice(1)}`;
   return latexifyVectorText(raw);
 }
@@ -1272,6 +1275,9 @@ function normalizeVectorDelimiters(latex) {
     .replace(/}\s+\(/g, '}(')
     .replace(/\s*\\(subsetneq|subseteq|supseteq|notin|approx|cong|equiv|mapsto|subset|supset|cap|cup|le|ge|ne|sim|ni|in|to)(?![A-Za-z])\s*/g, ' \\$1 ')
     .replace(/\\cdot\s+\\cdot\s+\\cdot/g, '\\cdots')
+    .replace(/\\sim\s*=|\\sim\s*\\equiv/g, '\\cong')
+    .replace(/\\not\s*=/g, '\\ne')
+    .replace(/^\\(?:cap|cup)\s+/, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -1281,7 +1287,7 @@ function parseVectorInline(tokens, baseHeight, overrides = new Map()) {
   const usable = [...tokens].sort((a, b) => (a.left - b.left) || (a.centerY - b.centerY));
   const localMaxHeight = Math.max(...usable.map((token) => token.syntheticLatex ? baseHeight : token.height));
   const localLargeHeights = usable
-    .filter((token) => token.syntheticLatex || token.height >= localMaxHeight * 0.70)
+    .filter((token) => token.syntheticLatex || token.height >= localMaxHeight * 0.82)
     .map((token) => token.syntheticLatex ? baseHeight : token.height);
   const referenceHeight = median(localLargeHeights) || baseHeight || localMaxHeight;
   const large = usable.filter((token) => token.syntheticLatex || token.height >= referenceHeight * 0.80);
@@ -1290,7 +1296,8 @@ function parseVectorInline(tokens, baseHeight, overrides = new Map()) {
   const bases = usable.filter((token) => {
     if (token.syntheticLatex) return true;
     const verticalOffset = Math.abs(token.centerY - localCenter);
-    if (verticalOffset <= referenceHeight * 0.22) return true;
+    if (token.height < referenceHeight * 0.82 && verticalOffset >= referenceHeight * 0.09) return false;
+    if (verticalOffset <= referenceHeight * 0.20) return true;
     return token.height >= referenceHeight * 0.88 && verticalOffset <= referenceHeight * 0.42;
   });
   const scripts = usable.filter((token) => !bases.includes(token));
@@ -1366,8 +1373,9 @@ function parseVectorInline(tokens, baseHeight, overrides = new Map()) {
 
     if (previousRight !== null) {
       const gap = base.left - previousRight;
-      const wordLike = /^[A-Za-z]/.test(base.text || '') && /[A-Za-z]$/.test(latex);
-      const controlWordBoundary = /^[A-Za-z]/.test(base.text || '') && /\\[A-Za-z]+$/.test(latex);
+      const valueStartsLetter = /^[A-Za-z]/.test(value);
+      const wordLike = valueStartsLetter && /[A-Za-z]$/.test(latex);
+      const controlWordBoundary = valueStartsLetter && /\\[A-Za-z]+$/.test(latex);
       if (controlWordBoundary || gap > referenceHeight * 0.48 || (wordLike && gap > referenceHeight * 0.16)) latex += ' ';
     }
     latex += value;
@@ -1383,7 +1391,7 @@ function vectorFindLimitSegment(rows, op, direction, baseHeight, usedSegments = 
     if (direction === 'lower' && (delta <= baseHeight * 0.10 || delta > baseHeight * 2.6)) continue;
     if (direction === 'upper' && (delta >= -baseHeight * 0.10 || delta < -baseHeight * 2.6)) continue;
     for (const segment of vectorRowSegments(row, baseHeight)) {
-      if (usedSegments.has(segment)) continue;
+      if (usedSegments.has(segment) || segment.tokens.includes(op)) continue;
       const horizontalNear = segment.left <= op.right + baseHeight * 2.0 && segment.right >= op.left - baseHeight * 0.65;
       if (!horizontalNear) continue;
       const centerDistance = Math.abs(segment.centerX - op.centerX);
@@ -1422,24 +1430,23 @@ function vectorAccentCommand(text) {
 
 function vectorBuildAccentTokens(tokens, mainRow, baseHeight, consumed) {
   const synthetic = [];
-  const mainTokens = mainRow.tokens;
-  const accents = tokens.filter((token) => !mainTokens.includes(token)
-    && !consumed.has(token)
+  const accents = tokens.filter((token) => !consumed.has(token)
     && vectorAccentCommand(token.text)
-    && token.centerY < mainRow.centerY - baseHeight * 0.12
-    && token.centerY > mainRow.centerY - baseHeight * 1.55);
+    && Math.abs(token.centerY - mainRow.centerY) <= baseHeight * 1.05);
   for (const accent of accents) {
     const command = vectorAccentCommand(accent.text);
-    const candidates = mainTokens.filter((token) => token.left <= accent.right + baseHeight * 0.65
-      && token.right >= accent.left - baseHeight * 0.65);
-    if (!candidates.length) continue;
-    candidates.sort((a, b) => a.left - b.left);
-    const left = candidates[0].left;
-    const right = candidates[candidates.length - 1].right;
-    // A narrow accent normally belongs to one symbol; a wide accent may span
-    // a short expression such as \widehat{\Delta f}.
-    const centered = candidates.filter((token) => token.centerX >= accent.left - baseHeight * 0.12 && token.centerX <= accent.right + baseHeight * 0.12);
-    const targets = centered.length ? centered : [candidates.reduce((best, token) => Math.abs(token.centerX - accent.centerX) < Math.abs(best.centerX - accent.centerX) ? token : best, candidates[0])];
+    const pad = accent.width <= baseHeight * 0.8 ? baseHeight * 0.10 : baseHeight * 0.18;
+    let targets = tokens.filter((token) => token !== accent
+      && !vectorAccentCommand(token.text)
+      && !consumed.has(token)
+      && token.centerX >= accent.left - pad
+      && token.centerX <= accent.right + pad
+      && Math.abs(token.centerY - mainRow.centerY) <= baseHeight * 0.72);
+    if (!targets.length) continue;
+    if (accent.width <= baseHeight * 0.8 && targets.length > 1) {
+      targets = [targets.reduce((best, token) => Math.abs(token.centerX - accent.centerX) < Math.abs(best.centerX - accent.centerX) ? token : best, targets[0])];
+    }
+    targets.sort((a, b) => a.left - b.left);
     const latex = parseVectorInline(targets, baseHeight);
     if (!latex) continue;
     targets.forEach((token) => consumed.add(token));
@@ -1449,25 +1456,25 @@ function vectorBuildAccentTokens(tokens, mainRow, baseHeight, consumed) {
       text: `${accent.text}${targets.map((token) => token.text).join('')}`,
       left: Math.min(...targets.map((token) => token.left)),
       right: Math.max(...targets.map((token) => token.right)),
-      top: accent.top,
+      top: Math.min(accent.top, ...targets.map((token) => token.top)),
       bottom: Math.max(...targets.map((token) => token.bottom)),
       width: Math.max(...targets.map((token) => token.right)) - Math.min(...targets.map((token) => token.left)),
       height: baseHeight,
-      centerX: (left + right) / 2,
+      centerX: (Math.min(...targets.map((token) => token.left)) + Math.max(...targets.map((token) => token.right))) / 2,
       centerY: mainRow.centerY
     });
   }
   return synthetic;
 }
 
-function extractVectorFormulaFromTokens(tokens, allowMultiline = true) {
+function extractVectorFormulaFromTokens(tokens, allowMultiline = true, baseHeightHint = 0) {
   if (!tokens?.length) return null;
-  const baseHeight = dominantVectorHeight(tokens) || median(tokens.map((token) => token.height));
+  const baseHeight = baseHeightHint || dominantVectorHeight(tokens) || median(tokens.map((token) => token.height));
   if (!baseHeight) return null;
   const baseRows = vectorRows(tokens.filter((token) => token.height >= baseHeight * 0.68), Math.max(1.8, baseHeight * 0.28));
 
   if (allowMultiline) {
-    const relationRows = baseRows.filter(vectorRelationRow).sort((a, b) => a.centerY - b.centerY);
+    const relationRows = baseRows.filter((row) => vectorRelationRow(row) && median(row.tokens.map((token) => token.height)) >= baseHeight * 0.82).sort((a, b) => a.centerY - b.centerY);
     const distinct = relationRows.filter((row, index) => index === 0 || Math.abs(row.centerY - relationRows[index - 1].centerY) > baseHeight * 0.62);
     if (distinct.length >= 2) {
       const parsed = [];
@@ -1476,7 +1483,7 @@ function extractVectorFormulaFromTokens(tokens, allowMultiline = true) {
         const topBoundary = index === 0 ? -Infinity : (distinct[index - 1].centerY + row.centerY) / 2;
         const bottomBoundary = index === distinct.length - 1 ? Infinity : (row.centerY + distinct[index + 1].centerY) / 2;
         const slice = tokens.filter((token) => token.centerY > topBoundary && token.centerY <= bottomBoundary);
-        const result = extractVectorFormulaFromTokens(slice, false);
+        const result = extractVectorFormulaFromTokens(slice, false, baseHeight);
         if (result?.latex) parsed.push(result);
       }
       if (parsed.length >= 2) {
@@ -1509,7 +1516,10 @@ function extractVectorFormulaFromTokens(tokens, allowMultiline = true) {
 
   const allRows = vectorRows(tokens.filter((token) => !mainRow.tokens.includes(token) && !consumed.has(token)), Math.max(1.8, baseHeight * 0.30));
   const usedLimitSegments = new Set();
-  for (const op of mainRow.tokens.filter((token) => vectorLimitOperatorInfo(token))) {
+  const syntheticOperators = [];
+  const operatorTokens = tokens.filter((token) => vectorLimitOperatorInfo(token)
+    && Math.abs(token.centerY - mainCenter) <= baseHeight * 1.55);
+  for (const op of operatorTokens) {
     const info = vectorLimitOperatorInfo(op);
     const lowerSegment = vectorFindLimitSegment(allRows, op, 'lower', baseHeight, usedLimitSegments);
     const upperSegment = vectorFindLimitSegment(allRows, op, 'upper', baseHeight, usedLimitSegments);
@@ -1527,11 +1537,32 @@ function extractVectorFormulaFromTokens(tokens, allowMultiline = true) {
       upperTokens.forEach((token) => consumed.add(token));
       upperLatex = parseVectorInline(upperTokens, baseHeight * 0.78);
     }
+    if (['∫','∬','∭','∮'].includes(info.raw)) {
+      const compactLower = lowerLatex.replace(/\s+/g, '');
+      if (/^Rn$/.test(compactLower) || /^R\^\{?n\}?$/.test(compactLower)) lowerLatex = '\\mathbb{R}^{n}';
+      else if (compactLower === 'R') lowerLatex = '\\mathbb{R}';
+    }
     let command = info.latex;
     if ((info.raw === '∪' || info.raw === '∩') && (lowerLatex || upperLatex)) command = info.raw === '∪' ? '\\bigcup' : '\\bigcap';
     if (lowerLatex) command += `_{${lowerLatex}}`;
     if (upperLatex) command += `^{${upperLatex}}`;
-    if (lowerLatex || upperLatex || vectorOperatorName(info.raw) || ['∫','∬','∭','∮','∑','∏','⋃','⋂'].includes(info.raw)) overrides.set(op, command);
+    if (mainRow.tokens.includes(op)) {
+      if (lowerLatex || upperLatex || vectorOperatorName(info.raw) || ['∫','∬','∭','∮','∑','∏','⋃','⋂'].includes(info.raw)) overrides.set(op, command);
+    } else {
+      consumed.add(op);
+      syntheticOperators.push({
+        syntheticLatex: command,
+        text: op.text,
+        left: op.left,
+        right: op.right,
+        top: mainCenter - baseHeight / 2,
+        bottom: mainCenter + baseHeight / 2,
+        width: op.width,
+        height: baseHeight,
+        centerX: op.centerX,
+        centerY: mainCenter
+      });
+    }
   }
 
   const reservedMainScripts = tokens.filter((token) => {
@@ -1587,14 +1618,19 @@ function extractVectorFormulaFromTokens(tokens, allowMultiline = true) {
     });
   }
 
-  const mainTokens = [...mainRow.tokens.filter((token) => !consumed.has(token)), ...syntheticAccents, ...syntheticFractions];
+  const mainTokens = [...mainRow.tokens.filter((token) => !consumed.has(token)), ...syntheticOperators, ...syntheticAccents, ...syntheticFractions];
   const remainingScripts = tokens.filter((token) => !mainRow.tokens.includes(token) && !consumed.has(token));
   let latex = parseVectorInline([...mainTokens, ...remainingScripts], baseHeight, overrides).replace(/\s+/g, ' ').trim();
   latex = latex
     .replace(/\\operatorname\{Ricci\}/g, '\\operatorname{Ric}')
     .replace(/\\operatorname\{Ric\}\s*([_^]\{)/g, '\\operatorname{Ric}$1')
+    .replace(/^\\(?:cap|cup)\s+/, '')
+    .replace(/\\cdot\s*\\cdot\s*\\cdot/g, '\\cdots')
     .replace(/\\bigcup\s+/g, '\\bigcup ')
-    .replace(/\\bigcap\s+/g, '\\bigcap ');
+    .replace(/\\bigcap\s+/g, '\\bigcap ')
+    .replace(/\\(cong|sim)(?=[A-Z])/g, '\\$1 ')
+    .replace(/(^|[\s,;)\]}])d(?=[xyztsruvw](?:\b|[),.;]))/g, '$1\\,\\mathrm{d}')
+    .replace(/(^|[\s,;)\]}])d(?=\\(?:xi|rho|sigma|mu|nu|omega|theta|phi)\b)/g, '$1\\,\\mathrm{d}');
   const plain = tokens.sort((a, b) => (a.top - b.top) || (a.left - b.left)).map((token) => token.text).join(' ').replace(/\s+/g, ' ').trim();
   if (!latex || !plain) return null;
   const mathSignal = /[=<>≤≥∫∑√∂∇∩∪⋃⋂∞_^]|\\(?:le|ge|cap|cup|bigcup|bigcap|partial|nabla|sqrt|frac|sup|inf|lim|sum|prod|int|iint|iiint|oint|operatorname|lvert|rvert)/.test(latex);
@@ -1617,7 +1653,7 @@ function extractVectorFormulaFromLayer(ocrLayer, selectionRect) {
   if (!tokens.length) return null;
   const glyphBaseHeight = dominantVectorHeight(tokens) || median(tokens.map((token) => token.height));
   tokens = mergeVectorGlyphWords(tokens, glyphBaseHeight || 12);
-  return extractVectorFormulaFromTokens(tokens, true);
+  return extractVectorFormulaFromTokens(tokens, true, glyphBaseHeight || 0);
 }
 
 function cropSelectedFormula(sourceCanvas, layer, rect) {
@@ -1815,30 +1851,76 @@ const latexSymbolMap = new Map(Object.entries({
   '∈':' \\in ','∉':' \\notin ','∋':' \\ni ','⊂':' \\subset ','⊆':' \\subseteq ','⊊':' \\subsetneq ','⊃':' \\supset ','⊇':' \\supseteq ','∪':' \\cup ','∩':' \\cap ',
   '→':' \\to ','←':' \\leftarrow ','↔':' \\leftrightarrow ','⇒':' \\Rightarrow ','⇐':' \\Leftarrow ','⇔':' \\Leftrightarrow ','↦':' \\mapsto ',
   '±':' \\pm ','∓':' \\mp ','×':' \\times ','·':' \\cdot ','∘':' \\circ ','⊗':' \\otimes ','⊕':' \\oplus ','∧':' \\wedge ','∨':' \\vee ','¬':'\\neg ',
-  '∀':'\\forall ','∃':'\\exists ','∅':'\\varnothing ','∥':'\\parallel ','⊥':'\\perp ','∠':'\\angle ','ℓ':'\\ell ','′':"'",'″':"''",'°':'^{\\circ}','…':'\\ldots ','⋯':'\\cdots ','⋮':'\\vdots '
+  '∀':'\\forall ','∃':'\\exists ','∅':'\\varnothing ','∥':'\\Vert ','‖':'\\Vert ','⟨':'\\langle ','⟩':'\\rangle ','⊥':'\\perp ','∠':'\\angle ','ℓ':'\\ell ','′':"'",'″':"''",'°':'^{\\circ}','…':'\\ldots ','⋯':'\\cdots ','⋮':'\\vdots '
 }));
 
 const superscriptMap = new Map(Object.entries({'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','⁺':'+','⁻':'-','⁼':'=','⁽':'(','⁾':')','ⁿ':'n','ⁱ':'i'}));
 const subscriptMap = new Map(Object.entries({'₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9','₊':'+','₋':'-','₌':'=','₍':'(','₎':')','ₐ':'a','ₑ':'e','ₕ':'h','ᵢ':'i','ⱼ':'j','ₖ':'k','ₗ':'l','ₘ':'m','ₙ':'n','ₒ':'o','ₚ':'p','ᵣ':'r','ₛ':'s','ₜ':'t','ᵤ':'u','ᵥ':'v','ₓ':'x'}));
 
+function vectorUnicodeStyleLatex(ch) {
+  const special = {
+    'ℱ':'\\mathcal{F}','ℰ':'\\mathcal{E}','ℋ':'\\mathcal{H}','ℐ':'\\mathcal{I}','ℒ':'\\mathcal{L}','ℳ':'\\mathcal{M}','ℛ':'\\mathcal{R}',
+    '𝒩':'\\mathcal{N}','𝒳':'\\mathcal{X}','𝒫':'\\mathcal{P}','𝒬':'\\mathcal{Q}','𝒮':'\\mathcal{S}',
+    'ℙ':'\\mathbb{P}','ℝ':'\\mathbb{R}','ℤ':'\\mathbb{Z}','ℕ':'\\mathbb{N}','ℚ':'\\mathbb{Q}','ℂ':'\\mathbb{C}'
+  };
+  if (special[ch]) return special[ch];
+  const cp = ch.codePointAt(0);
+  const compatibility = ch.normalize('NFKD');
+  if (compatibility !== ch && latexSymbolMap.has(compatibility)) return compatibility;
+  if (compatibility !== ch && /^[A-Za-z0-9α-ωΑ-Ωφϕϑϖϱς]+$/u.test(compatibility)) {
+    // Mathematical alphanumeric Unicode (italic/bold/etc.) carries font style,
+    // not a different mathematical symbol. Preserve calligraphic letters when
+    // they are clearly encoded as script; otherwise return the base character.
+    if ((cp >= 0x1D49C && cp <= 0x1D4CF) && /^[A-Za-z]$/.test(compatibility)) return `\\mathcal{${compatibility}}`;
+    return compatibility;
+  }
+  return null;
+}
+
+function cleanPdfGlyphText(text) {
+  return String(text || '')
+    .replace(/[\uFE00-\uFE0F]/g, '')
+    .replace(/⎛|⎜|⎝/g, '(')
+    .replace(/⎞|⎟|⎠/g, ')')
+    .replace(/⃒/g, '|')
+    .replace(/⃦/g, '∥')
+    .replace(/⋯|\.\.\./g, '…');
+}
+
 function pdfTextToLatex(source) {
-  const text = String(source || '').normalize('NFC').replace(/\u00ad/g, '').replace(/\r\n?/g, '\n');
+  const text = cleanPdfGlyphText(String(source || '').normalize('NFC').replace(/\u00ad/g, '').replace(/\r\n?/g, '\n'));
+  const chars = Array.from(text);
   let out = '';
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
+  for (let i = 0; i < chars.length; i += 1) {
+    const ch = chars[i];
+    const accentCommands = { '̂':'\\widehat', '̃':'\\widetilde', '̄':'\\overline', '̇':'\\dot' };
+    if (i + 1 < chars.length && accentCommands[chars[i + 1]]) {
+      const base = pdfTextToLatex(ch);
+      out += `${accentCommands[chars[i + 1]]}{${base}}`;
+      i += 1;
+      continue;
+    }
     if (superscriptMap.has(ch)) {
       let group = '';
-      while (i < text.length && superscriptMap.has(text[i])) { group += superscriptMap.get(text[i]); i += 1; }
+      while (i < chars.length && superscriptMap.has(chars[i])) { group += superscriptMap.get(chars[i]); i += 1; }
       i -= 1; out += `^{${group}}`; continue;
     }
     if (subscriptMap.has(ch)) {
       let group = '';
-      while (i < text.length && subscriptMap.has(text[i])) { group += subscriptMap.get(text[i]); i += 1; }
+      while (i < chars.length && subscriptMap.has(chars[i])) { group += subscriptMap.get(chars[i]); i += 1; }
       i -= 1; out += `_{${group}}`; continue;
     }
     if (latexSymbolMap.has(ch)) { out += latexSymbolMap.get(ch); continue; }
+    const styled = vectorUnicodeStyleLatex(ch);
+    if (styled) {
+      if (styled.length === 1 && latexSymbolMap.has(styled)) out += latexSymbolMap.get(styled);
+      else if (/^[α-ωΑ-Ωφϕϑϖϱς]$/u.test(styled) && latexSymbolMap.has(styled)) out += latexSymbolMap.get(styled);
+      else out += styled;
+      continue;
+    }
     if (ch === '−' || ch === '–') { out += '-'; continue; }
     if (ch === ' ') { out += ' '; continue; }
+    if (ch === '̸') { out += '\\not '; continue; }
     if (ch === '%') { out += '\\%'; continue; }
     if (ch === '#') { out += '\\#'; continue; }
     if (ch === '&') { out += '\\&'; continue; }
@@ -1850,6 +1932,7 @@ function pdfTextToLatex(source) {
     .replace(/ +\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/\\([A-Za-z]+) +(?=[,.;:!?)}\]])/g, '\\$1')
+    .replace(/\\not\s*=/g, '\\ne ')
     .trim();
 }
 
