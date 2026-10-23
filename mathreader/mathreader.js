@@ -2,7 +2,7 @@ const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min
 const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm';
 const TRANSFORMERS_RUNTIME = 'Transformers.js 4.3.1';
-const MATH_OCR_MODEL = 'onnx-community/nougat-latex-base-ONNX';
+const MATH_OCR_MODEL = 'Xenova/nougat-small';
 const LOCAL_DB_NAME = 'mathreader-local-v1';
 const LOCAL_DB_VERSION = 1;
 
@@ -173,7 +173,7 @@ let outlineMode = 'none';
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v2', 'official');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v3', 'official');
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v2';
 const LEGACY_DISPLAY_PREFS_KEY = 'mathreader-display-v1';
@@ -750,7 +750,26 @@ function setOcrStatus(message, working = false) {
 function normalizeOcrLatex(value) {
   let text = String(value || '').trim();
   if (!text) return '';
-  text = text.replace(/^```(?:latex|tex)?\s*/i, '').replace(/```$/i, '').trim();
+  text = text
+    .replace(/<\/?s>/gi, '')
+    .replace(/<pad>/gi, '')
+    .replace(/```(?:latex|tex|math|markdown)?\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
+
+  // Nougat Small is a scientific-document OCR model and may wrap an equation
+  // in Markdown. Prefer the longest explicit math block when one is present.
+  const blocks = [];
+  for (const match of text.matchAll(/\\\[([\s\S]*?)\\\]/g)) blocks.push(match[1].trim());
+  for (const match of text.matchAll(/\$\$([\s\S]*?)\$\$/g)) blocks.push(match[1].trim());
+  if (!blocks.length) {
+    for (const match of text.matchAll(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g)) blocks.push(match[1].trim());
+  }
+  if (blocks.length) {
+    blocks.sort((a, b) => b.length - a.length);
+    text = blocks[0];
+  }
+
   if (text.startsWith('$$') && text.endsWith('$$') && text.length > 4) text = text.slice(2, -2).trim();
   if (text.startsWith('\\[') && text.endsWith('\\]') && text.length > 4) text = text.slice(2, -2).trim();
   if (text.startsWith('$') && text.endsWith('$') && !text.startsWith('$$') && text.length > 2) text = text.slice(1, -1).trim();
@@ -844,20 +863,17 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   if (mode === 'webgpu') {
-    return [
-      { device: 'webgpu', dtype: 'q4f16', label: 'WebGPU · q4f16', official: false },
-      { device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4', official: false }
-    ];
+    // Xenova/nougat-small ships decoder_model_merged_fp16.onnx and matching
+    // encoder fp16 weights, so this path matches the repository layout.
+    return [{ device: 'webgpu', dtype: 'fp16', label: 'WebGPU · fp16', official: false }];
   }
   if (mode === 'wasm') {
-    return [
-      { device: 'wasm', dtype: 'q4', label: 'CPU/WASM · q4', official: false },
-      { device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8', official: false }
-    ];
+    // Explicit CPU path. The repository ships merged quantized decoder weights.
+    return [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8', official: false }];
   }
-  // Match the model card's browser example first: no forced device or dtype.
-  // Transformers.js therefore uses its normal browser defaults (WASM, q8).
-  return [{ device: null, dtype: null, label: 'Official browser default · WASM/q8', official: true }];
+  // Default browser path: Transformers.js uses WASM/q8, which resolves to the
+  // merged quantized decoder that Xenova/nougat-small actually ships.
+  return [{ device: null, dtype: null, label: 'Recommended · WASM/q8', official: true }];
 }
 
 function updateOcrCapability(extra = '') {
@@ -881,7 +897,8 @@ function friendlyOcrError(error, backend = null) {
   const lower = raw.toLowerCase();
   if (/out of memory|allocation|memory/.test(lower)) return t('The OCR model ran out of browser memory. Close other heavy tabs or switch OCR Engine to Compatibility · CPU.', '公式 OCR 模型的浏览器内存不足。请关闭其他占用较大的标签页，或将识别引擎切换到“兼容模式 · CPU”。');
   if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
-  if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the Nougat-LaTeX browser fallback model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用浏览器版 Nougat-LaTeX 备用模型。');
+  if (/could not locate file|model_file_not_found|404/.test(lower)) return t('The image model repository is missing a file required by this runtime. MathReader now uses Xenova/nougat-small because it ships the merged decoder files required by Transformers.js.', '图像模型仓库缺少当前运行时所需文件。MathReader 现改用 Xenova/nougat-small，因为它提供 Transformers.js 所需的 merged decoder 文件。');
+  if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the browser-compatible Nougat Small fallback model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用兼容浏览器的 Nougat Small 备用模型。');
   if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The image-OCR preprocessor rejected the selected region. Reload the page; if this persists, report the exact message.', '图像 OCR 预处理拒绝了框选区域。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
   if (/scale|dequant|onnx|session|can't create a session|cannot create.*session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize under ${TRANSFORMERS_RUNTIME}. Recommended mode follows the model card's browser path; reload the engine or try WebGPU as a diagnostic alternative.`, `${backend?.label || 'ONNX'} 引擎在 ${TRANSFORMERS_RUNTIME} 下初始化失败。推荐模式遵循模型卡的浏览器路径；请重新加载引擎，或尝试 WebGPU 作为诊断性备选。`);
   return raw || t('Image OCR fallback failed to initialize.', '图像 OCR 备用引擎初始化失败。');
@@ -897,7 +914,7 @@ function detailedOcrError(error, backend = null) {
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
   mathOcrLoading = true;
-  setOcrStatus(t(`Loading the local image-OCR fallback (Nougat-LaTeX · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地图像 OCR 备用引擎（Nougat-LaTeX · ${TRANSFORMERS_RUNTIME}）……`), true);
+  setOcrStatus(t(`Loading the local image-OCR fallback (Nougat Small · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地图像 OCR 备用引擎（Nougat Small · ${TRANSFORMERS_RUNTIME}）……`), true);
   try {
     if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
     const { pipeline } = await mathOcrModulePromise;
@@ -914,7 +931,7 @@ async function ensureMathOcrPipeline() {
             const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
             setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${Math.round(percent)}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${Math.round(percent)}%`), true);
           } else if (info.status === 'initiate' || info.status === 'download') {
-            setOcrStatus(t(`First image-only use: downloading Nougat-LaTeX for ${backend.label}…`, `首次图像识别：正在下载 ${backend.label} 的 Nougat-LaTeX 公式模型……`), true);
+            setOcrStatus(t(`First image-only use: downloading Nougat Small for ${backend.label}…`, `首次图像识别：正在下载 ${backend.label} 的 Nougat Small 科学文档模型……`), true);
           }
         };
         const options = { progress_callback };
@@ -2905,7 +2922,7 @@ brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(bri
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 96); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v2', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image fallback preference changed. It will load only when a selected formula has no usable PDF text.', '图像备用引擎偏好已更改。只有框选公式没有可用 PDF 原生文本时才会加载。')); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v3', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image fallback preference changed. It will load only when a selected formula has no usable PDF text.', '图像备用引擎偏好已更改。只有框选公式没有可用 PDF 原生文本时才会加载。')); });
 ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
 mathOcrButton.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton.addEventListener('click', () => setPinnedPage(currentPage));

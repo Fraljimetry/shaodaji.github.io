@@ -234,14 +234,14 @@
           <span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text." data-zh="在公式周围拖出矩形。MathReader 会优先依据 PDF 原生文字与字形几何关系重建 LaTeX；只有框内没有可用原生文本时才使用图像 OCR。">Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text.</p>
+        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses browser-compatible Nougat Small and may return scientific Markdown; MathReader extracts the formula block when possible." data-zh="在公式周围拖出矩形。MathReader 会优先依据 PDF 原生文字与字形几何关系重建 LaTeX；只有框内没有可用原生文本时才使用图像 OCR。">Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text, or when you explicitly request an image comparison. The fallback uses browser-compatible Nougat Small and may return scientific Markdown; MathReader extracts the formula block when possible.</p>
         <div class="ocr-engine-controls">
           <label>
             <span data-en="Image OCR fallback" data-zh="图像 OCR 备用引擎">Image OCR fallback</span>
             <select id="ocr-engine-mode">
-              <option value="official" data-en="Recommended · v4 browser runtime" data-zh="推荐 · v4 浏览器运行时">Recommended · v4 browser runtime</option>
-              <option value="webgpu" data-en="WebGPU · experimental" data-zh="WebGPU · 实验性">WebGPU · experimental</option>
-              <option value="wasm" data-en="CPU · explicit quantized" data-zh="CPU · 显式量化">CPU · explicit quantized</option>
+              <option value="official" data-en="Recommended · compatible CPU" data-zh="推荐 · 兼容 CPU">Recommended · compatible CPU</option>
+              <option value="webgpu" data-en="WebGPU · fp16 experimental" data-zh="WebGPU · fp16 实验性">WebGPU · fp16 experimental</option>
+              <option value="wasm" data-en="CPU · q8 explicit" data-zh="CPU · q8 显式">CPU · q8 explicit</option>
             </select>
           </label>
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
