@@ -117,7 +117,7 @@
         </div>
 
         <div class="toolbar-group toolbar-right">
-          <button class="tool-button text-tool ocr-tool-button" type="button" id="math-ocr-button" disabled data-en="Math OCR" data-zh="公式 OCR">Math OCR</button>
+          <button class="tool-button text-tool ocr-tool-button" type="button" id="math-ocr-button" disabled data-en="Extract formula" data-zh="提取公式">Extract formula</button>
           <button class="tool-button text-tool" type="button" id="pin-page" disabled data-en="Pin page" data-zh="固定此页">Pin page</button>
           <button class="tool-button sidebar-toggle" type="button" id="right-toggle" aria-label="Toggle workspace" title="Toggle workspace">▤</button>
         </div>
@@ -140,11 +140,11 @@
           </section>
           <div class="welcome-features">
             <span data-en="Selectable PDF text" data-zh="可选择 PDF 文本">Selectable PDF text</span>
-            <span data-en="Rectangle Math OCR → LaTeX" data-zh="矩形 Math OCR → LaTeX">Rectangle Math OCR → LaTeX</span>
+            <span data-en="Rectangle formula → LaTeX" data-zh="矩形公式 → LaTeX">Rectangle formula → LaTeX</span>
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
-          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Math OCR runs in your browser; first use downloads a quantized recognition model, but your selected formula image is not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。Math OCR 在浏览器内运行；首次使用会下载量化识别模型，但框选的公式图像不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Math OCR runs in your browser; first use downloads a quantized recognition model, but your selected formula image is not uploaded to this website.</p>
+          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula extraction uses embedded PDF vector text first. For scanned/image-only formulas, the fallback image model runs in your browser; the selected formula image is not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。公式提取会优先使用 PDF 原生矢量文本。对于扫描件或纯图像公式，备用图像模型在浏览器本地运行；框选的公式图像不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula extraction uses embedded PDF vector text first. For scanned/image-only formulas, the fallback image model runs in your browser; the selected formula image is not uploaded to this website.</p>
         </section>
 
         <div class="pdf-workspace is-hidden" id="pdf-workspace">
@@ -154,7 +154,7 @@
               <div class="page-surface" id="primary-page-surface">
                 <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
                 <div class="textLayer" id="primary-text-layer" aria-label="Selectable PDF text"></div>
-                <div class="ocr-select-layer" id="primary-ocr-layer" data-kind="primary" aria-label="Math OCR rectangle selection"><div class="ocr-selection-box"></div></div>
+                <div class="ocr-select-layer" id="primary-ocr-layer" data-kind="primary" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
               <div class="continuous-stack is-hidden" id="continuous-stack" aria-label="Continuous PDF pages"></div>
             </div>
@@ -173,7 +173,7 @@
               <div class="page-surface" id="reference-page-surface">
                 <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
                 <div class="textLayer" id="reference-text-layer" aria-label="Selectable pinned PDF text"></div>
-                <div class="ocr-select-layer" id="reference-ocr-layer" data-kind="reference" aria-label="Math OCR rectangle selection"><div class="ocr-selection-box"></div></div>
+                <div class="ocr-select-layer" id="reference-ocr-layer" data-kind="reference" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
             </div>
           </div>
@@ -226,17 +226,17 @@
           <input id="page-shadow" type="checkbox" checked>
           <span data-en="Page shadow" data-zh="页面阴影">Page shadow</span>
         </label>
-        <p class="display-note" data-en="Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter Math OCR crops." data-zh="柔和暗色会使用灰白文字而非纯白，以降低眩光。显示滤镜不会改变 Math OCR 使用的原始裁图。">Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter Math OCR crops.</p>
+        <p class="display-note" data-en="Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter formula-extraction crops." data-zh="柔和暗色会使用灰白文字而非纯白，以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter formula-extraction crops.</p>
       </section>
       <section class="workspace-section ocr-section" id="ocr-section">
         <div class="panel-heading">
-          <span data-en="Math OCR" data-zh="公式 OCR">Math OCR</span>
+          <span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="ocr-help" data-en="Choose Math OCR, then drag a rectangle around one formula on either PDF page. The crop is recognized locally in your browser and returned as LaTeX." data-zh="点击公式 OCR，然后在任一 PDF 页面上拖出矩形框选一个公式。裁图会在浏览器本地识别并返回 LaTeX。">Choose Math OCR, then drag a rectangle around one formula on either PDF page. The crop is recognized locally in your browser and returned as LaTeX.</p>
+        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text." data-zh="在公式周围拖出矩形。MathReader 会优先依据 PDF 原生文字与字形几何关系重建 LaTeX；只有框内没有可用原生文本时才使用图像 OCR。">Drag a rectangle around one formula. MathReader first reconstructs LaTeX from the PDF vector text and glyph geometry. Image OCR is used only when the selected region has no usable embedded text.</p>
         <div class="ocr-engine-controls">
           <label>
-            <span data-en="Engine" data-zh="识别引擎">Engine</span>
+            <span data-en="Image OCR fallback" data-zh="图像 OCR 备用引擎">Image OCR fallback</span>
             <select id="ocr-engine-mode">
               <option value="auto" data-en="Automatic · accuracy first" data-zh="自动 · 准确性优先">Automatic · accuracy first</option>
               <option value="webgpu" data-en="WebGPU" data-zh="WebGPU">WebGPU</option>
@@ -246,22 +246,23 @@
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
-        <div class="ocr-status" id="ocr-status" data-en="Ready. The recognition model loads only when you use Math OCR." data-zh="就绪。只有首次使用公式 OCR 时才会加载识别模型。">Ready. The recognition model loads only when you use Math OCR.</div>
+        <div class="ocr-status" id="ocr-status" data-en="Ready · PDF vector extraction is primary. The image model loads only for scanned/image-only formulas." data-zh="就绪 · 优先使用 PDF 矢量公式提取。只有扫描件或纯图像公式才会加载图像模型。">Ready · PDF vector extraction is primary. The image model loads only for scanned/image-only formulas.</div>
         <div class="ocr-result is-hidden" id="ocr-result">
+          <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
-          <label data-en="Recognized LaTeX" data-zh="识别出的 LaTeX">Recognized LaTeX</label>
+          <label data-en="Extracted LaTeX" data-zh="提取出的 LaTeX">Extracted LaTeX</label>
           <pre id="ocr-latex-preview"></pre>
           <div class="ocr-actions">
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
-          <p class="selection-caveat" data-en="Formula recognition is machine-generated and should be checked before reuse, especially for dense matrices, long multiline expressions, or unusual notation." data-zh="公式识别结果由模型生成，复用前应核对；对于密集矩阵、较长多行公式或非常用记号尤其如此。">Formula recognition is machine-generated and should be checked before reuse, especially for dense matrices, long multiline expressions, or unusual notation.</p>
+          <p class="selection-caveat" data-en="PDF-vector results preserve embedded mathematical text and simple script geometry; image OCR remains a fallback for scanned formulas and should be checked carefully." data-zh="PDF 矢量结果会保留原生数学文本并重建简单上下标几何；图像 OCR 仅作为扫描公式的备用方案，结果仍需仔细核对。">PDF-vector results preserve embedded mathematical text and simple script geometry; image OCR remains a fallback for scanned formulas and should be checked carefully.</p>
         </div>
         <div class="ocr-history-block">
-          <div class="panel-heading ocr-history-heading"><span data-en="Recent Math OCR" data-zh="最近公式 OCR">Recent Math OCR</span><span class="count-badge" id="ocr-history-count">0</span></div>
+          <div class="panel-heading ocr-history-heading"><span data-en="Recent formula extraction" data-zh="最近公式提取">Recent formula extraction</span><span class="count-badge" id="ocr-history-count">0</span></div>
           <div class="ocr-history-list" id="ocr-history-list"></div>
-          <div class="empty-panel" id="ocr-history-empty" data-en="Recognized formulas from this PDF will be remembered here." data-zh="这份 PDF 中识别过的公式会保存在这里。">Recognized formulas from this PDF will be remembered here.</div>
+          <div class="empty-panel" id="ocr-history-empty" data-en="Extracted formulas from this PDF will be remembered here." data-zh="这份 PDF 中提取过的公式会保存在这里。">Extracted formulas from this PDF will be remembered here.</div>
         </div>
       </section>
 
@@ -281,7 +282,7 @@
             <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
             <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
           </div>
-          <p class="selection-caveat" data-en="LaTeX β is reconstructed from the PDF text layer. It handles symbols and simple scripts, but complex fractions, matrices, roots, and other two-dimensional formulas still require Math OCR." data-zh="LaTeX β 基于 PDF 文本层重建，可处理符号和简单上下标；复杂分式、矩阵、根式等二维公式仍需要 Math OCR。">LaTeX β is reconstructed from the PDF text layer. It handles symbols and simple scripts, but complex fractions, matrices, roots, and other two-dimensional formulas still require Math OCR.</p>
+          <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction: embedded PDF glyph geometry is preferred, with image OCR only as a fallback for image-only regions." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”：优先依据 PDF 原生字形几何重建，仅对纯图像区域使用图像 OCR 备用方案。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction: embedded PDF glyph geometry is preferred, with image OCR only as a fallback for image-only regions.</p>
         </div>
       </section>
 
@@ -309,7 +310,7 @@
           <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
           <div><dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
           <div><dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
-          <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle Math OCR" data-zh="矩形公式 OCR">Rectangle Math OCR</dd></div>
+          <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle formula extraction" data-zh="矩形公式提取">Rectangle formula extraction</dd></div>
         </dl>
       </section>
     </aside>

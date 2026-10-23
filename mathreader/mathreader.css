@@ -100,7 +100,7 @@ html[data-theme="dark"] .textLayer ::selection{background:rgba(121,188,228,.42)}
 .selection-toolbar{position:fixed;z-index:120;display:flex;align-items:center;gap:4px;max-width:min(620px,calc(100vw - 16px));padding:5px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);box-shadow:0 8px 28px rgba(0,0,0,.22);font-size:10px}.selection-toolbar-label{max-width:120px;overflow:hidden;padding:0 5px;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}.selection-toolbar button{min-height:28px;padding:4px 7px;border:1px solid var(--line);border-radius:5px;color:var(--ink);background:var(--paper);cursor:pointer;font-size:10px;font-weight:700}.selection-toolbar button:hover{border-color:var(--accent);background:var(--surface-soft)}
 @media(max-width:860px){.selection-toolbar-label{display:none}.selection-toolbar{right:8px!important;left:8px!important;max-width:none;justify-content:center}.selection-toolbar button{flex:1;min-width:0;padding-inline:4px}}
 
-/* Rectangle Math OCR */
+/* Rectangle formula extraction */
 .ocr-tool-button.is-active{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-soft)}
 .ocr-select-layer{position:absolute;inset:0;z-index:7;display:block;pointer-events:none;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
 .page-surface.ocr-mode .ocr-select-layer{pointer-events:auto}
@@ -165,3 +165,5 @@ html[data-theme="dark"] .icon-button,html[data-theme="dark"] .tool-button,html[d
 @media(max-width:520px){.ocr-engine-controls{grid-template-columns:1fr}.ocr-engine-controls .text-button{justify-self:start}}
 
 .welcome-emblem-icon{display:grid;place-items:center}.welcome-emblem-icon img{display:block;width:78px;height:78px;object-fit:contain}
+
+.ocr-result-meta{display:flex;justify-content:flex-start}.source-badge{display:inline-flex;align-items:center;min-height:20px;padding:2px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--surface-soft);font-size:9px;font-weight:800;letter-spacing:.03em}.source-badge[data-source="vector"]{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-soft)}
