@@ -98,6 +98,7 @@ const ocrPreview = el('ocr-preview');
 const ocrLatexPreview = el('ocr-latex-preview');
 const copyOcrLatex = el('copy-ocr-latex');
 const ocrToNote = el('ocr-to-note');
+const tryImageOcrButton = el('try-image-ocr');
 const clearOcrResultButton = el('clear-ocr-result');
 const ocrHistoryList = el('ocr-history-list');
 const ocrHistoryEmpty = el('ocr-history-empty');
@@ -368,7 +369,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 5,
+    version: 6,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -616,6 +617,9 @@ function loadDocumentState(cachedSession = null) {
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
+    // v54 outline locations include an in-page ratio. Older cached detected
+    // outlines only knew the page number, so discard them once and rescan.
+    if (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio)))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     if (Number(session.version || 0) >= 4) {
       shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
@@ -762,6 +766,10 @@ function refreshOcrUI() {
     const source = has ? (currentOcrResult.source || 'image') : '';
     ocrSourceBadge.textContent = !has ? '—' : source === 'vector' ? t('PDF vector', 'PDF 矢量') : t('Image OCR', '图像 OCR');
     ocrSourceBadge.dataset.source = source;
+  }
+  if (tryImageOcrButton) {
+    const source = has ? (currentOcrResult.source || 'image') : '';
+    tryImageOcrButton.classList.toggle('is-hidden', !has || source !== 'vector' || !currentOcrResult?.preview);
   }
   if (has && currentOcrResult.preview) {
     ocrPreview.src = currentOcrResult.preview;
@@ -1779,6 +1787,67 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   }
 }
 
+async function canvasFromDataUrl(dataUrl) {
+  if (!dataUrl) return null;
+  const image = new Image();
+  image.decoding = 'async';
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, image.naturalWidth || image.width || 1);
+  canvas.height = Math.max(1, image.naturalHeight || image.height || 1);
+  const ctx = canvas.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0);
+  return canvas;
+}
+
+async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
+  if (!crop || !page) return;
+  mathOcrLoading = true;
+  const imagePreview = preview || crop.toDataURL('image/png');
+  try {
+    setOcrStatus(t('Running image OCR as an independent comparison…', '正在运行图像 OCR 作为独立对照……'), true);
+    const pipe = await ensureMathOcrPipeline();
+    const normalizedCrop = normalizeFormulaCropForOcr(crop);
+    const inputImage = await prepareMathOcrInput(normalizedCrop);
+    const output = await pipe(inputImage, { max_new_tokens: 384, num_beams: 5, early_stopping: true, do_sample: false });
+    const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
+    const rawLatex = normalizeOcrLatex(raw);
+    const latex = repairOcrLatex(rawLatex);
+    const penalty = latexStructuralPenalty(rawLatex);
+    if (!latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
+    const item = { page, kind, latex, preview: imagePreview, created: Date.now(), quality: penalty === 0 ? 'clean' : 'review', source: 'image' };
+    currentOcrResult = item;
+    ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 12);
+    refreshOcrUI();
+    persistDocumentState();
+    setOcrStatus(penalty === 0 ? t('Image OCR comparison complete.', '图像 OCR 对照完成。') : t('Image OCR comparison complete · structure still needs review.', '图像 OCR 对照完成 · 结构仍需人工核对。'));
+  } catch (error) {
+    console.error(error);
+    const friendly = friendlyOcrError(error, mathOcrBackend);
+    setOcrStatus(friendly);
+    showError(friendly);
+  } finally {
+    mathOcrLoading = false;
+  }
+}
+
+async function tryImageOcrForCurrentResult() {
+  if (!currentOcrResult?.preview || mathOcrLoading) return;
+  try {
+    const crop = await canvasFromDataUrl(currentOcrResult.preview);
+    await recognizeImageFallbackCrop(crop, Number(currentOcrResult.page) || currentPage, currentOcrResult.kind || 'primary', currentOcrResult.preview);
+  } catch (error) {
+    console.error(error);
+    showError(t('The selected formula image could not be prepared for image OCR.', '无法为图像 OCR 准备当前框选公式。'));
+  }
+}
+
 function addOcrToPageNote() {
   if (!pdfDoc || !currentOcrResult?.latex) return;
   const page = Number(currentOcrResult.page) || currentPage;
@@ -2298,27 +2367,42 @@ async function renderReferencePage() {
   catch (error) { console.error(error); }
 }
 
-async function goToPage(page) {
+async function goToLocation(page, ratio = 0) {
   if (!pdfDoc) return;
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
+  const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
   const changed = next !== currentPage;
   currentPage = next;
   hideSelectionToolbar();
   window.getSelection()?.removeAllRanges();
   if (readingFlow === 'continuous') {
     updateNavigationState();
-    const record = continuousPageNodes.get(next);
-    if (!record) await buildContinuousDocument();
-    const target = continuousPageNodes.get(next)?.frame;
-    if (target) {
+    let record = continuousPageNodes.get(next);
+    if (!record) {
+      await buildContinuousDocument({ anchor: { page: next, ratio: localRatio } });
+      record = continuousPageNodes.get(next);
+    }
+    if (record) {
       await renderContinuousPage(next, continuousGeneration);
-      target.scrollIntoView({ block: 'start', behavior: 'auto' });
-      primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop - 8);
+      const surfaceTop = record.frame.offsetTop + (record.surface?.offsetTop || 0);
+      const surfaceHeight = Math.max(1, record.surface?.offsetHeight || record.frame.offsetHeight || 1);
+      primaryCanvasWrap.scrollTop = Math.max(0, surfaceTop + surfaceHeight * localRatio - 10);
+      currentPage = next;
+      updateNavigationState();
+      continuousSavedAnchor = { page: next, ratio: localRatio };
     }
     persistDocumentState();
     return;
   }
   if (changed) await renderCurrentPage(); else updateNavigationState();
+  const pageHeight = Math.max(1, primaryPageSurface?.offsetHeight || canvas?.getBoundingClientRect().height || 1);
+  primaryCanvasWrap.scrollTop = Math.max(0, pageHeight * localRatio - 10);
+  scrollByPage[String(next)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
+  persistDocumentState();
+}
+
+async function goToPage(page) {
+  return goToLocation(page, 0);
 }
 
 function setPinnedPage(page) {
@@ -2476,7 +2560,8 @@ async function detectOutlineFromTypography() {
         page: line.page,
         depth: headingDepthFromStyle(line, bodySize),
         size: Number(line.size.toFixed(2)),
-        y: line.y
+        y: line.y,
+        ratio: Math.min(1, Math.max(0, (line.pageHeight - line.y) / Math.max(1, line.pageHeight)))
       });
     }
   }
@@ -2511,9 +2596,34 @@ function renderInferredOutline(entries) {
     button.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
-    button.addEventListener('click', () => goToPage(entry.page));
+    button.addEventListener('click', () => goToLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0));
     outlineList.append(button);
   }
+}
+
+async function resolveOutlineDestination(rawDest) {
+  if (!pdfDoc) return null;
+  let dest = rawDest;
+  if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
+  if (!Array.isArray(dest) || !dest[0]) return null;
+  const pageIndex = await pdfDoc.getPageIndex(dest[0]);
+  const pageNum = pageIndex + 1;
+  let ratio = 0;
+  const mode = dest[1]?.name || '';
+  let top = null;
+  if (mode === 'XYZ') top = Number(dest[3]);
+  else if (mode === 'FitH' || mode === 'FitBH') top = Number(dest[2]);
+  else if (mode === 'FitR') top = Number(dest[5]);
+  if (Number.isFinite(top)) {
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
+      const yMin = Number(view[1]) || 0;
+      const yMax = Number(view[3]) || 1;
+      ratio = Math.min(1, Math.max(0, (yMax - top) / Math.max(1, yMax - yMin)));
+    } catch (_) {}
+  }
+  return { page: pageNum, ratio };
 }
 
 async function renderOutline() {
@@ -2537,11 +2647,9 @@ async function renderOutline() {
         button.textContent = item.title || t('Untitled', '未命名');
         button.addEventListener('click', async () => {
           try {
-            let dest = item.dest;
-            if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
-            if (!Array.isArray(dest)) return;
-            const pageIndex = await pdfDoc.getPageIndex(dest[0]);
-            await goToPage(pageIndex + 1);
+            const location = await resolveOutlineDestination(item.dest);
+            if (!location) return;
+            await goToLocation(location.page, location.ratio);
           } catch (error) { console.error(error); }
         });
         outlineList.append(button);
@@ -2815,6 +2923,7 @@ ocrLatexPreview?.addEventListener('input', () => {
   persistDocumentState();
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
+tryImageOcrButton?.addEventListener('click', tryImageOcrForCurrentResult);
 clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);

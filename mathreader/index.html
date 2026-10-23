@@ -256,9 +256,10 @@
           <div class="ocr-actions">
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+            <button class="secondary-action is-hidden" type="button" id="try-image-ocr" data-en="Try image OCR" data-zh="尝试图像 OCR">Try image OCR</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
-          <p class="selection-caveat" data-en="PDF-vector results preserve embedded mathematical text and simple script geometry; image OCR remains a fallback for scanned formulas and should be checked carefully." data-zh="PDF 矢量结果会保留原生数学文本并重建简单上下标几何；图像 OCR 仅作为扫描公式的备用方案，结果仍需仔细核对。">PDF-vector results preserve embedded mathematical text and simple script geometry; image OCR remains a fallback for scanned formulas and should be checked carefully.</p>
+          <p class="selection-caveat" data-en="PDF vector is the primary draft for text-bearing PDFs. Image OCR is an independent fallback/comparison, not an automatic correction of a structurally wrong vector result; either result may need manual editing." data-zh="对于含文本层的 PDF，PDF 矢量是主要草稿。图像 OCR 是独立的备用/对照方案，并不会自动纠正结构错误的矢量结果；两种结果都可能需要人工编辑。">PDF-vector results preserve embedded mathematical text and simple script geometry; image OCR remains a fallback for scanned formulas and should be checked carefully.</p>
         </div>
         <div class="ocr-history-block">
           <div class="panel-heading ocr-history-heading"><span data-en="Recent formula extraction" data-zh="最近公式提取">Recent formula extraction</span><span class="count-badge" id="ocr-history-count">0</span></div>
