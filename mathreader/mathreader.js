@@ -61,6 +61,8 @@ const searchForm = el('search-form');
 const searchInput = el('search-input');
 const searchStatus = el('search-status');
 const searchResults = el('search-results');
+const searchMatchCase = el('search-match-case');
+const searchWholeWord = el('search-whole-word');
 const documentTitle = el('document-title');
 const loadingOverlay = el('loading-overlay');
 const loadingText = el('loading-text');
@@ -163,6 +165,7 @@ let ocrProcessingTimer = null;
 let readerWidthObserver = null;
 let readerWidthTimer = null;
 let lastObservedReaderWidth = 0;
+let fitWidthStabilizing = false;
 let currentOcrResult = null;
 let ocrHistory = [];
 let continuousScrollTop = 0;
@@ -175,12 +178,14 @@ let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
 let readingFlow = 'continuous';
 let pageTone = 'auto';
-let displayBrightness = 96;
-let displayContrast = 96;
+let displayBrightness = 100;
+let displayContrast = 100;
 let displayGap = 20;
 let displayShadow = true;
 let inferredOutline = [];
 let outlineMode = 'none';
+let editingBookmarkId = null;
+let pendingRecoveryRecordId = null;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -188,8 +193,10 @@ const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catc
 mathOcrEngineMode = safeGet('mathreader-ocr-engine-v4', 'official');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
-const DISPLAY_PREFS_KEY = 'mathreader-display-v2';
-const LEGACY_DISPLAY_PREFS_KEY = 'mathreader-display-v1';
+const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
+const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
+const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
+const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v1';
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -197,28 +204,30 @@ const clamp = (value, min, max, fallback) => {
 
 function loadDisplayPreferences() {
   let saved = null;
-  let migrated = false;
+  let migratedFrom = null;
   try { saved = JSON.parse(safeGet(DISPLAY_PREFS_KEY, 'null')); } catch (_) { saved = null; }
   if (!saved || typeof saved !== 'object') {
-    try { saved = JSON.parse(safeGet(LEGACY_DISPLAY_PREFS_KEY, 'null')); } catch (_) { saved = null; }
-    migrated = Boolean(saved && typeof saved === 'object');
+    for (const key of LEGACY_DISPLAY_PREFS_KEYS) {
+      try { saved = JSON.parse(safeGet(key, 'null')); } catch (_) { saved = null; }
+      if (saved && typeof saved === 'object') { migratedFrom = key; break; }
+    }
   }
   if (saved && typeof saved === 'object') {
-    // v46 makes continuous reading the product default. During the one-time v1→v2
-    // preference migration we preserve display tuning but intentionally adopt the
-    // new continuous-first reading flow.
-    readingFlow = migrated ? 'continuous' : (saved.flow === 'single' ? 'single' : 'continuous');
+    readingFlow = saved.flow === 'single' ? 'single' : 'continuous';
     pageTone = ['auto','original','soft-dark','warm'].includes(saved.tone) ? saved.tone : 'auto';
-    displayBrightness = clamp(saved.brightness, 70, 115, 96);
-    displayContrast = clamp(saved.contrast, 80, 120, 96);
+    const oldDefault = migratedFrom && Number(saved.brightness) === 96;
+    const oldContrastDefault = migratedFrom && Number(saved.contrast) === 96;
+    displayBrightness = oldDefault ? 100 : clamp(saved.brightness, 70, 115, 100);
+    displayContrast = oldContrastDefault ? 100 : clamp(saved.contrast, 80, 120, 100);
     displayGap = clamp(saved.gap, 8, 44, 20);
     displayShadow = saved.shadow !== false;
   } else {
     readingFlow = 'continuous';
+    displayBrightness = 100;
+    displayContrast = 100;
   }
-  if (migrated) persistDisplayPreferences();
+  if (migratedFrom) persistDisplayPreferences();
 }
-
 function persistDisplayPreferences() {
   safeSet(DISPLAY_PREFS_KEY, JSON.stringify({
     flow: readingFlow,
@@ -246,7 +255,13 @@ function updateDisplayControls() {
   if (brightnessValue) brightnessValue.textContent = `${displayBrightness}%`;
   if (contrastValue) contrastValue.textContent = `${displayContrast}%`;
   if (gapValue) gapValue.textContent = `${displayGap} px`;
-  if (flowButton) flowButton.textContent = readingFlow === 'continuous' ? t('Single page', '单页阅读') : t('Continuous', '连续阅读');
+  if (flowButton) {
+    flowButton.textContent = readingFlow === 'continuous' ? t('Continuous', '连续阅读') : t('Single page', '单页阅读');
+    const action = readingFlow === 'continuous' ? t('Switch to single-page reading', '切换到单页阅读') : t('Switch to continuous reading', '切换到连续阅读');
+    flowButton.title = action;
+    flowButton.setAttribute('aria-label', action);
+    flowButton.setAttribute('aria-pressed', readingFlow === 'continuous' ? 'true' : 'false');
+  }
 }
 
 function applyPageDisplay({ persist = true } = {}) {
@@ -278,8 +293,8 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
 function resetDisplayPreferences() {
   readingFlow = 'continuous';
   pageTone = 'auto';
-  displayBrightness = 96;
-  displayContrast = 96;
+  displayBrightness = 100;
+  displayContrast = 100;
   displayGap = 20;
   displayShadow = true;
   applyPageDisplay();
@@ -354,6 +369,12 @@ async function dbGetAllDocuments() {
   return idbRequest(tx.objectStore('documents').getAll());
 }
 
+async function dbGetAllFiles() {
+  const db = await openLocalDb();
+  const tx = db.transaction('files', 'readonly');
+  return idbRequest(tx.objectStore('files').getAll());
+}
+
 async function dbMetaGet(key) {
   const record = await dbGet('meta', key);
   return record?.value ?? null;
@@ -383,7 +404,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 7,
+    version: 8,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -450,13 +471,22 @@ function renderLocalLibrary() {
 
   for (const record of localLibrary) {
     const row = document.createElement('div'); row.className = 'history-item';
+    if (!record.localAvailable) row.classList.add('is-unavailable');
     const open = document.createElement('button'); open.type = 'button'; open.className = 'history-open';
     const title = document.createElement('strong'); title.textContent = record.name || t('Untitled PDF', '未命名 PDF');
     const meta = document.createElement('span'); meta.className = 'history-meta';
     const page = document.createElement('span'); page.textContent = t(`Page ${record.lastPage || record.session?.page || 1}`, `第 ${record.lastPage || record.session?.page || 1} 页`);
     const time = document.createElement('span'); time.textContent = formatHistoryTime(record.openedAt);
     meta.append(page); if (time.textContent) meta.append(time);
-    open.append(title, meta); open.addEventListener('click', () => openCachedDocument(record.id));
+    if (!record.localAvailable) {
+      const missing = document.createElement('span'); missing.className = 'history-unavailable'; missing.textContent = t('Local PDF copy unavailable', '本地 PDF 副本不可用'); meta.append(missing);
+    }
+    open.append(title, meta);
+    open.disabled = !record.localAvailable;
+    if (record.localAvailable) open.addEventListener('click', () => openCachedDocument(record.id));
+    const recover = document.createElement('button'); recover.type = 'button'; recover.className = 'history-recover'; recover.textContent = t('Reopen', '重新选择');
+    recover.classList.toggle('is-hidden', record.localAvailable);
+    recover.addEventListener('click', () => { pendingRecoveryRecordId = record.id; fileInput.click(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'history-remove'; remove.textContent = '×';
     remove.setAttribute('aria-label', t('Forget local copy', '忘记本地副本'));
     remove.title = t('Forget local copy', '忘记本地副本');
@@ -470,10 +500,10 @@ function renderLocalLibrary() {
         await refreshLocalLibrary();
       } catch (error) { console.warn(error); }
     });
-    row.append(open, remove); historyList.append(row);
+    row.append(open, recover, remove); historyList.append(row);
   }
 
-  for (const record of localLibrary.slice(0, 4)) {
+  for (const record of localLibrary.filter((item) => item.localAvailable).slice(0, 4)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'welcome-recent-item';
     const title = document.createElement('strong'); title.textContent = record.name || t('Untitled PDF', '未命名 PDF');
     const meta = document.createElement('span');
@@ -483,17 +513,17 @@ function renderLocalLibrary() {
     welcomeRecentList.append(button);
   }
 }
-
 async function refreshLocalLibrary() {
   try {
-    const records = await dbGetAllDocuments();
-    localLibrary = records.sort((a, b) => (b.openedAt || 0) - (a.openedAt || 0));
+    const [records, files] = await Promise.all([dbGetAllDocuments(), dbGetAllFiles()]);
+    const fileIds = new Set(files.filter((item) => item?.blob).map((item) => item.id));
+    localLibrary = records.map((record) => ({ ...record, localAvailable: fileIds.has(record.id) && !record.cacheError }))
+      .sort((a, b) => (b.openedAt || 0) - (a.openedAt || 0));
   } catch (_) {
     localLibrary = [];
   }
   renderLocalLibrary();
 }
-
 function showError(message) {
   errorBanner.textContent = message;
   errorBanner.classList.remove('is-hidden');
@@ -568,6 +598,7 @@ function applyLanguage(lang, persist = true) {
   renderLocalLibrary();
   refreshSelectionUI();
   refreshOcrUI();
+  updateWorkspaceCollapseButtons();
   if (persist) safeSet('shaoda-language', next);
 }
 
@@ -579,8 +610,75 @@ function applyTheme(theme, persist = true) {
   if (persist) safeSet('shaoda-theme', next);
 }
 
+function loadSearchPreferences() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(SEARCH_PREFS_KEY, 'null')); } catch (_) { saved = null; }
+  if (searchMatchCase) searchMatchCase.checked = Boolean(saved?.matchCase);
+  if (searchWholeWord) searchWholeWord.checked = Boolean(saved?.wholeWord);
+}
+
+function persistSearchPreferences() {
+  safeSet(SEARCH_PREFS_KEY, JSON.stringify({ matchCase: Boolean(searchMatchCase?.checked), wholeWord: Boolean(searchWholeWord?.checked) }));
+}
+
+function loadWorkspaceCollapseState() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
+  const defaults = new Set(['selection-section','note-section','reference-section','shortcuts-section']);
+  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+    const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
+    section.classList.toggle('is-collapsed', collapsed);
+  });
+}
+
+function persistWorkspaceCollapseState() {
+  const state = {};
+  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => { if (section.id) state[section.id] = section.classList.contains('is-collapsed'); });
+  safeSet(WORKSPACE_COLLAPSE_KEY, JSON.stringify(state));
+}
+
+function updateWorkspaceCollapseButtons() {
+  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+    const button = section.querySelector(':scope > .panel-heading .section-collapse-button');
+    if (!button) return;
+    const collapsed = section.classList.contains('is-collapsed');
+    button.textContent = collapsed ? '▸' : '▾';
+    const label = collapsed ? t('Expand section', '展开模块') : t('Collapse section', '收起模块');
+    button.title = label; button.setAttribute('aria-label', label); button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  });
+}
+
+function setupWorkspaceCollapsibles() {
+  loadWorkspaceCollapseState();
+  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+    if (!section.id) return;
+    const heading = section.querySelector(':scope > .panel-heading');
+    if (!heading || heading.querySelector('.section-collapse-button')) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'section-collapse-button';
+    button.addEventListener('click', () => { section.classList.toggle('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons(); });
+    heading.append(button);
+  });
+  updateWorkspaceCollapseButtons();
+}
+
+function expandWorkspaceSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  section.classList.remove('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons();
+}
+
 function stateKey(kind) {
   return currentFileKey ? `mathreader:${currentFileKey}:${kind}` : null;
+}
+
+function normalizeBookmarks(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && Number(item.page) >= 1).map((item, index) => ({
+    id: item.id || `bm-${Number(item.created) || Date.now()}-${index}`,
+    page: Number(item.page),
+    title: typeof item.title === 'string' ? item.title : '',
+    note: typeof item.note === 'string' ? item.note : '',
+    created: Number(item.created) || Date.now()
+  }));
 }
 
 function loadDocumentState(cachedSession = null) {
@@ -608,7 +706,7 @@ function loadDocumentState(cachedSession = null) {
   }
 
   if (session && typeof session === 'object') {
-    bookmarks = Array.isArray(session.bookmarks) ? session.bookmarks : [];
+    bookmarks = normalizeBookmarks(session.bookmarks);
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
     const savedPage = Number(session.page || 1);
     currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
@@ -649,7 +747,7 @@ function loadDocumentState(cachedSession = null) {
   } else {
     const rawBookmarks = safeGet(stateKey('bookmarks'));
     const rawNotes = safeGet(stateKey('notes'));
-    try { if (rawBookmarks) bookmarks = JSON.parse(rawBookmarks); } catch (_) {}
+    try { if (rawBookmarks) bookmarks = normalizeBookmarks(JSON.parse(rawBookmarks)); } catch (_) {}
     try { if (rawNotes) notes = JSON.parse(rawNotes); } catch (_) {}
     const savedPage = Number(safeGet(stateKey('page'), '1'));
     currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
@@ -701,6 +799,7 @@ async function cacheOpenedPdf(meta, blob) {
 
 async function touchCachedPdf(record) {
   try {
+    delete record.cacheError;
     record.openedAt = Date.now();
     record.updatedAt = Date.now();
     record.lastPage = currentPage;
@@ -784,6 +883,8 @@ function setOcrProcessing(active, message = '') {
   ocrProcessingTimer = setInterval(updateTime, 100);
 }
 
+function latexLineSeparator() { return ' ' + String.fromCharCode(92, 92, 10); }
+
 function normalizeOcrLatex(value) {
   let text = String(value || '').trim();
   if (!text) return '';
@@ -794,19 +895,29 @@ function normalizeOcrLatex(value) {
     .replace(/```/g, '')
     .trim();
 
-  // Texify can return explanatory prose around a displayed formula. Prefer the
-  // longest explicit math block when one is present, while still accepting
-  // bare LaTeX for tightly cropped formula images.
-  const blocks = [];
-  for (const match of text.matchAll(/\\\[([\s\S]*?)\\\]/g)) blocks.push(match[1].trim());
-  for (const match of text.matchAll(/\\\(([\s\S]*?)\\\)/g)) blocks.push(match[1].trim());
-  for (const match of text.matchAll(/\$\$([\s\S]*?)\$\$/g)) blocks.push(match[1].trim());
-  if (!blocks.length) {
-    for (const match of text.matchAll(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g)) blocks.push(match[1].trim());
+  // Texify may emit several explicit math blocks for a multi-line aligned
+  // selection. Preserve all blocks in source order instead of discarding all
+  // but the longest one (the old behavior that lost later lines).
+  const matches = [];
+  const patterns = [
+    { re: /\\\[([\s\S]*?)\\\]/g, inner: 1 },
+    { re: /\$\$([\s\S]*?)\$\$/g, inner: 1 },
+    { re: /\\\(([\s\S]*?)\\\)/g, inner: 1 },
+    { re: /(?<!\$)\$([^$\n]+?)\$(?!\$)/g, inner: 1 }
+  ];
+  for (const { re, inner } of patterns) {
+    for (const m of text.matchAll(re)) matches.push({ index: m.index ?? 0, value: String(m[inner] || '').trim() });
   }
-  if (blocks.length) {
-    blocks.sort((a, b) => b.length - a.length);
-    text = blocks[0];
+  matches.sort((a, b) => a.index - b.index);
+  const blocks = matches.map((m) => m.value).filter(Boolean);
+  if (blocks.length === 1) text = blocks[0];
+  else if (blocks.length > 1) {
+    const clean = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1]);
+    if (clean.some((block) => /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(block))) {
+      text = clean.join(' \\\\ ');
+    } else {
+      text = `\\begin{aligned}\n${clean.map(markAlignmentRelation).join(latexLineSeparator())}\n\\end{aligned}`;
+    }
   }
 
   if (text.startsWith('$$') && text.endsWith('$$') && text.length > 4) text = text.slice(2, -2).trim();
@@ -815,6 +926,16 @@ function normalizeOcrLatex(value) {
   return text;
 }
 
+function markAlignmentRelation(line) {
+  const value = String(line || '').trim();
+  if (!value || /&(?:=|\\le|\\ge|\\approx|\\sim|\\to|\\Rightarrow)/.test(value)) return value;
+  const patterns = ['\\\\leq?', '\\\\geq?', '\\\\approx', '\\\\sim', '\\\\equiv', '\\\\to', '='];
+  for (const pattern of patterns) {
+    const re = new RegExp(`(${pattern})`);
+    if (re.test(value)) return value.replace(re, '&$1');
+  }
+  return value;
+}
 function refreshOcrUI() {
   if (!ocrResult || !ocrHistoryList) return;
   const has = Boolean(currentOcrResult?.latex);
@@ -1822,19 +1943,74 @@ function cropSelectedFormula(sourceCanvas, layer, rect) {
   return crop;
 }
 
+
+function formulaRowBands(canvas) {
+  const ctx = canvas?.getContext?.('2d', { willReadFrequently: true });
+  if (!ctx || !canvas.width || !canvas.height || canvas.width / Math.max(1, canvas.height) < 1.15) return [];
+  const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const rowInk = new Array(height).fill(0);
+  const colInk = new Array(width).fill(0);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      if (lum < 235) { rowInk[y] += 1; colInk[x] += 1; }
+    }
+  }
+  // Tall braces/matrix delimiters are a strong sign that row-by-row OCR would
+  // destroy a single structured object, so keep those crops intact.
+  if (colInk.some((count) => count > height * 0.52)) return [];
+  const threshold = Math.max(3, Math.round(width * 0.008));
+  const raw = [];
+  let start = null;
+  for (let y = 0; y < height; y += 1) {
+    if (rowInk[y] >= threshold && start === null) start = y;
+    if ((rowInk[y] < threshold || y === height - 1) && start !== null) {
+      const end = rowInk[y] < threshold ? y - 1 : y;
+      if (end - start + 1 >= 5) raw.push({ top: start, bottom: end });
+      start = null;
+    }
+  }
+  if (raw.length < 2 || raw.length > 6) return [];
+  const merged = [];
+  for (const band of raw) {
+    const prev = merged.at(-1);
+    if (prev && band.top - prev.bottom <= Math.max(5, Math.round(height * 0.018))) prev.bottom = band.bottom;
+    else merged.push({ ...band });
+  }
+  if (merged.length < 2 || merged.length > 5) return [];
+  return merged.map((band) => ({ top: Math.max(0, band.top - 5), bottom: Math.min(height - 1, band.bottom + 5) }));
+}
+
+function cropCanvasRows(canvas, band) {
+  const out = document.createElement('canvas');
+  const height = Math.max(1, band.bottom - band.top + 1);
+  out.width = canvas.width;
+  out.height = height;
+  const ctx = out.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(canvas, 0, band.top, canvas.width, height, 0, 0, out.width, out.height);
+  return out;
+}
+
+function looksMultilineLatex(value) {
+  return /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}|\\\\/.test(String(value || ''));
+}
+
 async function runImageFormulaRecognition(crop) {
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
   const generation = {
-    max_new_tokens: 384,
+    max_new_tokens: 512,
     num_beams: 2,
     early_stopping: true,
     do_sample: false,
     repetition_penalty: 1.04
   };
 
-  async function onePass(variant) {
-    const prepared = normalizeFormulaCropForOcr(crop, variant);
+  async function onePass(sourceCanvas, variant = 'tight') {
+    const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
     const inputImage = await prepareMathOcrInput(prepared);
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
@@ -1846,22 +2022,40 @@ async function runImageFormulaRecognition(crop) {
   }
 
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  let best = await onePass('tight');
-  // The stress corpus contains long nested fractions, matrices, and radical
-  // stacks. A slightly wider crop can rescue context when the tight pass is
-  // structurally suspicious, but we do not pay for a second inference on clean
-  // results because that would make every extraction feel unnecessarily slow.
+  let best = await onePass(crop, 'tight');
+
+  // For visibly separated aligned rows, a whole-block decoder can return only
+  // the first line. When the crop has clean horizontal row bands and no tall
+  // matrix/cases delimiter, recognize each row and rebuild an aligned block.
+  const bands = formulaRowBands(crop);
+  if (bands.length >= 2 && !looksMultilineLatex(best.latex)) {
+    const lines = [];
+    let rowFailure = false;
+    for (let i = 0; i < bands.length; i += 1) {
+      setOcrStatus(t(`Detected ${bands.length} formula rows · recognizing row ${i + 1}…`, `检测到 ${bands.length} 行公式 · 正在识别第 ${i + 1} 行……`), true);
+      try {
+        const row = await onePass(cropCanvasRows(crop, bands[i]), 'tight');
+        if (!row.assessment.ok || !row.latex) { rowFailure = true; break; }
+        lines.push(markAlignmentRelation(row.latex));
+      } catch (_) { rowFailure = true; break; }
+    }
+    if (!rowFailure && lines.length === bands.length) {
+      const latex = `\\begin{aligned}\n${lines.join(latexLineSeparator())}\n\\end{aligned}`;
+      const candidate = { raw: latex, rawLatex: latex, latex, penalty: latexStructuralPenalty(latex), assessment: assessImageOcrResult(latex, latex), variant: 'rows' };
+      if (candidate.assessment.ok) best = candidate;
+    }
+  }
+
   if (!best.assessment.ok || best.penalty >= 8) {
     setOcrStatus(t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……'), true);
-    const alternate = await onePass('relaxed');
-    const score = (item) => item.penalty + item.assessment.reasons.length * 40 + (item.latex ? 0 : 1000);
+    const alternate = await onePass(crop, 'relaxed');
+    const score = (item) => item.penalty + item.assessment.reasons.length * 40 + (item.latex ? 0 : 1000) - (looksMultilineLatex(item.latex) ? 3 : 0);
     if (score(alternate) < score(best)) best = alternate;
   }
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
   requireUsableImageOcr(best.raw, best.latex);
   return best;
 }
-
 function commitFormulaResult(item, statusMessage = '') {
   currentOcrResult = item;
   ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 12);
@@ -2475,24 +2669,47 @@ function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-async function stabilizeFitWidthLayout() {
-  if (!pdfDoc || zoomMode !== 'fit-width') return;
-  // Cached-session restore can apply sidebar state and continuous placeholders
-  // before the final grid width has settled. Re-run fit-width after two layout
-  // frames so early pages cannot keep a stale oversized scale.
-  await nextFrame();
-  await nextFrame();
-  if (!pdfDoc || zoomMode !== 'fit-width') return;
-  if (readingFlow === 'continuous') {
-    const anchor = captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 };
-    await buildContinuousDocument({ restore: true, anchor });
-  } else {
-    await renderCurrentPage();
+function continuousFitWidthMismatch() {
+  if (readingFlow !== 'continuous' || zoomMode !== 'fit-width' || !primaryCanvasWrap) return false;
+  const expected = Math.max(220, primaryCanvasWrap.clientWidth - 46);
+  if (Math.abs(expected - continuousLayoutWidth) > 2) return true;
+  for (const record of continuousPageNodes.values()) {
+    if (!record.rendered) continue;
+    const width = record.surface?.getBoundingClientRect?.().width || 0;
+    if (width && Math.abs(width - expected) > 3) return true;
   }
+  return false;
 }
 
+async function stabilizeFitWidthLayout() {
+  if (!pdfDoc || zoomMode !== 'fit-width' || fitWidthStabilizing) return;
+  fitWidthStabilizing = true;
+  try {
+    clearTimeout(readerWidthTimer);
+    const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 }) : null;
+    // Browser-history restores can report an intermediate grid width for one or
+    // more frames. Sample it repeatedly and rebuild until rendered page widths
+    // agree with the final reading-region width.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await nextFrame(); await nextFrame();
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, 90 * attempt));
+      if (!pdfDoc || zoomMode !== 'fit-width') return;
+      lastObservedReaderWidth = Math.round(primaryCanvasWrap?.clientWidth || 0);
+      if (readingFlow === 'continuous') {
+        await buildContinuousDocument({ restore: true, anchor });
+        await nextFrame();
+        if (!continuousFitWidthMismatch()) break;
+      } else {
+        await renderCurrentPage();
+        break;
+      }
+    }
+  } finally {
+    fitWidthStabilizing = false;
+  }
+}
 function scheduleReaderWidthReflow() {
-  if (!pdfDoc || zoomMode === 'custom') return;
+  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing) return;
   clearTimeout(readerWidthTimer);
   readerWidthTimer = setTimeout(async () => {
     if (!pdfDoc || zoomMode === 'custom') return;
@@ -2857,19 +3074,46 @@ async function pageText(pageNum) {
   return text;
 }
 
-function highlightedSnippet(text, query) {
-  const low = text.toLocaleLowerCase();
-  const q = query.toLocaleLowerCase();
-  const index = low.indexOf(q);
-  const start = Math.max(0, index - 65);
-  const end = Math.min(text.length, index + query.length + 95);
-  const before = text.slice(start, index);
-  const hit = text.slice(index, index + query.length);
-  const after = text.slice(index + query.length, end);
+function normalizeSearchValue(value, matchCase = false) {
+  let text = String(value || '').normalize('NFKC')
+    .replace(/\u00ad/g, '')
+    .replace(/[ﬀﬁﬂﬃﬄ]/g, (ch) => ({ 'ﬀ':'ff','ﬁ':'fi','ﬂ':'fl','ﬃ':'ffi','ﬄ':'ffl' }[ch] || ch))
+    .replace(/-\s*\n\s*(?=\p{L})/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return matchCase ? text : text.toLocaleLowerCase();
+}
+
+function searchTextMatch(text, query) {
+  const matchCase = Boolean(searchMatchCase?.checked);
+  const wholeWord = Boolean(searchWholeWord?.checked);
+  const haystack = normalizeSearchValue(text, matchCase);
+  const needle = normalizeSearchValue(query, matchCase);
+  if (!needle) return { matched: false, index: -1 };
+  let index = haystack.indexOf(needle);
+  if (index < 0) return { matched: false, index: -1 };
+  if (wholeWord && /^[\p{L}\p{N}_]+$/u.test(needle)) {
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(^|[^\\p{L}\\p{N}_])(${escaped})(?=$|[^\\p{L}\\p{N}_])`, matchCase ? 'u' : 'iu');
+    const m = normalizeSearchValue(text, true).match(re);
+    if (!m) return { matched: false, index: -1 };
+  }
+  const direct = matchCase ? text.indexOf(query) : text.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
+  return { matched: true, index: direct >= 0 ? direct : Math.max(0, text.toLocaleLowerCase().indexOf(query.split(/\s+/)[0].toLocaleLowerCase())) };
+}
+
+function highlightedSnippet(text, query, index = -1) {
+  const safeIndex = index >= 0 ? index : 0;
+  const start = Math.max(0, safeIndex - 65);
+  const hitLength = Math.max(1, query.length);
+  const end = Math.min(text.length, safeIndex + hitLength + 95);
+  const before = text.slice(start, safeIndex);
+  const hit = text.slice(safeIndex, Math.min(text.length, safeIndex + hitLength));
+  const after = text.slice(Math.min(text.length, safeIndex + hitLength), end);
   const frag = document.createDocumentFragment();
   if (start > 0) frag.append('…');
   frag.append(before);
-  const mark = document.createElement('span'); mark.className = 'search-hit'; mark.textContent = hit; frag.append(mark);
+  if (hit) { const mark = document.createElement('span'); mark.className = 'search-hit'; mark.textContent = hit; frag.append(mark); }
   frag.append(after);
   if (end < text.length) frag.append('…');
   return frag;
@@ -2885,7 +3129,8 @@ async function searchPdf(query) {
     searchStatus.textContent = t(`Searching page ${page} of ${pdfDoc.numPages}…`, `正在搜索第 ${page} / ${pdfDoc.numPages} 页……`);
     try {
       const text = await pageText(page);
-      if (text.toLocaleLowerCase().includes(q.toLocaleLowerCase())) matches.push({ page, text });
+      const result = searchTextMatch(text, q);
+      if (result.matched) matches.push({ page, text, index: result.index });
     } catch (error) { console.error(error); }
     if (page % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
@@ -2894,38 +3139,66 @@ async function searchPdf(query) {
     const item = document.createElement('button');
     item.type = 'button'; item.className = 'search-result';
     const label = document.createElement('strong'); label.textContent = t(`Page ${match.page}`, `第 ${match.page} 页`);
-    const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, q));
+    const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, q, match.index));
     item.append(label, snippet);
     item.addEventListener('click', () => goToPage(match.page));
     searchResults.append(item);
   }
 }
 
+function formatBookmarkTime(timestamp) {
+  if (!timestamp) return '';
+  try {
+    return new Intl.DateTimeFormat(root.dataset.lang === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).format(new Date(timestamp));
+  } catch (_) { return new Date(timestamp).toLocaleString(); }
+}
+
 function renderBookmarks() {
   bookmarkList.replaceChildren();
   bookmarkEmpty.classList.toggle('is-hidden', bookmarks.length > 0);
-  bookmarks.sort((a,b) => a.page - b.page);
+  bookmarks.sort((a,b) => a.page - b.page || a.created - b.created);
   for (const bookmark of bookmarks) {
     const row = document.createElement('div'); row.className = 'bookmark-item';
+    const main = document.createElement('div'); main.className = 'bookmark-main';
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bookmark-jump';
-    const strong = document.createElement('strong'); strong.textContent = t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`);
-    const detail = document.createElement('span'); detail.textContent = bookmark.created ? new Date(bookmark.created).toLocaleDateString(root.dataset.lang === 'zh' ? 'zh-CN' : 'en-US') : '';
+    const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`);
+    const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
     jump.append(strong, detail); jump.addEventListener('click', () => goToPage(bookmark.page));
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'bookmark-edit'; edit.textContent = '✎'; edit.title = t('Edit bookmark', '编辑书签');
+    edit.addEventListener('click', () => { editingBookmarkId = editingBookmarkId === bookmark.id ? null : bookmark.id; renderBookmarks(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'bookmark-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', t('Remove bookmark', '删除书签'));
     remove.addEventListener('click', () => {
-      bookmarks = bookmarks.filter((item) => item.page !== bookmark.page);
-      persistDocumentState();
-      renderBookmarks();
+      bookmarks = bookmarks.filter((item) => item.id !== bookmark.id);
+      if (editingBookmarkId === bookmark.id) editingBookmarkId = null;
+      persistDocumentState(); renderBookmarks();
     });
-    row.append(jump, remove); bookmarkList.append(row);
+    main.append(jump, edit, remove); row.append(main);
+    if (bookmark.note?.trim()) { const preview = document.createElement('div'); preview.className = 'bookmark-note-preview'; preview.textContent = bookmark.note; row.append(preview); }
+    if (editingBookmarkId === bookmark.id) {
+      const editor = document.createElement('div'); editor.className = 'bookmark-editor';
+      const titleInput = document.createElement('input'); titleInput.value = bookmark.title || ''; titleInput.placeholder = t('Bookmark title', '书签标题');
+      const noteInput = document.createElement('textarea'); noteInput.value = bookmark.note || ''; noteInput.placeholder = t('What is this bookmark for?', '这个书签用于记录什么？');
+      const actions = document.createElement('div'); actions.className = 'bookmark-editor-actions';
+      const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = t('Cancel', '取消'); cancel.addEventListener('click', () => { editingBookmarkId = null; renderBookmarks(); });
+      const save = document.createElement('button'); save.type = 'button'; save.className = 'save'; save.textContent = t('Save', '保存'); save.addEventListener('click', () => {
+        bookmark.title = titleInput.value.trim(); bookmark.note = noteInput.value.trim(); editingBookmarkId = null; persistDocumentState(); renderBookmarks();
+      });
+      actions.append(cancel, save); editor.append(titleInput, noteInput, actions); row.append(editor);
+      setTimeout(() => titleInput.focus(), 0);
+    }
+    bookmarkList.append(row);
   }
 }
 
 function addCurrentBookmark() {
-  if (!pdfDoc || bookmarks.some((item) => item.page === currentPage)) return;
-  bookmarks.push({ page: currentPage, created: Date.now() });
-  persistDocumentState();
-  renderBookmarks();
+  if (!pdfDoc) return;
+  const existing = bookmarks.find((item) => item.page === currentPage);
+  if (existing) { editingBookmarkId = existing.id; renderBookmarks(); return; }
+  const item = { id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, page: currentPage, title: '', note: '', created: Date.now() };
+  bookmarks.push(item); editingBookmarkId = item.id;
+  persistDocumentState(); renderBookmarks();
 }
 
 async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null }) {
@@ -2975,16 +3248,28 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
   }
 }
 
-async function openPdfFile(file) {
+async function openPdfFile(file, recoveryId = null) {
   if (!file || (file.type && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'))) {
     showError(t('Please choose a PDF file.', '请选择 PDF 文件。'));
     return;
   }
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const id = makeFileKey(file.name, file.size, file.lastModified || 0);
+    let id = makeFileKey(file.name, file.size, file.lastModified || 0);
     let cachedRecord = null;
-    try { cachedRecord = await dbGet('documents', id); } catch (_) {}
+    if (recoveryId) {
+      try {
+        const recovery = await dbGet('documents', recoveryId);
+        if (recovery && recovery.name === file.name && Number(recovery.size) === Number(file.size)) {
+          id = recovery.id;
+          cachedRecord = recovery;
+          delete cachedRecord.cacheError;
+        } else if (recovery) {
+          showError(t('The selected PDF does not match the missing cached file. It will be opened as a new document.', '所选 PDF 与缺失的缓存文件不匹配，将作为新文档打开。'));
+        }
+      } catch (_) {}
+    }
+    if (!cachedRecord) { try { cachedRecord = await dbGet('documents', id); } catch (_) {} }
     const blob = file.slice(0, file.size, 'application/pdf');
     await openPdfSource({
       data: new Uint8Array(arrayBuffer),
@@ -2994,7 +3279,6 @@ async function openPdfFile(file) {
     });
   } catch (_) {}
 }
-
 async function openCachedDocument(id, options = {}) {
   try {
     const [record, fileRecord] = await Promise.all([dbGet('documents', id), dbGet('files', id)]);
@@ -3008,7 +3292,11 @@ async function openCachedDocument(id, options = {}) {
     return true;
   } catch (error) {
     console.error(error);
-    if (!options.silent) showError(error?.message || t('The cached PDF could not be reopened.', '无法重新打开本地缓存的 PDF。'));
+    try {
+      const record = await dbGet('documents', id);
+      if (record) { record.cacheError = 'unavailable'; await dbPut('documents', record); await refreshLocalLibrary(); }
+    } catch (_) {}
+    if (!options.silent) showError(error?.message || t('The cached PDF could not be reopened. Reopen the original file from History to recover the session.', '无法重新打开本地缓存的 PDF。请从历史中重新选择原文件以恢复阅读现场。'));
     return false;
   }
 }
@@ -3049,7 +3337,7 @@ document.querySelectorAll('.sidebar-tab').forEach((tab) => tab.addEventListener(
 
 openButton.addEventListener('click', () => fileInput.click());
 welcomeOpen.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => openPdfFile(fileInput.files?.[0]));
+fileInput.addEventListener('change', () => { const recoveryId = pendingRecoveryRecordId; pendingRecoveryRecordId = null; openPdfFile(fileInput.files?.[0], recoveryId); });
 prevPage.addEventListener('click', () => goToPage(currentPage - 1));
 nextPage.addEventListener('click', () => goToPage(currentPage + 1));
 pageNumberInput.addEventListener('change', () => goToPage(pageNumberInput.value));
@@ -3062,8 +3350,8 @@ flowSingle?.addEventListener('click', () => setReadingFlow('single'));
 flowContinuous?.addEventListener('click', () => setReadingFlow('continuous'));
 resetDisplay?.addEventListener('click', resetDisplayPreferences);
 pageToneSelect?.addEventListener('change', () => { pageTone = pageToneSelect.value; applyPageDisplay(); });
-brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 96); applyPageDisplay(); });
-contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 96); applyPageDisplay(); });
+brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 100); applyPageDisplay(); });
+contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 100); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
 formulaExtractionSelect?.addEventListener('change', () => {
@@ -3085,6 +3373,7 @@ referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinn
 addBookmark.addEventListener('click', addCurrentBookmark);
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
 searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState(); });
+[searchMatchCase, searchWholeWord].forEach((node) => node?.addEventListener('change', () => { persistSearchPreferences(); if (pdfDoc && searchInput.value.trim()) searchPdf(searchInput.value); }));
 
 pageNote.addEventListener('input', () => {
   if (!pdfDoc) return;
@@ -3201,6 +3490,7 @@ function openLeftPanelShortcut(panelId, focusTarget = null) {
 }
 
 function openRightSectionShortcut(sectionId, focusTarget = null) {
+  expandWorkspaceSection(sectionId);
   if (matchMedia('(max-width: 860px)').matches) {
     shell.classList.add('mobile-right-open');
     shell.classList.remove('mobile-left-open');
@@ -3217,24 +3507,26 @@ function openRightSectionShortcut(sectionId, focusTarget = null) {
 
 document.addEventListener('keydown', (event) => {
   const target = event.target;
-  const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); return; }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-    event.preventDefault(); activatePanel('search-panel');
-    if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-left-open');
-    else shell.classList.remove('left-collapsed');
-    searchInput.focus(); return;
-  }
-  if (!typing && event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
-  if (!typing && event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('outline-panel'); return; }
-  if (!typing && event.key.toLowerCase() === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('history-panel'); return; }
-  if (!typing && event.key.toLowerCase() === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('bookmarks-panel'); return; }
-  if (!typing && event.key.toLowerCase() === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('display-section'); return; }
-  if (!typing && event.key.toLowerCase() === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('note-section', pageNote); return; }
-  if (!typing && pdfDoc && event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setPinnedPage(currentPage); return; }
-  if (!typing && pdfDoc && event.key.toLowerCase() === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setOcrMode(!ocrMode); return; }
-  if (!typing && pdfDoc && event.key === 'ArrowLeft') goToPage(currentPage - 1);
-  if (!typing && pdfDoc && event.key === 'ArrowRight') goToPage(currentPage + 1);
+  const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target?.isContentEditable;
+  const key = event.key.toLowerCase();
+  if ((event.ctrlKey || event.metaKey) && key === 'o') { event.preventDefault(); fileInput.click(); return; }
+  if ((event.ctrlKey || event.metaKey) && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
+  if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'o') { event.preventDefault(); fileInput.click(); return; }
+  if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
+  if (!typing && key === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
+  if (!typing && key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('outline-panel'); return; }
+  if (!typing && key === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('history-panel'); return; }
+  if (!typing && key === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('bookmarks-panel'); return; }
+  if (!typing && key === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('display-section'); return; }
+  if (!typing && key === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('note-section', pageNote); return; }
+  if (!typing && pdfDoc && key === 'p' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setPinnedPage(currentPage); return; }
+  if (!typing && pdfDoc && key === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setOcrMode(!ocrMode); return; }
+  if (!typing && pdfDoc && event.key === 'ArrowUp') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: -Math.max(70, primaryCanvasWrap.clientHeight * 0.11), behavior: 'auto' }); return; }
+  if (!typing && pdfDoc && event.key === 'ArrowDown') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: Math.max(70, primaryCanvasWrap.clientHeight * 0.11), behavior: 'auto' }); return; }
+  if (!typing && pdfDoc && event.key === 'PageUp') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: -primaryCanvasWrap.clientHeight * 0.85, behavior: 'auto' }); return; }
+  if (!typing && pdfDoc && event.key === 'PageDown') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: primaryCanvasWrap.clientHeight * 0.85, behavior: 'auto' }); return; }
+  if (!typing && pdfDoc && event.key === 'ArrowLeft') { event.preventDefault(); goToPage(currentPage - 1); return; }
+  if (!typing && pdfDoc && event.key === 'ArrowRight') { event.preventDefault(); goToPage(currentPage + 1); return; }
   if (event.key === 'Escape') { setOcrMode(false); shell.classList.remove('mobile-left-open','mobile-right-open'); hideSelectionToolbar(); window.getSelection()?.removeAllRanges(); }
 });
 
@@ -3259,13 +3551,15 @@ if ('ResizeObserver' in window && primaryCanvasWrap) {
 }
 
 window.addEventListener('pageshow', () => {
-  if (pdfDoc && zoomMode === 'fit-width') setTimeout(() => stabilizeFitWidthLayout(), 60);
+  if (pdfDoc && zoomMode === 'fit-width') { lastObservedReaderWidth = 0; setTimeout(() => stabilizeFitWidthLayout(), 40); setTimeout(() => stabilizeFitWidthLayout(), 320); }
 });
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && pdfDoc && zoomMode === 'fit-width') setTimeout(() => stabilizeFitWidthLayout(), 80);
+  if (!document.hidden && pdfDoc && zoomMode === 'fit-width') { lastObservedReaderWidth = 0; setTimeout(() => stabilizeFitWidthLayout(), 60); setTimeout(() => stabilizeFitWidthLayout(), 360); }
 });
 
 loadDisplayPreferences();
+loadSearchPreferences();
+setupWorkspaceCollapsibles();
 mathOcrEngineMode = normalizedOcrEngineMode(mathOcrEngineMode);
 if (ocrEngineSelect) ocrEngineSelect.value = mathOcrEngineMode;
 if (formulaExtractionSelect) formulaExtractionSelect.value = formulaExtractionMode;

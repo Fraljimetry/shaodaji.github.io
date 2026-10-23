@@ -47,10 +47,10 @@
   <main class="reader-shell left-collapsed right-collapsed" id="reader-shell">
     <aside class="sidebar sidebar-left" id="left-sidebar" aria-label="Document navigation">
       <div class="sidebar-tabs" role="tablist" aria-label="Document tools">
-        <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录">Contents</button>
-        <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索">Search</button>
-        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Saved" data-zh="收藏">Saved</button>
-        <button class="sidebar-tab" type="button" data-panel="history-panel" data-en="History" data-zh="历史">History</button>
+        <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录" data-en-title="Contents · C" data-zh-title="目录 · C">Contents</button>
+        <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索" data-en-title="Search · F" data-zh-title="搜索 · F">Search</button>
+        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Saved" data-zh="收藏" data-en-title="Saved · S" data-zh-title="收藏 · S">Saved</button>
+        <button class="sidebar-tab" type="button" data-panel="history-panel" data-en="History" data-zh="历史" data-en-title="History · H" data-zh-title="历史 · H">History</button>
       </div>
 
       <section class="sidebar-panel is-active" id="outline-panel">
@@ -70,6 +70,11 @@
             <input id="search-input" type="search" autocomplete="off" placeholder="theorem, curvature, Ricci…">
             <button type="submit" data-en="Find" data-zh="查找">Find</button>
           </div>
+          <div class="search-options">
+            <label><input id="search-match-case" type="checkbox"> <span data-en="Match case" data-zh="区分大小写">Match case</span></label>
+            <label><input id="search-whole-word" type="checkbox"> <span data-en="Whole word" data-zh="全词匹配">Whole word</span></label>
+          </div>
+          <p class="search-help" data-en="Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized." data-zh="默认不区分大小写，并规范化 Unicode 连字、软连字符与重复空白。">Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized.</p>
         </form>
         <div class="search-status" id="search-status" aria-live="polite"></div>
         <div class="search-results" id="search-results"></div>
@@ -212,12 +217,12 @@
           </select>
         </label>
         <label class="display-setting range-setting">
-          <span class="display-label"><span data-en="Brightness" data-zh="亮度">Brightness</span><output id="brightness-value">96%</output></span>
-          <input id="brightness-range" type="range" min="70" max="115" step="1" value="96">
+          <span class="display-label"><span data-en="Brightness" data-zh="亮度">Brightness</span><output id="brightness-value">100%</output></span>
+          <input id="brightness-range" type="range" min="70" max="115" step="1" value="100">
         </label>
         <label class="display-setting range-setting">
-          <span class="display-label"><span data-en="Contrast" data-zh="对比度">Contrast</span><output id="contrast-value">96%</output></span>
-          <input id="contrast-range" type="range" min="80" max="120" step="1" value="96">
+          <span class="display-label"><span data-en="Contrast" data-zh="对比度">Contrast</span><output id="contrast-value">100%</output></span>
+          <input id="contrast-range" type="range" min="80" max="120" step="1" value="100">
         </label>
         <label class="display-setting range-setting">
           <span class="display-label"><span data-en="Page spacing" data-zh="页面间距">Page spacing</span><output id="gap-value">20 px</output></span>
@@ -235,6 +240,7 @@
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
         <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs." data-zh="在公式周围拖出矩形。默认使用 Texify 图像 OCR，因为它更适合二维数学排版；对于含文本层的 PDF，PDF 矢量提取仍作为快速本地备用与对照路径。">Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs.</p>
+        <p class="display-note" data-en="Formula OCR recognizes equations and mathematical text; it does not reliably interpret algebraic or commutative diagrams as structured objects." data-zh="公式 OCR 用于识别公式与数学文本；它不能可靠地把代数图、交换图等图示解析成结构化对象。">Formula OCR recognizes equations and mathematical text; it does not reliably interpret algebraic or commutative diagrams as structured objects.</p>
         <div class="ocr-engine-controls">
           <label>
             <span data-en="Default extraction" data-zh="默认提取方式">Default extraction</span>
@@ -251,7 +257,7 @@
               <option value="wasm" data-en="Texify · CPU q8" data-zh="Texify · CPU q8">Texify · CPU q8</option>
             </select>
           </label>
-          <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
+          <button class="text-button" type="button" id="ocr-retry" data-en="Reload" data-zh="重载" data-en-title="Reload image OCR engine" data-zh-title="重新加载图像 OCR 引擎">Reload</button>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
         <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available as a fast fallback." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量保留为快速备用路径。">Ready · Image OCR is the default formula extractor. PDF vector remains available as a fast fallback.</div>
@@ -281,7 +287,7 @@
         </div>
       </section>
 
-      <section class="workspace-section selection-section">
+      <section class="workspace-section selection-section" id="selection-section">
         <div class="panel-heading">
           <span data-en="Selection" data-zh="选区">Selection</span>
           <span class="page-chip" id="selection-page-chip">—</span>
@@ -310,7 +316,7 @@
         <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
       </section>
 
-      <section class="workspace-section">
+      <section class="workspace-section" id="reference-section">
         <div class="panel-heading"><span data-en="Reference view" data-zh="参考视图">Reference view</span></div>
         <p class="workspace-copy" data-en="Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading." data-zh="固定当前页面后继续阅读其他位置；固定页会始终保留在当前证明旁边。">Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading.</p>
         <div class="reference-card" id="reference-card">
@@ -319,12 +325,13 @@
         </div>
       </section>
 
-      <section class="workspace-section shortcuts">
+      <section class="workspace-section shortcuts" id="shortcuts-section">
         <div class="panel-heading"><span data-en="Shortcuts" data-zh="快捷键">Shortcuts</span></div>
         <dl>
+          <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd data-en="Scroll reading area" data-zh="滚动阅读区">Scroll reading area</dd></div>
           <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
-          <div><dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
-          <div><dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
+          <div><dt><kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
+          <div><dt><kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
           <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle formula extraction" data-zh="矩形公式提取">Rectangle formula extraction</dd></div>
           <div><dt><kbd>C</kbd></dt><dd data-en="Open Contents" data-zh="打开目录">Open Contents</dd></div>
           <div><dt><kbd>H</kbd></dt><dd data-en="Open History" data-zh="打开历史">Open History</dd></div>
