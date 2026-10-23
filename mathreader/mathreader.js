@@ -909,8 +909,28 @@ function normalizeOcrLatex(value) {
   const blocks = matches.map((m) => m.value).filter(Boolean);
   if (blocks.length === 1) text = blocks[0];
   else if (blocks.length > 1) {
-    const clean = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1]);
-    if (clean.some((block) => /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(block))) {
+    let clean = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1]);
+
+    // Texify occasionally emits a good main formula surrounded by tiny stray
+    // math blocks (for example a lone \blacksquare or an index fragment).
+    // When there are at least three explicit blocks and one block clearly
+    // dominates the others, keep that dominant block instead of fabricating
+    // an aligned environment from unrelated fragments. Two-block output is
+    // intentionally left untouched because it can be a genuine two-line
+    // formula.
+    if (clean.length >= 3) {
+      const ranked = clean
+        .map((block, index) => ({ block, index, length: block.replace(/\s+/g, '').length }))
+        .sort((a, b) => b.length - a.length);
+      const first = ranked[0];
+      const second = ranked[1];
+      if (first.length >= 72 && first.length >= Math.max(2.6 * second.length, second.length + 48)) {
+        clean = [first.block];
+      }
+    }
+
+    if (clean.length === 1) text = clean[0];
+    else if (clean.some((block) => /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(block))) {
       text = clean.join(' \\\\ ');
     } else {
       text = `\\begin{aligned}\n${clean.map(markAlignmentRelation).join(latexLineSeparator())}\n\\end{aligned}`;
@@ -1251,6 +1271,12 @@ function repairOcrLatex(value) {
   }
   if (depth > 0) out += '}'.repeat(depth);
   out = out.replace(/(\\mathrm\{div\})(?:\s*\1)+/g, '$1');
+
+  // Remove only mechanically duplicated arrow commands. This does not infer
+  // mathematical content; it fixes decoder artifacts such as `\mapsto \to`.
+  out = out
+    .replace(/\\mapsto\s*(?:\\to|\\rightarrow)\b/g, '\\mapsto')
+    .replace(/(?:\\to|\\rightarrow)\s*\\mapsto\b/g, '\\mapsto');
   return out.replace(/[ \t]+/g, ' ').trim();
 }
 
@@ -2016,13 +2042,38 @@ function formulaRowBands(canvas) {
   const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const rowInk = new Array(height).fill(0);
   const colInk = new Array(width).fill(0);
+  const rowLongestRun = new Array(height).fill(0);
   for (let y = 0; y < height; y += 1) {
+    let run = 0;
+    let longest = 0;
     for (let x = 0; x < width; x += 1) {
       const i = (y * width + x) * 4;
       const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-      if (lum < 235) { rowInk[y] += 1; colInk[x] += 1; }
+      if (lum < 235) {
+        rowInk[y] += 1;
+        colInk[x] += 1;
+        run += 1;
+        longest = Math.max(longest, run);
+      } else {
+        run = 0;
+      }
     }
+    rowLongestRun[y] = longest;
   }
+  // Several long, thin horizontal rules at distinct heights are a strong sign
+  // of a structured fraction/continued fraction. Treating those rules as row
+  // separators caused the fallback OCR to split one formula into nonsense
+  // fragments and wrap them in `aligned`. Keep such crops intact.
+  const longRuleThreshold = width * 0.28;
+  let longRuleGroups = 0;
+  let inLongRule = false;
+  for (let y = 0; y < height; y += 1) {
+    const isLongRule = rowLongestRun[y] >= longRuleThreshold;
+    if (isLongRule && !inLongRule) longRuleGroups += 1;
+    inLongRule = isLongRule;
+  }
+  if (longRuleGroups >= 2) return [];
+
   // Tall braces/matrix delimiters are a strong sign that row-by-row OCR would
   // destroy a single structured object, so keep those crops intact.
   if (colInk.some((count) => count > height * 0.52)) return [];
