@@ -152,6 +152,9 @@ let mathOcrEngineMode = 'auto';
 let currentOcrResult = null;
 let ocrHistory = [];
 let continuousScrollTop = 0;
+let continuousSavedAnchor = null;
+let continuousLayoutWidth = 0;
+let continuousLayoutHeight = 0;
 let continuousObserver = null;
 let continuousGeneration = 0;
 let continuousPageNodes = new Map();
@@ -363,8 +366,9 @@ function activePanelId() {
 }
 
 function snapshotSession() {
+  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 4,
+    version: 5,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -374,6 +378,7 @@ function snapshotSession() {
     scrollByPage,
     referenceScrollByPage,
     continuousScrollTop,
+    continuousAnchor: anchor,
     selection: currentSelection,
     ocrResult: currentOcrResult,
     ocrHistory,
@@ -569,6 +574,7 @@ function loadDocumentState(cachedSession = null) {
   scrollByPage = {};
   referenceScrollByPage = {};
   continuousScrollTop = 0;
+  continuousSavedAnchor = null;
   currentSelection = null;
   currentOcrResult = null;
   ocrHistory = [];
@@ -599,6 +605,13 @@ function loadDocumentState(cachedSession = null) {
     scrollByPage = session.scrollByPage && typeof session.scrollByPage === 'object' ? session.scrollByPage : {};
     referenceScrollByPage = session.referenceScrollByPage && typeof session.referenceScrollByPage === 'object' ? session.referenceScrollByPage : {};
     continuousScrollTop = Number.isFinite(Number(session.continuousScrollTop)) ? Math.max(0, Number(session.continuousScrollTop)) : 0;
+    const savedAnchor = session.continuousAnchor;
+    if (savedAnchor && Number.isFinite(Number(savedAnchor.page))) {
+      continuousSavedAnchor = {
+        page: Math.min(Math.max(1, Number(savedAnchor.page)), pdfDoc.numPages),
+        ratio: Math.min(1, Math.max(0, Number(savedAnchor.ratio) || 0))
+      };
+    }
     currentSelection = session.selection?.text ? session.selection : null;
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
@@ -1140,15 +1153,22 @@ function vectorGlyphTokensFromTextLayer(textLayer, layerRect, selected) {
     let emittedForSpan = 0;
     for (const node of span.childNodes) {
       if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue) continue;
-      const value = node.nodeValue.replace(/\u00ad/g, '');
-      for (let index = 0; index < value.length; index += 1) {
-        const ch = value[index];
-        if (!ch || /\s/.test(ch)) continue;
+      const value = node.nodeValue;
+      // DOM Range offsets are UTF-16 code-unit offsets, while mathematical
+      // alphanumeric symbols (e.g. 𝑢, 𝛼, 𝐾) are supplementary-plane Unicode
+      // code points represented by surrogate pairs. Iterate by code point but
+      // advance Range offsets by ch.length so a glyph is never split into two
+      // invalid surrogate halves (which previously surfaced as U+FFFD / �).
+      let utf16Offset = 0;
+      for (const ch of value) {
+        const startOffset = utf16Offset;
+        utf16Offset += ch.length;
+        if (!ch || ch === '\u00ad' || /[\uFE00-\uFE0F]/u.test(ch) || /\s/u.test(ch)) continue;
         let r = null;
         try {
           const range = document.createRange();
-          range.setStart(node, index);
-          range.setEnd(node, index + 1);
+          range.setStart(node, startOffset);
+          range.setEnd(node, utf16Offset);
           r = range.getBoundingClientRect();
           range.detach?.();
         } catch (_) { r = null; }
@@ -1651,6 +1671,10 @@ function extractVectorFormulaFromLayer(ocrLayer, selectionRect) {
   };
   let tokens = vectorGlyphTokensFromTextLayer(textLayer, layerRect, selected);
   if (!tokens.length) return null;
+  // If PDF.js itself reports an unmapped replacement glyph, vector extraction
+  // no longer has enough symbolic information to be trustworthy. Do not turn
+  // U+FFFD into plausible-looking LaTeX; let the image fallback handle it.
+  if (tokens.some((token) => String(token.text || '').includes('\uFFFD'))) return null;
   const glyphBaseHeight = dominantVectorHeight(tokens) || median(tokens.map((token) => token.height));
   tokens = mergeVectorGlyphWords(tokens, glyphBaseHeight || 12);
   return extractVectorFormulaFromTokens(tokens, true, glyphBaseHeight || 0);
@@ -2100,7 +2124,7 @@ async function renderContinuousPage(pageNum, generation) {
     const page = await pdfDoc.getPage(pageNum);
     if (generation !== continuousGeneration) return;
     const baseViewport = page.getViewport({ scale: 1 });
-    const scale = pageScale(baseViewport, primaryCanvasWrap, 'primary');
+    const scale = continuousScale(baseViewport);
     const viewport = page.getViewport({ scale });
     const { surface, canvas: pageCanvas, textLayer, ocrLayer } = record;
     surface.style.width = `${viewport.width}px`;
@@ -2127,6 +2151,26 @@ async function renderContinuousPage(pageNum, generation) {
   }
 }
 
+function captureContinuousAnchor() {
+  if (readingFlow !== 'continuous' || !pdfDoc || !continuousPageNodes.size || !primaryCanvasWrap) return null;
+  updateCurrentPageFromContinuousScroll();
+  const record = continuousPageNodes.get(currentPage);
+  if (!record?.frame) return null;
+  const height = Math.max(1, record.frame.offsetHeight || record.surface?.offsetHeight || 1);
+  const local = primaryCanvasWrap.scrollTop - record.frame.offsetTop;
+  return { page: currentPage, ratio: Math.min(1, Math.max(0, local / height)) };
+}
+
+function continuousScale(baseViewport) {
+  if (zoomMode === 'custom') return Math.max(.35, Math.min(zoomScale, 4));
+  const width = Math.max(220, continuousLayoutWidth || (primaryCanvasWrap.clientWidth - 46));
+  if (zoomMode === 'fit-page') {
+    const height = Math.max(220, continuousLayoutHeight || (primaryCanvasWrap.clientHeight - 46));
+    return Math.max(.35, Math.min(Math.min(width / baseViewport.width, height / baseViewport.height), 4));
+  }
+  return Math.max(.35, Math.min(width / baseViewport.width, 4));
+}
+
 function updateCurrentPageFromContinuousScroll() {
   if (readingFlow !== 'continuous' || !pdfDoc || !continuousPageNodes.size) return;
   const wrapRect = primaryCanvasWrap.getBoundingClientRect();
@@ -2145,15 +2189,19 @@ function updateCurrentPageFromContinuousScroll() {
   }
 }
 
-async function buildContinuousDocument({ restore = false } = {}) {
+async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
   if (!pdfDoc || !continuousStack) return;
   const generation = ++continuousGeneration;
   clearContinuousObserver();
   continuousStack.replaceChildren();
+  // Freeze one layout width/height for this generation. Lazy pages must never
+  // compute fit-width from a later sidebar/scrollbar state than early pages.
+  continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
+  continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
   const first = await pdfDoc.getPage(Math.min(currentPage, pdfDoc.numPages));
   if (generation !== continuousGeneration) return;
   const base = first.getViewport({ scale: 1 });
-  const scale = pageScale(base, primaryCanvasWrap, 'primary');
+  const scale = continuousScale(base);
   const estimateWidth = base.width * scale;
   const estimateHeight = base.height * scale;
   for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
@@ -2197,14 +2245,31 @@ async function buildContinuousDocument({ restore = false } = {}) {
     }
   }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
   for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
+
+  // Render the restored/current neighborhood before positioning the scroll
+  // anchor. This prevents giant stale placeholders near the resume point.
+  const anchorPage = Math.min(Math.max(1, Number(anchor?.page) || currentPage), pdfDoc.numPages);
+  const eagerPages = [];
+  for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) eagerPages.push(n);
+  await Promise.all(eagerPages.map((n) => renderContinuousPage(n, generation)));
+  if (generation !== continuousGeneration) return;
+
   requestAnimationFrame(() => {
     if (generation !== continuousGeneration) return;
-    if (restore && continuousScrollTop > 0) primaryCanvasWrap.scrollTop = continuousScrollTop;
-    else {
+    const restoreAnchor = anchor || continuousSavedAnchor;
+    if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
+      const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
+      const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
+      if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
+    } else {
+      // Legacy sessions stored only absolute pixels. Those values depend on the
+      // old viewport width and can land inside oversized placeholders after a
+      // reload, so migrate them to the saved page rather than replaying pixels.
       const target = continuousPageNodes.get(currentPage)?.frame;
       if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
     }
     updateCurrentPageFromContinuousScroll();
+    continuousSavedAnchor = captureContinuousAnchor();
   });
 }
 
@@ -2212,7 +2277,10 @@ async function renderCurrentPage() {
   if (!pdfDoc) return;
   updateNavigationState();
   if (readingFlow === 'continuous') {
-    try { await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0 }); }
+    try {
+      const anchor = restoringSession ? continuousSavedAnchor : captureContinuousAnchor();
+      await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0, anchor });
+    }
     catch (error) { showError(t('Continuous reading could not be rendered.', '无法渲染连续阅读模式。')); console.error(error); }
     return;
   }
@@ -2767,7 +2835,11 @@ primaryCanvasWrap.addEventListener('scroll', () => {
   if (readingFlow === 'continuous') {
     continuousScrollTop = primaryCanvasWrap.scrollTop;
     clearTimeout(continuousScrollTimer);
-    continuousScrollTimer = setTimeout(() => { updateCurrentPageFromContinuousScroll(); persistDocumentState(); }, 80);
+    continuousScrollTimer = setTimeout(() => {
+      updateCurrentPageFromContinuousScroll();
+      continuousSavedAnchor = captureContinuousAnchor();
+      persistDocumentState();
+    }, 80);
   } else {
     scrollByPage[String(currentPage)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
     persistDocumentState();
