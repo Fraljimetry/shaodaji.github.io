@@ -116,7 +116,6 @@ const ocrCapability = el('ocr-capability');
 const formulaExtractionSelect = el('formula-extraction-mode');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
-const ocrProcessingTime = el('ocr-processing-time');
 const resetDisplay = el('reset-display');
 const flowSingle = el('flow-single');
 const flowContinuous = el('flow-continuous');
@@ -162,8 +161,6 @@ let mathOcrLoading = false;
 let mathOcrBackend = null;
 let mathOcrEngineMode = 'official';
 let formulaExtractionMode = 'image';
-let ocrProcessingStartedAt = 0;
-let ocrProcessingTimer = null;
 let readerWidthObserver = null;
 let readerWidthTimer = null;
 let lastObservedReaderWidth = 0;
@@ -171,7 +168,6 @@ let fitWidthStabilizing = false;
 let currentOcrResult = null;
 let ocrHistory = [];
 let ocrHistoryExpanded = false;
-let ocrCropProcessingOverlay = null;
 let notePreviewTimer = null;
 let continuousScrollTop = 0;
 let continuousSavedAnchor = null;
@@ -867,38 +863,21 @@ function setOcrStatus(message, working = false) {
   if (!ocrStatus) return;
   ocrStatus.textContent = message;
   ocrStatus.classList.toggle('is-working', working);
-  if (working && ocrProcessing && !ocrProcessing.classList.contains('is-hidden') && ocrProcessingText) {
-    ocrProcessingText.textContent = message;
-  }
-  if (working && ocrCropProcessingOverlay) {
-    const label = ocrCropProcessingOverlay.querySelector('.ocr-crop-processing-label');
-    if (label) label.textContent = t('Processing…', '处理中…');
-  }
 }
 
-function setOcrProcessing(active, message = '') {
+function setOcrProcessing(active) {
   if (!ocrProcessing) return;
-  clearInterval(ocrProcessingTimer);
-  ocrProcessingTimer = null;
-  ocrProcessing.classList.toggle('is-hidden', !active);
-  if (!active) {
-    ocrProcessingStartedAt = 0;
-    if (ocrProcessingTime) ocrProcessingTime.textContent = '0.0 s';
-    return;
+  if (active) {
+    // Formula extraction has one authoritative busy indicator: the right
+    // workspace. Reopen it for every OCR invocation so returning to the tab,
+    // a previously collapsed sidebar, or a collapsed section cannot hide the
+    // next processing state.
+    openRightSectionShortcut('ocr-section');
+    ocrProcessing.classList.remove('is-hidden');
+    if (ocrProcessingText) ocrProcessingText.textContent = t('Processing…', '处理中…');
+  } else {
+    ocrProcessing.classList.add('is-hidden');
   }
-  ocrProcessingStartedAt = performance.now();
-  if (ocrProcessingText) ocrProcessingText.textContent = message || t('Preparing formula image…', '正在准备公式图像……');
-  const updateTime = () => {
-    if (!ocrProcessingStartedAt || !ocrProcessingTime) return;
-    const elapsed = ((performance.now() - ocrProcessingStartedAt) / 1000).toFixed(1);
-    ocrProcessingTime.textContent = `${elapsed} s`;
-    if (ocrCropProcessingOverlay) {
-      const label = ocrCropProcessingOverlay.querySelector('.ocr-crop-processing-label');
-      if (label) label.textContent = `${t('Processing', '处理中')}… ${elapsed} s`;
-    }
-  };
-  updateTime();
-  ocrProcessingTimer = setInterval(updateTime, 100);
 }
 
 function latexLineSeparator() { return ' ' + String.fromCharCode(92, 92, 10); }
@@ -1027,26 +1006,6 @@ function resetOcrBoxes() {
     const box = layer.querySelector('.ocr-selection-box');
     if (box) box.removeAttribute('style');
   }
-}
-
-function showOcrCropProcessing(layer, rect) {
-  hideOcrCropProcessing();
-  if (!layer || !rect) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'ocr-crop-processing';
-  overlay.style.left = `${rect.left}px`;
-  overlay.style.top = `${rect.top}px`;
-  overlay.style.width = `${Math.max(54, rect.width)}px`;
-  overlay.style.height = `${Math.max(32, rect.height)}px`;
-  const spinner = document.createElement('span'); spinner.className = 'spinner'; spinner.setAttribute('aria-hidden','true');
-  const label = document.createElement('span'); label.className = 'ocr-crop-processing-label'; label.textContent = t('Processing…', '处理中…');
-  overlay.append(spinner, label);
-  layer.append(overlay);
-  ocrCropProcessingOverlay = overlay;
-}
-function hideOcrCropProcessing() {
-  ocrCropProcessingOverlay?.remove();
-  ocrCropProcessingOverlay = null;
 }
 
 function applyOcrModeToSurfaces() {
@@ -2134,12 +2093,11 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
-    hideOcrCropProcessing();
     return;
   }
 
   mathOcrLoading = true;
-  setOcrProcessing(true, t('Preparing formula image…', '正在准备公式图像……'));
+  setOcrProcessing(true);
   try {
     const result = await runImageFormulaRecognition(crop);
     const item = { page, kind, latex: result.latex, preview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image', vectorAlternative: vector?.latex || null, vectorAlternativeText: vector?.text || null };
@@ -2161,7 +2119,6 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
-    hideOcrCropProcessing();
   }
 }
 
@@ -2188,7 +2145,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
   if (!crop || !page) return;
   mathOcrLoading = true;
   const imagePreview = preview || crop.toDataURL('image/png');
-  setOcrProcessing(true, t('Preparing image OCR comparison…', '正在准备图像 OCR 对照……'));
+  setOcrProcessing(true);
   try {
     const result = await runImageFormulaRecognition(crop);
     const item = { page, kind, latex: result.latex, preview: imagePreview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image' };
@@ -2289,7 +2246,6 @@ function bindOcrLayer(layer) {
     const sourceCanvas = kind === 'reference' ? referenceCanvas : kind === 'continuous' ? layer.closest('.continuous-page-surface')?.querySelector('canvas') : canvas;
     const crop = cropSelectedFormula(sourceCanvas, layer, drag.rect);
     resetOcrBoxes();
-    showOcrCropProcessing(layer, drag.rect);
     recognizeMathCrop(crop, page, kind, layer, drag.rect);
   };
   layer.addEventListener('pointerup', (event) => finish(event, false));
