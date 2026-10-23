@@ -1,6 +1,7 @@
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
 const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
-const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
+const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm';
+const TRANSFORMERS_RUNTIME = 'Transformers.js 4.3.1';
 const MATH_OCR_MODEL = 'onnx-community/nougat-latex-base-ONNX';
 const LOCAL_DB_NAME = 'mathreader-local-v1';
 const LOCAL_DB_VERSION = 1;
@@ -863,7 +864,7 @@ function updateOcrCapability(extra = '') {
   if (!ocrCapability) return;
   const gpu = Boolean(navigator.gpu);
   const engine = mathOcrBackend ? mathOcrBackend.label : t('not loaded', '尚未加载');
-  const base = t(`PDF vector: primary · Image fallback GPU: ${gpu ? 'available' : 'unavailable'} · Active image engine: ${engine}`, `PDF 矢量：主路径 · 图像备用 GPU：${gpu ? '可用' : '不可用'} · 当前图像引擎：${engine}`);
+  const base = t(`PDF vector: primary · ${TRANSFORMERS_RUNTIME} · Image fallback GPU: ${gpu ? 'available' : 'unavailable'} · Active image engine: ${engine}`, `PDF 矢量：主路径 · ${TRANSFORMERS_RUNTIME} · 图像备用 GPU：${gpu ? '可用' : '不可用'} · 当前图像引擎：${engine}`);
   ocrCapability.textContent = extra ? `${base} · ${extra}` : base;
 }
 
@@ -882,14 +883,21 @@ function friendlyOcrError(error, backend = null) {
   if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
   if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the Nougat-LaTeX browser fallback model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用浏览器版 Nougat-LaTeX 备用模型。');
   if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The image-OCR preprocessor rejected the selected region. Reload the page; if this persists, report the exact message.', '图像 OCR 预处理拒绝了框选区域。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
-  if (/scale|dequant|onnx|session|can't create a session|cannot create.*session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize. Recommended mode now follows the model card's official browser path (WASM/q8). Reload the engine; use WebGPU only as an experimental alternative.`, `${backend?.label || 'ONNX'} 引擎初始化失败。推荐模式现已按模型卡的官方浏览器路径（WASM/q8）加载。请重新加载引擎；WebGPU 仅作为实验性备选。`);
+  if (/scale|dequant|onnx|session|can't create a session|cannot create.*session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize under ${TRANSFORMERS_RUNTIME}. Recommended mode follows the model card's browser path; reload the engine or try WebGPU as a diagnostic alternative.`, `${backend?.label || 'ONNX'} 引擎在 ${TRANSFORMERS_RUNTIME} 下初始化失败。推荐模式遵循模型卡的浏览器路径；请重新加载引擎，或尝试 WebGPU 作为诊断性备选。`);
   return raw || t('Image OCR fallback failed to initialize.', '图像 OCR 备用引擎初始化失败。');
+}
+
+function detailedOcrError(error, backend = null) {
+  const friendly = friendlyOcrError(error, backend);
+  const technical = String(error?.message || error || '').replace(/\s+/g, ' ').trim();
+  if (!technical || technical === friendly) return friendly;
+  return `${friendly} · ${t('Technical', '技术信息')}: ${technical.slice(0, 520)}`;
 }
 
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
   mathOcrLoading = true;
-  setOcrStatus(t('Loading the local image-OCR fallback (Nougat-LaTeX)…', '正在加载本地图像 OCR 备用引擎（Nougat-LaTeX）……'), true);
+  setOcrStatus(t(`Loading the local image-OCR fallback (Nougat-LaTeX · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地图像 OCR 备用引擎（Nougat-LaTeX · ${TRANSFORMERS_RUNTIME}）……`), true);
   try {
     if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
     const { pipeline } = await mathOcrModulePromise;
@@ -1786,9 +1794,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     setOcrStatus(penalty === 0 ? t('Image OCR fallback complete · structure check passed.', '图像 OCR 备用识别完成 · 结构检查通过。') : t('Image OCR fallback complete, but the structure still needs review.', '图像 OCR 备用识别完成，但结构仍需人工核对。'));
   } catch (error) {
     console.error(error);
-    const friendly = friendlyOcrError(error, mathOcrBackend);
-    const technical = String(error?.message || error || '').replace(/\s+/g, ' ').trim();
-    const detail = technical && technical !== friendly ? `${friendly} · ${t('Technical', '技术信息')}: ${technical.slice(0, 280)}` : friendly;
+    const detail = detailedOcrError(error, mathOcrBackend);
     setOcrStatus(detail);
     showError(detail);
   } finally {
@@ -1838,9 +1844,9 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
     setOcrStatus(penalty === 0 ? t('Image OCR comparison complete.', '图像 OCR 对照完成。') : t('Image OCR comparison complete · structure still needs review.', '图像 OCR 对照完成 · 结构仍需人工核对。'));
   } catch (error) {
     console.error(error);
-    const friendly = friendlyOcrError(error, mathOcrBackend);
-    setOcrStatus(friendly);
-    showError(friendly);
+    const detail = detailedOcrError(error, mathOcrBackend);
+    setOcrStatus(detail);
+    showError(detail);
   } finally {
     mathOcrLoading = false;
   }

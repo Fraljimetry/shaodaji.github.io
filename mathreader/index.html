@@ -239,7 +239,7 @@
           <label>
             <span data-en="Image OCR fallback" data-zh="图像 OCR 备用引擎">Image OCR fallback</span>
             <select id="ocr-engine-mode">
-              <option value="official" data-en="Recommended · official CPU" data-zh="推荐 · 官方 CPU 路径">Recommended · official CPU</option>
+              <option value="official" data-en="Recommended · v4 browser runtime" data-zh="推荐 · v4 浏览器运行时">Recommended · v4 browser runtime</option>
               <option value="webgpu" data-en="WebGPU · experimental" data-zh="WebGPU · 实验性">WebGPU · experimental</option>
               <option value="wasm" data-en="CPU · explicit quantized" data-zh="CPU · 显式量化">CPU · explicit quantized</option>
             </select>
@@ -247,7 +247,7 @@
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload engine" data-zh="重新加载引擎">Reload engine</button>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
-        <div class="ocr-status" id="ocr-status" data-en="Ready · PDF vector extraction is primary. The image model loads only for scanned/image-only formulas." data-zh="就绪 · 优先使用 PDF 矢量公式提取。只有扫描件或纯图像公式才会加载图像模型。">Ready · PDF vector extraction is primary. The image model loads only for scanned/image-only formulas.</div>
+        <div class="ocr-status" id="ocr-status" data-en="Ready · PDF vector extraction is primary. Image OCR uses Transformers.js 4.3.1 and loads only for scanned/image-only formulas." data-zh="就绪 · 优先使用 PDF 矢量公式提取。图像 OCR 使用 Transformers.js 4.3.1，仅在扫描件或纯图像公式时加载。">Ready · PDF vector extraction is primary. Image OCR uses Transformers.js 4.3.1 and loads only for scanned/image-only formulas.</div>
         <div class="ocr-result is-hidden" id="ocr-result">
           <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
