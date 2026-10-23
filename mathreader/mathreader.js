@@ -1060,11 +1060,26 @@ function updateOcrCapability(extra = '') {
 }
 
 async function disposeMathOcrPipeline() {
-  try { await mathOcrPipeline?.dispose?.(); } catch (_) {}
+  const pipe = mathOcrPipeline;
   mathOcrPipeline = null;
   mathOcrBackend = null;
   mathOcrModulePromise = null;
   updateOcrCapability();
+  try { await pipe?.dispose?.(); } catch (_) {}
+}
+
+function releaseMathOcrPipelineAfterExtraction() {
+  // Transformers.js 4.3.1 can leave a browser inference session unusable
+  // after a completed/failed generation. A fresh pipeline for each user
+  // selection avoids carrying that session state into the next rectangle,
+  // while keeping the imported runtime and browser-cached model files.
+  // Detach synchronously so cleanup itself can never keep the UI locked.
+  const pipe = mathOcrPipeline;
+  mathOcrPipeline = null;
+  if (!pipe?.dispose) return;
+  Promise.resolve()
+    .then(() => pipe.dispose())
+    .catch((error) => console.warn('MathReader OCR pipeline cleanup failed', error));
 }
 
 function friendlyOcrError(error, backend = null) {
@@ -1258,6 +1273,45 @@ function assessImageOcrResult(rawValue, latexValue) {
   if (commandLoop) reasons.push(t('the model entered a repeated-token loop', '模型进入了重复 token 循环'));
   const compact = latex.replace(/\s+/g, ' ');
   if (/(.{18,90})(?:\s*\1){3,}/.test(compact)) reasons.push(t('large repeated fragments were detected', '检测到大段重复片段'));
+
+  // Texify can occasionally run away on continued fractions: the visual crop
+  // contains only a few levels, but generation keeps nesting \\frac/\\cfrac and
+  // repeats coefficient sequences for hundreds of tokens. Reject that failure
+  // mode rather than presenting fabricated mathematics as a usable result.
+  const fracCount = (latex.match(/\\(?:c?frac)\b/g) || []).length;
+  let braceDepth = 0;
+  let maxBraceDepth = 0;
+  for (let i = 0; i < latex.length; i += 1) {
+    if (latex[i] === '\\' && i + 1 < latex.length) { i += 1; continue; }
+    if (latex[i] === '{') { braceDepth += 1; maxBraceDepth = Math.max(maxBraceDepth, braceDepth); }
+    else if (latex[i] === '}' && braceDepth > 0) braceDepth -= 1;
+  }
+  if ((fracCount >= 16 && latex.length >= 520) || maxBraceDepth >= 24) {
+    reasons.push(t('the formula contains implausible runaway fraction nesting', '公式包含异常的失控分式嵌套'));
+  }
+
+  // Token n-grams catch loops whose digits change slightly, which a literal
+  // substring test misses (for example a_10,...,a_19 repeated several times).
+  const tokens = compact.match(/\\[A-Za-z]+|[A-Za-z]+|\d+|[^\s]/g) || [];
+  let repeatedTokenRun = false;
+  for (const width of [6, 8, 10, 12]) {
+    if (repeatedTokenRun || tokens.length < Math.max(120, width * 4)) break;
+    const seen = new Map();
+    for (let i = 0; i <= tokens.length - width; i += 1) {
+      const key = tokens.slice(i, i + width).join(' ');
+      const previous = seen.get(key) || [];
+      if (previous.some((at) => i - at >= width && i - at <= width * 12)) {
+        for (let j = i + width; j <= tokens.length - width; j += 1) {
+          if (tokens.slice(j, j + width).join(' ') === key) { repeatedTokenRun = true; break; }
+        }
+      }
+      if (repeatedTokenRun) break;
+      previous.push(i);
+      seen.set(key, previous.slice(-4));
+    }
+  }
+  if (repeatedTokenRun) reasons.push(t('a repeated LaTeX token sequence indicates decoder runaway', '重复的 LaTeX token 序列表明解码器发生失控循环'));
+
   const mathSignal = /\\[A-Za-z]+|[=<>_^{}]|[+\-*\/]|\d/.test(latex);
   const words = latex.match(/[A-Za-z]{3,}/g) || [];
   if (!mathSignal && words.length > 3) reasons.push(t('the output looks like prose rather than mathematics', '输出看起来像普通文本而不是数学公式'));
@@ -2119,6 +2173,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
+    releaseMathOcrPipelineAfterExtraction();
   }
 }
 
@@ -2160,6 +2215,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
+    releaseMathOcrPipelineAfterExtraction();
   }
 }
 
@@ -2699,12 +2755,20 @@ function continuousFitWidthMismatch() {
   return false;
 }
 
-async function stabilizeFitWidthLayout() {
+async function stabilizeFitWidthLayout(anchorOverride = null) {
   if (!pdfDoc || zoomMode !== 'fit-width' || fitWidthStabilizing) return;
   fitWidthStabilizing = true;
   try {
     clearTimeout(readerWidthTimer);
-    const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 }) : null;
+    // On tab/history return the browser may expose scrollTop=0 for the first
+    // frame. When a caller supplies the last stable anchor, never replace it
+    // with that transient page-1 position before fit-width rebuilding.
+    const suppliedAnchor = anchorOverride && Number.isFinite(Number(anchorOverride.page))
+      ? { page: Number(anchorOverride.page), ratio: Math.min(1, Math.max(0, Number(anchorOverride.ratio) || 0)) }
+      : null;
+    const anchor = readingFlow === 'continuous'
+      ? (suppliedAnchor || captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
+      : null;
     // Browser-history restores can report an intermediate grid width for one or
     // more frames. Sample it repeatedly and rebuild until rendered page widths
     // agree with the final reading-region width.
@@ -3598,10 +3662,26 @@ if ('ResizeObserver' in window && primaryCanvasWrap) {
 }
 
 window.addEventListener('pageshow', () => {
-  if (pdfDoc && zoomMode === 'fit-width') { lastObservedReaderWidth = 0; setTimeout(() => stabilizeFitWidthLayout(), 40); setTimeout(() => stabilizeFitWidthLayout(), 320); }
+  if (pdfDoc && zoomMode === 'fit-width') {
+    const anchor = readingFlow === 'continuous' && continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
+    lastObservedReaderWidth = 0;
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 40);
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 320);
+  }
 });
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && pdfDoc && zoomMode === 'fit-width') { lastObservedReaderWidth = 0; setTimeout(() => stabilizeFitWidthLayout(), 60); setTimeout(() => stabilizeFitWidthLayout(), 360); }
+  if (!pdfDoc) return;
+  if (document.hidden) {
+    if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+    persistDocumentState();
+    return;
+  }
+  if (zoomMode === 'fit-width') {
+    const anchor = readingFlow === 'continuous' && continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
+    lastObservedReaderWidth = 0;
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 60);
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 360);
+  }
 });
 
 loadDisplayPreferences();
