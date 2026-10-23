@@ -154,7 +154,7 @@ let continuousObserver = null;
 let continuousGeneration = 0;
 let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
-let readingFlow = 'single';
+let readingFlow = 'continuous';
 let pageTone = 'auto';
 let displayBrightness = 96;
 let displayContrast = 96;
@@ -168,7 +168,8 @@ const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
 mathOcrEngineMode = safeGet('mathreader-ocr-engine-v1', 'auto');
 
-const DISPLAY_PREFS_KEY = 'mathreader-display-v1';
+const DISPLAY_PREFS_KEY = 'mathreader-display-v2';
+const LEGACY_DISPLAY_PREFS_KEY = 'mathreader-display-v1';
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -176,15 +177,26 @@ const clamp = (value, min, max, fallback) => {
 
 function loadDisplayPreferences() {
   let saved = null;
+  let migrated = false;
   try { saved = JSON.parse(safeGet(DISPLAY_PREFS_KEY, 'null')); } catch (_) { saved = null; }
+  if (!saved || typeof saved !== 'object') {
+    try { saved = JSON.parse(safeGet(LEGACY_DISPLAY_PREFS_KEY, 'null')); } catch (_) { saved = null; }
+    migrated = Boolean(saved && typeof saved === 'object');
+  }
   if (saved && typeof saved === 'object') {
-    readingFlow = saved.flow === 'continuous' ? 'continuous' : 'single';
+    // v46 makes continuous reading the product default. During the one-time v1→v2
+    // preference migration we preserve display tuning but intentionally adopt the
+    // new continuous-first reading flow.
+    readingFlow = migrated ? 'continuous' : (saved.flow === 'single' ? 'single' : 'continuous');
     pageTone = ['auto','original','soft-dark','warm'].includes(saved.tone) ? saved.tone : 'auto';
     displayBrightness = clamp(saved.brightness, 70, 115, 96);
     displayContrast = clamp(saved.contrast, 80, 120, 96);
     displayGap = clamp(saved.gap, 8, 44, 20);
     displayShadow = saved.shadow !== false;
+  } else {
+    readingFlow = 'continuous';
   }
+  if (migrated) persistDisplayPreferences();
 }
 
 function persistDisplayPreferences() {
@@ -244,14 +256,14 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
 }
 
 function resetDisplayPreferences() {
-  readingFlow = 'single';
+  readingFlow = 'continuous';
   pageTone = 'auto';
   displayBrightness = 96;
   displayContrast = 96;
   displayGap = 20;
   displayShadow = true;
   applyPageDisplay();
-  setReadingFlow('single', { persist: true, render: true });
+  setReadingFlow('continuous', { persist: true, render: true });
 }
 
 
@@ -350,7 +362,7 @@ function activePanelId() {
 
 function snapshotSession() {
   return {
-    version: 3,
+    version: 4,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -563,7 +575,8 @@ function loadDocumentState(cachedSession = null) {
   zoomMode = 'fit-width';
   zoomScale = 1.2;
   searchInput.value = '';
-  shell.classList.remove('left-collapsed', 'right-collapsed', 'mobile-left-open', 'mobile-right-open');
+  shell.classList.remove('mobile-left-open', 'mobile-right-open');
+  shell.classList.add('left-collapsed', 'right-collapsed');
   activatePanel('outline-panel', false);
 
   let session = cachedSession;
@@ -589,8 +602,15 @@ function loadDocumentState(cachedSession = null) {
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 12) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
-    shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
-    shell.classList.toggle('right-collapsed', Boolean(session.ui?.rightCollapsed));
+    if (Number(session.version || 0) >= 4) {
+      shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
+      shell.classList.toggle('right-collapsed', Boolean(session.ui?.rightCollapsed));
+    } else {
+      // One-time v46 layout migration: older sessions were created when both
+      // sidebars opened by default. Start them collapsed once; future choices
+      // are saved normally in session v4.
+      shell.classList.add('left-collapsed', 'right-collapsed');
+    }
     if (session.ui?.activePanel) activatePanel(session.ui.activePanel, false);
   } else {
     const rawBookmarks = safeGet(stateKey('bookmarks'));
@@ -795,10 +815,14 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   const webgpuAvailable = Boolean(navigator.gpu);
-  if (mode === 'webgpu') return [{ device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4' }];
+  const accurateGpu = [
+    { device: 'webgpu', dtype: 'q4f16', label: 'WebGPU · q4f16 · accurate' },
+    { device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4' }
+  ];
+  if (mode === 'webgpu') return accurateGpu;
   if (mode === 'wasm') return [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }];
   return webgpuAvailable
-    ? [{ device: 'webgpu', dtype: 'q4', label: 'WebGPU · q4' }, { device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }]
+    ? [...accurateGpu, { device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }]
     : [{ device: 'wasm', dtype: 'q8', label: 'CPU/WASM · q8' }];
 }
 
@@ -886,9 +910,97 @@ async function prepareMathOcrInput(canvas) {
   if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
   const { RawImage } = await mathOcrModulePromise;
   if (!RawImage?.fromCanvas) throw new Error('Math OCR image utilities are unavailable.');
-  const image = RawImage.fromCanvas(canvas);
-  image.grayscale();
+  const image = RawImage.fromCanvas(canvas).grayscale();
+  if (image.channels !== 1) image.convert(1);
   return image;
+}
+
+function formulaInkBounds(canvas) {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx || !canvas.width || !canvas.height) return null;
+  const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  // Ignore near-white antialiasing/noise while retaining light mathematical strokes.
+  const threshold = 242;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      if (lum < threshold) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  return maxX >= minX && maxY >= minY ? { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 } : null;
+}
+
+function normalizeFormulaCropForOcr(crop) {
+  const bounds = formulaInkBounds(crop) || { left: 0, top: 0, width: crop.width, height: crop.height };
+  const sourcePad = Math.max(3, Math.round(Math.max(bounds.width, bounds.height) * 0.035));
+  const sx = Math.max(0, bounds.left - sourcePad);
+  const sy = Math.max(0, bounds.top - sourcePad);
+  const sw = Math.min(crop.width - sx, bounds.width + sourcePad * 2);
+  const sh = Math.min(crop.height - sy, bounds.height + sourcePad * 2);
+  // TexTeller3 is trained with a square 448×448 preprocessor. Put the formula
+  // on a square white field *before* preprocessing so a long equation is not
+  // geometrically stretched into a square by the model processor.
+  const target = 768;
+  const margin = 54;
+  const usable = target - margin * 2;
+  const scale = Math.min(usable / Math.max(1, sw), usable / Math.max(1, sh));
+  const dw = Math.max(1, Math.round(sw * scale));
+  const dh = Math.max(1, Math.round(sh * scale));
+  const out = document.createElement('canvas');
+  out.width = target;
+  out.height = target;
+  const ctx = out.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, target, target);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(crop, sx, sy, sw, sh, Math.round((target - dw) / 2), Math.round((target - dh) / 2), dw, dh);
+  return out;
+}
+
+function latexStructuralPenalty(value) {
+  const text = String(value || '');
+  if (!text.trim()) return 10000;
+  let depth = 0;
+  let unmatchedClose = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '\\' && text[i + 1]) { i += 1; continue; }
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') { if (depth > 0) depth -= 1; else unmatchedClose += 1; }
+  }
+  let penalty = (depth + unmatchedClose) * 12;
+  penalty += (text.match(/\}{3,}/g) || []).length * 15;
+  penalty += (text.match(/(\\mathrm\{div\}\s*){2,}/g) || []).length * 18;
+  penalty += (text.match(/(\\(?:frac|sqrt|mathrm|text)\b[^\n]{0,28})\1/g) || []).length * 10;
+  if (/\\sqrt\{[^\n]{0,80}\\frac\{1\}\{1\}/.test(text)) penalty += 8;
+  if (/\\cdot\s*\)/.test(text)) penalty += 8;
+  return penalty;
+}
+
+function repairOcrLatex(value) {
+  let text = normalizeOcrLatex(value);
+  if (!text) return '';
+  // Drop only closing braces that are provably unmatched at top level. This
+  // repairs degeneration such as `\\mathrm{div}}}}` without guessing content.
+  let depth = 0;
+  let out = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '\\' && i + 1 < text.length) { out += ch + text[i + 1]; i += 1; continue; }
+    if (ch === '{') { depth += 1; out += ch; continue; }
+    if (ch === '}') { if (depth > 0) { depth -= 1; out += ch; } continue; }
+    out += ch;
+  }
+  if (depth > 0) out += '}'.repeat(depth);
+  out = out.replace(/(\\mathrm\{div\})(?:\s*\1)+/g, '$1');
+  return out.replace(/[ \t]+/g, ' ').trim();
 }
 
 function cropSelectedFormula(sourceCanvas, layer, rect) {
@@ -926,17 +1038,51 @@ async function recognizeMathCrop(crop, page, kind) {
     const pipe = await ensureMathOcrPipeline();
     mathOcrLoading = true;
     setOcrStatus(t('Recognizing formula locally…', '正在本地识别公式……'), true);
-    const inputImage = await prepareMathOcrInput(crop);
-    const output = await pipe(inputImage, { max_new_tokens: 384 });
-    const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
-    const latex = normalizeOcrLatex(raw);
+    const normalizedCrop = normalizeFormulaCropForOcr(crop);
+    const inputImage = await prepareMathOcrInput(normalizedCrop);
+    const accurateGeneration = {
+      max_new_tokens: 384,
+      num_beams: 3,
+      early_stopping: true,
+      repetition_penalty: 1.08,
+      do_sample: false
+    };
+    let output = await pipe(inputImage, accurateGeneration);
+    let raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
+    let rawLatex = normalizeOcrLatex(raw);
+    let penalty = latexStructuralPenalty(rawLatex);
+    let latex = repairOcrLatex(rawLatex);
+    // A second pass is only paid for when the first raw result is structurally
+    // suspicious (unbalanced braces / token loops / common degeneration). The
+    // alternate pass uses the exact selected crop, which sometimes works better
+    // for compact expressions than the aspect-preserving normalization.
+    if (penalty >= 8) {
+      setOcrStatus(t('First OCR pass looked structurally unstable; retrying with an alternate crop…', '第一次识别结果结构不稳定；正在使用备用裁图重试……'), true);
+      const alternateImage = await prepareMathOcrInput(crop);
+      const alternateOutput = await pipe(alternateImage, {
+        max_new_tokens: 384,
+        num_beams: 2,
+        early_stopping: true,
+        repetition_penalty: 1.1,
+        do_sample: false
+      });
+      const alternateRaw = Array.isArray(alternateOutput) ? alternateOutput[0]?.generated_text : alternateOutput?.generated_text;
+      const alternateRawLatex = normalizeOcrLatex(alternateRaw);
+      const alternatePenalty = latexStructuralPenalty(alternateRawLatex);
+      const alternateLatex = repairOcrLatex(alternateRawLatex);
+      if (alternateLatex && alternatePenalty < penalty) {
+        rawLatex = alternateRawLatex;
+        latex = alternateLatex;
+        penalty = alternatePenalty;
+      }
+    }
     if (!latex) throw new Error(t('The model returned no LaTeX for this region.', '模型没有为该区域返回 LaTeX。'));
-    const item = { page, kind, latex, preview, created: Date.now() };
+    const item = { page, kind, latex, preview, created: Date.now(), quality: penalty === 0 ? 'clean' : 'review' };
     currentOcrResult = item;
     ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex))].slice(0, 12);
     refreshOcrUI();
     persistDocumentState();
-    setOcrStatus(t('Math OCR complete. Check the LaTeX before reuse.', '公式 OCR 完成。复用前请核对 LaTeX。'));
+    setOcrStatus(penalty === 0 ? t('Math OCR complete · structure check passed.', '公式 OCR 完成 · 结构检查通过。') : t('Math OCR complete, but the structure still needs review.', '公式 OCR 完成，但结构仍需人工核对。'));
   } catch (error) {
     console.error(error);
     const friendly = friendlyOcrError(error, mathOcrBackend);

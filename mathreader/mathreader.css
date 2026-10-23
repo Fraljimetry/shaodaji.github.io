@@ -163,3 +163,5 @@ html[data-page-tone="soft-dark"] .page-surface canvas,html[data-page-tone="soft-
 html[data-page-tone="warm"] .reader-main{background:#d8d1c2}
 html[data-theme="dark"] .icon-button,html[data-theme="dark"] .tool-button,html[data-theme="dark"] .zoom-label{font-weight:650}
 @media(max-width:520px){.ocr-engine-controls{grid-template-columns:1fr}.ocr-engine-controls .text-button{justify-self:start}}
+
+.welcome-emblem-icon{display:grid;place-items:center}.welcome-emblem-icon img{display:block;width:78px;height:78px;object-fit:contain}

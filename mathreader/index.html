@@ -44,7 +44,7 @@
 
   <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
 
-  <main class="reader-shell" id="reader-shell">
+  <main class="reader-shell left-collapsed right-collapsed" id="reader-shell">
     <aside class="sidebar sidebar-left" id="left-sidebar" aria-label="Document navigation">
       <div class="sidebar-tabs" role="tablist" aria-label="Document tools">
         <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录">Contents</button>
@@ -125,7 +125,7 @@
 
       <div class="reader-viewport" id="reader-viewport">
         <section class="welcome" id="welcome">
-          <div class="welcome-emblem" aria-hidden="true">∫</div>
+          <div class="welcome-emblem welcome-emblem-icon" aria-hidden="true"><img src="../assets/img/tool-mathreader-file-search.svg" alt=""></div>
           <p class="welcome-kicker">MathReader</p>
           <h1 data-en="A PDF reader designed for mathematics." data-zh="为数学阅读而设计的 PDF 阅读器。">A PDF reader designed for mathematics.</h1>
           <p class="welcome-copy" data-en="Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website." data-zh="在本地阅读 PDF，把参考页面固定在当前证明旁边，搜索全文并保存阅读位置；PDF 不会上传到本网站。">Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website.</p>
@@ -238,7 +238,7 @@
           <label>
             <span data-en="Engine" data-zh="识别引擎">Engine</span>
             <select id="ocr-engine-mode">
-              <option value="auto" data-en="Automatic · WebGPU preferred" data-zh="自动 · 优先 WebGPU">Automatic · WebGPU preferred</option>
+              <option value="auto" data-en="Automatic · accuracy first" data-zh="自动 · 准确性优先">Automatic · accuracy first</option>
               <option value="webgpu" data-en="WebGPU" data-zh="WebGPU">WebGPU</option>
               <option value="wasm" data-en="Compatibility · CPU" data-zh="兼容模式 · CPU">Compatibility · CPU</option>
             </select>
