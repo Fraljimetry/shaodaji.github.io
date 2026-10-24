@@ -3890,31 +3890,58 @@ function renderInferredOutline(entries) {
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
 const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
-const CLICKABLE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b|\(\s*(?:\d+(?:\.\d+)*|\*{1,3}|[†‡⋆★])\s*\)|\[\s*\d{1,3}\s*\]/gi;
+const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
+const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
+const CLICKABLE_REFERENCE_RE = new RegExp(
+  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
+  `\\(\\s*(?:\\d+(?:\\.\\d+)*|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
+  `\\[\\s*\\d{1,3}\\s*\\]`,
+  'gi',
+);
 const GROUPED_BIBLIOGRAPHY_RE = /\[\s*\d{1,3}(?:\s*(?:,|;|[-–—])\s*\d{1,3})+\s*\]/g;
 
 function normalizedReferenceLabel(value) {
   return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
 }
 
+function normalizeEquationTagCommands(value) {
+  const commandMap = new Map([
+    ['dagger', '†'], ['Dagger', '†'], ['ddagger', '‡'], ['Ddagger', '‡'],
+    ['ast', '*'], ['star', '⋆'], ['bigstar', '★'], ['circ', '○'], ['bullet', '•'],
+    ['triangle', '△'], ['blacktriangle', '▲'], ['triangledown', '▽'], ['blacktriangledown', '▼'],
+    ['square', '□'], ['blacksquare', '■'], ['diamond', '◇'], ['blackdiamond', '◆'],
+    ['odot', '⊙'], ['otimes', '⊗'], ['oplus', '⊕'], ['ominus', '⊖'], ['perp', '⊥'], ['parallel', '∥'],
+  ]);
+  return String(value || '').replace(/\\([A-Za-z]+)\b/g, (match, name) => commandMap.get(name) || match);
+}
+
 function normalizedEquationLabel(value) {
-  let inner = String(value || '').normalize('NFKC').trim();
+  let inner = normalizeEquationTagCommands(String(value || '').normalize('NFKC').trim());
   inner = inner.replace(/^\(\s*|\s*\)$/g, '').replace(/\s+/g, '');
-  inner = inner.replace(/^\\(?:dagger|Dagger)$/i, '†').replace(/^\\(?:ddagger|Ddagger)$/i, '‡');
   return `(${inner})`;
+}
+
+function isSymbolicEquationTagInner(inner) {
+  const compact = String(inner || '').replace(/\s+/g, '');
+  if (!compact || Array.from(compact).length > 8) return false;
+  return Array.from(compact).every((char) => EQUATION_TAG_SYMBOL_CLASS.includes(char));
 }
 
 function isEquationLabelQuery(value) {
   const label = normalizedEquationLabel(value);
-  return /^\((?:\d+(?:\.\d+)*|\*{1,3}|[†‡⋆★])\)$/.test(label);
+  const inner = label.slice(1, -1);
+  return /^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner);
 }
 
 function equationLabelCandidatesInLine(text) {
-  const value = String(text || '').normalize('NFKC');
+  const value = normalizeEquationTagCommands(String(text || '').normalize('NFKC'));
   const out = [];
-  const re = /\(\s*(\d+(?:\.\d+)*|\*{1,3}|[†‡⋆★])\s*\)/g;
+  const re = /\(\s*([^()]{1,32}?)\s*\)/g;
   let match;
   while ((match = re.exec(value))) {
+    const rawInner = match[1];
+    const compactInner = rawInner.replace(/\s+/g, '');
+    if (!/^\d+(?:\.\d+)*$/.test(compactInner) && !isSymbolicEquationTagInner(rawInner)) continue;
     out.push({ label: normalizedEquationLabel(match[0]), index: match.index, end: match.index + match[0].length });
   }
   return out;
