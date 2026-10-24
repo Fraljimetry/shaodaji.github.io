@@ -76,6 +76,7 @@ const readingTrailList = el('reading-trail-list');
 const readingTrailEmpty = el('reading-trail-empty');
 const readingTrailCount = el('reading-trail-count');
 const readingTrailClear = el('reading-trail-clear');
+const readingTrailToggle = el('reading-trail-toggle');
 const saveOcrEquation = el('save-ocr-equation');
 const selectionGoReference = el('selection-go-reference');
 const selectionHighlight = el('selection-highlight');
@@ -247,6 +248,7 @@ let structureIndexBuilding = false;
 let structureIndexBuildToken = 0;
 let referencePages = [];
 let readingBackStack = [];
+let readingTrailExpanded = false;
 let suppressReadingHistory = false;
 let equationLabelIndex = null;
 let tocOutlineTargets = null;
@@ -3585,7 +3587,15 @@ function renderReadingTrail() {
   if (readingTrailCount) readingTrailCount.textContent = String(readingBackStack.length);
   if (readingTrailEmpty) readingTrailEmpty.classList.toggle('is-hidden', readingBackStack.length > 0);
   if (readingTrailClear) readingTrailClear.disabled = readingBackStack.length === 0;
-  const entries = readingBackStack.map((entry, index) => ({ entry, index })).reverse();
+  const allEntries = readingBackStack.map((entry, index) => ({ entry, index })).reverse();
+  const visibleLimit = readingTrailExpanded ? 10 : 3;
+  const entries = allEntries.slice(0, visibleLimit);
+  if (readingTrailToggle) {
+    const hiddenCount = Math.max(0, Math.min(10, allEntries.length) - 3);
+    readingTrailToggle.classList.toggle('is-hidden', allEntries.length <= 3);
+    readingTrailToggle.textContent = readingTrailExpanded ? t('Less', '收起') : t(`More (${hiddenCount})`, `更多 (${hiddenCount})`);
+    readingTrailToggle.setAttribute('aria-expanded', readingTrailExpanded ? 'true' : 'false');
+  }
   for (const { entry, index } of entries) {
     const row = document.createElement('div'); row.className = 'reading-trail-item';
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'reading-trail-jump';
@@ -5639,7 +5649,8 @@ referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
 readingBackButton?.addEventListener('click', goBackReadingLocation);
-readingTrailClear?.addEventListener('click', () => { readingBackStack = []; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
+readingTrailClear?.addEventListener('click', () => { readingBackStack = []; readingTrailExpanded = false; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
+readingTrailToggle?.addEventListener('click', () => { readingTrailExpanded = !readingTrailExpanded; renderReadingTrail(); });
 buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({ force: true }));
 exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
