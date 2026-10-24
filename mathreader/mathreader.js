@@ -90,6 +90,7 @@ const commandPalette = el('command-palette');
 const commandInput = el('command-input');
 const commandList = el('command-list');
 const searchForm = el('search-form');
+const searchFuzzy = el('search-fuzzy');
 const searchInput = el('search-input');
 const searchStatus = el('search-status');
 const searchResults = el('search-results');
@@ -117,6 +118,14 @@ const selectionLatexPreview = el('selection-latex-preview');
 const copySelectionText = el('copy-selection-text');
 const copySelectionLatex = el('copy-selection-latex');
 const selectionToNote = el('selection-to-note');
+const selectionFindAll = el('selection-find-all');
+const selectionToGlossary = el('selection-to-glossary');
+const glossarySymbolInput = el('glossary-symbol');
+const glossaryMeaningInput = el('glossary-meaning');
+const glossaryAddButton = el('glossary-add');
+const symbolGlossaryList = el('symbol-glossary-list');
+const symbolGlossaryEmpty = el('symbol-glossary-empty');
+const symbolGlossaryCount = el('symbol-glossary-count');
 const selectionToolbar = el('selection-toolbar');
 const selectionToolbarLabel = el('selection-toolbar-label');
 const floatingCopyText = el('floating-copy-text');
@@ -176,6 +185,7 @@ let notes = {};
 let nativePdfCommentsByPage = new Map();
 let nativePdfCommentLoadToken = 0;
 let annotations = [];
+let symbolGlossary = [];
 let textCache = new Map();
 let lineCache = new Map();
 let pdfModulePromise = null;
@@ -497,7 +507,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 13,
+    version: 14,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -505,6 +515,8 @@ function snapshotSession() {
     bookmarks,
     notes,
     annotations,
+    symbolGlossary,
+    searchFuzzy: Boolean(searchFuzzy?.checked),
     scrollByPage,
     referenceScrollByPage,
     continuousScrollTop,
@@ -695,6 +707,7 @@ function applyLanguage(lang, persist = true) {
   updateOutlineSource();
   renderBookmarks();
   renderLocalLibrary();
+  renderSymbolGlossary();
   refreshSelectionUI();
   refreshOcrUI();
   renderAnnotationList();
@@ -794,6 +807,8 @@ function loadDocumentState(cachedSession = null) {
   nativePdfCommentsByPage = new Map();
   nativePdfCommentLoadToken += 1;
   annotations = [];
+  symbolGlossary = [];
+  if (searchFuzzy) searchFuzzy.checked = false;
   scrollByPage = {};
   referenceScrollByPage = {};
   continuousScrollTop = 0;
@@ -827,6 +842,8 @@ function loadDocumentState(cachedSession = null) {
     bookmarks = normalizeBookmarks(session.bookmarks);
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
     annotations = normalizeAnnotations(session.annotations);
+    symbolGlossary = normalizeSymbolGlossary(session.symbolGlossary);
+    if (searchFuzzy) searchFuzzy.checked = Boolean(session.searchFuzzy);
     const savedPage = Number(session.page || 1);
     currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
     const savedPinned = Number(session.pinnedPage || 0);
@@ -864,6 +881,7 @@ function loadDocumentState(cachedSession = null) {
     // discard older entries that lack an in-page ratio.
     if (Number(session.version || 0) < 7 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
+    renderSymbolGlossary();
     if (Number(session.version || 0) >= 4) {
       shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
       shell.classList.toggle('right-collapsed', Boolean(session.ui?.rightCollapsed));
@@ -884,6 +902,7 @@ function loadDocumentState(cachedSession = null) {
     const savedPinned = Number(safeGet(stateKey('pinned'), '0'));
     pinnedPage = savedPinned >= 1 && savedPinned <= pdfDoc.numPages ? savedPinned : null;
   }
+  renderSymbolGlossary();
   refreshSelectionUI();
   refreshOcrUI();
   renderAnnotationList();
@@ -4682,25 +4701,28 @@ async function searchPdf(query) {
   searchResults.replaceChildren();
   const q = query.trim();
   if (!pdfDoc || !q) { searchStatus.textContent = ''; return; }
-  searchStatus.textContent = t('Searching…', '正在搜索……');
+  const fuzzy = Boolean(searchFuzzy?.checked);
+  searchStatus.textContent = fuzzy ? t('Fuzzy searching…', '正在模糊搜索……') : t('Searching…', '正在搜索……');
   const matches = [];
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     searchStatus.textContent = t(`Searching page ${page} of ${pdfDoc.numPages}…`, `正在搜索第 ${page} / ${pdfDoc.numPages} 页……`);
     try {
       const text = await pageText(page);
-      const result = searchTextMatch(text, q);
-      if (result.matched) matches.push({ page, text, index: result.index });
+      const hits = fuzzy ? fuzzySearchMatches(text, q) : exactSearchMatches(text, q);
+      for (const hit of hits) matches.push({ page, text, index: hit.index, score: hit.score });
     } catch (error) { console.error(error); }
     if (page % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  searchStatus.textContent = t(`${matches.length} matching page${matches.length === 1 ? '' : 's'}`, `${matches.length} 个匹配页面`);
-  for (const match of matches.slice(0, 100)) {
+  matches.sort((a,b) => fuzzy ? (b.score - a.score || a.page - b.page || a.index - b.index) : (a.page - b.page || a.index - b.index));
+  searchStatus.textContent = t(`${matches.length} occurrence${matches.length === 1 ? '' : 's'}${fuzzy ? ' · fuzzy ranked' : ''}`, `${matches.length} 个出现位置${fuzzy ? ' · 按模糊匹配排序' : ''}`);
+  for (const match of matches.slice(0, 200)) {
     const item = document.createElement('button');
     item.type = 'button'; item.className = 'search-result';
-    const label = document.createElement('strong'); label.textContent = t(`Page ${match.page}`, `第 ${match.page} 页`);
+    const label = document.createElement('strong');
+    label.textContent = fuzzy && match.score < 0.999 ? t(`Page ${match.page} · ${Math.round(match.score*100)}%`, `第 ${match.page} 页 · ${Math.round(match.score*100)}%`) : t(`Page ${match.page}`, `第 ${match.page} 页`);
     const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, q, match.index));
     item.append(label, snippet);
-    item.addEventListener('click', () => goToPage(match.page));
+    item.addEventListener('click', () => goToLocation(match.page, Math.min(1, Math.max(0, match.index / Math.max(1, match.text.length)))));
     searchResults.append(item);
   }
 }
@@ -5369,7 +5391,11 @@ commandInput?.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') { event.preventDefault(); closeCommandPalette(); }
 });
 commandPalette?.addEventListener('pointerdown', (event) => { if (event.target === commandPalette) closeCommandPalette(); });
+renderSymbolGlossary();
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
+searchFuzzy?.addEventListener('change', () => { persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
+glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
+glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
 searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState(); });
 [searchMatchCase, searchWholeWord].forEach((node) => node?.addEventListener('change', () => { persistSearchPreferences(); if (pdfDoc && searchInput.value.trim()) searchPdf(searchInput.value); }));
 
@@ -5414,11 +5440,13 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, floatingHighlight, floatingMarginNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
 selectionToNote.addEventListener('click', addSelectionToPageNote);
+selectionFindAll?.addEventListener('click', () => runFindAllOccurrences(currentSelection?.text));
+selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
 floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });

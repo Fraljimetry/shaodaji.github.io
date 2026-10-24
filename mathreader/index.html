@@ -91,6 +91,7 @@
           <div class="search-options">
             <label><input id="search-match-case" type="checkbox"> <span data-en="Match case" data-zh="区分大小写">Match case</span></label>
             <label><input id="search-whole-word" type="checkbox"> <span data-en="Whole word" data-zh="全词匹配">Whole word</span></label>
+            <label><input id="search-fuzzy" type="checkbox"> <span data-en="Fuzzy" data-zh="模糊">Fuzzy</span></label>
           </div>
           <p class="search-help" data-en="Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized." data-zh="默认不区分大小写，并规范化 Unicode 连字、软连字符与重复空白。">Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized.</p>
         </form>
@@ -328,6 +329,8 @@
             <button class="secondary-action" type="button" id="selection-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
             <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin note" data-zh="页边注">Margin note</button>
             <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
+            <button class="secondary-action" type="button" id="selection-find-all" data-en="Find all occurrences" data-zh="查找全部出现位置">Find all occurrences</button>
+            <button class="secondary-action" type="button" id="selection-to-glossary" data-en="Add to glossary" data-zh="加入符号表">Add to glossary</button>
           </div>
         </div>
       </section>
@@ -357,6 +360,20 @@
         </div>
         <div class="annotation-list" id="annotation-list"></div>
         <div class="empty-panel" id="annotation-empty" data-en="Select text to create a highlight or margin note." data-zh="选择文字后可创建高亮或页边注。">Select text to create a highlight or margin note.</div>
+      </section>
+
+      <section class="workspace-section" id="symbol-glossary-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Symbol glossary" data-zh="符号表">Symbol glossary</span><details class="compact-help compact-help-heading"><summary data-en-title="Symbol glossary help" data-zh-title="符号表帮助" aria-label="Symbol glossary help">?</summary><div class="compact-help-body" data-en="Save a document-local symbol and its meaning. Jump to its first occurrence or find every occurrence in the PDF." data-zh="保存此文档中的符号及其含义；可跳到首次出现位置，或查找全文全部出现位置。">Save a document-local symbol and its meaning. Jump to its first occurrence or find every occurrence in the PDF.</div></details></span>
+          <span class="count-badge" id="symbol-glossary-count">0</span>
+        </div>
+        <div class="glossary-add">
+          <input id="glossary-symbol" type="text" autocomplete="off" data-en-placeholder="Symbol, e.g. Ric or λ₁" data-zh-placeholder="符号，例如 Ric 或 λ₁" placeholder="Symbol, e.g. Ric or λ₁">
+          <input id="glossary-meaning" type="text" autocomplete="off" data-en-placeholder="Meaning" data-zh-placeholder="含义" placeholder="Meaning">
+          <button class="secondary-action" type="button" id="glossary-add" data-en="Add symbol" data-zh="添加符号">Add symbol</button>
+        </div>
+        <div class="symbol-glossary-list" id="symbol-glossary-list"></div>
+        <div class="empty-panel" id="symbol-glossary-empty" data-en="Select a symbol or enter one above." data-zh="选择一个符号，或在上方输入。">Select a symbol or enter one above.</div>
       </section>
 
       <section class="workspace-section" id="reading-trail-section">

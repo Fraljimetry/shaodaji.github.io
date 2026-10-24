@@ -271,3 +271,7 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .compact-help-heading{position:static;display:inline-flex;width:auto;max-width:none;min-width:0;margin:0}
 .compact-help-heading>summary{width:18px;height:18px;font-size:9px;flex:0 0 auto}
 .compact-help-heading>.compact-help-body{position:absolute;z-index:40;left:8px;right:8px;top:34px;width:auto;max-width:none;margin:0;padding:7px 8px}
+
+/* v100 search + symbol glossary */
+.glossary-add{display:grid;gap:6px;margin:4px 0 9px}.glossary-add input{width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);outline:none}.glossary-add input:focus{border-color:var(--accent)}
+.symbol-glossary-list{display:flex;flex-direction:column;gap:7px}.symbol-glossary-item{padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--paper)}.symbol-glossary-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline}.symbol-glossary-head strong{font-family:var(--serif);font-size:13px;color:var(--ink)}.symbol-glossary-head span{min-width:0;color:var(--muted);font-size:10px;overflow-wrap:anywhere}.symbol-glossary-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.symbol-glossary-actions .text-button{font-size:9px;padding:3px 5px}
