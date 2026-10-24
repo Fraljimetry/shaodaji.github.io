@@ -297,3 +297,64 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
   outline-color: transparent;
 }
 .backlinks-context{margin:0 0 7px;color:var(--muted);font-size:10px;line-height:1.4;overflow-wrap:anywhere}.backlinks-list{display:grid;gap:6px}.backlink-item{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);text-align:left;cursor:pointer}.backlink-item:hover{border-color:var(--line-strong);background:var(--surface-soft)}.backlink-meta{display:block;margin-bottom:3px;color:var(--accent-deep);font-size:9px;font-weight:800;text-transform:uppercase}.backlink-snippet{display:-webkit-box;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.4;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+
+/* v112: named sessions, undo, and recovery */
+.session-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin: 8px 0;
+}
+.session-save-row input { min-width: 0; width: 100%; }
+.reading-sessions-list,
+.undo-list,
+.recovery-list {
+  display: grid;
+  gap: 7px;
+}
+.reading-session-item,
+.undo-item,
+.recovery-item {
+  border: 1px solid var(--line-soft, rgba(130,150,170,.22));
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 0;
+  background: color-mix(in srgb, var(--panel, #101820) 92%, transparent);
+}
+.reading-session-head,
+.undo-item-head,
+.recovery-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.reading-session-name,
+.undo-item-title,
+.recovery-item-title {
+  font-weight: 650;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reading-session-meta,
+.undo-item-meta,
+.recovery-item-meta {
+  margin-top: 3px;
+  font-size: .78rem;
+  opacity: .72;
+}
+.reading-session-actions,
+.undo-item-actions,
+.recovery-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+.reading-session-actions button,
+.undo-item-actions button,
+.recovery-item-actions button { font-size: .78rem; }
+.undo-clear { margin-top: 8px; width: 100%; }

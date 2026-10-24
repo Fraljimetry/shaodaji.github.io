@@ -81,6 +81,18 @@ const backlinksList = el('backlinks-list');
 const backlinksEmpty = el('backlinks-empty');
 const backlinksCount = el('backlinks-count');
 const backlinksContext = el('backlinks-context');
+const readingSessionsList = el('reading-sessions-list');
+const readingSessionsEmpty = el('reading-sessions-empty');
+const readingSessionsCount = el('reading-sessions-count');
+const readingSessionName = el('reading-session-name');
+const readingSessionSave = el('reading-session-save');
+const undoList = el('undo-list');
+const undoEmpty = el('undo-empty');
+const undoCount = el('undo-count');
+const undoClear = el('undo-clear');
+const recoveryList = el('recovery-list');
+const recoveryEmpty = el('recovery-empty');
+const recoveryCount = el('recovery-count');
 const saveOcrEquation = el('save-ocr-equation');
 const selectionGoReference = el('selection-go-reference');
 const selectionHighlight = el('selection-highlight');
@@ -261,6 +273,12 @@ let tocOutlineTargets = null;
 let tocDecorationSerial = 0;
 let backlinkContext = null;
 let backlinkEntries = [];
+let namedReadingSessions = [];
+let undoHistory = [];
+let recoverySnapshots = [];
+let recoverySnapshotTimer = null;
+let lastRecoveryFingerprint = '';
+let recoveryRestoreActive = false;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -277,6 +295,118 @@ const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 };
+
+
+function jsonClone(value, fallback = null) {
+  try { return JSON.parse(JSON.stringify(value)); } catch (_) { return fallback; }
+}
+
+function workspaceSectionState() {
+  const result = {};
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => { result[section.id] = section.classList.contains('is-collapsed'); });
+  return result;
+}
+
+function captureNamedWorkspaceState() {
+  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
+  return {
+    version: 1,
+    page: currentPage,
+    pinnedPage,
+    readingFlow,
+    zoomMode,
+    zoomScale,
+    scrollByPage: jsonClone(scrollByPage, {}),
+    referenceScrollByPage: jsonClone(referenceScrollByPage, {}),
+    continuousScrollTop,
+    continuousAnchor: anchor ? { page: Number(anchor.page), ratio: Number(anchor.ratio) || 0 } : null,
+    referencePages: [...referencePages],
+    readingBackStack: jsonClone(readingBackStack, []),
+    searchQuery: searchInput?.value || '',
+    ui: {
+      activePanel: activePanelId(),
+      leftCollapsed: shell.classList.contains('left-collapsed'),
+      rightCollapsed: shell.classList.contains('right-collapsed'),
+      sections: workspaceSectionState()
+    }
+  };
+}
+
+function normalizeNamedReadingSessions(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && typeof item.name === 'string' && item.state && typeof item.state === 'object').map((item, index) => ({
+    id: String(item.id || `rs-${Number(item.created) || Date.now()}-${index}`),
+    name: String(item.name || '').trim().slice(0, 120) || t('Reading session', '阅读会话'),
+    created: Number(item.created) || Date.now(),
+    updated: Number(item.updated) || Number(item.created) || Date.now(),
+    state: item.state
+  })).slice(0, 20);
+}
+
+function normalizeUndoHistory(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && item.type && item.payload !== undefined).map((item, index) => ({
+    id: String(item.id || `undo-${Number(item.created) || Date.now()}-${index}`),
+    type: String(item.type),
+    label: String(item.label || item.type),
+    created: Number(item.created) || Date.now(),
+    payload: item.payload
+  })).slice(0, 12);
+}
+
+function recoveryStorageKey() { return currentFileKey ? `mathreader:${currentFileKey}:recovery-v1` : null; }
+
+function loadRecoverySnapshots() {
+  const key = recoveryStorageKey();
+  if (!key) return [];
+  try {
+    const raw = JSON.parse(safeGet(key, '[]'));
+    return (Array.isArray(raw) ? raw : []).filter((item) => item && item.data).slice(0, 5);
+  } catch (_) { return []; }
+}
+
+function durableRecoveryData() {
+  return {
+    version: 1,
+    page: currentPage,
+    pinnedPage,
+    zoomMode,
+    zoomScale,
+    readingFlow,
+    continuousAnchor: readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor,
+    bookmarks: jsonClone(bookmarks, []),
+    notes: jsonClone(notes, {}),
+    annotations: jsonClone(annotations, []),
+    symbolGlossary: jsonClone(symbolGlossary, []),
+    referencePages: [...referencePages],
+    readingBackStack: jsonClone(readingBackStack, [])
+  };
+}
+
+function recoveryFingerprint(data) {
+  try { return JSON.stringify({ bookmarks: data.bookmarks, notes: data.notes, annotations: data.annotations, symbolGlossary: data.symbolGlossary }); }
+  catch (_) { return String(Date.now()); }
+}
+
+function scheduleRecoverySnapshot() {
+  if (!currentFileKey || restoringSession || recoveryRestoreActive) return;
+  clearTimeout(recoverySnapshotTimer);
+  recoverySnapshotTimer = setTimeout(() => {
+    const key = recoveryStorageKey();
+    if (!key) return;
+    const data = durableRecoveryData();
+    const fingerprint = recoveryFingerprint(data);
+    if (fingerprint === lastRecoveryFingerprint && recoverySnapshots.length) return;
+    lastRecoveryFingerprint = fingerprint;
+    recoverySnapshots = [{ id: `recovery-${Date.now()}`, created: Date.now(), data }, ...recoverySnapshots].slice(0, 5);
+    safeSet(key, JSON.stringify(recoverySnapshots));
+    renderRecoverySnapshots();
+  }, 900);
+}
+
+function pushUndo(type, label, payload) {
+  undoHistory = [{ id: `undo-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, type, label, created: Date.now(), payload: jsonClone(payload, payload) }, ...undoHistory].slice(0, 12);
+  renderUndoHistory();
+  persistDocumentState();
+}
 
 function loadDisplayPreferences() {
   let saved = null;
@@ -518,7 +648,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 15,
+    version: 16,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -527,6 +657,8 @@ function snapshotSession() {
     notes,
     annotations,
     symbolGlossary,
+    namedReadingSessions,
+    undoHistory,
     searchFuzzy: Boolean(searchFuzzy?.checked),
     scrollByPage,
     referenceScrollByPage,
@@ -723,6 +855,9 @@ function applyLanguage(lang, persist = true) {
   refreshOcrUI();
   renderAnnotationList();
   renderNativePdfComments(currentPage);
+  renderNamedReadingSessions();
+  renderUndoHistory();
+  renderRecoverySnapshots();
   updateWorkspaceCollapseButtons();
   if (persist) safeSet('shaoda-language', next);
 }
@@ -749,7 +884,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-trail-section','reference-section','shortcuts-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section']);
   document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -819,6 +954,9 @@ function loadDocumentState(cachedSession = null) {
   nativePdfCommentLoadToken += 1;
   annotations = [];
   symbolGlossary = [];
+  namedReadingSessions = [];
+  undoHistory = [];
+  recoverySnapshots = loadRecoverySnapshots();
   if (searchFuzzy) searchFuzzy.checked = false;
   scrollByPage = {};
   referenceScrollByPage = {};
@@ -857,6 +995,8 @@ function loadDocumentState(cachedSession = null) {
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
     annotations = normalizeAnnotations(session.annotations);
     symbolGlossary = normalizeSymbolGlossary(session.symbolGlossary);
+    namedReadingSessions = normalizeNamedReadingSessions(session.namedReadingSessions);
+    undoHistory = normalizeUndoHistory(session.undoHistory);
     if (searchFuzzy) searchFuzzy.checked = Boolean(session.searchFuzzy);
     const savedPage = Number(session.page || 1);
     currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
@@ -924,6 +1064,9 @@ function loadDocumentState(cachedSession = null) {
   updateZoomLabel();
   updateReadingBackButton();
   renderReadingTrail();
+  renderNamedReadingSessions();
+  renderUndoHistory();
+  renderRecoverySnapshots();
 }
 
 function persistDocumentState() {
@@ -935,6 +1078,7 @@ function persistDocumentState() {
   safeSet(stateKey('pinned'), pinnedPage ? String(pinnedPage) : '0');
   safeSet(stateKey('session-v2'), JSON.stringify(session));
   scheduleDbSessionSave();
+  scheduleRecoverySnapshot();
 }
 
 async function cacheOpenedPdf(meta, blob) {
@@ -2534,6 +2678,7 @@ function addOcrToPageNote() {
 }
 
 function clearOcrResultState() {
+  if (currentOcrResult) pushUndo('ocr-result', t('Formula extraction result', '公式提取结果'), currentOcrResult);
   currentOcrResult = null;
   refreshOcrUI();
   persistDocumentState();
@@ -2863,7 +3008,7 @@ function renderAnnotationList() {
     const actions = document.createElement('div'); actions.className = 'annotation-actions';
     const jump = document.createElement('button'); jump.type='button'; jump.textContent=t('Jump','跳转'); jump.addEventListener('click',()=>goToLocation(item.page,item.ratio));
     const promote = document.createElement('button'); promote.type='button'; promote.textContent=t('Add to page note','加入页注'); promote.addEventListener('click',()=>appendAnnotationToPageNote(item));
-    const remove = document.createElement('button'); remove.type='button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ annotations=annotations.filter((ann)=>ann.id!==item.id); persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations(); });
+    const remove = document.createElement('button'); remove.type='button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('annotation', item.type === 'highlight' ? t('Highlight','高亮') : t('Margin note','页边注'), item); annotations=annotations.filter((ann)=>ann.id!==item.id); persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations(); });
     actions.append(jump,promote,remove); row.append(actions); annotationList.append(row);
   }
 }
@@ -5207,7 +5352,7 @@ function renderSymbolGlossary() {
       item.meaning = String(next).trim(); persistDocumentState(); renderSymbolGlossary();
     });
     const del = document.createElement('button'); del.type = 'button'; del.className = 'text-button'; del.textContent = t('Delete', '删除');
-    del.addEventListener('click', () => { symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
+    del.addEventListener('click', () => { pushUndo('glossary', t(`Symbol ${item.symbol}`, `符号 ${item.symbol}`), item); symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
     actions.append(all, edit, del);
     card.append(head, actions);
     symbolGlossaryList.append(card);
@@ -5764,6 +5909,7 @@ function renderBookmarks() {
     edit.addEventListener('click', () => { editingBookmarkId = editingBookmarkId === bookmark.id ? null : bookmark.id; renderBookmarks(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'bookmark-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', t('Remove bookmark', '删除书签'));
     remove.addEventListener('click', () => {
+      pushUndo('bookmark', bookmark.title?.trim() || t(`Bookmark · page ${bookmark.page}`, `书签 · 第 ${bookmark.page} 页`), bookmark);
       bookmarks = bookmarks.filter((item) => item.id !== bookmark.id);
       if (editingBookmarkId === bookmark.id) editingBookmarkId = null;
       persistDocumentState(); renderBookmarks();
@@ -5994,6 +6140,164 @@ contrastRange?.addEventListener('input', () => { displayContrast = clamp(contras
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 gapRange?.addEventListener('change', () => { runDisplayTransition(() => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); persistDisplayPreferences(); }, { renderReference: false }); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
+
+function formatCompactDate(timestamp) {
+  try {
+    return new Intl.DateTimeFormat(root.dataset.lang === 'zh' ? 'zh-CN' : 'en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    }).format(new Date(timestamp));
+  } catch (_) { return ''; }
+}
+
+function renderNamedReadingSessions() {
+  if (!readingSessionsList || !readingSessionsCount || !readingSessionsEmpty) return;
+  readingSessionsList.replaceChildren();
+  readingSessionsCount.textContent = String(namedReadingSessions.length);
+  readingSessionsEmpty.classList.toggle('is-hidden', namedReadingSessions.length > 0);
+  for (const item of [...namedReadingSessions].sort((a,b) => b.updated - a.updated)) {
+    const row = document.createElement('div'); row.className = 'reading-session-item';
+    const head = document.createElement('div'); head.className = 'reading-session-head';
+    const name = document.createElement('div'); name.className = 'reading-session-name'; name.textContent = item.name;
+    const page = document.createElement('span'); page.className = 'page-chip'; page.textContent = t(`Page ${item.state?.page || 1}`, `第 ${item.state?.page || 1} 页`);
+    head.append(name, page);
+    const meta = document.createElement('div'); meta.className = 'reading-session-meta'; meta.textContent = formatCompactDate(item.updated);
+    const actions = document.createElement('div'); actions.className = 'reading-session-actions';
+    const restore = document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreNamedReadingSession(item));
+    const update = document.createElement('button'); update.type='button'; update.className='text-button'; update.textContent=t('Update','更新'); update.addEventListener('click',()=>{ item.state=captureNamedWorkspaceState(); item.updated=Date.now(); persistDocumentState(); renderNamedReadingSessions(); });
+    const remove = document.createElement('button'); remove.type='button'; remove.className='text-button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('reading-session', t(`Reading session “${item.name}”`, `阅读会话“${item.name}”`), item); namedReadingSessions=namedReadingSessions.filter((x)=>x.id!==item.id); persistDocumentState(); renderNamedReadingSessions(); });
+    actions.append(restore, update, remove); row.append(head, meta, actions); readingSessionsList.append(row);
+  }
+}
+
+function saveNamedReadingSession() {
+  if (!pdfDoc) return;
+  let name = String(readingSessionName?.value || '').trim();
+  if (!name) name = t(`Session ${namedReadingSessions.length + 1}`, `会话 ${namedReadingSessions.length + 1}`);
+  const now = Date.now();
+  namedReadingSessions = [{ id:`rs-${now}-${Math.random().toString(36).slice(2,7)}`, name:name.slice(0,120), created:now, updated:now, state:captureNamedWorkspaceState() }, ...namedReadingSessions].slice(0,20);
+  if (readingSessionName) readingSessionName.value='';
+  persistDocumentState(); renderNamedReadingSessions();
+}
+
+async function restoreNamedReadingSession(item) {
+  if (!pdfDoc || !item?.state) return;
+  const state = item.state;
+  restoringSession = true;
+  try {
+    currentPage = Math.min(Math.max(1, Number(state.page) || 1), pdfDoc.numPages);
+    pinnedPage = Number(state.pinnedPage) >= 1 && Number(state.pinnedPage) <= pdfDoc.numPages ? Number(state.pinnedPage) : null;
+    zoomMode = ['fit-width','fit-page','custom'].includes(state.zoomMode) ? state.zoomMode : zoomMode;
+    zoomScale = clamp(state.zoomScale, .35, 4, zoomScale);
+    scrollByPage = state.scrollByPage && typeof state.scrollByPage === 'object' ? jsonClone(state.scrollByPage,{}) : {};
+    referenceScrollByPage = state.referenceScrollByPage && typeof state.referenceScrollByPage === 'object' ? jsonClone(state.referenceScrollByPage,{}) : {};
+    continuousScrollTop = Math.max(0, Number(state.continuousScrollTop) || 0);
+    const a = state.continuousAnchor;
+    continuousSavedAnchor = a && Number(a.page) ? { page:Math.min(Math.max(1,Number(a.page)),pdfDoc.numPages), ratio:Math.min(1,Math.max(0,Number(a.ratio)||0)) } : {page:currentPage,ratio:0};
+    referencePages = Array.isArray(state.referencePages) ? state.referencePages.map(Number).filter((n,i,a)=>n>=1&&n<=pdfDoc.numPages&&a.indexOf(n)===i).slice(0,4) : [];
+    readingBackStack = normalizeReadingTrail(state.readingBackStack);
+    if (state.searchQuery != null) searchInput.value = String(state.searchQuery);
+    const desiredFlow = state.readingFlow === 'single' ? 'single' : 'continuous';
+    await setReadingFlow(desiredFlow, { persist:false, render:false });
+    if (state.ui?.sections) {
+      document.querySelectorAll('.workspace-section[id]').forEach((section)=>{
+        if (Object.prototype.hasOwnProperty.call(state.ui.sections, section.id)) section.classList.toggle('is-collapsed', Boolean(state.ui.sections[section.id]));
+      });
+      updateWorkspaceCollapseButtons();
+    }
+    if (state.ui?.activePanel) activatePanel(state.ui.activePanel, false);
+    shell.classList.toggle('left-collapsed', Boolean(state.ui?.leftCollapsed));
+    shell.classList.toggle('right-collapsed', Boolean(state.ui?.rightCollapsed));
+    await Promise.all([renderCurrentPage(), renderReferencePage()]);
+    renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateZoomLabel(); updateNavigationState();
+  } finally { restoringSession = false; }
+  persistWorkspaceCollapseState(); persistDocumentState();
+}
+
+function renderUndoHistory() {
+  if (!undoList || !undoCount || !undoEmpty) return;
+  undoList.replaceChildren();
+  undoCount.textContent = String(undoHistory.length);
+  undoEmpty.classList.toggle('is-hidden', undoHistory.length > 0);
+  if (undoClear) undoClear.disabled = undoHistory.length === 0;
+  for (const item of undoHistory.slice(0,10)) {
+    const row=document.createElement('div'); row.className='undo-item';
+    const head=document.createElement('div'); head.className='undo-item-head';
+    const title=document.createElement('div'); title.className='undo-item-title'; title.textContent=item.label;
+    head.append(title);
+    const meta=document.createElement('div'); meta.className='undo-item-meta'; meta.textContent=formatCompactDate(item.created);
+    const actions=document.createElement('div'); actions.className='undo-item-actions';
+    const restore=document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreUndoEntry(item.id));
+    actions.append(restore); row.append(head,meta,actions); undoList.append(row);
+  }
+}
+
+async function restoreUndoEntry(id = null) {
+  const item = id ? undoHistory.find((x)=>x.id===id) : undoHistory[0];
+  if (!item) return false;
+  const payload = jsonClone(item.payload, item.payload);
+  if (item.type === 'bookmark') { if (payload && !bookmarks.some((x)=>x.id===payload.id)) bookmarks.push(payload); renderBookmarks(); }
+  else if (item.type === 'annotation') { if (payload && !annotations.some((x)=>x.id===payload.id)) annotations.push(payload); renderAnnotationList(); rerenderVisibleAnnotations(); }
+  else if (item.type === 'glossary') { if (payload && !symbolGlossary.some((x)=>x.id===payload.id)) symbolGlossary.push(payload); renderSymbolGlossary(); }
+  else if (item.type === 'reading-trail') { readingBackStack=normalizeReadingTrail(payload); updateReadingBackButton(); renderReadingTrail(); }
+  else if (item.type === 'ocr-result') { currentOcrResult=payload; refreshOcrUI(); }
+  else if (item.type === 'reading-session') { if (payload && !namedReadingSessions.some((x)=>x.id===payload.id)) namedReadingSessions.unshift(payload); renderNamedReadingSessions(); }
+  else return false;
+  undoHistory = undoHistory.filter((x)=>x.id!==item.id);
+  renderUndoHistory(); persistDocumentState(); return true;
+}
+
+function renderRecoverySnapshots() {
+  if (!recoveryList || !recoveryCount || !recoveryEmpty) return;
+  recoveryList.replaceChildren();
+  recoveryCount.textContent=String(recoverySnapshots.length);
+  recoveryEmpty.classList.toggle('is-hidden', recoverySnapshots.length>0);
+  for (const item of recoverySnapshots.slice(0,5)) {
+    const row=document.createElement('div'); row.className='recovery-item';
+    const head=document.createElement('div'); head.className='recovery-item-head';
+    const title=document.createElement('div'); title.className='recovery-item-title'; title.textContent=t(`Snapshot · page ${item.data?.page || 1}`, `快照 · 第 ${item.data?.page || 1} 页`);
+    head.append(title);
+    const meta=document.createElement('div'); meta.className='recovery-item-meta'; meta.textContent=formatCompactDate(item.created);
+    const actions=document.createElement('div'); actions.className='recovery-item-actions';
+    const restore=document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreRecoverySnapshot(item));
+    actions.append(restore); row.append(head,meta,actions); recoveryList.append(row);
+  }
+}
+
+async function restoreRecoverySnapshot(item) {
+  if (!pdfDoc || !item?.data) return;
+  const data=item.data;
+  const currentSafety = durableRecoveryData();
+  const currentFingerprint = recoveryFingerprint(currentSafety);
+  const targetFingerprint = recoveryFingerprint(data);
+  if (currentFingerprint !== targetFingerprint) {
+    recoverySnapshots = [{ id:`recovery-${Date.now()}-safety`, created:Date.now(), data:currentSafety }, ...recoverySnapshots].slice(0,5);
+    const key = recoveryStorageKey(); if (key) safeSet(key, JSON.stringify(recoverySnapshots));
+    renderRecoverySnapshots();
+  }
+  recoveryRestoreActive=true;
+  try {
+    bookmarks=normalizeBookmarks(data.bookmarks);
+    notes=data.notes && typeof data.notes==='object' ? jsonClone(data.notes,{}) : {};
+    annotations=normalizeAnnotations(data.annotations);
+    symbolGlossary=normalizeSymbolGlossary(data.symbolGlossary);
+    currentPage=Math.min(Math.max(1,Number(data.page)||1),pdfDoc.numPages);
+    pinnedPage=Number(data.pinnedPage)>=1&&Number(data.pinnedPage)<=pdfDoc.numPages?Number(data.pinnedPage):null;
+    referencePages=Array.isArray(data.referencePages)?data.referencePages.map(Number).filter((n,i,a)=>n>=1&&n<=pdfDoc.numPages&&a.indexOf(n)===i).slice(0,4):[];
+    readingBackStack=normalizeReadingTrail(data.readingBackStack);
+    if (['fit-width','fit-page','custom'].includes(data.zoomMode)) zoomMode=data.zoomMode;
+    zoomScale=clamp(data.zoomScale,.35,4,zoomScale);
+    if (data.continuousAnchor) continuousSavedAnchor={page:Math.min(Math.max(1,Number(data.continuousAnchor.page)||currentPage),pdfDoc.numPages),ratio:Math.min(1,Math.max(0,Number(data.continuousAnchor.ratio)||0))};
+    const flow=data.readingFlow==='single'?'single':'continuous';
+    restoringSession=true;
+    await setReadingFlow(flow,{persist:false,render:false});
+    await Promise.all([renderCurrentPage(),renderReferencePage()]);
+    restoringSession=false;
+    renderBookmarks(); renderAnnotationList(); rerenderVisibleAnnotations(); renderSymbolGlossary(); renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateNavigationState();
+  } catch (error) { console.error(error); showError(t('Recovery snapshot could not be restored.', '无法恢复该快照。')); }
+  finally { restoringSession=false; recoveryRestoreActive=false; }
+  persistDocumentState();
+}
+
 function downloadJsonFile(name, value) {
   const blob = new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -6042,6 +6346,9 @@ function commandActions() {
     { label: t('Annotations', '批注'), needsPdf: true, run: () => openRightSectionShortcut('annotations-section') },
     { label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
     { label: t('Pin current page as reference', '固定当前页作为参考'), needsPdf: true, run: () => setPinnedPage(currentPage) },
+    { label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
+    { label: t('Undo last deleted item', '撤销最近删除'), needsPdf: true, run: () => restoreUndoEntry() },
+    { label: t('Recovery snapshots', '恢复快照'), needsPdf: true, run: () => openRightSectionShortcut('recovery-section') },
     { label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
     { label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() },
     { label: t('Reading trail', '阅读轨迹'), needsPdf: true, run: () => openRightSectionShortcut('reading-trail-section') }
@@ -6084,7 +6391,7 @@ referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
 readingBackButton?.addEventListener('click', goBackReadingLocation);
-readingTrailClear?.addEventListener('click', () => { readingBackStack = []; readingTrailExpanded = false; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
+readingTrailClear?.addEventListener('click', () => { if (readingBackStack.length) pushUndo('reading-trail', t('Reading trail', '阅读轨迹'), readingBackStack); readingBackStack = []; readingTrailExpanded = false; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
 readingTrailToggle?.addEventListener('click', () => { readingTrailExpanded = !readingTrailExpanded; renderReadingTrail(); });
 buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({ force: true }));
 exportReadingDataButton?.addEventListener('click', exportReadingData);
@@ -6105,6 +6412,9 @@ searchForm.addEventListener('submit', (event) => { event.preventDefault(); persi
 searchFuzzy?.addEventListener('change', () => { persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
 glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
 glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
+readingSessionSave?.addEventListener('click', saveNamedReadingSession);
+readingSessionName?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); saveNamedReadingSession(); } });
+undoClear?.addEventListener('click', () => { undoHistory = []; renderUndoHistory(); persistDocumentState(); });
 searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState(); });
 [searchMatchCase, searchWholeWord].forEach((node) => node?.addEventListener('change', () => { persistSearchPreferences(); if (pdfDoc && searchInput.value.trim()) searchPdf(searchInput.value); }));
 
@@ -6252,6 +6562,7 @@ document.addEventListener('keydown', (event) => {
   const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target?.isContentEditable;
   const key = event.key.toLowerCase();
   if ((event.ctrlKey || event.metaKey) && key === 'k') { event.preventDefault(); openCommandPalette(); return; }
+  if (!typing && pdfDoc && (event.ctrlKey || event.metaKey) && key === 'z' && !event.shiftKey && undoHistory.length) { event.preventDefault(); restoreUndoEntry(); return; }
   if (!typing && event.altKey && event.key === 'ArrowLeft') { event.preventDefault(); goBackReadingLocation(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'o') { event.preventDefault(); fileInput.click(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }

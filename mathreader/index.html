@@ -386,6 +386,38 @@
         <div class="empty-panel" id="backlinks-empty" data-en="Follow an equation, citation, theorem, or section reference to see its backlinks." data-zh="跟随公式、文献、定理或章节引用后，可在这里查看反向引用。">Follow an equation, citation, theorem, or section reference to see its backlinks.</div>
       </section>
 
+      <section class="workspace-section" id="reading-sessions-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Reading sessions" data-zh="阅读会话">Reading sessions</span><details class="compact-help compact-help-heading"><summary data-en-title="Reading sessions help" data-zh-title="阅读会话帮助" aria-label="Reading sessions help">?</summary><div class="compact-help-body" data-en="Save a named workspace state such as Seminar prep. Restoring it changes navigation/view state only; notes and annotations are never rolled back." data-zh="保存命名的阅读工作区状态，例如“研讨会准备”。恢复时只改变导航与视图状态，不会回滚页注或批注。">Save a named workspace state such as Seminar prep. Restoring it changes navigation/view state only; notes and annotations are never rolled back.</div></details></span>
+          <span class="count-badge" id="reading-sessions-count">0</span>
+        </div>
+        <div class="session-save-row">
+          <input id="reading-session-name" type="text" autocomplete="off" data-en-placeholder="Session name" data-zh-placeholder="会话名称" placeholder="Session name">
+          <button class="secondary-action" type="button" id="reading-session-save" data-en="Save current" data-zh="保存当前状态">Save current</button>
+        </div>
+        <div class="reading-sessions-list" id="reading-sessions-list"></div>
+        <div class="empty-panel" id="reading-sessions-empty" data-en="Save a named reading workspace to return to it later." data-zh="保存一个命名阅读工作区，稍后可快速恢复。">Save a named reading workspace to return to it later.</div>
+      </section>
+
+      <section class="workspace-section" id="undo-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Recently deleted" data-zh="最近删除">Recently deleted</span><details class="compact-help compact-help-heading"><summary data-en-title="Undo help" data-zh-title="撤销帮助" aria-label="Undo help">?</summary><div class="compact-help-body" data-en="Deleted bookmarks, annotations, glossary entries and cleared reading trails can be restored here. Ctrl/Cmd+Z restores the newest item when you are not typing." data-zh="删除的书签、批注、符号表条目以及被清空的阅读轨迹可在此恢复。未输入文字时，Ctrl/Cmd+Z 可恢复最新一项。">Deleted bookmarks, annotations, glossary entries and cleared reading trails can be restored here. Ctrl/Cmd+Z restores the newest item when you are not typing.</div></details></span>
+          <span class="count-badge" id="undo-count">0</span>
+        </div>
+        <div class="undo-list" id="undo-list"></div>
+        <div class="empty-panel" id="undo-empty" data-en="Nothing recently deleted." data-zh="暂无最近删除项目。">Nothing recently deleted.</div>
+        <button class="secondary-action undo-clear" type="button" id="undo-clear" disabled data-en="Clear history" data-zh="清空记录">Clear history</button>
+      </section>
+
+      <section class="workspace-section" id="recovery-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Recovery" data-zh="恢复">Recovery</span><details class="compact-help compact-help-heading"><summary data-en-title="Recovery help" data-zh-title="恢复帮助" aria-label="Recovery help">?</summary><div class="compact-help-body" data-en="MathReader keeps lightweight local snapshots of durable reading data independently of the cached PDF blob. Restoring a snapshot replaces local notes/bookmarks/annotations with that snapshot." data-zh="MathReader 会独立于 PDF 缓存文件保存轻量本地恢复快照。恢复快照会用该快照替换本地页注、书签与批注。">MathReader keeps lightweight local snapshots of durable reading data independently of the cached PDF blob. Restoring a snapshot replaces local notes/bookmarks/annotations with that snapshot.</div></details></span>
+          <span class="count-badge" id="recovery-count">0</span>
+        </div>
+        <div class="recovery-list" id="recovery-list"></div>
+        <div class="empty-panel" id="recovery-empty" data-en="Recovery snapshots appear automatically after your reading data changes." data-zh="阅读数据发生变化后会自动生成恢复快照。">Recovery snapshots appear automatically after your reading data changes.</div>
+      </section>
+
       <section class="workspace-section" id="reading-trail-section">
         <div class="panel-heading">
           <span class="panel-heading-title"><span data-en="Reading trail" data-zh="阅读轨迹">Reading trail</span><details class="compact-help compact-help-heading"><summary data-en-title="Reading trail help" data-zh-title="阅读轨迹帮助" aria-label="Reading trail help">?</summary><div class="compact-help-body" data-en="MathReader saves where you were before navigation jumps. Newest entries appear first; click one to return." data-zh="MathReader 会保存导航跳转前的位置。最新条目在最上方；点击即可返回。">MathReader saves where you were before navigation jumps. Newest entries appear first; click one to return.</div></details></span>
