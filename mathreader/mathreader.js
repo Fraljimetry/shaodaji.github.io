@@ -68,6 +68,9 @@ const buildStructureIndexButton = el('build-structure-index');
 const bibliographyIndex = el('bibliography-index');
 const bibliographyEmpty = el('bibliography-empty');
 const bibliographyCount = el('bibliography-count');
+const equationIndex = el('equation-index');
+const equationIndexEmpty = el('equation-index-empty');
+const equationIndexCount = el('equation-index-count');
 const exportReadingDataButton = el('export-reading-data');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');
@@ -294,7 +297,7 @@ formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 've
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
-const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v2';
+const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const STRUCTURE_INDEX_VERSION = 2;
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
@@ -889,8 +892,8 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section']);
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','contents-theorems-section','contents-equations-section','contents-bibliography-section']);
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
   });
@@ -898,12 +901,12 @@ function loadWorkspaceCollapseState() {
 
 function persistWorkspaceCollapseState() {
   const state = {};
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => { if (section.id) state[section.id] = section.classList.contains('is-collapsed'); });
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => { if (section.id) state[section.id] = section.classList.contains('is-collapsed'); });
   safeSet(WORKSPACE_COLLAPSE_KEY, JSON.stringify(state));
 }
 
 function updateWorkspaceCollapseButtons() {
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const button = section.querySelector(':scope > .panel-heading .section-collapse-button');
     if (!button) return;
     const collapsed = section.classList.contains('is-collapsed');
@@ -915,12 +918,12 @@ function updateWorkspaceCollapseButtons() {
 
 function setupWorkspaceCollapsibles() {
   loadWorkspaceCollapseState();
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     if (!section.id) return;
     const heading = section.querySelector(':scope > .panel-heading');
     if (!heading || heading.querySelector('.section-collapse-button')) return;
     const button = document.createElement('button'); button.type = 'button'; button.className = 'section-collapse-button';
-    button.addEventListener('click', () => { section.classList.toggle('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons(); });
+    button.addEventListener('click', () => { const willExpand = section.classList.contains('is-collapsed'); section.classList.toggle('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons(); if (willExpand && section.id === 'contents-equations-section') ensureEquationIndexRendered(); });
     heading.append(button);
   });
   updateWorkspaceCollapseButtons();
@@ -979,6 +982,7 @@ function loadDocumentState(cachedSession = null) {
   bibliographyEntries = [];
   structureIndexVersion = 0;
   equationLabelIndex = null;
+  renderEquationIndex();
   backlinkContext = null; backlinkEntries = []; renderBacklinks();
   tocOutlineTargets = null;
   referencePages = [];
@@ -4194,7 +4198,49 @@ async function buildEquationLabelIndex() {
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
   equationLabelIndex = index;
+  renderEquationIndex();
   return index;
+}
+
+function renderEquationIndex() {
+  if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
+  equationIndex.replaceChildren();
+  if (!equationLabelIndex) {
+    equationIndexCount.textContent = '0';
+    equationIndexEmpty.classList.remove('is-hidden');
+    equationIndexEmpty.textContent = t('Expand this section to prepare the equation-label index.', '展开此模块以生成公式编号索引。');
+    return;
+  }
+  const rows = [];
+  for (const [label, candidates] of equationLabelIndex.entries()) {
+    let best = null;
+    for (const candidate of candidates || []) {
+      const score = equationTargetScore(candidate.text, label, null, candidate.page, null, candidate.ratio);
+      if (!best || score > best.score) best = { ...candidate, score };
+    }
+    if (best) rows.push({ label, ...best });
+  }
+  rows.sort((a,b) => a.page - b.page || a.ratio - b.ratio || a.label.localeCompare(b.label));
+  equationIndexCount.textContent = String(rows.length);
+  equationIndexEmpty.classList.toggle('is-hidden', rows.length > 0);
+  if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
+  for (const entry of rows.slice(0, 500)) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item';
+    const label = document.createElement('strong'); label.textContent = entry.label;
+    const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
+    button.append(label, meta);
+    button.title = entry.text || entry.label;
+    button.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
+    equationIndex.append(button);
+  }
+}
+
+async function ensureEquationIndexRendered() {
+  if (!pdfDoc) { renderEquationIndex(); return; }
+  if (equationLabelIndex) { renderEquationIndex(); return; }
+  if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Building equation-label index…', '正在生成公式编号索引……'); }
+  try { await buildEquationLabelIndex(); }
+  catch (error) { console.warn('Equation-label index build failed', error); if (equationIndexEmpty) equationIndexEmpty.textContent = t('The equation-label index could not be built.', '无法生成公式编号索引。'); }
 }
 
 async function findEquationLabelLocation(query, originPage = null, originRatio = null) {

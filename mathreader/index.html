@@ -61,24 +61,43 @@
       </div>
 
       <section class="sidebar-panel is-active" id="outline-panel">
-        <div class="panel-heading">
-          <span data-en="Document structure" data-zh="文档结构">Document structure</span>
-          <span class="count-badge" id="outline-count">0</span>
-        </div>
-        <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
-        <p class="history-explainer is-hidden" id="outline-source"></p>
-        <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
-        <div class="structure-index-block">
-          <div class="panel-heading compact-heading"><span data-en="Theorems, definitions & proofs" data-zh="定理、定义与证明">Theorems, definitions & proofs</span><span class="count-badge" id="structure-count">0</span></div>
+        <section class="workspace-section contents-section" id="contents-structure-section">
+          <div class="panel-heading">
+            <span data-en="Document structure" data-zh="文档结构">Document structure</span>
+            <span class="count-badge" id="outline-count">0</span>
+          </div>
+          <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
+          <p class="history-explainer is-hidden" id="outline-source"></p>
+          <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-theorems-section">
+          <div class="panel-heading">
+            <span data-en="Theorems & definitions" data-zh="定理与定义">Theorems & definitions</span>
+            <span class="count-badge" id="structure-count">0</span>
+          </div>
           <button class="text-button structure-build" id="build-structure-index" type="button" disabled data-en="Rebuild structure" data-zh="重新生成结构索引">Rebuild structure</button>
           <div class="structure-index" id="structure-index"></div>
           <div class="empty-panel" id="structure-empty" data-en="The theorem, definition, and proof index is prepared automatically for this document." data-zh="此文档的定理、定义与证明索引会自动生成。">The theorem, definition, and proof index is prepared automatically for this document.</div>
-        </div>
-        <div class="bibliography-index-block">
-          <div class="panel-heading compact-heading"><span data-en="Bibliography" data-zh="参考文献">Bibliography</span><span class="count-badge" id="bibliography-count">0</span></div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-equations-section">
+          <div class="panel-heading">
+            <span data-en="Equations" data-zh="公式">Equations</span>
+            <span class="count-badge" id="equation-index-count">0</span>
+          </div>
+          <div class="equation-index" id="equation-index"></div>
+          <div class="empty-panel" id="equation-index-empty" data-en="Expand this section to prepare the equation-label index." data-zh="展开此模块以生成公式编号索引。">Expand this section to prepare the equation-label index.</div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-bibliography-section">
+          <div class="panel-heading">
+            <span data-en="Bibliography" data-zh="参考文献">Bibliography</span>
+            <span class="count-badge" id="bibliography-count">0</span>
+          </div>
           <div class="bibliography-index" id="bibliography-index"></div>
           <div class="empty-panel" id="bibliography-empty" data-en="Bibliography entries are detected automatically when numbered references are present." data-zh="存在编号参考文献时会自动检测条目。">Bibliography entries are detected automatically when numbered references are present.</div>
-        </div>
+        </section>
       </section>
 
       <section class="sidebar-panel" id="search-panel">
