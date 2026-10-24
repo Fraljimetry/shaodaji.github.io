@@ -2989,15 +2989,21 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   // to zero height for a frame, which visibly flashes page 1 during +/- zoom.
   continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
   continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
-  const first = await pdfDoc.getPage(Math.min(currentPage, pdfDoc.numPages));
+  // Build exact page metrics while the old document stays visible. Using one
+  // current-page estimate for every placeholder makes mixed-size pages change
+  // height as they render, which then forces a second anchor correction and
+  // produces the visible down-then-back nudge during +/- zoom.
+  const pageMetrics = await Promise.all(Array.from({ length: pdfDoc.numPages }, async (_, index) => {
+    const page = await pdfDoc.getPage(index + 1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = continuousScale(base);
+    return { width: base.width * scale, height: base.height * scale };
+  }));
   if (generation !== continuousGeneration) return;
-  const base = first.getViewport({ scale: 1 });
-  const scale = continuousScale(base);
-  const estimateWidth = base.width * scale;
-  const estimateHeight = base.height * scale;
   const replacement = document.createDocumentFragment();
   const replacementNodes = new Map();
   for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
+    const metric = pageMetrics[pageNum - 1];
     const frame = document.createElement('section');
     frame.className = 'continuous-page-frame';
     frame.dataset.page = String(pageNum);
@@ -3009,8 +3015,8 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     const surface = document.createElement('div');
     surface.className = 'page-surface continuous-page-surface is-placeholder';
     surface.dataset.placeholderLabel = t(`Page ${pageNum}`, `第 ${pageNum} 页`);
-    surface.style.width = `${estimateWidth}px`;
-    surface.style.height = `${estimateHeight}px`;
+    surface.style.width = `${metric.width}px`;
+    surface.style.height = `${metric.height}px`;
     const pageCanvas = document.createElement('canvas');
     pageCanvas.setAttribute('aria-label', t(`PDF page ${pageNum}`, `PDF 第 ${pageNum} 页`));
     const textLayer = document.createElement('div');
@@ -3064,31 +3070,17 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
   for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
 
-  // Render the restored/current neighborhood before positioning the scroll
-  // anchor. This prevents giant stale placeholders near the resume point.
+  // Render the restored/current neighborhood after the one-time anchor restore.
+  // Placeholder geometry already matches each page's final scaled geometry, so
+  // these renders must not trigger a second scroll correction. A single restore
+  // avoids the down-then-snap-back motion that made +/- zoom uncomfortable.
   const anchorPage = Math.min(Math.max(1, Number(anchor?.page) || currentPage), pdfDoc.numPages);
   const eagerPages = [];
   for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) eagerPages.push(n);
   await Promise.all(eagerPages.map((n) => renderContinuousPage(n, generation)));
   if (generation !== continuousGeneration) return;
-
-  requestAnimationFrame(() => {
-    if (generation !== continuousGeneration) return;
-    const finalRestoreAnchor = anchor || continuousSavedAnchor;
-    if (finalRestoreAnchor?.page && continuousPageNodes.has(Number(finalRestoreAnchor.page))) {
-      const target = continuousPageNodes.get(Number(finalRestoreAnchor.page))?.frame;
-      const ratio = Math.min(1, Math.max(0, Number(finalRestoreAnchor.ratio) || 0));
-      if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
-    } else {
-      // Legacy sessions stored only absolute pixels. Those values depend on the
-      // old viewport width and can land inside oversized placeholders after a
-      // reload, so migrate them to the saved page rather than replaying pixels.
-      const target = continuousPageNodes.get(currentPage)?.frame;
-      if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
-    }
-    updateCurrentPageFromContinuousScroll();
-    continuousSavedAnchor = captureContinuousAnchor();
-  });
+  updateCurrentPageFromContinuousScroll();
+  continuousSavedAnchor = captureContinuousAnchor() || restoreAnchor || continuousSavedAnchor;
 }
 
 async function renderCurrentPage() {
