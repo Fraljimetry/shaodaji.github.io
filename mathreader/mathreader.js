@@ -2992,6 +2992,15 @@ async function renderContinuousPage(pageNum, generation, { retry = true } = {}) 
   return renderContinuousPage(pageNum, generation, { retry: false });
 }
 
+function continuousViewportAnchorOffset() {
+  if (!primaryCanvasWrap) return 0;
+  // Anchor display transitions to a stable reading point inside the viewport,
+  // rather than to the scroll container's top edge. Keeping the same PDF point
+  // under this screen position removes the small down/up "settling" motion that
+  // otherwise appears when page geometry changes during zoom or fit operations.
+  return Math.max(0, Math.min(140, primaryCanvasWrap.clientHeight * 0.22));
+}
+
 function captureContinuousAnchor() {
   if (readingFlow !== 'continuous' || !pdfDoc || !continuousPageNodes.size || !primaryCanvasWrap) return null;
   if (continuousRebuilding || displayTransitionActive) return continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
@@ -2999,8 +3008,20 @@ function captureContinuousAnchor() {
   const record = continuousPageNodes.get(currentPage);
   if (!record?.frame) return null;
   const height = Math.max(1, record.frame.offsetHeight || record.surface?.offsetHeight || 1);
-  const local = primaryCanvasWrap.scrollTop - record.frame.offsetTop;
+  const focusY = continuousViewportAnchorOffset();
+  const documentY = primaryCanvasWrap.scrollTop + focusY;
+  const local = documentY - record.frame.offsetTop;
   return { page: currentPage, ratio: Math.min(1, Math.max(0, local / height)) };
+}
+
+function restoreContinuousAnchor(anchor) {
+  if (!primaryCanvasWrap || !anchor?.page) return false;
+  const target = continuousPageNodes.get(Number(anchor.page))?.frame;
+  if (!target) return false;
+  const ratio = Math.min(1, Math.max(0, Number(anchor.ratio) || 0));
+  const focusY = continuousViewportAnchorOffset();
+  primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio - focusY);
+  return true;
 }
 
 function continuousScale(baseViewport) {
@@ -3101,15 +3122,18 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   // temporarily exposes scrollTop=0 and the user sees page 1 flash during zoom
   // or layout rebuilds even though the correct reading anchor is restored later.
   const restoreAnchor = anchor || continuousSavedAnchor;
-  if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
-    const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
-    const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
-    if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
-  } else {
+  if (!restoreContinuousAnchor(restoreAnchor)) {
     const target = continuousPageNodes.get(currentPage)?.frame;
     if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
   }
-  requestAnimationFrame(() => { if (generation === continuousGeneration) continuousRebuilding = false; });
+
+  // Render the restored/current page BEFORE installing IntersectionObserver.
+  // Previously the observer could start rendering this same page first, set its
+  // `rendering` flag, and make the explicit active-page call return immediately.
+  // The result was a permanent-looking placeholder on initial continuous load.
+  const anchorPage = Math.min(Math.max(1, Number(restoreAnchor?.page) || Number(anchor?.page) || currentPage), pdfDoc.numPages);
+  await renderContinuousPage(anchorPage, generation);
+  if (generation !== continuousGeneration) return;
 
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -3120,15 +3144,11 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
   for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
 
-  // Render the restored/current page first. Do not make the visible page wait
-  // behind several neighboring raster jobs: on slower machines that left the
-  // reader showing only a dark placeholder even though PDF loading succeeded.
-  // Once the active page is visible, warm the surrounding pages opportunistically.
-  const anchorPage = Math.min(Math.max(1, Number(restoreAnchor?.page) || Number(anchor?.page) || currentPage), pdfDoc.numPages);
-  await renderContinuousPage(anchorPage, generation);
-  if (generation !== continuousGeneration) return;
-  updateCurrentPageFromContinuousScroll();
-  continuousSavedAnchor = captureContinuousAnchor() || restoreAnchor || continuousSavedAnchor;
+  requestAnimationFrame(() => { if (generation === continuousGeneration) continuousRebuilding = false; });
+  // Do not perform a second anchor correction after rendering. Exact placeholder
+  // metrics mean the first restore is already authoritative; a second restore is
+  // precisely the visible nudge users reported during +/- zoom.
+  continuousSavedAnchor = restoreAnchor ? { ...restoreAnchor } : (captureContinuousAnchor() || continuousSavedAnchor);
 
   const neighbors = [];
   for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) {
@@ -3193,6 +3213,11 @@ async function stabilizeFitWidthLayout(anchorOverride = null) {
       if (!pdfDoc || zoomMode !== 'fit-width') return;
       lastObservedReaderWidth = Math.round(primaryCanvasWrap?.clientWidth || 0);
       if (readingFlow === 'continuous') {
+        // Initial/open rendering already builds to the current measured width.
+        // Avoid immediately rebuilding it again unless the browser actually
+        // reports a width mismatch; that redundant second build can itself look
+        // like a display jump even when the final anchor is correct.
+        if (!continuousFitWidthMismatch()) break;
         await buildContinuousDocument({ restore: true, anchor });
         await nextFrame();
         if (!continuousFitWidthMismatch()) break;
