@@ -4779,7 +4779,13 @@ function renderBacklinks() {
     const meta = document.createElement('span'); meta.className = 'backlink-meta'; meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     const snippet = document.createElement('span'); snippet.className = 'backlink-snippet'; snippet.textContent = entry.snippet || entry.text || '';
     button.append(meta, snippet);
-    button.addEventListener('click', () => goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || backlinkContext?.label || ''));
+    button.addEventListener('click', () => {
+      if (entry.searchMatch && entry.matchText) {
+        goToSearchMatch(entry.searchMatch, entry.matchText);
+      } else {
+        goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || backlinkContext?.label || '');
+      }
+    });
     backlinksList.append(button);
   }
 }
@@ -4788,11 +4794,12 @@ async function collectBacklinks(query, target) {
   if (!pdfDoc || !query || !target) return [];
   const results = [];
   const seen = new Set();
-  const add = (page, ratio, text, matchText = query) => {
+  const add = (page, ratio, text, matchText = query, extra = {}) => {
     if (Number(page) === Number(target.page) && Math.abs((Number(ratio)||0) - (Number(target.ratio)||0)) < 0.025) return;
-    const key = `${page}:${Math.round((Number(ratio)||0)*10000)}:${String(text).slice(0,80)}`;
+    const occurrenceKey = Number.isFinite(Number(extra.matchIndex)) ? `:${Number(extra.matchIndex)}` : '';
+    const key = `${page}:${Math.round((Number(ratio)||0)*10000)}:${String(text).slice(0,80)}${occurrenceKey}`;
     if (seen.has(key)) return; seen.add(key);
-    results.push({ page, ratio:Number(ratio)||0, text, snippet:backlinkSnippet(text, query), matchText });
+    results.push({ page, ratio:Number(ratio)||0, text, snippet:backlinkSnippet(text, matchText || query), matchText, ...extra });
   };
   const normalized = normalizedReferenceLabel(query);
   const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
@@ -4803,16 +4810,34 @@ async function collectBacklinks(query, target) {
   const structureAlias = structureTarget ? headingAliasForTitle(structureTarget.title || structureTarget.label || '') : '';
   const structureLabel = structureTarget?.label || '';
   for (let page=1; page<=pdfDoc.numPages; page+=1) {
+    // Bibliography backlinks must be occurrence-based, not line-based. A single
+    // reconstructed line/paragraph can contain several [2] citations; using
+    // Array.some() collapsed all of them to one backlink in v110.
+    if (bibNumber) {
+      const pageValue = await pageText(page);
+      const bracketRe = /\[[^\]]{1,60}\]/g;
+      const rawOrdinals = new Map();
+      let bracket;
+      while ((bracket = bracketRe.exec(pageValue))) {
+        const raw = bracket[0];
+        const ordinal = rawOrdinals.get(raw) || 0;
+        rawOrdinals.set(raw, ordinal + 1);
+        if (!groupedBibliographyMembers(raw).includes(bibNumber)) continue;
+        const ratio = Math.min(1, Math.max(0, bracket.index / Math.max(1, pageValue.length)));
+        add(page, ratio, pageValue, raw, {
+          matchIndex: bracket.index,
+          searchMatch: { page, text: pageValue, index: bracket.index, ordinal }
+        });
+      }
+      if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
+      continue;
+    }
+
     const lines = await pageTextLines(page);
     for (const line of lines) {
       const text = String(line.text || '');
       if (eq) {
-        for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) add(page, line.ratio, text, eq);
-        continue;
-      }
-      if (bibNumber) {
-        const brackets = text.match(/\[[^\]]{1,60}\]/g) || [];
-        if (brackets.some((raw) => groupedBibliographyMembers(raw).includes(bibNumber))) add(page, line.ratio, text, `[${bibNumber}]`);
+        for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) add(page, line.ratio, text, eq, { matchIndex: c.index });
         continue;
       }
       if (structureLike || structureTarget) {
@@ -4827,7 +4852,7 @@ async function collectBacklinks(query, target) {
     }
     if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
   }
-  return results.sort((a,b)=>a.page-b.page || a.ratio-b.ratio);
+  return results.sort((a,b)=>a.page-b.page || a.ratio-b.ratio || (Number(a.matchIndex)||0)-(Number(b.matchIndex)||0));
 }
 
 async function updateBacklinksForTarget(query, target) {
