@@ -1,0 +1,24 @@
+MathReader v120 OCR hybrid-pipeline upgrade
+
+Implemented local hybrid OCR strengthening (no Mathpix / no external OCR service):
+- Added multi-pass local image OCR selection:
+  - tight crop / normal preprocessing
+  - relaxed crop / normal preprocessing
+  - tight crop / contrast preprocessing
+  - relaxed crop / contrast preprocessing for tensor-heavy or difficult cases
+- Added tensor/complex-script heuristics using local crop geometry plus PDF-vector signature.
+- Added local preprocessing stage for high-contrast formula normalization before Texify input.
+- Added structural signature extraction for LaTeX candidates (superscripts, subscripts, fractions, radicals, integrals, sums, relations).
+- Added scoring/comparison between image-OCR candidates and PDF-vector candidates.
+- Added automatic hybrid chooser in image mode:
+  - keeps image OCR when clearly better;
+  - automatically prefers PDF-vector reconstruction for complex tensor-like formulas when vector reconstruction scores materially better;
+  - still preserves vector fallback if image OCR fails or is rejected.
+- Existing explicit PDF-vector mode remains unchanged.
+- Existing OCR history / preview / retry behavior preserved.
+
+Files changed:
+- mathreader/mathreader.js
+
+Static checks:
+- node --check mathreader/mathreader.js : PASS

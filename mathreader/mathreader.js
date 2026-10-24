@@ -2717,13 +2717,119 @@ function alignedCandidateScore(item, expectedRows = 0) {
   const rows = latexVisualRowCount(item.latex);
   let score = structural + assessmentPenalty;
   if (expectedRows >= 2) score += Math.abs(rows - expectedRows) * 10;
-  if (/\\begin\{aligned\}/.test(item.latex)) score -= 4;
-  const relationCount = (String(item.latex).match(/&\s*(?:=|\\leq?|\\geq?|\\approx|\\sim|\\equiv|\\to|\\Rightarrow)/g) || []).length;
+  if (/\begin\{aligned\}/.test(item.latex)) score -= 4;
+  const relationCount = (String(item.latex).match(/&\s*(?:=|\leq?|\geq?|\approx|\sim|\equiv|\to|\Rightarrow)/g) || []).length;
   if (expectedRows >= 2) score -= Math.min(expectedRows, relationCount) * 2;
   return score;
 }
 
-async function runImageFormulaRecognition(crop) {
+function preprocessFormulaCanvas(sourceCanvas, mode = 'normal') {
+  if (!sourceCanvas || mode === 'normal') return sourceCanvas;
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, sourceCanvas.width || 1);
+  out.height = Math.max(1, sourceCanvas.height || 1);
+  const srcCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  const dstCtx = out.getContext('2d', { alpha: false, willReadFrequently: true });
+  if (!srcCtx || !dstCtx) return sourceCanvas;
+  dstCtx.fillStyle = '#fff';
+  dstCtx.fillRect(0, 0, out.width, out.height);
+  const imageData = srcCtx.getImageData(0, 0, out.width, out.height);
+  const { data } = imageData;
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    let value = lum;
+    if (mode === 'contrast') {
+      if (lum <= 190) value = 0;
+      else if (lum >= 248) value = 255;
+      else value = Math.max(0, Math.min(255, Math.round(((lum - 190) / 58) * 255)));
+    } else if (mode === 'boost') {
+      value = lum < 228 ? 0 : 255;
+    }
+    data[i] = value;
+    data[i + 1] = value;
+    data[i + 2] = value;
+    data[i + 3] = 255;
+  }
+  dstCtx.putImageData(imageData, 0, 0);
+  return out;
+}
+
+function latexMathSignature(value) {
+  const text = String(value || '');
+  const count = (pattern) => (text.match(pattern) || []).length;
+  return {
+    superscripts: count(/\^/g),
+    subscripts: count(/_/g),
+    fractions: count(/\\(?:c?frac)\b/g),
+    radicals: count(/\\sqrt\b/g),
+    integrals: count(/\\(?:int|iint|iiint|oint)\b/g),
+    sums: count(/\\(?:sum|prod|bigcup|bigcap)\b/g),
+    relations: count(/(?:=|\\leq?\b|\\geq?\b|\\approx\b|\\sim\b|\\equiv\b|\\to\b|\\Rightarrow\b)/g)
+  };
+}
+
+function latexSignatureDistance(a, b) {
+  const left = latexMathSignature(a);
+  const right = latexMathSignature(b);
+  return Math.abs(left.superscripts - right.superscripts)
+    + Math.abs(left.subscripts - right.subscripts)
+    + Math.abs(left.fractions - right.fractions) * 2
+    + Math.abs(left.radicals - right.radicals) * 2
+    + Math.abs(left.integrals - right.integrals) * 3
+    + Math.abs(left.sums - right.sums) * 3
+    + Math.abs(left.relations - right.relations) * 2;
+}
+
+function analyzeFormulaSelection(crop, vectorCandidate = null) {
+  const bands = formulaRowBands(crop);
+  const aspect = crop?.width && crop?.height ? crop.width / Math.max(1, crop.height) : 1;
+  const vectorLatex = String(vectorCandidate?.latex || '');
+  const vectorSignature = latexMathSignature(vectorLatex);
+  const scriptLoad = vectorSignature.superscripts + vectorSignature.subscripts;
+  const operatorLoad = vectorSignature.integrals + vectorSignature.sums + vectorSignature.fractions + vectorSignature.radicals;
+  const tensorLike = scriptLoad >= 4 || (aspect >= 4.8 && bands.length <= 1) || (scriptLoad >= 2 && operatorLoad >= 1);
+  return {
+    bands,
+    aspect,
+    tensorLike,
+    expectedRows: bands.length >= 2 ? bands.length : 0,
+    scriptLoad,
+    operatorLoad
+  };
+}
+
+function imageOcrCandidateScore(candidate, context = {}) {
+  if (!candidate?.latex) return 10000;
+  let score = alignedCandidateScore(candidate, context.expectedRows || 0);
+  if (context.tensorLike) {
+    const signature = latexMathSignature(candidate.latex);
+    if (signature.superscripts + signature.subscripts < Math.max(2, context.scriptLoad || 0)) score += 12;
+  }
+  if (context.vectorLatex) score += Math.min(24, latexSignatureDistance(candidate.latex, context.vectorLatex) * 1.4);
+  if (candidate.preprocess === 'contrast') score -= 0.6;
+  if (candidate.variant === 'aligned-rows') score -= 1.2;
+  return score;
+}
+
+function vectorCandidateScore(vectorCandidate, context = {}) {
+  if (!vectorCandidate?.latex) return 10000;
+  const latex = repairOcrLatex(vectorCandidate.latex);
+  const pseudo = {
+    latex,
+    penalty: latexStructuralPenalty(latex),
+    assessment: assessImageOcrResult(latex, latex)
+  };
+  let score = alignedCandidateScore(pseudo, context.expectedRows || 0);
+  if ((vectorCandidate.tokenCount || 0) > 120) score += Math.min(10, ((vectorCandidate.tokenCount || 0) - 120) * 0.08);
+  if (context.imageLatex) score += Math.min(18, latexSignatureDistance(latex, context.imageLatex));
+  if (context.tensorLike) {
+    const signature = latexMathSignature(latex);
+    if (signature.superscripts + signature.subscripts >= Math.max(3, context.scriptLoad || 0)) score -= 4;
+  }
+  return score;
+}
+
+async function runImageFormulaRecognition(crop, options = {}) {
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
   const generation = {
@@ -2733,35 +2839,43 @@ async function runImageFormulaRecognition(crop) {
     do_sample: false,
     repetition_penalty: 1.04
   };
+  const profile = analyzeFormulaSelection(crop, options.vectorCandidate || null);
 
-  async function onePass(sourceCanvas, variant = 'tight') {
+  async function onePass(sourceCanvas, variant = 'tight', preprocess = 'normal') {
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
-    const inputImage = await prepareMathOcrInput(prepared);
+    const processed = preprocessFormulaCanvas(prepared, preprocess);
+    const inputImage = await prepareMathOcrInput(processed);
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
     const latex = repairOcrLatex(rawLatex);
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
-    return { raw, rawLatex, latex, penalty, assessment, variant };
+    return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
   }
 
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  let best = await onePass(crop, 'tight');
+  let best = await onePass(crop, 'tight', 'normal');
+  let bestScore = imageOcrCandidateScore(best, {
+    expectedRows: profile.expectedRows,
+    tensorLike: profile.tensorLike,
+    scriptLoad: profile.scriptLoad,
+    vectorLatex: options.vectorCandidate?.latex || ''
+  });
 
   // Aligned displays need a dedicated recovery path. The whole-block decoder
   // can produce several rows yet still corrupt one continuation line, so do
   // not use "already multiline" as evidence that the result is good. When the
   // image has 2–5 clean horizontal bands, build a second candidate by OCRing
   // every row independently and compare both candidates structurally.
-  const bands = formulaRowBands(crop);
+  const bands = profile.bands;
   if (bands.length >= 2) {
     const lines = [];
     let rowFailure = false;
     for (let i = 0; i < bands.length; i += 1) {
       setOcrStatus(t(`Detected ${bands.length} formula rows · recognizing row ${i + 1}…`, `检测到 ${bands.length} 行公式 · 正在识别第 ${i + 1} 行……`), true);
       try {
-        const row = await onePass(cropCanvasRows(crop, bands[i]), 'tight');
+        const row = await onePass(cropCanvasRows(crop, bands[i]), 'tight', 'normal');
         if (!row.assessment.ok || !row.latex) { rowFailure = true; break; }
         lines.push(markAlignmentRelation(row.latex));
       } catch (_) { rowFailure = true; break; }
@@ -2769,31 +2883,67 @@ async function runImageFormulaRecognition(crop) {
     if (!rowFailure && lines.length === bands.length) {
       const rowAssessment = alignedRowsAssessment(lines);
       if (rowAssessment.ok) {
-        const latex = `\\begin{aligned}\n${lines.join(latexLineSeparator())}\n\\end{aligned}`;
+        const latex = `\begin{aligned}
+${lines.join(latexLineSeparator())}
+\end{aligned}`;
         const candidate = {
           raw: latex,
           rawLatex: latex,
           latex,
           penalty: latexStructuralPenalty(latex),
           assessment: assessImageOcrResult(latex, latex),
-          variant: 'aligned-rows'
+          variant: 'aligned-rows',
+          preprocess: 'normal'
         };
-        if (candidate.assessment.ok && alignedCandidateScore(candidate, bands.length) + 1 < alignedCandidateScore(best, bands.length)) {
+        const score = imageOcrCandidateScore(candidate, {
+          expectedRows: profile.expectedRows,
+          tensorLike: profile.tensorLike,
+          scriptLoad: profile.scriptLoad,
+          vectorLatex: options.vectorCandidate?.latex || ''
+        });
+        if (candidate.assessment.ok && score + 0.5 < bestScore) {
           best = candidate;
+          bestScore = score;
         }
       }
     }
   }
 
-  if (!best.assessment.ok || best.penalty >= 8) {
-    setOcrStatus(t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……'), true);
-    const alternate = await onePass(crop, 'relaxed');
-    const expectedRows = bands.length >= 2 ? bands.length : 0;
-    if (alignedCandidateScore(alternate, expectedRows) < alignedCandidateScore(best, expectedRows)) best = alternate;
+  const extraPasses = [];
+  if (!best.assessment.ok || best.penalty >= 8 || profile.tensorLike || Boolean(options.vectorCandidate?.latex)) {
+    extraPasses.push({ variant: 'relaxed', preprocess: 'normal', message: t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……') });
+    extraPasses.push({ variant: 'tight', preprocess: 'contrast', message: t('Comparing a higher-contrast local OCR pass…', '正在比较更高对比度的本地识别结果……') });
   }
+  if (profile.tensorLike || best.penalty >= 10) {
+    extraPasses.push({ variant: 'relaxed', preprocess: 'contrast', message: t('Trying a tensor-friendly high-contrast pass…', '正在尝试更适合张量/复杂上下标的高对比度识别……') });
+  }
+
+  const seenPasses = new Set();
+  for (const pass of extraPasses) {
+    const key = `${pass.variant}:${pass.preprocess}`;
+    if (seenPasses.has(key)) continue;
+    seenPasses.add(key);
+    setOcrStatus(pass.message, true);
+    try {
+      const candidate = await onePass(crop, pass.variant, pass.preprocess);
+      const score = imageOcrCandidateScore(candidate, {
+        expectedRows: profile.expectedRows,
+        tensorLike: profile.tensorLike,
+        scriptLoad: profile.scriptLoad,
+        vectorLatex: options.vectorCandidate?.latex || ''
+      });
+      if (candidate.assessment.ok && score + 0.25 < bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    } catch (_) {
+      // Ignore individual auxiliary-pass failures and keep the best valid pass.
+    }
+  }
+
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
   requireUsableImageOcr(best.raw, best.latex);
-  return best;
+  return { ...best, profile };
 }
 function commitFormulaResult(item, statusMessage = '') {
   currentOcrResult = item;
@@ -2820,16 +2970,60 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   mathOcrLoading = true;
   setOcrProcessing(true);
   try {
-    const result = await runImageFormulaRecognition(crop);
-    const item = { page, kind, latex: result.latex, preview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image', vectorAlternative: vector?.latex || null, vectorAlternativeText: vector?.text || null };
+    const result = await runImageFormulaRecognition(crop, { vectorCandidate: vector });
+    const profile = result.profile || analyzeFormulaSelection(crop, vector);
+    const hybridContext = {
+      expectedRows: profile.expectedRows,
+      tensorLike: profile.tensorLike,
+      scriptLoad: profile.scriptLoad,
+      imageLatex: result.latex,
+      vectorLatex: vector?.latex || ''
+    };
+    const imageScore = imageOcrCandidateScore(result, hybridContext);
+    const vectorScore = vectorCandidateScore(vector, hybridContext);
+    const useVector = Boolean(vector?.latex) && (
+      (profile.tensorLike && vectorScore + 4 < imageScore)
+      || (result.penalty >= 10 && vectorScore <= imageScore + 3)
+      || (imageScore - vectorScore >= 12)
+    );
+
+    if (useVector) {
+      commitFormulaResult(
+        {
+          page,
+          kind,
+          latex: repairOcrLatex(vector.latex),
+          preview,
+          created: Date.now(),
+          quality: vectorScore <= imageScore ? 'vector-hybrid' : 'vector-review',
+          source: 'vector',
+          extractedText: vector.text,
+          imageAlternative: result.latex
+        },
+        t('Hybrid local OCR selected the PDF-vector reconstruction for this complex formula.', '混合本地 OCR 已为该复杂公式选择 PDF 矢量重建结果。')
+      );
+      return;
+    }
+
+    const item = {
+      page,
+      kind,
+      latex: result.latex,
+      preview,
+      created: Date.now(),
+      quality: result.penalty === 0 ? 'clean' : 'review',
+      source: 'image',
+      vectorAlternative: vector?.latex || null,
+      vectorAlternativeText: vector?.text || null
+    };
     commitFormulaResult(item, result.penalty === 0
-      ? t('Image OCR complete · structure check passed.', '图像 OCR 完成 · 结构检查通过。')
-      : t('Image OCR complete · review the editable LaTeX before reuse.', '图像 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
+      ? t('Hybrid local OCR complete · structure check passed.', '混合本地 OCR 完成 · 结构检查通过。')
+      : t('Hybrid local OCR complete · review the editable LaTeX before reuse.', '混合本地 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
   } catch (error) {
     console.error(error);
     if (vector?.latex) {
       commitFormulaResult(
-        { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector-fallback', source: 'vector', extractedText: vector.text },
+        { page, kind, latex: repairOcrLatex(vector.latex), preview, created: Date.now(), quality: 'vector-fallback', source: 'vector', extractedText: vector.text },
         t('Image OCR failed or was rejected · PDF vector fallback was used instead.', '图像 OCR 失败或未通过质量检查 · 已改用 PDF 矢量备用结果。')
       );
     } else {
@@ -2843,6 +3037,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     releaseMathOcrPipelineAfterExtraction();
   }
 }
+
 
 async function canvasFromDataUrl(dataUrl) {
   if (!dataUrl) return null;
