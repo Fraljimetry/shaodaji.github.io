@@ -4280,10 +4280,48 @@ function tocTitlePattern(title) {
   try { return new RegExp(source, 'ig'); } catch (_) { return null; }
 }
 
+function tocSectionNumber(title) {
+  const clean = String(title || '').replace(/\s+/g, ' ').trim();
+  return clean.match(/^(?:§\s*)?([A-Z]?\d+(?:\.\d+){1,4})(?:[.)])?(?:\s|$)/i)?.[1] || '';
+}
+
+async function findSectionNumberLocation(number, originPage = null) {
+  if (!pdfDoc || !number) return null;
+  const escaped = String(number).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const headingRe = new RegExp(`^(?:§\\s*)?${escaped}(?:[.)])?\\s+\\S`, 'i');
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    if (page === originPage) continue;
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      if (headingRe.test(String(line.text || '').trim())) return { page, ratio: Number(line.ratio) || 0 };
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return null;
+}
+
+async function resolveTocSectionNumber(number, targets, originPage = null) {
+  const direct = (targets || []).find((target) => tocSectionNumber(target.title) === number);
+  if (direct) return { page: direct.page, ratio: Number(direct.ratio) || 0 };
+  const inferred = inferredOutline.find((entry) => tocSectionNumber(entry?.title) === number);
+  if (inferred) return { page: inferred.page, ratio: Number(inferred.ratio) || 0 };
+  return findSectionNumberLocation(number, originPage);
+}
+
 async function getTocOutlineTargets() {
   if (!pdfDoc) return [];
   if (Array.isArray(tocOutlineTargets)) return tocOutlineTargets;
   const targets = [];
+  const seen = new Set();
+  const addTarget = (title, page, ratio) => {
+    const clean = String(title || '').replace(/\s+/g, ' ').trim();
+    if (!clean || !Number(page)) return;
+    const number = tocSectionNumber(clean);
+    const key = number ? `n:${number}` : `t:${normalizeSearchValue(clean, false)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    targets.push({ title: clean, page: Number(page), ratio: Number(ratio) || 0 });
+  };
   try {
     const outline = await pdfDoc.getOutline();
     const flat = flattenOutline(outline);
@@ -4291,15 +4329,12 @@ async function getTocOutlineTargets() {
       const title = String(item?.title || '').replace(/\s+/g, ' ').trim();
       if (!title) continue;
       const location = await resolveOutlineDestination(item.dest);
-      if (location) targets.push({ title, page: location.page, ratio: Number(location.ratio) || 0 });
+      if (location) addTarget(title, location.page, location.ratio);
     }
   } catch (_) {}
-  if (!targets.length && inferredOutline.length) {
-    for (const entry of inferredOutline) {
-      const title = String(entry?.title || '').replace(/\s+/g, ' ').trim();
-      if (title) targets.push({ title, page: entry.page, ratio: Number(entry.ratio) || 0 });
-    }
-  }
+  // Merge any detected structure instead of letting a partial embedded outline
+  // suppress valid subsection targets.
+  for (const entry of inferredOutline || []) addTarget(entry?.title, entry?.page, entry?.ratio);
   if (targets.length) tocOutlineTargets = targets;
   return targets;
 }
@@ -4360,6 +4395,43 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
       linked += 1;
       break;
     }
+  }
+  // Some PDF text layers split a TOC subsection number from its title, or the
+  // embedded outline is incomplete. On an already-recognized TOC page, make
+  // dotted section numbers themselves reliable navigation targets.
+  const surfaceRect = surface.getBoundingClientRect();
+  const numberedSeen = new Set();
+  const subsectionRe = /\b([A-Z]?\d+(?:\.\d+){1,4})\b/gi;
+  let numberMatch;
+  while ((numberMatch = subsectionRe.exec(mapped.text))) {
+    const number = numberMatch[1];
+    if (numberedSeen.has(number)) continue;
+    const range = rangeForAggregateMatch(mapped.parts, numberMatch.index, numberMatch.index + numberMatch[0].length);
+    if (!range) continue;
+    const rects = [...range.getClientRects()].filter((rect) => rect.width >= 6 && rect.height >= 2);
+    // Printed TOC section numbers live on the left side; this excludes the
+    // printed page-number column and most incidental numeric prose.
+    const rect = rects.find((candidate) => (candidate.left - surfaceRect.left) < surfaceRect.width * 0.42);
+    if (!rect) continue;
+    numberedSeen.add(number);
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.className = 'pdf-reference-link pdf-toc-link';
+    link.style.left = `${rect.left - surfaceRect.left}px`;
+    link.style.top = `${rect.top - surfaceRect.top}px`;
+    link.style.width = `${rect.width}px`;
+    link.style.height = `${rect.height}px`;
+    link.title = t(`Go to section ${number}`, `跳转到第 ${number} 节`);
+    link.setAttribute('aria-label', link.title);
+    link.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = await resolveTocSectionNumber(number, targets, pageNum);
+      if (target) await goToLocation(target.page, Number(target.ratio) || 0);
+      else showError(t(`No target found for section ${number}.`, `未找到第 ${number} 节的目标位置。`));
+    });
+    overlay.append(link);
+    linked += 1;
   }
   if (linked) overlay.dataset.tocLinked = String(linked);
 }
