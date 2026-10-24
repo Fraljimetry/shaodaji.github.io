@@ -46,6 +46,9 @@ const pageNote = el('page-note');
 const notePreview = el('note-preview');
 const notePageChip = el('note-page-chip');
 const noteSaveState = el('note-save-state');
+const pdfComments = el('pdf-comments');
+const pdfCommentsList = el('pdf-comments-list');
+const pdfCommentsCount = el('pdf-comments-count');
 const addBookmark = el('add-bookmark');
 const bookmarkList = el('bookmark-list');
 const bookmarkEmpty = el('bookmark-empty');
@@ -170,6 +173,8 @@ let currentFileKey = null;
 let currentFileName = null;
 let bookmarks = [];
 let notes = {};
+let nativePdfCommentsByPage = new Map();
+let nativePdfCommentLoadToken = 0;
 let annotations = [];
 let textCache = new Map();
 let lineCache = new Map();
@@ -691,6 +696,7 @@ function applyLanguage(lang, persist = true) {
   refreshSelectionUI();
   refreshOcrUI();
   renderAnnotationList();
+  renderNativePdfComments(currentPage);
   updateWorkspaceCollapseButtons();
   if (persist) safeSet('shaoda-language', next);
 }
@@ -783,6 +789,8 @@ function normalizeBookmarks(items) {
 function loadDocumentState(cachedSession = null) {
   bookmarks = [];
   notes = {};
+  nativePdfCommentsByPage = new Map();
+  nativePdfCommentLoadToken += 1;
   annotations = [];
   scrollByPage = {};
   referenceScrollByPage = {};
@@ -949,6 +957,8 @@ function updateNavigationState() {
   pageNote.disabled = false;
   pageNote.value = notes[String(currentPage)] || ''; scheduleNotePreview();
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  renderNativePdfComments(currentPage);
+  void refreshNativePdfComments(currentPage);
   persistDocumentState();
 }
 
@@ -4518,6 +4528,125 @@ async function searchPdf(query) {
     item.append(label, snippet);
     item.addEventListener('click', () => goToPage(match.page));
     searchResults.append(item);
+  }
+}
+
+function nativeAnnotationString(value) {
+  if (typeof value === 'string') return value.trim();
+  if (!value || typeof value !== 'object') return '';
+  if (typeof value.str === 'string') return value.str.trim();
+  if (typeof value.value === 'string') return value.value.trim();
+  if (typeof value.text === 'string') return value.text.trim();
+  if (typeof value.html === 'string') {
+    const temp = document.createElement('div');
+    temp.innerHTML = value.html;
+    return String(temp.textContent || '').trim();
+  }
+  return '';
+}
+
+function nativeCommentBody(annotation) {
+  const candidates = [
+    annotation?.contentsObj,
+    annotation?.contents,
+    annotation?.richText,
+    annotation?.popup?.contentsObj,
+    annotation?.popup?.contents
+  ];
+  for (const candidate of candidates) {
+    const value = nativeAnnotationString(candidate);
+    if (value) return value;
+  }
+  return '';
+}
+
+function nativeCommentAuthor(annotation) {
+  for (const candidate of [annotation?.titleObj, annotation?.title, annotation?.author]) {
+    const value = nativeAnnotationString(candidate);
+    if (value) return value;
+  }
+  return '';
+}
+
+function nativeCommentKind(annotation) {
+  const subtype = String(annotation?.subtype || annotation?.annotationTypeName || '').trim();
+  if (subtype) return subtype;
+  const type = Number(annotation?.annotationType);
+  const labels = { 1: 'Text', 2: 'Link', 3: 'FreeText', 4: 'Line', 5: 'Square', 6: 'Circle', 7: 'Polygon', 8: 'PolyLine', 9: 'Highlight', 10: 'Underline', 11: 'Squiggly', 12: 'StrikeOut', 13: 'Stamp', 14: 'Caret', 15: 'Ink', 16: 'Popup', 17: 'FileAttachment', 20: 'Widget' };
+  return labels[type] || 'Comment';
+}
+
+function normalizeNativePdfComments(raw) {
+  const seen = new Set();
+  const result = [];
+  for (let index = 0; index < (Array.isArray(raw) ? raw.length : 0); index += 1) {
+    const annotation = raw[index];
+    const body = nativeCommentBody(annotation);
+    if (!body) continue;
+    const author = nativeCommentAuthor(annotation);
+    const kind = nativeCommentKind(annotation);
+    const key = `${body}\u0000${author}\u0000${kind}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      id: String(annotation?.id || `pdf-comment-${index}`),
+      body,
+      author,
+      kind
+    });
+  }
+  return result;
+}
+
+function renderNativePdfComments(page = currentPage) {
+  if (!pdfComments || !pdfCommentsList || !pdfCommentsCount) return;
+  const items = nativePdfCommentsByPage.get(Number(page)) || [];
+  pdfCommentsList.replaceChildren();
+  pdfCommentsCount.textContent = String(items.length);
+  pdfComments.classList.toggle('is-hidden', items.length === 0);
+  for (const item of items) {
+    const row = document.createElement('article');
+    row.className = 'pdf-comment-item';
+    const meta = document.createElement('div');
+    meta.className = 'pdf-comment-meta';
+    const kind = document.createElement('span');
+    kind.textContent = t(`PDF ${item.kind || 'comment'}`, `PDF ${item.kind || '批注'}`);
+    meta.append(kind);
+    if (item.author) {
+      const author = document.createElement('span');
+      author.textContent = t(`By ${item.author}`, `作者：${item.author}`);
+      meta.append(author);
+    }
+    const body = document.createElement('p');
+    body.className = 'pdf-comment-body';
+    body.textContent = item.body;
+    row.append(meta, body);
+    pdfCommentsList.append(row);
+  }
+}
+
+async function refreshNativePdfComments(pageNum) {
+  if (!pdfDoc || !Number.isFinite(Number(pageNum))) return;
+  const page = Number(pageNum);
+  if (nativePdfCommentsByPage.has(page)) {
+    if (page === currentPage) renderNativePdfComments(page);
+    return;
+  }
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const token = nativePdfCommentLoadToken;
+  try {
+    const pdfPage = await sourceDoc.getPage(page);
+    const raw = await pdfPage.getAnnotations({ intent: 'any' });
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== nativePdfCommentLoadToken) return;
+    nativePdfCommentsByPage.set(page, normalizeNativePdfComments(raw));
+    if (page === currentPage) renderNativePdfComments(page);
+  } catch (error) {
+    console.warn('MathReader PDF comment extraction failed', error);
+    if (pdfDoc === sourceDoc && currentFileKey === sourceKey && token === nativePdfCommentLoadToken) {
+      nativePdfCommentsByPage.set(page, []);
+      if (page === currentPage) renderNativePdfComments(page);
+    }
   }
 }
 

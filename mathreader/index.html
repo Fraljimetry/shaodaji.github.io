@@ -340,8 +340,15 @@
           <span data-en="Page note" data-zh="页注">Page note</span>
           <span class="page-chip" id="note-page-chip">—</span>
         </div>
+        <div class="pdf-comments is-hidden" id="pdf-comments" aria-live="polite">
+          <div class="pdf-comments-heading">
+            <span data-en="PDF comments" data-zh="PDF 原生批注">PDF comments</span>
+            <span class="count-badge" id="pdf-comments-count">0</span>
+          </div>
+          <div class="pdf-comments-list" id="pdf-comments-list"></div>
+        </div>
         <textarea id="page-note" disabled data-en-placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX." data-zh-placeholder="记录与此页关联的笔记……可用 \(...\) 或 \[...\] 输入 LaTeX。" placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX."></textarea>
-        <p class="note-latex-help" data-en="LaTeX is supported in notes: use \(...\) inline or \[...\] for display math." data-zh="页注支持 LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">LaTeX is supported in notes: use \(...\) inline or \[...\] for display math.</p>
+        <p class="note-latex-help" data-en="PDF comments above come from the document itself and are read-only. Your note below stays local. LaTeX is supported: use \(...\) inline or \[...\] for display math." data-zh="上方 PDF 批注来自文档本身，只读显示；下方页注仍保存在本地。页注支持 LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">PDF comments above come from the document itself and are read-only. Your note below stays local. LaTeX is supported: use \(...\) inline or \[...\] for display math.</p>
         <div class="note-preview is-hidden" id="note-preview" aria-label="Page note LaTeX preview"></div>
         <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
       </section>
