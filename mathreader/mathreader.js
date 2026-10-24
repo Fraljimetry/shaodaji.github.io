@@ -3130,7 +3130,7 @@ function renderReadingTrail() {
       readingBackStack = readingBackStack.slice(0, index);
       updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
       suppressReadingHistory = true;
-      try { await goToLocation(target.page, target.ratio); } finally { suppressReadingHistory = false; }
+      try { await goToLocation(target.page, target.ratio, { contextLead: false }); } finally { suppressReadingHistory = false; }
     });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'reading-trail-remove';
     remove.textContent = '×'; remove.title = t('Remove from reading trail', '从阅读轨迹中移除');
@@ -3142,7 +3142,18 @@ function renderReadingTrail() {
   }
 }
 
-async function goToLocation(page, ratio = 0) {
+function navigationTargetLeadPx() {
+  // Text-derived targets are stored at the PDF text baseline. Leave a modest
+  // amount of reading context above semantic jump targets so the referenced
+  // line itself is fully visible rather than clipped just above the viewport.
+  // Keep this pixel-based: the desired visual context should remain stable
+  // across zoom levels, while the target ratio continues to identify the PDF
+  // location.
+  const height = Number(primaryCanvasWrap?.clientHeight) || 0;
+  return Math.round(Math.min(72, Math.max(48, height ? height * 0.065 : 56)));
+}
+
+async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
   if (!pdfDoc) return;
   if (!suppressReadingHistory) {
     const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
@@ -3157,6 +3168,7 @@ async function goToLocation(page, ratio = 0) {
   }
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const targetLead = contextLead ? navigationTargetLeadPx() : 0;
   const changed = next !== currentPage;
   currentPage = next;
   hideSelectionToolbar();
@@ -3172,7 +3184,7 @@ async function goToLocation(page, ratio = 0) {
       await renderContinuousPage(next, continuousGeneration);
       const surfaceTop = record.frame.offsetTop + (record.surface?.offsetTop || 0);
       const surfaceHeight = Math.max(1, record.surface?.offsetHeight || record.frame.offsetHeight || 1);
-      primaryCanvasWrap.scrollTop = Math.max(0, surfaceTop + surfaceHeight * localRatio - 10);
+      primaryCanvasWrap.scrollTop = Math.max(0, surfaceTop + surfaceHeight * localRatio - targetLead);
       currentPage = next;
       updateNavigationState();
       continuousSavedAnchor = { page: next, ratio: localRatio };
@@ -3182,7 +3194,7 @@ async function goToLocation(page, ratio = 0) {
   }
   if (changed) await renderCurrentPage(); else updateNavigationState();
   const pageHeight = Math.max(1, primaryPageSurface?.offsetHeight || canvas?.getBoundingClientRect().height || 1);
-  primaryCanvasWrap.scrollTop = Math.max(0, pageHeight * localRatio - 10);
+  primaryCanvasWrap.scrollTop = Math.max(0, pageHeight * localRatio - targetLead);
   scrollByPage[String(next)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
   persistDocumentState();
 }
@@ -3197,11 +3209,11 @@ async function goBackReadingLocation() {
   updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
   if (!target || !pdfDoc) return;
   suppressReadingHistory = true;
-  try { await goToLocation(target.page, target.ratio); } finally { suppressReadingHistory = false; }
+  try { await goToLocation(target.page, target.ratio, { contextLead: false }); } finally { suppressReadingHistory = false; }
 }
 
 async function goToPage(page) {
-  return goToLocation(page, 0);
+  return goToLocation(page, 0, { contextLead: false });
 }
 
 function renderReferenceStack() {
