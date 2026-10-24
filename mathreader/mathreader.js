@@ -3065,14 +3065,25 @@ function updateCurrentPageFromContinuousScroll() {
 }
 
 async function buildInitialContinuousDocument({ anchor = null } = {}) {
-  if (!pdfDoc || !continuousStack) return;
+  if (!pdfDoc || !continuousStack || !primaryCanvasWrap) return;
   const generation = ++continuousGeneration;
   console.info('[MathReader] initial continuous: start', { generation, page: currentPage });
 
-  // First-load rendering deliberately follows the last known-good v78 sequence.
-  // Do not use the post-load display-transition coordinator here.
+  // First load is deliberately deterministic. The workspace may have only just
+  // become visible, so let layout settle before measuring the reader region.
+  await nextFrame();
+  await nextFrame();
+  if (generation !== continuousGeneration || !pdfDoc) return;
+
   continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
   continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
+  console.info('[MathReader] initial continuous: measured', {
+    generation,
+    readerWidth: primaryCanvasWrap.clientWidth,
+    readerHeight: primaryCanvasWrap.clientHeight,
+    layoutWidth: continuousLayoutWidth,
+    layoutHeight: continuousLayoutHeight,
+  });
 
   const pageMetrics = await Promise.all(Array.from({ length: pdfDoc.numPages }, async (_, index) => {
     const page = await pdfDoc.getPage(index + 1);
@@ -3122,42 +3133,81 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
     replacementNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
   }
 
+  // No lazy observer exists yet. Install the final geometry, restore the saved
+  // location, and render the active page through one uncontested code path.
   clearContinuousObserver();
   continuousRebuilding = true;
   continuousStack.replaceChildren(replacement);
   continuousPageNodes = replacementNodes;
 
   const restoreAnchor = anchor || continuousSavedAnchor;
+  const activePage = Math.min(Math.max(1, Number(restoreAnchor?.page) || currentPage), pdfDoc.numPages);
   if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
     const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
     const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
     if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
   } else {
-    const target = continuousPageNodes.get(currentPage)?.frame;
+    const target = continuousPageNodes.get(activePage)?.frame;
     if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
   }
 
-  requestAnimationFrame(() => { if (generation === continuousGeneration) continuousRebuilding = false; });
+  // Allow anchor capture again, but keep observer/prefetch disabled until the
+  // active page is visibly painted and the placeholder state is actually gone.
+  continuousRebuilding = false;
+  console.info('[MathReader] initial continuous: active render', { generation, activePage });
+  const ok = await renderContinuousPage(activePage, generation);
+  if (generation !== continuousGeneration) return;
+  const activeRecord = continuousPageNodes.get(activePage);
+  const placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
+  const canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+  console.info('[MathReader] initial continuous: active result', {
+    generation,
+    activePage,
+    ok,
+    rendered: Boolean(activeRecord?.rendered),
+    placeholderGone,
+    canvasReady,
+    canvasWidth: activeRecord?.canvas?.width || 0,
+    canvasHeight: activeRecord?.canvas?.height || 0,
+  });
 
+  if (!ok || !activeRecord?.rendered || !placeholderGone || !canvasReady) {
+    initialContinuousReady = false;
+    activeRecord?.surface?.classList.add('is-render-error');
+    if (activeRecord?.surface) activeRecord.surface.dataset.placeholderLabel = t(
+      `Page ${activePage} could not be rendered`,
+      `第 ${activePage} 页无法渲染`,
+    );
+    showError(t('Continuous reading could not render the current page.', '连续阅读无法渲染当前页面。'));
+    console.error('[MathReader] initial continuous: active page verification failed', { generation, activePage });
+    return;
+  }
+
+  // Only after the active page is definitely visible may lazy rendering begin.
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
       const pageNum = Number(entry.target.dataset.page);
-      if (pageNum) renderContinuousPage(pageNum, generation);
+      if (pageNum && pageNum !== activePage) renderContinuousPage(pageNum, generation);
     }
   }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
-  for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
+  for (const [pageNum, record] of continuousPageNodes) {
+    if (pageNum !== activePage) continuousObserver.observe(record.frame);
+  }
 
-  const anchorPage = Math.min(Math.max(1, Number(anchor?.page) || Number(restoreAnchor?.page) || currentPage), pdfDoc.numPages);
-  const eagerPages = [];
-  for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) eagerPages.push(n);
-  console.info('[MathReader] initial continuous: eager render', { generation, eagerPages });
-  await Promise.all(eagerPages.map((n) => renderContinuousPage(n, generation)));
-  if (generation !== continuousGeneration) return;
+  // Warm immediate neighbors after the active page is already on screen.
+  const neighborPages = [];
+  for (let n = Math.max(1, activePage - 2); n <= Math.min(pdfDoc.numPages, activePage + 2); n += 1) {
+    if (n !== activePage) neighborPages.push(n);
+  }
+  Promise.all(neighborPages.map((n) => renderContinuousPage(n, generation))).catch((error) => {
+    console.warn('[MathReader] initial continuous: neighbor warmup failed', error);
+  });
+
   updateCurrentPageFromContinuousScroll();
   continuousSavedAnchor = captureContinuousAnchor() || restoreAnchor || continuousSavedAnchor;
-  initialContinuousReady = eagerPages.some((n) => continuousPageNodes.get(n)?.rendered);
-  console.info('[MathReader] initial continuous: complete', { generation, initialContinuousReady, rendered: eagerPages.filter((n) => continuousPageNodes.get(n)?.rendered) });
+  initialContinuousReady = true;
+  console.info('[MathReader] initial continuous: complete', { generation, initialContinuousReady, rendered: [activePage] });
 }
 
 async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
