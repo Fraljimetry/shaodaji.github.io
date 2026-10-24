@@ -4876,6 +4876,90 @@ async function goToSelectedReference() {
   await goToReferenceQuery(query, currentSelection?.page || currentPage);
 }
 
+
+function searchMatchRangeInLayer(layer, query, ordinal = 0) {
+  if (!layer || !query) return null;
+  const mapped = textLayerAggregate(layer);
+  if (!mapped.text) return null;
+  const pieces = String(query || '').trim().split(/\s+/).filter(Boolean);
+  if (!pieces.length) return null;
+  const escaped = pieces.map((piece) => piece.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  let pattern;
+  try { pattern = new RegExp(escaped.join('\\s+'), searchMatchCase?.checked ? 'gu' : 'giu'); } catch (_) { return null; }
+  let match = null;
+  let index = 0;
+  while ((match = pattern.exec(mapped.text))) {
+    if (index === Math.max(0, Number(ordinal) || 0)) {
+      return rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    }
+    index += 1;
+    if (!match[0].length) pattern.lastIndex += 1;
+  }
+  return null;
+}
+
+function clearSearchMatchEmphasis() {
+  document.querySelectorAll('.search-match-emphasis-layer').forEach((node) => node.remove());
+}
+
+function emphasizeSearchRange(surface, range) {
+  if (!surface || !range) return null;
+  clearSearchMatchEmphasis();
+  const surfaceRect = surface.getBoundingClientRect();
+  const layer = document.createElement('div');
+  layer.className = 'search-match-emphasis-layer';
+  for (const rect of range.getClientRects()) {
+    if (rect.width < 1 || rect.height < 1) continue;
+    const mark = document.createElement('div');
+    mark.className = 'search-match-emphasis';
+    mark.style.left = `${rect.left - surfaceRect.left}px`;
+    mark.style.top = `${rect.top - surfaceRect.top}px`;
+    mark.style.width = `${rect.width}px`;
+    mark.style.height = `${rect.height}px`;
+    layer.append(mark);
+  }
+  if (!layer.childElementCount) return null;
+  surface.append(layer);
+  window.setTimeout(() => layer.classList.add('is-fading'), 1700);
+  window.setTimeout(() => layer.remove(), 2600);
+  return layer;
+}
+
+async function goToSearchMatch(match, query) {
+  if (!pdfDoc || !match) return;
+  // First get the correct page rendered without relying on the generic semantic
+  // lead. The exact text-layer range below becomes the authoritative position.
+  await goToLocation(match.page, Math.min(1, Math.max(0, match.index / Math.max(1, match.text.length))), { contextLead: false });
+  let layer = null;
+  let surface = null;
+  if (readingFlow === 'continuous') {
+    const record = continuousPageNodes.get(match.page);
+    if (record) {
+      if (!record.rendered) await renderContinuousPage(match.page, continuousGeneration);
+      layer = record.textLayer;
+      surface = record.surface;
+    }
+  } else {
+    layer = primaryTextLayer;
+    surface = primaryPageSurface;
+  }
+  if (!layer || !surface) return;
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const range = searchMatchRangeInLayer(layer, query, match.ordinal || 0);
+  if (!range) return;
+  const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
+  if (!rect) return;
+  const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+  // Keep the chosen occurrence at a predictable, comfortable position instead
+  // of pinning it close to the top edge. Clamp for short reader windows.
+  const desiredOffset = Math.min(280, Math.max(150, wrapRect.height * 0.34));
+  const delta = rect.top - (wrapRect.top + desiredOffset);
+  primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + delta);
+  if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+  emphasizeSearchRange(surface, range);
+  persistDocumentState();
+}
+
 async function searchPdf(query) {
   searchResults.replaceChildren();
   const q = query.trim();
@@ -4888,7 +4972,7 @@ async function searchPdf(query) {
     try {
       const text = await pageText(page);
       const hits = fuzzy ? fuzzySearchMatches(text, q) : exactSearchMatches(text, q);
-      for (const hit of hits) matches.push({ page, text, index: hit.index, score: hit.score });
+      for (const [ordinal, hit] of hits.entries()) matches.push({ page, text, index: hit.index, score: hit.score, ordinal });
     } catch (error) { console.error(error); }
     if (page % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
@@ -4901,7 +4985,7 @@ async function searchPdf(query) {
     label.textContent = fuzzy && match.score < 0.999 ? t(`Page ${match.page} · ${Math.round(match.score*100)}%`, `第 ${match.page} 页 · ${Math.round(match.score*100)}%`) : t(`Page ${match.page}`, `第 ${match.page} 页`);
     const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, q, match.index));
     item.append(label, snippet);
-    item.addEventListener('click', () => goToLocation(match.page, Math.min(1, Math.max(0, match.index / Math.max(1, match.text.length)))));
+    item.addEventListener('click', () => goToSearchMatch(match, q));
     searchResults.append(item);
   }
 }
