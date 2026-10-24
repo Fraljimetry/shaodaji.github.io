@@ -358,3 +358,18 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .undo-item-actions button,
 .recovery-item-actions button { font-size: .78rem; }
 .undo-clear { margin-top: 8px; width: 100%; }
+
+/* v113: universal navigator, equation search, and reference preview */
+.command-list{overflow:auto;max-height:calc(60vh - 6.4rem);padding:.35rem 0}
+.command-item{width:100%;display:grid;grid-template-columns:5.8rem minmax(0,1fr);gap:.55rem;align-items:start;text-align:left;padding:.55rem .65rem;border:0;border-radius:.45rem;background:transparent;color:inherit;cursor:pointer}
+.command-item:hover,.command-item.is-current{background:var(--surface-2)}
+.command-kind{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.035em;padding-top:.08rem}
+.command-main{min-width:0}
+.command-title{display:block;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.command-subtitle{display:block;margin-top:.12rem;font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reference-preview{position:fixed;z-index:1300;width:min(22rem,calc(100vw - 1rem));max-height:10rem;overflow:auto;padding:.55rem .65rem;border:1px solid var(--line);border-radius:.55rem;background:var(--surface);box-shadow:0 10px 28px rgb(0 0 0 / .18);font-size:.82rem;line-height:1.35;pointer-events:none}
+.reference-preview.is-hidden{display:none}
+.reference-preview strong{display:block;margin-bottom:.15rem}
+.reference-preview .reference-preview-meta{color:var(--muted);font-size:.74rem;margin-bottom:.25rem}
+.reference-preview .reference-preview-text{display:block;overflow-wrap:anywhere}
+.search-result-equation code{display:block;margin-top:.3rem;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem}

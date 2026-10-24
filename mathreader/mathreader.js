@@ -108,6 +108,7 @@ const commandInput = el('command-input');
 const commandList = el('command-list');
 const searchForm = el('search-form');
 const searchFuzzy = el('search-fuzzy');
+const searchEquations = el('search-equations');
 const searchInput = el('search-input');
 const searchStatus = el('search-status');
 const searchResults = el('search-results');
@@ -123,6 +124,7 @@ const languageLabel = el('language-label');
 const themeButton = el('theme-button');
 const themeIcon = el('theme-icon');
 const themeLabel = el('theme-label');
+const referencePreview = el('reference-preview');
 const leftToggle = el('left-toggle');
 const bothPanelsToggle = el('both-panels-toggle');
 const rightToggle = el('right-toggle');
@@ -279,6 +281,8 @@ let recoverySnapshots = [];
 let recoverySnapshotTimer = null;
 let lastRecoveryFingerprint = '';
 let recoveryRestoreActive = false;
+let referencePreviewTimer = null;
+let referencePreviewSerial = 0;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -4448,7 +4452,8 @@ function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
     const sourceRatio = surfaceRect.height > 0
       ? Math.min(1, Math.max(0, ((rect.top - surfaceRect.top) + rect.height / 2) / surfaceRect.height))
       : null;
-    link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); await goToReferenceQuery(query, pageNum, sourceRatio); });
+    link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); hideReferencePreview(); await goToReferenceQuery(query, pageNum, sourceRatio); });
+    attachReferencePreview(link, query, pageNum, sourceRatio);
     overlay.append(link);
   }
 }
@@ -4752,9 +4757,11 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
       link.style.height = `${rect.height}px`;
       link.title = t(`Go to ${label || target.title}`, `跳转到 ${label || target.title}`);
       link.setAttribute('aria-label', link.title);
+      attachReferencePreview(link, target.title || label || '', pageNum, null);
       link.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
+        hideReferencePreview();
         const destination = await resolveTocContentDestination(target, pageNum);
         if (!destination) return;
         await goToMatchedLocation(destination.page, Number(destination.ratio) || 0, target.title || label || '');
@@ -5554,6 +5561,17 @@ async function searchPdf(query) {
   searchResults.replaceChildren();
   const q = query.trim();
   if (!pdfDoc || !q) { searchStatus.textContent = ''; return; }
+  if (searchEquations?.checked) {
+    const matches = equationSearchMatches(q);
+    searchStatus.textContent = t(`${matches.length} saved/extracted equation${matches.length===1?'':'s'}`, `${matches.length} 个已保存/提取公式`);
+    for (const match of matches.slice(0,200)) {
+      const item=document.createElement('button'); item.type='button'; item.className='search-result search-result-equation';
+      const label=document.createElement('strong'); label.textContent=t(`Page ${match.page} · ${match.source}`,`第 ${match.page} 页 · ${match.source}`);
+      const code=document.createElement('code'); code.textContent=match.latex.length>280?`${match.latex.slice(0,280)}…`:match.latex; item.append(label,code);
+      item.addEventListener('click',()=>goToLocation(match.page,0)); searchResults.append(item);
+    }
+    return;
+  }
   const fuzzy = Boolean(searchFuzzy?.checked);
   searchStatus.textContent = fuzzy ? t('Fuzzy searching…', '正在模糊搜索……') : t('Searching…', '正在搜索……');
   const matches = [];
@@ -6331,45 +6349,162 @@ async function importReadingDataFile(file) {
   renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
 }
 
+
+function normalizeEquationLatexForSearch(value) {
+  return String(value || '')
+    .replace(/\\left|\\right/g, '')
+    .replace(/\\,/g, '')
+    .replace(/\\!/g, '')
+    .replace(/\\;/g, '')
+    .replace(/\\:/g, '')
+    .replace(/\s+/g, '')
+    .replace(/[{}]/g, '')
+    .toLocaleLowerCase();
+}
+
+function equationSearchEntries() {
+  const items = [];
+  const seen = new Set();
+  const add = (latex, page, source, created = 0) => {
+    const clean = String(latex || '').trim();
+    if (!clean) return;
+    const key = `${Number(page)||0}:${normalizeEquationLatexForSearch(clean)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ latex: clean, page: Number(page) || 1, source, created: Number(created)||0 });
+  };
+  for (const item of ocrHistory || []) add(item?.latex, item?.page, t('OCR history','OCR 历史'), item?.created);
+  for (const item of bookmarks || []) if (item?.type === 'equation') add(item?.latex, item?.page, t('Saved equation','已保存公式'), item?.created);
+  if (currentOcrResult?.latex) add(currentOcrResult.latex, currentOcrResult.page, t('Current extraction','当前提取'), currentOcrResult.created);
+  return items.sort((a,b) => a.page - b.page || a.created - b.created);
+}
+
+function equationSearchMatches(query) {
+  const wanted = normalizeEquationLatexForSearch(query);
+  if (!wanted) return [];
+  return equationSearchEntries().map((item) => {
+    const hay = normalizeEquationLatexForSearch(item.latex);
+    const idx = hay.indexOf(wanted);
+    let score = idx >= 0 ? 1 : 0;
+    if (!score && searchFuzzy?.checked) {
+      const compactNeedle = wanted.slice(0, 80);
+      const tokenHits = compactNeedle.split(/(?=[\\=+\-])/).filter(Boolean).filter((token) => hay.includes(token)).length;
+      const tokenCount = Math.max(1, compactNeedle.split(/(?=[\\=+\-])/).filter(Boolean).length);
+      score = tokenHits / tokenCount;
+    }
+    return { ...item, score };
+  }).filter((item) => item.score >= (searchFuzzy?.checked ? .55 : 1)).sort((a,b) => b.score - a.score || a.page - b.page);
+}
+
+function commandPaletteEntities() {
+  if (!pdfDoc) return [];
+  const out = [];
+  const push = (kind, title, subtitle, run, searchText = '') => out.push({ kind, title, subtitle, run, searchText: `${title} ${subtitle||''} ${searchText||''}` });
+  for (const entry of inferredOutline || []) push(t('Section','章节'), entry.title || t('Untitled section','未命名章节'), t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.title || ''), entry.title);
+  for (const entry of structureEntries || []) push(t('Structure','结构'), entry.label || entry.title, entry.title || t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label || entry.title), entry.title);
+  if (equationLabelIndex instanceof Map) {
+    for (const [label, candidates] of equationLabelIndex.entries()) {
+      const target = (candidates || [])[0];
+      if (target) push(t('Equation','公式'), label, t(`Page ${target.page}`,`第 ${target.page} 页`), () => goToMatchedLocation(target.page, Number(target.ratio)||0, label), label);
+    }
+  }
+  for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), entry.title);
+  for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => { if (searchInput) searchInput.value=item.symbol; if (searchEquations) searchEquations.checked=false; openLeftPanelShortcut('search-panel', searchInput); searchPdf(item.symbol); }, item.meaning);
+  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Saved equation','已保存公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0), `${item.note||''} ${item.latex||''}`);
+  for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note);
+  for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name);
+  return out;
+}
+
+function hideReferencePreview() {
+  clearTimeout(referencePreviewTimer);
+  if (referencePreview) referencePreview.classList.add('is-hidden');
+}
+
+async function referencePreviewData(query, originPage, originRatio) {
+  const target = await resolveReferenceTarget(query, originPage, originRatio);
+  if (!target) return null;
+  const lines = await pageTextLines(target.page);
+  let line = lines[0] || null;
+  if (lines.length) line = [...lines].sort((a,b) => Math.abs((Number(a.ratio)||0)-(Number(target.ratio)||0)) - Math.abs((Number(b.ratio)||0)-(Number(target.ratio)||0)))[0];
+  return { target, text: String(line?.text || '').replace(/\s+/g,' ').trim() };
+}
+
+function attachReferencePreview(link, query, originPage, originRatio = null) {
+  if (!link || !referencePreview) return;
+  const show = () => {
+    clearTimeout(referencePreviewTimer);
+    const serial = ++referencePreviewSerial;
+    referencePreviewTimer = setTimeout(async () => {
+      try {
+        const data = await referencePreviewData(query, originPage, originRatio);
+        if (!data || serial !== referencePreviewSerial || !link.isConnected) return;
+        referencePreview.replaceChildren();
+        const strong = document.createElement('strong'); strong.textContent = query;
+        const meta = document.createElement('div'); meta.className='reference-preview-meta'; meta.textContent=t(`Page ${data.target.page}`,`第 ${data.target.page} 页`);
+        const text = document.createElement('span'); text.className='reference-preview-text'; text.textContent=data.text || t('Target preview unavailable.','无法预览目标。');
+        referencePreview.append(strong, meta, text);
+        const r = link.getBoundingClientRect();
+        const width = Math.min(352, window.innerWidth - 16);
+        const left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left));
+        let top = r.bottom + 8;
+        if (top + 150 > window.innerHeight) top = Math.max(8, r.top - 150);
+        referencePreview.style.left=`${left}px`; referencePreview.style.top=`${top}px`; referencePreview.classList.remove('is-hidden');
+      } catch (_) {}
+    }, 260);
+  };
+  link.addEventListener('pointerenter', show);
+  link.addEventListener('focus', show);
+  link.addEventListener('pointerleave', hideReferencePreview);
+  link.addEventListener('blur', hideReferencePreview);
+}
+
 function commandActions() {
   return [
-    { label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
-    { label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
-    { label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
-    { label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
-    { label: t('Rebuild mathematical structure index', '重新生成数学结构索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
-    { label: t('Bibliography', '参考文献'), needsPdf: true, run: () => { openLeftPanelShortcut('outline-panel'); bibliographyIndex?.scrollIntoView({ block: 'nearest' }); } },
-    { label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
-    { label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
-    { label: t('Highlight selected text', '高亮所选文字'), needsPdf: true, run: () => addSelectionAnnotation('highlight') },
-    { label: t('Add margin note to selection', '为所选文字添加页边注'), needsPdf: true, run: () => addSelectionAnnotation('margin') },
-    { label: t('Annotations', '批注'), needsPdf: true, run: () => openRightSectionShortcut('annotations-section') },
-    { label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
-    { label: t('Pin current page as reference', '固定当前页作为参考'), needsPdf: true, run: () => setPinnedPage(currentPage) },
-    { label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
-    { label: t('Undo last deleted item', '撤销最近删除'), needsPdf: true, run: () => restoreUndoEntry() },
-    { label: t('Recovery snapshots', '恢复快照'), needsPdf: true, run: () => openRightSectionShortcut('recovery-section') },
-    { label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
-    { label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() },
-    { label: t('Reading trail', '阅读轨迹'), needsPdf: true, run: () => openRightSectionShortcut('reading-trail-section') }
+    { kind:t('Command','命令'), label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
+    { kind:t('Command','命令'), label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
+    { kind:t('Command','命令'), label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
+    { kind:t('Command','命令'), label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
+    { kind:t('Command','命令'), label: t('Rebuild mathematical structure index', '重新生成数学结构索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
+    { kind:t('Command','命令'), label: t('Bibliography', '参考文献'), needsPdf: true, run: () => { openLeftPanelShortcut('outline-panel'); bibliographyIndex?.scrollIntoView({ block: 'nearest' }); } },
+    { kind:t('Command','命令'), label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
+    { kind:t('Command','命令'), label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
+    { kind:t('Command','命令'), label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
+    { kind:t('Command','命令'), label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
+    { kind:t('Command','命令'), label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
+    { kind:t('Command','命令'), label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() }
   ].filter((item) => !item.needsPdf || pdfDoc);
 }
 
 function renderCommandPalette() {
   if (!commandList) return;
-  const q = String(commandInput?.value || '').trim().toLocaleLowerCase();
+  const qRaw = String(commandInput?.value || '').trim();
+  const q = normalizeSearchValue(qRaw, false);
   commandList.replaceChildren();
-  const actions = commandActions().filter((item) => !q || item.label.toLocaleLowerCase().includes(q));
-  for (const [index, action] of actions.entries()) {
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'command-item'; button.textContent = action.label;
-    if (index === 0) button.classList.add('is-current');
-    button.addEventListener('click', () => { closeCommandPalette(); action.run(); });
-    commandList.append(button);
+  const items = [];
+  for (const action of commandActions()) items.push({ kind:action.kind, title:action.label, subtitle:'', run:action.run, searchText:action.label });
+  if (qRaw) items.push(...commandPaletteEntities());
+  const filtered = items.filter((item) => {
+    if (!q) return item.kind === t('Command','命令');
+    return normalizeSearchValue(item.searchText || `${item.title} ${item.subtitle||''}`, false).includes(q);
+  }).slice(0, 80);
+  for (const [index, item] of filtered.entries()) {
+    const button=document.createElement('button'); button.type='button'; button.className='command-item'; if(index===0) button.classList.add('is-current');
+    const kind=document.createElement('span'); kind.className='command-kind'; kind.textContent=item.kind || t('Command','命令');
+    const main=document.createElement('span'); main.className='command-main';
+    const title=document.createElement('span'); title.className='command-title'; title.textContent=item.title; main.append(title);
+    if(item.subtitle){ const sub=document.createElement('span'); sub.className='command-subtitle'; sub.textContent=item.subtitle; main.append(sub); }
+    button.append(kind,main); button.addEventListener('click',()=>{ closeCommandPalette(); item.run(); }); commandList.append(button);
   }
+  if (!filtered.length) { const empty=document.createElement('div'); empty.className='command-hint'; empty.textContent=t('No matching commands or document items.','没有匹配的命令或文档项目。'); commandList.append(empty); }
 }
 
 function openCommandPalette() {
-  if (!commandPalette) return; commandPalette.classList.remove('is-hidden'); commandInput.value = ''; renderCommandPalette(); setTimeout(() => commandInput.focus(), 0);
+  if (!commandPalette) return;
+  commandPalette.classList.remove('is-hidden'); commandInput.value = ''; renderCommandPalette(); setTimeout(() => commandInput.focus(), 0);
+  if (pdfDoc && !equationLabelIndex) {
+    buildEquationLabelIndex().then(() => { if (!commandPalette.classList.contains('is-hidden') && commandInput.value.trim()) renderCommandPalette(); }).catch(() => {});
+  }
 }
 function closeCommandPalette() { commandPalette?.classList.add('is-hidden'); }
 
@@ -6410,6 +6545,7 @@ commandPalette?.addEventListener('pointerdown', (event) => { if (event.target ==
 renderSymbolGlossary();
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
 searchFuzzy?.addEventListener('change', () => { persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
+searchEquations?.addEventListener('change', () => { if (searchInput.value.trim()) searchPdf(searchInput.value); });
 glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
 glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
 readingSessionSave?.addEventListener('click', saveNamedReadingSession);
