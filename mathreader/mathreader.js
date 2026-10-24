@@ -58,6 +58,20 @@ const outlineList = el('outline-list');
 const outlineEmpty = el('outline-empty');
 const outlineCount = el('outline-count');
 const outlineSource = el('outline-source');
+const structureIndex = el('structure-index');
+const structureEmpty = el('structure-empty');
+const structureCount = el('structure-count');
+const buildStructureIndexButton = el('build-structure-index');
+const exportReadingDataButton = el('export-reading-data');
+const importReadingDataButton = el('import-reading-data');
+const importReadingInput = el('import-reading-input');
+const readingBackButton = el('reading-back');
+const saveOcrEquation = el('save-ocr-equation');
+const selectionGoReference = el('selection-go-reference');
+const referenceStack = el('reference-stack');
+const commandPalette = el('command-palette');
+const commandInput = el('command-input');
+const commandList = el('command-list');
 const searchForm = el('search-form');
 const searchInput = el('search-input');
 const searchStatus = el('search-status');
@@ -187,6 +201,10 @@ let inferredOutline = [];
 let outlineMode = 'none';
 let editingBookmarkId = null;
 let pendingRecoveryRecordId = null;
+let structureEntries = [];
+let referencePages = [];
+let readingBackStack = [];
+let suppressReadingHistory = false;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -405,7 +423,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 8,
+    version: 9,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -420,6 +438,8 @@ function snapshotSession() {
     ocrResult: currentOcrResult,
     ocrHistory,
     inferredOutline,
+    structureEntries,
+    referencePages,
     searchQuery: searchInput?.value || '',
     ui: {
       activePanel: activePanelId(),
@@ -681,7 +701,10 @@ function normalizeBookmarks(items) {
     title: typeof item.title === 'string' ? item.title : '',
     note: typeof item.note === 'string' ? item.note : '',
     color: normalizedBookmarkColor(item.color),
-    created: Number(item.created) || Date.now()
+    created: Number(item.created) || Date.now(),
+    type: item.type === 'equation' ? 'equation' : 'page',
+    latex: typeof item.latex === 'string' ? item.latex : '',
+    preview: typeof item.preview === 'string' ? item.preview : ''
   }));
 }
 
@@ -698,6 +721,9 @@ function loadDocumentState(cachedSession = null) {
   ocrHistoryExpanded = false;
   inferredOutline = [];
   outlineMode = 'none';
+  structureEntries = [];
+  referencePages = [];
+  readingBackStack = [];
   zoomMode = 'fit-width';
   zoomScale = 1.2;
   searchInput.value = '';
@@ -734,6 +760,9 @@ function loadDocumentState(cachedSession = null) {
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
+    structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
+    referencePages = Array.isArray(session.referencePages) ? session.referencePages.map(Number).filter((page, index, values) => page >= 1 && page <= pdfDoc.numPages && values.indexOf(page) === index).slice(0, 4) : [];
+    if (pinnedPage && !referencePages.includes(pinnedPage)) referencePages.unshift(pinnedPage);
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
@@ -817,7 +846,7 @@ async function touchCachedPdf(record) {
 }
 
 function enableReaderControls(enabled) {
-  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,fitPage,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark].forEach((node) => node.disabled = !enabled);
+  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,fitPage,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton,importReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
 }
 
 function updateNavigationState() {
@@ -2869,6 +2898,15 @@ async function renderReferencePage() {
 
 async function goToLocation(page, ratio = 0) {
   if (!pdfDoc) return;
+  if (!suppressReadingHistory) {
+    const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
+    const targetPage = Math.min(Math.max(1, Number(page) || 1), pdfDoc.numPages);
+    if (here && (Number(here.page) !== targetPage || Math.abs(Number(here.ratio || 0) - Number(ratio || 0)) > 0.02)) {
+      readingBackStack.push({ page: Number(here.page) || currentPage, ratio: Number(here.ratio) || 0 });
+      if (readingBackStack.length > 40) readingBackStack.shift();
+      updateReadingBackButton();
+    }
+  }
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
   const changed = next !== currentPage;
@@ -2901,14 +2939,43 @@ async function goToLocation(page, ratio = 0) {
   persistDocumentState();
 }
 
+function updateReadingBackButton() {
+  if (!readingBackButton) return;
+  readingBackButton.disabled = !pdfDoc || readingBackStack.length === 0;
+}
+
+async function goBackReadingLocation() {
+  const target = readingBackStack.pop();
+  updateReadingBackButton();
+  if (!target || !pdfDoc) return;
+  suppressReadingHistory = true;
+  try { await goToLocation(target.page, target.ratio); } finally { suppressReadingHistory = false; }
+}
+
 async function goToPage(page) {
   return goToLocation(page, 0);
+}
+
+function renderReferenceStack() {
+  if (!referenceStack) return;
+  referenceStack.replaceChildren();
+  for (const page of referencePages) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'reference-stack-chip';
+    chip.classList.toggle('is-active', page === pinnedPage);
+    chip.textContent = t(`Page ${page}`, `第 ${page} 页`);
+    chip.addEventListener('click', () => setPinnedPage(page));
+    referenceStack.append(chip);
+  }
 }
 
 function setPinnedPage(page) {
   if (!pdfDoc) return;
   setOcrMode(false);
   pinnedPage = Math.min(Math.max(1, Number(page) || currentPage), pdfDoc.numPages);
+  referencePages = [pinnedPage, ...referencePages.filter((item) => item !== pinnedPage)].slice(0, 4);
+  renderReferenceStack();
   persistDocumentState();
   renderReferencePage();
 }
@@ -2916,6 +2983,7 @@ function setPinnedPage(page) {
 function clearPinnedPage() {
   setOcrMode(false);
   pinnedPage = null;
+  renderReferenceStack();
   persistDocumentState();
   renderReferencePage();
 }
@@ -3126,6 +3194,56 @@ function renderInferredOutline(entries) {
   }
 }
 
+const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
+
+async function buildStructureIndex() {
+  if (!pdfDoc || !structureIndex) return;
+  buildStructureIndexButton.disabled = true;
+  structureEmpty.textContent = t('Building theorem and definition index…', '正在生成定理与定义索引……');
+  structureEntries = [];
+  const maxPages = Math.min(pdfDoc.numPages, 800);
+  for (let page = 1; page <= maxPages; page += 1) {
+    const text = await pageText(page);
+    const parts = text.split(/(?<=[.!?])\s+|(?=(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+)/i);
+    for (const part of parts) {
+      const cleaned = String(part || '').replace(/\s+/g, ' ').trim();
+      const match = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+      if (!match) continue;
+      const title = match[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
+      if (!STRUCTURE_LABEL_RE.test(title)) continue;
+      const label = title.match(/^(.*?)(?=[.:)]\s|\s{2,}|$)/)?.[1] || title.slice(0, 80);
+      const key = `${page}:${label.toLowerCase()}`;
+      if (structureEntries.some((entry) => entry.key === key)) continue;
+      structureEntries.push({ key, page, title: title.slice(0, 180) });
+    }
+  }
+  structureEntries = structureEntries.slice(0, 500);
+  renderStructureIndex();
+  persistDocumentState();
+  buildStructureIndexButton.disabled = false;
+}
+
+function renderStructureIndex() {
+  if (!structureIndex || !structureEmpty || !structureCount) return;
+  structureIndex.replaceChildren();
+  structureCount.textContent = String(structureEntries.length);
+  structureEmpty.classList.toggle('is-hidden', structureEntries.length > 0);
+  if (!structureEntries.length) {
+    structureEmpty.textContent = t('Build a conservative index of theorem-like statements when you need it.', '需要时可生成保守的定理类结构索引。');
+    return;
+  }
+  for (const entry of structureEntries) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'structure-item';
+    const strong = document.createElement('strong'); strong.textContent = entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
+    const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
+    button.append(strong, meta);
+    button.title = entry.title;
+    button.addEventListener('click', () => goToPage(entry.page));
+    structureIndex.append(button);
+  }
+}
+
 async function resolveOutlineDestination(rawDest) {
   if (!pdfDoc) return null;
   let dest = rawDest;
@@ -3252,6 +3370,29 @@ function highlightedSnippet(text, query, index = -1) {
   return frag;
 }
 
+function selectedReferenceQuery() {
+  const text = String(currentSelection?.text || '').replace(/\s+/g, ' ').trim();
+  const match = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
+    || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/);
+  return match?.[0] || '';
+}
+
+async function goToSelectedReference() {
+  if (!pdfDoc) return;
+  const query = selectedReferenceQuery();
+  if (!query) { showError(t('Select a reference such as “Theorem 2.4”, “Section 3”, or “(4.7)”.', '请选择类似“Theorem 2.4”、“Section 3”或“(4.7)”的引用。')); return; }
+  const normalized = normalizeSearchValue(query, false);
+  let fallback = null;
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    const text = await pageText(page);
+    if (!normalizeSearchValue(text, false).includes(normalized)) continue;
+    if (page !== currentPage) { await goToPage(page); return; }
+    fallback = page;
+  }
+  if (fallback) showError(t('The selected reference appears only on the current page.', '所选引用仅出现在当前页。'));
+  else showError(t('No matching reference label was found in this PDF.', '未在此 PDF 中找到匹配的引用标签。'));
+}
+
 async function searchPdf(query) {
   searchResults.replaceChildren();
   const q = query.trim();
@@ -3312,8 +3453,9 @@ function renderBookmarks() {
     const row = document.createElement('div'); row.className = 'bookmark-item'; row.dataset.color = normalizedBookmarkColor(bookmark.color);
     const main = document.createElement('div'); main.className = 'bookmark-main';
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bookmark-jump';
-    const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`);
-    const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
+    const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || (bookmark.type === 'equation' ? t(`Equation · page ${bookmark.page}`, `公式 · 第 ${bookmark.page} 页`) : t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`));
+    const kindLabel = bookmark.type === 'equation' ? t('Equation', '公式') : t('Page', '页面');
+    const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${kindLabel} · ${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
     jump.append(strong, detail); jump.addEventListener('click', () => goToPage(bookmark.page));
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'bookmark-edit'; edit.textContent = '✎'; edit.title = t('Edit bookmark', '编辑书签');
     edit.addEventListener('click', () => { editingBookmarkId = editingBookmarkId === bookmark.id ? null : bookmark.id; renderBookmarks(); });
@@ -3324,6 +3466,7 @@ function renderBookmarks() {
       persistDocumentState(); renderBookmarks();
     });
     main.append(jump, edit, remove); row.append(main);
+    if (bookmark.latex?.trim()) { const formula = document.createElement('code'); formula.className = 'bookmark-equation-preview'; formula.textContent = bookmark.latex.length > 220 ? `${bookmark.latex.slice(0, 220)}…` : bookmark.latex; row.append(formula); }
     if (bookmark.note?.trim()) { const preview = document.createElement('div'); preview.className = 'bookmark-note-preview'; preview.textContent = bookmark.note; row.append(preview); }
     if (editingBookmarkId === bookmark.id) {
       const editor = document.createElement('div'); editor.className = 'bookmark-editor';
@@ -3361,6 +3504,19 @@ function addCurrentBookmark() {
   persistDocumentState(); renderBookmarks();
 }
 
+function saveCurrentOcrAsEquation() {
+  if (!pdfDoc || !currentOcrResult?.latex) return;
+  const page = Number(currentOcrResult.page) || currentPage;
+  const item = {
+    id: `eq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    page, title: '', note: '', color: 'purple', created: Date.now(), type: 'equation',
+    latex: String(ocrLatexPreview?.value || currentOcrResult.latex).trim(), preview: currentOcrResult.preview || ''
+  };
+  bookmarks.push(item); editingBookmarkId = item.id;
+  persistDocumentState(); renderBookmarks();
+  openLeftPanelShortcut('bookmarks-panel');
+}
+
 async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null }) {
   setLoading(true, cachedRecord ? t('Restoring local reading session…', '正在恢复本地阅读现场……') : t('Opening PDF…', '正在打开 PDF……'));
   restoringSession = true;
@@ -3387,6 +3543,9 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     pdfWorkspace.classList.remove('is-hidden');
     renderBookmarks();
     await Promise.all([renderOutline(), renderCurrentPage()]);
+    renderStructureIndex();
+    renderReferenceStack();
+    updateReadingBackButton();
     await stabilizeFitWidthLayout();
     await renderReferencePage();
     updateReferenceStatus();
@@ -3515,6 +3674,72 @@ brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(bri
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 100); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
+function downloadJsonFile(name, value) {
+  const blob = new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportReadingData() {
+  if (!pdfDoc || !currentFileKey) return;
+  const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
+  downloadJsonFile(`${safeName}-mathreader.json`, {
+    schema: 'mathreader.reading-data@1', exportedAt: new Date().toISOString(),
+    document: { id: currentFileKey, name: currentFileName, pages: pdfDoc.numPages },
+    session: snapshotSession()
+  });
+}
+
+async function importReadingDataFile(file) {
+  if (!pdfDoc || !currentFileKey || !file) return;
+  let payload;
+  try { payload = JSON.parse(await file.text()); } catch (_) { showError(t('The selected reading-data file is not valid JSON.', '所选阅读数据文件不是有效的 JSON。')); return; }
+  if (payload?.schema !== 'mathreader.reading-data@1' || !payload.session) { showError(t('This is not a MathReader reading-data export.', '这不是 MathReader 阅读数据导出文件。')); return; }
+  if (payload.document?.id && payload.document.id !== currentFileKey) {
+    const sameName = String(payload.document?.name || '') === String(currentFileName || '');
+    const samePages = Number(payload.document?.pages || 0) === Number(pdfDoc.numPages || 0);
+    if (!sameName || !samePages) { showError(t('This reading-data export belongs to a different PDF. Open the matching PDF before importing.', '此阅读数据属于另一份 PDF。请先打开匹配的 PDF 再导入。')); return; }
+  }
+  safeSet(stateKey('session-v2'), JSON.stringify(payload.session));
+  loadDocumentState(payload.session);
+  await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
+  renderBookmarks(); renderStructureIndex(); renderReferenceStack(); updateReadingBackButton(); persistDocumentState();
+}
+
+function commandActions() {
+  return [
+    { label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
+    { label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
+    { label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
+    { label: t('Build theorem & definition index', '生成定理与定义索引'), needsPdf: true, run: () => buildStructureIndex() },
+    { label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
+    { label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
+    { label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
+    { label: t('Pin current page as reference', '固定当前页作为参考'), needsPdf: true, run: () => setPinnedPage(currentPage) },
+    { label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
+    { label: t('Back to previous reading location', '返回上一阅读位置'), needsPdf: true, run: () => goBackReadingLocation() }
+  ].filter((item) => !item.needsPdf || pdfDoc);
+}
+
+function renderCommandPalette() {
+  if (!commandList) return;
+  const q = String(commandInput?.value || '').trim().toLocaleLowerCase();
+  commandList.replaceChildren();
+  const actions = commandActions().filter((item) => !q || item.label.toLocaleLowerCase().includes(q));
+  for (const [index, action] of actions.entries()) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'command-item'; button.textContent = action.label;
+    if (index === 0) button.classList.add('is-current');
+    button.addEventListener('click', () => { closeCommandPalette(); action.run(); });
+    commandList.append(button);
+  }
+}
+
+function openCommandPalette() {
+  if (!commandPalette) return; commandPalette.classList.remove('is-hidden'); commandInput.value = ''; renderCommandPalette(); setTimeout(() => commandInput.focus(), 0);
+}
+function closeCommandPalette() { commandPalette?.classList.add('is-hidden'); }
+
 formulaExtractionSelect?.addEventListener('change', () => {
   formulaExtractionMode = formulaExtractionSelect.value === 'vector' ? 'vector' : 'image';
   safeSet('mathreader-formula-method-v1', formulaExtractionMode);
@@ -3532,6 +3757,19 @@ unpinPage.addEventListener('click', clearPinnedPage);
 referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1) setPinnedPage(pinnedPage - 1); });
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
+readingBackButton?.addEventListener('click', goBackReadingLocation);
+buildStructureIndexButton?.addEventListener('click', buildStructureIndex);
+exportReadingDataButton?.addEventListener('click', exportReadingData);
+importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
+importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
+selectionGoReference?.addEventListener('click', goToSelectedReference);
+saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
+commandInput?.addEventListener('input', renderCommandPalette);
+commandInput?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') { const first = commandList?.querySelector('.command-item'); if (first) { event.preventDefault(); first.click(); } }
+  if (event.key === 'Escape') { event.preventDefault(); closeCommandPalette(); }
+});
+commandPalette?.addEventListener('pointerdown', (event) => { if (event.target === commandPalette) closeCommandPalette(); });
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
 searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState(); });
 [searchMatchCase, searchWholeWord].forEach((node) => node?.addEventListener('change', () => { persistSearchPreferences(); if (pdfDoc && searchInput.value.trim()) searchPdf(searchInput.value); }));
@@ -3671,6 +3909,8 @@ document.addEventListener('keydown', (event) => {
   const target = event.target;
   const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target?.isContentEditable;
   const key = event.key.toLowerCase();
+  if ((event.ctrlKey || event.metaKey) && key === 'k') { event.preventDefault(); openCommandPalette(); return; }
+  if (!typing && event.altKey && event.key === 'ArrowLeft') { event.preventDefault(); goBackReadingLocation(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'o') { event.preventDefault(); fileInput.click(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
   if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'o') { event.preventDefault(); fileInput.click(); return; }
@@ -3689,7 +3929,7 @@ document.addEventListener('keydown', (event) => {
   if (!typing && pdfDoc && event.key === 'PageDown') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: primaryCanvasWrap.clientHeight * 0.85, behavior: 'auto' }); return; }
   if (!typing && pdfDoc && event.key === 'ArrowLeft') { event.preventDefault(); goToPage(currentPage - 1); return; }
   if (!typing && pdfDoc && event.key === 'ArrowRight') { event.preventDefault(); goToPage(currentPage + 1); return; }
-  if (event.key === 'Escape') { setOcrMode(false); shell.classList.remove('mobile-left-open','mobile-right-open'); hideSelectionToolbar(); window.getSelection()?.removeAllRanges(); }
+  if (event.key === 'Escape') { closeCommandPalette(); setOcrMode(false); shell.classList.remove('mobile-left-open','mobile-right-open'); hideSelectionToolbar(); window.getSelection()?.removeAllRanges(); }
 });
 
 let dragDepth = 0;
@@ -3751,6 +3991,9 @@ updateReferenceStatus();
 refreshSelectionUI();
 refreshOcrUI();
 renderBookmarks();
+renderStructureIndex();
+renderReferenceStack();
+updateReadingBackButton();
 
 async function initializeLocalLibrary() {
   await refreshLocalLibrary();

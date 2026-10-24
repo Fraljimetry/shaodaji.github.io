@@ -68,6 +68,12 @@
         <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
         <p class="history-explainer is-hidden" id="outline-source"></p>
         <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
+        <div class="structure-index-block">
+          <div class="panel-heading compact-heading"><span data-en="Theorems & definitions" data-zh="定理与定义">Theorems & definitions</span><span class="count-badge" id="structure-count">0</span></div>
+          <button class="text-button structure-build" id="build-structure-index" type="button" disabled data-en="Build index" data-zh="生成索引">Build index</button>
+          <div class="structure-index" id="structure-index"></div>
+          <div class="empty-panel" id="structure-empty" data-en="Build a conservative index of theorem-like statements when you need it." data-zh="需要时可生成保守的定理类结构索引。">Build a conservative index of theorem-like statements when you need it.</div>
+        </div>
       </section>
 
       <section class="sidebar-panel" id="search-panel">
@@ -102,6 +108,11 @@
           <span class="count-badge" id="history-count">0</span>
         </div>
         <p class="history-explainer" data-en="PDFs and reading sessions cached on this device." data-zh="缓存在本设备上的 PDF 与阅读现场。">PDFs and reading sessions cached on this device.</p>
+        <div class="library-tools">
+          <button class="text-button" id="export-reading-data" type="button" disabled data-en="Export reading data" data-zh="导出阅读数据">Export reading data</button>
+          <button class="text-button" id="import-reading-data" type="button" disabled data-en="Import" data-zh="导入">Import</button>
+          <input id="import-reading-input" type="file" accept="application/json,.json" hidden>
+        </div>
         <div class="history-list" id="history-list"></div>
         <div class="empty-panel" id="history-empty" data-en="Open a PDF once and MathReader will remember it here." data-zh="打开一次 PDF 后，MathReader 会把它记在这里。">Open a PDF once and MathReader will remember it here.</div>
       </section>
@@ -112,6 +123,7 @@
         <div class="toolbar-group">
           <button class="tool-button sidebar-toggle" type="button" id="left-toggle" aria-label="Toggle document navigation" title="Toggle document navigation">☰</button>
           <button class="tool-button sidebar-toggle both-panels-toggle" type="button" id="both-panels-toggle" data-en-title="Toggle both side panels · B" data-zh-title="同时展开/收起两侧栏 · B" aria-label="Toggle both side panels · B" title="Toggle both side panels · B">⇔</button>
+          <button class="tool-button" type="button" id="reading-back" disabled data-en-title="Back to previous reading location" data-zh-title="返回上一阅读位置" aria-label="Back to previous reading location" title="Back to previous reading location">↶</button>
           <button class="tool-button" type="button" id="prev-page" disabled aria-label="Previous page" title="Previous page">←</button>
           <div class="page-control">
             <input id="page-number" type="number" min="1" value="1" disabled aria-label="Page number">
@@ -273,7 +285,7 @@
           <span class="ocr-processing-copy"><strong data-en="Processing formula" data-zh="正在处理公式">Processing formula</strong><span id="ocr-processing-text" data-en="Processing…" data-zh="处理中…">Processing…</span></span>
         </div>
         <div class="ocr-result is-hidden" id="ocr-result">
-          <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
+          <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span><button class="text-button ocr-save-equation" type="button" id="save-ocr-equation" data-en="Save equation" data-zh="收藏公式">Save equation</button></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
           <label data-en="Extracted LaTeX · editable" data-zh="提取出的 LaTeX · 可编辑">Extracted LaTeX · editable</label>
           <textarea id="ocr-latex-preview" class="ocr-latex-editor" rows="4" spellcheck="false" aria-label="Extracted LaTeX"></textarea>
@@ -309,6 +321,7 @@
             <button class="secondary-action" type="button" id="copy-selection-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
             <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
             <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+            <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
           </div>
           <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”；默认使用图像 OCR，并保留 PDF 矢量作为快速备用路径。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback.</p>
         </div>
@@ -332,6 +345,7 @@
           <span class="reference-status" id="reference-status" data-en="No page pinned" data-zh="尚未固定页面">No page pinned</span>
           <button class="secondary-action" type="button" id="pin-from-sidebar" disabled data-en="Pin current page" data-zh="固定当前页">Pin current page</button>
         </div>
+        <div class="reference-stack" id="reference-stack" aria-label="Recent reference pages"></div>
       </section>
 
       <section class="workspace-section shortcuts" id="shortcuts-section">
@@ -349,6 +363,8 @@
           <div><dt><kbd>N</kbd></dt><dd data-en="Open page note" data-zh="打开页注">Open page note</dd></div>
           <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>
           <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
+          <div><dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>K</kbd></dt><dd data-en="Command palette" data-zh="命令面板">Command palette</dd></div>
+          <div><dt><kbd>Alt</kbd> <kbd>←</kbd></dt><dd data-en="Back to previous reading location" data-zh="返回上一阅读位置">Back to previous reading location</dd></div>
         </dl>
       </section>
     </aside>
@@ -360,6 +376,14 @@
     <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
     <button type="button" id="floating-add-note" data-en="Note" data-zh="页注">Note</button>
     <button type="button" id="floating-pin-page" data-en="Pin page" data-zh="固定页">Pin page</button>
+  </div>
+
+  <div class="command-palette is-hidden" id="command-palette" role="dialog" aria-modal="true" aria-label="MathReader commands">
+    <div class="command-palette-card">
+      <input id="command-input" type="search" autocomplete="off" data-en-placeholder="Type a command…" data-zh-placeholder="输入命令……" placeholder="Type a command…">
+      <div class="command-list" id="command-list"></div>
+      <div class="command-hint" data-en="Enter to run · Esc to close" data-zh="Enter 执行 · Esc 关闭">Enter to run · Esc to close</div>
+    </div>
   </div>
 
   <div class="drop-overlay is-hidden" id="drop-overlay" aria-hidden="true">
