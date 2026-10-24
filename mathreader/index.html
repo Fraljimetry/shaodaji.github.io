@@ -56,7 +56,7 @@
       <div class="sidebar-tabs" role="tablist" aria-label="Document tools">
         <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录" data-en-title="Contents · C" data-zh-title="目录 · C">Contents</button>
         <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索" data-en-title="Search · F" data-zh-title="搜索 · F">Search</button>
-        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Saved" data-zh="收藏" data-en-title="Saved · S" data-zh-title="收藏 · S">Saved</button>
+        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Bookmarks" data-zh="书签" data-en-title="Bookmarks · S" data-zh-title="书签 · S">Bookmarks</button>
         <button class="sidebar-tab" type="button" data-panel="history-panel" data-en="History" data-zh="历史" data-en-title="History · H" data-zh-title="历史 · H">History</button>
       </div>
 
@@ -103,16 +103,6 @@
           <div class="empty-panel" id="bibliography-empty" data-en="Bibliography entries are detected automatically when numbered references are present." data-zh="存在编号参考文献时会自动检测条目。">Bibliography entries are detected automatically when numbered references are present.</div>
         </section>
 
-        <section class="workspace-section contents-section" id="contents-bookmarks-section">
-          <div class="panel-heading">
-            <span data-en="Bookmarks" data-zh="书签">Bookmarks</span>
-            <span class="count-badge" id="map-bookmarks-count">0</span>
-          </div>
-          <input class="map-filter" id="map-filter-bookmarks" type="search" autocomplete="off" data-map-target="map-bookmarks-list" data-en-placeholder="Filter bookmarks…" data-zh-placeholder="筛选书签…" placeholder="Filter bookmarks…">
-          <div class="document-map-list" id="map-bookmarks-list"></div>
-          <div class="empty-panel" id="map-bookmarks-empty" data-en="Saved pages and equations appear here." data-zh="保存的页面和公式会显示在这里。">Saved pages and equations appear here.</div>
-        </section>
-
         <section class="workspace-section contents-section" id="contents-annotations-section">
           <div class="panel-heading">
             <span data-en="Annotations" data-zh="批注">Annotations</span>
@@ -149,7 +139,7 @@
           <button class="text-button" id="add-bookmark" type="button" disabled data-en="+ Current page" data-zh="+ 当前页">+ Current page</button>
         </div>
         <div class="bookmark-list" id="bookmark-list"></div>
-        <div class="empty-panel" id="bookmark-empty" data-en="Bookmark pages you want to return to." data-zh="收藏需要再次查看的页面。">Bookmark pages you want to return to.</div>
+        <div class="empty-panel" id="bookmark-empty" data-en="Bookmark pages and equations you want to return to." data-zh="为需要再次查看的页面和公式添加书签。">Bookmark pages and equations you want to return to.</div>
       </section>
 
       <section class="sidebar-panel" id="history-panel">
@@ -503,7 +493,7 @@
           <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle formula extraction" data-zh="矩形公式提取">Rectangle formula extraction</dd></div>
           <div><dt><kbd>C</kbd></dt><dd data-en="Open Contents" data-zh="打开目录">Open Contents</dd></div>
           <div><dt><kbd>H</kbd></dt><dd data-en="Open History" data-zh="打开历史">Open History</dd></div>
-          <div><dt><kbd>S</kbd></dt><dd data-en="Open Saved pages" data-zh="打开收藏页">Open Saved pages</dd></div>
+          <div><dt><kbd>S</kbd></dt><dd data-en="Open Bookmarks" data-zh="打开书签">Open Bookmarks</dd></div>
           <div><dt><kbd>D</kbd></dt><dd data-en="Open Display settings" data-zh="打开显示设置">Open Display settings</dd></div>
           <div><dt><kbd>N</kbd></dt><dd data-en="Open page note" data-zh="打开页注">Open page note</dd></div>
           <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>

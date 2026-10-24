@@ -32,7 +32,6 @@ const nextPage = el('next-page');
 const zoomIn = el('zoom-in');
 const zoomOut = el('zoom-out');
 const zoomLabel = el('zoom-label');
-const fitPage = el('fit-page');
 const flowButton = el('flow-button');
 const pinPageButton = el('pin-page');
 const pinFromSidebar = el('pin-from-sidebar');
@@ -68,9 +67,6 @@ const buildStructureIndexButton = el('build-structure-index');
 const bibliographyIndex = el('bibliography-index');
 const bibliographyEmpty = el('bibliography-empty');
 const bibliographyCount = el('bibliography-count');
-const mapBookmarksList = el('map-bookmarks-list');
-const mapBookmarksEmpty = el('map-bookmarks-empty');
-const mapBookmarksCount = el('map-bookmarks-count');
 const mapAnnotationsList = el('map-annotations-list');
 const mapAnnotationsEmpty = el('map-annotations-empty');
 const mapAnnotationsCount = el('map-annotations-count');
@@ -889,7 +885,6 @@ function applyLanguage(lang, persist = true) {
   renderLocalLibrary();
   renderSymbolGlossary();
   renderDocumentMetadata();
-  renderDocumentMapBookmarks();
   renderDocumentMapAnnotations();
   refreshSelectionUI();
   refreshOcrUI();
@@ -924,7 +919,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-bookmarks-section','contents-annotations-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -1154,21 +1149,6 @@ function updateDocumentMapCurrentLocation() {
   });
 }
 
-function renderDocumentMapBookmarks() {
-  if (!mapBookmarksList || !mapBookmarksEmpty || !mapBookmarksCount) return;
-  mapBookmarksList.replaceChildren();
-  const ordered = [...bookmarks].sort((a,b)=>a.page-b.page||a.created-b.created);
-  mapBookmarksCount.textContent = String(ordered.length);
-  mapBookmarksEmpty.classList.toggle('is-hidden', ordered.length > 0);
-  for (const item of ordered) {
-    const button=document.createElement('button'); button.type='button'; button.className='document-map-item'; button.dataset.page=String(item.page);
-    const title=document.createElement('strong'); title.textContent=item.title?.trim() || (item.type==='equation'?t('Saved equation','已保存公式'):t(`Page ${item.page}`,`第 ${item.page} 页`));
-    const meta=document.createElement('span'); meta.textContent=`${t(`Page ${item.page}`,`第 ${item.page} 页`)}${item.note?.trim()?` · ${item.note.trim().slice(0,70)}`:''}`;
-    button.append(title,meta); button.addEventListener('click',()=>goToLocation(item.page,0)); mapBookmarksList.append(button);
-  }
-  applyDocumentMapFilter(el('map-filter-bookmarks')); updateDocumentMapCurrentLocation();
-}
-
 function renderDocumentMapAnnotations() {
   if (!mapAnnotationsList || !mapAnnotationsEmpty || !mapAnnotationsCount) return;
   mapAnnotationsList.replaceChildren();
@@ -1373,7 +1353,7 @@ async function touchCachedPdf(record) {
 }
 
 function enableReaderControls(enabled) {
-  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,fitPage,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton,importReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
+  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton,importReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
 }
 
 function updateNavigationState() {
@@ -6470,7 +6450,6 @@ function renderBookmarks() {
     }
     bookmarkList.append(row);
   }
-  renderDocumentMapBookmarks();
   renderDocumentMetadata();
 }
 
@@ -6661,7 +6640,6 @@ pageNumberInput.addEventListener('change', () => goToPage(pageNumberInput.value)
 zoomIn.addEventListener('click', () => changeZoom(.15));
 zoomOut.addEventListener('click', () => changeZoom(-.15));
 zoomLabel.addEventListener('click', () => setFitMode(zoomMode === 'fit-width' ? 'fit-page' : 'fit-width'));
-fitPage?.addEventListener('click', () => setFitMode('fit-page'));
 ocrHistoryToggle?.addEventListener('click', () => { ocrHistoryExpanded = !ocrHistoryExpanded; refreshOcrUI(); });
 flowButton.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
 flowSingle?.addEventListener('click', () => setReadingFlow('single'));
@@ -6828,7 +6806,7 @@ async function restoreRecoverySnapshot(item) {
     await setReadingFlow(flow,{persist:false,render:false});
     await Promise.all([renderCurrentPage(),renderReferencePage()]);
     restoringSession=false;
-    renderBookmarks(); renderAnnotationList(); rerenderVisibleAnnotations(); renderSymbolGlossary(); renderDocumentMetadata(); renderDocumentMapBookmarks(); renderDocumentMapAnnotations(); renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateNavigationState();
+    renderBookmarks(); renderAnnotationList(); rerenderVisibleAnnotations(); renderSymbolGlossary(); renderDocumentMetadata(); renderDocumentMapAnnotations(); renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateNavigationState();
   } catch (error) { console.error(error); showError(t('Recovery snapshot could not be restored.', '无法恢复该快照。')); }
   finally { restoringSession=false; recoveryRestoreActive=false; }
   persistDocumentState();
@@ -6892,7 +6870,7 @@ function equationSearchEntries() {
     items.push({ latex: clean, page: Number(page) || 1, source, created: Number(created)||0 });
   };
   for (const item of ocrHistory || []) add(item?.latex, item?.page, t('OCR history','OCR 历史'), item?.created);
-  for (const item of bookmarks || []) if (item?.type === 'equation') add(item?.latex, item?.page, t('Saved equation','已保存公式'), item?.created);
+  for (const item of bookmarks || []) if (item?.type === 'equation') add(item?.latex, item?.page, t('Bookmarked equation','已加书签公式'), item?.created);
   if (currentOcrResult?.latex) add(currentOcrResult.latex, currentOcrResult.page, t('Current extraction','当前提取'), currentOcrResult.created);
   return items.sort((a,b) => a.page - b.page || a.created - b.created);
 }
@@ -6932,7 +6910,7 @@ function commandPaletteEntities() {
   }
   for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');
   for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => { if (searchInput) searchInput.value=item.symbol; if (searchEquations) searchEquations.checked=false; openLeftPanelShortcut('search-panel', searchInput); searchPdf(item.symbol); }, item.meaning,'symbol');
-  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Saved equation','已保存公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0), `${item.note||''} ${item.latex||''}`,'bookmark');
+  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0), `${item.note||''} ${item.latex||''}`,'bookmark');
   for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
   for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name,'session');
   return out;
@@ -7385,7 +7363,6 @@ refreshSelectionUI();
 refreshOcrUI();
 renderBookmarks();
 renderDocumentMetadata();
-renderDocumentMapBookmarks();
 renderDocumentMapAnnotations();
 renderStructureIndex();
 renderBibliographyIndex();
