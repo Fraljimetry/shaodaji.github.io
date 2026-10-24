@@ -209,6 +209,8 @@ let continuousLayoutHeight = 0;
 let continuousObserver = null;
 let continuousGeneration = 0;
 let continuousRebuilding = false;
+let displayTransitionActive = false;
+let displayTransitionSerial = 0;
 let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
 let readingFlow = 'continuous';
@@ -321,17 +323,47 @@ function applyPageDisplay({ persist = true } = {}) {
 async function setReadingFlow(flow, { persist = true, render = true } = {}) {
   const next = flow === 'continuous' ? 'continuous' : 'single';
   const changed = readingFlow !== next;
-  if (readingFlow === 'continuous') continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
-  readingFlow = next;
-  primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
-  primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
-  continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
-  if (next === 'single') clearContinuousObserver();
-  applyOcrModeToSurfaces();
-  updateDisplayControls();
-  if (persist) persistDisplayPreferences();
-  if (pdfDoc && render && (changed || next === 'continuous')) await renderCurrentPage();
-  if (pdfDoc) persistDocumentState();
+  if (!changed) {
+    updateDisplayControls();
+    if (persist) persistDisplayPreferences();
+    if (pdfDoc && render && next === 'continuous') await renderCurrentPage();
+    if (pdfDoc) persistDocumentState();
+    return;
+  }
+
+  const departureAnchor = readingFlow === 'continuous'
+    ? (captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
+    : { page: currentPage, ratio: 0 };
+  if (departureAnchor?.page) currentPage = Math.max(1, Math.min(pdfDoc?.numPages || currentPage, Number(departureAnchor.page) || currentPage));
+  if (readingFlow === 'continuous') {
+    continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
+    continuousSavedAnchor = departureAnchor ? { ...departureAnchor } : continuousSavedAnchor;
+  }
+
+  // Prepare the destination surface while the current one remains visible.
+  // Only swap visibility after the destination geometry/render is ready, so a
+  // mode change can never expose a stale/default page-1 surface.
+  displayTransitionActive = true;
+  try {
+    readingFlow = next;
+    if (pdfDoc && render) {
+      if (next === 'continuous') {
+        await buildContinuousDocument({ restore: true, anchor: departureAnchor });
+      } else {
+        await renderPage(currentPage, canvas, primaryCanvasWrap, 'primary');
+      }
+    }
+    primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
+    primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
+    continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
+    if (next === 'single') clearContinuousObserver();
+    applyOcrModeToSurfaces();
+    updateDisplayControls();
+    if (persist) persistDisplayPreferences();
+    if (pdfDoc) persistDocumentState();
+  } finally {
+    requestAnimationFrame(() => { displayTransitionActive = false; });
+  }
 }
 
 function resetDisplayPreferences() {
@@ -1024,13 +1056,17 @@ function normalizeOcrLatex(value) {
 
 function markAlignmentRelation(line) {
   const value = String(line || '').trim();
-  if (!value || /&(?:=|\\le|\\ge|\\approx|\\sim|\\to|\\Rightarrow)/.test(value)) return value;
+  if (!value) return value;
+  // Row OCR sometimes puts `&` at a visual indentation point instead of at the
+  // equation relation (for example before a nested parenthesis). For the
+  // rowwise aligned-formula candidate, normalize to one relation column.
+  const normalized = value.replace(/&\s*/g, '');
   const patterns = ['\\\\leq?', '\\\\geq?', '\\\\approx', '\\\\sim', '\\\\equiv', '\\\\to', '='];
   for (const pattern of patterns) {
     const re = new RegExp(`(${pattern})`);
-    if (re.test(value)) return value.replace(re, '&$1');
+    if (re.test(normalized)) return normalized.replace(re, '&$1');
   }
-  return value;
+  return normalized;
 }
 function refreshOcrUI() {
   if (!ocrResult || !ocrHistoryList) return;
@@ -2945,6 +2981,7 @@ async function renderContinuousPage(pageNum, generation) {
 
 function captureContinuousAnchor() {
   if (readingFlow !== 'continuous' || !pdfDoc || !continuousPageNodes.size || !primaryCanvasWrap) return null;
+  if (continuousRebuilding || displayTransitionActive) return continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
   updateCurrentPageFromContinuousScroll();
   const record = continuousPageNodes.get(currentPage);
   if (!record?.frame) return null;
@@ -3150,7 +3187,7 @@ async function stabilizeFitWidthLayout(anchorOverride = null) {
   }
 }
 function scheduleReaderWidthReflow() {
-  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing) return;
+  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing || displayTransitionActive) return;
   clearTimeout(readerWidthTimer);
   readerWidthTimer = setTimeout(async () => {
     if (!pdfDoc || zoomMode === 'custom') return;
@@ -3163,6 +3200,41 @@ function scheduleReaderWidthReflow() {
     else await renderCurrentPage();
     await renderReferencePage();
   }, 140);
+}
+
+function snapshotDisplayAnchor() {
+  if (readingFlow !== 'continuous') return null;
+  const live = captureContinuousAnchor();
+  return live ? { ...live } : (continuousSavedAnchor ? { ...continuousSavedAnchor } : { page: currentPage, ratio: 0 });
+}
+
+async function runDisplayTransition(mutator, { delay = 0, renderReference = true } = {}) {
+  if (!pdfDoc) { mutator?.(); return; }
+  const serial = ++displayTransitionSerial;
+  const anchor = snapshotDisplayAnchor();
+  displayTransitionActive = true;
+  continuousRebuilding = readingFlow === 'continuous';
+  if (anchor) continuousSavedAnchor = { ...anchor };
+  try {
+    mutator?.();
+    if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+    if (serial !== displayTransitionSerial || !pdfDoc) return;
+    if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
+    else await renderCurrentPage();
+    if (renderReference) await renderReferencePage();
+  } finally {
+    if (serial === displayTransitionSerial) {
+      requestAnimationFrame(() => {
+        if (serial !== displayTransitionSerial) return;
+        displayTransitionActive = false;
+        continuousRebuilding = false;
+        if (readingFlow === 'continuous') {
+          continuousSavedAnchor = captureContinuousAnchor() || anchor || continuousSavedAnchor;
+          continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
+        }
+      });
+    }
+  }
 }
 
 async function renderReferencePage() {
@@ -4230,7 +4302,8 @@ async function changeZoom(delta) {
   // Capture before any await. A browser/layout frame may transiently report
   // scrollTop=0 while the continuous document is being rebuilt; that must never
   // replace the real reading location with page 1.
-  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : null;
+  const stableAnchor = snapshotDisplayAnchor();
+  if (stableAnchor) continuousSavedAnchor = { ...stableAnchor };
   if (zoomMode !== 'custom') {
     const page = await pdfDoc.getPage(currentPage);
     const baseViewport = page.getViewport({ scale: 1 });
@@ -4238,24 +4311,22 @@ async function changeZoom(delta) {
     const renderedWidth = visibleCanvas?.getBoundingClientRect().width || canvas.getBoundingClientRect().width;
     zoomScale = renderedWidth > 0 ? renderedWidth / baseViewport.width : 1.2;
   }
-  zoomMode = 'custom';
-  zoomScale = Math.max(.4, Math.min(3.5, zoomScale + delta));
-  updateZoomLabel();
-  persistDocumentState();
-  if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
-  else await renderCurrentPage();
-  await renderReferencePage();
+  const nextScale = Math.max(.4, Math.min(3.5, zoomScale + delta));
+  await runDisplayTransition(() => {
+    zoomMode = 'custom';
+    zoomScale = nextScale;
+    updateZoomLabel();
+    persistDocumentState();
+  });
 }
 
 async function setFitMode(mode) {
   if (!pdfDoc) return;
-  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : null;
-  zoomMode = mode;
-  updateZoomLabel();
-  persistDocumentState();
-  if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
-  else await renderCurrentPage();
-  await renderReferencePage();
+  await runDisplayTransition(() => {
+    zoomMode = mode;
+    updateZoomLabel();
+    persistDocumentState();
+  });
 }
 
 function activatePanel(panelId, persist = true) {
@@ -4287,6 +4358,7 @@ pageToneSelect?.addEventListener('change', () => { pageTone = pageToneSelect.val
 brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 100); applyPageDisplay(); });
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 100); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
+gapRange?.addEventListener('change', () => { runDisplayTransition(() => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); persistDisplayPreferences(); }, { renderReference: false }); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
 function downloadJsonFile(name, value) {
   const blob = new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' });
@@ -4477,27 +4549,30 @@ languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang =
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
 
 leftToggle.addEventListener('click', () => {
-  if (matchMedia('(max-width: 860px)').matches) {
-    shell.classList.toggle('mobile-left-open'); shell.classList.remove('mobile-right-open');
-  } else shell.classList.toggle('left-collapsed');
-  if (pdfDoc) persistDocumentState();
-  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
+  runDisplayTransition(() => {
+    if (matchMedia('(max-width: 860px)').matches) {
+      shell.classList.toggle('mobile-left-open'); shell.classList.remove('mobile-right-open');
+    } else shell.classList.toggle('left-collapsed');
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
 });
 rightToggle.addEventListener('click', () => {
-  if (matchMedia('(max-width: 860px)').matches) {
-    shell.classList.toggle('mobile-right-open'); shell.classList.remove('mobile-left-open');
-  } else shell.classList.toggle('right-collapsed');
-  if (pdfDoc) persistDocumentState();
-  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
+  runDisplayTransition(() => {
+    if (matchMedia('(max-width: 860px)').matches) {
+      shell.classList.toggle('mobile-right-open'); shell.classList.remove('mobile-left-open');
+    } else shell.classList.toggle('right-collapsed');
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
 });
 
 function toggleBothSidePanels() {
   if (matchMedia('(max-width: 860px)').matches) return;
-  const bothClosed = shell.classList.contains('left-collapsed') && shell.classList.contains('right-collapsed');
-  shell.classList.toggle('left-collapsed', !bothClosed);
-  shell.classList.toggle('right-collapsed', !bothClosed);
-  if (pdfDoc) persistDocumentState();
-  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
+  runDisplayTransition(() => {
+    const bothClosed = shell.classList.contains('left-collapsed') && shell.classList.contains('right-collapsed');
+    shell.classList.toggle('left-collapsed', !bothClosed);
+    shell.classList.toggle('right-collapsed', !bothClosed);
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
 }
 
 bothPanelsToggle?.addEventListener('click', toggleBothSidePanels);
@@ -4569,7 +4644,7 @@ window.addEventListener('drop', (event) => {
 
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { if (pdfDoc && zoomMode !== 'custom') { renderCurrentPage(); renderReferencePage(); } }, 180);
+  resizeTimer = setTimeout(() => { if (pdfDoc && zoomMode !== 'custom' && !displayTransitionActive) runDisplayTransition(() => {}, { renderReference: true }); }, 180);
 });
 
 if ('ResizeObserver' in window && primaryCanvasWrap) {
