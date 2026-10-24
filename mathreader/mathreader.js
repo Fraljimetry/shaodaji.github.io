@@ -238,6 +238,8 @@ let referencePages = [];
 let readingBackStack = [];
 let suppressReadingHistory = false;
 let equationLabelIndex = null;
+let tocOutlineTargets = null;
+let tocDecorationSerial = 0;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -806,6 +808,7 @@ function loadDocumentState(cachedSession = null) {
   bibliographyEntries = [];
   structureIndexVersion = 0;
   equationLabelIndex = null;
+  tocOutlineTargets = null;
   referencePages = [];
   readingBackStack = [];
   zoomMode = 'fit-width';
@@ -4266,10 +4269,92 @@ function groupedBibliographyMembers(raw) {
   return [...new Set(members)].slice(0, 60);
 }
 
+function tocTitlePattern(title) {
+  const clean = String(title || '').replace(/\s+/g, ' ').trim();
+  if (!clean || clean.length < 3) return null;
+  const escape = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const numbered = clean.match(/^([A-Z]?\d+(?:\.\d+)*)(?:[.)])?\s+(.+)$/i);
+  const source = numbered
+    ? `${escape(numbered[1])}\\s*[.)]?\\s+${escape(numbered[2])}`
+    : escape(clean);
+  try { return new RegExp(source, 'ig'); } catch (_) { return null; }
+}
+
+async function getTocOutlineTargets() {
+  if (!pdfDoc) return [];
+  if (Array.isArray(tocOutlineTargets)) return tocOutlineTargets;
+  const targets = [];
+  try {
+    const outline = await pdfDoc.getOutline();
+    const flat = flattenOutline(outline);
+    for (const { item } of flat) {
+      const title = String(item?.title || '').replace(/\s+/g, ' ').trim();
+      if (!title) continue;
+      const location = await resolveOutlineDestination(item.dest);
+      if (location) targets.push({ title, page: location.page, ratio: Number(location.ratio) || 0 });
+    }
+  } catch (_) {}
+  if (!targets.length && inferredOutline.length) {
+    for (const entry of inferredOutline) {
+      const title = String(entry?.title || '').replace(/\s+/g, ' ').trim();
+      if (title) targets.push({ title, page: entry.page, ratio: Number(entry.ratio) || 0 });
+    }
+  }
+  if (targets.length) tocOutlineTargets = targets;
+  return targets;
+}
+
+async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
+  if (!mapped?.text || !pdfDoc) return;
+  const head = mapped.text.slice(0, 500).replace(/\s+/g, ' ');
+  const looksLikeToc = /(?:table\s+of\s+contents|\bcontents\b|目录)/i.test(head);
+  if (!looksLikeToc) return;
+  const targets = await getTocOutlineTargets();
+  if (!targets.length || overlay.dataset.tocSerial !== String(serial) || !overlay.isConnected) return;
+  const seen = new Set();
+  let linked = 0;
+  for (const target of targets) {
+    const pattern = tocTitlePattern(target.title);
+    if (!pattern) continue;
+    let match;
+    while ((match = pattern.exec(mapped.text))) {
+      const key = `${match.index}:${match[0].length}:${target.page}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+      if (!range) continue;
+      const surfaceRect = surface.getBoundingClientRect();
+      for (const rect of range.getClientRects()) {
+        if (rect.width < 8 || rect.height < 2) continue;
+        const link = document.createElement('button');
+        link.type = 'button';
+        link.className = 'pdf-reference-link pdf-toc-link';
+        link.style.left = `${rect.left - surfaceRect.left}px`;
+        link.style.top = `${rect.top - surfaceRect.top}px`;
+        link.style.width = `${rect.width}px`;
+        link.style.height = `${rect.height}px`;
+        link.title = t(`Go to ${target.title}`, `跳转到 ${target.title}`);
+        link.setAttribute('aria-label', link.title);
+        link.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          await goToLocation(target.page, Number(target.ratio) || 0);
+        });
+        overlay.append(link);
+      }
+      linked += 1;
+      break;
+    }
+  }
+  if (linked) overlay.dataset.tocLinked = String(linked);
+}
+
 function decorateReferenceLinks(textLayer, surface, pageNum) {
   if (!textLayer || !surface) return;
   const overlay = ensureReferenceLinkLayer(surface);
   const mapped = textLayerAggregate(textLayer); if (!mapped.text) return;
+  const tocSerial = ++tocDecorationSerial;
+  overlay.dataset.tocSerial = String(tocSerial);
 
   // Grouped citations such as [1, 7] or [1-3, 8] need one target per
   // bibliography member. Prefer the number's own glyph range when it is
@@ -4304,6 +4389,7 @@ function decorateReferenceLinks(textLayer, surface, pageNum) {
     const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
     appendReferenceLinkForRange(overlay, surface, range, query, pageNum);
   }
+  decorateTocLinks(mapped, overlay, surface, pageNum, tocSerial).catch((error) => console.warn('MathReader TOC links unavailable for page', pageNum, error));
 }
 
 function rerenderReferenceLinks() {
@@ -4419,6 +4505,7 @@ async function renderOutline() {
     outlineEmpty.textContent = t('No embedded outline. Detecting document structure…', '没有嵌入式目录，正在自动检测文档结构……');
     if (!inferredOutline.length) {
       inferredOutline = await detectOutlineFromTypography();
+      tocOutlineTargets = null;
       persistDocumentState();
     }
     renderInferredOutline(inferredOutline);
