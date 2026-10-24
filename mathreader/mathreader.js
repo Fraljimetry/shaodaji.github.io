@@ -62,6 +62,9 @@ const structureIndex = el('structure-index');
 const structureEmpty = el('structure-empty');
 const structureCount = el('structure-count');
 const buildStructureIndexButton = el('build-structure-index');
+const bibliographyIndex = el('bibliography-index');
+const bibliographyEmpty = el('bibliography-empty');
+const bibliographyCount = el('bibliography-count');
 const exportReadingDataButton = el('export-reading-data');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');
@@ -169,6 +172,7 @@ let bookmarks = [];
 let notes = {};
 let annotations = [];
 let textCache = new Map();
+let lineCache = new Map();
 let pdfModulePromise = null;
 let noteTimer = null;
 let annotationSaveTimer = null;
@@ -217,6 +221,7 @@ let outlineMode = 'none';
 let editingBookmarkId = null;
 let pendingRecoveryRecordId = null;
 let structureEntries = [];
+let bibliographyEntries = [];
 let structureIndexVersion = 0;
 let structureIndexBuilding = false;
 let structureIndexBuildToken = 0;
@@ -234,7 +239,7 @@ const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v1';
-const STRUCTURE_INDEX_VERSION = 1;
+const STRUCTURE_INDEX_VERSION = 2;
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -442,7 +447,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 12,
+    version: 13,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -459,6 +464,7 @@ function snapshotSession() {
     ocrHistory,
     inferredOutline,
     structureEntries,
+    bibliographyEntries,
     structureIndexVersion,
     referencePages,
     readingBackStack,
@@ -746,6 +752,7 @@ function loadDocumentState(cachedSession = null) {
   inferredOutline = [];
   outlineMode = 'none';
   structureEntries = [];
+  bibliographyEntries = [];
   structureIndexVersion = 0;
   referencePages = [];
   readingBackStack = [];
@@ -787,9 +794,11 @@ function loadDocumentState(cachedSession = null) {
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
+    bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
     if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
       structureEntries = [];
+      bibliographyEntries = [];
       structureIndexVersion = 0;
     }
     referencePages = Array.isArray(session.referencePages) ? session.referencePages.map(Number).filter((page, index, values) => page >= 1 && page <= pdfDoc.numPages && values.indexOf(page) === index).slice(0, 4) : [];
@@ -2758,6 +2767,7 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum, kin
     const textContent = await page.getTextContent({ includeMarkedContent: true });
     const textLayer = new pdfjsLib.TextLayer({ textContentSource: textContent, container: layer, viewport });
     await textLayer.render();
+    decorateReferenceLinks(layer, surface, pageNum);
   } catch (error) {
     console.warn('MathReader text layer unavailable for page', pageNum, error);
   }
@@ -3433,54 +3443,137 @@ function renderInferredOutline(entries) {
 }
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
+const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
+const CLICKABLE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b|\(\s*\d+(?:\.\d+)*\s*\)|\[\s*\d{1,3}\s*\]/gi;
+
+function normalizedReferenceLabel(value) {
+  return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
+}
+
+async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache) {
+  if (cache.has(pageNum)) return cache.get(pageNum);
+  const page = await sourceDoc.getPage(pageNum);
+  const content = await page.getTextContent();
+  const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
+  const yMin = Number(view[1]) || 0;
+  const yMax = Number(view[3]) || 1;
+  const pageHeight = Math.max(1, yMax - yMin);
+  const rows = [];
+  for (const item of content.items || []) {
+    const text = String(item.str || '').replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    const x = Number(item.transform?.[4]) || 0;
+    const y = Number(item.transform?.[5]) || 0;
+    let row = rows.find((candidate) => Math.abs(candidate.y - y) <= 2.2);
+    if (!row) { row = { y, items: [] }; rows.push(row); }
+    row.items.push({ x, text });
+  }
+  rows.sort((a, b) => b.y - a.y);
+  const lines = rows.map((row) => ({
+    text: row.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim(),
+    ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight))
+  })).filter((line) => line.text);
+  cache.set(pageNum, lines);
+  if (flatCache && !flatCache.has(pageNum)) flatCache.set(pageNum, lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim());
+  return lines;
+}
+
+function bibliographyMetadata(text) {
+  const value = String(text || '');
+  const doi = value.match(/\b10\.\d{4,9}\/[\-._;()/:A-Z0-9]+/i)?.[0]?.replace(/[.,;)]$/, '') || '';
+  const arxiv = value.match(/\barXiv\s*:\s*([a-z.-]+\/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?/i)?.[1] || '';
+  return { doi, arxiv };
+}
 
 async function buildStructureIndex({ force = false } = {}) {
   if (!pdfDoc || !structureIndex || structureIndexBuilding) return;
   if (!force && structureIndexVersion === STRUCTURE_INDEX_VERSION) {
-    renderStructureIndex();
+    renderStructureIndex(); renderBibliographyIndex();
     return;
   }
 
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
   const sourceTextCache = textCache;
+  const sourceLineCache = lineCache;
   const token = ++structureIndexBuildToken;
   structureIndexBuilding = true;
   buildStructureIndexButton.disabled = true;
   structureEmpty.classList.remove('is-hidden');
-  structureEmpty.textContent = t('Building theorem and definition index in the background…', '正在后台生成定理与定义索引……');
+  structureEmpty.textContent = t('Building mathematical structure in the background…', '正在后台生成数学结构索引……');
+  if (bibliographyEmpty) { bibliographyEmpty.classList.remove('is-hidden'); bibliographyEmpty.textContent = t('Detecting bibliography entries…', '正在检测参考文献条目……'); }
 
   const nextEntries = [];
+  const nextBibliography = [];
+  let bibliographyMode = false;
+  let activeProofEntry = null;
   try {
     const maxPages = Math.min(sourceDoc.numPages, 800);
     for (let page = 1; page <= maxPages; page += 1) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
-      const text = await pageText(page, sourceDoc, sourceTextCache);
-      const parts = text.split(/(?<=[.!?])\s+|(?=(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+)/i);
-      for (const part of parts) {
-        const cleaned = String(part || '').replace(/\s+/g, ' ').trim();
-        const match = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
-        if (!match) continue;
-        const title = match[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
-        if (!STRUCTURE_LABEL_RE.test(title)) continue;
-        const label = title.match(/^(.*?)(?=[.:)]\s|\s{2,}|$)/)?.[1] || title.slice(0, 80);
-        const key = `${page}:${label.toLowerCase()}`;
-        if (nextEntries.some((entry) => entry.key === key)) continue;
-        nextEntries.push({ key, page, title: title.slice(0, 180) });
+      const lines = await pageTextLines(page, sourceDoc, sourceLineCache, sourceTextCache);
+      for (const line of lines) {
+        const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
+        if (!cleaned) continue;
+        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; activeProofEntry = null; continue; }
+
+        const structureMatch = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+        if (structureMatch) {
+          const title = structureMatch[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
+          if (STRUCTURE_LABEL_RE.test(title)) {
+            const label = title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80);
+            const key = `${page}:${normalizedReferenceLabel(label)}`;
+            if (!nextEntries.some((entry) => entry.key === key)) {
+              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180) };
+              nextEntries.push(entry); activeProofEntry = entry;
+            }
+          }
+        }
+
+        const proofMatch = cleaned.match(/^Proof(?:\s+of\s+((?:Theorem|Lemma|Proposition|Corollary)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])))?\b[.:]?/i);
+        if (proofMatch) {
+          let target = null;
+          if (proofMatch[1]) {
+            const wanted = normalizedReferenceLabel(proofMatch[1]);
+            target = [...nextEntries].reverse().find((entry) => normalizedReferenceLabel(entry.label) === wanted) || null;
+          }
+          if (!target) target = [...nextEntries].reverse().find((entry) => page - entry.page <= 1 && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(entry.label || '')) || null;
+          if (target && !target.proofPage) {
+            target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch[1] ? `Proof of ${proofMatch[1]}` : 'Proof';
+            activeProofEntry = target;
+          }
+        }
+        if (activeProofEntry && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
+          activeProofEntry.proofEndPage = page; activeProofEntry.proofEndRatio = line.ratio; activeProofEntry = null;
+        }
+
+        if (bibliographyMode) {
+          let bib = cleaned.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
+          if (!bib) bib = cleaned.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
+          if (bib) {
+            const number = Number(bib[1]);
+            const body = bib[2].trim();
+            const label = `[${number}]`;
+            if (!nextBibliography.some((entry) => entry.number === number)) {
+              const meta = bibliographyMetadata(body);
+              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), ...meta });
+            }
+          }
+        }
       }
-      // Keep long books responsive while the index is prepared in the background.
-      if (page % 12 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+      if (page % 10 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     }
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
     structureEntries = nextEntries.slice(0, 500);
+    bibliographyEntries = nextBibliography.slice(0, 400);
     structureIndexVersion = STRUCTURE_INDEX_VERSION;
-    renderStructureIndex();
+    renderStructureIndex(); renderBibliographyIndex(); rerenderReferenceLinks();
     persistDocumentState();
   } catch (error) {
-    console.warn('Theorem/definition index build failed', error);
+    console.warn('Mathematical structure index build failed', error);
     if (pdfDoc === sourceDoc && currentFileKey === sourceKey && token === structureIndexBuildToken) {
       structureEmpty.classList.remove('is-hidden');
-      structureEmpty.textContent = t('The theorem and definition index could not be built. Use Rebuild index to try again.', '无法生成定理与定义索引。可使用“重新生成索引”再次尝试。');
+      structureEmpty.textContent = t('The mathematical structure index could not be built. Use Rebuild index to try again.', '无法生成数学结构索引。可使用“重新生成索引”再次尝试。');
     }
   } finally {
     if (token === structureIndexBuildToken) {
@@ -3509,20 +3602,151 @@ function renderStructureIndex() {
   structureEmpty.classList.toggle('is-hidden', structureEntries.length > 0);
   if (!structureEntries.length) {
     structureEmpty.textContent = structureIndexBuilding
-      ? t('Building theorem and definition index in the background…', '正在后台生成定理与定义索引……')
-      : t('The theorem and definition index is prepared automatically for this document.', '此文档的定理与定义索引会自动生成。');
+      ? t('Building mathematical structure in the background…', '正在后台生成数学结构索引……')
+      : t('The theorem, definition, and proof index is prepared automatically for this document.', '此文档的定理、定义与证明索引会自动生成。');
     return;
   }
   for (const entry of structureEntries) {
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'structure-item';
-    const strong = document.createElement('strong'); strong.textContent = entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
+    const row = document.createElement('div'); row.className = 'structure-entry';
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'structure-item';
+    const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
-    button.append(strong, meta);
-    button.title = entry.title;
-    button.addEventListener('click', () => goToPage(entry.page));
-    structureIndex.append(button);
+    button.append(strong, meta); button.title = entry.title;
+    button.addEventListener('click', () => goToLocation(entry.page, Number(entry.ratio) || 0));
+    row.append(button);
+    if (entry.proofPage) {
+      const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof';
+      proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
+      proof.title = entry.proofEndPage ? t(`Proof ends on page ${entry.proofEndPage}`, `证明结束于第 ${entry.proofEndPage} 页`) : '';
+      proof.addEventListener('click', () => goToLocation(entry.proofPage, Number(entry.proofRatio) || 0));
+      row.append(proof);
+    }
+    structureIndex.append(row);
   }
+}
+
+function renderBibliographyIndex() {
+  if (!bibliographyIndex || !bibliographyEmpty || !bibliographyCount) return;
+  bibliographyIndex.replaceChildren(); bibliographyCount.textContent = String(bibliographyEntries.length);
+  bibliographyEmpty.classList.toggle('is-hidden', bibliographyEntries.length > 0);
+  if (!bibliographyEntries.length) {
+    bibliographyEmpty.textContent = structureIndexBuilding ? t('Detecting bibliography entries…', '正在检测参考文献条目……') : t('No numbered bibliography entries detected.', '未检测到编号参考文献条目。');
+    return;
+  }
+  for (const entry of bibliographyEntries) {
+    const row = document.createElement('div'); row.className = 'bibliography-item';
+    const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bibliography-jump';
+    const label = document.createElement('strong'); label.textContent = entry.label;
+    const text = document.createElement('span'); text.textContent = entry.title;
+    jump.append(label, text); jump.addEventListener('click', () => goToLocation(entry.page, Number(entry.ratio) || 0)); row.append(jump);
+    if (entry.doi || entry.arxiv) {
+      const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
+      if (entry.doi) { external.href = `https://doi.org/${entry.doi}`; external.textContent = 'DOI ↗'; }
+      else { external.href = `https://arxiv.org/abs/${entry.arxiv}`; external.textContent = 'arXiv ↗'; }
+      row.append(external);
+    }
+    bibliographyIndex.append(row);
+  }
+}
+
+function textLayerAggregate(layer) {
+  let text = ''; const parts = [];
+  for (const span of layer.querySelectorAll('span')) {
+    const node = [...span.childNodes].find((child) => child.nodeType === Node.TEXT_NODE);
+    if (!node || !node.nodeValue) continue;
+    const start = text.length; text += node.nodeValue; const end = text.length;
+    parts.push({ node, start, end }); text += ' ';
+  }
+  return { text, parts };
+}
+
+function rangeForAggregateMatch(parts, start, end) {
+  const first = parts.find((part) => start >= part.start && start < part.end);
+  const last = [...parts].reverse().find((part) => end > part.start && end <= part.end + 1);
+  if (!first || !last) return null;
+  const range = document.createRange();
+  try {
+    range.setStart(first.node, Math.max(0, Math.min(first.node.length, start - first.start)));
+    range.setEnd(last.node, Math.max(0, Math.min(last.node.length, Math.min(end, last.end) - last.start)));
+    return range;
+  } catch (_) { return null; }
+}
+
+function ensureReferenceLinkLayer(surface) {
+  let layer = surface.querySelector(':scope > .reference-link-layer');
+  if (!layer) { layer = document.createElement('div'); layer.className = 'reference-link-layer'; surface.append(layer); }
+  layer.replaceChildren(); return layer;
+}
+
+function decorateReferenceLinks(textLayer, surface, pageNum) {
+  if (!textLayer || !surface) return;
+  const overlay = ensureReferenceLinkLayer(surface);
+  const mapped = textLayerAggregate(textLayer); if (!mapped.text) return;
+  CLICKABLE_REFERENCE_RE.lastIndex = 0;
+  let match;
+  while ((match = CLICKABLE_REFERENCE_RE.exec(mapped.text))) {
+    const query = match[0].replace(/\s+/g, ' ').trim();
+    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length); if (!range) continue;
+    const surfaceRect = surface.getBoundingClientRect();
+    for (const rect of range.getClientRects()) {
+      if (rect.width < 2 || rect.height < 2) continue;
+      const link = document.createElement('button'); link.type = 'button'; link.className = 'pdf-reference-link';
+      link.style.left = `${rect.left - surfaceRect.left}px`; link.style.top = `${rect.top - surfaceRect.top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
+      link.title = t(`Follow ${query}`, `跳转到 ${query}`); link.setAttribute('aria-label', link.title);
+      link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); await goToReferenceQuery(query, pageNum); });
+      overlay.append(link);
+    }
+  }
+}
+
+function rerenderReferenceLinks() {
+  if (primaryTextLayer && primaryPageSurface && currentPage) decorateReferenceLinks(primaryTextLayer, primaryPageSurface, currentPage);
+  if (referenceTextLayer && referencePageSurface && pinnedPage) decorateReferenceLinks(referenceTextLayer, referencePageSurface, pinnedPage);
+  for (const [page, record] of continuousPageNodes) if (record?.rendered) decorateReferenceLinks(record.textLayer, record.surface, page);
+}
+
+async function findReferenceTextLocation(query, originPage = null) {
+  const wanted = normalizeSearchValue(query, false);
+  const equationLike = /^\(/.test(query);
+  let best = null;
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      if (!normalizeSearchValue(line.text, false).includes(wanted)) continue;
+      let score = page === originPage ? -2 : 0;
+      if (equationLike) score += (line.text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_]/g) || []).length * 2 - Math.min(4, line.text.split(/\s+/).length / 12);
+      else score += Math.max(0, 3 - line.text.length / 100);
+      if (!best || score > best.score) best = { page, ratio: line.ratio, score };
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return best;
+}
+
+async function resolveReferenceTarget(query, originPage = null) {
+  const normalized = normalizedReferenceLabel(query);
+  if (/^\[/.test(query)) {
+    const number = Number(query.replace(/\D/g, ''));
+    const bib = bibliographyEntries.find((entry) => entry.number === number);
+    if (bib) return { page: bib.page, ratio: bib.ratio };
+  }
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query)) {
+    const entry = structureEntries.find((item) => normalizedReferenceLabel(item.label) === normalized);
+    if (entry) return { page: entry.page, ratio: entry.ratio };
+  }
+  if (/^section\b/i.test(query)) {
+    const number = query.match(/[A-Z]?\d+(?:\.\d+)*/i)?.[0] || '';
+    const outline = inferredOutline.find((entry) => new RegExp(`^(?:§\\s*)?${number.replace(/\./g, '\\.')}(?:[.)\\s]|$)`, 'i').test(entry.title || ''));
+    if (outline) return { page: outline.page, ratio: Number(outline.ratio) || 0 };
+  }
+  return findReferenceTextLocation(query, originPage);
+}
+
+async function goToReferenceQuery(query, originPage = currentPage) {
+  if (!pdfDoc || !query) return;
+  const target = await resolveReferenceTarget(query, originPage);
+  if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
+  await goToLocation(target.page, Number(target.ratio) || 0);
 }
 
 async function resolveOutlineDestination(rawDest) {
@@ -3599,6 +3823,10 @@ async function renderOutline() {
 
 async function pageText(pageNum, sourceDoc = pdfDoc, cache = textCache) {
   if (cache.has(pageNum)) return cache.get(pageNum);
+  if (sourceDoc === pdfDoc && lineCache.has(pageNum)) {
+    const text = lineCache.get(pageNum).map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
+    cache.set(pageNum, text); return text;
+  }
   const page = await sourceDoc.getPage(pageNum);
   const content = await page.getTextContent();
   const text = content.items.map((item) => item.str).join(' ').replace(/\s+/g, ' ').trim();
@@ -3654,24 +3882,16 @@ function highlightedSnippet(text, query, index = -1) {
 function selectedReferenceQuery() {
   const text = String(currentSelection?.text || '').replace(/\s+/g, ' ').trim();
   const match = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
-    || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/);
+    || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/)
+    || text.match(/\[\s*\d{1,3}\s*\]/);
   return match?.[0] || '';
 }
 
 async function goToSelectedReference() {
   if (!pdfDoc) return;
   const query = selectedReferenceQuery();
-  if (!query) { showError(t('Select a reference such as “Theorem 2.4”, “Section 3”, or “(4.7)”.', '请选择类似“Theorem 2.4”、“Section 3”或“(4.7)”的引用。')); return; }
-  const normalized = normalizeSearchValue(query, false);
-  let fallback = null;
-  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
-    const text = await pageText(page);
-    if (!normalizeSearchValue(text, false).includes(normalized)) continue;
-    if (page !== currentPage) { await goToPage(page); return; }
-    fallback = page;
-  }
-  if (fallback) showError(t('The selected reference appears only on the current page.', '所选引用仅出现在当前页。'));
-  else showError(t('No matching reference label was found in this PDF.', '未在此 PDF 中找到匹配的引用标签。'));
+  if (!query) { showError(t('Select a reference such as “Theorem 2.4”, “Section 3”, “(4.7)”, or “[17]”.', '请选择类似“Theorem 2.4”、“Section 3”、“(4.7)”或“[17]”的引用。')); return; }
+  await goToReferenceQuery(query, currentSelection?.page || currentPage);
 }
 
 async function searchPdf(query) {
@@ -3810,6 +4030,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     currentFileKey = meta.id;
     cacheEnabledForCurrent = Boolean(cachedRecord);
     textCache = new Map();
+    lineCache = new Map();
     currentSelection = null;
     setOcrMode(false);
     hideSelectionToolbar();
@@ -3825,6 +4046,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     renderBookmarks();
     await Promise.all([renderOutline(), renderCurrentPage()]);
     renderStructureIndex();
+    renderBibliographyIndex();
     renderReferenceStack();
     updateReadingBackButton();
     await stabilizeFitWidthLayout();
@@ -3986,7 +4208,7 @@ async function importReadingDataFile(file) {
   safeSet(stateKey('session-v2'), JSON.stringify(payload.session));
   loadDocumentState(payload.session);
   await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
-  renderBookmarks(); renderStructureIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
+  renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
 }
 
 function commandActions() {
@@ -3995,7 +4217,8 @@ function commandActions() {
     { label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
     { label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
     { label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
-    { label: t('Rebuild theorem & definition index', '重新生成定理与定义索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
+    { label: t('Rebuild mathematical structure index', '重新生成数学结构索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
+    { label: t('Bibliography', '参考文献'), needsPdf: true, run: () => { openLeftPanelShortcut('outline-panel'); bibliographyIndex?.scrollIntoView({ block: 'nearest' }); } },
     { label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
     { label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
     { label: t('Highlight selected text', '高亮所选文字'), needsPdf: true, run: () => addSelectionAnnotation('highlight') },
@@ -4284,6 +4507,7 @@ refreshSelectionUI();
 refreshOcrUI();
 renderBookmarks();
 renderStructureIndex();
+renderBibliographyIndex();
 renderReferenceStack();
 renderAnnotationList();
 updateReadingBackButton();
