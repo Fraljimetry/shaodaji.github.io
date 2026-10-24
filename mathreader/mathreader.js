@@ -299,7 +299,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 2;
+const STRUCTURE_INDEX_VERSION = 3;
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -4314,6 +4314,33 @@ function equationTargetScore(lineText, label, originPage, page, originRatio = nu
   return score;
 }
 
+function equationCandidateConfidence(line, label) {
+  const text = String(line?.text || '').trim();
+  if (!text || isLikelyCalendarYearEquationLabel(label)) return -Infinity;
+  const compact = text.replace(/\s+/g, '').normalize('NFKC');
+  const normalized = normalizedEquationLabel(label);
+  const isOnlyTag = compact === normalized;
+  const mathSignals = (text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_+−-]/g) || []).length;
+  const xStart = Number(line?.xStartRatio);
+  const xEnd = Number(line?.xEndRatio);
+  const nearRight = (Number.isFinite(xStart) && xStart >= 0.62) || (Number.isFinite(xEnd) && xEnd >= 0.78);
+  const nearBottom = Number(line?.ratio) >= 0.90;
+  const proseHeavy = text.length > 55 && mathSignals === 0;
+  if (isOnlyTag && nearBottom && !nearRight) return -Infinity;
+  if (proseHeavy && !nearRight) return -Infinity;
+  let confidence = equationTargetScore(text, normalized, null, 0, null, Number(line?.ratio));
+  if (mathSignals >= 2) confidence += 5;
+  else if (mathSignals === 1) confidence += 2;
+  if (nearRight) confidence += 6;
+  if (isOnlyTag && nearRight) confidence += 5;
+  if (Number.isFinite(xStart) && xStart < 0.18 && mathSignals === 0) confidence -= 6;
+  return confidence;
+}
+
+function isReliableEquationTargetLine(line, label) {
+  return equationCandidateConfidence(line, label) >= 6;
+}
+
 async function buildEquationLabelIndex() {
   if (!pdfDoc) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
@@ -4322,8 +4349,9 @@ async function buildEquationLabelIndex() {
     const lines = await pageTextLines(page);
     for (const line of lines) {
       for (const candidate of equationLabelCandidatesInLine(line.text)) {
+        if (!isReliableEquationTargetLine(line, candidate.label)) continue;
         const list = index.get(candidate.label) || [];
-        list.push({ page, ratio: line.ratio, text: line.text });
+        list.push({ page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence: equationCandidateConfidence(line, candidate.label) });
         index.set(candidate.label, list);
       }
     }
@@ -4347,7 +4375,8 @@ function renderEquationIndex() {
   for (const [label, candidates] of equationLabelIndex.entries()) {
     let best = null;
     for (const candidate of candidates || []) {
-      const score = equationTargetScore(candidate.text, label, null, candidate.page, null, candidate.ratio);
+      const score = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
+      if (score < 6) continue;
       if (!best || score > best.score) best = { ...candidate, score };
     }
     if (best) rows.push({ label, ...best });
@@ -4386,7 +4415,9 @@ async function findEquationLabelLocation(query, originPage = null, originRatio =
     // occurrence in prose and the actual equation tag.
     if (candidate.page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidate.ratio)
         && Math.abs(candidate.ratio - originRatio) < 0.018) continue;
-    const score = equationTargetScore(candidate.text, label, originPage, candidate.page, originRatio, candidate.ratio);
+    const confidence = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
+    if (confidence < 6) continue;
+    const score = equationTargetScore(candidate.text, label, originPage, candidate.page, originRatio, candidate.ratio) + confidence * 0.2;
     if (!best || score > best.score) best = { ...candidate, score };
   }
   return best ? { page: best.page, ratio: best.ratio } : null;
@@ -4405,16 +4436,25 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
     const text = String(item.str || '').replace(/\s+/g, ' ').trim();
     if (!text) continue;
     const x = Number(item.transform?.[4]) || 0;
+    const width = Math.max(0, Number(item.width) || 0);
     const y = Number(item.transform?.[5]) || 0;
     let row = rows.find((candidate) => Math.abs(candidate.y - y) <= 2.2);
     if (!row) { row = { y, items: [] }; rows.push(row); }
-    row.items.push({ x, text });
+    row.items.push({ x, width, text });
   }
   rows.sort((a, b) => b.y - a.y);
-  const lines = rows.map((row) => ({
-    text: row.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim(),
-    ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight))
-  })).filter((line) => line.text);
+  const pageWidth = Math.max(1, (Number(view[2]) || 1) - (Number(view[0]) || 0));
+  const lines = rows.map((row) => {
+    const items = row.items.sort((a, b) => a.x - b.x);
+    const xMin = Math.min(...items.map((item) => item.x));
+    const xMax = Math.max(...items.map((item) => item.x + (item.width || 0)));
+    return {
+      text: items.map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim(),
+      ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight)),
+      xStartRatio: Math.min(1, Math.max(0, (xMin - (Number(view[0]) || 0)) / pageWidth)),
+      xEndRatio: Math.min(1, Math.max(0, (xMax - (Number(view[0]) || 0)) / pageWidth))
+    };
+  }).filter((line) => line.text);
   cache.set(pageNum, lines);
   if (flatCache && !flatCache.has(pageNum)) flatCache.set(pageNum, lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim());
   return lines;
@@ -4466,7 +4506,7 @@ async function buildStructureIndex({ force = false } = {}) {
             const label = title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80);
             const key = `${page}:${normalizedReferenceLabel(label)}`;
             if (!nextEntries.some((entry) => entry.key === key)) {
-              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180) };
+              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
               nextEntries.push(entry); activeProofEntry = entry;
             }
           }
@@ -4485,6 +4525,15 @@ async function buildStructureIndex({ force = false } = {}) {
             activeProofEntry = target;
           }
         }
+        if (activeProofEntry && activeProofEntry.proofPage) {
+          const references = cleaned.match(STRUCTURE_REFERENCE_RE) || [];
+          for (const reference of references) {
+            const normalizedRef = normalizedReferenceLabel(reference);
+            if (!normalizedRef || normalizedRef === normalizedReferenceLabel(activeProofEntry.label)) continue;
+            if (!activeProofEntry.proofReferences.includes(reference)) activeProofEntry.proofReferences.push(reference);
+          }
+        }
+
         if (activeProofEntry && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
           activeProofEntry.proofEndPage = page; activeProofEntry.proofEndRatio = line.ratio; activeProofEntry = null;
         }
@@ -4506,6 +4555,22 @@ async function buildStructureIndex({ force = false } = {}) {
       if (page % 10 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     }
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+
+    // Resolve proof dependencies into a directed graph and derive the reverse
+    // relation from the same detected structure index.
+    const structureByLabel = new Map(nextEntries.map((entry) => [normalizedReferenceLabel(entry.label), entry]));
+    for (const owner of nextEntries) {
+      const resolved = [];
+      for (const reference of owner.proofReferences || []) {
+        const target = structureByLabel.get(normalizedReferenceLabel(reference));
+        if (!target || target === owner) continue;
+        if (!resolved.some((item) => item.label === target.label)) resolved.push({ label: target.label, page: target.page, ratio: target.ratio });
+        target.usedByProofs = target.usedByProofs || [];
+        if (!target.usedByProofs.some((item) => item.label === owner.label)) target.usedByProofs.push({ label: owner.label, page: owner.proofPage || owner.page, ratio: owner.proofRatio || owner.ratio });
+      }
+      owner.proofUses = resolved.slice(0, 12);
+    }
+
     structureEntries = nextEntries.slice(0, 500);
     bibliographyEntries = nextBibliography.slice(0, 400);
     structureIndexVersion = STRUCTURE_INDEX_VERSION;
@@ -4562,6 +4627,19 @@ function renderStructureIndex() {
       proof.title = entry.proofEndPage ? t(`Proof ends on page ${entry.proofEndPage}`, `证明结束于第 ${entry.proofEndPage} 页`) : '';
       proof.addEventListener('click', async () => { const q = entry.proofTitle || 'Proof'; const target = { page: entry.proofPage, ratio: Number(entry.proofRatio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); });
       row.append(proof);
+    }
+    const relations = [];
+    if (Array.isArray(entry.proofUses) && entry.proofUses.length) relations.push({ prefix: t('Uses', '使用'), items: entry.proofUses });
+    if (Array.isArray(entry.usedByProofs) && entry.usedByProofs.length) relations.push({ prefix: t('Used in', '用于'), items: entry.usedByProofs });
+    for (const relation of relations) {
+      const graph = document.createElement('div'); graph.className = 'structure-relations';
+      const prefix = document.createElement('span'); prefix.className = 'structure-relations-label'; prefix.textContent = `${relation.prefix}:`; graph.append(prefix);
+      for (const related of relation.items.slice(0, 5)) {
+        const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'structure-relation-chip'; chip.textContent = related.label;
+        chip.addEventListener('click', async () => { await goToMatchedLocation(related.page, Number(related.ratio) || 0, related.label); updateBacklinksForTarget(related.label, { page: related.page, ratio: Number(related.ratio) || 0 }); });
+        graph.append(chip);
+      }
+      row.append(graph);
     }
     structureIndex.append(row);
   }
@@ -5090,14 +5168,38 @@ async function findReferenceTextLocation(query, originPage = null) {
 }
 
 
-function backlinkSnippet(text, query) {
+function backlinkSnippet(text, query, explicitIndex = null) {
   const value = String(text || '').replace(/\s+/g, ' ').trim();
   if (!value) return '';
   const q = String(query || '').replace(/\s+/g, ' ').trim();
   const lower = value.toLocaleLowerCase();
-  const idx = q ? lower.indexOf(q.toLocaleLowerCase()) : -1;
-  const start = idx >= 0 ? Math.max(0, idx - 70) : 0;
-  return `${start > 0 ? '…' : ''}${value.slice(start, start + 190)}${start + 190 < value.length ? '…' : ''}`;
+  let idx = Number.isFinite(Number(explicitIndex)) ? Number(explicitIndex) : (q ? lower.indexOf(q.toLocaleLowerCase()) : -1);
+  if (idx < 0) idx = 0;
+  const qEnd = Math.min(value.length, idx + Math.max(1, q.length));
+  const leftSlice = value.slice(Math.max(0, idx - 240), idx);
+  const leftBoundary = Math.max(leftSlice.lastIndexOf('. '), leftSlice.lastIndexOf('? '), leftSlice.lastIndexOf('! '), leftSlice.lastIndexOf('; '));
+  const start = leftBoundary >= 0 ? Math.max(0, idx - 240 + leftBoundary + 2) : Math.max(0, idx - 105);
+  const rightSlice = value.slice(qEnd, Math.min(value.length, qEnd + 280));
+  const boundaries = ['. ', '? ', '! ', '; '].map((token) => rightSlice.indexOf(token)).filter((v) => v >= 0);
+  const rightBoundary = boundaries.length ? Math.min(...boundaries) + 1 : -1;
+  const finish = rightBoundary >= 0 ? Math.min(value.length, qEnd + rightBoundary) : Math.min(value.length, start + 250);
+  const snippet = value.slice(start, finish).trim();
+  return `${start > 0 ? '…' : ''}${snippet}${finish < value.length ? '…' : ''}`;
+}
+
+function proofContextForLocation(page, ratio) {
+  const p = Number(page);
+  const r = Number(ratio) || 0;
+  for (const entry of structureEntries || []) {
+    if (!entry?.proofPage) continue;
+    const startPage = Number(entry.proofPage);
+    const endPage = Number(entry.proofEndPage || entry.proofPage);
+    if (p < startPage || p > endPage) continue;
+    if (p === startPage && r + 0.01 < (Number(entry.proofRatio) || 0)) continue;
+    if (p === endPage && entry.proofEndRatio != null && r - 0.01 > Number(entry.proofEndRatio)) continue;
+    return entry.label || entry.title || '';
+  }
+  return '';
 }
 
 function renderBacklinks() {
@@ -5108,7 +5210,9 @@ function renderBacklinks() {
   backlinksEmpty.classList.toggle('is-hidden', backlinkEntries.length > 0);
   for (const entry of backlinkEntries.slice(0, 80)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'backlink-item';
-    const meta = document.createElement('span'); meta.className = 'backlink-meta'; meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
+    const meta = document.createElement('span'); meta.className = 'backlink-meta';
+    const proofOwner = entry.proofOwner || proofContextForLocation(entry.page, entry.ratio);
+    meta.textContent = proofOwner ? t(`Page ${entry.page} · proof of ${proofOwner}`, `第 ${entry.page} 页 · ${proofOwner} 的证明`) : t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     const snippet = document.createElement('span'); snippet.className = 'backlink-snippet'; snippet.textContent = entry.snippet || entry.text || '';
     button.append(meta, snippet);
     button.addEventListener('click', () => {
@@ -5131,7 +5235,7 @@ async function collectBacklinks(query, target) {
     const occurrenceKey = Number.isFinite(Number(extra.matchIndex)) ? `:${Number(extra.matchIndex)}` : '';
     const key = `${page}:${Math.round((Number(ratio)||0)*10000)}:${String(text).slice(0,80)}${occurrenceKey}`;
     if (seen.has(key)) return; seen.add(key);
-    results.push({ page, ratio:Number(ratio)||0, text, snippet:backlinkSnippet(text, matchText || query), matchText, ...extra });
+    results.push({ page, ratio:Number(ratio)||0, text, snippet:extra.snippet || backlinkSnippet(text, matchText || query, extra.matchIndex), matchText, proofOwner: proofContextForLocation(page, ratio), ...extra });
   };
   const normalized = normalizedReferenceLabel(query);
   const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
@@ -5158,6 +5262,7 @@ async function collectBacklinks(query, target) {
         const ratio = Math.min(1, Math.max(0, bracket.index / Math.max(1, pageValue.length)));
         add(page, ratio, pageValue, raw, {
           matchIndex: bracket.index,
+          snippet: backlinkSnippet(pageValue, raw, bracket.index),
           searchMatch: { page, text: pageValue, index: bracket.index, ordinal }
         });
       }
@@ -5166,10 +5271,15 @@ async function collectBacklinks(query, target) {
     }
 
     const lines = await pageTextLines(page);
-    for (const line of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
       const text = String(line.text || '');
+      const contextText = lines.slice(Math.max(0, lineIndex - 1), Math.min(lines.length, lineIndex + 2)).map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim();
       if (eq) {
-        for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) add(page, line.ratio, text, eq, { matchIndex: c.index });
+        for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) {
+          const contextIndex = Math.max(0, contextText.indexOf(text)) + c.index;
+          add(page, line.ratio, text, eq, { matchIndex: c.index, snippet: backlinkSnippet(contextText, eq, contextIndex) });
+        }
         continue;
       }
       if (structureLike || structureTarget) {
@@ -5177,10 +5287,13 @@ async function collectBacklinks(query, target) {
         const literalHit = structureLike && normalizedText.includes(normalized);
         const labelHit = structureLabel && normalizedText.includes(normalizedReferenceLabel(structureLabel));
         const aliasHit = structureAlias && new RegExp(`(?:^|\\W)${structureAlias}(?:$|\\W)`).test(text);
-        if (literalHit || labelHit || aliasHit) add(page, line.ratio, text, literalHit ? query : (aliasHit ? structureAlias : structureLabel || query));
+        if (literalHit || labelHit || aliasHit) {
+          const hitText = literalHit ? query : (aliasHit ? structureAlias : structureLabel || query);
+          add(page, line.ratio, text, hitText, { snippet: backlinkSnippet(contextText, hitText) });
+        }
         continue;
       }
-      if (acronym && new RegExp(`(?:^|\\W)${acronym}(?:$|\\W)`).test(text)) add(page, line.ratio, text, acronym);
+      if (acronym && new RegExp(`(?:^|\\W)${acronym}(?:$|\\W)`).test(text)) add(page, line.ratio, text, acronym, { snippet: backlinkSnippet(contextText, acronym) });
     }
     if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
   }
