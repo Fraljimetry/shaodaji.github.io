@@ -251,3 +251,10 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .pdf-comments-list{display:grid;gap:8px}.pdf-comment-item{padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);overflow:hidden}
 .pdf-comment-meta{display:flex;flex-wrap:wrap;gap:5px 8px;margin-bottom:6px;color:var(--muted);font-size:9px;line-height:1.35}.pdf-comment-source,.pdf-comment-reply{padding:7px 8px;border-radius:5px}.pdf-comment-source{background:rgba(206,164,45,.15);border-left:3px solid rgba(206,164,45,.72)}.pdf-comment-reply{margin-top:6px;background:rgba(55,143,197,.12);border-left:3px solid rgba(55,143,197,.72)}
 .pdf-comment-source-label,.pdf-comment-reply-label{margin-bottom:3px;font-size:9px;font-weight:800;letter-spacing:.01em}.pdf-comment-source-label{color:#b18416}.pdf-comment-reply-label{color:var(--accent-deep)}.pdf-comment-source-text{margin:0;padding:0;border:0;color:var(--ink);font-size:10px;line-height:1.5;font-style:normal;white-space:pre-wrap;overflow-wrap:anywhere}.pdf-comment-body{margin:0;color:var(--ink);font-size:10px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+/* v94 compact contextual help */
+.compact-instruction{margin:4px 0 5px;font-size:10px;line-height:1.35}
+.compact-help{position:relative;margin:3px 0 7px;width:max-content;max-width:100%}
+.compact-help>summary{display:flex;align-items:center;justify-content:center;width:22px;height:22px;box-sizing:border-box;border:1px solid var(--line);border-radius:50%;color:var(--muted);background:var(--surface);cursor:pointer;font-size:10px;font-weight:800;list-style:none;user-select:none}
+.compact-help>summary::-webkit-details-marker{display:none}
+.compact-help>summary:hover,.compact-help[open]>summary{color:var(--ink);border-color:var(--line-strong);background:var(--surface-soft)}
+.compact-help-body{width:min(260px,calc(100vw - 40px));margin-top:5px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;color:var(--muted);background:var(--paper);font-size:9px;line-height:1.45;box-shadow:0 5px 16px rgba(0,0,0,.12)}

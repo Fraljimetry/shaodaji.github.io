@@ -112,7 +112,7 @@
           <span data-en="Local library" data-zh="本地资料库">Local library</span>
           <span class="count-badge" id="history-count">0</span>
         </div>
-        <p class="history-explainer" data-en="PDFs and reading sessions cached on this device." data-zh="缓存在本设备上的 PDF 与阅读现场。">PDFs and reading sessions cached on this device.</p>
+        <p class="history-explainer" data-en="Stored locally on this device." data-zh="保存在本设备。">Stored locally on this device.</p>
         <div class="library-tools">
           <button class="text-button" id="export-reading-data" type="button" disabled data-en="Export reading data" data-zh="导出阅读数据">Export reading data</button>
           <button class="text-button" id="import-reading-data" type="button" disabled data-en="Import" data-zh="导入">Import</button>
@@ -257,15 +257,15 @@
           <input id="page-shadow" type="checkbox" checked>
           <span data-en="Page shadow" data-zh="页面阴影">Page shadow</span>
         </label>
-        <p class="display-note" data-en="Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter formula-extraction crops." data-zh="柔和暗色会使用灰白文字而非纯白，以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter formula-extraction crops.</p>
+        <details class="compact-help"><summary data-en-title="Display help" data-zh-title="显示帮助" aria-label="Display help">?</summary><div class="compact-help-body" data-en="Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops." data-zh="柔和暗色使用灰白文字以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops.</div></details>
       </section>
       <section class="workspace-section ocr-section" id="ocr-section">
         <div class="panel-heading">
           <span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs." data-zh="在公式周围拖出矩形。默认使用 Texify 图像 OCR，因为它更适合二维数学排版；对于含文本层的 PDF，PDF 矢量提取仍作为快速本地备用与对照路径。">Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs.</p>
-        <p class="display-note" data-en="Formula OCR recognizes equations and mathematical text; it does not reliably interpret algebraic or commutative diagrams as structured objects." data-zh="公式 OCR 用于识别公式与数学文本；它不能可靠地把代数图、交换图等图示解析成结构化对象。">Formula OCR recognizes equations and mathematical text; it does not reliably interpret algebraic or commutative diagrams as structured objects.</p>
+        <p class="workspace-copy compact-instruction" id="ocr-help" data-en="Drag a rectangle around a formula." data-zh="在公式周围拖出矩形。">Drag a rectangle around a formula.</p>
+        <details class="compact-help"><summary data-en-title="Formula extraction help" data-zh-title="公式提取帮助" aria-label="Formula extraction help">?</summary><div class="compact-help-body" data-en="Image OCR (Texify) is the default because it handles two-dimensional formula layout. PDF vector is a fast local fallback/comparison path for text-bearing PDFs. Formula OCR is not a reliable structured parser for algebraic or commutative diagrams." data-zh="默认使用 Texify 图像 OCR，因为它更适合二维公式排版。对于含文本层的 PDF，PDF 矢量提取是快速的本地备用与对照路径。公式 OCR 不能可靠地把代数图或交换图解析为结构化对象。">Image OCR (Texify) is the default because it handles two-dimensional formula layout. PDF vector is a fast local fallback/comparison path for text-bearing PDFs. Formula OCR is not a reliable structured parser for algebraic or commutative diagrams.</div></details>
         <div class="ocr-engine-controls">
           <label>
             <span data-en="Default extraction" data-zh="默认提取方式">Default extraction</span>
@@ -302,13 +302,13 @@
             <button class="secondary-action is-hidden" type="button" id="try-pdf-vector" data-en="Try PDF vector" data-zh="尝试 PDF 矢量">Try PDF vector</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
-          <p class="selection-caveat" data-en="Image OCR is the default for formula rectangles. PDF vector is faster and deterministic when embedded text is clean, and is used automatically if image OCR fails. Both outputs remain editable and should be checked before reuse." data-zh="矩形公式默认使用图像 OCR。若 PDF 原生文本干净，PDF 矢量更快且确定性更高；当图像 OCR 失败时会自动使用它。两种结果都可编辑，复用前应核对。">Image OCR is the default for formula rectangles. PDF vector is faster and deterministic when embedded text is clean, and is used automatically if image OCR fails. Both outputs remain editable and should be checked before reuse.</p>
+          <details class="compact-help"><summary data-en-title="Extraction result help" data-zh-title="提取结果帮助" aria-label="Extraction result help">?</summary><div class="compact-help-body" data-en="Image OCR is preferred for formula rectangles; PDF vector is used as a fast fallback when appropriate. Results remain editable and should be checked before reuse." data-zh="矩形公式优先使用图像 OCR；适合时会使用 PDF 矢量作为快速备用。结果均可编辑，复用前应核对。">Image OCR is preferred for formula rectangles; PDF vector is used as a fast fallback when appropriate. Results remain editable and should be checked before reuse.</div></details>
         </div>
         <div class="ocr-history-block">
           <div class="panel-heading ocr-history-heading"><span data-en="Recent formula extraction" data-zh="最近公式提取">Recent formula extraction</span><span class="count-badge" id="ocr-history-count">0</span></div>
           <div class="ocr-history-list" id="ocr-history-list"></div>
           <button class="ocr-history-toggle is-hidden" type="button" id="ocr-history-toggle" data-en="More" data-zh="更多">More</button>
-          <div class="empty-panel" id="ocr-history-empty" data-en="Extracted formulas from this PDF will be remembered here." data-zh="这份 PDF 中提取过的公式会保存在这里。">Extracted formulas from this PDF will be remembered here.</div>
+          <div class="empty-panel" id="ocr-history-empty" data-en="Recent results appear here." data-zh="最近结果显示在这里。">Recent results appear here.</div>
         </div>
       </section>
 
@@ -317,7 +317,7 @@
           <span data-en="Selection" data-zh="选区">Selection</span>
           <span class="page-chip" id="selection-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="selection-help" data-en="Drag across text on the PDF. MathReader will expose the PDF text and a best-effort LaTeX form here." data-zh="在 PDF 上拖选文字。MathReader 会在这里显示 PDF 文本以及尽力转换的 LaTeX。">Drag across text on the PDF. MathReader will expose the PDF text and a best-effort LaTeX form here.</p>
+        <p class="workspace-copy compact-instruction" id="selection-help" data-en="Select PDF text." data-zh="选择 PDF 文字。">Select PDF text.</p>
         <div class="selection-card is-hidden" id="selection-card">
           <label data-en="PDF text" data-zh="PDF 文本">PDF text</label>
           <pre id="selection-text-preview"></pre>
@@ -331,7 +331,7 @@
             <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin note" data-zh="页边注">Margin note</button>
             <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
           </div>
-          <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”；默认使用图像 OCR，并保留 PDF 矢量作为快速备用路径。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback.</p>
+          <details class="compact-help"><summary data-en-title="Selection help" data-zh-title="选区帮助" aria-label="Selection help">?</summary><div class="compact-help-body" data-en="LaTeX β is reconstructed from ordinary text selection. For formulas, rectangle Formula extraction is more reliable." data-zh="LaTeX β 根据普通文字选区重建。公式请优先使用矩形“公式提取”。">LaTeX β is reconstructed from ordinary text selection. For formulas, rectangle Formula extraction is more reliable.</div></details>
         </div>
       </section>
 
@@ -348,7 +348,7 @@
           <div class="pdf-comments-list" id="pdf-comments-list"></div>
         </div>
         <textarea id="page-note" disabled data-en-placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX." data-zh-placeholder="记录与此页关联的笔记……可用 \(...\) 或 \[...\] 输入 LaTeX。" placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX."></textarea>
-        <p class="note-latex-help" data-en="PDF comments above come from the document itself and are read-only. Your note below stays local. LaTeX is supported: use \(...\) inline or \[...\] for display math." data-zh="上方 PDF 批注来自文档本身，只读显示；下方页注仍保存在本地。页注支持 LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">PDF comments above come from the document itself and are read-only. Your note below stays local. LaTeX is supported: use \(...\) inline or \[...\] for display math.</p>
+        <details class="compact-help"><summary data-en-title="Page note help" data-zh-title="页注帮助" aria-label="Page note help">?</summary><div class="compact-help-body" data-en="PDF comments are read-only and come from the document. Your page note stays local. LaTeX: use \(...\) inline or \[...\] for display math." data-zh="PDF 原生批注只读并来自文档本身；你的页注保存在本地。LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">PDF comments are read-only and come from the document. Your page note stays local. LaTeX: use \(...\) inline or \[...\] for display math.</div></details>
         <div class="note-preview is-hidden" id="note-preview" aria-label="Page note LaTeX preview"></div>
         <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
       </section>
@@ -359,7 +359,7 @@
           <span data-en="Annotations" data-zh="批注">Annotations</span>
           <span class="count-badge" id="annotation-count">0</span>
         </div>
-        <p class="workspace-copy" data-en="Highlights and margin notes are anchored to their exact position in this PDF and saved locally." data-zh="高亮与页边注会锚定到 PDF 中的准确位置，并保存在本地。">Highlights and margin notes are anchored to their exact position in this PDF and saved locally.</p>
+        <details class="compact-help"><summary data-en-title="Annotation help" data-zh-title="批注帮助" aria-label="Annotation help">?</summary><div class="compact-help-body" data-en="Highlights and margin notes are position-anchored in this PDF and saved locally." data-zh="高亮与页边注会锚定到此 PDF 的具体位置，并保存在本地。">Highlights and margin notes are position-anchored in this PDF and saved locally.</div></details>
         <div class="annotation-list" id="annotation-list"></div>
         <div class="empty-panel" id="annotation-empty" data-en="Select text to create a highlight or margin note." data-zh="选择文字后可创建高亮或页边注。">Select text to create a highlight or margin note.</div>
       </section>
@@ -369,7 +369,7 @@
           <span data-en="Reading trail" data-zh="阅读轨迹">Reading trail</span>
           <span class="count-badge" id="reading-trail-count">0</span>
         </div>
-        <p class="workspace-copy" data-en="Locations saved before navigation jumps. The newest location is shown first; click any entry to return there." data-zh="每次导航跳转前保存的位置。最新位置显示在最上方；点击任一条目即可返回。">Locations saved before navigation jumps. The newest location is shown first; click any entry to return there.</p>
+        <details class="compact-help"><summary data-en-title="Reading trail help" data-zh-title="阅读轨迹帮助" aria-label="Reading trail help">?</summary><div class="compact-help-body" data-en="MathReader saves where you were before navigation jumps. Newest entries appear first; click one to return." data-zh="MathReader 会保存导航跳转前的位置。最新条目在最上方；点击即可返回。">MathReader saves where you were before navigation jumps. Newest entries appear first; click one to return.</div></details>
         <div class="reading-trail-list" id="reading-trail-list"></div>
         <div class="empty-panel" id="reading-trail-empty" data-en="Follow a cross-reference or other navigation jump to start a reading trail." data-zh="跟随交叉引用或其他导航跳转后，这里会形成阅读轨迹。">Follow a cross-reference or other navigation jump to start a reading trail.</div>
         <button class="secondary-action reading-trail-clear" type="button" id="reading-trail-clear" disabled data-en="Clear reading trail" data-zh="清空阅读轨迹">Clear reading trail</button>
@@ -377,7 +377,7 @@
 
       <section class="workspace-section" id="reference-section">
         <div class="panel-heading"><span data-en="Reference view" data-zh="参考视图">Reference view</span></div>
-        <p class="workspace-copy" data-en="Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading." data-zh="固定当前页面后继续阅读其他位置；固定页会始终保留在当前证明旁边。">Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading.</p>
+        <details class="compact-help"><summary data-en-title="Reference view help" data-zh-title="参考视图帮助" aria-label="Reference view help">?</summary><div class="compact-help-body" data-en="Pin a page to keep it visible while reading elsewhere." data-zh="固定页面后，可在阅读其他位置时继续保留它。">Pin a page to keep it visible while reading elsewhere.</div></details>
         <div class="reference-card" id="reference-card">
           <span class="reference-status" id="reference-status" data-en="No page pinned" data-zh="尚未固定页面">No page pinned</span>
           <button class="secondary-action" type="button" id="pin-from-sidebar" disabled data-en="Pin current page" data-zh="固定当前页">Pin current page</button>
