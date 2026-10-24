@@ -2983,40 +2983,6 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   setOcrProcessing(true);
   try {
     const result = await runImageFormulaRecognition(crop, { vectorCandidate: vector });
-    const profile = result.profile || analyzeFormulaSelection(crop, vector);
-    const hybridContext = {
-      expectedRows: profile.expectedRows,
-      tensorLike: profile.tensorLike,
-      scriptLoad: profile.scriptLoad,
-      imageLatex: result.latex,
-      vectorLatex: vector?.latex || ''
-    };
-    const imageScore = imageOcrCandidateScore(result, hybridContext);
-    const vectorScore = vectorCandidateScore(vector, hybridContext);
-    const useVector = Boolean(vector?.latex) && (
-      (profile.tensorLike && vectorScore + 4 < imageScore)
-      || (result.penalty >= 10 && vectorScore <= imageScore + 3)
-      || (imageScore - vectorScore >= 12)
-    );
-
-    if (useVector) {
-      commitFormulaResult(
-        {
-          page,
-          kind,
-          latex: repairOcrLatex(vector.latex),
-          preview,
-          created: Date.now(),
-          quality: vectorScore <= imageScore ? 'vector-hybrid' : 'vector-review',
-          source: 'vector',
-          extractedText: vector.text,
-          imageAlternative: result.latex
-        },
-        t('Hybrid local OCR selected the PDF-vector reconstruction for this complex formula.', '混合本地 OCR 已为该复杂公式选择 PDF 矢量重建结果。')
-      );
-      return;
-    }
-
     const item = {
       page,
       kind,
@@ -3029,8 +2995,8 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       vectorAlternativeText: vector?.text || null
     };
     commitFormulaResult(item, result.penalty === 0
-      ? t('Hybrid local OCR complete · structure check passed.', '混合本地 OCR 完成 · 结构检查通过。')
-      : t('Hybrid local OCR complete · review the editable LaTeX before reuse.', '混合本地 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
+      ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
+      : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
   } catch (error) {
     console.error(error);
     if (vector?.latex) {
