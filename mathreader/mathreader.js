@@ -2943,6 +2943,67 @@ function clearContinuousObserver() {
   continuousPageNodes.clear();
 }
 
+function canvasHasVisibleContent(sourceCanvas) {
+  if (!sourceCanvas?.width || !sourceCanvas?.height) return false;
+  try {
+    const sample = document.createElement('canvas');
+    const size = 48;
+    sample.width = size;
+    sample.height = size;
+    const sampleCtx = sample.getContext('2d', { willReadFrequently: true });
+    sampleCtx.drawImage(sourceCanvas, 0, 0, size, size);
+    const data = sampleCtx.getImageData(0, 0, size, size).data;
+    let minLum = 255;
+    let maxLum = 0;
+    let varied = 0;
+    let firstLum = null;
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = Math.round((data[i] * 0.2126) + (data[i + 1] * 0.7152) + (data[i + 2] * 0.0722));
+      minLum = Math.min(minLum, lum);
+      maxLum = Math.max(maxLum, lum);
+      if (firstLum === null) firstLum = lum;
+      else if (Math.abs(lum - firstLum) > 8) varied += 1;
+    }
+    return (maxLum - minLum) > 18 && varied >= 3;
+  } catch (error) {
+    console.warn('MathReader canvas content check unavailable', error);
+    return true;
+  }
+}
+
+async function recoverInitialContinuousCanvasFromPrimary(pageNum, activeRecord) {
+  if (!activeRecord?.canvas || !canvas || !primaryPageSurface) return false;
+  const previousTop = primaryCanvasWrap?.scrollTop || 0;
+  const previousLeft = primaryCanvasWrap?.scrollLeft || 0;
+  try {
+    await renderPage(pageNum, canvas, primaryCanvasWrap, 'primary');
+    if (!canvasHasVisibleContent(canvas)) return false;
+    const target = activeRecord.canvas;
+    target.width = canvas.width;
+    target.height = canvas.height;
+    target.style.width = canvas.style.width;
+    target.style.height = canvas.style.height;
+    activeRecord.surface.style.width = canvas.style.width;
+    activeRecord.surface.style.height = canvas.style.height;
+    const ctx = target.getContext('2d', { alpha: false });
+    ctx.clearRect(0, 0, target.width, target.height);
+    ctx.drawImage(canvas, 0, 0);
+    activeRecord.surface.classList.remove('is-placeholder', 'is-render-error');
+    activeRecord.surface.removeAttribute('data-placeholder-label');
+    activeRecord.rendered = true;
+    activeRecord.failed = false;
+    return canvasHasVisibleContent(target);
+  } catch (error) {
+    console.warn('MathReader initial continuous primary-render fallback failed', error);
+    return false;
+  } finally {
+    if (primaryCanvasWrap) {
+      primaryCanvasWrap.scrollTop = previousTop;
+      primaryCanvasWrap.scrollLeft = previousLeft;
+    }
+  }
+}
+
 async function renderContinuousPage(pageNum, generation, { retry = true } = {}) {
   if (!pdfDoc || generation !== continuousGeneration) return false;
   const record = continuousPageNodes.get(pageNum);
@@ -3158,8 +3219,9 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
   const ok = await renderContinuousPage(activePage, generation);
   if (generation !== continuousGeneration) return;
   const activeRecord = continuousPageNodes.get(activePage);
-  const placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
-  const canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+  let placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
+  let canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+  let canvasContent = canvasReady && canvasHasVisibleContent(activeRecord?.canvas);
   console.info('[MathReader] initial continuous: active result', {
     generation,
     activePage,
@@ -3167,11 +3229,26 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
     rendered: Boolean(activeRecord?.rendered),
     placeholderGone,
     canvasReady,
+    canvasContent,
     canvasWidth: activeRecord?.canvas?.width || 0,
     canvasHeight: activeRecord?.canvas?.height || 0,
   });
 
-  if (!ok || !activeRecord?.rendered || !placeholderGone || !canvasReady) {
+  // A resolved PDF.js render task can still leave an effectively blank canvas
+  // in the first continuous view on some PDFs/browser states. Single-page
+  // rendering is an independent, proven path in MathReader, so use it as a
+  // narrowly-scoped first-load recovery source rather than leaving a gray page.
+  if (ok && activeRecord?.rendered && placeholderGone && canvasReady && !canvasContent) {
+    console.warn('[MathReader] initial continuous: blank canvas detected; trying primary-render fallback', { generation, activePage });
+    const recovered = await recoverInitialContinuousCanvasFromPrimary(activePage, activeRecord);
+    if (generation !== continuousGeneration) return;
+    placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
+    canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+    canvasContent = recovered && canvasHasVisibleContent(activeRecord?.canvas);
+    console.info('[MathReader] initial continuous: fallback result', { generation, activePage, recovered, canvasContent });
+  }
+
+  if (!ok || !activeRecord?.rendered || !placeholderGone || !canvasReady || !canvasContent) {
     initialContinuousReady = false;
     activeRecord?.surface?.classList.add('is-render-error');
     if (activeRecord?.surface) activeRecord.surface.dataset.placeholderLabel = t(
