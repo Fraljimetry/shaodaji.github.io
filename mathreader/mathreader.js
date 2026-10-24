@@ -921,13 +921,14 @@ function updateReferenceStatus() {
 }
 
 function updateZoomLabel() {
-  if (!pdfDoc) {
+  if (!pdfDoc || zoomMode !== 'custom') {
+    // This control is an action: clicking it returns to Fit width. Keep its
+    // label stable in both fit modes so Fit page is not duplicated in the
+    // toolbar when the dedicated Fit page button is already present.
     zoomLabel.textContent = t('Fit width', '适合宽度');
     return;
   }
-  if (zoomMode === 'fit-width') zoomLabel.textContent = t('Fit width', '适合宽度');
-  else if (zoomMode === 'fit-page') zoomLabel.textContent = t('Fit page', '适合页面');
-  else zoomLabel.textContent = `${Math.round(zoomScale * 100)}%`;
+  zoomLabel.textContent = `${Math.round(zoomScale * 100)}%`;
 }
 
 
@@ -1368,6 +1369,16 @@ function assessImageOcrResult(rawValue, latexValue) {
   }
   if (/\\(?:begin|end)\{(?:document|figure|table)\}/i.test(raw)) {
     reasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
+  }
+  // PDF/font private-use glyphs (for example U+F8xx delimiters) are not
+  // meaningful LaTeX. If Texify leaks them into its answer, the reconstruction
+  // is structurally corrupted and should be rejected rather than presented as
+  // editable mathematics.
+  if (/[\uE000-\uF8FF\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/u.test(raw + latex)) {
+    reasons.push(t('private-use font glyphs leaked into the OCR output', 'OCR 输出中混入了私用区字体字形'));
+  }
+  if (/\uFFFD/.test(raw + latex)) {
+    reasons.push(t('unrecoverable replacement glyphs were produced', '生成了无法恢复的替代字形'));
   }
   if (latex.length > 1800) reasons.push(t('the output is implausibly long for one selected formula', '单个框选公式的输出异常过长'));
   const includeCount = (raw.match(/\\includegraphics\b/gi) || []).length;
@@ -2962,6 +2973,20 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     continuousStack.append(frame);
     continuousPageNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
   }
+  // Restore against the freshly-created placeholders immediately, before any
+  // asynchronous page rendering. Without this, replacing the continuous stack
+  // temporarily exposes scrollTop=0 and the user sees page 1 flash during zoom
+  // or layout rebuilds even though the correct reading anchor is restored later.
+  const restoreAnchor = anchor || continuousSavedAnchor;
+  if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
+    const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
+    const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
+    if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
+  } else {
+    const target = continuousPageNodes.get(currentPage)?.frame;
+    if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
+  }
+
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
@@ -2981,10 +3006,10 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
 
   requestAnimationFrame(() => {
     if (generation !== continuousGeneration) return;
-    const restoreAnchor = anchor || continuousSavedAnchor;
-    if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
-      const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
-      const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
+    const finalRestoreAnchor = anchor || continuousSavedAnchor;
+    if (finalRestoreAnchor?.page && continuousPageNodes.has(Number(finalRestoreAnchor.page))) {
+      const target = continuousPageNodes.get(Number(finalRestoreAnchor.page))?.frame;
+      const ratio = Math.min(1, Math.max(0, Number(finalRestoreAnchor.ratio) || 0));
       if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
     } else {
       // Legacy sessions stored only absolute pixels. Those values depend on the
@@ -4142,6 +4167,10 @@ async function openCachedDocument(id, options = {}) {
 
 async function changeZoom(delta) {
   if (!pdfDoc) return;
+  // Capture before any await. A browser/layout frame may transiently report
+  // scrollTop=0 while the continuous document is being rebuilt; that must never
+  // replace the real reading location with page 1.
+  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : null;
   if (zoomMode !== 'custom') {
     const page = await pdfDoc.getPage(currentPage);
     const baseViewport = page.getViewport({ scale: 1 });
@@ -4153,15 +4182,20 @@ async function changeZoom(delta) {
   zoomScale = Math.max(.4, Math.min(3.5, zoomScale + delta));
   updateZoomLabel();
   persistDocumentState();
-  renderCurrentPage();
+  if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
+  else await renderCurrentPage();
+  await renderReferencePage();
 }
 
-function setFitMode(mode) {
+async function setFitMode(mode) {
   if (!pdfDoc) return;
+  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : null;
   zoomMode = mode;
   updateZoomLabel();
   persistDocumentState();
-  renderCurrentPage();
+  if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
+  else await renderCurrentPage();
+  await renderReferencePage();
 }
 
 function activatePanel(panelId, persist = true) {
