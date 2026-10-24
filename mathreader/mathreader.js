@@ -1143,8 +1143,20 @@ function applyAllDocumentMapFilters() {
   document.querySelectorAll('.map-filter[data-map-target]').forEach(applyDocumentMapFilter);
 }
 
+function setDocumentMapSelectedNode(node) {
+  document.querySelectorAll('#outline-panel .is-selected-location').forEach((item) => item.classList.remove('is-selected-location'));
+  if (node?.isConnected) node.classList.add('is-selected-location');
+}
+
 function updateDocumentMapCurrentLocation() {
-  document.querySelectorAll('#outline-panel [data-page]').forEach((node) => {
+  const selector = [
+    '.outline-item[data-page]',
+    '.structure-item[data-page]',
+    '.equation-index-item[data-page]',
+    '.document-map-item[data-page]',
+    '.bibliography-smart-item[data-page]'
+  ].join(',');
+  document.querySelectorAll(`#outline-panel ${selector}`).forEach((node) => {
     node.classList.toggle('is-current-location', Number(node.dataset.page) === Number(currentPage));
   });
 }
@@ -4514,7 +4526,7 @@ function renderInferredOutline(entries) {
     button.dataset.page = String(entry.page);
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
-    button.addEventListener('click', () => goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title));
+    button.addEventListener('click', () => { setDocumentMapSelectedNode(button); goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title); });
     outlineList.append(button);
   }
   applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
@@ -4979,7 +4991,7 @@ function renderStructureIndex() {
     const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     button.append(strong, meta); button.title = entry.title;
-    button.addEventListener('click', async () => { const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
+    button.addEventListener('click', async () => { setDocumentMapSelectedNode(button); const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
     row.append(button);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
@@ -5809,6 +5821,7 @@ async function renderOutline() {
         button.textContent = item.title || t('Untitled', '未命名');
         void resolveOutlineDestination(item.dest).then((location)=>{ if (location && button.isConnected) { button.dataset.page=String(location.page); updateDocumentMapCurrentLocation(); } }).catch(()=>{});
         button.addEventListener('click', async () => {
+          setDocumentMapSelectedNode(button);
           try {
             const location = await resolveOutlineDestination(item.dest);
             if (!location) return;

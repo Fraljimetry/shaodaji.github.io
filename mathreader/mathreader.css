@@ -412,7 +412,10 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 
 /* v118 document map + mathematical intelligence */
 .map-filter{width:100%;margin:6px 0 2px;padding:6px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-size:.68rem;outline:none}.map-filter:focus{border-color:var(--accent)}.map-filter-hidden{display:none!important}.document-map-list{display:grid;gap:3px;margin-top:5px;max-height:31vh;overflow:auto}.document-map-item{display:grid;gap:2px;width:100%;padding:6px 7px;border:0;border-radius:5px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}.document-map-item:hover{background:var(--surface-soft)}.document-map-item strong{font-size:.71rem}.document-map-item span{color:var(--muted);font-size:.66rem;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#outline-panel [data-page].is-current-location{position:relative;background:color-mix(in srgb,var(--accent) 8%,transparent)}#outline-panel [data-page].is-current-location::before{content:"";position:absolute;left:1px;top:23%;bottom:23%;width:2px;border-radius:2px;background:var(--accent)}
+#outline-panel .is-current-location{position:relative}
+#outline-panel .is-current-location::after{content:"";position:absolute;right:5px;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:color-mix(in srgb,var(--accent) 58%,var(--muted));opacity:.7;pointer-events:none}
+#outline-panel .is-selected-location{position:relative;background:var(--surface-soft);box-shadow:inset 3px 0 0 var(--accent)}
+#outline-panel .is-selected-location::after{display:none}
 
 .equation-index-item{grid-template-columns:68px minmax(0,1fr);align-items:center;min-height:48px}.equation-index-thumb{display:block;width:68px;height:42px;object-fit:cover;border:1px solid var(--line);border-radius:4px;background:#fff}.equation-index-copy{display:grid;gap:2px;min-width:0}.equation-index-item[data-confidence="review"]{opacity:.78}.equation-index-item[data-confidence="high"] strong::after{content:"";display:inline-block;width:5px;height:5px;margin-left:5px;border-radius:50%;background:var(--accent);vertical-align:middle;opacity:.7}
 
