@@ -66,6 +66,10 @@ const exportReadingDataButton = el('export-reading-data');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');
 const readingBackButton = el('reading-back');
+const readingTrailList = el('reading-trail-list');
+const readingTrailEmpty = el('reading-trail-empty');
+const readingTrailCount = el('reading-trail-count');
+const readingTrailClear = el('reading-trail-clear');
 const saveOcrEquation = el('save-ocr-equation');
 const selectionGoReference = el('selection-go-reference');
 const selectionHighlight = el('selection-highlight');
@@ -438,7 +442,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 11,
+    version: 12,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -457,6 +461,7 @@ function snapshotSession() {
     structureEntries,
     structureIndexVersion,
     referencePages,
+    readingBackStack,
     searchQuery: searchInput?.value || '',
     ui: {
       activePanel: activePanelId(),
@@ -663,7 +668,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['selection-section','note-section','annotations-section','reference-section','shortcuts-section']);
+  const defaults = new Set(['selection-section','note-section','annotations-section','reading-trail-section','reference-section','shortcuts-section']);
   document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -788,6 +793,7 @@ function loadDocumentState(cachedSession = null) {
       structureIndexVersion = 0;
     }
     referencePages = Array.isArray(session.referencePages) ? session.referencePages.map(Number).filter((page, index, values) => page >= 1 && page <= pdfDoc.numPages && values.indexOf(page) === index).slice(0, 4) : [];
+    readingBackStack = normalizeReadingTrail(session.readingBackStack);
     if (pinnedPage && !referencePages.includes(pinnedPage)) referencePages.unshift(pinnedPage);
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
@@ -818,6 +824,8 @@ function loadDocumentState(cachedSession = null) {
   refreshOcrUI();
   renderAnnotationList();
   updateZoomLabel();
+  updateReadingBackButton();
+  renderReadingTrail();
 }
 
 function persistDocumentState() {
@@ -3068,15 +3076,73 @@ async function renderReferencePage() {
   catch (error) { console.error(error); }
 }
 
+function normalizeReadingTrail(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && Number(item.page) >= 1).slice(-40).map((item) => ({
+    page: Number(item.page),
+    ratio: Math.min(1, Math.max(0, Number(item.ratio) || 0)),
+    snippet: typeof item.snippet === 'string' ? item.snippet.slice(0, 180) : '',
+    created: Number(item.created) || Date.now()
+  }));
+}
+
+async function readingTrailEntry(anchor) {
+  const page = Math.min(Math.max(1, Number(anchor?.page) || currentPage), pdfDoc?.numPages || 1);
+  const ratio = Math.min(1, Math.max(0, Number(anchor?.ratio) || 0));
+  let snippet = '';
+  try {
+    const text = (await pageText(page)).replace(/\s+/g, ' ').trim();
+    if (text) {
+      const center = Math.min(text.length - 1, Math.max(0, Math.round(ratio * text.length)));
+      const from = Math.max(0, center - 55);
+      const to = Math.min(text.length, center + 95);
+      snippet = `${from > 0 ? '…' : ''}${text.slice(from, to).trim()}${to < text.length ? '…' : ''}`;
+    }
+  } catch (_) {}
+  return { page, ratio, snippet, created: Date.now() };
+}
+
+function renderReadingTrail() {
+  if (!readingTrailList) return;
+  readingTrailList.replaceChildren();
+  if (readingTrailCount) readingTrailCount.textContent = String(readingBackStack.length);
+  if (readingTrailEmpty) readingTrailEmpty.classList.toggle('is-hidden', readingBackStack.length > 0);
+  if (readingTrailClear) readingTrailClear.disabled = readingBackStack.length === 0;
+  const entries = readingBackStack.map((entry, index) => ({ entry, index })).reverse();
+  for (const { entry, index } of entries) {
+    const row = document.createElement('div'); row.className = 'reading-trail-item';
+    const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'reading-trail-jump';
+    const title = document.createElement('strong');
+    title.textContent = t(`Page ${entry.page} · ${Math.round(entry.ratio * 100)}%`, `第 ${entry.page} 页 · ${Math.round(entry.ratio * 100)}%`);
+    const preview = document.createElement('span'); preview.textContent = entry.snippet || t('Saved reading position', '已保存的阅读位置');
+    jump.append(title, preview);
+    jump.addEventListener('click', async () => {
+      const target = readingBackStack[index];
+      readingBackStack = readingBackStack.slice(0, index);
+      updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
+      suppressReadingHistory = true;
+      try { await goToLocation(target.page, target.ratio); } finally { suppressReadingHistory = false; }
+    });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'reading-trail-remove';
+    remove.textContent = '×'; remove.title = t('Remove from reading trail', '从阅读轨迹中移除');
+    remove.addEventListener('click', () => {
+      readingBackStack.splice(index, 1);
+      updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
+    });
+    row.append(jump, remove); readingTrailList.append(row);
+  }
+}
+
 async function goToLocation(page, ratio = 0) {
   if (!pdfDoc) return;
   if (!suppressReadingHistory) {
     const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
     const targetPage = Math.min(Math.max(1, Number(page) || 1), pdfDoc.numPages);
     if (here && (Number(here.page) !== targetPage || Math.abs(Number(here.ratio || 0) - Number(ratio || 0)) > 0.02)) {
-      readingBackStack.push({ page: Number(here.page) || currentPage, ratio: Number(here.ratio) || 0 });
+      const entry = await readingTrailEntry(here);
+      const last = readingBackStack.at(-1);
+      if (!last || last.page !== entry.page || Math.abs(last.ratio - entry.ratio) > 0.015) readingBackStack.push(entry);
       if (readingBackStack.length > 40) readingBackStack.shift();
-      updateReadingBackButton();
+      updateReadingBackButton(); renderReadingTrail();
     }
   }
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
@@ -3112,13 +3178,13 @@ async function goToLocation(page, ratio = 0) {
 }
 
 function updateReadingBackButton() {
-  if (!readingBackButton) return;
-  readingBackButton.disabled = !pdfDoc || readingBackStack.length === 0;
+  if (readingBackButton) readingBackButton.disabled = !pdfDoc || readingBackStack.length === 0;
+  if (readingTrailCount) readingTrailCount.textContent = String(readingBackStack.length);
 }
 
 async function goBackReadingLocation() {
   const target = readingBackStack.pop();
-  updateReadingBackButton();
+  updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
   if (!target || !pdfDoc) return;
   suppressReadingHistory = true;
   try { await goToLocation(target.page, target.ratio); } finally { suppressReadingHistory = false; }
@@ -3938,7 +4004,8 @@ function commandActions() {
     { label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
     { label: t('Pin current page as reference', '固定当前页作为参考'), needsPdf: true, run: () => setPinnedPage(currentPage) },
     { label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
-    { label: t('Back to previous reading location', '返回上一阅读位置'), needsPdf: true, run: () => goBackReadingLocation() }
+    { label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() },
+    { label: t('Reading trail', '阅读轨迹'), needsPdf: true, run: () => openRightSectionShortcut('reading-trail-section') }
   ].filter((item) => !item.needsPdf || pdfDoc);
 }
 
@@ -3978,6 +4045,7 @@ referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
 readingBackButton?.addEventListener('click', goBackReadingLocation);
+readingTrailClear?.addEventListener('click', () => { readingBackStack = []; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
 buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({ force: true }));
 exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());

@@ -123,7 +123,7 @@
         <div class="toolbar-group">
           <button class="tool-button sidebar-toggle" type="button" id="left-toggle" aria-label="Toggle document navigation" title="Toggle document navigation">☰</button>
           <button class="tool-button sidebar-toggle both-panels-toggle" type="button" id="both-panels-toggle" data-en-title="Toggle both side panels · B" data-zh-title="同时展开/收起两侧栏 · B" aria-label="Toggle both side panels · B" title="Toggle both side panels · B">⇔</button>
-          <button class="tool-button" type="button" id="reading-back" disabled data-en-title="Back to previous reading location" data-zh-title="返回上一阅读位置" aria-label="Back to previous reading location" title="Back to previous reading location">↶</button>
+          <button class="tool-button" type="button" id="reading-back" disabled data-en-title="Back in reading trail" data-zh-title="返回阅读轨迹上一位置" aria-label="Back in reading trail" title="Back in reading trail">↶</button>
           <button class="tool-button" type="button" id="prev-page" disabled aria-label="Previous page" title="Previous page">←</button>
           <div class="page-control">
             <input id="page-number" type="number" min="1" value="1" disabled aria-label="Page number">
@@ -353,6 +353,17 @@
         <div class="empty-panel" id="annotation-empty" data-en="Select text to create a highlight or margin note." data-zh="选择文字后可创建高亮或页边注。">Select text to create a highlight or margin note.</div>
       </section>
 
+      <section class="workspace-section" id="reading-trail-section">
+        <div class="panel-heading">
+          <span data-en="Reading trail" data-zh="阅读轨迹">Reading trail</span>
+          <span class="count-badge" id="reading-trail-count">0</span>
+        </div>
+        <p class="workspace-copy" data-en="Locations saved before navigation jumps. The newest location is shown first; click any entry to return there." data-zh="每次导航跳转前保存的位置。最新位置显示在最上方；点击任一条目即可返回。">Locations saved before navigation jumps. The newest location is shown first; click any entry to return there.</p>
+        <div class="reading-trail-list" id="reading-trail-list"></div>
+        <div class="empty-panel" id="reading-trail-empty" data-en="Follow a cross-reference or other navigation jump to start a reading trail." data-zh="跟随交叉引用或其他导航跳转后，这里会形成阅读轨迹。">Follow a cross-reference or other navigation jump to start a reading trail.</div>
+        <button class="secondary-action reading-trail-clear" type="button" id="reading-trail-clear" disabled data-en="Clear reading trail" data-zh="清空阅读轨迹">Clear reading trail</button>
+      </section>
+
       <section class="workspace-section" id="reference-section">
         <div class="panel-heading"><span data-en="Reference view" data-zh="参考视图">Reference view</span></div>
         <p class="workspace-copy" data-en="Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading." data-zh="固定当前页面后继续阅读其他位置；固定页会始终保留在当前证明旁边。">Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading.</p>
@@ -379,7 +390,7 @@
           <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>
           <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
           <div><dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>K</kbd></dt><dd data-en="Command palette" data-zh="命令面板">Command palette</dd></div>
-          <div><dt><kbd>Alt</kbd> <kbd>←</kbd></dt><dd data-en="Back to previous reading location" data-zh="返回上一阅读位置">Back to previous reading location</dd></div>
+          <div><dt><kbd>Alt</kbd> <kbd>←</kbd></dt><dd data-en="Back in reading trail" data-zh="返回阅读轨迹上一位置">Back in reading trail</dd></div>
         </dl>
       </section>
     </aside>
