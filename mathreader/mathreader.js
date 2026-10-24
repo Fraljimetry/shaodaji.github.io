@@ -4354,11 +4354,50 @@ async function findSectionNumberLocation(number, originPage = null) {
 }
 
 async function resolveTocSectionNumber(number, targets, originPage = null) {
-  const direct = (targets || []).find((target) => tocSectionNumber(target.title) === number);
+  const direct = (targets || []).find((target) => tocSectionNumber(target.title) === number && Number(target.page) !== Number(originPage));
   if (direct) return { page: direct.page, ratio: Number(direct.ratio) || 0 };
-  const inferred = inferredOutline.find((entry) => tocSectionNumber(entry?.title) === number);
+  const inferred = inferredOutline.find((entry) => tocSectionNumber(entry?.title) === number && Number(entry?.page) !== Number(originPage));
   if (inferred) return { page: inferred.page, ratio: Number(inferred.ratio) || 0 };
   return findSectionNumberLocation(number, originPage);
+}
+
+async function findTocTitleLocation(title, originPage = null) {
+  if (!pdfDoc || !title) return null;
+  const wanted = tocComparableTitle(title);
+  if (!wanted) return null;
+  let best = null;
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    if (Number(page) === Number(originPage)) continue;
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      const text = String(line.text || '').trim();
+      if (!text || text.length > 240) continue;
+      const score = tocTitleSimilarity(text, title);
+      if (score < 0.86) continue;
+      // Prefer heading-like lines over prose mentions of the same words.
+      const number = tocSectionNumber(title);
+      const exactNumber = number && tocSectionNumber(text) === number;
+      const headingBonus = exactNumber ? 0.12 : (text.length <= String(title).length + 24 ? 0.04 : 0);
+      const finalScore = score + headingBonus;
+      if (!best || finalScore > best.score) best = { page, ratio: Number(line.ratio) || 0, score: finalScore };
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return best ? { page: best.page, ratio: best.ratio } : null;
+}
+
+async function resolveTocContentDestination(target, originPage) {
+  if (!target) return null;
+  const targetPage = Number(target.page) || 0;
+  if (targetPage && targetPage !== Number(originPage)) {
+    return { page: targetPage, ratio: Number(target.ratio) || 0 };
+  }
+  const number = tocSectionNumber(target.title);
+  if (number) {
+    const byNumber = await resolveTocSectionNumber(number, [], originPage);
+    if (byNumber) return byNumber;
+  }
+  return findTocTitleLocation(target.title, originPage);
 }
 
 
@@ -4521,7 +4560,9 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
       link.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.title || label || '');
+        const destination = await resolveTocContentDestination(target, pageNum);
+        if (!destination) return;
+        await goToMatchedLocation(destination.page, Number(destination.ratio) || 0, target.title || label || '');
       });
       overlay.append(link);
       added = true;
