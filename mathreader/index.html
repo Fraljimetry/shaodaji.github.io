@@ -66,6 +66,7 @@
             <span data-en="Document structure" data-zh="文档结构">Document structure</span>
             <span class="count-badge" id="outline-count">0</span>
           </div>
+          <input class="map-filter" id="map-filter-structure" type="search" autocomplete="off" data-map-target="outline-list" data-en-placeholder="Filter structure…" data-zh-placeholder="筛选结构…" placeholder="Filter structure…">
           <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
           <p class="history-explainer is-hidden" id="outline-source"></p>
           <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
@@ -76,6 +77,7 @@
             <span data-en="Theorems & definitions" data-zh="定理与定义">Theorems & definitions</span>
             <span class="count-badge" id="structure-count">0</span>
           </div>
+          <input class="map-filter" id="map-filter-theorems" type="search" autocomplete="off" data-map-target="structure-index" data-en-placeholder="Filter theorems…" data-zh-placeholder="筛选定理…" placeholder="Filter theorems…">
           <button class="text-button structure-build" id="build-structure-index" type="button" disabled data-en="Rebuild structure" data-zh="重新生成结构索引">Rebuild structure</button>
           <div class="structure-index" id="structure-index"></div>
           <div class="empty-panel" id="structure-empty" data-en="The theorem, definition, and proof index is prepared automatically for this document." data-zh="此文档的定理、定义与证明索引会自动生成。">The theorem, definition, and proof index is prepared automatically for this document.</div>
@@ -86,6 +88,7 @@
             <span data-en="Equations" data-zh="公式">Equations</span>
             <span class="count-badge" id="equation-index-count">0</span>
           </div>
+          <input class="map-filter" id="map-filter-equations" type="search" autocomplete="off" data-map-target="equation-index" data-en-placeholder="Filter equations…" data-zh-placeholder="筛选公式…" placeholder="Filter equations…">
           <div class="equation-index" id="equation-index"></div>
           <div class="empty-panel" id="equation-index-empty" data-en="Expand this section to prepare the equation-label index." data-zh="展开此模块以生成公式编号索引。">Expand this section to prepare the equation-label index.</div>
         </section>
@@ -95,8 +98,29 @@
             <span data-en="Bibliography" data-zh="参考文献">Bibliography</span>
             <span class="count-badge" id="bibliography-count">0</span>
           </div>
+          <input class="map-filter" id="map-filter-bibliography" type="search" autocomplete="off" data-map-target="bibliography-index" data-en-placeholder="Filter references…" data-zh-placeholder="筛选文献…" placeholder="Filter references…">
           <div class="bibliography-index" id="bibliography-index"></div>
           <div class="empty-panel" id="bibliography-empty" data-en="Bibliography entries are detected automatically when numbered references are present." data-zh="存在编号参考文献时会自动检测条目。">Bibliography entries are detected automatically when numbered references are present.</div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-bookmarks-section">
+          <div class="panel-heading">
+            <span data-en="Bookmarks" data-zh="书签">Bookmarks</span>
+            <span class="count-badge" id="map-bookmarks-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-bookmarks" type="search" autocomplete="off" data-map-target="map-bookmarks-list" data-en-placeholder="Filter bookmarks…" data-zh-placeholder="筛选书签…" placeholder="Filter bookmarks…">
+          <div class="document-map-list" id="map-bookmarks-list"></div>
+          <div class="empty-panel" id="map-bookmarks-empty" data-en="Saved pages and equations appear here." data-zh="保存的页面和公式会显示在这里。">Saved pages and equations appear here.</div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-annotations-section">
+          <div class="panel-heading">
+            <span data-en="Annotations" data-zh="批注">Annotations</span>
+            <span class="count-badge" id="map-annotations-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-annotations" type="search" autocomplete="off" data-map-target="map-annotations-list" data-en-placeholder="Filter annotations…" data-zh-placeholder="筛选批注…" placeholder="Filter annotations…">
+          <div class="document-map-list" id="map-annotations-list"></div>
+          <div class="empty-panel" id="map-annotations-empty" data-en="Highlights and margin notes appear here." data-zh="高亮和页边注会显示在这里。">Highlights and margin notes appear here.</div>
         </section>
       </section>
 
@@ -279,6 +303,16 @@
           <span data-en="Page shadow" data-zh="页面阴影">Page shadow</span>
         </label>
       </section>
+      <section class="workspace-section" id="document-info-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Document info" data-zh="文档信息">Document info</span><details class="compact-help compact-help-heading"><summary aria-label="Document info help">?</summary><div class="compact-help-body" data-en="Local-only tags, reading status, and a personal note for this PDF." data-zh="仅保存在本机的标签、阅读状态和个人文档备注。">Local-only tags, reading status, and a personal note for this PDF.</div></details></span>
+        </div>
+        <label class="document-meta-field"><span data-en="Status" data-zh="状态">Status</span><select id="document-reading-status"><option value="unread" data-en="Unread" data-zh="未读">Unread</option><option value="reading" data-en="Reading" data-zh="阅读中">Reading</option><option value="finished" data-en="Finished" data-zh="已完成">Finished</option></select></label>
+        <label class="document-meta-field"><span data-en="Tags" data-zh="标签">Tags</span><input id="document-tags" type="text" autocomplete="off" data-en-placeholder="Yamabe, PMT, seminar" data-zh-placeholder="Yamabe, PMT, seminar" placeholder="Yamabe, PMT, seminar"></label>
+        <label class="document-meta-field"><span data-en="Personal document note" data-zh="个人文档备注">Personal document note</span><textarea id="document-personal-note" rows="4" data-en-placeholder="Why this paper matters, what to revisit…" data-zh-placeholder="这篇论文的重要性、需要回看的内容……" placeholder="Why this paper matters, what to revisit…"></textarea></label>
+        <div class="document-meta-summary" id="document-meta-summary"></div>
+      </section>
+
       <section class="workspace-section ocr-section" id="ocr-section">
         <div class="panel-heading">
           <span class="panel-heading-title"><span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span><details class="compact-help compact-help-heading"><summary data-en-title="Formula extraction help" data-zh-title="公式提取帮助" aria-label="Formula extraction help">?</summary><div class="compact-help-body" data-en="Image OCR (Texify) is the default because it handles two-dimensional formula layout. PDF vector is a fast local fallback/comparison path for text-bearing PDFs. Formula OCR is not a reliable structured parser for algebraic or commutative diagrams." data-zh="默认使用 Texify 图像 OCR，因为它更适合二维公式排版。对于含文本层的 PDF，PDF 矢量提取是快速的本地备用与对照路径。公式 OCR 不能可靠地把代数图或交换图解析为结构化对象。">Image OCR (Texify) is the default because it handles two-dimensional formula layout. PDF vector is a fast local fallback/comparison path for text-bearing PDFs. Formula OCR is not a reliable structured parser for algebraic or commutative diagrams.</div></details></span>
@@ -402,6 +436,7 @@
           <span class="count-badge" id="backlinks-count">0</span>
         </div>
         <div class="backlinks-context" id="backlinks-context"></div>
+        <select class="backlinks-filter" id="backlinks-filter" aria-label="Filter backlinks"><option value="all" data-en="All backlinks" data-zh="全部反向引用">All backlinks</option><option value="prose" data-en="Prose citations" data-zh="正文引用">Prose citations</option><option value="proof" data-en="Proof uses" data-zh="证明中的使用">Proof uses</option><option value="equation" data-en="Equation references" data-zh="公式引用">Equation references</option><option value="bibliography" data-en="Bibliography citations" data-zh="文献引用">Bibliography citations</option></select>
         <div class="backlinks-list" id="backlinks-list"></div>
         <div class="empty-panel" id="backlinks-empty" data-en="Follow an equation, citation, theorem, or section reference to see its backlinks." data-zh="跟随公式、文献、定理或章节引用后，可在这里查看反向引用。">Follow an equation, citation, theorem, or section reference to see its backlinks.</div>
       </section>

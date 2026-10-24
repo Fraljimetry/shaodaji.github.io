@@ -68,6 +68,12 @@ const buildStructureIndexButton = el('build-structure-index');
 const bibliographyIndex = el('bibliography-index');
 const bibliographyEmpty = el('bibliography-empty');
 const bibliographyCount = el('bibliography-count');
+const mapBookmarksList = el('map-bookmarks-list');
+const mapBookmarksEmpty = el('map-bookmarks-empty');
+const mapBookmarksCount = el('map-bookmarks-count');
+const mapAnnotationsList = el('map-annotations-list');
+const mapAnnotationsEmpty = el('map-annotations-empty');
+const mapAnnotationsCount = el('map-annotations-count');
 const equationIndex = el('equation-index');
 const equationIndexEmpty = el('equation-index-empty');
 const equationIndexCount = el('equation-index-count');
@@ -84,6 +90,7 @@ const backlinksList = el('backlinks-list');
 const backlinksEmpty = el('backlinks-empty');
 const backlinksCount = el('backlinks-count');
 const backlinksContext = el('backlinks-context');
+const backlinksFilter = el('backlinks-filter');
 const readingSessionsList = el('reading-sessions-list');
 const readingSessionsEmpty = el('reading-sessions-empty');
 const readingSessionsCount = el('reading-sessions-count');
@@ -181,6 +188,10 @@ const ocrCapability = el('ocr-capability');
 const formulaExtractionSelect = el('formula-extraction-mode');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
+const documentReadingStatus = el('document-reading-status');
+const documentTagsInput = el('document-tags');
+const documentPersonalNoteInput = el('document-personal-note');
+const documentMetaSummary = el('document-meta-summary');
 const resetDisplay = el('reset-display');
 const flowSingle = el('flow-single');
 const flowContinuous = el('flow-continuous');
@@ -209,10 +220,16 @@ let nativePdfCommentsByPage = new Map();
 let nativePdfCommentLoadToken = 0;
 let annotations = [];
 let symbolGlossary = [];
+let documentTags = [];
+let documentReadingState = 'unread';
+let documentPersonalNote = '';
 let textCache = new Map();
 let lineCache = new Map();
+let referencePageRenderCache = new Map();
+let bibliographyExpanded = new Set();
 let pdfModulePromise = null;
 let noteTimer = null;
+let documentMetaTimer = null;
 let annotationSaveTimer = null;
 let resizeTimer = null;
 let selectionTimer = null;
@@ -299,7 +316,8 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 3;
+const STRUCTURE_INDEX_VERSION = 4;
+const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -385,13 +403,16 @@ function durableRecoveryData() {
     notes: jsonClone(notes, {}),
     annotations: jsonClone(annotations, []),
     symbolGlossary: jsonClone(symbolGlossary, []),
+    documentTags: jsonClone(documentTags, []),
+    documentReadingState,
+    documentPersonalNote,
     referencePages: [...referencePages],
     readingBackStack: jsonClone(readingBackStack, [])
   };
 }
 
 function recoveryFingerprint(data) {
-  try { return JSON.stringify({ bookmarks: data.bookmarks, notes: data.notes, annotations: data.annotations, symbolGlossary: data.symbolGlossary }); }
+  try { return JSON.stringify({ bookmarks: data.bookmarks, notes: data.notes, annotations: data.annotations, symbolGlossary: data.symbolGlossary, documentTags: data.documentTags, documentReadingState: data.documentReadingState, documentPersonalNote: data.documentPersonalNote }); }
   catch (_) { return String(Date.now()); }
 }
 
@@ -657,7 +678,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 16,
+    version: 17,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -666,6 +687,9 @@ function snapshotSession() {
     notes,
     annotations,
     symbolGlossary,
+    documentTags,
+    documentReadingState,
+    documentPersonalNote,
     namedReadingSessions,
     undoHistory,
     searchFuzzy: Boolean(searchFuzzy?.checked),
@@ -741,6 +765,10 @@ function renderLocalLibrary() {
     const page = document.createElement('span'); page.textContent = t(`Page ${record.lastPage || record.session?.page || 1}`, `第 ${record.lastPage || record.session?.page || 1} 页`);
     const time = document.createElement('span'); time.textContent = formatHistoryTime(record.openedAt);
     meta.append(page); if (time.textContent) meta.append(time);
+    const statusValue=record.session?.documentReadingState;
+    if (['unread','reading','finished'].includes(statusValue)) { const status=document.createElement('span'); status.textContent={unread:t('Unread','未读'),reading:t('Reading','阅读中'),finished:t('Finished','已完成')}[statusValue]; meta.append(status); }
+    const tags=normalizeDocumentTags(record.session?.documentTags); if(tags.length){ const tag=document.createElement('span'); tag.textContent=tags.slice(0,3).join(' · '); meta.append(tag); }
+    if (record.session?.documentPersonalNote) open.title=String(record.session.documentPersonalNote).slice(0,240);
     if (!record.localAvailable) {
       const missing = document.createElement('span'); missing.className = 'history-unavailable'; missing.textContent = t('Local PDF copy unavailable', '本地 PDF 副本不可用'); meta.append(missing);
     }
@@ -860,6 +888,9 @@ function applyLanguage(lang, persist = true) {
   renderBookmarks();
   renderLocalLibrary();
   renderSymbolGlossary();
+  renderDocumentMetadata();
+  renderDocumentMapBookmarks();
+  renderDocumentMapAnnotations();
   refreshSelectionUI();
   refreshOcrUI();
   renderAnnotationList();
@@ -893,7 +924,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','contents-theorems-section','contents-equations-section','contents-bibliography-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-bookmarks-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -1076,6 +1107,89 @@ function normalizeBookmarks(items) {
   }));
 }
 
+
+function normalizeDocumentTags(value) {
+  const raw = Array.isArray(value) ? value : String(value || '').split(/[,;\n]/);
+  const seen = new Set();
+  const out = [];
+  for (const item of raw) {
+    const clean = String(item || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    const key = clean.toLocaleLowerCase();
+    if (!clean || seen.has(key)) continue;
+    seen.add(key); out.push(clean);
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
+function renderDocumentMetadata() {
+  if (documentReadingStatus) documentReadingStatus.value = documentReadingState;
+  if (documentTagsInput) documentTagsInput.value = documentTags.join(', ');
+  if (documentPersonalNoteInput && documentPersonalNoteInput.value !== documentPersonalNote) documentPersonalNoteInput.value = documentPersonalNote;
+  if (documentMetaSummary) {
+    const labels = { unread: t('Unread','未读'), reading: t('Reading','阅读中'), finished: t('Finished','已完成') };
+    documentMetaSummary.textContent = `${labels[documentReadingState] || labels.unread} · ${t(`${documentTags.length} tags`, `${documentTags.length} 个标签`)} · ${t(`${bookmarks.length} bookmarks`, `${bookmarks.length} 个书签`)} · ${t(`${annotations.length} annotations`, `${annotations.length} 个批注`)}`;
+  }
+}
+
+function documentMapItemMatches(node, query) {
+  if (!query) return true;
+  return normalizeSearchValue(node?.textContent || '', false).includes(normalizeSearchValue(query, false));
+}
+
+function applyDocumentMapFilter(input) {
+  const target = input?.dataset?.mapTarget ? el(input.dataset.mapTarget) : null;
+  if (!target) return;
+  const query = input.value.trim();
+  for (const child of target.children) child.classList.toggle('map-filter-hidden', !documentMapItemMatches(child, query));
+}
+
+function applyAllDocumentMapFilters() {
+  document.querySelectorAll('.map-filter[data-map-target]').forEach(applyDocumentMapFilter);
+}
+
+function updateDocumentMapCurrentLocation() {
+  document.querySelectorAll('#outline-panel [data-page]').forEach((node) => {
+    node.classList.toggle('is-current-location', Number(node.dataset.page) === Number(currentPage));
+  });
+}
+
+function renderDocumentMapBookmarks() {
+  if (!mapBookmarksList || !mapBookmarksEmpty || !mapBookmarksCount) return;
+  mapBookmarksList.replaceChildren();
+  const ordered = [...bookmarks].sort((a,b)=>a.page-b.page||a.created-b.created);
+  mapBookmarksCount.textContent = String(ordered.length);
+  mapBookmarksEmpty.classList.toggle('is-hidden', ordered.length > 0);
+  for (const item of ordered) {
+    const button=document.createElement('button'); button.type='button'; button.className='document-map-item'; button.dataset.page=String(item.page);
+    const title=document.createElement('strong'); title.textContent=item.title?.trim() || (item.type==='equation'?t('Saved equation','已保存公式'):t(`Page ${item.page}`,`第 ${item.page} 页`));
+    const meta=document.createElement('span'); meta.textContent=`${t(`Page ${item.page}`,`第 ${item.page} 页`)}${item.note?.trim()?` · ${item.note.trim().slice(0,70)}`:''}`;
+    button.append(title,meta); button.addEventListener('click',()=>goToLocation(item.page,0)); mapBookmarksList.append(button);
+  }
+  applyDocumentMapFilter(el('map-filter-bookmarks')); updateDocumentMapCurrentLocation();
+}
+
+function renderDocumentMapAnnotations() {
+  if (!mapAnnotationsList || !mapAnnotationsEmpty || !mapAnnotationsCount) return;
+  mapAnnotationsList.replaceChildren();
+  const ordered=[...annotations].sort((a,b)=>a.page-b.page||a.ratio-b.ratio||a.created-b.created);
+  mapAnnotationsCount.textContent=String(ordered.length); mapAnnotationsEmpty.classList.toggle('is-hidden',ordered.length>0);
+  for (const item of ordered) {
+    const button=document.createElement('button'); button.type='button'; button.className='document-map-item'; button.dataset.page=String(item.page);
+    const title=document.createElement('strong'); title.textContent=item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注');
+    const meta=document.createElement('span'); meta.textContent=`${t(`Page ${item.page}`,`第 ${item.page} 页`)} · ${(item.note||item.text||item.latex||'').trim().slice(0,90)}`;
+    button.append(title,meta); button.addEventListener('click',()=>goToMatchedLocation(item.page,Number(item.ratio)||0,item.text||'')); mapAnnotationsList.append(button);
+  }
+  applyDocumentMapFilter(el('map-filter-annotations')); updateDocumentMapCurrentLocation();
+}
+
+function bibliographyCitationSummary(entry) {
+  const citations=Array.isArray(entry?.citations)?entry.citations:[];
+  if (!citations.length) return t('No citations detected','未检测到引用');
+  const first=citations[0];
+  return t(`${citations.length} citations · first p. ${first.page}`,`${citations.length} 处引用 · 首次第 ${first.page} 页`);
+}
+
 function loadDocumentState(cachedSession = null) {
   bookmarks = [];
   notes = {};
@@ -1083,6 +1197,9 @@ function loadDocumentState(cachedSession = null) {
   nativePdfCommentLoadToken += 1;
   annotations = [];
   symbolGlossary = [];
+  documentTags = [];
+  documentReadingState = 'unread';
+  documentPersonalNote = '';
   namedReadingSessions = [];
   undoHistory = [];
   recoverySnapshots = loadRecoverySnapshots();
@@ -1125,6 +1242,9 @@ function loadDocumentState(cachedSession = null) {
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
     annotations = normalizeAnnotations(session.annotations);
     symbolGlossary = normalizeSymbolGlossary(session.symbolGlossary);
+    documentTags = Array.isArray(session.documentTags) ? session.documentTags.map((item)=>String(item).trim()).filter(Boolean).slice(0,20) : [];
+    documentReadingState = ['unread','reading','finished'].includes(session.documentReadingState) ? session.documentReadingState : 'unread';
+    documentPersonalNote = typeof session.documentPersonalNote === 'string' ? session.documentPersonalNote : '';
     namedReadingSessions = normalizeNamedReadingSessions(session.namedReadingSessions);
     undoHistory = normalizeUndoHistory(session.undoHistory);
     if (searchFuzzy) searchFuzzy.checked = Boolean(session.searchFuzzy);
@@ -1269,6 +1389,7 @@ function updateNavigationState() {
   pageNote.value = notes[String(currentPage)] || ''; scheduleNotePreview();
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
   renderNativePdfComments(currentPage);
+  updateDocumentMapCurrentLocation();
   void refreshNativePdfComments(currentPage);
   persistDocumentState();
 }
@@ -3141,6 +3262,8 @@ function renderAnnotationList() {
     const remove = document.createElement('button'); remove.type='button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('annotation', item.type === 'highlight' ? t('Highlight','高亮') : t('Margin note','页边注'), item); annotations=annotations.filter((ann)=>ann.id!==item.id); persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations(); });
     actions.append(jump,promote,remove); row.append(actions); annotationList.append(row);
   }
+  renderDocumentMapAnnotations();
+  renderDocumentMetadata();
 }
 
 function capturePdfSelection() {
@@ -4213,11 +4336,13 @@ function renderInferredOutline(entries) {
     button.type = 'button';
     button.className = 'outline-item';
     button.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
+    button.dataset.page = String(entry.page);
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
     button.addEventListener('click', () => goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title));
     outlineList.append(button);
   }
+  applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
 }
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
@@ -4320,14 +4445,19 @@ function equationCandidateConfidence(line, label) {
   const compact = text.replace(/\s+/g, '').normalize('NFKC');
   const normalized = normalizedEquationLabel(label);
   const isOnlyTag = compact === normalized;
-  const mathSignals = (text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_+−-]/g) || []).length;
+  const mathSignals = (text.match(/[=≤≥≠≈≡∈∉⊂⊆⊇→↔∫∑∏√∂∇∞^_+−×·/\-]/g) || []).length;
   const xStart = Number(line?.xStartRatio);
   const xEnd = Number(line?.xEndRatio);
   const nearRight = (Number.isFinite(xStart) && xStart >= 0.62) || (Number.isFinite(xEnd) && xEnd >= 0.78);
   const nearBottom = Number(line?.ratio) >= 0.90;
   const proseHeavy = text.length > 55 && mathSignals === 0;
-  if (isOnlyTag && nearBottom && !nearRight) return -Infinity;
-  if (proseHeavy && !nearRight) return -Infinity;
+  const isolatedRightTag = isOnlyTag && Number.isFinite(xStart) && xStart >= 0.62;
+  if (isOnlyTag && nearBottom && !isolatedRightTag) return -Infinity;
+  // A numeric parenthesis embedded in prose is a reference/date/section-like
+  // token, not an equation target. Pure tag lines are accepted only when the
+  // glyph geometry places them at the display-math right margin.
+  if (mathSignals === 0 && !isolatedRightTag) return -Infinity;
+  if (proseHeavy && !isolatedRightTag) return -Infinity;
   let confidence = equationTargetScore(text, normalized, null, 0, null, Number(line?.ratio));
   if (mathSignals >= 2) confidence += 5;
   else if (mathSignals === 1) confidence += 2;
@@ -4338,7 +4468,7 @@ function equationCandidateConfidence(line, label) {
 }
 
 function isReliableEquationTargetLine(line, label) {
-  return equationCandidateConfidence(line, label) >= 6;
+  return equationCandidateConfidence(line, label) >= 8;
 }
 
 async function buildEquationLabelIndex() {
@@ -4362,6 +4492,29 @@ async function buildEquationLabelIndex() {
   return index;
 }
 
+function equationConfidenceTier(score) {
+  if (score >= 20) return t('high confidence','高置信度');
+  if (score >= 12) return t('medium confidence','中等置信度');
+  return t('review','需核对');
+}
+
+let equationThumbObserver = null;
+function observeEquationThumbnail(img, entry) {
+  const load = async () => {
+    if (img.dataset.loaded === '1' || !pdfDoc) return;
+    img.dataset.loaded = '1';
+    try {
+      const snap = await referenceSnapshotData({ page: entry.page, ratio: entry.ratio }, 'equation');
+      if (snap?.url && img.isConnected) img.src = snap.url;
+    } catch (_) {}
+  };
+  if (!('IntersectionObserver' in window)) { void load(); return; }
+  if (!equationThumbObserver) equationThumbObserver = new IntersectionObserver((items) => {
+    for (const item of items) if (item.isIntersecting) { const fn = item.target._loadEquationThumb; if (fn) void fn(); equationThumbObserver.unobserve(item.target); }
+  }, { root: equationIndex, rootMargin: '80px' });
+  img._loadEquationThumb = load; equationThumbObserver.observe(img);
+}
+
 function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
   equationIndex.replaceChildren();
@@ -4376,7 +4529,7 @@ function renderEquationIndex() {
     let best = null;
     for (const candidate of candidates || []) {
       const score = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
-      if (score < 6) continue;
+      if (score < 8) continue;
       if (!best || score > best.score) best = { ...candidate, score };
     }
     if (best) rows.push({ label, ...best });
@@ -4386,14 +4539,17 @@ function renderEquationIndex() {
   equationIndexEmpty.classList.toggle('is-hidden', rows.length > 0);
   if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
   for (const entry of rows.slice(0, 500)) {
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item';
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item'; button.dataset.page=String(entry.page); button.dataset.confidence=entry.score >= 20 ? 'high' : entry.score >= 12 ? 'medium' : 'review';
+    const img=document.createElement('img'); img.className='equation-index-thumb'; img.alt=''; img.loading='lazy'; observeEquationThumbnail(img,entry);
+    const copy=document.createElement('span'); copy.className='equation-index-copy';
     const label = document.createElement('strong'); label.textContent = entry.label;
-    const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
-    button.append(label, meta);
+    const meta = document.createElement('span'); meta.textContent = `${t(`Page ${entry.page}`, `第 ${entry.page} 页`)} · ${equationConfidenceTier(entry.score)}`;
+    copy.append(label,meta); button.append(img,copy);
     button.title = entry.text || entry.label;
     button.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
     equationIndex.append(button);
   }
+  applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
 }
 
 async function ensureEquationIndexRendered() {
@@ -4416,7 +4572,7 @@ async function findEquationLabelLocation(query, originPage = null, originRatio =
     if (candidate.page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidate.ratio)
         && Math.abs(candidate.ratio - originRatio) < 0.018) continue;
     const confidence = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
-    if (confidence < 6) continue;
+    if (confidence < 8) continue;
     const score = equationTargetScore(candidate.text, label, originPage, candidate.page, originRatio, candidate.ratio) + confidence * 0.2;
     if (!best || score > best.score) best = { ...candidate, score };
   }
@@ -4487,6 +4643,7 @@ async function buildStructureIndex({ force = false } = {}) {
 
   const nextEntries = [];
   const nextBibliography = [];
+  const bibliographyCitationOccurrences = new Map();
   let bibliographyMode = false;
   let activeProofEntry = null;
   try {
@@ -4498,6 +4655,19 @@ async function buildStructureIndex({ force = false } = {}) {
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
         if (!cleaned) continue;
         if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; activeProofEntry = null; continue; }
+
+        if (!bibliographyMode) {
+          const bracketRe = /\[[^\]]{1,60}\]/g;
+          let bracketMatch;
+          while ((bracketMatch = bracketRe.exec(cleaned))) {
+            const raw = bracketMatch[0];
+            for (const number of groupedBibliographyMembers(raw)) {
+              const list = bibliographyCitationOccurrences.get(number) || [];
+              list.push({ page, ratio: line.ratio, raw, snippet: backlinkSnippet(cleaned, raw, bracketMatch.index), matchIndex: bracketMatch.index });
+              bibliographyCitationOccurrences.set(number, list);
+            }
+          }
+        }
 
         const structureMatch = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
         if (structureMatch) {
@@ -4547,7 +4717,7 @@ async function buildStructureIndex({ force = false } = {}) {
             const label = `[${number}]`;
             if (!nextBibliography.some((entry) => entry.number === number)) {
               const meta = bibliographyMetadata(body);
-              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), ...meta });
+              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: (bibliographyCitationOccurrences.get(number) || []).slice(0, 500), ...meta });
             }
           }
         }
@@ -4569,6 +4739,21 @@ async function buildStructureIndex({ force = false } = {}) {
         if (!target.usedByProofs.some((item) => item.label === owner.label)) target.usedByProofs.push({ label: owner.label, page: owner.proofPage || owner.page, ratio: owner.proofRatio || owner.ratio });
       }
       owner.proofUses = resolved.slice(0, 12);
+    }
+
+    // Corollary edges are intentionally conservative: only create them when
+    // the corollary statement itself explicitly names an earlier structure.
+    for (const entry of nextEntries) {
+      if (!/^corollary\b/i.test(entry.label || '')) continue;
+      const refs = String(entry.title || '').match(STRUCTURE_REFERENCE_RE) || [];
+      for (const ref of refs) {
+        const parent = structureByLabel.get(normalizedReferenceLabel(ref));
+        if (!parent || parent === entry) continue;
+        parent.corollaries = parent.corollaries || [];
+        if (!parent.corollaries.some((item) => item.label === entry.label)) parent.corollaries.push({ label: entry.label, page: entry.page, ratio: entry.ratio });
+        entry.derivedFrom = entry.derivedFrom || [];
+        if (!entry.derivedFrom.some((item) => item.label === parent.label)) entry.derivedFrom.push({ label: parent.label, page: parent.page, ratio: parent.ratio });
+      }
     }
 
     structureEntries = nextEntries.slice(0, 500);
@@ -4614,35 +4799,42 @@ function renderStructureIndex() {
     return;
   }
   for (const entry of structureEntries) {
-    const row = document.createElement('div'); row.className = 'structure-entry';
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'structure-item';
+    const row = document.createElement('div'); row.className = 'structure-entry proof-graph-card'; row.dataset.page=String(entry.page);
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'structure-item proof-graph-root'; button.dataset.page=String(entry.page);
     const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     button.append(strong, meta); button.title = entry.title;
     button.addEventListener('click', async () => { const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
     row.append(button);
     if (entry.proofPage) {
-      const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof';
+      const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
       proof.title = entry.proofEndPage ? t(`Proof ends on page ${entry.proofEndPage}`, `证明结束于第 ${entry.proofEndPage} 页`) : '';
       proof.addEventListener('click', async () => { const q = entry.proofTitle || 'Proof'; const target = { page: entry.proofPage, ratio: Number(entry.proofRatio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); });
       row.append(proof);
     }
     const relations = [];
-    if (Array.isArray(entry.proofUses) && entry.proofUses.length) relations.push({ prefix: t('Uses', '使用'), items: entry.proofUses });
-    if (Array.isArray(entry.usedByProofs) && entry.usedByProofs.length) relations.push({ prefix: t('Used in', '用于'), items: entry.usedByProofs });
-    for (const relation of relations) {
-      const graph = document.createElement('div'); graph.className = 'structure-relations';
-      const prefix = document.createElement('span'); prefix.className = 'structure-relations-label'; prefix.textContent = `${relation.prefix}:`; graph.append(prefix);
-      for (const related of relation.items.slice(0, 5)) {
-        const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'structure-relation-chip'; chip.textContent = related.label;
-        chip.addEventListener('click', async () => { await goToMatchedLocation(related.page, Number(related.ratio) || 0, related.label); updateBacklinksForTarget(related.label, { page: related.page, ratio: Number(related.ratio) || 0 }); });
-        graph.append(chip);
+    if (Array.isArray(entry.proofUses) && entry.proofUses.length) relations.push({ prefix: t('Proof uses', '证明使用'), type:'uses', items: entry.proofUses });
+    if (Array.isArray(entry.usedByProofs) && entry.usedByProofs.length) relations.push({ prefix: t('Used in proofs', '用于证明'), type:'used-in', items: entry.usedByProofs });
+    if (Array.isArray(entry.corollaries) && entry.corollaries.length) relations.push({ prefix: t('Corollaries', '推论'), type:'corollary', items: entry.corollaries });
+    if (Array.isArray(entry.derivedFrom) && entry.derivedFrom.length) relations.push({ prefix: t('Derived from', '源自'), type:'derived', items: entry.derivedFrom });
+    if (relations.length) {
+      const graphWrap=document.createElement('div'); graphWrap.className='proof-graph-relations';
+      for (const relation of relations) {
+        const graph = document.createElement('div'); graph.className = `structure-relations relation-${relation.type}`;
+        const prefix = document.createElement('span'); prefix.className = 'structure-relations-label'; prefix.textContent = `${relation.prefix}:`; graph.append(prefix);
+        for (const related of relation.items.slice(0, 8)) {
+          const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'structure-relation-chip'; chip.textContent = related.label; chip.dataset.page=String(related.page);
+          chip.addEventListener('click', async () => { await goToMatchedLocation(related.page, Number(related.ratio) || 0, related.label); updateBacklinksForTarget(related.label, { page: related.page, ratio: Number(related.ratio) || 0 }); });
+          graph.append(chip);
+        }
+        graphWrap.append(graph);
       }
-      row.append(graph);
+      row.append(graphWrap);
     }
     structureIndex.append(row);
   }
+  applyDocumentMapFilter(el('map-filter-theorems')); updateDocumentMapCurrentLocation();
 }
 
 function renderBibliographyIndex() {
@@ -4654,19 +4846,38 @@ function renderBibliographyIndex() {
     return;
   }
   for (const entry of bibliographyEntries) {
-    const row = document.createElement('div'); row.className = 'bibliography-item';
-    const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bibliography-jump';
+    const row = document.createElement('div'); row.className = 'bibliography-item bibliography-smart-item'; row.dataset.page=String(entry.page);
+    const main = document.createElement('button'); main.type='button'; main.className='bibliography-jump bibliography-expand'; main.setAttribute('aria-expanded', bibliographyExpanded.has(entry.number)?'true':'false');
     const label = document.createElement('strong'); label.textContent = entry.label;
-    const text = document.createElement('span'); text.textContent = entry.title;
-    jump.append(label, text); jump.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); }); row.append(jump);
+    const copy=document.createElement('span'); copy.className='bibliography-copy';
+    const text = document.createElement('span'); text.className='bibliography-title'; text.textContent = entry.title;
+    const stats=document.createElement('span'); stats.className='bibliography-stats'; stats.textContent=bibliographyCitationSummary(entry);
+    copy.append(text,stats); main.append(label,copy);
+    main.addEventListener('click',()=>{ if (bibliographyExpanded.has(entry.number)) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number); renderBibliographyIndex(); });
+    const actions=document.createElement('div'); actions.className='bibliography-actions';
+    const go=document.createElement('button'); go.type='button'; go.className='bibliography-go'; go.textContent=t('Go','跳转'); go.addEventListener('click',async()=>{ const target={page:entry.page,ratio:Number(entry.ratio)||0}; await goToMatchedLocation(target.page,target.ratio,entry.label); updateBacklinksForTarget(entry.label,target); }); actions.append(go);
     if (entry.doi || entry.arxiv) {
       const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
       if (entry.doi) { external.href = `https://doi.org/${entry.doi}`; external.textContent = 'DOI ↗'; }
       else { external.href = `https://arxiv.org/abs/${entry.arxiv}`; external.textContent = 'arXiv ↗'; }
-      row.append(external);
+      actions.append(external);
+    }
+    row.append(main,actions);
+    if (bibliographyExpanded.has(entry.number)) {
+      const cites=document.createElement('div'); cites.className='bibliography-citations';
+      const citations=Array.isArray(entry.citations)?entry.citations:[];
+      if (!citations.length) { const empty=document.createElement('div'); empty.className='bibliography-citations-empty'; empty.textContent=t('No in-text citations detected.','未检测到正文引用。'); cites.append(empty); }
+      for (const [index,citation] of citations.entries()) {
+        const button=document.createElement('button'); button.type='button'; button.className='bibliography-citation-item'; button.dataset.page=String(citation.page);
+        const meta=document.createElement('strong'); meta.textContent=index===0?t(`First citation · p. ${citation.page}`,`首次引用 · 第 ${citation.page} 页`):t(`Citation ${index+1} · p. ${citation.page}`,`第 ${index+1} 处引用 · 第 ${citation.page} 页`);
+        const snippet=document.createElement('span'); snippet.textContent=citation.snippet||citation.raw||''; button.append(meta,snippet);
+        button.addEventListener('click',()=>goToMatchedLocation(citation.page,Number(citation.ratio)||0,citation.raw||entry.label)); cites.append(button);
+      }
+      row.append(cites);
     }
     bibliographyIndex.append(row);
   }
+  applyDocumentMapFilter(el('map-filter-bibliography')); updateDocumentMapCurrentLocation();
 }
 
 function textLayerAggregate(layer) {
@@ -5205,22 +5416,24 @@ function proofContextForLocation(page, ratio) {
 function renderBacklinks() {
   if (!backlinksList || !backlinksEmpty || !backlinksCount || !backlinksContext) return;
   backlinksList.replaceChildren();
-  backlinksCount.textContent = String(backlinkEntries.length);
+  const mode=backlinksFilter?.value || 'all';
+  const visible=mode==='all'?backlinkEntries:backlinkEntries.filter((entry)=>entry.kind===mode);
+  backlinksCount.textContent = mode==='all' ? String(backlinkEntries.length) : `${visible.length}/${backlinkEntries.length}`;
   backlinksContext.textContent = backlinkContext?.label ? t(`References to ${backlinkContext.label}`, `引用 ${backlinkContext.label} 的位置`) : '';
-  backlinksEmpty.classList.toggle('is-hidden', backlinkEntries.length > 0);
-  for (const entry of backlinkEntries.slice(0, 80)) {
+  backlinksEmpty.classList.toggle('is-hidden', visible.length > 0);
+  if (!visible.length && backlinkEntries.length) backlinksEmpty.textContent=t('No backlinks match this filter.','没有符合此筛选条件的反向引用。');
+  else backlinksEmpty.textContent=t('Follow an equation, citation, theorem, or section reference to see its backlinks.','跟随公式、文献、定理或章节引用后，可在这里查看反向引用。');
+  for (const entry of visible.slice(0, 120)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'backlink-item';
     const meta = document.createElement('span'); meta.className = 'backlink-meta';
     const proofOwner = entry.proofOwner || proofContextForLocation(entry.page, entry.ratio);
-    meta.textContent = proofOwner ? t(`Page ${entry.page} · proof of ${proofOwner}`, `第 ${entry.page} 页 · ${proofOwner} 的证明`) : t(`Page ${entry.page}`, `第 ${entry.page} 页`);
+    const kindLabel={prose:t('Prose','正文'),proof:t('Proof','证明'),equation:t('Equation','公式'),bibliography:t('Bibliography','文献')}[entry.kind] || t('Reference','引用');
+    meta.textContent = proofOwner ? t(`${kindLabel} · page ${entry.page} · proof of ${proofOwner}`, `${kindLabel} · 第 ${entry.page} 页 · ${proofOwner} 的证明`) : t(`${kindLabel} · page ${entry.page}`, `${kindLabel} · 第 ${entry.page} 页`);
     const snippet = document.createElement('span'); snippet.className = 'backlink-snippet'; snippet.textContent = entry.snippet || entry.text || '';
     button.append(meta, snippet);
     button.addEventListener('click', () => {
-      if (entry.searchMatch && entry.matchText) {
-        goToSearchMatch(entry.searchMatch, entry.matchText);
-      } else {
-        goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || backlinkContext?.label || '');
-      }
+      if (entry.searchMatch && entry.matchText) goToSearchMatch(entry.searchMatch, entry.matchText);
+      else goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || backlinkContext?.label || '');
     });
     backlinksList.append(button);
   }
@@ -5235,7 +5448,8 @@ async function collectBacklinks(query, target) {
     const occurrenceKey = Number.isFinite(Number(extra.matchIndex)) ? `:${Number(extra.matchIndex)}` : '';
     const key = `${page}:${Math.round((Number(ratio)||0)*10000)}:${String(text).slice(0,80)}${occurrenceKey}`;
     if (seen.has(key)) return; seen.add(key);
-    results.push({ page, ratio:Number(ratio)||0, text, snippet:extra.snippet || backlinkSnippet(text, matchText || query, extra.matchIndex), matchText, proofOwner: proofContextForLocation(page, ratio), ...extra });
+    const owner=proofContextForLocation(page, ratio);
+    results.push({ page, ratio:Number(ratio)||0, text, snippet:extra.snippet || backlinkSnippet(text, matchText || query, extra.matchIndex), matchText, proofOwner: owner, kind: extra.kind || (owner ? 'proof' : 'prose'), ...extra });
   };
   const normalized = normalizedReferenceLabel(query);
   const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
@@ -5263,7 +5477,8 @@ async function collectBacklinks(query, target) {
         add(page, ratio, pageValue, raw, {
           matchIndex: bracket.index,
           snippet: backlinkSnippet(pageValue, raw, bracket.index),
-          searchMatch: { page, text: pageValue, index: bracket.index, ordinal }
+          searchMatch: { page, text: pageValue, index: bracket.index, ordinal },
+          kind: 'bibliography'
         });
       }
       if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
@@ -5278,7 +5493,7 @@ async function collectBacklinks(query, target) {
       if (eq) {
         for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) {
           const contextIndex = Math.max(0, contextText.indexOf(text)) + c.index;
-          add(page, line.ratio, text, eq, { matchIndex: c.index, snippet: backlinkSnippet(contextText, eq, contextIndex) });
+          add(page, line.ratio, text, eq, { matchIndex: c.index, snippet: backlinkSnippet(contextText, eq, contextIndex), kind: 'equation' });
         }
         continue;
       }
@@ -5417,6 +5632,7 @@ async function renderOutline() {
         button.className = 'outline-item';
         button.dataset.depth = String(depth);
         button.textContent = item.title || t('Untitled', '未命名');
+        void resolveOutlineDestination(item.dest).then((location)=>{ if (location && button.isConnected) { button.dataset.page=String(location.page); updateDocumentMapCurrentLocation(); } }).catch(()=>{});
         button.addEventListener('click', async () => {
           try {
             const location = await resolveOutlineDestination(item.dest);
@@ -5426,6 +5642,7 @@ async function renderOutline() {
         });
         outlineList.append(button);
       }
+      applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
       scheduleDetectedOutlineAugmentation();
       return;
     }
@@ -6253,6 +6470,8 @@ function renderBookmarks() {
     }
     bookmarkList.append(row);
   }
+  renderDocumentMapBookmarks();
+  renderDocumentMetadata();
 }
 
 function addCurrentBookmark() {
@@ -6291,6 +6510,9 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     initialContinuousReady = false;
     textCache = new Map();
     lineCache = new Map();
+    referencePageRenderCache = new Map();
+    referenceSnapshotCache.clear();
+    bibliographyExpanded = new Set();
     currentSelection = null;
     setOcrMode(false);
     hideSelectionToolbar();
@@ -6591,6 +6813,9 @@ async function restoreRecoverySnapshot(item) {
     notes=data.notes && typeof data.notes==='object' ? jsonClone(data.notes,{}) : {};
     annotations=normalizeAnnotations(data.annotations);
     symbolGlossary=normalizeSymbolGlossary(data.symbolGlossary);
+    documentTags=normalizeDocumentTags(data.documentTags);
+    documentReadingState=['unread','reading','finished'].includes(data.documentReadingState)?data.documentReadingState:'unread';
+    documentPersonalNote=typeof data.documentPersonalNote==='string'?data.documentPersonalNote:'';
     currentPage=Math.min(Math.max(1,Number(data.page)||1),pdfDoc.numPages);
     pinnedPage=Number(data.pinnedPage)>=1&&Number(data.pinnedPage)<=pdfDoc.numPages?Number(data.pinnedPage):null;
     referencePages=Array.isArray(data.referencePages)?data.referencePages.map(Number).filter((n,i,a)=>n>=1&&n<=pdfDoc.numPages&&a.indexOf(n)===i).slice(0,4):[];
@@ -6603,7 +6828,7 @@ async function restoreRecoverySnapshot(item) {
     await setReadingFlow(flow,{persist:false,render:false});
     await Promise.all([renderCurrentPage(),renderReferencePage()]);
     restoringSession=false;
-    renderBookmarks(); renderAnnotationList(); rerenderVisibleAnnotations(); renderSymbolGlossary(); renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateNavigationState();
+    renderBookmarks(); renderAnnotationList(); rerenderVisibleAnnotations(); renderSymbolGlossary(); renderDocumentMetadata(); renderDocumentMapBookmarks(); renderDocumentMapAnnotations(); renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateNavigationState();
   } catch (error) { console.error(error); showError(t('Recovery snapshot could not be restored.', '无法恢复该快照。')); }
   finally { restoringSession=false; recoveryRestoreActive=false; }
   persistDocumentState();
@@ -6692,21 +6917,44 @@ function equationSearchMatches(query) {
 function commandPaletteEntities() {
   if (!pdfDoc) return [];
   const out = [];
-  const push = (kind, title, subtitle, run, searchText = '') => out.push({ kind, title, subtitle, run, searchText: `${title} ${subtitle||''} ${searchText||''}` });
-  for (const entry of inferredOutline || []) push(t('Section','章节'), entry.title || t('Untitled section','未命名章节'), t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.title || ''), entry.title);
-  for (const entry of structureEntries || []) push(t('Structure','结构'), entry.label || entry.title, entry.title || t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label || entry.title), entry.title);
+  const push = (kind, title, subtitle, run, searchText = '', kindKey='entity') => out.push({ kind, kindKey, title, subtitle, run, searchText: `${title} ${subtitle||''} ${searchText||''}` });
+  for (const entry of inferredOutline || []) push(t('Section','章节'), entry.title || t('Untitled section','未命名章节'), t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.title || ''), entry.title,'section');
+  for (const entry of structureEntries || []) {
+    const relations=[...(entry.proofUses||[]),...(entry.usedByProofs||[]),...(entry.corollaries||[]),...(entry.derivedFrom||[])].map((x)=>x.label).join(' ');
+    push(t('Structure','结构'), entry.label || entry.title, entry.title || t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label || entry.title), `${entry.title||''} ${relations}`,'structure');
+    if (entry.proofPage) push(t('Proof','证明'), t(`Proof of ${entry.label}`,`${entry.label} 的证明`), t(`Page ${entry.proofPage}`,`第 ${entry.proofPage} 页`), ()=>goToMatchedLocation(entry.proofPage,Number(entry.proofRatio)||0,entry.proofTitle||'Proof'), `${entry.label} ${(entry.proofUses||[]).map((x)=>x.label).join(' ')}`,'proof');
+  }
   if (equationLabelIndex instanceof Map) {
     for (const [label, candidates] of equationLabelIndex.entries()) {
-      const target = (candidates || [])[0];
-      if (target) push(t('Equation','公式'), label, t(`Page ${target.page}`,`第 ${target.page} 页`), () => goToMatchedLocation(target.page, Number(target.ratio)||0, label), label);
+      const target = (candidates || []).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0))[0];
+      if (target) push(t('Equation','公式'), label, t(`Page ${target.page}`,`第 ${target.page} 页`), () => goToMatchedLocation(target.page, Number(target.ratio)||0, label), label,'equation');
     }
   }
-  for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), entry.title);
-  for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => { if (searchInput) searchInput.value=item.symbol; if (searchEquations) searchEquations.checked=false; openLeftPanelShortcut('search-panel', searchInput); searchPdf(item.symbol); }, item.meaning);
-  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Saved equation','已保存公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0), `${item.note||''} ${item.latex||''}`);
-  for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note);
-  for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name);
+  for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');
+  for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => { if (searchInput) searchInput.value=item.symbol; if (searchEquations) searchEquations.checked=false; openLeftPanelShortcut('search-panel', searchInput); searchPdf(item.symbol); }, item.meaning,'symbol');
+  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Saved equation','已保存公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0), `${item.note||''} ${item.latex||''}`,'bookmark');
+  for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
+  for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name,'session');
   return out;
+}
+
+function commandRecentUseMap() {
+  try { const value=JSON.parse(safeGet(COMMAND_RECENT_KEY,'{}')); return value&&typeof value==='object'?value:{}; } catch (_) { return {}; }
+}
+function commandPaletteUseKey(item) { return `${item.kindKey||'command'}:${normalizeSearchValue(item.title||'',false)}`; }
+function recordCommandPaletteUse(item) { const map=commandRecentUseMap(); map[commandPaletteUseKey(item)]=Date.now(); const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,80); safeSet(COMMAND_RECENT_KEY,JSON.stringify(Object.fromEntries(sorted))); }
+function commandPaletteMatchScore(item,qRaw) {
+  const q=normalizeSearchValue(qRaw,false); if(!q) return item.isCommand?100:0;
+  const title=normalizeSearchValue(item.title||'',false); const search=normalizeSearchValue(item.searchText||`${item.title||''} ${item.subtitle||''}`,false);
+  let match=0;
+  if(title===q) match=1000; else if(title.startsWith(q)) match=820; else if(title.includes(q)) match=680; else if(search.includes(q)) match=560; else {
+    const tokens=q.split(/\s+/).filter(Boolean); const hits=tokens.filter((token)=>search.includes(token)).length; if(tokens.length&&hits===tokens.length) match=360+hits*8; else if(tokens.length&&hits/tokens.length>=.65) match=220+Math.round(80*hits/tokens.length);
+  }
+  if(!match) return 0;
+  const entityPriority={equation:90,structure:85,proof:82,reference:80,section:75,symbol:55,bookmark:50,annotation:48,session:45,entity:40};
+  const typeBoost=item.isCommand?10:(entityPriority[item.kindKey]||40);
+  const recent=commandRecentUseMap()[commandPaletteUseKey(item)]||0; const age=Date.now()-recent; const recentBoost=recent?Math.max(0,30-Math.floor(age/(1000*60*60*24))):0;
+  return match+typeBoost+recentBoost;
 }
 
 function hideReferencePreview() {
@@ -6714,39 +6962,54 @@ function hideReferencePreview() {
   if (referencePreview) referencePreview.classList.add('is-hidden');
 }
 
-async function referenceSnapshotData(target) {
+function snapshotKindForQuery(query) {
+  const q=String(query||'').trim();
+  if (isEquationLabelQuery(q)) return 'equation';
+  if (/^\[\s*\d+\s*\]$/.test(q)) return 'bibliography';
+  if (/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\b/i.test(q)) return 'structure';
+  return 'generic';
+}
+
+async function referenceRenderedPage(pageNumber) {
+  if (!pdfDoc || !pageNumber) return null;
+  const key=`${currentFileKey||'pdf'}:${pageNumber}`;
+  if (referencePageRenderCache.has(key)) return referencePageRenderCache.get(key);
+  const promise=(async()=>{
+    const page=await pdfDoc.getPage(pageNumber);
+    const base=page.getViewport({scale:1});
+    const renderWidth=760; const scale=renderWidth/Math.max(1,base.width); const viewport=page.getViewport({scale});
+    const canvas=document.createElement('canvas'); canvas.width=Math.max(1,Math.round(viewport.width)); canvas.height=Math.max(1,Math.round(viewport.height));
+    const ctx=canvas.getContext('2d',{alpha:false}); await page.render({canvasContext:ctx,viewport,background:'#ffffff'}).promise;
+    return canvas;
+  })();
+  referencePageRenderCache.set(key,promise);
+  if (referencePageRenderCache.size>6) referencePageRenderCache.delete(referencePageRenderCache.keys().next().value);
+  try { return await promise; } catch (error) { referencePageRenderCache.delete(key); throw error; }
+}
+
+async function referenceSnapshotData(target, kind='generic') {
   if (!pdfDoc || !target?.page) return null;
   const ratio = Math.max(0, Math.min(1, Number(target.ratio) || 0));
-  const key = `${currentFileKey || 'pdf'}:${target.page}:${Math.round(ratio * 160)}`;
+  const normalizedKind=['equation','bibliography','structure'].includes(kind)?kind:'generic';
+  const key = `${currentFileKey || 'pdf'}:${target.page}:${Math.round(ratio * 180)}:${normalizedKind}`;
   if (referenceSnapshotCache.has(key)) return referenceSnapshotCache.get(key);
-  const page = await pdfDoc.getPage(target.page);
-  const base = page.getViewport({ scale: 1 });
-  const renderWidth = 760;
-  const scale = renderWidth / Math.max(1, base.width);
-  const viewport = page.getViewport({ scale });
-  const full = document.createElement('canvas');
-  full.width = Math.max(1, Math.round(viewport.width));
-  full.height = Math.max(1, Math.round(viewport.height));
-  const ctx = full.getContext('2d', { alpha: false });
-  await page.render({ canvasContext: ctx, viewport, background: '#ffffff' }).promise;
-  const cropHeight = Math.min(full.height, 250);
-  const targetY = Math.round(ratio * full.height);
-  const cropY = Math.max(0, Math.min(full.height - cropHeight, Math.round(targetY - cropHeight * .42)));
-  const crop = document.createElement('canvas');
-  crop.width = full.width;
-  crop.height = cropHeight;
-  crop.getContext('2d', { alpha: false }).drawImage(full, 0, cropY, full.width, cropHeight, 0, 0, full.width, cropHeight);
-  const data = { url: crop.toDataURL('image/jpeg', .9), targetOffset: Math.max(0, Math.min(1, (targetY - cropY) / Math.max(1, cropHeight))) };
-  referenceSnapshotCache.set(key, data);
-  if (referenceSnapshotCache.size > 24) referenceSnapshotCache.delete(referenceSnapshotCache.keys().next().value);
+  const full=await referenceRenderedPage(target.page); if (!full) return null;
+  const config={equation:{height:150,lead:.50},structure:{height:310,lead:.28},bibliography:{height:210,lead:.34},generic:{height:240,lead:.40}}[normalizedKind];
+  const cropHeight=Math.min(full.height,config.height); const targetY=Math.round(ratio*full.height);
+  const cropY=Math.max(0,Math.min(full.height-cropHeight,Math.round(targetY-cropHeight*config.lead)));
+  const crop=document.createElement('canvas'); crop.width=full.width; crop.height=cropHeight;
+  crop.getContext('2d',{alpha:false}).drawImage(full,0,cropY,full.width,cropHeight,0,0,full.width,cropHeight);
+  const data={url:crop.toDataURL('image/jpeg',.9),targetOffset:Math.max(0,Math.min(1,(targetY-cropY)/Math.max(1,cropHeight))),kind:normalizedKind};
+  referenceSnapshotCache.set(key,data); if(referenceSnapshotCache.size>32) referenceSnapshotCache.delete(referenceSnapshotCache.keys().next().value);
   return data;
 }
 
 async function referencePreviewData(query, originPage, originRatio) {
   const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) return null;
-  const snapshot = await referenceSnapshotData(target);
-  return { target, snapshot };
+  const kind=snapshotKindForQuery(query);
+  const snapshot = await referenceSnapshotData(target,kind);
+  return { target, snapshot, kind };
 }
 
 function attachReferencePreview(link, query, originPage, originRatio = null) {
@@ -6809,28 +7072,19 @@ function commandActions() {
 function renderCommandPalette() {
   if (!commandList) return;
   const qRaw = String(commandInput?.value || '').trim();
-  const q = normalizeSearchValue(qRaw, false);
   commandList.replaceChildren();
   const items = [];
-  for (const action of commandActions()) items.push({ isCommand:true, kind:action.kind, title:action.label, subtitle:'', run:action.run, searchText:action.label });
+  for (const action of commandActions()) items.push({ isCommand:true, kind:action.kind, kindKey:'command', title:action.label, subtitle:'', run:action.run, searchText:action.label });
   if (qRaw) items.push(...commandPaletteEntities());
-  const filtered = items.filter((item) => {
-    if (!q) return item.isCommand === true;
-    return normalizeSearchValue(item.searchText || `${item.title} ${item.subtitle||''}`, false).includes(q);
-  }).slice(0, 80);
+  const filtered = items.map((item)=>({item,score:commandPaletteMatchScore(item,qRaw)})).filter((row)=>row.score>0).sort((a,b)=>b.score-a.score || String(a.item.title).localeCompare(String(b.item.title))).slice(0,80).map((row)=>row.item);
   for (const [index, item] of filtered.entries()) {
     const button=document.createElement('button'); button.type='button'; button.className='command-item'; if(index===0) button.classList.add('is-current');
     const main=document.createElement('span'); main.className='command-main';
     const title=document.createElement('span'); title.className='command-title'; title.textContent=item.title; main.append(title);
     if(item.subtitle){ const sub=document.createElement('span'); sub.className='command-subtitle'; sub.textContent=item.subtitle; main.append(sub); }
-    if (item.isCommand) {
-      button.classList.add('is-command-action');
-      button.append(main);
-    } else {
-      const kind=document.createElement('span'); kind.className='command-kind'; kind.textContent=item.kind || '';
-      button.append(kind,main);
-    }
-    button.addEventListener('click',()=>{ closeCommandPalette(); item.run(); }); commandList.append(button);
+    if (item.isCommand) { button.classList.add('is-command-action'); button.append(main); }
+    else { const kind=document.createElement('span'); kind.className='command-kind'; kind.textContent=item.kind || ''; button.append(kind,main); }
+    button.addEventListener('click',()=>{ recordCommandPaletteUse(item); closeCommandPalette(); item.run(); }); commandList.append(button);
   }
   if (!filtered.length) { const empty=document.createElement('div'); empty.className='command-hint'; empty.textContent=t('No matching commands or document items.','没有匹配的命令或文档项目。'); commandList.append(empty); }
 }
@@ -6968,6 +7222,13 @@ referenceCanvasWrap.addEventListener('scroll', () => {
   referenceScrollByPage[String(pinnedPage)] = { top: referenceCanvasWrap.scrollTop, left: referenceCanvasWrap.scrollLeft };
   persistDocumentState();
 }, { passive: true });
+
+document.querySelectorAll('.map-filter[data-map-target]').forEach((input) => input.addEventListener('input', () => applyDocumentMapFilter(input)));
+backlinksFilter?.addEventListener('change', renderBacklinks);
+documentReadingStatus?.addEventListener('change',()=>{ documentReadingState=['unread','reading','finished'].includes(documentReadingStatus.value)?documentReadingStatus.value:'unread'; renderDocumentMetadata(); persistDocumentState(); });
+documentTagsInput?.addEventListener('change',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
+documentTagsInput?.addEventListener('blur',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
+documentPersonalNoteInput?.addEventListener('input',()=>{ documentPersonalNote=documentPersonalNoteInput.value; clearTimeout(documentMetaTimer); documentMetaTimer=setTimeout(()=>{ renderDocumentMetadata(); persistDocumentState(); },280); });
 
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
@@ -7123,6 +7384,9 @@ updateReferenceStatus();
 refreshSelectionUI();
 refreshOcrUI();
 renderBookmarks();
+renderDocumentMetadata();
+renderDocumentMapBookmarks();
+renderDocumentMapAnnotations();
 renderStructureIndex();
 renderBibliographyIndex();
 renderReferenceStack();
