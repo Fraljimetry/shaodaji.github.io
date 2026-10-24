@@ -202,6 +202,9 @@ let outlineMode = 'none';
 let editingBookmarkId = null;
 let pendingRecoveryRecordId = null;
 let structureEntries = [];
+let structureIndexVersion = 0;
+let structureIndexBuilding = false;
+let structureIndexBuildToken = 0;
 let referencePages = [];
 let readingBackStack = [];
 let suppressReadingHistory = false;
@@ -216,6 +219,7 @@ const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v1';
+const STRUCTURE_INDEX_VERSION = 1;
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -423,7 +427,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 9,
+    version: 10,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -439,6 +443,7 @@ function snapshotSession() {
     ocrHistory,
     inferredOutline,
     structureEntries,
+    structureIndexVersion,
     referencePages,
     searchQuery: searchInput?.value || '',
     ui: {
@@ -722,6 +727,7 @@ function loadDocumentState(cachedSession = null) {
   inferredOutline = [];
   outlineMode = 'none';
   structureEntries = [];
+  structureIndexVersion = 0;
   referencePages = [];
   readingBackStack = [];
   zoomMode = 'fit-width';
@@ -761,6 +767,11 @@ function loadDocumentState(cachedSession = null) {
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
+    structureIndexVersion = Number(session.structureIndexVersion || 0);
+    if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
+      structureEntries = [];
+      structureIndexVersion = 0;
+    }
     referencePages = Array.isArray(session.referencePages) ? session.referencePages.map(Number).filter((page, index, values) => page >= 1 && page <= pdfDoc.numPages && values.indexOf(page) === index).slice(0, 4) : [];
     if (pinnedPage && !referencePages.includes(pinnedPage)) referencePages.unshift(pinnedPage);
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
@@ -3196,31 +3207,72 @@ function renderInferredOutline(entries) {
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
 
-async function buildStructureIndex() {
-  if (!pdfDoc || !structureIndex) return;
+async function buildStructureIndex({ force = false } = {}) {
+  if (!pdfDoc || !structureIndex || structureIndexBuilding) return;
+  if (!force && structureIndexVersion === STRUCTURE_INDEX_VERSION) {
+    renderStructureIndex();
+    return;
+  }
+
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const sourceTextCache = textCache;
+  const token = ++structureIndexBuildToken;
+  structureIndexBuilding = true;
   buildStructureIndexButton.disabled = true;
-  structureEmpty.textContent = t('Building theorem and definition index…', '正在生成定理与定义索引……');
-  structureEntries = [];
-  const maxPages = Math.min(pdfDoc.numPages, 800);
-  for (let page = 1; page <= maxPages; page += 1) {
-    const text = await pageText(page);
-    const parts = text.split(/(?<=[.!?])\s+|(?=(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+)/i);
-    for (const part of parts) {
-      const cleaned = String(part || '').replace(/\s+/g, ' ').trim();
-      const match = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
-      if (!match) continue;
-      const title = match[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
-      if (!STRUCTURE_LABEL_RE.test(title)) continue;
-      const label = title.match(/^(.*?)(?=[.:)]\s|\s{2,}|$)/)?.[1] || title.slice(0, 80);
-      const key = `${page}:${label.toLowerCase()}`;
-      if (structureEntries.some((entry) => entry.key === key)) continue;
-      structureEntries.push({ key, page, title: title.slice(0, 180) });
+  structureEmpty.classList.remove('is-hidden');
+  structureEmpty.textContent = t('Building theorem and definition index in the background…', '正在后台生成定理与定义索引……');
+
+  const nextEntries = [];
+  try {
+    const maxPages = Math.min(sourceDoc.numPages, 800);
+    for (let page = 1; page <= maxPages; page += 1) {
+      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+      const text = await pageText(page, sourceDoc, sourceTextCache);
+      const parts = text.split(/(?<=[.!?])\s+|(?=(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+)/i);
+      for (const part of parts) {
+        const cleaned = String(part || '').replace(/\s+/g, ' ').trim();
+        const match = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+        if (!match) continue;
+        const title = match[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
+        if (!STRUCTURE_LABEL_RE.test(title)) continue;
+        const label = title.match(/^(.*?)(?=[.:)]\s|\s{2,}|$)/)?.[1] || title.slice(0, 80);
+        const key = `${page}:${label.toLowerCase()}`;
+        if (nextEntries.some((entry) => entry.key === key)) continue;
+        nextEntries.push({ key, page, title: title.slice(0, 180) });
+      }
+      // Keep long books responsive while the index is prepared in the background.
+      if (page % 12 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+    structureEntries = nextEntries.slice(0, 500);
+    structureIndexVersion = STRUCTURE_INDEX_VERSION;
+    renderStructureIndex();
+    persistDocumentState();
+  } catch (error) {
+    console.warn('Theorem/definition index build failed', error);
+    if (pdfDoc === sourceDoc && currentFileKey === sourceKey && token === structureIndexBuildToken) {
+      structureEmpty.classList.remove('is-hidden');
+      structureEmpty.textContent = t('The theorem and definition index could not be built. Use Rebuild index to try again.', '无法生成定理与定义索引。可使用“重新生成索引”再次尝试。');
+    }
+  } finally {
+    if (token === structureIndexBuildToken) {
+      structureIndexBuilding = false;
+      buildStructureIndexButton.disabled = !pdfDoc;
     }
   }
-  structureEntries = structureEntries.slice(0, 500);
-  renderStructureIndex();
-  persistDocumentState();
-  buildStructureIndexButton.disabled = false;
+}
+
+function scheduleAutomaticStructureIndex() {
+  if (!pdfDoc || structureIndexVersion === STRUCTURE_INDEX_VERSION || structureIndexBuilding) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const run = () => {
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || structureIndexVersion === STRUCTURE_INDEX_VERSION) return;
+    buildStructureIndex();
+  };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 700 });
+  else setTimeout(run, 120);
 }
 
 function renderStructureIndex() {
@@ -3229,7 +3281,9 @@ function renderStructureIndex() {
   structureCount.textContent = String(structureEntries.length);
   structureEmpty.classList.toggle('is-hidden', structureEntries.length > 0);
   if (!structureEntries.length) {
-    structureEmpty.textContent = t('Build a conservative index of theorem-like statements when you need it.', '需要时可生成保守的定理类结构索引。');
+    structureEmpty.textContent = structureIndexBuilding
+      ? t('Building theorem and definition index in the background…', '正在后台生成定理与定义索引……')
+      : t('The theorem and definition index is prepared automatically for this document.', '此文档的定理与定义索引会自动生成。');
     return;
   }
   for (const entry of structureEntries) {
@@ -3316,12 +3370,12 @@ async function renderOutline() {
   }
 }
 
-async function pageText(pageNum) {
-  if (textCache.has(pageNum)) return textCache.get(pageNum);
-  const page = await pdfDoc.getPage(pageNum);
+async function pageText(pageNum, sourceDoc = pdfDoc, cache = textCache) {
+  if (cache.has(pageNum)) return cache.get(pageNum);
+  const page = await sourceDoc.getPage(pageNum);
   const content = await page.getTextContent();
   const text = content.items.map((item) => item.str).join(' ').replace(/\s+/g, ' ').trim();
-  textCache.set(pageNum, text);
+  cache.set(pageNum, text);
   return text;
 }
 
@@ -3563,6 +3617,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
   } finally {
     restoringSession = false;
     setLoading(false);
+    if (pdfDoc) scheduleAutomaticStructureIndex();
     fileInput.value = '';
   }
 }
@@ -3704,7 +3759,7 @@ async function importReadingDataFile(file) {
   safeSet(stateKey('session-v2'), JSON.stringify(payload.session));
   loadDocumentState(payload.session);
   await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
-  renderBookmarks(); renderStructureIndex(); renderReferenceStack(); updateReadingBackButton(); persistDocumentState();
+  renderBookmarks(); renderStructureIndex(); renderReferenceStack(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
 }
 
 function commandActions() {
@@ -3712,7 +3767,7 @@ function commandActions() {
     { label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
     { label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
     { label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
-    { label: t('Build theorem & definition index', '生成定理与定义索引'), needsPdf: true, run: () => buildStructureIndex() },
+    { label: t('Rebuild theorem & definition index', '重新生成定理与定义索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
     { label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
     { label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
     { label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
@@ -3758,7 +3813,7 @@ referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
 readingBackButton?.addEventListener('click', goBackReadingLocation);
-buildStructureIndexButton?.addEventListener('click', buildStructureIndex);
+buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({ force: true }));
 exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
 importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
