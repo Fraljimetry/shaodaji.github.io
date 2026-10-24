@@ -4682,6 +4682,194 @@ function highlightedSnippet(text, query, index = -1) {
   return frag;
 }
 
+
+function exactSearchMatches(text, query) {
+  const matchCase = Boolean(searchMatchCase?.checked);
+  const wholeWord = Boolean(searchWholeWord?.checked);
+  const source = normalizeSearchValue(text, matchCase);
+  const needle = normalizeSearchValue(query, matchCase);
+  if (!needle) return [];
+  const out = [];
+  let from = 0;
+  while (from <= source.length) {
+    const index = source.indexOf(needle, from);
+    if (index < 0) break;
+    let ok = true;
+    if (wholeWord) {
+      const before = index > 0 ? source[index - 1] : '';
+      const after = index + needle.length < source.length ? source[index + needle.length] : '';
+      const isWord = (ch) => /[\p{L}\p{N}_]/u.test(ch || '');
+      ok = !isWord(before) && !isWord(after);
+    }
+    if (ok) out.push({ index, score: 1 });
+    from = index + Math.max(1, needle.length);
+  }
+  return out;
+}
+
+function levenshteinDistance(a, b, maxDistance = Infinity) {
+  const aa = String(a || ''), bb = String(b || '');
+  if (Math.abs(aa.length - bb.length) > maxDistance) return maxDistance + 1;
+  let prev = Array.from({ length: bb.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= aa.length; i += 1) {
+    const curr = [i];
+    let rowMin = curr[0];
+    for (let j = 1; j <= bb.length; j += 1) {
+      const cost = aa[i - 1] === bb[j - 1] ? 0 : 1;
+      const v = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      curr[j] = v; rowMin = Math.min(rowMin, v);
+    }
+    if (rowMin > maxDistance) return maxDistance + 1;
+    prev = curr;
+  }
+  return prev[bb.length];
+}
+
+function fuzzySearchMatches(text, query) {
+  const matchCase = Boolean(searchMatchCase?.checked);
+  const normalizedText = normalizeSearchValue(text, matchCase);
+  const normalizedQuery = normalizeSearchValue(query, matchCase).trim();
+  if (!normalizedQuery) return [];
+  const direct = exactSearchMatches(text, query);
+  if (direct.length) return direct;
+  const qWords = normalizedQuery.split(/\s+/).filter(Boolean);
+  const words = [];
+  const re = /[\p{L}\p{N}_]+/gu;
+  let m;
+  while ((m = re.exec(normalizedText))) words.push({ word: m[0], index: m.index });
+  if (!qWords.length || !words.length) return [];
+  const maxEditsFor = (w) => w.length <= 4 ? 1 : w.length <= 8 ? 2 : 3;
+  const out = [];
+  const span = qWords.length;
+  for (let i = 0; i < words.length; i += 1) {
+    if (i + span > words.length) break;
+    let total = 0, possible = 0, ok = true;
+    for (let j = 0; j < span; j += 1) {
+      const q = qWords[j], w = words[i + j].word;
+      const maxD = maxEditsFor(q);
+      const d = levenshteinDistance(q, w, maxD);
+      if (d > maxD) { ok = false; break; }
+      total += d; possible += Math.max(q.length, w.length, 1);
+    }
+    if (!ok) continue;
+    const score = Math.max(0, 1 - total / possible);
+    if (score >= 0.72) out.push({ index: words[i].index, score });
+  }
+  return out.slice(0, 80);
+}
+
+async function runFindAllOccurrences(query) {
+  const q = String(query || '').replace(/\s+/g, ' ').trim();
+  if (!pdfDoc || !q) return;
+  openLeftPanelShortcut('search-panel', searchInput);
+  searchInput.value = q;
+  if (searchFuzzy) searchFuzzy.checked = false;
+  persistDocumentState();
+  await searchPdf(q);
+}
+
+function normalizeSymbolGlossary(items) {
+  const seen = new Set();
+  const out = [];
+  for (const [index, item] of (Array.isArray(items) ? items : []).entries()) {
+    if (!item) continue;
+    const symbol = String(item.symbol || '').replace(/\s+/g, ' ').trim();
+    if (!symbol) continue;
+    const key = normalizeSearchValue(symbol, false);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      id: item.id || `sym-${Number(item.created) || Date.now()}-${index}`,
+      symbol,
+      meaning: String(item.meaning || '').trim(),
+      created: Number(item.created) || Date.now(),
+      firstPage: Number(item.firstPage) >= 1 ? Number(item.firstPage) : null,
+      firstRatio: Number.isFinite(Number(item.firstRatio)) ? Math.min(1, Math.max(0, Number(item.firstRatio))) : null
+    });
+  }
+  return out;
+}
+
+async function locateFirstOccurrence(symbol) {
+  if (!pdfDoc || !symbol) return null;
+  const needle = normalizeSearchValue(symbol, false);
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    try {
+      const text = await pageText(page);
+      const hay = normalizeSearchValue(text, false);
+      const index = hay.indexOf(needle);
+      if (index >= 0) return { page, ratio: Math.min(1, Math.max(0, index / Math.max(1, hay.length))) };
+    } catch (_) {}
+  }
+  return null;
+}
+
+function renderSymbolGlossary() {
+  if (!symbolGlossaryList || !symbolGlossaryEmpty || !symbolGlossaryCount) return;
+  symbolGlossary = normalizeSymbolGlossary(symbolGlossary);
+  symbolGlossaryCount.textContent = String(symbolGlossary.length);
+  symbolGlossaryList.replaceChildren();
+  symbolGlossaryEmpty.classList.toggle('is-hidden', symbolGlossary.length > 0);
+  for (const item of symbolGlossary) {
+    const card = document.createElement('div'); card.className = 'symbol-glossary-item';
+    const head = document.createElement('div'); head.className = 'symbol-glossary-head';
+    const symbol = document.createElement('strong'); symbol.textContent = item.symbol;
+    const meaning = document.createElement('span'); meaning.textContent = item.meaning || t('No meaning yet', '尚未填写含义');
+    head.append(symbol, meaning);
+    const actions = document.createElement('div'); actions.className = 'symbol-glossary-actions';
+    const first = document.createElement('button'); first.type = 'button'; first.className = 'text-button'; first.textContent = t('First', '首次');
+    first.addEventListener('click', async () => {
+      let loc = item.firstPage ? { page: item.firstPage, ratio: item.firstRatio ?? 0 } : null;
+      if (!loc) {
+        loc = await locateFirstOccurrence(item.symbol);
+        if (loc) { item.firstPage = loc.page; item.firstRatio = loc.ratio; persistDocumentState(); renderSymbolGlossary(); }
+      }
+      if (loc) goToLocation(loc.page, loc.ratio);
+      else showError(t('Symbol not found in this PDF.', '在此 PDF 中未找到该符号。'));
+    });
+    const all = document.createElement('button'); all.type = 'button'; all.className = 'text-button'; all.textContent = t('Find all', '查找全部');
+    all.addEventListener('click', () => runFindAllOccurrences(item.symbol));
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-button'; edit.textContent = t('Edit', '编辑');
+    edit.addEventListener('click', () => {
+      const next = window.prompt(t(`Meaning of ${item.symbol}`, `${item.symbol} 的含义`), item.meaning || '');
+      if (next === null) return;
+      item.meaning = String(next).trim(); persistDocumentState(); renderSymbolGlossary();
+    });
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'text-button'; del.textContent = t('Delete', '删除');
+    del.addEventListener('click', () => { symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
+    actions.append(first, all, edit, del);
+    card.append(head, actions);
+    symbolGlossaryList.append(card);
+  }
+}
+
+async function addGlossaryEntry(symbolValue = null, meaningValue = null) {
+  if (!pdfDoc) return;
+  const symbol = String(symbolValue ?? glossarySymbolInput?.value ?? '').replace(/\s+/g, ' ').trim();
+  const meaning = String(meaningValue ?? glossaryMeaningInput?.value ?? '').trim();
+  if (!symbol) { glossarySymbolInput?.focus(); return; }
+  const key = normalizeSearchValue(symbol, false);
+  let item = symbolGlossary.find((entry) => normalizeSearchValue(entry.symbol, false) === key);
+  if (item) {
+    if (meaning) item.meaning = meaning;
+  } else {
+    const first = await locateFirstOccurrence(symbol);
+    item = { id: `sym-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, symbol, meaning, created: Date.now(), firstPage: first?.page || null, firstRatio: first?.ratio ?? null };
+    symbolGlossary.push(item);
+  }
+  if (glossarySymbolInput) glossarySymbolInput.value = '';
+  if (glossaryMeaningInput) glossaryMeaningInput.value = '';
+  persistDocumentState(); renderSymbolGlossary(); expandWorkspaceSection('symbol-glossary-section');
+}
+
+function addSelectionToGlossary() {
+  const selected = String(currentSelection?.latex || currentSelection?.text || '').replace(/\s+/g, ' ').trim();
+  if (!selected) return;
+  if (glossarySymbolInput) glossarySymbolInput.value = selected;
+  expandWorkspaceSection('symbol-glossary-section');
+  glossaryMeaningInput?.focus();
+}
+
 function selectedReferenceQuery() {
   const text = String(currentSelection?.text || '').replace(/\s+/g, ' ').trim();
   const match = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
