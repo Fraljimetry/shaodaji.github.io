@@ -4576,23 +4576,165 @@ function nativeCommentKind(annotation) {
   return labels[type] || 'Comment';
 }
 
-function normalizeNativePdfComments(raw) {
-  const seen = new Set();
+function nativeAnnotationId(annotation) {
+  return String(annotation?.id || annotation?.annotationId || annotation?.ref || '').trim();
+}
+
+function nativeAnnotationParentId(annotation) {
+  const values = [
+    annotation?.parentId,
+    annotation?.parentAnnotationId,
+    annotation?.popupParentId,
+    annotation?.parent?.id,
+    annotation?.popupRef?.id,
+    annotation?.parentRef?.id
+  ];
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function nativeAnnotationRect(annotation) {
+  const quad = annotation?.quadPoints;
+  const nums = [];
+  const collect = (value) => {
+    if (Number.isFinite(Number(value))) nums.push(Number(value));
+    else if (value && typeof value === 'object') {
+      if (Number.isFinite(Number(value.x))) nums.push(Number(value.x));
+      if (Number.isFinite(Number(value.y))) nums.push(Number(value.y));
+    }
+  };
+  if (Array.isArray(quad) || ArrayBuffer.isView(quad)) {
+    for (const value of quad) {
+      if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+        for (const part of value) collect(part);
+      } else collect(value);
+    }
+  }
+  if (nums.length >= 4) {
+    const xs = nums.filter((_, i) => i % 2 === 0);
+    const ys = nums.filter((_, i) => i % 2 === 1);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+  const rect = Array.isArray(annotation?.rect) || ArrayBuffer.isView(annotation?.rect) ? Array.from(annotation.rect).map(Number) : [];
+  if (rect.length >= 4 && rect.slice(0, 4).every(Number.isFinite)) {
+    return [Math.min(rect[0], rect[2]), Math.min(rect[1], rect[3]), Math.max(rect[0], rect[2]), Math.max(rect[1], rect[3])];
+  }
+  return null;
+}
+
+function annotationTextFromContent(annotation, textContent) {
+  const rect = nativeAnnotationRect(annotation);
+  if (!rect || !textContent?.items?.length) return '';
+  const [ax1, ay1, ax2, ay2] = rect;
+  const hits = [];
+  for (const item of textContent.items) {
+    const text = String(item?.str || '').trim();
+    if (!text) continue;
+    const tr = item?.transform || [1, 0, 0, 1, 0, 0];
+    const x = Number(tr[4]) || 0;
+    const y = Number(tr[5]) || 0;
+    const w = Math.max(0.5, Number(item?.width) || 0.5);
+    const h = Math.max(1, Number(item?.height) || Math.hypot(Number(tr[2]) || 0, Number(tr[3]) || 0) || Math.hypot(Number(tr[0]) || 0, Number(tr[1]) || 0) || 8);
+    // PDF text y is normally a baseline. Give it a small descender allowance so
+    // native highlight rectangles overlap reliably across fonts.
+    const ix1 = x;
+    const ix2 = x + w;
+    const iy1 = y - Math.max(2, h * 0.28);
+    const iy2 = y + Math.max(2, h * 0.95);
+    const overlapX = Math.min(ax2, ix2) - Math.max(ax1, ix1);
+    const overlapY = Math.min(ay2, iy2) - Math.max(ay1, iy1);
+    if (overlapX <= 0 || overlapY <= 0) continue;
+    const itemArea = Math.max(1, (ix2 - ix1) * (iy2 - iy1));
+    const overlapArea = overlapX * overlapY;
+    if (overlapArea / itemArea < 0.08 && overlapX < Math.min(5, w * 0.25)) continue;
+    hits.push({ text, x, y });
+  }
+  if (!hits.length) return '';
+  hits.sort((a, b) => Math.abs(b.y - a.y) > 2.2 ? b.y - a.y : a.x - b.x);
+  const rows = [];
+  for (const hit of hits) {
+    let row = rows.find((candidate) => Math.abs(candidate.y - hit.y) <= 2.2);
+    if (!row) { row = { y: hit.y, items: [] }; rows.push(row); }
+    row.items.push(hit);
+  }
+  rows.sort((a, b) => b.y - a.y);
+  return rows.map((row) => row.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(' '))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeNativePdfComments(raw, textContent = null) {
+  const annotations = Array.isArray(raw) ? raw : [];
+  const byId = new Map();
+  for (const annotation of annotations) {
+    const id = nativeAnnotationId(annotation);
+    if (id) byId.set(id, annotation);
+  }
+
+  const popupByParent = new Map();
+  const unpairedPopups = [];
+  for (const annotation of annotations) {
+    if (nativeCommentKind(annotation).toLowerCase() !== 'popup') continue;
+    const parentId = nativeAnnotationParentId(annotation);
+    if (parentId) popupByParent.set(parentId, annotation);
+    else unpairedPopups.push(annotation);
+  }
+
   const result = [];
-  for (let index = 0; index < (Array.isArray(raw) ? raw.length : 0); index += 1) {
-    const annotation = raw[index];
-    const body = nativeCommentBody(annotation);
-    if (!body) continue;
-    const author = nativeCommentAuthor(annotation);
+  const usedPopups = new Set();
+  const isMarkupKind = (kind) => /^(highlight|underline|squiggly|strikeout)$/i.test(kind);
+
+  for (let index = 0; index < annotations.length; index += 1) {
+    const annotation = annotations[index];
     const kind = nativeCommentKind(annotation);
-    const key = `${body}\u0000${author}\u0000${kind}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (kind.toLowerCase() === 'popup') continue;
+    const id = nativeAnnotationId(annotation) || `pdf-comment-${index}`;
+    let popup = popupByParent.get(id) || null;
+    const annotationBody = nativeCommentBody(annotation);
+
+    // Some PDFs expose the parent linkage incompletely but duplicate the same
+    // comment body on the markup and Popup objects. Pair those conservatively.
+    if (!popup && annotationBody) {
+      popup = unpairedPopups.find((candidate) => !usedPopups.has(candidate) && nativeCommentBody(candidate) === annotationBody) || null;
+    }
+    if (popup) usedPopups.add(popup);
+
+    const popupBody = popup ? nativeCommentBody(popup) : '';
+    const body = popupBody || annotationBody;
+    const sourceText = isMarkupKind(kind) ? annotationTextFromContent(annotation, textContent) : '';
+    if (!body && !sourceText) continue;
     result.push({
-      id: String(annotation?.id || `pdf-comment-${index}`),
+      id,
+      kind,
+      sourceText,
       body,
-      author,
-      kind
+      author: (popup && nativeCommentAuthor(popup)) || nativeCommentAuthor(annotation),
+      paired: Boolean(popup),
+      ratio: (() => {
+        const rect = nativeAnnotationRect(annotation);
+        return rect ? Number(rect[3]) : null;
+      })()
+    });
+  }
+
+  // Preserve genuine standalone popup/text comments that have no markup parent.
+  for (let index = 0; index < unpairedPopups.length; index += 1) {
+    const popup = unpairedPopups[index];
+    if (usedPopups.has(popup)) continue;
+    const body = nativeCommentBody(popup);
+    if (!body) continue;
+    result.push({
+      id: nativeAnnotationId(popup) || `pdf-popup-${index}`,
+      kind: 'Popup',
+      sourceText: '',
+      body,
+      author: nativeCommentAuthor(popup),
+      paired: false,
+      ratio: null
     });
   }
   return result;
@@ -4606,7 +4748,8 @@ function renderNativePdfComments(page = currentPage) {
   pdfComments.classList.toggle('is-hidden', items.length === 0);
   for (const item of items) {
     const row = document.createElement('article');
-    row.className = 'pdf-comment-item';
+    row.className = `pdf-comment-item${item.sourceText ? ' has-source' : ''}${item.paired ? ' is-paired' : ''}`;
+
     const meta = document.createElement('div');
     meta.className = 'pdf-comment-meta';
     const kind = document.createElement('span');
@@ -4617,10 +4760,33 @@ function renderNativePdfComments(page = currentPage) {
       author.textContent = t(`By ${item.author}`, `作者：${item.author}`);
       meta.append(author);
     }
-    const body = document.createElement('p');
-    body.className = 'pdf-comment-body';
-    body.textContent = item.body;
-    row.append(meta, body);
+    row.append(meta);
+
+    if (item.sourceText) {
+      const source = document.createElement('div');
+      source.className = 'pdf-comment-source';
+      const label = document.createElement('div');
+      label.className = 'pdf-comment-source-label';
+      label.textContent = t('Highlighted text', '高亮原文');
+      const text = document.createElement('blockquote');
+      text.className = 'pdf-comment-source-text';
+      text.textContent = item.sourceText;
+      source.append(label, text);
+      row.append(source);
+    }
+
+    if (item.body) {
+      const reply = document.createElement('div');
+      reply.className = 'pdf-comment-reply';
+      const label = document.createElement('div');
+      label.className = 'pdf-comment-reply-label';
+      label.textContent = item.sourceText ? t('Comment', '批注内容') : t('PDF comment', 'PDF 批注');
+      const body = document.createElement('p');
+      body.className = 'pdf-comment-body';
+      body.textContent = item.body;
+      reply.append(label, body);
+      row.append(reply);
+    }
     pdfCommentsList.append(row);
   }
 }
@@ -4637,9 +4803,12 @@ async function refreshNativePdfComments(pageNum) {
   const token = nativePdfCommentLoadToken;
   try {
     const pdfPage = await sourceDoc.getPage(page);
-    const raw = await pdfPage.getAnnotations({ intent: 'any' });
+    const [raw, textContent] = await Promise.all([
+      pdfPage.getAnnotations({ intent: 'any' }),
+      pdfPage.getTextContent().catch(() => null)
+    ]);
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== nativePdfCommentLoadToken) return;
-    nativePdfCommentsByPage.set(page, normalizeNativePdfComments(raw));
+    nativePdfCommentsByPage.set(page, normalizeNativePdfComments(raw, textContent));
     if (page === currentPage) renderNativePdfComments(page);
   } catch (error) {
     console.warn('MathReader PDF comment extraction failed', error);
