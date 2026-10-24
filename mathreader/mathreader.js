@@ -208,6 +208,7 @@ let continuousLayoutWidth = 0;
 let continuousLayoutHeight = 0;
 let continuousObserver = null;
 let continuousGeneration = 0;
+let continuousRebuilding = false;
 let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
 let readingFlow = 'continuous';
@@ -921,14 +922,18 @@ function updateReferenceStatus() {
 }
 
 function updateZoomLabel() {
-  if (!pdfDoc || zoomMode !== 'custom') {
-    // This control is an action: clicking it returns to Fit width. Keep its
-    // label stable in both fit modes so Fit page is not duplicated in the
-    // toolbar when the dedicated Fit page button is already present.
+  if (!pdfDoc || zoomMode === 'fit-width') {
     zoomLabel.textContent = t('Fit width', '适合宽度');
+    zoomLabel.title = t('Switch to Fit page', '切换到适合页面');
+    return;
+  }
+  if (zoomMode === 'fit-page') {
+    zoomLabel.textContent = t('Fit page', '适合页面');
+    zoomLabel.title = t('Switch to Fit width', '切换到适合宽度');
     return;
   }
   zoomLabel.textContent = `${Math.round(zoomScale * 100)}%`;
+  zoomLabel.title = t('Return to Fit width', '返回适合宽度');
 }
 
 
@@ -2209,6 +2214,46 @@ function latexVisualRowCount(value) {
   return rowBreaks ? rowBreaks + 1 : 1;
 }
 
+function latexHasAlignmentRelation(value) {
+  return /(?:&\s*)?(?:=|\\leq?\b|\\geq?\b|\\approx\b|\\sim\b|\\equiv\b|\\to\b|\\Rightarrow\b)/.test(String(value || ''));
+}
+
+function latexHasLargeMathOperator(value) {
+  return /\\(?:int|iint|iiint|oint|sum|prod|lim|sup|inf|bigcup|bigcap)\b/.test(String(value || ''));
+}
+
+function alignedRowsAssessment(lines) {
+  const clean = (Array.isArray(lines) ? lines : []).map((line) => String(line || '').trim()).filter(Boolean);
+  const reasons = [];
+  if (clean.length < 2) reasons.push('too-few-rows');
+  const relationCount = clean.filter(latexHasAlignmentRelation).length;
+  if (clean.length >= 2 && relationCount < Math.max(2, clean.length - 1)) reasons.push('weak-shared-alignment');
+  for (let i = 0; i < clean.length; i += 1) {
+    const compact = clean[i].replace(/\s+/g, '');
+    // A very short, relation-free fragment between equation rows is usually a
+    // decoder artifact (for example `J\\mathbb{R}^{n}` detached from an
+    // integral). Reject the rowwise candidate rather than silently deleting
+    // mathematics or presenting a fabricated aligned block.
+    if (clean.length >= 3 && compact.length <= 22 && !latexHasAlignmentRelation(clean[i]) && !latexHasLargeMathOperator(clean[i])) {
+      reasons.push(`orphan-row-${i + 1}`);
+    }
+  }
+  return { ok: reasons.length === 0, reasons, relationCount };
+}
+
+function alignedCandidateScore(item, expectedRows = 0) {
+  if (!item?.latex) return 10000;
+  const assessmentPenalty = (item.assessment?.reasons?.length || 0) * 50;
+  const structural = Number(item.penalty || 0);
+  const rows = latexVisualRowCount(item.latex);
+  let score = structural + assessmentPenalty;
+  if (expectedRows >= 2) score += Math.abs(rows - expectedRows) * 10;
+  if (/\\begin\{aligned\}/.test(item.latex)) score -= 4;
+  const relationCount = (String(item.latex).match(/&\s*(?:=|\\leq?|\\geq?|\\approx|\\sim|\\equiv|\\to|\\Rightarrow)/g) || []).length;
+  if (expectedRows >= 2) score -= Math.min(expectedRows, relationCount) * 2;
+  return score;
+}
+
 async function runImageFormulaRecognition(crop) {
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
@@ -2235,11 +2280,13 @@ async function runImageFormulaRecognition(crop) {
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
   let best = await onePass(crop, 'tight');
 
-  // For visibly separated aligned rows, a whole-block decoder can return only
-  // the first line. When the crop has clean horizontal row bands and no tall
-  // matrix/cases delimiter, recognize each row and rebuild an aligned block.
+  // Aligned displays need a dedicated recovery path. The whole-block decoder
+  // can produce several rows yet still corrupt one continuation line, so do
+  // not use "already multiline" as evidence that the result is good. When the
+  // image has 2–5 clean horizontal bands, build a second candidate by OCRing
+  // every row independently and compare both candidates structurally.
   const bands = formulaRowBands(crop);
-  if (bands.length >= 2 && latexVisualRowCount(best.latex) < bands.length) {
+  if (bands.length >= 2) {
     const lines = [];
     let rowFailure = false;
     for (let i = 0; i < bands.length; i += 1) {
@@ -2251,17 +2298,29 @@ async function runImageFormulaRecognition(crop) {
       } catch (_) { rowFailure = true; break; }
     }
     if (!rowFailure && lines.length === bands.length) {
-      const latex = `\\begin{aligned}\n${lines.join(latexLineSeparator())}\n\\end{aligned}`;
-      const candidate = { raw: latex, rawLatex: latex, latex, penalty: latexStructuralPenalty(latex), assessment: assessImageOcrResult(latex, latex), variant: 'rows' };
-      if (candidate.assessment.ok) best = candidate;
+      const rowAssessment = alignedRowsAssessment(lines);
+      if (rowAssessment.ok) {
+        const latex = `\\begin{aligned}\n${lines.join(latexLineSeparator())}\n\\end{aligned}`;
+        const candidate = {
+          raw: latex,
+          rawLatex: latex,
+          latex,
+          penalty: latexStructuralPenalty(latex),
+          assessment: assessImageOcrResult(latex, latex),
+          variant: 'aligned-rows'
+        };
+        if (candidate.assessment.ok && alignedCandidateScore(candidate, bands.length) + 1 < alignedCandidateScore(best, bands.length)) {
+          best = candidate;
+        }
+      }
     }
   }
 
   if (!best.assessment.ok || best.penalty >= 8) {
     setOcrStatus(t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……'), true);
     const alternate = await onePass(crop, 'relaxed');
-    const score = (item) => item.penalty + item.assessment.reasons.length * 40 + (item.latex ? 0 : 1000) - (looksMultilineLatex(item.latex) ? 3 : 0);
-    if (score(alternate) < score(best)) best = alternate;
+    const expectedRows = bands.length >= 2 ? bands.length : 0;
+    if (alignedCandidateScore(alternate, expectedRows) < alignedCandidateScore(best, expectedRows)) best = alternate;
   }
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
   requireUsableImageOcr(best.raw, best.latex);
@@ -2925,10 +2984,9 @@ function updateCurrentPageFromContinuousScroll() {
 async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
   if (!pdfDoc || !continuousStack) return;
   const generation = ++continuousGeneration;
-  clearContinuousObserver();
-  continuousStack.replaceChildren();
-  // Freeze one layout width/height for this generation. Lazy pages must never
-  // compute fit-width from a later sidebar/scrollbar state than early pages.
+  // Keep the old continuous document on screen while asynchronous PDF metadata
+  // is fetched. Clearing it before this await lets the scroll container collapse
+  // to zero height for a frame, which visibly flashes page 1 during +/- zoom.
   continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
   continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
   const first = await pdfDoc.getPage(Math.min(currentPage, pdfDoc.numPages));
@@ -2937,6 +2995,8 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   const scale = continuousScale(base);
   const estimateWidth = base.width * scale;
   const estimateHeight = base.height * scale;
+  const replacement = document.createDocumentFragment();
+  const replacementNodes = new Map();
   for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
     const frame = document.createElement('section');
     frame.className = 'continuous-page-frame';
@@ -2970,9 +3030,16 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     bindOcrLayer(ocrLayer);
     surface.append(pageCanvas, textLayer, annotationLayer, ocrLayer);
     frame.append(label, surface);
-    continuousStack.append(frame);
-    continuousPageNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
+    replacement.append(frame);
+    replacementNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
   }
+  // Swap the complete placeholder skeleton and restore its anchor as one visual
+  // operation. Suppress the scroll-history listener during this swap so a
+  // transient scrollTop=0 can never be interpreted or persisted as page 1.
+  clearContinuousObserver();
+  continuousRebuilding = true;
+  continuousStack.replaceChildren(replacement);
+  continuousPageNodes = replacementNodes;
   // Restore against the freshly-created placeholders immediately, before any
   // asynchronous page rendering. Without this, replacing the continuous stack
   // temporarily exposes scrollTop=0 and the user sees page 1 flash during zoom
@@ -2986,6 +3053,7 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     const target = continuousPageNodes.get(currentPage)?.frame;
     if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
   }
+  requestAnimationFrame(() => { if (generation === continuousGeneration) continuousRebuilding = false; });
 
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -4216,8 +4284,8 @@ nextPage.addEventListener('click', () => goToPage(currentPage + 1));
 pageNumberInput.addEventListener('change', () => goToPage(pageNumberInput.value));
 zoomIn.addEventListener('click', () => changeZoom(.15));
 zoomOut.addEventListener('click', () => changeZoom(-.15));
-zoomLabel.addEventListener('click', () => setFitMode('fit-width'));
-fitPage.addEventListener('click', () => setFitMode('fit-page'));
+zoomLabel.addEventListener('click', () => setFitMode(zoomMode === 'fit-width' ? 'fit-page' : 'fit-width'));
+fitPage?.addEventListener('click', () => setFitMode('fit-page'));
 ocrHistoryToggle?.addEventListener('click', () => { ocrHistoryExpanded = !ocrHistoryExpanded; refreshOcrUI(); });
 flowButton.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
 flowSingle?.addEventListener('click', () => setReadingFlow('single'));
@@ -4392,7 +4460,7 @@ floatingPinPage.addEventListener('click', () => { if (currentSelection?.page) se
 document.addEventListener('selectionchange', capturePdfSelection);
 primaryCanvasWrap.addEventListener('scroll', () => {
   hideSelectionToolbar();
-  if (!pdfDoc) return;
+  if (!pdfDoc || continuousRebuilding) return;
   if (readingFlow === 'continuous') {
     continuousScrollTop = primaryCanvasWrap.scrollTop;
     clearTimeout(continuousScrollTimer);

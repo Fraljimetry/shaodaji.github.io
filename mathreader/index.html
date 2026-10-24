@@ -140,9 +140,8 @@
 
         <div class="toolbar-group toolbar-center">
           <button class="tool-button" type="button" id="zoom-out" disabled aria-label="Zoom out" title="Zoom out">−</button>
-          <button class="zoom-label" type="button" id="zoom-label" disabled title="Reset to fit width">Fit width</button>
+          <button class="zoom-label" type="button" id="zoom-label" disabled title="Switch Fit width / Fit page">Fit width</button>
           <button class="tool-button" type="button" id="zoom-in" disabled aria-label="Zoom in" title="Zoom in">+</button>
-          <button class="tool-button text-tool" type="button" id="fit-page" disabled data-en="Fit page" data-zh="适合页面">Fit page</button>
           <button class="tool-button text-tool" type="button" id="flow-button" disabled data-en="Continuous" data-zh="连续阅读">Continuous</button>
         </div>
 
@@ -278,9 +277,9 @@
           <label>
             <span data-en="Image OCR engine" data-zh="图像 OCR 引擎">Image OCR engine</span>
             <select id="ocr-engine-mode">
-              <option value="official" data-en="Recommended · Texify CPU" data-zh="推荐 · Texify CPU">Recommended · Texify CPU</option>
-              <option value="webgpu" data-en="Texify · WebGPU q4f16" data-zh="Texify · WebGPU q4f16">Texify · WebGPU q4f16</option>
-              <option value="wasm" data-en="Texify · CPU q8" data-zh="Texify · CPU q8">Texify · CPU q8</option>
+              <option value="webgpu" data-en="Default · WebGPU → CPU fallback" data-zh="默认 · WebGPU → CPU 备用">Default · WebGPU → CPU fallback</option>
+              <option value="official" data-en="Compatibility · Texify CPU" data-zh="兼容模式 · Texify CPU">Compatibility · Texify CPU</option>
+              <option value="wasm" data-en="Texify · CPU/WASM q8" data-zh="Texify · CPU/WASM q8">Texify · CPU/WASM q8</option>
             </select>
           </label>
           <button class="text-button" type="button" id="ocr-retry" data-en="Reload" data-zh="重载" data-en-title="Reload image OCR engine" data-zh-title="重新加载图像 OCR 引擎">Reload</button>
