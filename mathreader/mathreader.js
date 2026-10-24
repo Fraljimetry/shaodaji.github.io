@@ -298,6 +298,7 @@ const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
+const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 2;
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
@@ -913,7 +914,126 @@ function updateWorkspaceCollapseButtons() {
     button.textContent = collapsed ? '▸' : '▾';
     const label = collapsed ? t('Expand section', '展开模块') : t('Collapse section', '收起模块');
     button.title = label; button.setAttribute('aria-label', label); button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const handle = section.querySelector(':scope > .panel-heading .section-drag-handle');
+    if (handle) {
+      const dragLabel = t('Drag to reorder · double-click to reset panel order', '拖动重新排序 · 双击恢复默认顺序');
+      handle.title = dragLabel; handle.setAttribute('aria-label', dragLabel);
+    }
   });
+}
+
+const panelOrderDefaults = new Map();
+let draggedWorkspaceSection = null;
+
+function reorderablePanelContainers() {
+  return [
+    document.getElementById('outline-panel'),
+    document.getElementById('right-sidebar'),
+  ].filter(Boolean);
+}
+
+function directWorkspaceSections(container) {
+  return [...container.children].filter((child) => child.classList?.contains('workspace-section') && child.id);
+}
+
+function panelOrderKeyFor(container) {
+  return container?.id === 'outline-panel' ? 'left' : container?.id === 'right-sidebar' ? 'right' : '';
+}
+
+function captureDefaultPanelOrders() {
+  for (const container of reorderablePanelContainers()) {
+    const key = panelOrderKeyFor(container);
+    if (key && !panelOrderDefaults.has(key)) panelOrderDefaults.set(key, directWorkspaceSections(container).map((section) => section.id));
+  }
+}
+
+function loadPanelOrder() {
+  captureDefaultPanelOrders();
+  let saved = null;
+  try { saved = JSON.parse(safeGet(PANEL_ORDER_KEY, 'null')); } catch (_) { saved = null; }
+  for (const container of reorderablePanelContainers()) {
+    const key = panelOrderKeyFor(container);
+    const allowed = new Map(directWorkspaceSections(container).map((section) => [section.id, section]));
+    const order = Array.isArray(saved?.[key]) ? saved[key] : [];
+    for (const id of order) { const section = allowed.get(id); if (section) { container.append(section); allowed.delete(id); } }
+    // Any newly introduced sections remain available and follow the saved ones
+    // in their shipped/default order rather than disappearing from the panel.
+    for (const id of panelOrderDefaults.get(key) || []) { const section = allowed.get(id); if (section) { container.append(section); allowed.delete(id); } }
+    for (const section of allowed.values()) container.append(section);
+  }
+}
+
+function persistPanelOrder() {
+  const state = {};
+  for (const container of reorderablePanelContainers()) {
+    const key = panelOrderKeyFor(container);
+    if (key) state[key] = directWorkspaceSections(container).map((section) => section.id);
+  }
+  safeSet(PANEL_ORDER_KEY, JSON.stringify(state));
+}
+
+function resetPanelOrder(container) {
+  const key = panelOrderKeyFor(container);
+  const byId = new Map(directWorkspaceSections(container).map((section) => [section.id, section]));
+  for (const id of panelOrderDefaults.get(key) || []) { const section = byId.get(id); if (section) { container.append(section); byId.delete(id); } }
+  for (const section of byId.values()) container.append(section);
+  persistPanelOrder();
+}
+
+function setupPanelReordering() {
+  loadPanelOrder();
+  for (const container of reorderablePanelContainers()) {
+    for (const section of directWorkspaceSections(container)) {
+      const heading = section.querySelector(':scope > .panel-heading');
+      if (!heading || heading.querySelector('.section-drag-handle')) continue;
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'section-drag-handle';
+      handle.draggable = true;
+      handle.textContent = '⠿';
+      const dragLabel = t('Drag to reorder · double-click to reset panel order', '拖动重新排序 · 双击恢复默认顺序');
+      handle.title = dragLabel; handle.setAttribute('aria-label', dragLabel);
+      handle.addEventListener('click', (event) => event.preventDefault());
+      handle.addEventListener('dblclick', (event) => { event.preventDefault(); event.stopPropagation(); resetPanelOrder(container); });
+      handle.addEventListener('dragstart', (event) => {
+        draggedWorkspaceSection = section;
+        section.classList.add('is-dragging-section');
+        event.stopPropagation();
+        try { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', section.id); } catch (_) {}
+      });
+      handle.addEventListener('dragend', (event) => {
+        event.stopPropagation();
+        section.classList.remove('is-dragging-section');
+        draggedWorkspaceSection = null;
+        document.querySelectorAll('.workspace-section.drag-target-before,.workspace-section.drag-target-after').forEach((item) => item.classList.remove('drag-target-before','drag-target-after'));
+      });
+      const collapse = heading.querySelector('.section-collapse-button');
+      heading.insertBefore(handle, collapse || null);
+
+      section.addEventListener('dragover', (event) => {
+        if (!draggedWorkspaceSection || draggedWorkspaceSection === section || draggedWorkspaceSection.parentElement !== container) return;
+        event.preventDefault(); event.stopPropagation();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        const rect = section.getBoundingClientRect();
+        const before = event.clientY < rect.top + rect.height / 2;
+        section.classList.toggle('drag-target-before', before);
+        section.classList.toggle('drag-target-after', !before);
+      });
+      section.addEventListener('dragleave', (event) => {
+        event.stopPropagation();
+        section.classList.remove('drag-target-before','drag-target-after');
+      });
+      section.addEventListener('drop', (event) => {
+        if (!draggedWorkspaceSection || draggedWorkspaceSection === section || draggedWorkspaceSection.parentElement !== container) return;
+        event.preventDefault(); event.stopPropagation();
+        const rect = section.getBoundingClientRect();
+        const before = event.clientY < rect.top + rect.height / 2;
+        container.insertBefore(draggedWorkspaceSection, before ? section : section.nextSibling);
+        section.classList.remove('drag-target-before','drag-target-after');
+        persistPanelOrder();
+      });
+    }
+  }
 }
 
 function setupWorkspaceCollapsibles() {
@@ -926,6 +1046,7 @@ function setupWorkspaceCollapsibles() {
     button.addEventListener('click', () => { const willExpand = section.classList.contains('is-collapsed'); section.classList.toggle('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons(); if (willExpand && section.id === 'contents-equations-section') ensureEquationIndexRendered(); });
     heading.append(button);
   });
+  setupPanelReordering();
   updateWorkspaceCollapseButtons();
 }
 
@@ -4138,9 +4259,18 @@ function isSymbolicEquationTagInner(inner) {
   return Array.from(compact).every((char) => EQUATION_TAG_SYMBOL_CLASS.includes(char));
 }
 
+function isLikelyCalendarYearEquationLabel(value) {
+  const label = normalizedEquationLabel(value);
+  const inner = label.slice(1, -1);
+  if (!/^\d{4}$/.test(inner)) return false;
+  const year = Number(inner);
+  return year >= 1800 && year <= 2099;
+}
+
 function isEquationLabelQuery(value) {
   const label = normalizedEquationLabel(value);
   const inner = label.slice(1, -1);
+  if (isLikelyCalendarYearEquationLabel(label)) return false;
   return /^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner);
 }
 
@@ -4153,7 +4283,9 @@ function equationLabelCandidatesInLine(text) {
     const rawInner = match[1];
     const compactInner = rawInner.replace(/\s+/g, '');
     if (!/^\d+(?:\.\d+)*$/.test(compactInner) && !isSymbolicEquationTagInner(rawInner)) continue;
-    out.push({ label: normalizedEquationLabel(match[0]), index: match.index, end: match.index + match[0].length });
+    const label = normalizedEquationLabel(match[0]);
+    if (isLikelyCalendarYearEquationLabel(label)) continue;
+    out.push({ label, index: match.index, end: match.index + match[0].length });
   }
   return out;
 }
@@ -4927,6 +5059,7 @@ function decorateReferenceLinks(textLayer, surface, pageNum) {
   let match;
   while ((match = CLICKABLE_REFERENCE_RE.exec(mapped.text))) {
     const query = match[0].replace(/\s+/g, ' ').trim();
+    if (/^\(/.test(query) && isLikelyCalendarYearEquationLabel(query)) continue;
     const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
     appendReferenceLinkForRange(overlay, surface, range, query, pageNum);
   }
@@ -6812,10 +6945,17 @@ document.addEventListener('keydown', (event) => {
 });
 
 let dragDepth = 0;
-window.addEventListener('dragenter', (event) => { event.preventDefault(); dragDepth += 1; dropOverlay.classList.remove('is-hidden'); });
-window.addEventListener('dragover', (event) => { event.preventDefault(); });
-window.addEventListener('dragleave', (event) => { event.preventDefault(); dragDepth -= 1; if (dragDepth <= 0) { dragDepth = 0; dropOverlay.classList.add('is-hidden'); } });
+window.addEventListener('dragenter', (event) => {
+  if (draggedWorkspaceSection) return;
+  event.preventDefault(); dragDepth += 1; dropOverlay.classList.remove('is-hidden');
+});
+window.addEventListener('dragover', (event) => { if (!draggedWorkspaceSection) event.preventDefault(); });
+window.addEventListener('dragleave', (event) => {
+  if (draggedWorkspaceSection) return;
+  event.preventDefault(); dragDepth -= 1; if (dragDepth <= 0) { dragDepth = 0; dropOverlay.classList.add('is-hidden'); }
+});
 window.addEventListener('drop', (event) => {
+  if (draggedWorkspaceSection) return;
   event.preventDefault(); dragDepth = 0; dropOverlay.classList.add('is-hidden');
   const file = [...(event.dataTransfer?.files || [])].find((item) => item.type === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf'));
   if (file) openPdfFile(file); else showError(t('Drop a PDF file to open it.', '请拖入 PDF 文件。'));

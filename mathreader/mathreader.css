@@ -394,3 +394,12 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .equation-index-item strong{color:var(--accent-deep);font-size:.72rem}
 .equation-index-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:.68rem}
 .reference-preview-target{left:7px;right:auto;top:42%;width:0;height:0;background:transparent;box-shadow:none;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid color-mix(in srgb,var(--accent) 78%,white);filter:drop-shadow(0 1px 1px rgb(0 0 0 / .28));transform:translateY(-50%)}
+
+/* v116 · user-reorderable sidebar sections */
+.section-drag-handle{flex:0 0 auto;width:24px;height:26px;padding:0;border:0;border-radius:6px;color:var(--muted);background:transparent;cursor:grab;font-size:14px;line-height:1;opacity:.58}
+.section-drag-handle:hover,.section-drag-handle:focus-visible{color:var(--ink);background:var(--surface-soft);opacity:1;outline:none}
+.section-drag-handle:active{cursor:grabbing}
+.workspace-section.is-dragging-section{opacity:.48}
+.workspace-section.drag-target-before::before,.workspace-section.drag-target-after::after{content:"";position:absolute;left:8px;right:8px;height:2px;border-radius:2px;background:var(--accent);z-index:5;pointer-events:none}
+.workspace-section.drag-target-before::before{top:-1px}.workspace-section.drag-target-after::after{bottom:-1px}
+.sidebar-left .contents-section>.panel-heading,.sidebar-right .workspace-section>.panel-heading{min-width:0}
