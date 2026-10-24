@@ -2942,14 +2942,14 @@ function clearContinuousObserver() {
   continuousPageNodes.clear();
 }
 
-async function renderContinuousPage(pageNum, generation) {
-  if (!pdfDoc || generation !== continuousGeneration) return;
+async function renderContinuousPage(pageNum, generation, { retry = true } = {}) {
+  if (!pdfDoc || generation !== continuousGeneration) return false;
   const record = continuousPageNodes.get(pageNum);
-  if (!record || record.rendering || record.rendered) return;
+  if (!record || record.rendering || record.rendered) return Boolean(record?.rendered);
   record.rendering = true;
   try {
     const page = await pdfDoc.getPage(pageNum);
-    if (generation !== continuousGeneration) return;
+    if (generation !== continuousGeneration) return false;
     const baseViewport = page.getViewport({ scale: 1 });
     const scale = continuousScale(baseViewport);
     const viewport = page.getViewport({ scale });
@@ -2963,20 +2963,33 @@ async function renderContinuousPage(pageNum, generation) {
     pageCanvas.style.width = `${viewport.width}px`;
     pageCanvas.style.height = `${viewport.height}px`;
     await page.render({ canvasContext: ctx, viewport, transform: dpr === 1 ? null : [dpr,0,0,dpr,0,0] }).promise;
-    if (generation !== continuousGeneration) return;
+    if (generation !== continuousGeneration) return false;
     await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
     renderAnnotationsForPage(pageNum, surface, 'continuous');
     ocrLayer.dataset.page = String(pageNum);
     ocrLayer.dataset.kind = 'continuous';
-    surface.classList.remove('is-placeholder');
+    surface.classList.remove('is-placeholder', 'is-render-error');
     surface.removeAttribute('data-placeholder-label');
     surface.classList.toggle('ocr-mode', ocrMode);
     record.rendered = true;
+    record.failed = false;
+    return true;
   } catch (error) {
     console.warn('Continuous page render failed', pageNum, error);
+    record.failed = true;
+    if (!retry || generation !== continuousGeneration) {
+      record.surface?.classList.add('is-render-error');
+      if (record.surface) record.surface.dataset.placeholderLabel = t(`Page ${pageNum} could not be rendered`, `第 ${pageNum} 页无法渲染`);
+      return false;
+    }
   } finally {
     record.rendering = false;
   }
+  // A cancelled/temporary first attempt should not strand the visible page as a
+  // permanent placeholder. Retry once after yielding so the active page can
+  // recover independently from neighboring lazy renders.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return renderContinuousPage(pageNum, generation, { retry: false });
 }
 
 function captureContinuousAnchor() {
@@ -3107,17 +3120,23 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
   for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
 
-  // Render the restored/current neighborhood after the one-time anchor restore.
-  // Placeholder geometry already matches each page's final scaled geometry, so
-  // these renders must not trigger a second scroll correction. A single restore
-  // avoids the down-then-snap-back motion that made +/- zoom uncomfortable.
-  const anchorPage = Math.min(Math.max(1, Number(anchor?.page) || currentPage), pdfDoc.numPages);
-  const eagerPages = [];
-  for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) eagerPages.push(n);
-  await Promise.all(eagerPages.map((n) => renderContinuousPage(n, generation)));
+  // Render the restored/current page first. Do not make the visible page wait
+  // behind several neighboring raster jobs: on slower machines that left the
+  // reader showing only a dark placeholder even though PDF loading succeeded.
+  // Once the active page is visible, warm the surrounding pages opportunistically.
+  const anchorPage = Math.min(Math.max(1, Number(restoreAnchor?.page) || Number(anchor?.page) || currentPage), pdfDoc.numPages);
+  await renderContinuousPage(anchorPage, generation);
   if (generation !== continuousGeneration) return;
   updateCurrentPageFromContinuousScroll();
   continuousSavedAnchor = captureContinuousAnchor() || restoreAnchor || continuousSavedAnchor;
+
+  const neighbors = [];
+  for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) {
+    if (n !== anchorPage) neighbors.push(n);
+  }
+  Promise.all(neighbors.map((n) => renderContinuousPage(n, generation))).catch((error) => {
+    console.warn('Continuous neighbor render failed', error);
+  });
 }
 
 async function renderCurrentPage() {
