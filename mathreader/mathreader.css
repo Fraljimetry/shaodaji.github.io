@@ -296,3 +296,4 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
   opacity: .28;
   outline-color: transparent;
 }
+.backlinks-context{margin:0 0 7px;color:var(--muted);font-size:10px;line-height:1.4;overflow-wrap:anywhere}.backlinks-list{display:grid;gap:6px}.backlink-item{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);text-align:left;cursor:pointer}.backlink-item:hover{border-color:var(--line-strong);background:var(--surface-soft)}.backlink-meta{display:block;margin-bottom:3px;color:var(--accent-deep);font-size:9px;font-weight:800;text-transform:uppercase}.backlink-snippet{display:-webkit-box;overflow:hidden;color:var(--muted);font-size:10px;line-height:1.4;-webkit-box-orient:vertical;-webkit-line-clamp:2}

@@ -77,6 +77,10 @@ const readingTrailEmpty = el('reading-trail-empty');
 const readingTrailCount = el('reading-trail-count');
 const readingTrailClear = el('reading-trail-clear');
 const readingTrailToggle = el('reading-trail-toggle');
+const backlinksList = el('backlinks-list');
+const backlinksEmpty = el('backlinks-empty');
+const backlinksCount = el('backlinks-count');
+const backlinksContext = el('backlinks-context');
 const saveOcrEquation = el('save-ocr-equation');
 const selectionGoReference = el('selection-go-reference');
 const selectionHighlight = el('selection-highlight');
@@ -255,6 +259,8 @@ let suppressReadingHistory = false;
 let equationLabelIndex = null;
 let tocOutlineTargets = null;
 let tocDecorationSerial = 0;
+let backlinkContext = null;
+let backlinkEntries = [];
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -743,7 +749,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','reading-trail-section','reference-section','shortcuts-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-trail-section','reference-section','shortcuts-section']);
   document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -830,6 +836,7 @@ function loadDocumentState(cachedSession = null) {
   bibliographyEntries = [];
   structureIndexVersion = 0;
   equationLabelIndex = null;
+  backlinkContext = null; backlinkEntries = []; renderBacklinks();
   tocOutlineTargets = null;
   referencePages = [];
   readingBackStack = [];
@@ -4219,13 +4226,13 @@ function renderStructureIndex() {
     const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     button.append(strong, meta); button.title = entry.title;
-    button.addEventListener('click', () => goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.label || entry.title));
+    button.addEventListener('click', async () => { const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
     row.append(button);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof';
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
       proof.title = entry.proofEndPage ? t(`Proof ends on page ${entry.proofEndPage}`, `证明结束于第 ${entry.proofEndPage} 页`) : '';
-      proof.addEventListener('click', () => goToMatchedLocation(entry.proofPage, Number(entry.proofRatio) || 0, entry.proofTitle || 'Proof'));
+      proof.addEventListener('click', async () => { const q = entry.proofTitle || 'Proof'; const target = { page: entry.proofPage, ratio: Number(entry.proofRatio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); });
       row.append(proof);
     }
     structureIndex.append(row);
@@ -4245,7 +4252,7 @@ function renderBibliographyIndex() {
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bibliography-jump';
     const label = document.createElement('strong'); label.textContent = entry.label;
     const text = document.createElement('span'); text.textContent = entry.title;
-    jump.append(label, text); jump.addEventListener('click', () => goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.label)); row.append(jump);
+    jump.append(label, text); jump.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); }); row.append(jump);
     if (entry.doi || entry.arxiv) {
       const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
       if (entry.doi) { external.href = `https://doi.org/${entry.doi}`; external.textContent = 'DOI ↗'; }
@@ -4750,6 +4757,88 @@ async function findReferenceTextLocation(query, originPage = null) {
   return best;
 }
 
+
+function backlinkSnippet(text, query) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!value) return '';
+  const q = String(query || '').replace(/\s+/g, ' ').trim();
+  const lower = value.toLocaleLowerCase();
+  const idx = q ? lower.indexOf(q.toLocaleLowerCase()) : -1;
+  const start = idx >= 0 ? Math.max(0, idx - 70) : 0;
+  return `${start > 0 ? '…' : ''}${value.slice(start, start + 190)}${start + 190 < value.length ? '…' : ''}`;
+}
+
+function renderBacklinks() {
+  if (!backlinksList || !backlinksEmpty || !backlinksCount || !backlinksContext) return;
+  backlinksList.replaceChildren();
+  backlinksCount.textContent = String(backlinkEntries.length);
+  backlinksContext.textContent = backlinkContext?.label ? t(`References to ${backlinkContext.label}`, `引用 ${backlinkContext.label} 的位置`) : '';
+  backlinksEmpty.classList.toggle('is-hidden', backlinkEntries.length > 0);
+  for (const entry of backlinkEntries.slice(0, 80)) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'backlink-item';
+    const meta = document.createElement('span'); meta.className = 'backlink-meta'; meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
+    const snippet = document.createElement('span'); snippet.className = 'backlink-snippet'; snippet.textContent = entry.snippet || entry.text || '';
+    button.append(meta, snippet);
+    button.addEventListener('click', () => goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || backlinkContext?.label || ''));
+    backlinksList.append(button);
+  }
+}
+
+async function collectBacklinks(query, target) {
+  if (!pdfDoc || !query || !target) return [];
+  const results = [];
+  const seen = new Set();
+  const add = (page, ratio, text, matchText = query) => {
+    if (Number(page) === Number(target.page) && Math.abs((Number(ratio)||0) - (Number(target.ratio)||0)) < 0.025) return;
+    const key = `${page}:${Math.round((Number(ratio)||0)*10000)}:${String(text).slice(0,80)}`;
+    if (seen.has(key)) return; seen.add(key);
+    results.push({ page, ratio:Number(ratio)||0, text, snippet:backlinkSnippet(text, query), matchText });
+  };
+  const normalized = normalizedReferenceLabel(query);
+  const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
+  const bibNumber = /^\[/.test(query) ? Number(String(query).replace(/\D/g,'')) : null;
+  const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query);
+  const acronym = /^[A-Z][A-Z0-9]{1,7}$/.test(String(query).trim()) ? String(query).trim() : null;
+  const structureTarget = structureEntries.find((entry) => Number(entry.page) === Number(target.page) && Math.abs((Number(entry.ratio)||0) - (Number(target.ratio)||0)) < 0.04) || null;
+  const structureAlias = structureTarget ? headingAliasForTitle(structureTarget.title || structureTarget.label || '') : '';
+  const structureLabel = structureTarget?.label || '';
+  for (let page=1; page<=pdfDoc.numPages; page+=1) {
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      const text = String(line.text || '');
+      if (eq) {
+        for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) add(page, line.ratio, text, eq);
+        continue;
+      }
+      if (bibNumber) {
+        const brackets = text.match(/\[[^\]]{1,60}\]/g) || [];
+        if (brackets.some((raw) => groupedBibliographyMembers(raw).includes(bibNumber))) add(page, line.ratio, text, `[${bibNumber}]`);
+        continue;
+      }
+      if (structureLike || structureTarget) {
+        const normalizedText = normalizedReferenceLabel(text);
+        const literalHit = structureLike && normalizedText.includes(normalized);
+        const labelHit = structureLabel && normalizedText.includes(normalizedReferenceLabel(structureLabel));
+        const aliasHit = structureAlias && new RegExp(`(?:^|\\W)${structureAlias}(?:$|\\W)`).test(text);
+        if (literalHit || labelHit || aliasHit) add(page, line.ratio, text, literalHit ? query : (aliasHit ? structureAlias : structureLabel || query));
+        continue;
+      }
+      if (acronym && new RegExp(`(?:^|\\W)${acronym}(?:$|\\W)`).test(text)) add(page, line.ratio, text, acronym);
+    }
+    if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
+  }
+  return results.sort((a,b)=>a.page-b.page || a.ratio-b.ratio);
+}
+
+async function updateBacklinksForTarget(query, target) {
+  backlinkContext = { label:String(query || '').replace(/\s+/g,' ').trim(), page:target.page, ratio:Number(target.ratio)||0 };
+  backlinkEntries = [];
+  renderBacklinks();
+  try { backlinkEntries = await collectBacklinks(query, target); } catch (error) { console.warn('Backlink indexing unavailable', error); backlinkEntries = []; }
+  renderBacklinks();
+  expandWorkspaceSection('backlinks-section');
+}
+
 async function resolveReferenceTarget(query, originPage = null, originRatio = null) {
   const normalized = normalizedReferenceLabel(query);
   if (isEquationLabelQuery(query)) {
@@ -4784,6 +4873,7 @@ async function goToReferenceQuery(query, originPage = currentPage, originRatio =
   const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
   await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.matchText || query);
+  updateBacklinksForTarget(target.matchText || query, target);
 }
 
 async function resolveOutlineDestination(rawDest) {
