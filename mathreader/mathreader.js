@@ -232,6 +232,7 @@ let structureIndexBuildToken = 0;
 let referencePages = [];
 let readingBackStack = [];
 let suppressReadingHistory = false;
+let equationLabelIndex = null;
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -796,6 +797,7 @@ function loadDocumentState(cachedSession = null) {
   structureEntries = [];
   bibliographyEntries = [];
   structureIndexVersion = 0;
+  equationLabelIndex = null;
   referencePages = [];
   readingBackStack = [];
   zoomMode = 'fit-width';
@@ -3888,11 +3890,80 @@ function renderInferredOutline(entries) {
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
 const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
-const CLICKABLE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b|\(\s*\d+(?:\.\d+)*\s*\)|\[\s*\d{1,3}\s*\]/gi;
+const CLICKABLE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b|\(\s*(?:\d+(?:\.\d+)*|\*{1,3}|[†‡⋆★])\s*\)|\[\s*\d{1,3}\s*\]/gi;
 const GROUPED_BIBLIOGRAPHY_RE = /\[\s*\d{1,3}(?:\s*(?:,|;|[-–—])\s*\d{1,3})+\s*\]/g;
 
 function normalizedReferenceLabel(value) {
   return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
+}
+
+function normalizedEquationLabel(value) {
+  let inner = String(value || '').normalize('NFKC').trim();
+  inner = inner.replace(/^\(\s*|\s*\)$/g, '').replace(/\s+/g, '');
+  inner = inner.replace(/^\\(?:dagger|Dagger)$/i, '†').replace(/^\\(?:ddagger|Ddagger)$/i, '‡');
+  return `(${inner})`;
+}
+
+function isEquationLabelQuery(value) {
+  const label = normalizedEquationLabel(value);
+  return /^\((?:\d+(?:\.\d+)*|\*{1,3}|[†‡⋆★])\)$/.test(label);
+}
+
+function equationLabelCandidatesInLine(text) {
+  const value = String(text || '').normalize('NFKC');
+  const out = [];
+  const re = /\(\s*(\d+(?:\.\d+)*|\*{1,3}|[†‡⋆★])\s*\)/g;
+  let match;
+  while ((match = re.exec(value))) {
+    out.push({ label: normalizedEquationLabel(match[0]), index: match.index, end: match.index + match[0].length });
+  }
+  return out;
+}
+
+function equationTargetScore(lineText, label, originPage, page) {
+  const text = String(lineText || '').trim();
+  const compact = text.replace(/\s+/g, '').normalize('NFKC');
+  const pos = compact.lastIndexOf(label);
+  let score = 0;
+  if (pos >= 0 && pos + label.length >= compact.length - 1) score += 12;
+  if (compact === label) score += 10;
+  score += Math.min(10, (text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_+−-]/g) || []).length * 1.5);
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\b/i.test(text)) score -= 20;
+  if (/\b(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\s+\d/i.test(text)) score -= 10;
+  if (page === originPage) score += 0.5;
+  score -= Math.min(4, text.length / 160);
+  return score;
+}
+
+async function buildEquationLabelIndex() {
+  if (!pdfDoc) return new Map();
+  if (equationLabelIndex) return equationLabelIndex;
+  const index = new Map();
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      for (const candidate of equationLabelCandidatesInLine(line.text)) {
+        const list = index.get(candidate.label) || [];
+        list.push({ page, ratio: line.ratio, text: line.text });
+        index.set(candidate.label, list);
+      }
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  equationLabelIndex = index;
+  return index;
+}
+
+async function findEquationLabelLocation(query, originPage = null) {
+  const label = normalizedEquationLabel(query);
+  const index = await buildEquationLabelIndex();
+  const candidates = index.get(label) || [];
+  let best = null;
+  for (const candidate of candidates) {
+    const score = equationTargetScore(candidate.text, label, originPage, candidate.page);
+    if (!best || score > best.score) best = { ...candidate, score };
+  }
+  return best ? { page: best.page, ratio: best.ratio } : null;
 }
 
 async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache) {
@@ -4206,15 +4277,13 @@ function rerenderReferenceLinks() {
 
 async function findReferenceTextLocation(query, originPage = null) {
   const wanted = normalizeSearchValue(query, false);
-  const equationLike = /^\(/.test(query);
   let best = null;
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     const lines = await pageTextLines(page);
     for (const line of lines) {
       if (!normalizeSearchValue(line.text, false).includes(wanted)) continue;
       let score = page === originPage ? -2 : 0;
-      if (equationLike) score += (line.text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_]/g) || []).length * 2 - Math.min(4, line.text.split(/\s+/).length / 12);
-      else score += Math.max(0, 3 - line.text.length / 100);
+      score += Math.max(0, 3 - line.text.length / 100);
       if (!best || score > best.score) best = { page, ratio: line.ratio, score };
     }
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
@@ -4224,6 +4293,11 @@ async function findReferenceTextLocation(query, originPage = null) {
 
 async function resolveReferenceTarget(query, originPage = null) {
   const normalized = normalizedReferenceLabel(query);
+  if (isEquationLabelQuery(query)) {
+    const equationTarget = await findEquationLabelLocation(query, originPage);
+    if (equationTarget) return equationTarget;
+    return null;
+  }
   if (/^\[/.test(query)) {
     const number = Number(query.replace(/\D/g, ''));
     const bib = bibliographyEntries.find((entry) => entry.number === number);
