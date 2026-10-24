@@ -283,6 +283,7 @@ let lastRecoveryFingerprint = '';
 let recoveryRestoreActive = false;
 let referencePreviewTimer = null;
 let referencePreviewSerial = 0;
+const referenceSnapshotCache = new Map();
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
@@ -6421,13 +6422,39 @@ function hideReferencePreview() {
   if (referencePreview) referencePreview.classList.add('is-hidden');
 }
 
+async function referenceSnapshotData(target) {
+  if (!pdfDoc || !target?.page) return null;
+  const ratio = Math.max(0, Math.min(1, Number(target.ratio) || 0));
+  const key = `${currentFileKey || 'pdf'}:${target.page}:${Math.round(ratio * 160)}`;
+  if (referenceSnapshotCache.has(key)) return referenceSnapshotCache.get(key);
+  const page = await pdfDoc.getPage(target.page);
+  const base = page.getViewport({ scale: 1 });
+  const renderWidth = 760;
+  const scale = renderWidth / Math.max(1, base.width);
+  const viewport = page.getViewport({ scale });
+  const full = document.createElement('canvas');
+  full.width = Math.max(1, Math.round(viewport.width));
+  full.height = Math.max(1, Math.round(viewport.height));
+  const ctx = full.getContext('2d', { alpha: false });
+  await page.render({ canvasContext: ctx, viewport, background: '#ffffff' }).promise;
+  const cropHeight = Math.min(full.height, 250);
+  const targetY = Math.round(ratio * full.height);
+  const cropY = Math.max(0, Math.min(full.height - cropHeight, Math.round(targetY - cropHeight * .42)));
+  const crop = document.createElement('canvas');
+  crop.width = full.width;
+  crop.height = cropHeight;
+  crop.getContext('2d', { alpha: false }).drawImage(full, 0, cropY, full.width, cropHeight, 0, 0, full.width, cropHeight);
+  const data = { url: crop.toDataURL('image/jpeg', .9), targetOffset: Math.max(0, Math.min(1, (targetY - cropY) / Math.max(1, cropHeight))) };
+  referenceSnapshotCache.set(key, data);
+  if (referenceSnapshotCache.size > 24) referenceSnapshotCache.delete(referenceSnapshotCache.keys().next().value);
+  return data;
+}
+
 async function referencePreviewData(query, originPage, originRatio) {
   const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) return null;
-  const lines = await pageTextLines(target.page);
-  let line = lines[0] || null;
-  if (lines.length) line = [...lines].sort((a,b) => Math.abs((Number(a.ratio)||0)-(Number(target.ratio)||0)) - Math.abs((Number(b.ratio)||0)-(Number(target.ratio)||0)))[0];
-  return { target, text: String(line?.text || '').replace(/\s+/g,' ').trim() };
+  const snapshot = await referenceSnapshotData(target);
+  return { target, snapshot };
 }
 
 function attachReferencePreview(link, query, originPage, originRatio = null) {
@@ -6440,16 +6467,27 @@ function attachReferencePreview(link, query, originPage, originRatio = null) {
         const data = await referencePreviewData(query, originPage, originRatio);
         if (!data || serial !== referencePreviewSerial || !link.isConnected) return;
         referencePreview.replaceChildren();
+        const header = document.createElement('div'); header.className='reference-preview-header';
         const strong = document.createElement('strong'); strong.textContent = query;
         const meta = document.createElement('div'); meta.className='reference-preview-meta'; meta.textContent=t(`Page ${data.target.page}`,`第 ${data.target.page} 页`);
-        const text = document.createElement('span'); text.className='reference-preview-text'; text.textContent=data.text || t('Target preview unavailable.','无法预览目标。');
-        referencePreview.append(strong, meta, text);
+        header.append(strong, meta); referencePreview.append(header);
+        if (data.snapshot?.url) {
+          const wrap = document.createElement('div'); wrap.className='reference-preview-image-wrap';
+          const image = document.createElement('img'); image.className='reference-preview-image'; image.alt=t(`Preview of ${query}`,`${query} 的预览`); image.src=data.snapshot.url;
+          const marker = document.createElement('span'); marker.className='reference-preview-target'; marker.style.top=`${Math.round((data.snapshot.targetOffset || .42) * 100)}%`;
+          wrap.append(image, marker); referencePreview.append(wrap);
+        } else {
+          const fallback = document.createElement('span'); fallback.className='reference-preview-fallback'; fallback.textContent=t('Visual preview unavailable.','无法显示可视预览。'); referencePreview.append(fallback);
+        }
         const r = link.getBoundingClientRect();
-        const width = Math.min(352, window.innerWidth - 16);
+        const width = Math.min(480, window.innerWidth - 16);
         const left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left));
+        referencePreview.style.left=`${left}px`;
+        referencePreview.classList.remove('is-hidden');
+        const cardHeight = Math.min(referencePreview.getBoundingClientRect().height || 260, window.innerHeight - 16);
         let top = r.bottom + 8;
-        if (top + 150 > window.innerHeight) top = Math.max(8, r.top - 150);
-        referencePreview.style.left=`${left}px`; referencePreview.style.top=`${top}px`; referencePreview.classList.remove('is-hidden');
+        if (top + cardHeight > window.innerHeight - 8) top = Math.max(8, r.top - cardHeight - 8);
+        referencePreview.style.top=`${top}px`;
       } catch (_) {}
     }, 260);
   };
@@ -6461,18 +6499,18 @@ function attachReferencePreview(link, query, originPage, originRatio = null) {
 
 function commandActions() {
   return [
-    { kind:t('Command','命令'), label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
-    { kind:t('Command','命令'), label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
-    { kind:t('Command','命令'), label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
-    { kind:t('Command','命令'), label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
-    { kind:t('Command','命令'), label: t('Rebuild mathematical structure index', '重新生成数学结构索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
-    { kind:t('Command','命令'), label: t('Bibliography', '参考文献'), needsPdf: true, run: () => { openLeftPanelShortcut('outline-panel'); bibliographyIndex?.scrollIntoView({ block: 'nearest' }); } },
-    { kind:t('Command','命令'), label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
-    { kind:t('Command','命令'), label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
-    { kind:t('Command','命令'), label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
-    { kind:t('Command','命令'), label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
-    { kind:t('Command','命令'), label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
-    { kind:t('Command','命令'), label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() }
+    { isCommand:true, kind:t('Command','命令'), label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
+    { isCommand:true, kind:t('Command','命令'), label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Rebuild mathematical structure index', '重新生成数学结构索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Bibliography', '参考文献'), needsPdf: true, run: () => { openLeftPanelShortcut('outline-panel'); bibliographyIndex?.scrollIntoView({ block: 'nearest' }); } },
+    { isCommand:true, kind:t('Command','命令'), label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() }
   ].filter((item) => !item.needsPdf || pdfDoc);
 }
 
@@ -6482,19 +6520,25 @@ function renderCommandPalette() {
   const q = normalizeSearchValue(qRaw, false);
   commandList.replaceChildren();
   const items = [];
-  for (const action of commandActions()) items.push({ kind:action.kind, title:action.label, subtitle:'', run:action.run, searchText:action.label });
+  for (const action of commandActions()) items.push({ isCommand:true, kind:action.kind, title:action.label, subtitle:'', run:action.run, searchText:action.label });
   if (qRaw) items.push(...commandPaletteEntities());
   const filtered = items.filter((item) => {
-    if (!q) return item.kind === t('Command','命令');
+    if (!q) return item.isCommand === true;
     return normalizeSearchValue(item.searchText || `${item.title} ${item.subtitle||''}`, false).includes(q);
   }).slice(0, 80);
   for (const [index, item] of filtered.entries()) {
     const button=document.createElement('button'); button.type='button'; button.className='command-item'; if(index===0) button.classList.add('is-current');
-    const kind=document.createElement('span'); kind.className='command-kind'; kind.textContent=item.kind || t('Command','命令');
     const main=document.createElement('span'); main.className='command-main';
     const title=document.createElement('span'); title.className='command-title'; title.textContent=item.title; main.append(title);
     if(item.subtitle){ const sub=document.createElement('span'); sub.className='command-subtitle'; sub.textContent=item.subtitle; main.append(sub); }
-    button.append(kind,main); button.addEventListener('click',()=>{ closeCommandPalette(); item.run(); }); commandList.append(button);
+    if (item.isCommand) {
+      button.classList.add('is-command-action');
+      button.append(main);
+    } else {
+      const kind=document.createElement('span'); kind.className='command-kind'; kind.textContent=item.kind || '';
+      button.append(kind,main);
+    }
+    button.addEventListener('click',()=>{ closeCommandPalette(); item.run(); }); commandList.append(button);
   }
   if (!filtered.length) { const empty=document.createElement('div'); empty.className='command-hint'; empty.textContent=t('No matching commands or document items.','没有匹配的命令或文档项目。'); commandList.append(empty); }
 }
