@@ -265,7 +265,7 @@ formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 've
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
-const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v1';
+const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v2';
 const STRUCTURE_INDEX_VERSION = 2;
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
@@ -512,7 +512,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 14,
+    version: 15,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -743,7 +743,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['selection-section','note-section','annotations-section','reading-trail-section','reference-section','shortcuts-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','reading-trail-section','reference-section','shortcuts-section']);
   document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -887,7 +887,7 @@ function loadDocumentState(cachedSession = null) {
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
-    if (Number(session.version || 0) < 7 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
+    if (Number(session.version || 0) < 15 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     renderSymbolGlossary();
     if (Number(session.version || 0) >= 4) {
@@ -3880,8 +3880,9 @@ async function detectOutlineFromTypography() {
       const numberedDepth = headingNumberDepth(text);
       const known = isKnownHeading(text);
       const ratio = line.size / Math.max(1, bodySize);
+      const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(text) && ratio >= 1.08;
       const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(text);
-      if (!known && numberedDepth === null && !styleHeading) continue;
+      if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
       if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
       if (isLikelyFormulaHeading(text)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
@@ -4494,6 +4495,48 @@ function tocLinePattern(lineText) {
   try { return new RegExp(source, 'ig'); } catch (_) { return null; }
 }
 
+const HEADING_ALIAS_STOPWORDS = new Set(['a','an','the','of','and','or','in','on','for','to','with','by','from','as','at']);
+
+function headingAliasForTitle(title) {
+  const clean = tocLineCore(title).replace(/^(?:§\s*)?[A-Z]?\d+(?:\.\d+){0,4}[.)]?\s*/i, '').trim();
+  if (!clean) return '';
+  if (/^[A-Z][A-Z0-9]{1,7}$/.test(clean)) return clean;
+  const words = (clean.match(/[A-Za-z][A-Za-z'-]*/g) || []).filter((word) => !HEADING_ALIAS_STOPWORDS.has(word.toLowerCase()));
+  if (words.length < 2 || words.length > 7) return '';
+  const alias = words.map((word) => word[0].toUpperCase()).join('');
+  return /^[A-Z]{2,7}$/.test(alias) ? alias : '';
+}
+
+function unambiguousHeadingAliases(targets) {
+  const buckets = new Map();
+  for (const target of targets || []) {
+    const alias = headingAliasForTitle(target?.title);
+    if (!alias) continue;
+    const list = buckets.get(alias) || [];
+    list.push(target);
+    buckets.set(alias, list);
+  }
+  const result = new Map();
+  for (const [alias, list] of buckets) {
+    const unique = list.filter((item, index, arr) => arr.findIndex((other) => Number(other.page) === Number(item.page) && String(other.title) === String(item.title)) === index);
+    if (unique.length === 1) result.set(alias, unique[0]);
+  }
+  return result;
+}
+
+function appendHeadingAliasLinks(mapped, overlay, surface, pageNum, targets) {
+  const aliases = unambiguousHeadingAliases(targets);
+  for (const [alias, target] of aliases) {
+    const re = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+    let match;
+    while ((match = re.exec(mapped.text))) {
+      if (Number(target.page) === Number(pageNum) && normalizeSearchValue(target.title, false) === normalizeSearchValue(alias, false)) continue;
+      const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+      appendReferenceLinkForRange(overlay, surface, range, alias, pageNum);
+    }
+  }
+}
+
 async function getTocOutlineTargets() {
   if (!pdfDoc) return [];
   if (Array.isArray(tocOutlineTargets)) return tocOutlineTargets;
@@ -4681,6 +4724,7 @@ function decorateReferenceLinks(textLayer, surface, pageNum) {
     const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
     appendReferenceLinkForRange(overlay, surface, range, query, pageNum);
   }
+  getTocOutlineTargets().then((targets) => appendHeadingAliasLinks(mapped, overlay, surface, pageNum, targets)).catch(() => {});
   decorateTocLinks(mapped, overlay, surface, pageNum, tocSerial).catch((error) => console.warn('MathReader TOC links unavailable for page', pageNum, error));
 }
 
@@ -4727,6 +4771,11 @@ async function resolveReferenceTarget(query, originPage = null, originRatio = nu
     const outline = inferredOutline.find((entry) => new RegExp(`^(?:§\\s*)?${number.replace(/\./g, '\\.')}(?:[.)\\s]|$)`, 'i').test(entry.title || ''));
     if (outline) return { page: outline.page, ratio: Number(outline.ratio) || 0 };
   }
+  if (/^[A-Z][A-Z0-9]{1,7}$/.test(String(query || '').trim())) {
+    const targets = await getTocOutlineTargets();
+    const aliasTarget = unambiguousHeadingAliases(targets).get(String(query).trim());
+    if (aliasTarget && Number(aliasTarget.page) !== Number(originPage)) return { page: aliasTarget.page, ratio: Number(aliasTarget.ratio) || 0, matchText: aliasTarget.title };
+  }
   return findReferenceTextLocation(query, originPage);
 }
 
@@ -4734,7 +4783,7 @@ async function goToReferenceQuery(query, originPage = currentPage, originRatio =
   if (!pdfDoc || !query) return;
   const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
-  await goToMatchedLocation(target.page, Number(target.ratio) || 0, query);
+  await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.matchText || query);
 }
 
 async function resolveOutlineDestination(rawDest) {
