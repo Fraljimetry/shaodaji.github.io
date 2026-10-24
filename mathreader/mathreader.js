@@ -4306,11 +4306,26 @@ async function getTocOutlineTargets() {
 
 async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
   if (!mapped?.text || !pdfDoc) return;
-  const head = mapped.text.slice(0, 500).replace(/\s+/g, ' ');
-  const looksLikeToc = /(?:table\s+of\s+contents|\bcontents\b|目录)/i.test(head);
-  if (!looksLikeToc) return;
   const targets = await getTocOutlineTargets();
   if (!targets.length || overlay.dataset.tocSerial !== String(serial) || !overlay.isConnected) return;
+
+  const head = mapped.text.slice(0, 700).replace(/\s+/g, ' ');
+  const hasTocHeading = /(?:table\s+of\s+contents|\bcontents\b|目录)/i.test(head);
+  let matchedTargetCount = 0;
+  if (!hasTocHeading) {
+    // Some PDFs omit a textual Contents heading or encode it in a way that the
+    // text layer cannot reconstruct. Treat the page as a TOC when several
+    // actual outline titles are present instead of relying on the heading.
+    for (const target of targets) {
+      const pattern = tocTitlePattern(target.title);
+      if (!pattern) continue;
+      pattern.lastIndex = 0;
+      if (pattern.test(mapped.text)) matchedTargetCount += 1;
+      if (matchedTargetCount >= 3) break;
+    }
+    if (matchedTargetCount < 3) return;
+  }
+
   const seen = new Set();
   let linked = 0;
   for (const target of targets) {
