@@ -169,6 +169,7 @@ const ocrStatus = el('ocr-status');
 const ocrResult = el('ocr-result');
 const ocrPreview = el('ocr-preview');
 const ocrLatexPreview = el('ocr-latex-preview');
+const ocrRenderedPreview = el('ocr-rendered-preview');
 const copyOcrLatex = el('copy-ocr-latex');
 const ocrToNote = el('ocr-to-note');
 const tryImageOcrButton = el('try-image-ocr');
@@ -252,6 +253,8 @@ let fitWidthStabilizing = false;
 let currentOcrResult = null;
 let ocrHistory = [];
 let ocrHistoryExpanded = false;
+let ocrRenderedPreviewTimer = null;
+let ocrRenderedPreviewToken = 0;
 let notePreviewTimer = null;
 let continuousScrollTop = 0;
 let continuousSavedAnchor = null;
@@ -1513,12 +1516,52 @@ function markAlignmentRelation(line) {
   }
   return normalized;
 }
+function ocrPreviewMathSource(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if ((text.startsWith('\\[') && text.endsWith('\\]')) || (text.startsWith('$$') && text.endsWith('$$'))) return text;
+  return `\\[${text}\\]`;
+}
+
+function scheduleOcrRenderedPreview() {
+  clearTimeout(ocrRenderedPreviewTimer);
+  ocrRenderedPreviewTimer = setTimeout(renderOcrRenderedPreview, 120);
+}
+
+async function renderOcrRenderedPreview() {
+  if (!ocrRenderedPreview) return;
+  const value = String(ocrLatexPreview?.value || currentOcrResult?.latex || '').trim();
+  const token = ++ocrRenderedPreviewToken;
+  ocrRenderedPreview.classList.toggle('is-hidden', !value);
+  if (!value) {
+    try { window.MathJax?.typesetClear?.([ocrRenderedPreview]); } catch (_) {}
+    ocrRenderedPreview.replaceChildren();
+    return;
+  }
+  try { window.MathJax?.typesetClear?.([ocrRenderedPreview]); } catch (_) {}
+  ocrRenderedPreview.textContent = ocrPreviewMathSource(value);
+  if (window.MathJax?.typesetPromise) {
+    try {
+      await window.MathJax.typesetPromise([ocrRenderedPreview]);
+      if (token !== ocrRenderedPreviewToken) scheduleOcrRenderedPreview();
+    } catch (error) {
+      if (token !== ocrRenderedPreviewToken) return;
+      console.warn('MathReader OCR LaTeX preview failed', error);
+      ocrRenderedPreview.textContent = t('Preview unavailable for the current LaTeX. Edit the source and it will retry automatically.', '当前 LaTeX 无法渲染预览。编辑源码后将自动重试。');
+      ocrRenderedPreview.classList.add('has-error');
+      return;
+    }
+  }
+  if (token === ocrRenderedPreviewToken) ocrRenderedPreview.classList.remove('has-error');
+}
+
 function refreshOcrUI() {
   if (!ocrResult || !ocrHistoryList) return;
   const has = Boolean(currentOcrResult?.latex);
   ocrResult.classList.toggle('is-hidden', !has);
   ocrPageChip.textContent = has ? String(currentOcrResult.page || '—') : '—';
   ocrLatexPreview.value = has ? currentOcrResult.latex : '';
+  scheduleOcrRenderedPreview();
   if (ocrSourceBadge) {
     const source = has ? (currentOcrResult.source || 'image') : '';
     ocrSourceBadge.textContent = !has ? '—' : source === 'vector' ? t('PDF vector', 'PDF 矢量') : t('Image OCR', '图像 OCR');
@@ -7322,6 +7365,7 @@ ocrLatexPreview?.addEventListener('input', () => {
   currentOcrResult.latex = ocrLatexPreview.value;
   const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
   if (match) match.latex = currentOcrResult.latex;
+  scheduleOcrRenderedPreview();
   persistDocumentState();
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
