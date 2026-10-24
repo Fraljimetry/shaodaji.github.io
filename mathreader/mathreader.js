@@ -1100,6 +1100,7 @@ function normalizeBookmarks(items) {
     color: normalizedBookmarkColor(item.color),
     created: Number(item.created) || Date.now(),
     type: item.type === 'equation' ? 'equation' : 'page',
+    ratio: Math.min(1, Math.max(0, Number(item.ratio) || 0)),
     latex: typeof item.latex === 'string' ? item.latex : '',
     preview: typeof item.preview === 'string' ? item.preview : ''
   }));
@@ -6636,7 +6637,7 @@ function renderBookmarks() {
     const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || (bookmark.type === 'equation' ? t(`Equation · page ${bookmark.page}`, `公式 · 第 ${bookmark.page} 页`) : t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`));
     const kindLabel = bookmark.type === 'equation' ? t('Equation', '公式') : t('Page', '页面');
     const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${kindLabel} · ${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
-    jump.append(strong, detail); jump.addEventListener('click', () => goToPage(bookmark.page));
+    jump.append(strong, detail); jump.addEventListener('click', () => goToLocation(bookmark.page, bookmark.type === 'page' ? (Number(bookmark.ratio) || 0) : 0, { contextLead: false }));
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'bookmark-edit'; edit.textContent = '✎'; edit.title = t('Edit bookmark', '编辑书签');
     edit.addEventListener('click', () => { editingBookmarkId = editingBookmarkId === bookmark.id ? null : bookmark.id; renderBookmarks(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'bookmark-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', t('Remove bookmark', '删除书签'));
@@ -6677,11 +6678,33 @@ function renderBookmarks() {
   renderDocumentMetadata();
 }
 
+function currentBookmarkLocation() {
+  if (readingFlow === 'continuous') {
+    const anchor = captureContinuousAnchor() || continuousSavedAnchor;
+    if (anchor && Number(anchor.page) >= 1) return { page: Number(anchor.page), ratio: Math.min(1, Math.max(0, Number(anchor.ratio) || 0)) };
+  }
+  const page = Number(currentPage) || 1;
+  const height = Math.max(1, primaryPageSurface?.offsetHeight || primaryCanvasWrap?.scrollHeight || 1);
+  const ratio = Math.min(1, Math.max(0, Number(primaryCanvasWrap?.scrollTop || 0) / height));
+  return { page, ratio };
+}
+
 function addCurrentBookmark() {
   if (!pdfDoc) return;
-  const existing = bookmarks.find((item) => item.page === currentPage);
-  if (existing) { editingBookmarkId = existing.id; renderBookmarks(); return; }
-  const item = { id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, page: currentPage, title: '', note: '', color: 'blue', created: Date.now() };
+  // Page bookmarks are independent records. Equation bookmarks on the same
+  // page never block them, and users may keep several page bookmarks at
+  // different reading positions on one page.
+  const location = currentBookmarkLocation();
+  const item = {
+    id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    page: location.page,
+    ratio: location.ratio,
+    title: '',
+    note: '',
+    color: 'blue',
+    created: Date.now(),
+    type: 'page'
+  };
   bookmarks.push(item); editingBookmarkId = item.id;
   persistDocumentState(); renderBookmarks();
 }
@@ -7134,7 +7157,7 @@ function commandPaletteEntities() {
   }
   for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');
   for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => { if (searchInput) searchInput.value=item.symbol; if (searchEquations) searchEquations.checked=false; openLeftPanelShortcut('search-panel', searchInput); searchPdf(item.symbol); }, item.meaning,'symbol');
-  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0), `${item.note||''} ${item.latex||''}`,'bookmark');
+  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, item.type === 'page' ? (Number(item.ratio) || 0) : 0, { contextLead: false }), `${item.note||''} ${item.latex||''}`,'bookmark');
   for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
   for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name,'session');
   return out;
