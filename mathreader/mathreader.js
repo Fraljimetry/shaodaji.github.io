@@ -238,6 +238,8 @@ let displayContrast = 100;
 let displayGap = 20;
 let displayShadow = true;
 let inferredOutline = [];
+let inferredOutlineDetectionDone = false;
+let inferredOutlineBuildPromise = null;
 let outlineMode = 'none';
 let editingBookmarkId = null;
 let pendingRecoveryRecordId = null;
@@ -821,6 +823,8 @@ function loadDocumentState(cachedSession = null) {
   ocrHistory = [];
   ocrHistoryExpanded = false;
   inferredOutline = [];
+  inferredOutlineDetectionDone = false;
+  inferredOutlineBuildPromise = null;
   outlineMode = 'none';
   structureEntries = [];
   bibliographyEntries = [];
@@ -868,6 +872,7 @@ function loadDocumentState(cachedSession = null) {
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
+    if (inferredOutline.length) inferredOutlineDetectionDone = true;
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
@@ -4356,6 +4361,100 @@ async function resolveTocSectionNumber(number, targets, originPage = null) {
   return findSectionNumberLocation(number, originPage);
 }
 
+
+function tocLineCore(value) {
+  let clean = String(value || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+  // Drop the visual dot leader and printed page number commonly found in TOCs.
+  clean = clean.replace(/\s*(?:\.{2,}|…+|·{3,})\s*\d{1,4}\s*$/u, '').trim();
+  // Some text layers lose the dot leader but retain the terminal page number.
+  if (/^(?:§\s*)?[A-Z]?\d+(?:\.\d+){0,4}[.)]?\s+\S/i.test(clean) && /\s\d{1,4}$/.test(clean)) {
+    clean = clean.replace(/\s+\d{1,4}\s*$/, '').trim();
+  }
+  return clean;
+}
+
+function tocComparableTitle(value) {
+  return normalizeSearchValue(tocLineCore(value), false)
+    .replace(/^(?:§\s*)?[a-z]?\d+(?:\.\d+){0,4}[.)]?\s*/i, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tocTitleSimilarity(a, b) {
+  const aa = tocComparableTitle(a);
+  const bb = tocComparableTitle(b);
+  if (!aa || !bb) return 0;
+  if (aa === bb) return 1;
+  if ((aa.includes(bb) || bb.includes(aa)) && Math.min(aa.length, bb.length) >= 8) {
+    return Math.min(0.97, Math.min(aa.length, bb.length) / Math.max(aa.length, bb.length) + 0.12);
+  }
+  const aTokens = new Set(aa.split(/\s+/).filter((token) => token.length > 1));
+  const bTokens = new Set(bb.split(/\s+/).filter((token) => token.length > 1));
+  let overlap = 0;
+  for (const token of aTokens) if (bTokens.has(token)) overlap += 1;
+  const union = new Set([...aTokens, ...bTokens]).size || 1;
+  const jaccard = overlap / union;
+  const maxLen = Math.max(aa.length, bb.length, 1);
+  const maxDistance = Math.ceil(maxLen * 0.35);
+  const distance = levenshteinDistance(aa, bb, maxDistance);
+  const edit = distance > maxDistance ? 0 : Math.max(0, 1 - distance / maxLen);
+  return Math.max(jaccard, edit * 0.9 + jaccard * 0.1);
+}
+
+function tocStructureMatchScore(lineText, targetTitle) {
+  const line = tocLineCore(lineText);
+  const lineNumber = tocSectionNumber(line);
+  const targetNumber = tocSectionNumber(targetTitle);
+  if (lineNumber && targetNumber && lineNumber !== targetNumber) return 0;
+  const titleScore = tocTitleSimilarity(line, targetTitle);
+  if (lineNumber && targetNumber && lineNumber === targetNumber) {
+    // Exact section numbering is authoritative; title similarity distinguishes
+    // a real TOC entry from incidental mentions of the same section number.
+    return Math.max(0.82, 0.78 + titleScore * 0.22);
+  }
+  return titleScore;
+}
+
+async function compareTocPageWithStructure(pageNum, targets) {
+  const lines = await pageTextLines(pageNum);
+  const matches = [];
+  const usedTargets = new Set();
+  for (const line of lines) {
+    const core = tocLineCore(line.text);
+    if (!core || core.length < 3) continue;
+    let best = null;
+    for (let i = 0; i < targets.length; i += 1) {
+      const target = targets[i];
+      if (!target || Number(target.page) === Number(pageNum) || usedTargets.has(i)) continue;
+      const score = tocStructureMatchScore(core, target.title);
+      const hasExactNumber = Boolean(tocSectionNumber(core) && tocSectionNumber(core) === tocSectionNumber(target.title));
+      const threshold = hasExactNumber ? 0.80 : 0.84;
+      if (score < threshold) continue;
+      if (!best || score > best.score) best = { line, target, targetIndex: i, score, hasExactNumber };
+    }
+    if (best) {
+      matches.push(best);
+      usedTargets.add(best.targetIndex);
+    }
+  }
+  // Three distinct structural matches are enough to classify a page as a TOC.
+  // Requiring distinct nodes prevents a body page from qualifying because one
+  // heading is repeated in prose.
+  const average = matches.length ? matches.reduce((sum, item) => sum + item.score, 0) / matches.length : 0;
+  return { matches, isToc: matches.length >= 3 && average >= 0.82, average };
+}
+
+function tocLinePattern(lineText) {
+  const core = tocLineCore(lineText);
+  if (!core) return null;
+  const escape = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tokens = core.split(/\s+/).filter(Boolean).slice(0, 24);
+  if (!tokens.length) return null;
+  const source = tokens.map(escape).join('\\s+');
+  try { return new RegExp(source, 'ig'); } catch (_) { return null; }
+}
+
 async function getTocOutlineTargets() {
   if (!pdfDoc) return [];
   if (Array.isArray(tocOutlineTargets)) return tocOutlineTargets;
@@ -4392,62 +4491,94 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
   const targets = await getTocOutlineTargets();
   if (!targets.length || overlay.dataset.tocSerial !== String(serial) || !overlay.isConnected) return;
 
+  const comparison = await compareTocPageWithStructure(pageNum, targets);
+  if (overlay.dataset.tocSerial !== String(serial) || !overlay.isConnected) return;
   const head = mapped.text.slice(0, 700).replace(/\s+/g, ' ');
   const hasTocHeading = /(?:table\s+of\s+contents|\bcontents\b|目录)/i.test(head);
-  let matchedTargetCount = 0;
-  if (!hasTocHeading) {
-    // Some PDFs omit a textual Contents heading or encode it in a way that the
-    // text layer cannot reconstruct. Treat the page as a TOC when several
-    // actual outline titles are present instead of relying on the heading.
-    for (const target of targets) {
-      const pattern = tocTitlePattern(target.title);
-      if (!pattern) continue;
-      pattern.lastIndex = 0;
-      if (pattern.test(mapped.text)) matchedTargetCount += 1;
-      if (matchedTargetCount >= 3) break;
-    }
-    if (matchedTargetCount < 3) return;
-  }
+  if (!hasTocHeading && !comparison.isToc) return;
 
   const seen = new Set();
   let linked = 0;
+  const surfaceRect = surface.getBoundingClientRect();
+
+  const addLinkForRange = (range, target, label) => {
+    if (!range) return false;
+    let added = false;
+    for (const rect of range.getClientRects()) {
+      if (rect.width < 6 || rect.height < 2) continue;
+      const key = `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${target.page}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'pdf-reference-link pdf-toc-link';
+      link.style.left = `${rect.left - surfaceRect.left}px`;
+      link.style.top = `${rect.top - surfaceRect.top}px`;
+      link.style.width = `${rect.width}px`;
+      link.style.height = `${rect.height}px`;
+      link.title = t(`Go to ${label || target.title}`, `跳转到 ${label || target.title}`);
+      link.setAttribute('aria-label', link.title);
+      link.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.title || label || '');
+      });
+      overlay.append(link);
+      added = true;
+    }
+    return added;
+  };
+
+  // Primary path: compare each visual TOC line against the already-detected
+  // document structure. This makes TOC recognition a structure-alignment
+  // problem rather than another independent heading parser.
+  for (const match of comparison.matches) {
+    const patterns = [tocLinePattern(match.line.text), tocTitlePattern(match.target.title)].filter(Boolean);
+    let added = false;
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      let found;
+      while ((found = pattern.exec(mapped.text))) {
+        const range = rangeForAggregateMatch(mapped.parts, found.index, found.index + found[0].length);
+        if (addLinkForRange(range, match.target, match.line.text)) { added = true; break; }
+      }
+      if (added) break;
+    }
+    // PDF.js may split the title beyond recoverable text matching. In that
+    // case, the section number remains a stable visual anchor for the line.
+    if (!added) {
+      const number = tocSectionNumber(match.line.text) || tocSectionNumber(match.target.title);
+      if (number) {
+        const escaped = number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const numberRe = new RegExp(`\\b${escaped}\\b`, 'g');
+        let found;
+        while ((found = numberRe.exec(mapped.text))) {
+          const range = rangeForAggregateMatch(mapped.parts, found.index, found.index + found[0].length);
+          if (!range) continue;
+          const rect = [...range.getClientRects()].find((candidate) => (candidate.left - surfaceRect.left) < surfaceRect.width * 0.42);
+          if (!rect) continue;
+          if (addLinkForRange(range, match.target, match.line.text)) { added = true; break; }
+        }
+      }
+    }
+    if (added) linked += 1;
+  }
+
+  // Secondary exact-title pass fills entries that were not part of the fuzzy
+  // structure comparison but still match an authoritative outline node.
   for (const target of targets) {
     const pattern = tocTitlePattern(target.title);
     if (!pattern) continue;
-    let match;
-    while ((match = pattern.exec(mapped.text))) {
-      const key = `${match.index}:${match[0].length}:${target.page}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
-      if (!range) continue;
-      const surfaceRect = surface.getBoundingClientRect();
-      for (const rect of range.getClientRects()) {
-        if (rect.width < 8 || rect.height < 2) continue;
-        const link = document.createElement('button');
-        link.type = 'button';
-        link.className = 'pdf-reference-link pdf-toc-link';
-        link.style.left = `${rect.left - surfaceRect.left}px`;
-        link.style.top = `${rect.top - surfaceRect.top}px`;
-        link.style.width = `${rect.width}px`;
-        link.style.height = `${rect.height}px`;
-        link.title = t(`Go to ${target.title}`, `跳转到 ${target.title}`);
-        link.setAttribute('aria-label', link.title);
-        link.addEventListener('click', async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.title);
-        });
-        overlay.append(link);
-      }
-      linked += 1;
-      break;
+    let found;
+    while ((found = pattern.exec(mapped.text))) {
+      const range = rangeForAggregateMatch(mapped.parts, found.index, found.index + found[0].length);
+      if (addLinkForRange(range, target, target.title)) { linked += 1; break; }
     }
   }
-  // Some PDF text layers split a TOC subsection number from its title, or the
-  // embedded outline is incomplete. On an already-recognized TOC page, make
-  // dotted section numbers themselves reliable navigation targets.
-  const surfaceRect = surface.getBoundingClientRect();
+
+  // Last-resort section-number links remain useful when PDF text segmentation
+  // destroys the title entirely. Destination resolution still consults the
+  // merged structure before searching the document.
   const numberedSeen = new Set();
   const subsectionRe = /\b([A-Z]?\d+(?:\.\d+){1,4})\b/gi;
   let numberMatch;
@@ -4456,32 +4587,17 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
     if (numberedSeen.has(number)) continue;
     const range = rangeForAggregateMatch(mapped.parts, numberMatch.index, numberMatch.index + numberMatch[0].length);
     if (!range) continue;
-    const rects = [...range.getClientRects()].filter((rect) => rect.width >= 6 && rect.height >= 2);
-    // Printed TOC section numbers live on the left side; this excludes the
-    // printed page-number column and most incidental numeric prose.
-    const rect = rects.find((candidate) => (candidate.left - surfaceRect.left) < surfaceRect.width * 0.42);
+    const rect = [...range.getClientRects()].find((candidate) => candidate.width >= 6 && candidate.height >= 2 && (candidate.left - surfaceRect.left) < surfaceRect.width * 0.42);
     if (!rect) continue;
     numberedSeen.add(number);
-    const link = document.createElement('button');
-    link.type = 'button';
-    link.className = 'pdf-reference-link pdf-toc-link';
-    link.style.left = `${rect.left - surfaceRect.left}px`;
-    link.style.top = `${rect.top - surfaceRect.top}px`;
-    link.style.width = `${rect.width}px`;
-    link.style.height = `${rect.height}px`;
-    link.title = t(`Go to section ${number}`, `跳转到第 ${number} 节`);
-    link.setAttribute('aria-label', link.title);
-    link.addEventListener('click', async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const target = await resolveTocSectionNumber(number, targets, pageNum);
-      if (target) await goToMatchedLocation(target.page, Number(target.ratio) || 0, number);
-      else showError(t(`No target found for section ${number}.`, `未找到第 ${number} 节的目标位置。`));
-    });
-    overlay.append(link);
-    linked += 1;
+    const target = await resolveTocSectionNumber(number, targets, pageNum);
+    if (!target) continue;
+    const synthetic = { title: number, page: target.page, ratio: target.ratio };
+    if (addLinkForRange(range, synthetic, number)) linked += 1;
   }
+
   if (linked) overlay.dataset.tocLinked = String(linked);
+  overlay.dataset.tocStructureMatches = String(comparison.matches.length);
 }
 
 function decorateReferenceLinks(textLayer, surface, pageNum) {
@@ -4605,6 +4721,33 @@ async function resolveOutlineDestination(rawDest) {
   return { page: pageNum, ratio };
 }
 
+
+function scheduleDetectedOutlineAugmentation() {
+  if (!pdfDoc || inferredOutlineDetectionDone || inferredOutlineBuildPromise) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  inferredOutlineBuildPromise = (async () => {
+    try {
+      const detected = await detectOutlineFromTypography();
+      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+      inferredOutline = Array.isArray(detected) ? detected : [];
+      inferredOutlineDetectionDone = true;
+      tocOutlineTargets = null;
+      persistDocumentState();
+      // TOC pages may already be rendered. Refresh overlays now that the
+      // detected structure can fill gaps in the embedded PDF outline.
+      rerenderReferenceLinks();
+    } catch (error) {
+      if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+        inferredOutlineDetectionDone = true;
+        console.warn('Detected outline augmentation unavailable', error);
+      }
+    } finally {
+      inferredOutlineBuildPromise = null;
+    }
+  })();
+}
+
 async function renderOutline() {
   outlineList.replaceChildren();
   outlineMode = 'none';
@@ -4633,6 +4776,7 @@ async function renderOutline() {
         });
         outlineList.append(button);
       }
+      scheduleDetectedOutlineAugmentation();
       return;
     }
 
@@ -4640,8 +4784,11 @@ async function renderOutline() {
     outlineEmpty.textContent = t('No embedded outline. Detecting document structure…', '没有嵌入式目录，正在自动检测文档结构……');
     if (!inferredOutline.length) {
       inferredOutline = await detectOutlineFromTypography();
+      inferredOutlineDetectionDone = true;
       tocOutlineTargets = null;
       persistDocumentState();
+    } else {
+      inferredOutlineDetectionDone = true;
     }
     renderInferredOutline(inferredOutline);
   } catch (error) {
