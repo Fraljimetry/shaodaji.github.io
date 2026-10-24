@@ -2964,15 +2964,26 @@ async function renderContinuousPage(pageNum, generation, { retry = true } = {}) 
     pageCanvas.style.height = `${viewport.height}px`;
     await page.render({ canvasContext: ctx, viewport, transform: dpr === 1 ? null : [dpr,0,0,dpr,0,0] }).promise;
     if (generation !== continuousGeneration) return false;
-    await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
-    renderAnnotationsForPage(pageNum, surface, 'continuous');
-    ocrLayer.dataset.page = String(pageNum);
-    ocrLayer.dataset.kind = 'continuous';
+
+    // The PDF canvas is the authoritative visible page. Make it visible as soon
+    // as canvas painting succeeds; selectable text, links and annotations are
+    // secondary overlays and must never be able to strand a successfully
+    // rendered page behind the placeholder state.
     surface.classList.remove('is-placeholder', 'is-render-error');
     surface.removeAttribute('data-placeholder-label');
     surface.classList.toggle('ocr-mode', ocrMode);
     record.rendered = true;
     record.failed = false;
+
+    try {
+      await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
+      renderAnnotationsForPage(pageNum, surface, 'continuous');
+      ocrLayer.dataset.page = String(pageNum);
+      ocrLayer.dataset.kind = 'continuous';
+    } catch (overlayError) {
+      // Keep the already-painted PDF visible even if a secondary overlay fails.
+      console.warn('Continuous page overlay render failed', pageNum, overlayError);
+    }
     return true;
   } catch (error) {
     console.warn('Continuous page render failed', pageNum, error);
@@ -3231,10 +3242,14 @@ async function stabilizeFitWidthLayout(anchorOverride = null) {
   }
 }
 function scheduleReaderWidthReflow() {
-  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing || displayTransitionActive) return;
+  // Initial PDF restoration and an in-progress continuous rebuild already own
+  // the page geometry. ResizeObserver callbacks fired while the workspace is
+  // being unhidden must not start a competing build and invalidate the active
+  // page's generation token, otherwise the first page can remain a placeholder.
+  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing || displayTransitionActive || restoringSession || continuousRebuilding) return;
   clearTimeout(readerWidthTimer);
   readerWidthTimer = setTimeout(async () => {
-    if (!pdfDoc || zoomMode === 'custom') return;
+    if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing || displayTransitionActive || restoringSession || continuousRebuilding) return;
     const width = Math.round(primaryCanvasWrap?.clientWidth || 0);
     if (width < 180) return;
     if (lastObservedReaderWidth && Math.abs(width - lastObservedReaderWidth) < 2) return;
