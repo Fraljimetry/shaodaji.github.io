@@ -3072,13 +3072,20 @@ async function tryImageOcrForCurrentResult() {
 
 function addOcrToPageNote() {
   if (!pdfDoc || !currentOcrResult?.latex) return;
-  const page = Number(currentOcrResult.page) || currentPage;
-  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${page}`, `第 ${page} 页`)}\n\\[\n${currentOcrResult.latex}\n\\]`;
-  const existing = notes[String(page)] || '';
-  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  const targetPage = Number(currentPage) || Number(currentOcrResult.page) || 1;
+  const sourcePage = Number(currentOcrResult.page) || targetPage;
+  const sourceLabel = sourcePage !== targetPage
+    ? ` · ${t(`OCR source page ${sourcePage}`, `OCR 来源第 ${sourcePage} 页`)}`
+    : '';
+  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}${sourceLabel}\n\\[\n${currentOcrResult.latex}\n\\]`;
+  const existing = notes[String(targetPage)] || '';
+  notes[String(targetPage)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  pageNote.value = notes[String(targetPage)];
+  scheduleNotePreview();
   persistDocumentState();
-  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  openRightSectionShortcut('note-section', pageNote);
+  setOcrStatus(t(`Added to page ${targetPage} note.`, `已添加到第 ${targetPage} 页注。`));
 }
 
 function clearOcrResultState() {
