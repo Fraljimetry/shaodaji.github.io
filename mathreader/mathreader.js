@@ -211,6 +211,7 @@ let continuousGeneration = 0;
 let continuousRebuilding = false;
 let displayTransitionActive = false;
 let displayTransitionSerial = 0;
+let initialContinuousReady = false;
 let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
 let readingFlow = 'continuous';
@@ -3063,6 +3064,132 @@ function updateCurrentPageFromContinuousScroll() {
   }
 }
 
+async function buildInitialContinuousDocument({ anchor = null } = {}) {
+  if (!pdfDoc || !continuousStack) return;
+  const generation = ++continuousGeneration;
+  clearContinuousObserver();
+  continuousRebuilding = true;
+  initialContinuousReady = false;
+  continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
+  continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
+
+  // First load deliberately bypasses the display-transition coordinator. Build
+  // the complete placeholder geometry from the final visible reader size, paint
+  // the active page deterministically, and only then enable lazy rendering.
+  const pageMetrics = await Promise.all(Array.from({ length: pdfDoc.numPages }, async (_, index) => {
+    const page = await pdfDoc.getPage(index + 1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = continuousScale(base);
+    return { width: base.width * scale, height: base.height * scale };
+  }));
+  if (generation !== continuousGeneration) return;
+
+  const replacement = document.createDocumentFragment();
+  const replacementNodes = new Map();
+  for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
+    const metric = pageMetrics[pageNum - 1];
+    const frame = document.createElement('section');
+    frame.className = 'continuous-page-frame';
+    frame.dataset.page = String(pageNum);
+    const label = document.createElement('div');
+    label.className = 'continuous-page-number';
+    label.dataset.en = `Page ${pageNum}`;
+    label.dataset.zh = `第 ${pageNum} 页`;
+    label.textContent = t(label.dataset.en, label.dataset.zh);
+    const surface = document.createElement('div');
+    surface.className = 'page-surface continuous-page-surface is-placeholder';
+    surface.dataset.placeholderLabel = t(`Page ${pageNum}`, `第 ${pageNum} 页`);
+    surface.style.width = `${metric.width}px`;
+    surface.style.height = `${metric.height}px`;
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.setAttribute('aria-label', t(`PDF page ${pageNum}`, `PDF 第 ${pageNum} 页`));
+    const textLayer = document.createElement('div');
+    textLayer.className = 'textLayer';
+    textLayer.dataset.page = String(pageNum);
+    textLayer.dataset.kind = 'continuous';
+    const annotationLayer = document.createElement('div');
+    annotationLayer.className = 'annotation-layer';
+    annotationLayer.dataset.page = String(pageNum);
+    const ocrLayer = document.createElement('div');
+    ocrLayer.className = 'ocr-select-layer';
+    ocrLayer.dataset.kind = 'continuous';
+    ocrLayer.dataset.page = String(pageNum);
+    const box = document.createElement('div');
+    box.className = 'ocr-selection-box';
+    ocrLayer.append(box);
+    bindOcrLayer(ocrLayer);
+    surface.append(pageCanvas, textLayer, annotationLayer, ocrLayer);
+    frame.append(label, surface);
+    replacement.append(frame);
+    replacementNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
+  }
+
+  continuousStack.replaceChildren(replacement);
+  continuousPageNodes = replacementNodes;
+  const restoreAnchor = anchor || continuousSavedAnchor || { page: currentPage, ratio: 0 };
+  const targetPage = Math.min(Math.max(1, Number(restoreAnchor.page) || currentPage), pdfDoc.numPages);
+  const target = continuousPageNodes.get(targetPage)?.frame;
+  if (target) {
+    const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
+    primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
+  }
+
+  // Paint the visible page directly. Do not let observers, text overlays or a
+  // second layout build compete for the first visible canvas.
+  const record = continuousPageNodes.get(targetPage);
+  if (record) {
+    try {
+      record.rendering = true;
+      const page = await pdfDoc.getPage(targetPage);
+      if (generation !== continuousGeneration) return;
+      const baseViewport = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: continuousScale(baseViewport) });
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const ctx = record.canvas.getContext('2d', { alpha: false });
+      record.canvas.width = Math.floor(viewport.width * dpr);
+      record.canvas.height = Math.floor(viewport.height * dpr);
+      record.canvas.style.width = `${viewport.width}px`;
+      record.canvas.style.height = `${viewport.height}px`;
+      record.surface.style.width = `${viewport.width}px`;
+      record.surface.style.height = `${viewport.height}px`;
+      await page.render({ canvasContext: ctx, viewport, transform: dpr === 1 ? null : [dpr,0,0,dpr,0,0] }).promise;
+      if (generation !== continuousGeneration) return;
+      record.surface.classList.remove('is-placeholder', 'is-render-error');
+      record.surface.removeAttribute('data-placeholder-label');
+      record.surface.classList.toggle('ocr-mode', ocrMode);
+      record.rendered = true;
+      initialContinuousReady = true;
+      try {
+        await renderSelectableText(page, viewport, record.textLayer, record.surface, targetPage, 'continuous');
+        renderAnnotationsForPage(targetPage, record.surface, 'continuous');
+      } catch (overlayError) {
+        console.warn('Initial continuous page overlay render failed', targetPage, overlayError);
+      }
+    } finally {
+      record.rendering = false;
+    }
+  }
+
+  if (generation !== continuousGeneration) return;
+  continuousRebuilding = false;
+  continuousSavedAnchor = { page: targetPage, ratio: Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0)) };
+
+  continuousObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const pageNum = Number(entry.target.dataset.page);
+      if (pageNum && pageNum !== targetPage) renderContinuousPage(pageNum, generation);
+    }
+  }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
+  for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
+
+  const neighbors = [];
+  for (let n = Math.max(1, targetPage - 2); n <= Math.min(pdfDoc.numPages, targetPage + 2); n += 1) {
+    if (n !== targetPage) neighbors.push(n);
+  }
+  Promise.all(neighbors.map((n) => renderContinuousPage(n, generation))).catch((error) => console.warn('Initial neighbor render failed', error));
+}
+
 async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
   if (!pdfDoc || !continuousStack) return;
   const generation = ++continuousGeneration;
@@ -3176,7 +3303,8 @@ async function renderCurrentPage() {
   if (readingFlow === 'continuous') {
     try {
       const anchor = restoringSession ? continuousSavedAnchor : captureContinuousAnchor();
-      await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0, anchor });
+      if (restoringSession && !initialContinuousReady) await buildInitialContinuousDocument({ anchor });
+      else await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0, anchor });
     }
     catch (error) { showError(t('Continuous reading could not be rendered.', '无法渲染连续阅读模式。')); console.error(error); }
     return;
@@ -4261,6 +4389,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     currentFileName = meta.name;
     currentFileKey = meta.id;
     cacheEnabledForCurrent = Boolean(cachedRecord);
+    initialContinuousReady = false;
     textCache = new Map();
     lineCache = new Map();
     currentSelection = null;
@@ -4281,7 +4410,11 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     renderBibliographyIndex();
     renderReferenceStack();
     updateReadingBackButton();
-    await stabilizeFitWidthLayout();
+    // The initial continuous path already uses the final visible reader width.
+    // Do not immediately rebuild it through the post-load stabilizer; that was
+    // the regression source introduced after v78. Later display changes still
+    // use the universal transition path.
+    if (!(readingFlow === 'continuous' && initialContinuousReady)) await stabilizeFitWidthLayout();
     await renderReferencePage();
     updateReferenceStatus();
     if (cacheBlob) await cacheOpenedPdf(meta, cacheBlob);
