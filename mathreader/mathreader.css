@@ -143,7 +143,7 @@ html[data-page-tone="warm"] .page-surface{background:#f1e8d5}
 html[data-page-tone="warm"] .page-surface canvas{filter:sepia(.18) saturate(.82) brightness(var(--pdf-brightness)) contrast(var(--pdf-contrast))}
 html[data-page-shadow="off"]{--reader-page-shadow:none}
 
-.canvas-wrap.continuous-mode{display:block;overflow-y:scroll;padding:18px;scroll-behavior:smooth}
+.canvas-wrap.continuous-mode{display:block;overflow-y:scroll;padding:18px;scroll-behavior:auto;overflow-anchor:none}
 .continuous-stack{display:flex;min-width:100%;flex-direction:column;align-items:center;gap:var(--continuous-gap);padding:0;margin:0 auto}
 .continuous-page-frame{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;scroll-margin-top:10px}
 .continuous-page-number{align-self:flex-start;margin-left:2px;padding:2px 6px;border-radius:999px;color:var(--muted);background:var(--surface);font-size:9px;font-weight:750;box-shadow:0 1px 4px rgba(0,0,0,.08)}
