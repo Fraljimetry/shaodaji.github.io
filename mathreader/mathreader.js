@@ -3991,7 +3991,7 @@ function equationLabelCandidatesInLine(text) {
   return out;
 }
 
-function equationTargetScore(lineText, label, originPage, page) {
+function equationTargetScore(lineText, label, originPage, page, originRatio = null, candidateRatio = null) {
   const text = String(lineText || '').trim();
   const compact = text.replace(/\s+/g, '').normalize('NFKC');
   const pos = compact.lastIndexOf(label);
@@ -4001,7 +4001,16 @@ function equationTargetScore(lineText, label, originPage, page) {
   score += Math.min(10, (text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_+−-]/g) || []).length * 1.5);
   if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\b/i.test(text)) score -= 20;
   if (/\b(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\s+\d/i.test(text)) score -= 10;
+  // Parenthesized equation numbers inside prose are references, not targets.
+  // Prefer display-math/right-margin style lines and strongly demote prose
+  // phrases that merely cite an equation.
+  if (/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text)) score -= 18;
   if (page === originPage) score += 0.5;
+  if (page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidateRatio)) {
+    const delta = Math.abs(candidateRatio - originRatio);
+    if (delta < 0.018) score -= 1000;
+    else if (delta < 0.05) score -= 12;
+  }
   score -= Math.min(4, text.length / 160);
   return score;
 }
@@ -4025,13 +4034,18 @@ async function buildEquationLabelIndex() {
   return index;
 }
 
-async function findEquationLabelLocation(query, originPage = null) {
+async function findEquationLabelLocation(query, originPage = null, originRatio = null) {
   const label = normalizedEquationLabel(query);
   const index = await buildEquationLabelIndex();
   const candidates = index.get(label) || [];
   let best = null;
   for (const candidate of candidates) {
-    const score = equationTargetScore(candidate.text, label, originPage, candidate.page);
+    // Never resolve an inline equation reference back to the exact glyphs
+    // that were clicked. This is the key distinction between a reference
+    // occurrence in prose and the actual equation tag.
+    if (candidate.page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidate.ratio)
+        && Math.abs(candidate.ratio - originRatio) < 0.018) continue;
+    const score = equationTargetScore(candidate.text, label, originPage, candidate.page, originRatio, candidate.ratio);
     if (!best || score > best.score) best = { ...candidate, score };
   }
   return best ? { page: best.page, ratio: best.ratio } : null;
@@ -4273,7 +4287,10 @@ function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
     const link = document.createElement('button'); link.type = 'button'; link.className = 'pdf-reference-link';
     link.style.left = `${rect.left - surfaceRect.left}px`; link.style.top = `${rect.top - surfaceRect.top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
     link.title = t(`Follow ${query}`, `跳转到 ${query}`); link.setAttribute('aria-label', link.title);
-    link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); await goToReferenceQuery(query, pageNum); });
+    const sourceRatio = surfaceRect.height > 0
+      ? Math.min(1, Math.max(0, ((rect.top - surfaceRect.top) + rect.height / 2) / surfaceRect.height))
+      : null;
+    link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); await goToReferenceQuery(query, pageNum, sourceRatio); });
     overlay.append(link);
   }
 }
@@ -4532,10 +4549,10 @@ async function findReferenceTextLocation(query, originPage = null) {
   return best;
 }
 
-async function resolveReferenceTarget(query, originPage = null) {
+async function resolveReferenceTarget(query, originPage = null, originRatio = null) {
   const normalized = normalizedReferenceLabel(query);
   if (isEquationLabelQuery(query)) {
-    const equationTarget = await findEquationLabelLocation(query, originPage);
+    const equationTarget = await findEquationLabelLocation(query, originPage, originRatio);
     if (equationTarget) return equationTarget;
     return null;
   }
@@ -4556,9 +4573,9 @@ async function resolveReferenceTarget(query, originPage = null) {
   return findReferenceTextLocation(query, originPage);
 }
 
-async function goToReferenceQuery(query, originPage = currentPage) {
+async function goToReferenceQuery(query, originPage = currentPage, originRatio = null) {
   if (!pdfDoc || !query) return;
-  const target = await resolveReferenceTarget(query, originPage);
+  const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
   await goToLocation(target.page, Number(target.ratio) || 0);
 }
