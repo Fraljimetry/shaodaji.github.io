@@ -192,7 +192,7 @@ let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
-let mathOcrEngineMode = 'official';
+let mathOcrEngineMode = 'webgpu';
 let formulaExtractionMode = 'image';
 let readerWidthObserver = null;
 let readerWidthTimer = null;
@@ -232,7 +232,7 @@ let suppressReadingHistory = false;
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v4', 'official');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v4', 'webgpu');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
@@ -1132,8 +1132,12 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   if (mode === 'webgpu') {
-    // Xenova/texify ships Transformers.js-ready merged q4f16 weights.
-    return [{ device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false }];
+    // WebGPU is the default accelerator. If it cannot initialize, fall back
+    // automatically to the model-card CPU path instead of failing OCR.
+    return [
+      { device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false },
+      { device: null, dtype: null, label: 'Texify · CPU fallback', official: true }
+    ];
   }
   if (mode === 'wasm') {
     return [{ device: 'wasm', dtype: 'q8', label: 'Texify · CPU/WASM q8', official: false }];
@@ -3150,7 +3154,7 @@ function navigationTargetLeadPx() {
   // across zoom levels, while the target ratio continues to identify the PDF
   // location.
   const height = Number(primaryCanvasWrap?.clientHeight) || 0;
-  return Math.round(Math.min(72, Math.max(48, height ? height * 0.065 : 56)));
+  return Math.round(Math.min(96, Math.max(72, height ? height * 0.085 : 80)));
 }
 
 async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
