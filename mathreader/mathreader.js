@@ -3889,6 +3889,7 @@ function renderInferredOutline(entries) {
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
 const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
 const CLICKABLE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b|\(\s*\d+(?:\.\d+)*\s*\)|\[\s*\d{1,3}\s*\]/gi;
+const GROUPED_BIBLIOGRAPHY_RE = /\[\s*\d{1,3}(?:\s*(?:,|;|[-–—])\s*\d{1,3})+\s*\]/g;
 
 function normalizedReferenceLabel(value) {
   return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
@@ -4122,24 +4123,78 @@ function ensureReferenceLinkLayer(surface) {
   layer.replaceChildren(); return layer;
 }
 
+function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
+  if (!range) return;
+  const surfaceRect = surface.getBoundingClientRect();
+  for (const rect of range.getClientRects()) {
+    if (rect.width < 2 || rect.height < 2) continue;
+    const link = document.createElement('button'); link.type = 'button'; link.className = 'pdf-reference-link';
+    link.style.left = `${rect.left - surfaceRect.left}px`; link.style.top = `${rect.top - surfaceRect.top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
+    link.title = t(`Follow ${query}`, `跳转到 ${query}`); link.setAttribute('aria-label', link.title);
+    link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); await goToReferenceQuery(query, pageNum); });
+    overlay.append(link);
+  }
+}
+
+function groupedBibliographyMembers(raw) {
+  const inner = String(raw || '').replace(/^\[|\]$/g, '');
+  const members = [];
+  const tokenRe = /\d{1,3}(?:\s*[-–—]\s*\d{1,3})?/g;
+  let token;
+  while ((token = tokenRe.exec(inner))) {
+    const value = token[0];
+    const rangeMatch = value.match(/^(\d{1,3})\s*[-–—]\s*(\d{1,3})$/);
+    if (!rangeMatch) {
+      const number = Number(value);
+      if (number >= 1) members.push(number);
+      continue;
+    }
+    const start = Number(rangeMatch[1]);
+    const end = Number(rangeMatch[2]);
+    if (start < 1 || end < 1 || Math.abs(end - start) > 50) continue;
+    const step = start <= end ? 1 : -1;
+    for (let number = start; number !== end + step; number += step) members.push(number);
+  }
+  return [...new Set(members)].slice(0, 60);
+}
+
 function decorateReferenceLinks(textLayer, surface, pageNum) {
   if (!textLayer || !surface) return;
   const overlay = ensureReferenceLinkLayer(surface);
   const mapped = textLayerAggregate(textLayer); if (!mapped.text) return;
+
+  // Grouped citations such as [1, 7] or [1-3, 8] need one target per
+  // bibliography member. Prefer the number's own glyph range when it is
+  // explicitly present; generated range members share the group's range.
+  GROUPED_BIBLIOGRAPHY_RE.lastIndex = 0;
+  let grouped;
+  while ((grouped = GROUPED_BIBLIOGRAPHY_RE.exec(mapped.text))) {
+    const raw = grouped[0];
+    const explicitNumbers = [];
+    const numberRe = /\d{1,3}/g;
+    let numberMatch;
+    while ((numberMatch = numberRe.exec(raw))) {
+      explicitNumbers.push({ number: Number(numberMatch[0]), start: grouped.index + numberMatch.index, end: grouped.index + numberMatch.index + numberMatch[0].length });
+    }
+    const members = groupedBibliographyMembers(raw);
+    const explicitSet = new Set(explicitNumbers.map((item) => item.number));
+    for (const item of explicitNumbers) {
+      const range = rangeForAggregateMatch(mapped.parts, item.start, item.end);
+      appendReferenceLinkForRange(overlay, surface, range, `[${item.number}]`, pageNum);
+    }
+    const generated = members.filter((number) => !explicitSet.has(number));
+    if (generated.length) {
+      const groupRange = rangeForAggregateMatch(mapped.parts, grouped.index, grouped.index + raw.length);
+      for (const number of generated) appendReferenceLinkForRange(overlay, surface, groupRange, `[${number}]`, pageNum);
+    }
+  }
+
   CLICKABLE_REFERENCE_RE.lastIndex = 0;
   let match;
   while ((match = CLICKABLE_REFERENCE_RE.exec(mapped.text))) {
     const query = match[0].replace(/\s+/g, ' ').trim();
-    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length); if (!range) continue;
-    const surfaceRect = surface.getBoundingClientRect();
-    for (const rect of range.getClientRects()) {
-      if (rect.width < 2 || rect.height < 2) continue;
-      const link = document.createElement('button'); link.type = 'button'; link.className = 'pdf-reference-link';
-      link.style.left = `${rect.left - surfaceRect.left}px`; link.style.top = `${rect.top - surfaceRect.top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
-      link.title = t(`Follow ${query}`, `跳转到 ${query}`); link.setAttribute('aria-label', link.title);
-      link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); await goToReferenceQuery(query, pageNum); });
-      overlay.append(link);
-    }
+    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    appendReferenceLinkForRange(overlay, surface, range, query, pageNum);
   }
 }
 
