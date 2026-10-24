@@ -3927,7 +3927,7 @@ function renderInferredOutline(entries) {
     button.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
-    button.addEventListener('click', () => goToLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0));
+    button.addEventListener('click', () => goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title));
     outlineList.append(button);
   }
 }
@@ -4213,13 +4213,13 @@ function renderStructureIndex() {
     const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     button.append(strong, meta); button.title = entry.title;
-    button.addEventListener('click', () => goToLocation(entry.page, Number(entry.ratio) || 0));
+    button.addEventListener('click', () => goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.label || entry.title));
     row.append(button);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof';
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
       proof.title = entry.proofEndPage ? t(`Proof ends on page ${entry.proofEndPage}`, `证明结束于第 ${entry.proofEndPage} 页`) : '';
-      proof.addEventListener('click', () => goToLocation(entry.proofPage, Number(entry.proofRatio) || 0));
+      proof.addEventListener('click', () => goToMatchedLocation(entry.proofPage, Number(entry.proofRatio) || 0, entry.proofTitle || 'Proof'));
       row.append(proof);
     }
     structureIndex.append(row);
@@ -4239,7 +4239,7 @@ function renderBibliographyIndex() {
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bibliography-jump';
     const label = document.createElement('strong'); label.textContent = entry.label;
     const text = document.createElement('span'); text.textContent = entry.title;
-    jump.append(label, text); jump.addEventListener('click', () => goToLocation(entry.page, Number(entry.ratio) || 0)); row.append(jump);
+    jump.append(label, text); jump.addEventListener('click', () => goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.label)); row.append(jump);
     if (entry.doi || entry.arxiv) {
       const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
       if (entry.doi) { external.href = `https://doi.org/${entry.doi}`; external.textContent = 'DOI ↗'; }
@@ -4436,7 +4436,7 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
         link.addEventListener('click', async (event) => {
           event.preventDefault();
           event.stopPropagation();
-          await goToLocation(target.page, Number(target.ratio) || 0);
+          await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.title);
         });
         overlay.append(link);
       }
@@ -4475,7 +4475,7 @@ async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
       event.preventDefault();
       event.stopPropagation();
       const target = await resolveTocSectionNumber(number, targets, pageNum);
-      if (target) await goToLocation(target.page, Number(target.ratio) || 0);
+      if (target) await goToMatchedLocation(target.page, Number(target.ratio) || 0, number);
       else showError(t(`No target found for section ${number}.`, `未找到第 ${number} 节的目标位置。`));
     });
     overlay.append(link);
@@ -4577,7 +4577,7 @@ async function goToReferenceQuery(query, originPage = currentPage, originRatio =
   if (!pdfDoc || !query) return;
   const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
-  await goToLocation(target.page, Number(target.ratio) || 0);
+  await goToMatchedLocation(target.page, Number(target.ratio) || 0, query);
 }
 
 async function resolveOutlineDestination(rawDest) {
@@ -4628,7 +4628,7 @@ async function renderOutline() {
           try {
             const location = await resolveOutlineDestination(item.dest);
             if (!location) return;
-            await goToLocation(location.page, location.ratio);
+            await goToMatchedLocation(location.page, location.ratio, item.title || '');
           } catch (error) { console.error(error); }
         });
         outlineList.append(button);
@@ -4903,6 +4903,72 @@ async function goToSelectedReference() {
   await goToReferenceQuery(query, currentSelection?.page || currentPage);
 }
 
+
+
+function semanticMatchRangeInLayer(layer, surface, query, targetRatio = null) {
+  if (!layer || !surface || !query) return null;
+  const mapped = textLayerAggregate(layer);
+  if (!mapped.text) return null;
+  const pieces = String(query || '').trim().split(/\s+/).filter(Boolean);
+  if (!pieces.length) return null;
+  const escaped = pieces.map((piece) => piece.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  let pattern;
+  try { pattern = new RegExp(escaped.join('\\s+'), 'giu'); } catch (_) { return null; }
+  const surfaceRect = surface.getBoundingClientRect();
+  const candidates = [];
+  let match;
+  while ((match = pattern.exec(mapped.text))) {
+    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    if (!range) continue;
+    const rects = [...range.getClientRects()].filter((rect) => rect.width >= 1 && rect.height >= 1);
+    if (!rects.length) continue;
+    const first = rects[0];
+    const centerY = first.top - surfaceRect.top + first.height / 2;
+    const ratio = surfaceRect.height > 0 ? Math.min(1, Math.max(0, centerY / surfaceRect.height)) : 0;
+    candidates.push({ range, ratio });
+    if (!match[0].length) pattern.lastIndex += 1;
+  }
+  if (!candidates.length) return null;
+  if (!Number.isFinite(Number(targetRatio))) return candidates[0].range;
+  const wanted = Math.min(1, Math.max(0, Number(targetRatio)));
+  candidates.sort((a, b) => Math.abs(a.ratio - wanted) - Math.abs(b.ratio - wanted));
+  return candidates[0].range;
+}
+
+async function emphasizeSemanticDestination(page, ratio, query) {
+  if (!pdfDoc || !query) return;
+  let layer = null;
+  let surface = null;
+  if (readingFlow === 'continuous') {
+    const record = continuousPageNodes.get(Number(page));
+    if (record) {
+      if (!record.rendered) await renderContinuousPage(Number(page), continuousGeneration);
+      layer = record.textLayer;
+      surface = record.surface;
+    }
+  } else {
+    layer = primaryTextLayer;
+    surface = primaryPageSurface;
+  }
+  if (!layer || !surface) return;
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const range = semanticMatchRangeInLayer(layer, surface, query, ratio);
+  if (!range) return;
+  const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
+  if (!rect) return;
+  const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+  const desiredOffset = Math.min(280, Math.max(150, wrapRect.height * 0.34));
+  const delta = rect.top - (wrapRect.top + desiredOffset);
+  primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + delta);
+  if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+  emphasizeSearchRange(surface, range);
+  persistDocumentState();
+}
+
+async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
+  await goToLocation(page, ratio, options);
+  if (query) await emphasizeSemanticDestination(page, ratio, query);
+}
 
 function searchMatchRangeInLayer(layer, query, ordinal = 0) {
   if (!layer || !query) return null;
