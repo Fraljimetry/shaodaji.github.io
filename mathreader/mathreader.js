@@ -325,6 +325,14 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
   const next = flow === 'continuous' ? 'continuous' : 'single';
   const changed = readingFlow !== next;
   if (!changed) {
+    // Even when the logical flow value is unchanged, the DOM may still be in
+    // its initial single-page visibility state (notably after restoring a saved
+    // continuous session). Always synchronize the reading surfaces.
+    primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
+    primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
+    continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
+    if (next === 'single') clearContinuousObserver();
+    applyOcrModeToSurfaces();
     updateDisplayControls();
     if (persist) persistDisplayPreferences();
     if (pdfDoc && render && next === 'continuous') await renderCurrentPage();
@@ -3128,7 +3136,6 @@ function updateCurrentPageFromContinuousScroll() {
 async function buildInitialContinuousDocument({ anchor = null } = {}) {
   if (!pdfDoc || !continuousStack || !primaryCanvasWrap) return;
   const generation = ++continuousGeneration;
-  console.info('[MathReader] initial continuous: start', { generation, page: currentPage });
 
   // First load is deliberately deterministic. The workspace may have only just
   // become visible, so let layout settle before measuring the reader region.
@@ -3138,13 +3145,6 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
 
   continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
   continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
-  console.info('[MathReader] initial continuous: measured', {
-    generation,
-    readerWidth: primaryCanvasWrap.clientWidth,
-    readerHeight: primaryCanvasWrap.clientHeight,
-    layoutWidth: continuousLayoutWidth,
-    layoutHeight: continuousLayoutHeight,
-  });
 
   const pageMetrics = await Promise.all(Array.from({ length: pdfDoc.numPages }, async (_, index) => {
     const page = await pdfDoc.getPage(index + 1);
@@ -3215,24 +3215,12 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
   // Allow anchor capture again, but keep observer/prefetch disabled until the
   // active page is visibly painted and the placeholder state is actually gone.
   continuousRebuilding = false;
-  console.info('[MathReader] initial continuous: active render', { generation, activePage });
   const ok = await renderContinuousPage(activePage, generation);
   if (generation !== continuousGeneration) return;
   const activeRecord = continuousPageNodes.get(activePage);
   let placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
   let canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
   let canvasContent = canvasReady && canvasHasVisibleContent(activeRecord?.canvas);
-  console.info('[MathReader] initial continuous: active result', {
-    generation,
-    activePage,
-    ok,
-    rendered: Boolean(activeRecord?.rendered),
-    placeholderGone,
-    canvasReady,
-    canvasContent,
-    canvasWidth: activeRecord?.canvas?.width || 0,
-    canvasHeight: activeRecord?.canvas?.height || 0,
-  });
 
   // A resolved PDF.js render task can still leave an effectively blank canvas
   // in the first continuous view on some PDFs/browser states. Single-page
@@ -3284,7 +3272,6 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
   updateCurrentPageFromContinuousScroll();
   continuousSavedAnchor = captureContinuousAnchor() || restoreAnchor || continuousSavedAnchor;
   initialContinuousReady = true;
-  console.info('[MathReader] initial continuous: complete', { generation, initialContinuousReady, rendered: [activePage] });
 }
 
 async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
