@@ -52,7 +52,7 @@ a{color:var(--accent)}
 .icon-button{min-height:34px;display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;font-size:12px;font-weight:700}.home-link{color:var(--ink)}
 .reader-shell{height:calc(100vh - 60px);height:calc(100dvh - 60px);min-height:0;overflow:hidden;display:grid;grid-template-columns:250px minmax(0,1fr) 260px;min-width:0}
 .sidebar{min-width:0;overflow:auto;background:var(--surface);position:relative;z-index:20;transition:width .18s ease,transform .18s ease}
-.sidebar-left{border-right:1px solid var(--line)}.sidebar-right{border-left:1px solid var(--line);padding:0 14px}
+.sidebar-left{border-right:1px solid var(--line)}.sidebar-right{border-left:1px solid var(--line);padding:0 14px;overflow-x:hidden;overflow-y:auto}
 .reader-shell.left-collapsed{grid-template-columns:0 minmax(0,1fr) 260px}.reader-shell.right-collapsed{grid-template-columns:250px minmax(0,1fr) 0}.reader-shell.left-collapsed.right-collapsed{grid-template-columns:0 minmax(0,1fr) 0}
 .reader-shell.left-collapsed .sidebar-left,.reader-shell.right-collapsed .sidebar-right{overflow:hidden;visibility:hidden}
 .sidebar-tabs{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px 0;background:var(--surface)}
@@ -253,8 +253,19 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .pdf-comment-source-label,.pdf-comment-reply-label{margin-bottom:3px;font-size:9px;font-weight:800;letter-spacing:.01em}.pdf-comment-source-label{color:#b18416}.pdf-comment-reply-label{color:var(--accent-deep)}.pdf-comment-source-text{margin:0;padding:0;border:0;color:var(--ink);font-size:10px;line-height:1.5;font-style:normal;white-space:pre-wrap;overflow-wrap:anywhere}.pdf-comment-body{margin:0;color:var(--ink);font-size:10px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 /* v94 compact contextual help */
 .compact-instruction{margin:4px 0 5px;font-size:10px;line-height:1.35}
-.compact-help{position:relative;margin:3px 0 7px;width:max-content;max-width:100%}
+.compact-help{position:relative;margin:3px 0 7px;width:100%;max-width:100%;min-width:0}
 .compact-help>summary{display:flex;align-items:center;justify-content:center;width:22px;height:22px;box-sizing:border-box;border:1px solid var(--line);border-radius:50%;color:var(--muted);background:var(--surface);cursor:pointer;font-size:10px;font-weight:800;list-style:none;user-select:none}
 .compact-help>summary::-webkit-details-marker{display:none}
 .compact-help>summary:hover,.compact-help[open]>summary{color:var(--ink);border-color:var(--line-strong);background:var(--surface-soft)}
-.compact-help-body{width:min(260px,calc(100vw - 40px));margin-top:5px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;color:var(--muted);background:var(--paper);font-size:9px;line-height:1.45;box-shadow:0 5px 16px rgba(0,0,0,.12)}
+.compact-help-body{box-sizing:border-box;width:100%;max-width:100%;min-width:0;margin-top:5px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;color:var(--muted);background:var(--paper);font-size:9px;line-height:1.45;overflow-wrap:anywhere;word-break:break-word;white-space:normal;box-shadow:0 5px 16px rgba(0,0,0,.12)}
+
+/* v95: right panel must never require horizontal scrolling */
+.sidebar-right,.sidebar-right *{min-width:0;box-sizing:border-box}
+.sidebar-right pre,.sidebar-right code,.sidebar-right p,.sidebar-right span,.sidebar-right div{max-width:100%}
+
+/* v97: keep contextual help attached to its section label */
+.workspace-section{position:relative}
+.panel-heading-title{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.compact-help-heading{position:static;display:inline-flex;width:auto;max-width:none;min-width:0;margin:0}
+.compact-help-heading>summary{width:18px;height:18px;font-size:9px;flex:0 0 auto}
+.compact-help-heading>.compact-help-body{position:absolute;z-index:40;left:8px;right:8px;top:34px;width:auto;max-width:none;margin:0;padding:7px 8px}
