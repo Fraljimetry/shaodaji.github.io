@@ -179,6 +179,7 @@
               <div class="page-surface" id="primary-page-surface">
                 <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
                 <div class="textLayer" id="primary-text-layer" aria-label="Selectable PDF text"></div>
+                <div class="annotation-layer" id="primary-annotation-layer" aria-label="Reading annotations"></div>
                 <div class="ocr-select-layer" id="primary-ocr-layer" data-kind="primary" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
               <div class="continuous-stack is-hidden" id="continuous-stack" aria-label="Continuous PDF pages"></div>
@@ -198,6 +199,7 @@
               <div class="page-surface" id="reference-page-surface">
                 <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
                 <div class="textLayer" id="reference-text-layer" aria-label="Selectable pinned PDF text"></div>
+                <div class="annotation-layer" id="reference-annotation-layer" aria-label="Reading annotations"></div>
                 <div class="ocr-select-layer" id="reference-ocr-layer" data-kind="reference" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
             </div>
@@ -321,6 +323,8 @@
             <button class="secondary-action" type="button" id="copy-selection-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
             <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
             <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+            <button class="secondary-action" type="button" id="selection-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
+            <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin note" data-zh="页边注">Margin note</button>
             <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
           </div>
           <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”；默认使用图像 OCR，并保留 PDF 矢量作为快速备用路径。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback.</p>
@@ -336,6 +340,17 @@
         <p class="note-latex-help" data-en="LaTeX is supported in notes: use \(...\) inline or \[...\] for display math." data-zh="页注支持 LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">LaTeX is supported in notes: use \(...\) inline or \[...\] for display math.</p>
         <div class="note-preview is-hidden" id="note-preview" aria-label="Page note LaTeX preview"></div>
         <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
+      </section>
+
+
+      <section class="workspace-section" id="annotations-section">
+        <div class="panel-heading">
+          <span data-en="Annotations" data-zh="批注">Annotations</span>
+          <span class="count-badge" id="annotation-count">0</span>
+        </div>
+        <p class="workspace-copy" data-en="Highlights and margin notes are anchored to their exact position in this PDF and saved locally." data-zh="高亮与页边注会锚定到 PDF 中的准确位置，并保存在本地。">Highlights and margin notes are anchored to their exact position in this PDF and saved locally.</p>
+        <div class="annotation-list" id="annotation-list"></div>
+        <div class="empty-panel" id="annotation-empty" data-en="Select text to create a highlight or margin note." data-zh="选择文字后可创建高亮或页边注。">Select text to create a highlight or margin note.</div>
       </section>
 
       <section class="workspace-section" id="reference-section">
@@ -375,6 +390,8 @@
     <button type="button" id="floating-copy-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
     <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
     <button type="button" id="floating-add-note" data-en="Note" data-zh="页注">Note</button>
+    <button type="button" id="floating-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
+    <button type="button" id="floating-margin-note" data-en="Margin" data-zh="页边注">Margin</button>
     <button type="button" id="floating-pin-page" data-en="Pin page" data-zh="固定页">Pin page</button>
   </div>
 

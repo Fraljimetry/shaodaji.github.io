@@ -68,6 +68,13 @@ const importReadingInput = el('import-reading-input');
 const readingBackButton = el('reading-back');
 const saveOcrEquation = el('save-ocr-equation');
 const selectionGoReference = el('selection-go-reference');
+const selectionHighlight = el('selection-highlight');
+const selectionMarginNote = el('selection-margin-note');
+const annotationList = el('annotation-list');
+const annotationEmpty = el('annotation-empty');
+const annotationCount = el('annotation-count');
+const primaryAnnotationLayer = el('primary-annotation-layer');
+const referenceAnnotationLayer = el('reference-annotation-layer');
 const referenceStack = el('reference-stack');
 const commandPalette = el('command-palette');
 const commandInput = el('command-input');
@@ -105,6 +112,8 @@ const selectionToolbarLabel = el('selection-toolbar-label');
 const floatingCopyText = el('floating-copy-text');
 const floatingCopyLatex = el('floating-copy-latex');
 const floatingAddNote = el('floating-add-note');
+const floatingHighlight = el('floating-highlight');
+const floatingMarginNote = el('floating-margin-note');
 const floatingPinPage = el('floating-pin-page');
 const mathOcrButton = el('math-ocr-button');
 const primaryOcrLayer = el('primary-ocr-layer');
@@ -154,9 +163,11 @@ let currentFileKey = null;
 let currentFileName = null;
 let bookmarks = [];
 let notes = {};
+let annotations = [];
 let textCache = new Map();
 let pdfModulePromise = null;
 let noteTimer = null;
+let annotationSaveTimer = null;
 let resizeTimer = null;
 let selectionTimer = null;
 let currentSelection = null;
@@ -427,13 +438,14 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 10,
+    version: 11,
     page: currentPage,
     pinnedPage,
     zoomMode,
     zoomScale,
     bookmarks,
     notes,
+    annotations,
     scrollByPage,
     referenceScrollByPage,
     continuousScrollTop,
@@ -624,6 +636,7 @@ function applyLanguage(lang, persist = true) {
   renderLocalLibrary();
   refreshSelectionUI();
   refreshOcrUI();
+  renderAnnotationList();
   updateWorkspaceCollapseButtons();
   if (persist) safeSet('shaoda-language', next);
 }
@@ -650,7 +663,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['selection-section','note-section','reference-section','shortcuts-section']);
+  const defaults = new Set(['selection-section','note-section','annotations-section','reference-section','shortcuts-section']);
   document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -716,6 +729,7 @@ function normalizeBookmarks(items) {
 function loadDocumentState(cachedSession = null) {
   bookmarks = [];
   notes = {};
+  annotations = [];
   scrollByPage = {};
   referenceScrollByPage = {};
   continuousScrollTop = 0;
@@ -745,6 +759,7 @@ function loadDocumentState(cachedSession = null) {
   if (session && typeof session === 'object') {
     bookmarks = normalizeBookmarks(session.bookmarks);
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
+    annotations = normalizeAnnotations(session.annotations);
     const savedPage = Number(session.page || 1);
     currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
     const savedPinned = Number(session.pinnedPage || 0);
@@ -801,6 +816,7 @@ function loadDocumentState(cachedSession = null) {
   }
   refreshSelectionUI();
   refreshOcrUI();
+  renderAnnotationList();
   updateZoomLabel();
 }
 
@@ -2530,6 +2546,143 @@ function positionSelectionToolbar(rect) {
   selectionToolbar.style.top = `${Math.round(top)}px`;
 }
 
+
+function normalizedSelectionRects(range, layer) {
+  if (!range || !layer) return [];
+  const layerRect = layer.getBoundingClientRect();
+  if (!layerRect.width || !layerRect.height) return [];
+  const out = [];
+  for (const rect of Array.from(range.getClientRects())) {
+    const left = Math.max(rect.left, layerRect.left);
+    const top = Math.max(rect.top, layerRect.top);
+    const right = Math.min(rect.right, layerRect.right);
+    const bottom = Math.min(rect.bottom, layerRect.bottom);
+    if (right - left < 1 || bottom - top < 1) continue;
+    out.push({
+      x: (left - layerRect.left) / layerRect.width,
+      y: (top - layerRect.top) / layerRect.height,
+      w: (right - left) / layerRect.width,
+      h: (bottom - top) / layerRect.height
+    });
+  }
+  return out.slice(0, 80);
+}
+
+function normalizeAnnotations(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && Number(item.page) >= 1 && ['highlight','margin'].includes(item.type)).map((item, index) => ({
+    id: item.id || `ann-${Number(item.created) || Date.now()}-${index}`,
+    type: item.type,
+    page: Number(item.page),
+    text: typeof item.text === 'string' ? item.text : '',
+    latex: typeof item.latex === 'string' ? item.latex : '',
+    note: typeof item.note === 'string' ? item.note : '',
+    rects: Array.isArray(item.rects) ? item.rects.map((r) => ({ x:Number(r.x)||0, y:Number(r.y)||0, w:Number(r.w)||0, h:Number(r.h)||0 })).filter((r) => r.w > 0 && r.h > 0).slice(0,80) : [],
+    ratio: Math.min(1, Math.max(0, Number(item.ratio) || Number(item.rects?.[0]?.y) || 0)),
+    created: Number(item.created) || Date.now()
+  })).filter((item) => item.rects.length || Number.isFinite(item.ratio));
+}
+
+function annotationLayerForSurface(surface, kind = 'primary') {
+  if (!surface) return null;
+  if (surface === primaryPageSurface) return primaryAnnotationLayer;
+  if (surface === referencePageSurface) return referenceAnnotationLayer;
+  return surface.querySelector('.annotation-layer');
+}
+
+function renderAnnotationsForPage(page, surface, kind = 'primary') {
+  const layer = annotationLayerForSurface(surface, kind);
+  if (!layer) return;
+  layer.replaceChildren();
+  layer.dataset.page = String(page);
+  for (const item of annotations.filter((ann) => Number(ann.page) === Number(page))) {
+    if (item.type === 'highlight') {
+      for (const r of item.rects) {
+        const mark = document.createElement('div');
+        mark.className = 'annotation-highlight';
+        mark.style.left = `${r.x * 100}%`; mark.style.top = `${r.y * 100}%`;
+        mark.style.width = `${r.w * 100}%`; mark.style.height = `${r.h * 100}%`;
+        mark.title = item.note || item.text;
+        layer.append(mark);
+      }
+    } else if (item.type === 'margin') {
+      const marker = document.createElement('button');
+      marker.type = 'button'; marker.className = 'annotation-margin-marker';
+      marker.style.top = `${Math.min(.97, Math.max(0, item.ratio)) * 100}%`;
+      marker.title = item.note || item.text || t('Margin note', '页边注');
+      marker.setAttribute('aria-label', t(`Margin note on page ${item.page}`, `第 ${item.page} 页页边注`));
+      marker.addEventListener('click', () => { openRightSectionShortcut('annotations-section'); focusAnnotationEditor(item.id); });
+      layer.append(marker);
+    }
+  }
+}
+
+function rerenderVisibleAnnotations() {
+  if (!pdfDoc) return;
+  if (readingFlow === 'continuous') {
+    for (const [page, record] of continuousPageNodes) if (record.rendered) renderAnnotationsForPage(page, record.surface, 'continuous');
+  } else renderAnnotationsForPage(currentPage, primaryPageSurface, 'primary');
+  if (pinnedPage) renderAnnotationsForPage(pinnedPage, referencePageSurface, 'reference');
+}
+
+function focusAnnotationEditor(id) {
+  const node = annotationList?.querySelector(`[data-annotation-id="${CSS.escape(String(id))}"] textarea`);
+  if (node) { node.focus(); node.scrollIntoView({ block: 'nearest' }); }
+}
+
+function addSelectionAnnotation(type) {
+  if (!pdfDoc || !currentSelection?.text || !currentSelection.rects?.length || !['highlight','margin'].includes(type)) return;
+  const item = {
+    id: `ann-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    type, page: Number(currentSelection.page), text: currentSelection.text, latex: currentSelection.latex || '', note: '',
+    rects: currentSelection.rects.map((r) => ({...r})), ratio: Number(currentSelection.ratio) || Number(currentSelection.rects[0]?.y) || 0,
+    created: Date.now()
+  };
+  annotations.push(item);
+  persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations();
+  if (type === 'margin') { openRightSectionShortcut('annotations-section'); setTimeout(() => focusAnnotationEditor(item.id), 0); }
+}
+
+function appendAnnotationToPageNote(item) {
+  if (!item) return;
+  const page = Number(item.page) || currentPage;
+  const position = `${Math.round((Number(item.ratio) || 0) * 100)}%`;
+  const quoted = String(item.text || '').split('\n').map((line) => `> ${line}`).join('\n');
+  const meta = t(`Page ${page} · position ${position}`, `第 ${page} 页 · 位置 ${position}`);
+  const block = `${meta}\n${quoted}${item.note?.trim() ? `\n\n${item.note.trim()}` : ''}`;
+  const existing = notes[String(page)] || '';
+  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  persistDocumentState();
+  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
+  noteSaveState.textContent = t('Saved locally', '已保存到本地');
+}
+
+function renderAnnotationList() {
+  if (!annotationList || !annotationEmpty || !annotationCount) return;
+  annotationList.replaceChildren();
+  annotationCount.textContent = String(annotations.length);
+  annotationEmpty.classList.toggle('is-hidden', annotations.length > 0);
+  const ordered = [...annotations].sort((a,b) => a.page - b.page || a.ratio - b.ratio || a.created - b.created);
+  for (const item of ordered) {
+    const row = document.createElement('div'); row.className = 'annotation-item'; row.dataset.annotationId = item.id;
+    const head = document.createElement('div'); head.className = 'annotation-item-head';
+    const kind = document.createElement('span'); kind.className = 'annotation-kind'; kind.textContent = item.type === 'highlight' ? t('Highlight','高亮') : t('Margin note','页边注');
+    const page = document.createElement('span'); page.className = 'annotation-page'; page.textContent = t(`Page ${item.page}`, `第 ${item.page} 页`);
+    head.append(kind,page);
+    const quote = document.createElement('p'); quote.className = 'annotation-quote'; quote.textContent = item.text || item.latex || '';
+    row.append(head, quote);
+    if (item.type === 'margin') {
+      const input = document.createElement('textarea'); input.className = 'annotation-note-input'; input.placeholder = t('Write a margin note…','写页边注……'); input.value = item.note || '';
+      input.addEventListener('input', () => { item.note = input.value; clearTimeout(annotationSaveTimer); annotationSaveTimer = setTimeout(() => { persistDocumentState(); rerenderVisibleAnnotations(); }, 250); });
+      row.append(input);
+    }
+    const actions = document.createElement('div'); actions.className = 'annotation-actions';
+    const jump = document.createElement('button'); jump.type='button'; jump.textContent=t('Jump','跳转'); jump.addEventListener('click',()=>goToLocation(item.page,item.ratio));
+    const promote = document.createElement('button'); promote.type='button'; promote.textContent=t('Add to page note','加入页注'); promote.addEventListener('click',()=>appendAnnotationToPageNote(item));
+    const remove = document.createElement('button'); remove.type='button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ annotations=annotations.filter((ann)=>ann.id!==item.id); persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations(); });
+    actions.append(jump,promote,remove); row.append(actions); annotationList.append(row);
+  }
+}
+
 function capturePdfSelection() {
   clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
@@ -2543,7 +2696,8 @@ function capturePdfSelection() {
     if (!text) { hideSelectionToolbar(); return; }
     const page = Number(startLayer.dataset.page || 0);
     if (!page) { hideSelectionToolbar(); return; }
-    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary') };
+    const rects = normalizedSelectionRects(range, startLayer);
+    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary'), rects, ratio: Number(rects[0]?.y) || 0 };
     refreshSelectionUI();
     persistDocumentState();
     const rect = range.getBoundingClientRect();
@@ -2572,9 +2726,11 @@ async function copyPlainText(text, button = null) {
 function addSelectionToPageNote() {
   if (!pdfDoc || !currentSelection?.text) return;
   const page = currentSelection.page;
+  const position = `${Math.round((Number(currentSelection.ratio) || 0) * 100)}%`;
   const quoted = currentSelection.text.split('\n').map((line) => `> ${line}`).join('\n');
+  const meta = t(`Page ${page} · position ${position}`, `第 ${page} 页 · 位置 ${position}`);
   const existing = notes[String(page)] || '';
-  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${quoted}`;
+  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${meta}\n${quoted}`;
   persistDocumentState();
   if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
@@ -2637,6 +2793,7 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   try {
     await task.promise;
     await renderSelectableText(page, viewport, targetTextLayer, targetSurface, pageNum, kind);
+    renderAnnotationsForPage(pageNum, targetSurface, kind);
     const ocrLayer = kind === 'reference' ? referenceOcrLayer : primaryOcrLayer;
     ocrLayer.dataset.page = String(pageNum);
     ocrLayer.dataset.kind = kind;
@@ -2680,6 +2837,7 @@ async function renderContinuousPage(pageNum, generation) {
     await page.render({ canvasContext: ctx, viewport, transform: dpr === 1 ? null : [dpr,0,0,dpr,0,0] }).promise;
     if (generation !== continuousGeneration) return;
     await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
+    renderAnnotationsForPage(pageNum, surface, 'continuous');
     ocrLayer.dataset.page = String(pageNum);
     ocrLayer.dataset.kind = 'continuous';
     surface.classList.remove('is-placeholder');
@@ -2766,6 +2924,9 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     textLayer.className = 'textLayer';
     textLayer.dataset.page = String(pageNum);
     textLayer.dataset.kind = 'continuous';
+    const annotationLayer = document.createElement('div');
+    annotationLayer.className = 'annotation-layer';
+    annotationLayer.dataset.page = String(pageNum);
     const ocrLayer = document.createElement('div');
     ocrLayer.className = 'ocr-select-layer';
     ocrLayer.dataset.kind = 'continuous';
@@ -2774,10 +2935,10 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     box.className = 'ocr-selection-box';
     ocrLayer.append(box);
     bindOcrLayer(ocrLayer);
-    surface.append(pageCanvas, textLayer, ocrLayer);
+    surface.append(pageCanvas, textLayer, annotationLayer, ocrLayer);
     frame.append(label, surface);
     continuousStack.append(frame);
-    continuousPageNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, ocrLayer, rendered: false, rendering: false });
+    continuousPageNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
   }
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -3759,7 +3920,7 @@ async function importReadingDataFile(file) {
   safeSet(stateKey('session-v2'), JSON.stringify(payload.session));
   loadDocumentState(payload.session);
   await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
-  renderBookmarks(); renderStructureIndex(); renderReferenceStack(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
+  renderBookmarks(); renderStructureIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
 }
 
 function commandActions() {
@@ -3767,9 +3928,13 @@ function commandActions() {
     { label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
     { label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
     { label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
+    { label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
     { label: t('Rebuild theorem & definition index', '重新生成定理与定义索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
     { label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
     { label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
+    { label: t('Highlight selected text', '高亮所选文字'), needsPdf: true, run: () => addSelectionAnnotation('highlight') },
+    { label: t('Add margin note to selection', '为所选文字添加页边注'), needsPdf: true, run: () => addSelectionAnnotation('margin') },
+    { label: t('Annotations', '批注'), needsPdf: true, run: () => openRightSectionShortcut('annotations-section') },
     { label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
     { label: t('Pin current page as reference', '固定当前页作为参考'), needsPdf: true, run: () => setPinnedPage(currentPage) },
     { label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
@@ -3818,6 +3983,8 @@ exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
 importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
 selectionGoReference?.addEventListener('click', goToSelectedReference);
+selectionHighlight?.addEventListener('click', () => addSelectionAnnotation('highlight'));
+selectionMarginNote?.addEventListener('click', () => addSelectionAnnotation('margin'));
 saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
 commandInput?.addEventListener('input', renderCommandPalette);
 commandInput?.addEventListener('keydown', (event) => {
@@ -3870,7 +4037,7 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, floatingHighlight, floatingMarginNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
@@ -3878,6 +4045,8 @@ selectionToNote.addEventListener('click', addSelectionToPageNote);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
 floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });
+floatingHighlight?.addEventListener('click', () => { addSelectionAnnotation('highlight'); hideSelectionToolbar(); });
+floatingMarginNote?.addEventListener('click', () => { addSelectionAnnotation('margin'); hideSelectionToolbar(); });
 floatingPinPage.addEventListener('click', () => { if (currentSelection?.page) setPinnedPage(currentSelection.page); hideSelectionToolbar(); });
 document.addEventListener('selectionchange', capturePdfSelection);
 primaryCanvasWrap.addEventListener('scroll', () => {
@@ -4048,6 +4217,7 @@ refreshOcrUI();
 renderBookmarks();
 renderStructureIndex();
 renderReferenceStack();
+renderAnnotationList();
 updateReadingBackButton();
 
 async function initializeLocalLibrary() {
