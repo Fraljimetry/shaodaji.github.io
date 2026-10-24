@@ -129,6 +129,7 @@ const symbolGlossaryCount = el('symbol-glossary-count');
 const selectionToolbar = el('selection-toolbar');
 const selectionToolbarLabel = el('selection-toolbar-label');
 const floatingCopyText = el('floating-copy-text');
+const floatingFindAll = el('floating-find-all');
 const floatingCopyLatex = el('floating-copy-latex');
 const floatingAddNote = el('floating-add-note');
 const floatingHighlight = el('floating-highlight');
@@ -2869,6 +2870,7 @@ function capturePdfSelection() {
     const rects = normalizedSelectionRects(range, startLayer);
     currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary'), rects, ratio: Number(rects[0]?.y) || 0 };
     refreshSelectionUI();
+    expandWorkspaceSection('selection-section');
     persistDocumentState();
     const rect = range.getBoundingClientRect();
     if (rect.width || rect.height) positionSelectionToolbar(rect);
@@ -4817,16 +4819,6 @@ function renderSymbolGlossary() {
     const meaning = document.createElement('span'); meaning.textContent = item.meaning || t('No meaning yet', '尚未填写含义');
     head.append(symbol, meaning);
     const actions = document.createElement('div'); actions.className = 'symbol-glossary-actions';
-    const first = document.createElement('button'); first.type = 'button'; first.className = 'text-button'; first.textContent = t('First', '首次');
-    first.addEventListener('click', async () => {
-      let loc = item.firstPage ? { page: item.firstPage, ratio: item.firstRatio ?? 0 } : null;
-      if (!loc) {
-        loc = await locateFirstOccurrence(item.symbol);
-        if (loc) { item.firstPage = loc.page; item.firstRatio = loc.ratio; persistDocumentState(); renderSymbolGlossary(); }
-      }
-      if (loc) goToLocation(loc.page, loc.ratio);
-      else showError(t('Symbol not found in this PDF.', '在此 PDF 中未找到该符号。'));
-    });
     const all = document.createElement('button'); all.type = 'button'; all.className = 'text-button'; all.textContent = t('Find all', '查找全部');
     all.addEventListener('click', () => runFindAllOccurrences(item.symbol));
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-button'; edit.textContent = t('Edit', '编辑');
@@ -4837,7 +4829,7 @@ function renderSymbolGlossary() {
     });
     const del = document.createElement('button'); del.type = 'button'; del.className = 'text-button'; del.textContent = t('Delete', '删除');
     del.addEventListener('click', () => { symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
-    actions.append(first, all, edit, del);
+    actions.append(all, edit, del);
     card.append(head, actions);
     symbolGlossaryList.append(card);
   }
@@ -4853,8 +4845,7 @@ async function addGlossaryEntry(symbolValue = null, meaningValue = null) {
   if (item) {
     if (meaning) item.meaning = meaning;
   } else {
-    const first = await locateFirstOccurrence(symbol);
-    item = { id: `sym-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, symbol, meaning, created: Date.now(), firstPage: first?.page || null, firstRatio: first?.ratio ?? null };
+    item = { id: `sym-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, symbol, meaning, created: Date.now(), firstPage: null, firstRatio: null };
     symbolGlossary.push(item);
   }
   if (glossarySymbolInput) glossarySymbolInput.value = '';
@@ -5628,7 +5619,7 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
@@ -5637,6 +5628,7 @@ selectionFindAll?.addEventListener('click', () => runFindAllOccurrences(currentS
 selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
+floatingFindAll?.addEventListener('click', () => { runFindAllOccurrences(currentSelection?.text); hideSelectionToolbar(); });
 floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });
 floatingHighlight?.addEventListener('click', () => { addSelectionAnnotation('highlight'); hideSelectionToolbar(); });
 floatingMarginNote?.addEventListener('click', () => { addSelectionAnnotation('margin'); hideSelectionToolbar(); });
