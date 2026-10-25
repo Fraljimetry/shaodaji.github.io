@@ -192,8 +192,8 @@ html[data-theme="dark"] .icon-button,html[data-theme="dark"] .tool-button,html[d
 .ocr-history-toggle:hover{border-color:var(--accent);background:var(--surface-soft)}
 .ocr-history-item.is-copied{border-color:var(--accent);background:var(--accent-soft)}
 .note-latex-help{margin:6px 0 0;color:var(--muted);font-size:9px;line-height:1.45}
-.note-preview{margin-top:7px;padding:9px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--paper);font-size:11px;line-height:1.55;white-space:pre-wrap;overflow:auto}
-.note-preview mjx-container[display="true"]{margin:.7em 0!important;overflow-x:auto;overflow-y:hidden}
+.note-preview{margin-top:7px;padding:12px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--paper);font-size:11px;line-height:1.55;white-space:pre-wrap;overflow:auto}
+.note-preview mjx-container[display="true"]{margin:.8em 0!important;padding:.15em .3em;overflow-x:auto;overflow-y:visible}
 .bookmark-item{border-left-width:4px}.bookmark-item[data-color="red"]{border-left-color:#c95d5d}.bookmark-item[data-color="blue"]{border-left-color:#5d8fc9}.bookmark-item[data-color="green"]{border-left-color:#5e9d72}.bookmark-item[data-color="yellow"]{border-left-color:#d2a93e}.bookmark-item[data-color="purple"]{border-left-color:#8d6bc1}
 .bookmark-color-picker{display:grid;gap:5px}.bookmark-color-picker>span{color:var(--muted);font-size:9px;font-weight:700}.bookmark-color-swatches{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.bookmark-color-swatch{width:22px;height:22px;padding:0;border:2px solid transparent;border-radius:999px;cursor:pointer;box-shadow:0 0 0 1px var(--line)}.bookmark-color-swatch[data-color="red"]{background:#c95d5d}.bookmark-color-swatch[data-color="blue"]{background:#5d8fc9}.bookmark-color-swatch[data-color="green"]{background:#5e9d72}.bookmark-color-swatch[data-color="yellow"]{background:#d2a93e}.bookmark-color-swatch[data-color="purple"]{background:#8d6bc1}.bookmark-color-swatch.is-active{border-color:var(--surface);box-shadow:0 0 0 2px var(--accent)}
 
@@ -426,8 +426,8 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 
 .document-meta-field{display:grid;gap:5px;margin:7px 0;color:var(--muted);font-size:.68rem}.document-meta-field input,.document-meta-field select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}.document-meta-field textarea{min-height:82px!important}.document-meta-summary{margin-top:7px;color:var(--muted);font-size:.64rem;line-height:1.4}.backlinks-filter{width:100%;margin:0 0 7px;padding:6px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-size:.67rem}
 
-.ocr-rendered-preview{min-height:64px;max-height:220px;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;text-align:center}
-.ocr-rendered-preview mjx-container{max-width:100%;margin:.25em 0!important;overflow-x:auto;overflow-y:hidden}
+.ocr-rendered-preview{min-height:64px;max-height:340px;overflow:auto;padding:14px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);display:block;text-align:center}
+.ocr-rendered-preview mjx-container{max-width:100%;margin:.45em auto!important;padding:.2em .35em;overflow:visible}
 .ocr-rendered-preview.has-error{justify-content:flex-start;text-align:left;color:var(--danger,#b42318);font-size:10px;line-height:1.45}
 
 /* v132 mathematical-reading context tools */

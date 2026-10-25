@@ -1528,7 +1528,7 @@ function markAlignmentRelation(line) {
 function unwrapOcrFormattingEnvelope(value) {
   let text = String(value || '').trim();
   if (!text) return '';
-  const envMatch = text.match(/^\\begin\{(aligned|gathered|gather|array)\}([\s\S]*?)\\end\{\1\}$/);
+  const envMatch = text.match(/^\\begin\{(aligned|split|gathered|gather|array)\}([\s\S]*?)\\end\{\1\}$/);
   if (!envMatch) return text;
   const env = envMatch[1];
   let inner = String(envMatch[2] || '').trim();
@@ -1627,7 +1627,7 @@ function alignLineByPattern(value, mode = 'relation') {
   if (!line) return '';
   const pattern = mode === 'equals'
     ? /(=)/
-    : /(\\(?:Longleftrightarrow|Leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z])|<=|>=|=|<|>)/;
+    : /(\\(?:Longleftrightarrow|Leftrightarrow|longleftrightarrow|leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|longleftarrow|leftarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z])|<=|>=|=|<|>)/;
   const match = line.match(pattern);
   if (!match || typeof match.index !== 'number') return line;
   return `${line.slice(0, match.index)}&${line.slice(match.index)}`.replace(/\s+&/g, ' &').trim();
@@ -1686,7 +1686,7 @@ function autoFormatOcrLatex(value) {
   const rows = cleanOcrFormattingRows(splitOcrLatexRows(value));
   if (!rows.length) return String(value || '').trim();
   if (rows.length === 1) return formatOcrRowsSingleLine(rows);
-  const relationPattern = /(=|<=|>=|<|>|\\(?:Longleftrightarrow|Leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z]))/;
+  const relationPattern = /(=|<=|>=|<|>|\\(?:Longleftrightarrow|Leftrightarrow|longleftrightarrow|leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|longleftarrow|leftarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z]))/;
   const relationRows = rows.filter((row) => relationPattern.test(normalizeOcrAlignmentLine(row))).length;
   const signedContinuations = rows.slice(1).filter((row) => Boolean(ocrSignedContinuationBody(row))).length;
   if (relationRows || signedContinuations) return formatOcrRowsSemanticAlign(rows);
