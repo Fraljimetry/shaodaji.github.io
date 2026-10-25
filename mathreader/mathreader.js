@@ -1478,8 +1478,12 @@ function renderOcrTimingDiagnostics() {
     if (r.retryFailed) lines.push(`  ${t('Retry outcome', '重试结果')}: ${t('failed quality gate', '未通过质量门槛')}`);
     if (r.candidateDecision) lines.push(`  ${t('Candidate choice', '候选选择')}: ${r.candidateDecision}`);
     if (Number.isFinite(r.fusionAgreement)) lines.push(`  ${t('OCR/vector structural agreement', 'OCR/矢量结构一致度')}: ${(r.fusionAgreement * 100).toFixed(1)}%`);
-    if (r.fusionApplied) lines.push(`  ${t('Vector leaf fusion', '矢量叶节点融合')}: ${r.fusionCorrections} ${t('correction(s)', '处修正')} · ${ocrMs(r.fusionMs)}`);
-    else if (r.fusionReason) lines.push(`  ${t('Vector leaf fusion', '矢量叶节点融合')}: ${t('not applied', '未应用')} · ${r.fusionReason}`);
+    if (r.fusionApplied) {
+      lines.push(`  ${t('Vector leaf fusion', '矢量叶节点融合')}: ${r.fusionCorrections} ${t('correction(s)', '处修正')} · ${ocrMs(r.fusionMs)}`);
+      if (Array.isArray(r.fusionChanges) && r.fusionChanges.length) lines.push(`    ${t('Changes', '修改')}: ${r.fusionChanges.join(' · ')}`);
+    } else if (r.fusionReason) {
+      lines.push(`  ${t('Vector leaf fusion', '矢量叶节点融合')}: ${t('not applied', '未应用')} · ${r.fusionReason}`);
+    }
     (r.passes || []).forEach((pass, index) => {
       lines.push(`  ${t('Pass', '第')} ${index + 1}${t('', ' 次')} · ${pass.variant}/${pass.preprocess}${pass.careful ? ' · beam 2' : ' · beam 1'}`);
       if (Number.isFinite(pass.inputWidth) && Number.isFinite(pass.inputHeight)) lines.push(`    ${t('Model input', '模型输入')}: ${pass.inputWidth}×${pass.inputHeight}${Number.isFinite(pass.inputAspect) ? ` · ${t('aspect', '宽高比')} ${pass.inputAspect.toFixed(2)}:1` : ''}`);
@@ -1521,7 +1525,8 @@ function renderOcrTimingDiagnostics() {
     if (e.backendDetail) lines.push(`  ${t('Backend', '后端')}: ${e.backendDetail}`);
     lines.push(`  ${t('Runtime import', '运行时导入')}: ${ocrMs(e.importMs)}`);
     lines.push(`  ${t('Pipeline/model init', '模型初始化')}: ${ocrMs(e.pipelineMs)}`);
-    lines.push(`  ${t('Load total', '加载合计')}: ${ocrMs(e.totalMs)}`);
+    if (e.warmupAttempted) lines.push(`  ${t('Warm-up inference', '预热推理')}: ${ocrMs(e.warmupMs)}${e.warmupError ? ` · ${t('failed', '失败')}: ${e.warmupError}` : ''}`);
+    lines.push(`  ${t('Ready total', '就绪合计')}: ${ocrMs(e.totalMs)}`);
   }
   if (!lines.length) lines.push(ocrTimingDiagnostics.dataset[root.dataset.lang === 'zh' ? 'zhEmpty' : 'enEmpty'] || t('No OCR run yet.', '尚无 OCR 运行记录。'));
   ocrTimingDiagnostics.textContent = lines.join('\n');
@@ -2121,6 +2126,42 @@ function detailedOcrError(error, backend = null) {
   return `${friendly} · ${t('Technical', '技术信息')}: ${technical.slice(0, 520)}`;
 }
 
+
+async function warmMathOcrPipeline(pipe) {
+  const warmupStart = ocrNow();
+  const canvas = document.createElement('canvas');
+  canvas.width = 160;
+  canvas.height = 56;
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) return { attempted: false, ms: 0, error: 'canvas unavailable' };
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  ctx.font = '28px serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('x = 1', 18, canvas.height / 2);
+
+  try {
+    setOcrStatus(t('Warming OCR…', '正在预热 OCR……'), true);
+    const input = await prepareMathOcrInput(canvas);
+    await pipe(input, {
+      max_new_tokens: 16,
+      num_beams: 1,
+      early_stopping: false,
+      do_sample: false,
+      repetition_penalty: 1.04
+    });
+    return { attempted: true, ms: ocrNow() - warmupStart, error: '' };
+  } catch (error) {
+    console.warn('MathReader OCR warm-up failed; continuing with loaded engine.', error);
+    return {
+      attempted: true,
+      ms: ocrNow() - warmupStart,
+      error: String(error?.message || error || '').replace(/\s+/g, ' ').trim().slice(0, 240)
+    };
+  }
+}
+
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
   const engineLoadStart = ocrNow();
@@ -2167,8 +2208,12 @@ async function ensureMathOcrPipeline() {
         const pipelineStart = ocrNow();
         const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, options);
         const pipelineMs = ocrNow() - pipelineStart;
-        mathOcrPipeline = pipe;
+        // Keep the pipeline private from the interaction layer until one real
+        // inference has exercised the WebGPU/ONNX execution path. pipeline()
+        // can return before deferred shader/graph compilation has happened.
         mathOcrBackend = backend;
+        const warmup = await warmMathOcrPipeline(pipe);
+        mathOcrPipeline = pipe;
         mathOcrReadyAt = ocrNow();
         mathOcrInferenceRuns = 0;
         lastOcrEngineTiming = {
@@ -2176,10 +2221,15 @@ async function ensureMathOcrPipeline() {
           backendDetail: `${backend.label}${backend.device ? ` · device=${backend.device}` : ''}${backend.dtype ? ` · dtype=${backend.dtype}` : ''}`,
           importMs: runtimeImportMs,
           pipelineMs,
+          warmupMs: warmup.ms,
+          warmupAttempted: warmup.attempted,
+          warmupError: warmup.error || '',
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
+        setOcrStatus(warmup.error
+          ? t(`OCR ready · ${backend.label} · warm-up incomplete`, `OCR 就绪 · ${backend.label} · 预热未完成`)
+          : t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
@@ -3631,6 +3681,10 @@ function alignLatexForVectorFusion(ocrTokens, vectorTokens) {
   return { pairs, cost: dp[n][m] };
 }
 
+function latexFusionTopology(tokens, scriptLeaves) {
+  return tokens.map((token, index) => scriptLeaves[index] ? '<leaf>' : token).join(' ');
+}
+
 function fuseTensorOcrWithVector(ocrLatex, vectorLatex, tensorLike) {
   const original = String(ocrLatex || '');
   const vector = stabilizeOcrLatexSyntax(repairOcrLatex(vectorLatex || ''));
@@ -3646,81 +3700,83 @@ function fuseTensorOcrWithVector(ocrLatex, vectorLatex, tensorLike) {
 
   const ocrTokens = tokenizeLatexForVectorFusion(original);
   const vectorTokens = tokenizeLatexForVectorFusion(vector);
-  const aligned = alignLatexForVectorFusion(ocrTokens, vectorTokens);
-  if (!aligned) { result.reason = 'alignment unavailable'; return result; }
-
-  const ocrScriptLeaf = markLatexScriptLeaves(ocrTokens);
-  let structuralPairs = 0;
-  let structuralMatches = 0;
-  for (const pair of aligned.pairs) {
-    if (pair.oi < 0 || pair.vi < 0) continue;
-    const a = ocrTokens[pair.oi];
-    const b = vectorTokens[pair.vi];
-    if (!vectorFusionLeafKind(a) && !vectorFusionLeafKind(b)) {
-      structuralPairs += 1;
-      if (a === b) structuralMatches += 1;
-    }
-  }
-  result.structuralAgreement = structuralPairs ? structuralMatches / structuralPairs : 0;
-  if (structuralPairs < 8 || result.structuralAgreement < 0.82) {
-    result.reason = `structure agreement ${(result.structuralAgreement * 100).toFixed(1)}%`;
+  if (!ocrTokens.length || ocrTokens.length !== vectorTokens.length) {
+    result.reason = 'token topology differs';
     return result;
   }
 
-  const alignedPairs = aligned.pairs;
-  const replacements = [];
-  const exactStructuralNeighborCount = (pairIndex, direction) => {
-    let count = 0;
-    for (let p = pairIndex + direction, walked = 0; p >= 0 && p < alignedPairs.length && walked < 6; p += direction, walked += 1) {
-      const q = alignedPairs[p];
-      if (q.oi < 0 || q.vi < 0) continue;
-      const a = ocrTokens[q.oi], b = vectorTokens[q.vi];
-      if (!vectorFusionLeafKind(a) && !vectorFusionLeafKind(b)) {
-        if (a === b) count += 1;
-        else break;
-        if (count >= 2) break;
-      }
-    }
-    return count;
-  };
+  const ocrLeaves = markLatexScriptLeaves(ocrTokens);
+  const vectorLeaves = markLatexScriptLeaves(vectorTokens);
+  if (ocrLeaves.some((value, index) => value !== vectorLeaves[index])) {
+    result.reason = 'script topology differs';
+    return result;
+  }
 
-  alignedPairs.forEach((pair, pairIndex) => {
-    if (pair.oi < 0 || pair.vi < 0) return;
-    const from = ocrTokens[pair.oi];
-    const to = vectorTokens[pair.vi];
-    if (from === to || !ocrScriptLeaf[pair.oi]) return;
+  const ocrTopology = latexFusionTopology(ocrTokens, ocrLeaves);
+  const vectorTopology = latexFusionTopology(vectorTokens, vectorLeaves);
+  if (ocrTopology !== vectorTopology) {
+    result.reason = 'structure is not identical';
+    return result;
+  }
+  result.structuralAgreement = 1;
+
+  const replacements = [];
+  for (let i = 0; i < ocrTokens.length; i += 1) {
+    if (!ocrLeaves[i]) continue;
+    const from = ocrTokens[i];
+    const to = vectorTokens[i];
+    if (from === to) continue;
     const fromKind = vectorFusionLeafKind(from);
     const toKind = vectorFusionLeafKind(to);
-    if (!fromKind || !toKind || fromKind !== toKind) return;
+    if (!fromKind || !toKind || fromKind !== toKind) {
+      result.reason = 'leaf class disagreement';
+      return result;
+    }
 
-    const leftAnchors = exactStructuralNeighborCount(pairIndex, -1);
-    const rightAnchors = exactStructuralNeighborCount(pairIndex, 1);
-    if (leftAnchors < 1 || rightAnchors < 1 || leftAnchors + rightAnchors < 3) return;
+    // Require identical immediate script punctuation around the differing leaf.
+    const left1 = ocrTokens[i - 1] || '';
+    const left2 = ocrTokens[i - 2] || '';
+    const right1 = ocrTokens[i + 1] || '';
+    const right2 = ocrTokens[i + 2] || '';
+    if (left1 !== vectorTokens[i - 1] || left2 !== vectorTokens[i - 2] ||
+        right1 !== vectorTokens[i + 1] || right2 !== vectorTokens[i + 2]) {
+      result.reason = 'local context differs';
+      return result;
+    }
+    replacements.push({ oi: i, from, to });
+  }
 
-    replacements.push({ oi: pair.oi, from, to, leftAnchors, rightAnchors });
-  });
-
-  // Conservative ceiling: if candidates disagree in too many script leaves,
-  // do not let vector extraction rewrite the OCR result wholesale.
-  if (!replacements.length) { result.reason = 'no high-confidence leaf corrections'; return result; }
-  if (replacements.length > 12 || replacements.length > Math.max(4, Math.floor(ocrTokens.length * 0.08))) {
-    result.reason = `too many candidate corrections (${replacements.length})`;
+  if (!replacements.length) {
+    result.reason = 'no differing script leaves';
     return result;
   }
 
-  for (const replacement of replacements) ocrTokens[replacement.oi] = replacement.to;
-  result.latex = ocrTokens.join(' ')
-    .replace(/\s+([{}_^,.;:])/g, '$1')
-    .replace(/([{}_^])\s+/g, '$1')
-    .replace(/\\([A-Za-z]+)\s+\{/g, '\\$1{')
-    .replace(/\s+/g, ' ')
-    .trim();
-  result.latex = stabilizeOcrLatexSyntax(repairOcrLatex(result.latex));
-  result.applied = result.latex !== original;
+  // v196 intentionally accepts only a very small correction set. If the PDF
+  // vector candidate disagrees with OCR broadly, keep OCR authoritative.
+  if (replacements.length > 4) {
+    result.reason = `too many leaf disagreements (${replacements.length})`;
+    return result;
+  }
+
+  // Rebuild only because topology is exactly identical token-for-token.
+  const fusedTokens = [...ocrTokens];
+  for (const replacement of replacements) fusedTokens[replacement.oi] = replacement.to;
+  const fused = stabilizeOcrLatexSyntax(repairOcrLatex(
+    fusedTokens.join(' ')
+      .replace(/\s+([{}_^,.;:])/g, '$1')
+      .replace(/([{}_^])\s+/g, '$1')
+      .replace(/\\([A-Za-z]+)\s+\{/g, '\\$1{')
+      .replace(/\s+/g, ' ')
+      .trim()
+  ));
+
+  result.latex = fused;
+  result.applied = fused !== original;
   result.replacements = replacements;
-  result.reason = result.applied ? 'high-confidence script-leaf reconciliation' : 'no effective change';
+  result.reason = result.applied ? 'identical topology; script leaves reconciled' : 'no effective change';
   return result;
 }
+
 
 async function runImageFormulaRecognition(crop, options = {}) {
   const recognitionStart = ocrNow();
@@ -3857,6 +3913,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
         : t('single-pass result retained', '保留单次识别结果'),
       fusionApplied: Boolean(fusion.applied),
       fusionCorrections: fusion.replacements?.length || 0,
+      fusionChanges: (fusion.replacements || []).map((item) => `${item.from}→${item.to}`),
       fusionAgreement: fusion.structuralAgreement,
       fusionReason: fusion.reason || '',
       fusionMs,
@@ -3938,6 +3995,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       retryProfile: result.timing?.retryProfile || '',
       fusionApplied: Boolean(result.timing?.fusionApplied),
       fusionCorrections: Number(result.timing?.fusionCorrections || 0),
+      fusionChanges: Array.isArray(result.timing?.fusionChanges) ? result.timing.fusionChanges : [],
       fusionAgreement: Number.isFinite(Number(result.timing?.fusionAgreement)) ? Number(result.timing.fusionAgreement) : null,
       fusionReason: result.timing?.fusionReason || '',
       fusionMs: result.timing?.fusionMs,
@@ -4037,6 +4095,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
       retryProfile: result.timing?.retryProfile || '',
       fusionApplied: Boolean(result.timing?.fusionApplied),
       fusionCorrections: Number(result.timing?.fusionCorrections || 0),
+      fusionChanges: Array.isArray(result.timing?.fusionChanges) ? result.timing.fusionChanges : [],
       fusionAgreement: Number.isFinite(Number(result.timing?.fusionAgreement)) ? Number(result.timing.fusionAgreement) : null,
       fusionReason: result.timing?.fusionReason || '',
       fusionMs: result.timing?.fusionMs,
