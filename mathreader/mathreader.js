@@ -3349,17 +3349,10 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
     const processed = preprocessFormulaCanvas(prepared, preprocess);
     const inputImage = await prepareMathOcrInput(processed);
-    // Keep the stable 512-token cap for ordinary formulas. Only crops that
-    // the existing row-band analysis already identifies as genuinely
-    // multi-line receive extra decoder headroom, preventing long derivations
-    // from being cut off without changing the model, preprocessing, retry
-    // count, beam policy, or candidate selection.
-    const expectedRows = Number(profile?.expectedRows || 0);
-    const maxNewTokens = expectedRows >= 3
-      ? Math.min(1280, 512 + expectedRows * 128)
-      : 512;
+    // Stable decoder budget: preserve the v153-era 512-token cap for every
+    // formula. Longer caps increased latency without reliably fixing truncation.
     const generation = {
-      max_new_tokens: maxNewTokens,
+      max_new_tokens: 512,
       num_beams: careful ? 2 : 1,
       early_stopping: Boolean(careful),
       do_sample: false,
