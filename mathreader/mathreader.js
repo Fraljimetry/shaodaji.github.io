@@ -3935,18 +3935,21 @@ function addSelectionAnnotation(type) {
   if (type === 'margin') { openRightSectionShortcut('annotations-section'); setTimeout(() => focusAnnotationEditor(item.id), 0); }
 }
 
-function appendAnnotationToPageNote(item) {
-  if (!item) return;
-  const page = Number(item.page) || currentPage;
+async function appendAnnotationToPageNote(item) {
+  if (!item || !pdfDoc) return;
+  const page = Math.min(Math.max(1, Number(item.page) || currentPage || 1), pdfDoc.numPages);
   const position = `${Math.round((Number(item.ratio) || 0) * 100)}%`;
-  const quoted = String(item.text || '').split('\n').map((line) => `> ${line}`).join('\n');
+  const quoted = String(item.text || item.latex || '').split('\n').map((line) => `> ${line}`).join('\n');
   const meta = t(`Page ${page} · position ${position}`, `第 ${page} 页 · 位置 ${position}`);
   const block = `${meta}\n${quoted}${item.note?.trim() ? `\n\n${item.note.trim()}` : ''}`;
   const existing = notes[String(page)] || '';
   notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
   persistDocumentState();
-  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
+  if (page !== currentPage) await goToPage(page);
+  pageNote.value = notes[String(page)] || '';
+  scheduleNotePreview();
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  openRightSectionShortcut('note-section', pageNote);
 }
 
 function renderAnnotationList() {
