@@ -1477,6 +1477,9 @@ function renderOcrTimingDiagnostics() {
     if (r.retryProfile) lines.push(`  ${t('Retry profile', '重试方案')}: ${r.retryProfile}`);
     if (r.retryFailed) lines.push(`  ${t('Retry outcome', '重试结果')}: ${t('failed quality gate', '未通过质量门槛')}`);
     if (r.candidateDecision) lines.push(`  ${t('Candidate choice', '候选选择')}: ${r.candidateDecision}`);
+    if (Number.isFinite(r.fusionAgreement)) lines.push(`  ${t('OCR/vector structural agreement', 'OCR/矢量结构一致度')}: ${(r.fusionAgreement * 100).toFixed(1)}%`);
+    if (r.fusionApplied) lines.push(`  ${t('Vector leaf fusion', '矢量叶节点融合')}: ${r.fusionCorrections} ${t('correction(s)', '处修正')} · ${ocrMs(r.fusionMs)}`);
+    else if (r.fusionReason) lines.push(`  ${t('Vector leaf fusion', '矢量叶节点融合')}: ${t('not applied', '未应用')} · ${r.fusionReason}`);
     (r.passes || []).forEach((pass, index) => {
       lines.push(`  ${t('Pass', '第')} ${index + 1}${t('', ' 次')} · ${pass.variant}/${pass.preprocess}${pass.careful ? ' · beam 2' : ' · beam 1'}`);
       if (Number.isFinite(pass.inputWidth) && Number.isFinite(pass.inputHeight)) lines.push(`    ${t('Model input', '模型输入')}: ${pass.inputWidth}×${pass.inputHeight}${Number.isFinite(pass.inputAspect) ? ` · ${t('aspect', '宽高比')} ${pass.inputAspect.toFixed(2)}:1` : ''}`);
@@ -3535,6 +3538,190 @@ function vectorCandidateScore(vectorCandidate, context = {}) {
   return score;
 }
 
+
+function tokenizeLatexForVectorFusion(value) {
+  return String(value || '').match(/\\[A-Za-z]+|[A-Za-z]+|\d+|\\.|[{}_^]|[^\s]/g) || [];
+}
+
+function vectorFusionLeafKind(token) {
+  const value = String(token || '');
+  if (/^[A-Za-z]$/.test(value)) return 'latin';
+  if (/^\d+$/.test(value)) return 'number';
+  if (/^\\(?:alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega|ell)$/.test(value)) return 'greek';
+  return '';
+}
+
+function markLatexScriptLeaves(tokens) {
+  const marked = new Array(tokens.length).fill(false);
+  const stack = [];
+  let pendingScript = false;
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (token === '^' || token === '_') {
+      pendingScript = true;
+      continue;
+    }
+    if (token === '{') {
+      stack.push(pendingScript || (stack.length && stack[stack.length - 1]));
+      pendingScript = false;
+      continue;
+    }
+    if (token === '}') {
+      stack.pop();
+      pendingScript = false;
+      continue;
+    }
+    if (pendingScript) {
+      marked[i] = Boolean(vectorFusionLeafKind(token));
+      pendingScript = false;
+    } else if (stack.length && stack[stack.length - 1] && vectorFusionLeafKind(token)) {
+      marked[i] = true;
+    }
+  }
+  return marked;
+}
+
+function alignLatexForVectorFusion(ocrTokens, vectorTokens) {
+  const n = ocrTokens.length;
+  const m = vectorTokens.length;
+  if (!n || !m || n > 900 || m > 900) return null;
+
+  const dp = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
+  const move = Array.from({ length: n + 1 }, () => new Uint8Array(m + 1));
+  for (let i = 1; i <= n; i += 1) { dp[i][0] = i * 1.15; move[i][0] = 2; }
+  for (let j = 1; j <= m; j += 1) { dp[0][j] = j * 1.15; move[0][j] = 3; }
+
+  for (let i = 1; i <= n; i += 1) {
+    for (let j = 1; j <= m; j += 1) {
+      const a = ocrTokens[i - 1];
+      const b = vectorTokens[j - 1];
+      const ka = vectorFusionLeafKind(a);
+      const kb = vectorFusionLeafKind(b);
+      let subst = 0;
+      if (a === b) subst = 0;
+      else if (ka && kb && ka === kb) subst = 0.35;
+      else if (ka && kb) subst = 0.75;
+      else subst = 2.4;
+
+      const diag = dp[i - 1][j - 1] + subst;
+      const del = dp[i - 1][j] + 1.15;
+      const ins = dp[i][j - 1] + 1.15;
+      if (diag <= del && diag <= ins) { dp[i][j] = diag; move[i][j] = 1; }
+      else if (del <= ins) { dp[i][j] = del; move[i][j] = 2; }
+      else { dp[i][j] = ins; move[i][j] = 3; }
+    }
+  }
+
+  const pairs = [];
+  let i = n, j = m;
+  while (i > 0 || j > 0) {
+    const mv = move[i][j];
+    if (i > 0 && j > 0 && mv === 1) {
+      pairs.push({ oi: i - 1, vi: j - 1 });
+      i -= 1; j -= 1;
+    } else if (i > 0 && (mv === 2 || j === 0)) {
+      pairs.push({ oi: i - 1, vi: -1 });
+      i -= 1;
+    } else {
+      pairs.push({ oi: -1, vi: j - 1 });
+      j -= 1;
+    }
+  }
+  pairs.reverse();
+  return { pairs, cost: dp[n][m] };
+}
+
+function fuseTensorOcrWithVector(ocrLatex, vectorLatex, tensorLike) {
+  const original = String(ocrLatex || '');
+  const vector = stabilizeOcrLatexSyntax(repairOcrLatex(vectorLatex || ''));
+  const result = {
+    latex: original,
+    applied: false,
+    replacements: [],
+    structuralAgreement: 0,
+    reason: '',
+  };
+  if (!tensorLike) { result.reason = 'not tensor-heavy'; return result; }
+  if (!original || !vector) { result.reason = 'missing candidate'; return result; }
+
+  const ocrTokens = tokenizeLatexForVectorFusion(original);
+  const vectorTokens = tokenizeLatexForVectorFusion(vector);
+  const aligned = alignLatexForVectorFusion(ocrTokens, vectorTokens);
+  if (!aligned) { result.reason = 'alignment unavailable'; return result; }
+
+  const ocrScriptLeaf = markLatexScriptLeaves(ocrTokens);
+  let structuralPairs = 0;
+  let structuralMatches = 0;
+  for (const pair of aligned.pairs) {
+    if (pair.oi < 0 || pair.vi < 0) continue;
+    const a = ocrTokens[pair.oi];
+    const b = vectorTokens[pair.vi];
+    if (!vectorFusionLeafKind(a) && !vectorFusionLeafKind(b)) {
+      structuralPairs += 1;
+      if (a === b) structuralMatches += 1;
+    }
+  }
+  result.structuralAgreement = structuralPairs ? structuralMatches / structuralPairs : 0;
+  if (structuralPairs < 8 || result.structuralAgreement < 0.82) {
+    result.reason = `structure agreement ${(result.structuralAgreement * 100).toFixed(1)}%`;
+    return result;
+  }
+
+  const alignedPairs = aligned.pairs;
+  const replacements = [];
+  const exactStructuralNeighborCount = (pairIndex, direction) => {
+    let count = 0;
+    for (let p = pairIndex + direction, walked = 0; p >= 0 && p < alignedPairs.length && walked < 6; p += direction, walked += 1) {
+      const q = alignedPairs[p];
+      if (q.oi < 0 || q.vi < 0) continue;
+      const a = ocrTokens[q.oi], b = vectorTokens[q.vi];
+      if (!vectorFusionLeafKind(a) && !vectorFusionLeafKind(b)) {
+        if (a === b) count += 1;
+        else break;
+        if (count >= 2) break;
+      }
+    }
+    return count;
+  };
+
+  alignedPairs.forEach((pair, pairIndex) => {
+    if (pair.oi < 0 || pair.vi < 0) return;
+    const from = ocrTokens[pair.oi];
+    const to = vectorTokens[pair.vi];
+    if (from === to || !ocrScriptLeaf[pair.oi]) return;
+    const fromKind = vectorFusionLeafKind(from);
+    const toKind = vectorFusionLeafKind(to);
+    if (!fromKind || !toKind || fromKind !== toKind) return;
+
+    const leftAnchors = exactStructuralNeighborCount(pairIndex, -1);
+    const rightAnchors = exactStructuralNeighborCount(pairIndex, 1);
+    if (leftAnchors < 1 || rightAnchors < 1 || leftAnchors + rightAnchors < 3) return;
+
+    replacements.push({ oi: pair.oi, from, to, leftAnchors, rightAnchors });
+  });
+
+  // Conservative ceiling: if candidates disagree in too many script leaves,
+  // do not let vector extraction rewrite the OCR result wholesale.
+  if (!replacements.length) { result.reason = 'no high-confidence leaf corrections'; return result; }
+  if (replacements.length > 12 || replacements.length > Math.max(4, Math.floor(ocrTokens.length * 0.08))) {
+    result.reason = `too many candidate corrections (${replacements.length})`;
+    return result;
+  }
+
+  for (const replacement of replacements) ocrTokens[replacement.oi] = replacement.to;
+  result.latex = ocrTokens.join(' ')
+    .replace(/\s+([{}_^,.;:])/g, '$1')
+    .replace(/([{}_^])\s+/g, '$1')
+    .replace(/\\([A-Za-z]+)\s+\{/g, '\\$1{')
+    .replace(/\s+/g, ' ')
+    .trim();
+  result.latex = stabilizeOcrLatexSyntax(repairOcrLatex(result.latex));
+  result.applied = result.latex !== original;
+  result.replacements = replacements;
+  result.reason = result.applied ? 'high-confidence script-leaf reconciliation' : 'no effective change';
+  return result;
+}
+
 async function runImageFormulaRecognition(crop, options = {}) {
   const recognitionStart = ocrNow();
   const pipe = await ensureMathOcrPipeline();
@@ -3623,10 +3810,22 @@ async function runImageFormulaRecognition(crop, options = {}) {
     throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
   }
 
-  // v194: recognition is deliberately single-pass again. Quality assessment
-  // remains diagnostic-only and must not trigger another expensive inference.
-  // Keep any nonempty image-OCR result visible/editable for review.
-  let finalResult = result;
+  // v194 baseline remains single-pass. v195 adds only a post-inference,
+  // conservative tensor/vector reconciliation; it never triggers another model call.
+  const fusionStart = ocrNow();
+  const fusion = fuseTensorOcrWithVector(result.latex, options.vectorCandidate?.latex || '', Boolean(profile.tensorLike));
+  let finalResult = fusion.applied
+    ? {
+        ...result,
+        latex: fusion.latex,
+        penalty: latexStructuralPenalty(fusion.latex),
+        assessment: assessImageOcrResult(fusion.latex, fusion.latex),
+        imageOriginalLatex: result.latex,
+        vectorFusion: fusion
+      }
+    : { ...result, vectorFusion: fusion };
+  const fusionMs = ocrNow() - fusionStart;
+
   if (finalResult.assessment?.hardReject) {
     finalResult = {
       ...finalResult,
@@ -3653,7 +3852,14 @@ async function runImageFormulaRecognition(crop, options = {}) {
       retryReason: '',
       retryProfile: '',
       retryFailed: false,
-      candidateDecision: t('single-pass result retained', '保留单次识别结果'),
+      candidateDecision: fusion.applied
+        ? `${t('single-pass OCR + vector leaf fusion', '单次 OCR + 矢量叶节点融合')} · ${fusion.replacements.length} ${t('correction(s)', '处修正')}`
+        : t('single-pass result retained', '保留单次识别结果'),
+      fusionApplied: Boolean(fusion.applied),
+      fusionCorrections: fusion.replacements?.length || 0,
+      fusionAgreement: fusion.structuralAgreement,
+      fusionReason: fusion.reason || '',
+      fusionMs,
       passes: passTimings,
       recognitionMs: ocrNow() - recognitionStart,
       engineWarmMs,
@@ -3704,6 +3910,9 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       created: Date.now(),
       quality: result.penalty === 0 && !(result.assessment?.warnings?.length) ? 'clean' : 'review',
       source: 'image',
+      imageOriginalLatex: result.imageOriginalLatex || null,
+      vectorFusionApplied: Boolean(result.vectorFusion?.applied),
+      vectorFusionCorrections: result.vectorFusion?.replacements || [],
       vectorAlternative: vector?.latex || null,
       vectorAlternativeText: vector?.text || null
     };
@@ -3727,6 +3936,11 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       firstPassPenalty: result.timing?.firstPassPenalty,
       retryReason: result.timing?.retryReason || '',
       retryProfile: result.timing?.retryProfile || '',
+      fusionApplied: Boolean(result.timing?.fusionApplied),
+      fusionCorrections: Number(result.timing?.fusionCorrections || 0),
+      fusionAgreement: Number.isFinite(Number(result.timing?.fusionAgreement)) ? Number(result.timing.fusionAgreement) : null,
+      fusionReason: result.timing?.fusionReason || '',
+      fusionMs: result.timing?.fusionMs,
       engineWarmMs: result.timing?.engineWarmMs,
       engineRunNumber: result.timing?.engineRunNumber,
       visibilityState: result.timing?.visibilityState || 'unknown',
@@ -3821,6 +4035,11 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
       firstPassPenalty: result.timing?.firstPassPenalty,
       retryReason: result.timing?.retryReason || '',
       retryProfile: result.timing?.retryProfile || '',
+      fusionApplied: Boolean(result.timing?.fusionApplied),
+      fusionCorrections: Number(result.timing?.fusionCorrections || 0),
+      fusionAgreement: Number.isFinite(Number(result.timing?.fusionAgreement)) ? Number(result.timing.fusionAgreement) : null,
+      fusionReason: result.timing?.fusionReason || '',
+      fusionMs: result.timing?.fusionMs,
       engineWarmMs: result.timing?.engineWarmMs,
       engineRunNumber: result.timing?.engineRunNumber,
       visibilityState: result.timing?.visibilityState || 'unknown',
