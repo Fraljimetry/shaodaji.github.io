@@ -3531,14 +3531,24 @@ async function canvasFromDataUrl(dataUrl) {
   return canvas;
 }
 
-async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
+async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null) {
   if (!crop || !page) return;
   mathOcrLoading = true;
   const imagePreview = preview || crop.toDataURL('image/png');
   setOcrProcessing(true);
   try {
     const result = await runImageFormulaRecognition(crop);
-    const item = { page, kind, latex: result.latex, preview: imagePreview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image' };
+    const item = {
+      page,
+      kind,
+      latex: result.latex,
+      preview: imagePreview,
+      created: Date.now(),
+      quality: result.penalty === 0 ? 'clean' : 'review',
+      source: 'image',
+      vectorAlternative,
+      vectorAlternativeText
+    };
     commitFormulaResult(item, result.penalty === 0
       ? t('Image OCR comparison complete.', '图像 OCR 对照完成。')
       : t('Image OCR comparison complete · review the editable LaTeX.', '图像 OCR 对照完成 · 请核对可编辑 LaTeX。'));
@@ -3558,7 +3568,14 @@ async function tryImageOcrForCurrentResult() {
   if (!currentOcrResult?.preview || mathOcrLoading) return;
   try {
     const crop = await canvasFromDataUrl(currentOcrResult.preview);
-    await recognizeImageFallbackCrop(crop, Number(currentOcrResult.page) || currentPage, currentOcrResult.kind || 'primary', currentOcrResult.preview);
+    await recognizeImageFallbackCrop(
+      crop,
+      Number(currentOcrResult.page) || currentPage,
+      currentOcrResult.kind || 'primary',
+      currentOcrResult.preview,
+      currentOcrResult.vectorAlternative || null,
+      currentOcrResult.vectorAlternativeText || null
+    );
   } catch (error) {
     console.error(error);
     showError(t('The selected formula image could not be prepared for image OCR.', '无法为图像 OCR 准备当前框选公式。'));
@@ -7908,7 +7925,9 @@ tryPdfVectorButton?.addEventListener('click', () => {
     created: Date.now(),
     quality: 'vector-comparison',
     source: 'vector',
-    extractedText: currentOcrResult.vectorAlternativeText || null
+    extractedText: currentOcrResult.vectorAlternativeText || null,
+    vectorAlternative: currentOcrResult.vectorAlternative,
+    vectorAlternativeText: currentOcrResult.vectorAlternativeText || null
   };
   commitFormulaResult(item, t('PDF vector comparison loaded.', '已载入 PDF 矢量对照结果。'));
 });
