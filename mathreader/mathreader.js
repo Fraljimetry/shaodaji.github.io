@@ -3042,7 +3042,25 @@ async function runImageFormulaRecognition(crop, options = {}) {
   }
 
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
-  requireUsableImageOcr(best.raw, best.latex);
+
+  // Image mode must remain image-first. A nonempty Texify result is more useful
+  // to the user than silently replacing it with a weak PDF-vector reconstruction.
+  // Preserve hard-reject information as a review warning instead of throwing;
+  // automatic vector fallback is reserved for the true no-output / inference-error case.
+  if (best.assessment?.hardReject) {
+    best = {
+      ...best,
+      assessment: {
+        ...best.assessment,
+        ok: true,
+        retainedForReview: true,
+        warnings: [
+          ...(best.assessment.warnings || []),
+          ...(best.assessment.reasons || [])
+        ]
+      }
+    };
+  }
   return { ...best, profile, inferenceCount: retry ? 2 : 1 };
 }
 
@@ -3083,21 +3101,21 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       vectorAlternative: vector?.latex || null,
       vectorAlternativeText: vector?.text || null
     };
-    commitFormulaResult(item, result.penalty === 0 && !(result.assessment?.warnings?.length)
-      ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
-      : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
+    commitFormulaResult(item, result.assessment?.retainedForReview
+      ? t('Image OCR returned uncertain LaTeX · kept for review instead of replacing it with PDF vector.', '图像 OCR 返回不确定的 LaTeX · 已保留供核对，不再自动替换为 PDF 矢量结果。')
+      : (result.penalty === 0 && !(result.assessment?.warnings?.length)
+        ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
+        : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。')));
   } catch (error) {
     console.error(error);
-    if (vector?.latex) {
-      commitFormulaResult(
-        { page, kind, latex: repairOcrLatex(vector.latex), preview, created: Date.now(), quality: 'vector-fallback', source: 'vector', extractedText: vector.text },
-        t('Image OCR failed or was rejected · PDF vector fallback was used instead.', '图像 OCR 失败或未通过质量检查 · 已改用 PDF 矢量备用结果。')
-      );
-    } else {
-      const detail = detailedOcrError(error, mathOcrBackend);
-      setOcrStatus(detail);
-      showError(detail);
-    }
+    // Do not silently replace Image OCR with PDF vector. Vector reconstruction
+    // can be badly corrupted by PDF font encodings even for simple formulas.
+    // Keep it available only through the explicit "Try PDF Vector" action.
+    const detail = detailedOcrError(error, mathOcrBackend);
+    setOcrStatus(vector?.latex
+      ? `${detail} · ${t('PDF vector is available manually.', '可手动尝试 PDF 矢量结果。')}`
+      : detail);
+    showError(detail);
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
