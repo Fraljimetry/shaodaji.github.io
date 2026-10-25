@@ -446,3 +446,7 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .ocr-result-meta .ocr-result-help>.compact-help-body{top:26px;left:0;right:0;z-index:60}
 
 .ocr-troubleshooting{margin-top:4px;padding-top:2px}.ocr-troubleshooting>summary{width:max-content;color:var(--muted);font-size:9px;cursor:pointer}.ocr-troubleshooting>summary:hover{color:var(--ink)}.ocr-troubleshooting .text-button{width:max-content;min-width:0;min-height:0;margin-top:7px;padding:3px 6px;font-size:9px;justify-self:start}.ocr-actions #ocr-source-switch{grid-column:auto}
+
+/* v173: align Contents section metadata/actions as a compact right-side group, matching the right panel. */
+.sidebar-left .contents-section>.panel-heading{justify-content:flex-start}
+.sidebar-left .contents-section>.panel-heading>:first-child{margin-right:auto}
