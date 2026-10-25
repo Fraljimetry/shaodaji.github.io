@@ -2054,6 +2054,23 @@ async function ensureMathOcrPipeline() {
 }
 
 
+function scheduleMathOcrPreload() {
+  const preload = async () => {
+    if (mathOcrPipeline || mathOcrLoading) return;
+    try {
+      await ensureMathOcrPipeline();
+    } catch (error) {
+      console.warn('MathReader OCR background preload failed', error);
+      setOcrStatus(t('OCR will retry when you extract a formula.', '公式 OCR 将在你提取公式时重试。'));
+    }
+  };
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => preload(), { timeout: 1800 });
+  } else {
+    setTimeout(preload, 600);
+  }
+}
+
 async function prepareMathOcrInput(canvas) {
   if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
   const { RawImage } = await mathOcrModulePromise;
@@ -7815,7 +7832,7 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
     : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image OCR engine preference changed. It will load on the next image extraction.', '图像 OCR 引擎偏好已更改，将在下一次图像提取时加载。')); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……')); scheduleMathOcrPreload(); });
 ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
@@ -8233,3 +8250,4 @@ async function initializeLocalLibrary() {
 
 window.addEventListener('pagehide', () => persistDocumentState());
 initializeLocalLibrary();
+scheduleMathOcrPreload();
