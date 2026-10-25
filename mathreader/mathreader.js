@@ -1475,6 +1475,8 @@ function renderOcrTimingDiagnostics() {
     if (Number.isFinite(r.firstPassPenalty)) lines.push(`  ${t('First-pass structural penalty', '首轮结构惩罚')}: ${Number(r.firstPassPenalty).toFixed(1)}`);
     if (r.retryReason) lines.push(`  ${t('Retry reason', '重试原因')}: ${r.retryReason}`);
     if (r.retryProfile) lines.push(`  ${t('Retry profile', '重试方案')}: ${r.retryProfile}`);
+    if (r.retryFailed) lines.push(`  ${t('Retry outcome', '重试结果')}: ${t('failed quality gate', '未通过质量门槛')}`);
+    if (r.candidateDecision) lines.push(`  ${t('Candidate choice', '候选选择')}: ${r.candidateDecision}`);
     (r.passes || []).forEach((pass, index) => {
       lines.push(`  ${t('Pass', '第')} ${index + 1}${t('', ' 次')} · ${pass.variant}/${pass.preprocess}${pass.careful ? ' · beam 2' : ' · beam 1'}`);
       if (Number.isFinite(pass.inputWidth) && Number.isFinite(pass.inputHeight)) lines.push(`    ${t('Model input', '模型输入')}: ${pass.inputWidth}×${pass.inputHeight}${Number.isFinite(pass.inputAspect) ? ` · ${t('aspect', '宽高比')} ${pass.inputAspect.toFixed(2)}:1` : ''}`);
@@ -1491,6 +1493,8 @@ function renderOcrTimingDiagnostics() {
       if (Number.isFinite(pass.penalty)) lines.push(`    ${t('Structural penalty', '结构惩罚')}: ${pass.penalty.toFixed(1)}`);
       if (pass.hardReject) lines.push(`    ${t('Hard reject', '硬拒绝')}: ${t('yes', '是')}${pass.rejectReasons ? ` · ${pass.rejectReasons}` : ''}`);
       else lines.push(`    ${t('Hard reject', '硬拒绝')}: ${t('no', '否')}`);
+      if (pass.runawaySequence) lines.push(`    ${t('Runaway sequence', '失控序列')}: ${pass.runawayKind || 'generic'} · “${String(pass.runawaySequence).slice(0, 180)}”${pass.runawayOccurrences ? ` ×${pass.runawayOccurrences}` : ''}`);
+      if (Number.isFinite(pass.corruptionScore)) lines.push(`    ${t('Corruption score', '损坏评分')}: ${pass.corruptionScore.toFixed(1)} ${t('(lower is better)', '（越低越好）')}`);
       lines.push(`    ${t('LaTeX cleanup/check', 'LaTeX 清理/检查')}: ${ocrMs(pass.postprocessMs)}`);
       lines.push(`    ${t('Pass total', '本次合计')}: ${ocrMs(pass.totalMs)}`);
     });
@@ -2400,35 +2404,68 @@ function stabilizeOcrLatexSyntax(value) {
 }
 
 
+function findRepeatedLatexSequence(latexValue) {
+  const latex = String(latexValue || '').trim();
+  const compact = latex.replace(/\s+/g, ' ');
+  const tokens = compact.match(/\\[A-Za-z]+|[A-Za-z]+|\d+|[^\s]/g) || [];
+  let best = null;
+
+  for (const width of [6, 8, 10, 12]) {
+    if (tokens.length < Math.max(140, width * 4)) continue;
+    const positions = new Map();
+    for (let i = 0; i <= tokens.length - width; i += 1) {
+      const key = tokens.slice(i, i + width).join(' ');
+      const list = positions.get(key) || [];
+      list.push(i);
+      positions.set(key, list);
+    }
+    for (const [key, list] of positions.entries()) {
+      if (list.length < 3) continue;
+      const chosen = [];
+      for (const at of list) {
+        if (!chosen.length || at - chosen[chosen.length - 1] >= width) chosen.push(at);
+      }
+      if (chosen.length < 3) continue;
+      const locallyRepeated = chosen.some((at, idx) => idx > 0 && at - chosen[idx - 1] <= width * 12);
+      if (!locallyRepeated) continue;
+      const sequenceTokens = key.split(' ');
+      const tensorSignals = sequenceTokens.filter((token) =>
+        token === '_' || token === '^' || token === '{' || token === '}' ||
+        /^(?:i|j|k|l|m|n|a|b|p|q|r|s)$/.test(token) ||
+        /^\\(?:ell|Gamma|delta|nabla|partial)$/.test(token)
+      ).length;
+      const tensorIndexLike = tensorSignals >= Math.max(2, Math.floor(width / 3));
+      const candidate = { width, sequence: key, occurrences: chosen.length, tensorIndexLike };
+      if (!best || candidate.occurrences > best.occurrences || (candidate.occurrences === best.occurrences && candidate.width > best.width)) best = candidate;
+    }
+  }
+  return best;
+}
+
 function assessImageOcrResult(rawValue, latexValue) {
   const raw = String(rawValue || '').trim();
   const latex = String(latexValue || '').trim();
   const hardReasons = [];
   const warnings = [];
+  const corruption = { commandLoop: null, repeatedFragment: null, repeatedSequence: null, runawayFraction: false };
 
-  // Hard rejection is intentionally narrow. It is only for output that is
-  // clearly unusable/corrupted, not merely imperfect mathematics. The editable
-  // preview is more useful than an automatic vector fallback for uncertain but
-  // still plausible LaTeX.
   if (!latex) hardReasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
-  if (/\\includegraphics\b/i.test(raw) || /\\includegraphics\b/i.test(latex)) {
-    hardReasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));
-  }
-  if (/\\(?:begin|end)\{(?:document|figure|table)\}/i.test(raw)) {
-    hardReasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
-  }
-  if (/[\uE000-\uF8FF\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/u.test(raw + latex)) {
-    hardReasons.push(t('private-use font glyphs leaked into the OCR output', 'OCR 输出中混入了私用区字体字形'));
-  }
-  if (/\uFFFD/.test(raw + latex)) {
-    hardReasons.push(t('unrecoverable replacement glyphs were produced', '生成了无法恢复的替代字形'));
-  }
+  if (/\\includegraphics\b/i.test(raw) || /\\includegraphics\b/i.test(latex)) hardReasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));
+  if (/\\(?:begin|end)\{(?:document|figure|table)\}/i.test(raw)) hardReasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
+  if (/[\uE000-\uF8FF\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/u.test(raw + latex)) hardReasons.push(t('private-use font glyphs leaked into the OCR output', 'OCR 输出中混入了私用区字体字形'));
+  if (/\uFFFD/.test(raw + latex)) hardReasons.push(t('unrecoverable replacement glyphs were produced', '生成了无法恢复的替代字形'));
 
   const commandLoop = raw.match(/(\\[A-Za-z]+(?:\{[^{}]{0,30}\})?)(?:\s*\1){4,}/);
-  if (commandLoop) hardReasons.push(t('the model entered a repeated-token loop', '模型进入了重复 token 循环'));
+  if (commandLoop) {
+    corruption.commandLoop = { sequence: commandLoop[1], occurrences: 5 };
+    hardReasons.push(`${t('decoder runaway: repeated command', '解码器失控：重复命令')} “${commandLoop[1]}”`);
+  }
   const compact = latex.replace(/\s+/g, ' ');
-  if (/(.{18,90})(?:\s*\1){3,}/.test(compact)) {
-    hardReasons.push(t('large repeated fragments were detected', '检测到大段重复片段'));
+  const fragmentLoop = compact.match(/(.{18,90})(?:\s*\1){3,}/);
+  if (fragmentLoop) {
+    const fragment = String(fragmentLoop[1] || '').trim().slice(0, 120);
+    corruption.repeatedFragment = { sequence: fragment, occurrences: 4 };
+    hardReasons.push(`${t('decoder runaway: repeated fragment', '解码器失控：重复片段')} “${fragment}”`);
   }
 
   const fracCount = (latex.match(/\\(?:c?frac)\b/g) || []).length;
@@ -2440,31 +2477,17 @@ function assessImageOcrResult(rawValue, latexValue) {
     else if (latex[i] === '}' && braceDepth > 0) braceDepth -= 1;
   }
   if ((fracCount >= 20 && latex.length >= 700) || maxBraceDepth >= 30) {
-    hardReasons.push(t('the formula contains implausible runaway fraction nesting', '公式包含异常的失控分式嵌套'));
+    corruption.runawayFraction = true;
+    hardReasons.push(t('decoder runaway: implausible fraction nesting', '解码器失控：异常分式嵌套'));
   }
 
-  const tokens = compact.match(/\\[A-Za-z]+|[A-Za-z]+|\d+|[^\s]/g) || [];
-  let repeatedTokenRun = false;
-  for (const width of [6, 8, 10, 12]) {
-    if (repeatedTokenRun || tokens.length < Math.max(140, width * 4)) break;
-    const seen = new Map();
-    for (let i = 0; i <= tokens.length - width; i += 1) {
-      const key = tokens.slice(i, i + width).join(' ');
-      const previous = seen.get(key) || [];
-      if (previous.some((at) => i - at >= width && i - at <= width * 12)) {
-        for (let j = i + width; j <= tokens.length - width; j += 1) {
-          if (tokens.slice(j, j + width).join(' ') === key) { repeatedTokenRun = true; break; }
-        }
-      }
-      if (repeatedTokenRun) break;
-      previous.push(i);
-      seen.set(key, previous.slice(-4));
-    }
+  const repeatedSequence = findRepeatedLatexSequence(latex);
+  if (repeatedSequence) {
+    corruption.repeatedSequence = repeatedSequence;
+    const kind = repeatedSequence.tensorIndexLike ? t('tensor/index sequence', '张量/指标序列') : t('LaTeX token sequence', 'LaTeX token 序列');
+    hardReasons.push(`${t('decoder runaway: repeated', '解码器失控：重复')} ${kind} “${repeatedSequence.sequence.slice(0,160)}” ×${repeatedSequence.occurrences}`);
   }
-  if (repeatedTokenRun) hardReasons.push(t('a repeated LaTeX token sequence indicates decoder runaway', '重复的 LaTeX token 序列表明解码器发生失控循环'));
 
-  // Everything below is advisory. Keep the image-OCR result visible/editable
-  // and label it for review instead of throwing it away.
   if (latex.length > 1800) warnings.push(t('the output is unusually long', '输出长度异常偏长'));
   if (braceDepth !== 0) warnings.push(t('brace balance needed repair or review', '花括号平衡需要检查'));
   const mathSignal = /\\[A-Za-z]+|[=<>_^{}]|[+\-*\/]|\d/.test(latex);
@@ -2472,14 +2495,26 @@ function assessImageOcrResult(rawValue, latexValue) {
   if (!mathSignal && words.length > 3) warnings.push(t('the output may contain prose rather than mathematics', '输出可能包含普通文本而非数学公式'));
   if (fracCount >= 12 || maxBraceDepth >= 18) warnings.push(t('complex nesting should be reviewed', '复杂嵌套结构建议人工核对'));
 
-  return {
-    ok: hardReasons.length === 0,
-    hardReject: hardReasons.length > 0,
-    reasons: hardReasons,
-    warnings
-  };
+  return { ok: hardReasons.length === 0, hardReject: hardReasons.length > 0, reasons: hardReasons, warnings, corruption };
 }
 
+function imageOcrCorruptionScore(candidate) {
+  if (!candidate?.latex) return 100000;
+  const assessment = candidate.assessment || {};
+  const corruption = assessment.corruption || {};
+  let score = Number(candidate.penalty) || 0;
+  if (assessment.hardReject) score += 100;
+  score += (Array.isArray(assessment.reasons) ? assessment.reasons.length : 0) * 18;
+  if (corruption.commandLoop) score += 70 + Math.min(40, Number(corruption.commandLoop.occurrences || 0) * 4);
+  if (corruption.repeatedFragment) score += 65 + Math.min(40, Number(corruption.repeatedFragment.occurrences || 0) * 4);
+  if (corruption.repeatedSequence) {
+    score += corruption.repeatedSequence.tensorIndexLike ? 55 : 70;
+    score += Math.min(50, Number(corruption.repeatedSequence.occurrences || 0) * 5);
+  }
+  if (corruption.runawayFraction) score += 90;
+  score += Math.max(0, String(candidate.latex || '').length - 250) / 120;
+  return score;
+}
 
 function rectIntersectionRatio(a, b) {
   const left = Math.max(a.left, b.left);
@@ -3559,6 +3594,10 @@ async function runImageFormulaRecognition(crop, options = {}) {
     timing.penalty = Number(penalty) || 0;
     timing.hardReject = Boolean(assessment?.hardReject);
     timing.rejectReasons = Array.isArray(assessment?.reasons) ? assessment.reasons.filter(Boolean).join('; ') : '';
+    timing.runawaySequence = assessment?.corruption?.repeatedSequence?.sequence || assessment?.corruption?.repeatedFragment?.sequence || assessment?.corruption?.commandLoop?.sequence || '';
+    timing.runawayKind = assessment?.corruption?.repeatedSequence?.tensorIndexLike ? 'tensor/index' : (timing.runawaySequence ? 'generic' : '');
+    timing.runawayOccurrences = Number(assessment?.corruption?.repeatedSequence?.occurrences || assessment?.corruption?.repeatedFragment?.occurrences || assessment?.corruption?.commandLoop?.occurrences || 0) || 0;
+    timing.corruptionScore = imageOcrCorruptionScore({ latex, penalty, assessment });
     timing.postprocessMs = ocrNow() - stageStart;
     timing.totalMs = ocrNow() - passStart;
     passTimings.push(timing);
@@ -3592,7 +3631,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
   // Keep that retry conservative (beam 1). Other failure classes retain the
   // existing careful beam-2 retry until real diagnostics justify changing them.
   const firstRejectReasons = Array.isArray(first.assessment?.reasons) ? first.assessment.reasons : [];
-  const decoderRunaway = firstRejectReasons.some((reason) => /decoder runaway|解码器发生失控循环/i.test(String(reason || '')));
+  const decoderRunaway = firstRejectReasons.some((reason) => /decoder runaway|解码器失控|解码器发生失控循环/i.test(String(reason || '')));
   let retryVariant = 'relaxed';
   let retryPreprocess = 'normal';
   let retryCareful = !decoderRunaway;
@@ -3629,38 +3668,54 @@ async function runImageFormulaRecognition(crop, options = {}) {
   }
 
   let best = first;
-  if (retry?.latex && !retry.assessment.hardReject) {
-    const context = {
-      expectedRows: profile.expectedRows,
-      tensorLike: profile.tensorLike,
-      scriptLoad: profile.scriptLoad,
-      fractionLike: profile.fractionLike,
-      vectorLatex: options.vectorCandidate?.latex || ''
-    };
-    if (imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context)) best = retry;
+  let retryFailed = false;
+  let candidateDecision = t('first pass retained', '保留首轮结果');
+  const context = {
+    expectedRows: profile.expectedRows,
+    tensorLike: profile.tensorLike,
+    scriptLoad: profile.scriptLoad,
+    fractionLike: profile.fractionLike,
+    vectorLatex: options.vectorCandidate?.latex || ''
+  };
+
+  if (retry?.latex) {
+    if (!retry.assessment.hardReject) {
+      if (first.assessment?.hardReject || imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context)) {
+        best = retry;
+        candidateDecision = t('retry passed quality gate and was selected', '重试通过质量门槛并被选中');
+      }
+    } else if (first.assessment?.hardReject) {
+      retryFailed = true;
+      const firstCorruption = imageOcrCorruptionScore(first);
+      const retryCorruption = imageOcrCorruptionScore(retry);
+      if (retryCorruption < firstCorruption ||
+          (retryCorruption === firstCorruption && imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context))) {
+        best = retry;
+        candidateDecision = `${t('both passes failed; retry was less corrupted', '两轮均失败；重试结果损坏较轻')} (${retryCorruption.toFixed(1)} < ${firstCorruption.toFixed(1)})`;
+      } else {
+        candidateDecision = `${t('both passes failed; first pass was less corrupted', '两轮均失败；首轮结果损坏较轻')} (${firstCorruption.toFixed(1)} ≤ ${retryCorruption.toFixed(1)})`;
+      }
+    }
   }
 
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
 
-  // Image mode must remain image-first. A nonempty Texify result is more useful
-  // to the user than silently replacing it with a weak PDF-vector reconstruction.
-  // Preserve hard-reject information as a review warning instead of throwing;
-  // automatic vector fallback is reserved for the true no-output / inference-error case.
   if (best.assessment?.hardReject) {
+    const failureWarning = retryFailed
+      ? t('OCR retry failed; showing the less-corrupted candidate for review', 'OCR 重试失败；显示损坏较轻的候选结果供检查')
+      : t('OCR result failed the quality gate; review carefully', 'OCR 结果未通过质量门槛；请仔细检查');
     best = {
       ...best,
       assessment: {
         ...best.assessment,
         ok: true,
         retainedForReview: true,
-        warnings: [
-          ...(best.assessment.warnings || []),
-          ...(best.assessment.reasons || [])
-        ]
+        retryFailed,
+        warnings: [failureWarning, ...(best.assessment.warnings || []), ...(best.assessment.reasons || [])]
       }
     };
   }
-  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason, retryProfile, passes: passTimings, recognitionMs: ocrNow() - recognitionStart, engineWarmMs, engineRunNumber, ...runtimeEnvironment } };
+  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason, retryProfile, retryFailed, candidateDecision, passes: passTimings, recognitionMs: ocrNow() - recognitionStart, engineWarmMs, engineRunNumber, ...runtimeEnvironment } };
 }
 
 function commitFormulaResult(item, statusMessage = '') {
