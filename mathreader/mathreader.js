@@ -6815,7 +6815,7 @@ function emphasizeSearchRange(surface, range) {
     cue.textContent = '→';
     cue.setAttribute('aria-hidden', 'true');
     cue.style.top = `${firstRect.top - surfaceRect.top + firstRect.height / 2}px`;
-    cue.style.left = `${Math.max(4, firstRect.left - surfaceRect.left - 24)}px`;
+    cue.style.left = `-54px`;
     layer.append(cue);
   }
   surface.append(layer);

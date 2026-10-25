@@ -293,8 +293,10 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
   transition: opacity .65s ease, outline-color .65s ease;
 }
 
-.target-landing-cue{position:absolute;z-index:2;transform:translateY(-50%) translateX(-4px);opacity:.95;pointer-events:none;color:var(--accent-deep);font-size:17px;font-weight:900;line-height:1;text-shadow:0 1px 2px var(--surface)}
-.search-match-emphasis-layer.is-fading .target-landing-cue{opacity:0;transform:translateY(-50%) translateX(3px);transition:opacity .35s ease,transform .35s ease}
+.target-landing-cue{position:absolute;z-index:8;width:48px;height:24px;transform:translateY(-50%) translateX(-6px);opacity:.98;pointer-events:none;color:var(--accent-deep);font-size:0;line-height:1;filter:drop-shadow(0 1px 1px var(--surface))}
+.target-landing-cue::before{content:"";position:absolute;left:3px;top:9px;width:31px;height:6px;border-radius:999px;background:currentColor}
+.target-landing-cue::after{content:"";position:absolute;left:31px;top:4px;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:14px solid currentColor}
+.search-match-emphasis-layer.is-fading .target-landing-cue{opacity:0;transform:translateY(-50%) translateX(4px);transition:opacity .35s ease,transform .35s ease}
 .search-match-emphasis-layer.is-fading .search-match-emphasis {
   opacity: .28;
   outline-color: transparent;
@@ -503,6 +505,8 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .settings-section .settings-search-options { gap: 7px; }
 
 /* Equation bookmark landing cue: brief, non-interactive pointer at the saved formula position. */
-.equation-bookmark-cue{position:absolute;left:10px;z-index:8;transform:translateY(-50%) translateX(-8px);opacity:0;pointer-events:none;color:var(--accent-deep);font-size:30px;font-weight:900;line-height:1;padding:2px 5px 3px;border-radius:6px;background:var(--surface);box-shadow:0 0 0 2px var(--surface),0 1px 4px rgba(0,0,0,.18);text-shadow:0 0 1px currentColor;transition:opacity .16s ease,transform .16s ease}
-.equation-bookmark-cue.is-visible{opacity:.95;transform:translateY(-50%) translateX(0)}
-.equation-bookmark-cue.is-fading{opacity:0;transform:translateY(-50%) translateX(4px)}
+.equation-bookmark-cue{position:absolute;left:-54px;z-index:8;width:48px;height:24px;transform:translateY(-50%) translateX(-6px);opacity:0;pointer-events:none;color:var(--accent-deep);font-size:0;line-height:1;filter:drop-shadow(0 1px 1px var(--surface));transition:opacity .16s ease,transform .16s ease}
+.equation-bookmark-cue::before{content:"";position:absolute;left:3px;top:9px;width:31px;height:6px;border-radius:999px;background:currentColor}
+.equation-bookmark-cue::after{content:"";position:absolute;left:31px;top:4px;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:14px solid currentColor}
+.equation-bookmark-cue.is-visible{opacity:.98;transform:translateY(-50%) translateX(0)}
+.equation-bookmark-cue.is-fading{opacity:0;transform:translateY(-50%) translateX(5px)}
