@@ -1840,6 +1840,230 @@ function syncCurrentOcrLatexValue(value, options = {}) {
   persistDocumentState();
 }
 
+
+function latexBalancedGroupEnd(text, start) {
+  if (text[start] !== '{') return -1;
+  let depth = 0;
+  for (let i = start; i < text.length; i += 1) {
+    if (text[i] === '\\' && i + 1 < text.length) { i += 1; continue; }
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function mergeDuplicateLatexScripts(value, changes) {
+  let text = String(value || '');
+  // Repeated same-type scripts are illegal TeX: X_{a}_{b}, X^{a}^{b}.
+  // Merge only adjacent balanced groups and keep their order.
+  for (let guard = 0; guard < 20; guard += 1) {
+    let changed = false;
+    for (let i = 0; i < text.length - 3; i += 1) {
+      const marker = text[i];
+      if (marker !== '_' && marker !== '^') continue;
+      if (text[i + 1] !== '{') continue;
+      const firstEnd = latexBalancedGroupEnd(text, i + 1);
+      if (firstEnd < 0) continue;
+      let j = firstEnd + 1;
+      while (j < text.length && /\s/.test(text[j])) j += 1;
+      if (text[j] !== marker || text[j + 1] !== '{') continue;
+      const secondEnd = latexBalancedGroupEnd(text, j + 1);
+      if (secondEnd < 0) continue;
+      const first = text.slice(i + 2, firstEnd).trim();
+      const second = text.slice(j + 2, secondEnd).trim();
+      const separator = first && second ? ' ' : '';
+      text = text.slice(0, i) + `${marker}{${first}${separator}${second}}` + text.slice(secondEnd + 1);
+      changes.push(marker === '_' ? 'merged duplicate subscripts' : 'merged duplicate superscripts');
+      changed = true;
+      break;
+    }
+    if (!changed) break;
+  }
+  return text;
+}
+
+function repairLatexEnvironments(value, changes) {
+  let text = String(value || '');
+  const environments = ['aligned', 'gathered', 'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix', 'cases'];
+  for (const env of environments) {
+    const beginRe = new RegExp(`\\\\begin\\{${env}\\}`, 'g');
+    const endRe = new RegExp(`\\\\end\\{${env}\\}`, 'g');
+    const begins = (text.match(beginRe) || []).length;
+    const ends = (text.match(endRe) || []).length;
+    if (begins > ends) {
+      text += `\\end{${env}}`.repeat(begins - ends);
+      changes.push(`closed ${env} environment`);
+    } else if (ends > begins) {
+      let excess = ends - begins;
+      text = text.replace(endRe, (match) => {
+        if (excess > 0) { excess -= 1; return ''; }
+        return match;
+      });
+      changes.push(`removed orphan ${env} ending`);
+    }
+  }
+  return text;
+}
+
+function repairLatexDelimiters(value, changes) {
+  let text = String(value || '');
+  const leftCount = (text.match(/\\left\b/g) || []).length;
+  const rightCount = (text.match(/\\right\b/g) || []).length;
+  if (leftCount !== rightCount) {
+    // Size commands are optional. Removing only the unmatched sizing semantics
+    // preserves the visible delimiters and is safer than inventing a mate.
+    text = text.replace(/\\left\b\s*/g, '').replace(/\\right\b\s*/g, '');
+    changes.push('removed unmatched \\left/\\right sizing');
+  }
+  return text;
+}
+
+function repairLatexAlignment(value, changes) {
+  let text = String(value || '').trim();
+  const hasRows = /\\\\/.test(text);
+  const hasAmp = /(^|[^\\])&/.test(text);
+  const inAlignment = /\\begin\{(?:aligned|align|align\*|gathered|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases)\}/.test(text);
+  if ((hasRows || hasAmp) && !inAlignment) {
+    text = `\\begin{aligned}\n${text}\n\\end{aligned}`;
+    changes.push('wrapped alignment markers in aligned');
+  }
+  return text;
+}
+
+function repairLatexScriptMarkers(value, changes) {
+  let text = String(value || '');
+  const before = text;
+  // Empty or terminal script markers are non-compilable.
+  text = text
+    .replace(/([_^])\s*(?=[_^])/g, '$1{}')
+    .replace(/([_^])\s*$/g, '$1{}');
+  if (text !== before) changes.push('completed empty script argument');
+  return text;
+}
+
+function repairLatexBraceBalance(value, changes) {
+  const text = String(value || '');
+  let depth = 0;
+  let out = '';
+  let droppedClose = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '\\' && i + 1 < text.length) {
+      out += ch + text[i + 1];
+      i += 1;
+      continue;
+    }
+    if (ch === '{') { depth += 1; out += ch; continue; }
+    if (ch === '}') {
+      if (depth > 0) { depth -= 1; out += ch; }
+      else droppedClose += 1;
+      continue;
+    }
+    out += ch;
+  }
+  if (droppedClose) changes.push(`removed ${droppedClose} unmatched closing brace${droppedClose === 1 ? '' : 's'}`);
+  if (depth > 0) {
+    out += '}'.repeat(depth);
+    changes.push(`added ${depth} missing closing brace${depth === 1 ? '' : 's'}`);
+  }
+  return out;
+}
+
+function repairLatexBrokenCommands(value, changes) {
+  let text = String(value || '');
+  const before = text;
+  // Common OCR aliases / malformed wrappers that can make MathJax fail.
+  text = text
+    .replace(/\\begin\{align\*?\}/g, '\\begin{aligned}')
+    .replace(/\\end\{align\*?\}/g, '\\end{aligned}')
+    .replace(/\\(?:dfrac|tfrac)\s*(?=[^{}\s])/g, '\\frac ')
+    .replace(/\\operatorname\s+([A-Za-z]+)/g, '\\operatorname{$1}')
+    .replace(/\\mathrm\s+([A-Za-z]+)/g, '\\mathrm{$1}')
+    .replace(/\\text\s+([A-Za-z]+)/g, '\\text{$1}')
+    .replace(/\\sqrt\s+([A-Za-z0-9])/g, '\\sqrt{$1}');
+  if (text !== before) changes.push('normalized malformed command arguments');
+  return text;
+}
+
+function repairLatexSpecialCharacters(value, changes) {
+  let text = String(value || '');
+  const before = text;
+  // Raw # is illegal in ordinary math input; raw % comments out the rest.
+  text = text.replace(/(^|[^\\])#/g, '$1\\#').replace(/(^|[^\\])%/g, '$1\\%');
+  if (text !== before) changes.push('escaped raw TeX special characters');
+  return text;
+}
+
+function repairLatexDisplayWrappers(value, changes) {
+  let text = String(value || '').trim();
+  const before = text;
+  text = text
+    .replace(/^\s*\\\[\s*/, '')
+    .replace(/\s*\\\]\s*$/, '')
+    .replace(/^\s*\$\$\s*/, '')
+    .replace(/\s*\$\$\s*$/, '')
+    .replace(/\\begin\{(?:equation|equation\*|displaymath)\}/g, '')
+    .replace(/\\end\{(?:equation|equation\*|displaymath)\}/g, '')
+    .trim();
+  if (text !== before) changes.push('removed nested display wrapper');
+  return text;
+}
+
+function repairTensorIndexCorruption(value, vectorLatex, changes) {
+  let text = String(value || '');
+  // Keep this conservative: only repair obvious OCR artifacts that are
+  // mechanically invalid or strongly supported by the same formula's pattern.
+  const before = text;
+
+  // A hatted dotless j is a frequent glyph-level OCR hallucination for j.
+  // Only normalize it when the same expression already uses indexed j symbols.
+  if (/j_\{?\w/.test(text) && /\\hat\{\\jmath\}/.test(text)) {
+    text = text.replace(/\\hat\{\\jmath\}/g, 'j');
+    changes.push('normalized OCR \\hat{\\jmath} to j in an existing j-index family');
+  }
+
+  // If explicit Improve is requested and the stored PDF vector has exactly the
+  // same token topology, allow the stricter v196 leaf reconciliation here too.
+  if (vectorLatex) {
+    const fusion = fuseTensorOcrWithVector(text, vectorLatex, true);
+    if (fusion.applied) {
+      text = fusion.latex;
+      changes.push(...fusion.replacements.map((item) => `vector-supported ${item.from}→${item.to}`));
+    }
+  }
+
+  return text === before ? value : text;
+}
+
+function improveOcrLatex(value, options = {}) {
+  const changes = [];
+  let text = String(value || '').trim();
+  if (!text) return { latex: '', changes };
+
+  text = repairLatexDisplayWrappers(text, changes);
+  text = repairLatexBrokenCommands(text, changes);
+  text = repairLatexSpecialCharacters(text, changes);
+  text = repairLatexScriptMarkers(text, changes);
+  text = repairLatexBraceBalance(text, changes);
+  text = mergeDuplicateLatexScripts(text, changes);
+  text = repairLatexDelimiters(text, changes);
+  text = repairLatexAlignment(text, changes);
+  text = repairLatexEnvironments(text, changes);
+  text = repairTensorIndexCorruption(text, options.vectorLatex || '', changes);
+
+  // Re-run the basic syntax stabilizer after targeted repairs.
+  text = stabilizeOcrLatexSyntax(repairOcrLatex(text)).trim();
+
+  // One last duplicate-script pass can become possible after brace repair.
+  text = mergeDuplicateLatexScripts(text, changes);
+  text = stabilizeOcrLatexSyntax(text).trim();
+
+  return { latex: text, changes: [...new Set(changes)] };
+}
+
 function applyOcrFormat(mode) {
   if (!currentOcrResult || !ocrLatexPreview) return;
   ensureCurrentOcrFormatState();
@@ -1847,7 +2071,13 @@ function applyOcrFormat(mode) {
   if (!source && mode !== 'original') return;
   let next = source;
   const rows = cleanOcrFormattingRows(splitOcrLatexRows(source));
+  let repairChanges = [];
   if (mode === 'original') next = String(currentOcrResult.originalLatex || source).trim();
+  else if (mode === 'repair') {
+    const repaired = improveOcrLatex(source, { vectorLatex: currentOcrResult.vectorAlternative || '' });
+    next = repaired.latex;
+    repairChanges = repaired.changes;
+  }
   else if (mode === 'auto') next = autoFormatOcrLatex(source);
   else if (mode === 'align') next = formatOcrRowsSemanticAlign(rows.length ? rows : [source]);
   else if (mode === 'gathered') next = formatOcrRowsGathered(rows.length ? rows : [source]);
@@ -1855,10 +2085,14 @@ function applyOcrFormat(mode) {
   next = stabilizeOcrLatexSyntax(repairOcrLatex(next)).trim();
   if (!next || next === source) {
     updateOcrFormattingControls();
+    if (mode === 'repair') setOcrStatus(t('No safe LaTeX repair was found.', '未发现可安全应用的 LaTeX 修复。'));
     return;
   }
   currentOcrResult.formatUndoStack.push(source);
-  syncCurrentOcrLatexValue(next, { status: t('Applied one-click LaTeX cleanup.', '已应用一键 LaTeX 整理。') });
+  const status = mode === 'repair'
+    ? `${t('Repaired LaTeX', '已修复 LaTeX')} · ${repairChanges.length || 1} ${t('change(s)', '处修改')}${repairChanges.length ? ` · ${repairChanges.slice(0, 3).join(' · ')}` : ''}`
+    : t('Applied one-click LaTeX cleanup.', '已应用一键 LaTeX 整理。');
+  syncCurrentOcrLatexValue(next, { status });
 }
 
 function undoOcrFormat() {
