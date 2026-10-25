@@ -288,7 +288,6 @@ let tocOutlineTargets = null;
 let tocDecorationSerial = 0;
 let backlinkContext = null;
 let backlinkEntries = [];
-let namedReadingSessions = [];
 let undoHistory = [];
 let recoverySnapshots = [];
 let recoverySnapshotTimer = null;
@@ -335,41 +334,6 @@ function workspaceSectionState() {
   const result = {};
   document.querySelectorAll('.workspace-section[id]').forEach((section) => { result[section.id] = section.classList.contains('is-collapsed'); });
   return result;
-}
-
-function captureNamedWorkspaceState() {
-  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
-  return {
-    version: 1,
-    page: currentPage,
-    pinnedPage,
-    readingFlow,
-    zoomMode,
-    zoomScale,
-    scrollByPage: jsonClone(scrollByPage, {}),
-    referenceScrollByPage: jsonClone(referenceScrollByPage, {}),
-    continuousScrollTop,
-    continuousAnchor: anchor ? { page: Number(anchor.page), ratio: Number(anchor.ratio) || 0 } : null,
-    referencePages: [...referencePages],
-    readingBackStack: jsonClone(readingBackStack, []),
-    searchQuery: searchInput?.value || '',
-    ui: {
-      activePanel: activePanelId(),
-      leftCollapsed: shell.classList.contains('left-collapsed'),
-      rightCollapsed: shell.classList.contains('right-collapsed'),
-      sections: workspaceSectionState()
-    }
-  };
-}
-
-function normalizeNamedReadingSessions(items) {
-  return (Array.isArray(items) ? items : []).filter((item) => item && typeof item.name === 'string' && item.state && typeof item.state === 'object').map((item, index) => ({
-    id: String(item.id || `rs-${Number(item.created) || Date.now()}-${index}`),
-    name: String(item.name || '').trim().slice(0, 120) || t('Reading session', '阅读会话'),
-    created: Number(item.created) || Date.now(),
-    updated: Number(item.updated) || Number(item.created) || Date.now(),
-    state: item.state
-  })).slice(0, 20);
 }
 
 function normalizeUndoHistory(items) {
@@ -693,7 +657,6 @@ function snapshotSession() {
     documentTags,
     documentReadingState,
     documentPersonalNote,
-    namedReadingSessions,
     undoHistory,
     searchFuzzy: Boolean(searchFuzzy?.checked),
     scrollByPage,
@@ -1225,7 +1188,6 @@ function loadDocumentState(cachedSession = null) {
   documentTags = [];
   documentReadingState = 'unread';
   documentPersonalNote = '';
-  namedReadingSessions = [];
   undoHistory = [];
   recoverySnapshots = loadRecoverySnapshots();
   if (searchFuzzy) searchFuzzy.checked = false;
@@ -1270,7 +1232,6 @@ function loadDocumentState(cachedSession = null) {
     documentTags = Array.isArray(session.documentTags) ? session.documentTags.map((item)=>String(item).trim()).filter(Boolean).slice(0,20) : [];
     documentReadingState = ['unread','reading','finished'].includes(session.documentReadingState) ? session.documentReadingState : 'unread';
     documentPersonalNote = typeof session.documentPersonalNote === 'string' ? session.documentPersonalNote : '';
-    namedReadingSessions = normalizeNamedReadingSessions(session.namedReadingSessions);
     undoHistory = normalizeUndoHistory(session.undoHistory);
     if (searchFuzzy) searchFuzzy.checked = Boolean(session.searchFuzzy);
     const savedPage = Number(session.page || 1);

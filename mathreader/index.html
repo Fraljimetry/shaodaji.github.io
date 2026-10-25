@@ -295,7 +295,7 @@
           <div class="ocr-actions">
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
-            <button class="secondary-action is-hidden" type="button" id="ocr-source-switch">Compare source</button>
+            <button class="secondary-action is-hidden" type="button" id="ocr-source-switch">PDF vector</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
         </div>
@@ -421,30 +421,6 @@
         <div class="reference-stack" id="reference-stack" aria-label="Recent reference pages"></div>
       </section>
 
-      <section class="workspace-section shortcuts" id="shortcuts-section">
-        <div class="panel-heading"><span data-en="Shortcuts" data-zh="快捷键">Shortcuts</span></div>
-        <dl>
-          <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd data-en="Scroll reading area" data-zh="滚动阅读区">Scroll reading area</dd></div>
-          <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
-          <div><dt><kbd>Ctrl/Cmd</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
-          <div><dt><kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
-          <div><dt><kbd>F</kbd></dt><dd data-en="Toggle formula extraction" data-zh="切换公式提取">Toggle formula extraction</dd></div>
-          <div><dt><kbd>C</kbd></dt><dd data-en="Open Contents" data-zh="打开目录">Open Contents</dd></div>
-          <div><dt><kbd>H</kbd></dt><dd data-en="Open History" data-zh="打开历史">Open History</dd></div>
-          <div><dt><kbd>S</kbd></dt><dd data-en="Open Bookmarks" data-zh="打开书签">Open Bookmarks</dd></div>
-          <div><dt><kbd>D</kbd></dt><dd data-en="Open Display settings" data-zh="打开显示设置">Open Display settings</dd></div>
-          <div><dt><kbd>N</kbd></dt><dd data-en="Open page note" data-zh="打开页注">Open page note</dd></div>
-          <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>
-          <div><dt><kbd>L</kbd></dt><dd data-en="Toggle left sidebar" data-zh="展开/收起左侧栏">Toggle left sidebar</dd></div>
-          <div><dt><kbd>R</kbd></dt><dd data-en="Toggle right sidebar" data-zh="展开/收起右侧栏">Toggle right sidebar</dd></div>
-          <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
-          <div><dt><kbd>Shift</kbd> <kbd>L</kbd></dt><dd data-en="Collapse all Contents groups" data-zh="收起目录中的全部分组">Collapse all Contents groups</dd></div>
-          <div><dt><kbd>Shift</kbd> <kbd>R</kbd></dt><dd data-en="Collapse all right-panel sections" data-zh="收起右侧栏全部模块">Collapse all right-panel sections</dd></div>
-          <div><dt><kbd>Ctrl/Cmd</kbd> <kbd>K</kbd></dt><dd data-en="Command palette" data-zh="命令面板">Command palette</dd></div>
-          <div><dt><kbd>Alt</kbd> <kbd>←</kbd></dt><dd data-en="Back in reading trail" data-zh="返回阅读轨迹上一位置">Back in reading trail</dd></div>
-        </dl>
-      </section>
-
       <section class="workspace-section settings-section" id="settings-section">
         <div class="panel-heading">
           <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Personalize MathReader without crowding the reading workspace. Preferences stay local to this browser." data-zh="在不挤占阅读工作区的前提下个性化 MathReader。偏好仅保存在当前浏览器。">Personalize MathReader without crowding the reading workspace. Preferences stay local to this browser.</div></details></span>
@@ -485,6 +461,30 @@
             <details class="ocr-troubleshooting"><summary data-en="Troubleshooting" data-zh="故障处理">Troubleshooting</summary><button class="text-button" type="button" id="ocr-retry" data-en="Reset OCR" data-zh="重置 OCR" data-en-title="Unload the current OCR engine and preload a fresh one. Formula selection stays disabled until the engine is ready." data-zh-title="卸载当前 OCR 引擎并预加载新的引擎。引擎就绪前公式框选保持禁用。">Reset OCR</button></details>
           </div>
         </details>
+      </section>
+
+      <section class="workspace-section shortcuts" id="shortcuts-section">
+        <div class="panel-heading"><span data-en="Shortcuts" data-zh="快捷键">Shortcuts</span></div>
+        <dl>
+          <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd data-en="Scroll reading area" data-zh="滚动阅读区">Scroll reading area</dd></div>
+          <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
+          <div><dt><kbd>Ctrl/Cmd</kbd> <kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
+          <div><dt><kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
+          <div><dt><kbd>F</kbd></dt><dd data-en="Toggle Formula OCR" data-zh="切换公式 OCR">Toggle Formula OCR</dd></div>
+          <div><dt><kbd>C</kbd></dt><dd data-en="Open Contents" data-zh="打开目录">Open Contents</dd></div>
+          <div><dt><kbd>H</kbd></dt><dd data-en="Open History" data-zh="打开历史">Open History</dd></div>
+          <div><dt><kbd>S</kbd></dt><dd data-en="Open Bookmarks" data-zh="打开书签">Open Bookmarks</dd></div>
+          <div><dt><kbd>D</kbd></dt><dd data-en="Open Display settings" data-zh="打开显示设置">Open Display settings</dd></div>
+          <div><dt><kbd>N</kbd></dt><dd data-en="Open page note" data-zh="打开页注">Open page note</dd></div>
+          <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>
+          <div><dt><kbd>L</kbd></dt><dd data-en="Toggle left sidebar" data-zh="展开/收起左侧栏">Toggle left sidebar</dd></div>
+          <div><dt><kbd>R</kbd></dt><dd data-en="Toggle right sidebar" data-zh="展开/收起右侧栏">Toggle right sidebar</dd></div>
+          <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
+          <div><dt><kbd>Shift</kbd> <kbd>L</kbd></dt><dd data-en="Collapse all Contents groups" data-zh="收起目录中的全部分组">Collapse all Contents groups</dd></div>
+          <div><dt><kbd>Shift</kbd> <kbd>R</kbd></dt><dd data-en="Collapse all right-panel sections" data-zh="收起右侧栏全部模块">Collapse all right-panel sections</dd></div>
+          <div><dt><kbd>Ctrl/Cmd</kbd> <kbd>K</kbd></dt><dd data-en="Command palette" data-zh="命令面板">Command palette</dd></div>
+          <div><dt><kbd>Alt</kbd> <kbd>←</kbd></dt><dd data-en="Back in reading trail" data-zh="返回阅读轨迹上一位置">Back in reading trail</dd></div>
+        </dl>
       </section>
     </aside>
   </main>
