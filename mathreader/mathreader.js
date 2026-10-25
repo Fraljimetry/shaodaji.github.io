@@ -1633,6 +1633,26 @@ function alignLineByPattern(value, mode = 'relation') {
   return `${line.slice(0, match.index)}&${line.slice(match.index)}`.replace(/\s+&/g, ' &').trim();
 }
 
+function ocrSignedContinuationBody(value) {
+  const line = normalizeOcrAlignmentLine(value)
+    .replace(/^\\(?:qquad|quad)\s*/, '')
+    .trim();
+  return /^(?:[+\-]|\\(?:pm|mp)(?![A-Za-z]))/.test(line) ? line : '';
+}
+
+function formatOcrRowsSemanticAlign(rows) {
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  const formatted = cleaned.map((row) => {
+    const aligned = alignLineByPattern(row, 'relation');
+    if (aligned !== row) return aligned;
+    const continuation = ocrSignedContinuationBody(row);
+    if (continuation) return `&\\qquad ${continuation}`;
+    return row;
+  });
+  return `\\begin{aligned}\n${formatted.join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
 function formatOcrRowsAligned(rows, mode = 'relation') {
   const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
   if (!cleaned.length) return '';
@@ -1667,11 +1687,9 @@ function autoFormatOcrLatex(value) {
   if (!rows.length) return String(value || '').trim();
   if (rows.length === 1) return formatOcrRowsSingleLine(rows);
   const relationPattern = /(=|<=|>=|<|>|\\(?:Longleftrightarrow|Leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z]))/;
-  const continuationPattern = /^\s*(=|<=|>=|<|>|\\(?:Longleftrightarrow|Leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z]))/;
-  const relationRows = rows.filter((row) => relationPattern.test(row)).length;
-  const continuationLike = rows.slice(1).some((row) => continuationPattern.test(row.trim()));
-  if (continuationLike) return formatOcrRowsContinuation(rows);
-  if (relationRows >= Math.max(2, rows.length - 1)) return formatOcrRowsAligned(rows, 'relation');
+  const relationRows = rows.filter((row) => relationPattern.test(normalizeOcrAlignmentLine(row))).length;
+  const signedContinuations = rows.slice(1).filter((row) => Boolean(ocrSignedContinuationBody(row))).length;
+  if (relationRows || signedContinuations) return formatOcrRowsSemanticAlign(rows);
   return formatOcrRowsGathered(rows);
 }
 
@@ -1719,10 +1737,7 @@ function applyOcrFormat(mode) {
   const rows = cleanOcrFormattingRows(splitOcrLatexRows(source));
   if (mode === 'original') next = String(currentOcrResult.originalLatex || source).trim();
   else if (mode === 'auto') next = autoFormatOcrLatex(source);
-  else if (mode === 'clean-artifacts') next = cleanOcrFormattingArtifacts(source);
-  else if (mode === 'align-equals') next = formatOcrRowsAligned(rows.length ? rows : [source], 'equals');
-  else if (mode === 'align-relation') next = formatOcrRowsAligned(rows.length ? rows : [source], 'relation');
-  else if (mode === 'continuation') next = formatOcrRowsContinuation(rows.length ? rows : [source]);
+  else if (mode === 'align') next = formatOcrRowsSemanticAlign(rows.length ? rows : [source]);
   else if (mode === 'gathered') next = formatOcrRowsGathered(rows.length ? rows : [source]);
   else if (mode === 'single-line') next = formatOcrRowsSingleLine(rows.length ? rows : [source]);
   next = stabilizeOcrLatexSyntax(repairOcrLatex(next)).trim();
