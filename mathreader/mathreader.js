@@ -1816,13 +1816,14 @@ function formulaInkBounds(canvas) {
 }
 
 function normalizeFormulaCropForOcr(crop, variant = 'tight') {
-  const bounds = formulaInkBounds(crop) || { left: 0, top: 0, width: crop.width, height: crop.height };
+  const normalizedCrop = normalizeFormulaPolarity(crop);
+  const bounds = formulaInkBounds(normalizedCrop) || { left: 0, top: 0, width: normalizedCrop.width, height: normalizedCrop.height };
   const padRatio = variant === 'relaxed' ? 0.115 : 0.055;
   const sourcePad = Math.max(5, Math.round(Math.max(bounds.width, bounds.height) * padRatio));
   const sx = Math.max(0, bounds.left - sourcePad);
   const sy = Math.max(0, bounds.top - sourcePad);
-  const sw = Math.min(crop.width - sx, bounds.width + sourcePad * 2);
-  const sh = Math.min(crop.height - sy, bounds.height + sourcePad * 2);
+  const sw = Math.min(normalizedCrop.width - sx, bounds.width + sourcePad * 2);
+  const sh = Math.min(normalizedCrop.height - sy, bounds.height + sourcePad * 2);
   // Texify's processor accepts variable-size formula images. Preserve the
   // formula aspect ratio, remove irrelevant whitespace, and upscale small
   // selections so fine scripts/radicals do not disappear before encoding.
@@ -1840,7 +1841,7 @@ function normalizeFormulaCropForOcr(crop, variant = 'tight') {
   ctx.fillRect(0, 0, dw, dh);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(crop, sx, sy, sw, sh, 0, 0, dw, dh);
+  ctx.drawImage(normalizedCrop, sx, sy, sw, sh, 0, 0, dw, dh);
   return out;
 }
 
@@ -2654,10 +2655,60 @@ function cropSelectedFormula(sourceCanvas, layer, rect) {
 }
 
 
-function formulaRowBands(canvas) {
+function formulaBackgroundIsDark(canvas) {
   const ctx = canvas?.getContext?.('2d', { willReadFrequently: true });
-  if (!ctx || !canvas.width || !canvas.height || canvas.width / Math.max(1, canvas.height) < 1.15) return [];
+  if (!ctx || !canvas.width || !canvas.height) return false;
   const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const samples = [];
+  const stepX = Math.max(1, Math.floor(width / 24));
+  const stepY = Math.max(1, Math.floor(height / 12));
+  const pushLum = (x, y) => {
+    const i = (y * width + x) * 4;
+    samples.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+  };
+  for (let x = 0; x < width; x += stepX) { pushLum(x, 0); pushLum(x, height - 1); }
+  for (let y = 0; y < height; y += stepY) { pushLum(0, y); pushLum(width - 1, y); }
+  return median(samples) < 128;
+}
+
+function normalizeFormulaPolarity(canvas) {
+  if (!canvas || !formulaBackgroundIsDark(canvas)) return canvas;
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, canvas.width);
+  out.height = Math.max(1, canvas.height);
+  const src = canvas.getContext('2d', { willReadFrequently: true });
+  const dst = out.getContext('2d', { alpha: false, willReadFrequently: true });
+  if (!src || !dst) return canvas;
+  const image = src.getImageData(0, 0, out.width, out.height);
+  const border = [];
+  const stepX = Math.max(1, Math.floor(out.width / 24));
+  const stepY = Math.max(1, Math.floor(out.height / 12));
+  const lumAt = (x, y) => {
+    const i = (y * out.width + x) * 4;
+    return 0.2126 * image.data[i] + 0.7152 * image.data[i + 1] + 0.0722 * image.data[i + 2];
+  };
+  for (let x = 0; x < out.width; x += stepX) { border.push(lumAt(x, 0), lumAt(x, out.height - 1)); }
+  for (let y = 0; y < out.height; y += stepY) { border.push(lumAt(0, y), lumAt(out.width - 1, y)); }
+  const background = Math.max(0, Math.min(180, median(border)));
+  const span = Math.max(48, 255 - background);
+  for (let i = 0; i < image.data.length; i += 4) {
+    const lum = 0.2126 * image.data[i] + 0.7152 * image.data[i + 1] + 0.0722 * image.data[i + 2];
+    const signal = Math.max(0, Math.min(1, (lum - background) / span));
+    const value = Math.round(255 * (1 - Math.pow(signal, 0.78)));
+    image.data[i] = value;
+    image.data[i + 1] = value;
+    image.data[i + 2] = value;
+    image.data[i + 3] = 255;
+  }
+  dst.putImageData(image, 0, 0);
+  return out;
+}
+
+function formulaInkProfiles(canvas) {
+  const normalized = normalizeFormulaPolarity(canvas);
+  const ctx = normalized?.getContext?.('2d', { willReadFrequently: true });
+  if (!ctx || !normalized.width || !normalized.height) return null;
+  const { data, width, height } = ctx.getImageData(0, 0, normalized.width, normalized.height);
   const rowInk = new Array(height).fill(0);
   const colInk = new Array(width).fill(0);
   const rowLongestRun = new Array(height).fill(0);
@@ -2667,7 +2718,7 @@ function formulaRowBands(canvas) {
     for (let x = 0; x < width; x += 1) {
       const i = (y * width + x) * 4;
       const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-      if (lum < 235) {
+      if (lum < 225) {
         rowInk[y] += 1;
         colInk[x] += 1;
         run += 1;
@@ -2678,6 +2729,82 @@ function formulaRowBands(canvas) {
     }
     rowLongestRun[y] = longest;
   }
+  return { canvas: normalized, width, height, rowInk, colInk, rowLongestRun };
+}
+
+function formulaColumnTiles(canvas, maxAspect = 4.2) {
+  const profile = formulaInkProfiles(canvas);
+  if (!profile) return [];
+  const { width, height, colInk } = profile;
+  const aspect = width / Math.max(1, height);
+  if (aspect < 6.0) return [];
+  const tileCount = Math.max(2, Math.min(4, Math.ceil(aspect / maxAspect)));
+  const cuts = [];
+  for (let n = 1; n < tileCount; n += 1) {
+    const target = Math.round((width * n) / tileCount);
+    const radius = Math.round(width * 0.10);
+    let best = null;
+    for (let x = Math.max(8, target - radius); x <= Math.min(width - 8, target + radius); x += 1) {
+      const local = (colInk[x - 1] || 0) + (colInk[x] || 0) + (colInk[x + 1] || 0);
+      const distance = Math.abs(x - target) / Math.max(1, radius);
+      const score = local * 4 + distance;
+      if (!best || score < best.score) best = { x, score, ink: local };
+    }
+    if (!best || best.ink > Math.max(3, height * 0.10)) return [];
+    if (cuts.length && best.x - cuts.at(-1) < width * 0.16) return [];
+    cuts.push(best.x);
+  }
+  const boundaries = [0, ...cuts, width];
+  const tiles = [];
+  for (let i = 0; i < boundaries.length - 1; i += 1) {
+    const left = boundaries[i];
+    const right = boundaries[i + 1];
+    const sx = Math.max(0, left);
+    const ex = Math.min(width, right);
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, ex - sx);
+    out.height = height;
+    const ctx = out.getContext('2d', { alpha: false });
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.drawImage(profile.canvas, sx, 0, out.width, height, 0, 0, out.width, height);
+    tiles.push(out);
+  }
+  return tiles;
+}
+
+function joinWideFormulaFragments(fragments) {
+  const clean = fragments.map((value) => normalizeOcrLatex(value).trim()).filter(Boolean);
+  if (clean.length < 2) return '';
+  let joined = clean.join(' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\}\s+\{/g, '} {')
+    .trim();
+  joined = repairOcrLatex(joined);
+  return joined;
+}
+
+function formulaHasDominantFractionRule(canvas) {
+  const profile = formulaInkProfiles(canvas);
+  if (!profile) return false;
+  const { width, height, rowInk, rowLongestRun } = profile;
+  const strongRuleRows = rowLongestRun.map((run, y) => ({ run, y })).filter((item) => item.run >= width * 0.48);
+  if (!strongRuleRows.length) return false;
+  const ruleY = strongRuleRows[Math.floor(strongRuleRows.length / 2)].y;
+  const aboveInk = rowInk.slice(0, Math.max(0, ruleY - 2)).reduce((a, b) => a + b, 0);
+  const belowInk = rowInk.slice(Math.min(height, ruleY + 3)).reduce((a, b) => a + b, 0);
+  return aboveInk > width * 0.35 && belowInk > width * 0.18;
+}
+
+function formulaRowBands(canvas) {
+  const profile = formulaInkProfiles(canvas);
+  if (!profile || profile.width / Math.max(1, profile.height) < 1.15) return [];
+  const { width, height, rowInk, colInk, rowLongestRun } = profile;
+  // One dominant long fraction bar with substantial ink both above and below
+  // is a single structured quotient, not a multi-row aligned environment.
+  // Keeping it intact is critical for Yamabe/Rayleigh quotients.
+  if (formulaHasDominantFractionRule(canvas)) return [];
+
   // Several long, thin horizontal rules at distinct heights are a strong sign
   // of a structured fraction/continued fraction. Treating those rules as row
   // separators caused the fallback OCR to split one formula into nonsense
@@ -2714,6 +2841,15 @@ function formulaRowBands(canvas) {
     else merged.push({ ...band });
   }
   if (merged.length < 2 || merged.length > 5) return [];
+  // A very wide one-line tensor identity with large \sum/\int limits often
+  // appears as three horizontal bands: upper limits, the main baseline, and
+  // lower limits. Do not mistake those script bands for separate equation rows.
+  const aspect = width / Math.max(1, height);
+  if (aspect >= 6.0 && merged.length === 3) {
+    const heights = merged.map((band) => band.bottom - band.top + 1);
+    const middleDominates = heights[1] >= Math.max(18, heights[0] * 1.8, heights[2] * 1.8);
+    if (middleDominates) return [];
+  }
   return merged.map((band) => ({ top: Math.max(0, band.top - 5), bottom: Math.min(height - 1, band.bottom + 5) }));
 }
 
@@ -2773,8 +2909,8 @@ function alignedCandidateScore(item, expectedRows = 0) {
   const rows = latexVisualRowCount(item.latex);
   let score = structural + assessmentPenalty;
   if (expectedRows >= 2) score += Math.abs(rows - expectedRows) * 10;
-  if (/\begin\{aligned\}/.test(item.latex)) score -= 4;
-  const relationCount = (String(item.latex).match(/&\s*(?:=|\leq?|\geq?|\approx|\sim|\equiv|\to|\Rightarrow)/g) || []).length;
+  if (/\\begin\{aligned\}/.test(item.latex)) score -= 4;
+  const relationCount = (String(item.latex).match(/&\s*(?:=|\\leq?|\\geq?|\\approx|\\sim|\\equiv|\\to|\\Rightarrow)/g) || []).length;
   if (expectedRows >= 2) score -= Math.min(expectedRows, relationCount) * 2;
   return score;
 }
@@ -2844,10 +2980,12 @@ function analyzeFormulaSelection(crop, vectorCandidate = null) {
   const scriptLoad = vectorSignature.superscripts + vectorSignature.subscripts;
   const operatorLoad = vectorSignature.integrals + vectorSignature.sums + vectorSignature.fractions + vectorSignature.radicals;
   const tensorLike = scriptLoad >= 4 || (aspect >= 4.8 && bands.length <= 1) || (scriptLoad >= 2 && operatorLoad >= 1);
+  const fractionLike = formulaHasDominantFractionRule(crop);
   return {
     bands,
     aspect,
     tensorLike,
+    fractionLike,
     expectedRows: bands.length >= 2 ? bands.length : 0,
     scriptLoad,
     operatorLoad
@@ -2857,13 +2995,18 @@ function analyzeFormulaSelection(crop, vectorCandidate = null) {
 function imageOcrCandidateScore(candidate, context = {}) {
   if (!candidate?.latex) return 10000;
   let score = alignedCandidateScore(candidate, context.expectedRows || 0);
+  const signature = latexMathSignature(candidate.latex);
   if (context.tensorLike) {
-    const signature = latexMathSignature(candidate.latex);
     if (signature.superscripts + signature.subscripts < Math.max(2, context.scriptLoad || 0)) score += 12;
+  }
+  if (context.fractionLike) {
+    if (signature.fractions < 1) score += 14;
+    else score -= 2;
   }
   if (context.vectorLatex) score += Math.min(24, latexSignatureDistance(candidate.latex, context.vectorLatex) * 1.4);
   if (candidate.preprocess === 'contrast') score -= 0.6;
   if (candidate.variant === 'aligned-rows') score -= 1.2;
+  if (candidate.variant === 'wide-tiles') score -= 1.5;
   return score;
 }
 
@@ -2910,12 +3053,36 @@ async function runImageFormulaRecognition(crop, options = {}) {
     return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
   }
 
+  async function wideTilePass(sourceCanvas, preprocess = 'contrast') {
+    const tiles = formulaColumnTiles(sourceCanvas);
+    if (tiles.length < 2) return null;
+    const fragments = [];
+    for (let i = 0; i < tiles.length; i += 1) {
+      setOcrStatus(t(`Wide formula · recognizing segment ${i + 1} of ${tiles.length}…`, `超宽公式 · 正在识别第 ${i + 1}/${tiles.length} 段……`), true);
+      const part = await onePass(tiles[i], 'tight', preprocess);
+      if (!part.assessment.ok || !part.latex) return null;
+      fragments.push(part.latex);
+    }
+    const latex = joinWideFormulaFragments(fragments);
+    if (!latex) return null;
+    return {
+      raw: latex,
+      rawLatex: latex,
+      latex,
+      penalty: latexStructuralPenalty(latex),
+      assessment: assessImageOcrResult(latex, latex),
+      variant: 'wide-tiles',
+      preprocess
+    };
+  }
+
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
   let best = await onePass(crop, 'tight', 'normal');
   let bestScore = imageOcrCandidateScore(best, {
     expectedRows: profile.expectedRows,
     tensorLike: profile.tensorLike,
     scriptLoad: profile.scriptLoad,
+    fractionLike: profile.fractionLike,
     vectorLatex: options.vectorCandidate?.latex || ''
   });
 
@@ -2931,7 +3098,16 @@ async function runImageFormulaRecognition(crop, options = {}) {
     for (let i = 0; i < bands.length; i += 1) {
       setOcrStatus(t(`Detected ${bands.length} formula rows · recognizing row ${i + 1}…`, `检测到 ${bands.length} 行公式 · 正在识别第 ${i + 1} 行……`), true);
       try {
-        const row = await onePass(cropCanvasRows(crop, bands[i]), 'tight', 'normal');
+        const rowCrop = cropCanvasRows(crop, bands[i]);
+        let row = await onePass(rowCrop, 'tight', 'normal');
+        if (rowCrop.width / Math.max(1, rowCrop.height) >= 6.0) {
+          try {
+            const tiledRow = await wideTilePass(rowCrop, 'contrast');
+            if (tiledRow?.assessment?.ok && imageOcrCandidateScore(tiledRow, { tensorLike: true, scriptLoad: profile.scriptLoad }) + 0.5 < imageOcrCandidateScore(row, { tensorLike: true, scriptLoad: profile.scriptLoad })) row = tiledRow;
+          } catch (_) {
+            // Keep the whole-row result if the auxiliary tiled row fails.
+          }
+        }
         if (!row.assessment.ok || !row.latex) { rowFailure = true; break; }
         lines.push(markAlignmentRelation(row.latex));
       } catch (_) { rowFailure = true; break; }
@@ -2939,9 +3115,9 @@ async function runImageFormulaRecognition(crop, options = {}) {
     if (!rowFailure && lines.length === bands.length) {
       const rowAssessment = alignedRowsAssessment(lines);
       if (rowAssessment.ok) {
-        const latex = `\begin{aligned}
+        const latex = `\\begin{aligned}
 ${lines.join(latexLineSeparator())}
-\end{aligned}`;
+\\end{aligned}`;
         const candidate = {
           raw: latex,
           rawLatex: latex,
@@ -2955,6 +3131,7 @@ ${lines.join(latexLineSeparator())}
           expectedRows: profile.expectedRows,
           tensorLike: profile.tensorLike,
           scriptLoad: profile.scriptLoad,
+          fractionLike: profile.fractionLike,
           vectorLatex: options.vectorCandidate?.latex || ''
         });
         if (candidate.assessment.ok && score + 0.5 < bestScore) {
@@ -2965,12 +3142,48 @@ ${lines.join(latexLineSeparator())}
     }
   }
 
+  // Extremely wide single-line formulas are a known weak spot for Texify:
+  // tiny scripts at the far left/right compete for one global decoder context.
+  // Split only at very low-ink whitespace valleys, OCR the fragments, then
+  // compare the fused candidate against the whole-line result. Never tile
+  // detected multi-row formulas or structured fractions.
+  if (profile.expectedRows === 0 && profile.aspect >= 6.0) {
+    try {
+      const candidate = await wideTilePass(crop, profile.tensorLike ? 'contrast' : 'normal');
+      if (candidate?.assessment?.ok) {
+        let score = imageOcrCandidateScore(candidate, {
+          expectedRows: 0,
+          tensorLike: profile.tensorLike,
+          scriptLoad: profile.scriptLoad,
+          fractionLike: profile.fractionLike,
+          vectorLatex: options.vectorCandidate?.latex || ''
+        });
+        const tileSig = latexMathSignature(candidate.latex);
+        const wholeSig = latexMathSignature(best.latex);
+        const tileScripts = tileSig.superscripts + tileSig.subscripts;
+        const wholeScripts = wholeSig.superscripts + wholeSig.subscripts;
+        if (profile.tensorLike) {
+          score -= Math.min(6, Math.max(0, tileScripts - wholeScripts) * 0.6);
+          if (tileScripts + 2 < wholeScripts) score += 8;
+        }
+        if (tileSig.relations < wholeSig.relations) score += (wholeSig.relations - tileSig.relations) * 6;
+        score -= profile.tensorLike ? 5.0 : 3.0;
+        if (score + 0.5 < bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      }
+    } catch (_) {
+      // Whole-line OCR remains available if segmented recognition fails.
+    }
+  }
+
   const extraPasses = [];
-  if (!best.assessment.ok || best.penalty >= 8 || profile.tensorLike || Boolean(options.vectorCandidate?.latex)) {
+  if (!best.assessment.ok || best.penalty >= 8 || profile.tensorLike || profile.fractionLike || Boolean(options.vectorCandidate?.latex)) {
     extraPasses.push({ variant: 'relaxed', preprocess: 'normal', message: t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……') });
     extraPasses.push({ variant: 'tight', preprocess: 'contrast', message: t('Comparing a higher-contrast local OCR pass…', '正在比较更高对比度的本地识别结果……') });
   }
-  if (profile.tensorLike || best.penalty >= 10) {
+  if (profile.tensorLike || profile.fractionLike || best.penalty >= 10) {
     extraPasses.push({ variant: 'relaxed', preprocess: 'contrast', message: t('Trying a tensor-friendly high-contrast pass…', '正在尝试更适合张量/复杂上下标的高对比度识别……') });
   }
 
@@ -2986,6 +3199,7 @@ ${lines.join(latexLineSeparator())}
         expectedRows: profile.expectedRows,
         tensorLike: profile.tensorLike,
         scriptLoad: profile.scriptLoad,
+        fractionLike: profile.fractionLike,
         vectorLatex: options.vectorCandidate?.latex || ''
       });
       if (candidate.assessment.ok && score + 0.25 < bestScore) {
