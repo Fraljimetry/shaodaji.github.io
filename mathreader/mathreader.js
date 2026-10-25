@@ -1764,6 +1764,23 @@ function ocrPreviewMathSource(value) {
   return `\\[${text}\\]`;
 }
 
+function resetRenderedMathScroll(rootNode) {
+  if (!rootNode) return;
+  const reset = () => {
+    rootNode.scrollLeft = 0;
+    rootNode.scrollTop = 0;
+    rootNode.querySelectorAll('mjx-container').forEach((node) => {
+      node.scrollLeft = 0;
+      node.scrollTop = 0;
+    });
+  };
+  reset();
+  requestAnimationFrame(() => {
+    reset();
+    requestAnimationFrame(reset);
+  });
+}
+
 function scheduleOcrRenderedPreview() {
   clearTimeout(ocrRenderedPreviewTimer);
   ocrRenderedPreviewTimer = setTimeout(renderOcrRenderedPreview, 120);
@@ -1793,7 +1810,10 @@ async function renderOcrRenderedPreview() {
       return;
     }
   }
-  if (token === ocrRenderedPreviewToken) ocrRenderedPreview.classList.remove('has-error');
+  if (token === ocrRenderedPreviewToken) {
+    ocrRenderedPreview.classList.remove('has-error');
+    resetRenderedMathScroll(ocrRenderedPreview);
+  }
 }
 
 function refreshOcrUI() {
@@ -3324,8 +3344,17 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
     const processed = preprocessFormulaCanvas(prepared, preprocess);
     const inputImage = await prepareMathOcrInput(processed);
+    // Keep the stable 512-token cap for ordinary formulas. Only crops that
+    // the existing row-band analysis already identifies as genuinely
+    // multi-line receive extra decoder headroom, preventing long derivations
+    // from being cut off without changing the model, preprocessing, retry
+    // count, beam policy, or candidate selection.
+    const expectedRows = Number(profile?.expectedRows || 0);
+    const maxNewTokens = expectedRows >= 3
+      ? Math.min(896, 512 + expectedRows * 64)
+      : 512;
     const generation = {
-      max_new_tokens: 512,
+      max_new_tokens: maxNewTokens,
       num_beams: careful ? 2 : 1,
       early_stopping: Boolean(careful),
       do_sample: false,
@@ -7071,6 +7100,7 @@ async function renderNotePreview() {
   if (window.MathJax?.typesetPromise) {
     try { await window.MathJax.typesetPromise([notePreview]); } catch (error) { console.warn('MathReader note MathJax preview failed', error); }
   }
+  resetRenderedMathScroll(notePreview);
 }
 
 function formatBookmarkTime(timestamp) {
