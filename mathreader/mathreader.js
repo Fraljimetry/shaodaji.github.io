@@ -3587,30 +3587,43 @@ async function runImageFormulaRecognition(crop, options = {}) {
   }
   const retryReason = retryReasons.join(' · ') || t('first pass did not clear the quality gate', '首轮未通过质量门槛');
 
-  // At most one targeted retry. Choose a single transformation from the crop
-  // geometry instead of running row OCR, tiled OCR, and several contrast passes.
+  // At most one targeted retry. Decoder-runaway is a special case: beam 2
+  // has repeatedly reproduced the same failure while adding very large latency.
+  // Keep that retry conservative (beam 1). Other failure classes retain the
+  // existing careful beam-2 retry until real diagnostics justify changing them.
+  const firstRejectReasons = Array.isArray(first.assessment?.reasons) ? first.assessment.reasons : [];
+  const decoderRunaway = firstRejectReasons.some((reason) => /decoder runaway|解码器发生失控循环/i.test(String(reason || '')));
   let retryVariant = 'relaxed';
   let retryPreprocess = 'normal';
-  let retryProfile = t('careful · relaxed/normal · beam 2', '精细 · relaxed/normal · beam 2');
-  let retryMessage = t('OCR was uncertain · trying one careful retry…', 'OCR 结果不够稳定 · 正在进行一次精细重试……');
+  let retryCareful = !decoderRunaway;
+  let retryProfile = retryCareful
+    ? t('careful · relaxed/normal · beam 2', '精细 · relaxed/normal · beam 2')
+    : t('decoder-runaway recovery · relaxed/normal · beam 1', '解码失控恢复 · relaxed/normal · beam 1');
+  let retryMessage = retryCareful
+    ? t('OCR was uncertain · trying one careful retry…', 'OCR 结果不够稳定 · 正在进行一次精细重试……')
+    : t('Decoder repetition detected · trying one conservative retry…', '检测到解码重复 · 正在进行一次保守重试……');
   if (profile.tensorLike || (profile.aspect >= 6 && profile.expectedRows === 0)) {
     retryVariant = 'tight';
     retryPreprocess = 'contrast';
     retryProfile = profile.tensorLike
-      ? t('tensor-like geometry · tight/contrast · beam 2', '张量型结构 · tight/contrast · beam 2')
-      : t('very wide single line · tight/contrast · beam 2', '超宽单行 · tight/contrast · beam 2');
-    retryMessage = t('OCR was uncertain · trying one tensor-friendly contrast pass…', 'OCR 结果不够稳定 · 正在进行一次适合复杂上下标的高对比度重试……');
+      ? t(`tensor-like geometry · tight/contrast · beam ${retryCareful ? 2 : 1}`, `张量型结构 · tight/contrast · beam ${retryCareful ? 2 : 1}`)
+      : t(`very wide single line · tight/contrast · beam ${retryCareful ? 2 : 1}`, `超宽单行 · tight/contrast · beam ${retryCareful ? 2 : 1}`);
+    retryMessage = decoderRunaway
+      ? t('Decoder repetition detected · trying one conservative contrast retry…', '检测到解码重复 · 正在进行一次保守的高对比度重试……')
+      : t('OCR was uncertain · trying one tensor-friendly contrast pass…', 'OCR 结果不够稳定 · 正在进行一次适合复杂上下标的高对比度重试……');
   } else if (profile.fractionLike) {
     retryVariant = 'relaxed';
     retryPreprocess = 'normal';
-    retryProfile = t('fraction-like geometry · relaxed/normal · beam 2', '分式型结构 · relaxed/normal · beam 2');
-    retryMessage = t('OCR was uncertain · trying one full-fraction retry…', 'OCR 结果不够稳定 · 正在对完整分式进行一次重试……');
+    retryProfile = t(`fraction-like geometry · relaxed/normal · beam ${retryCareful ? 2 : 1}`, `分式型结构 · relaxed/normal · beam ${retryCareful ? 2 : 1}`);
+    retryMessage = decoderRunaway
+      ? t('Decoder repetition detected · trying one conservative full-fraction retry…', '检测到解码重复 · 正在对完整分式进行一次保守重试……')
+      : t('OCR was uncertain · trying one full-fraction retry…', 'OCR 结果不够稳定 · 正在对完整分式进行一次重试……');
   }
 
   setOcrStatus(retryMessage, true);
   let retry = null;
   try {
-    retry = await onePass(crop, retryVariant, retryPreprocess, true);
+    retry = await onePass(crop, retryVariant, retryPreprocess, retryCareful);
   } catch (_) {
     retry = null;
   }
