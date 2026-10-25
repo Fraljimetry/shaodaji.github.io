@@ -1890,6 +1890,84 @@ function repairOcrLatex(value) {
 }
 
 
+function stabilizeOcrLatexSyntax(value) {
+  let text = String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim();
+  if (!text) return '';
+
+  // normalizeOcrLatex already removes ordinary display wrappers. Guard
+  // against partial wrappers that a decoder can leave behind after truncation.
+  text = text
+    .replace(/^\s*\\\[\s*/, '')
+    .replace(/\s*\\\]\s*$/, '')
+    .replace(/^\s*\$\$\s*/, '')
+    .replace(/\s*\$\$\s*$/, '')
+    .replace(/\\begin\{(?:equation|equation\*|displaymath)\}/g, '')
+    .replace(/\\end\{(?:equation|equation\*|displaymath)\}/g, '')
+    .replace(/\\begin\{align\*?\}/g, '\\begin{aligned}')
+    .replace(/\\end\{align\*?\}/g, '\\end{aligned}')
+    .trim();
+
+  // A lone sizing command is a common decoder truncation and causes MathJax
+  // failures. If the counts disagree, remove only the sizing commands; the
+  // actual delimiters remain visible and mathematically readable.
+  text = text.replace(/\\(?:left|right)\b\s*$/g, '');
+  const leftCount = (text.match(/\\left\b/g) || []).length;
+  const rightCount = (text.match(/\\right\b/g) || []).length;
+  if (leftCount !== rightCount) text = text.replace(/\\(?:left|right)\b\s*/g, '');
+
+  // Keep only well-nested math environments. Orphan/mismatched \end tokens
+  // are discarded, and unclosed environments are closed at the end. This is
+  // syntax stabilization only; it does not invent mathematical symbols.
+  const safeEnvs = new Set(['aligned','alignedat','array','cases','matrix','pmatrix','bmatrix','Bmatrix','vmatrix','Vmatrix','gathered','split']);
+  const stack = [];
+  text = text.replace(/\\(begin|end)\{([A-Za-z*]+)\}/g, (full, kind, env) => {
+    if (!safeEnvs.has(env)) return full;
+    if (kind === 'begin') {
+      stack.push(env);
+      return full;
+    }
+    if (stack.at(-1) === env) {
+      stack.pop();
+      return full;
+    }
+    return '';
+  });
+  while (stack.length) text += `\\end{${stack.pop()}}`;
+
+  // repairOcrLatex balances ordinary braces. Re-run a lightweight balance in
+  // case environment cleanup exposed a truncated group.
+  let depth = 0;
+  let balanced = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '\\' && i + 1 < text.length) {
+      balanced += ch + text[i + 1];
+      i += 1;
+      continue;
+    }
+    if (ch === '{') {
+      depth += 1;
+      balanced += ch;
+    } else if (ch === '}') {
+      if (depth > 0) {
+        depth -= 1;
+        balanced += ch;
+      }
+    } else {
+      balanced += ch;
+    }
+  }
+  if (depth > 0) balanced += '}'.repeat(depth);
+
+  // A decoder can terminate immediately after a script marker. Make that
+  // syntactically harmless while keeping the uncertainty visible in source.
+  balanced = balanced
+    .replace(/([_^])\s*(?=[_^])/g, '$1{}')
+    .replace(/([_^])\s*$/, '$1{}');
+  return balanced.replace(/[ \t]+/g, ' ').trim();
+}
+
+
 function assessImageOcrResult(rawValue, latexValue) {
   const raw = String(rawValue || '').trim();
   const latex = String(latexValue || '').trim();
@@ -1968,13 +2046,6 @@ function assessImageOcrResult(rawValue, latexValue) {
     reasons: hardReasons,
     warnings
   };
-}
-
-function requireUsableImageOcr(rawValue, latexValue) {
-  const assessment = assessImageOcrResult(rawValue, latexValue);
-  if (!assessment.hardReject) return assessment;
-  const reason = assessment.reasons[0] || t('the output is clearly corrupted', '输出存在明显损坏');
-  throw new Error(t(`Image OCR result rejected: ${reason}. The previous PDF-vector result was kept.`, `图像 OCR 结果已拒绝：${reason}。已保留之前的 PDF 矢量结果。`));
 }
 
 
@@ -2739,6 +2810,20 @@ function formulaInkProfiles(canvas) {
   return { canvas: normalized, width, height, rowInk, colInk, rowLongestRun };
 }
 
+function formulaHasDominantFractionRule(canvas) {
+  const profile = formulaInkProfiles(canvas);
+  if (!profile) return false;
+  const { width, height, rowInk, rowLongestRun } = profile;
+  const strongRuleRows = rowLongestRun
+    .map((run, y) => ({ run, y }))
+    .filter((item) => item.run >= width * 0.48);
+  if (!strongRuleRows.length) return false;
+  const ruleY = strongRuleRows[Math.floor(strongRuleRows.length / 2)].y;
+  const aboveInk = rowInk.slice(0, Math.max(0, ruleY - 2)).reduce((a, b) => a + b, 0);
+  const belowInk = rowInk.slice(Math.min(height, ruleY + 3)).reduce((a, b) => a + b, 0);
+  return aboveInk > width * 0.35 && belowInk > width * 0.18;
+}
+
 function formulaRowBands(canvas) {
   const profile = formulaInkProfiles(canvas);
   if (!profile || profile.width / Math.max(1, profile.height) < 1.15) return [];
@@ -2955,7 +3040,7 @@ function imageOcrCandidateScore(candidate, context = {}) {
 
 function vectorCandidateScore(vectorCandidate, context = {}) {
   if (!vectorCandidate?.latex) return 10000;
-  const latex = repairOcrLatex(vectorCandidate.latex);
+  const latex = stabilizeOcrLatexSyntax(repairOcrLatex(vectorCandidate.latex));
   const pseudo = {
     latex,
     penalty: latexStructuralPenalty(latex),
@@ -2974,7 +3059,21 @@ function vectorCandidateScore(vectorCandidate, context = {}) {
 async function runImageFormulaRecognition(crop, options = {}) {
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
-  const profile = analyzeFormulaSelection(crop, options.vectorCandidate || null);
+  let profile;
+  try {
+    profile = analyzeFormulaSelection(crop, options.vectorCandidate || null);
+  } catch (error) {
+    console.warn('MathReader OCR layout analysis failed; using safe single-pass defaults.', error);
+    profile = {
+      bands: [],
+      aspect: crop?.width && crop?.height ? crop.width / Math.max(1, crop.height) : 1,
+      tensorLike: false,
+      fractionLike: false,
+      expectedRows: 0,
+      scriptLoad: 0,
+      operatorLoad: 0
+    };
+  }
 
   async function onePass(sourceCanvas, variant = 'tight', preprocess = 'normal', careful = false) {
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
@@ -2990,7 +3089,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
-    const latex = repairOcrLatex(rawLatex);
+    const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
     return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
@@ -3080,7 +3179,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
 
   if (formulaExtractionMode === 'vector' && vector?.latex) {
     commitFormulaResult(
-      { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
+      { page, kind, latex: stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex)), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
     return;
@@ -7461,7 +7560,7 @@ tryPdfVectorButton?.addEventListener('click', () => {
   const item = {
     page: currentOcrResult.page,
     kind: currentOcrResult.kind,
-    latex: currentOcrResult.vectorAlternative,
+    latex: stabilizeOcrLatexSyntax(repairOcrLatex(currentOcrResult.vectorAlternative)),
     preview: currentOcrResult.preview,
     created: Date.now(),
     quality: 'vector-comparison',
