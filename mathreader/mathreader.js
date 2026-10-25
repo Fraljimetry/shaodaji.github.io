@@ -1493,7 +1493,13 @@ function renderOcrTimingDiagnostics() {
       if (Number.isFinite(pass.penalty)) lines.push(`    ${t('Structural penalty', '结构惩罚')}: ${pass.penalty.toFixed(1)}`);
       if (pass.hardReject) lines.push(`    ${t('Hard reject', '硬拒绝')}: ${t('yes', '是')}${pass.rejectReasons ? ` · ${pass.rejectReasons}` : ''}`);
       else lines.push(`    ${t('Hard reject', '硬拒绝')}: ${t('no', '否')}`);
-      if (pass.runawaySequence) lines.push(`    ${t('Runaway sequence', '失控序列')}: ${pass.runawayKind || 'generic'} · “${String(pass.runawaySequence).slice(0, 180)}”${pass.runawayOccurrences ? ` ×${pass.runawayOccurrences}` : ''}`);
+      if (pass.runawaySequence) {
+        if (pass.runawayKind === 'tensor/index') {
+          lines.push(`    ${t('Tensor/index repetition', '张量/指标重复')}: ${t('allowed', '允许')} · “${String(pass.runawaySequence).slice(0, 180)}”${pass.runawayOccurrences ? ` ×${pass.runawayOccurrences}` : ''}`);
+        } else {
+          lines.push(`    ${t('Runaway sequence', '失控序列')}: ${pass.runawayKind || 'generic'} · “${String(pass.runawaySequence).slice(0, 180)}”${pass.runawayOccurrences ? ` ×${pass.runawayOccurrences}` : ''}`);
+        }
+      }
       if (Number.isFinite(pass.corruptionScore)) lines.push(`    ${t('Corruption score', '损坏评分')}: ${pass.corruptionScore.toFixed(1)} ${t('(lower is better)', '（越低越好）')}`);
       lines.push(`    ${t('LaTeX cleanup/check', 'LaTeX 清理/检查')}: ${ocrMs(pass.postprocessMs)}`);
       lines.push(`    ${t('Pass total', '本次合计')}: ${ocrMs(pass.totalMs)}`);
@@ -2484,8 +2490,14 @@ function assessImageOcrResult(rawValue, latexValue) {
   const repeatedSequence = findRepeatedLatexSequence(latex);
   if (repeatedSequence) {
     corruption.repeatedSequence = repeatedSequence;
-    const kind = repeatedSequence.tensorIndexLike ? t('tensor/index sequence', '张量/指标序列') : t('LaTeX token sequence', 'LaTeX token 序列');
-    hardReasons.push(`${t('decoder runaway: repeated', '解码器失控：重复')} ${kind} “${repeatedSequence.sequence.slice(0,160)}” ×${repeatedSequence.occurrences}`);
+    const sequence = repeatedSequence.sequence.slice(0, 160);
+    if (repeatedSequence.tensorIndexLike) {
+      // Tensor/index notation is naturally repetitive. Keep the evidence for
+      // diagnostics, but it must not hard-reject the result or trigger a retry.
+      warnings.push(`${t('repeated tensor/index notation detected (allowed)', '检测到重复张量/指标记号（允许）')} “${sequence}” ×${repeatedSequence.occurrences}`);
+    } else {
+      hardReasons.push(`${t('decoder runaway: repeated LaTeX token sequence', '解码器失控：重复 LaTeX token 序列')} “${sequence}” ×${repeatedSequence.occurrences}`);
+    }
   }
 
   if (latex.length > 1800) warnings.push(t('the output is unusually long', '输出长度异常偏长'));
@@ -2507,8 +2519,8 @@ function imageOcrCorruptionScore(candidate) {
   score += (Array.isArray(assessment.reasons) ? assessment.reasons.length : 0) * 18;
   if (corruption.commandLoop) score += 70 + Math.min(40, Number(corruption.commandLoop.occurrences || 0) * 4);
   if (corruption.repeatedFragment) score += 65 + Math.min(40, Number(corruption.repeatedFragment.occurrences || 0) * 4);
-  if (corruption.repeatedSequence) {
-    score += corruption.repeatedSequence.tensorIndexLike ? 55 : 70;
+  if (corruption.repeatedSequence && !corruption.repeatedSequence.tensorIndexLike) {
+    score += 70;
     score += Math.min(50, Number(corruption.repeatedSequence.occurrences || 0) * 5);
   }
   if (corruption.runawayFraction) score += 90;
