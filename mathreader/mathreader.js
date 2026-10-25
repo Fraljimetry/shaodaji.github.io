@@ -5521,6 +5521,23 @@ function ensureReferenceLinkLayer(surface) {
   layer.replaceChildren(); return layer;
 }
 
+async function equationTargetAtLocation(query, pageNum, ratio) {
+  if (!isEquationLabelQuery(query) || !Number.isFinite(Number(ratio))) return null;
+  const label = normalizedEquationLabel(query);
+  const index = await buildEquationLabelIndex();
+  const candidates = index.get(label) || [];
+  let best = null;
+  for (const candidate of candidates) {
+    if (Number(candidate.page) !== Number(pageNum)) continue;
+    const delta = Math.abs((Number(candidate.ratio) || 0) - Number(ratio));
+    if (delta > 0.035) continue;
+    const confidence = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
+    if (confidence < 8) continue;
+    if (!best || delta < best.delta) best = { page: candidate.page, ratio: Number(candidate.ratio) || 0, delta };
+  }
+  return best ? { page: best.page, ratio: best.ratio } : null;
+}
+
 function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
   if (!range) return;
   const surfaceRect = surface.getBoundingClientRect();
@@ -5532,7 +5549,20 @@ function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
     const sourceRatio = surfaceRect.height > 0
       ? Math.min(1, Math.max(0, ((rect.top - surfaceRect.top) + rect.height / 2) / surfaceRect.height))
       : null;
-    link.addEventListener('click', async (event) => { event.preventDefault(); event.stopPropagation(); hideReferencePreview(); await goToReferenceQuery(query, pageNum, sourceRatio); });
+    link.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hideReferencePreview();
+      // A right-margin equation tag is the destination itself, not a reference
+      // that should resolve to another copy of the same label. Clicking it should
+      // reveal backlinks for that equation without producing "No target found".
+      const equationTarget = await equationTargetAtLocation(query, pageNum, sourceRatio);
+      if (equationTarget) {
+        await updateBacklinksForTarget(query, equationTarget);
+        return;
+      }
+      await goToReferenceQuery(query, pageNum, sourceRatio);
+    });
     attachReferencePreview(link, query, pageNum, sourceRatio);
     overlay.append(link);
   }
@@ -6071,32 +6101,23 @@ async function collectBacklinks(query, target) {
   const structureTarget = structureEntries.find((entry) => Number(entry.page) === Number(target.page) && Math.abs((Number(entry.ratio)||0) - (Number(target.ratio)||0)) < 0.04) || null;
   const structureAlias = structureTarget ? headingAliasForTitle(structureTarget.title || structureTarget.label || '') : '';
   const structureLabel = structureTarget?.label || '';
-  for (let page=1; page<=pdfDoc.numPages; page+=1) {
-    // Bibliography backlinks must be occurrence-based, not line-based. A single
-    // reconstructed line/paragraph can contain several [2] citations; using
-    // Array.some() collapsed all of them to one backlink in v110.
-    if (bibNumber) {
-      const pageValue = await pageText(page);
-      const bracketRe = /\[[^\]]{1,60}\]/g;
-      const rawOrdinals = new Map();
-      let bracket;
-      while ((bracket = bracketRe.exec(pageValue))) {
-        const raw = bracket[0];
-        const ordinal = rawOrdinals.get(raw) || 0;
-        rawOrdinals.set(raw, ordinal + 1);
-        if (!groupedBibliographyMembers(raw).includes(bibNumber)) continue;
-        const ratio = Math.min(1, Math.max(0, bracket.index / Math.max(1, pageValue.length)));
-        add(page, ratio, pageValue, raw, {
-          matchIndex: bracket.index,
-          snippet: backlinkSnippet(pageValue, raw, bracket.index),
-          searchMatch: { page, text: pageValue, index: bracket.index, ordinal },
-          kind: 'bibliography'
-        });
-      }
-      if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
-      continue;
+  // Bibliography citations already have an authoritative occurrence list built
+  // while scanning body text before the References/Bibliography section. Reuse
+  // it here instead of rescanning every page, which could mistakenly count the
+  // bibliography definition itself as a backlink to its own entry.
+  if (bibNumber) {
+    const bib = bibliographyEntries.find((entry) => Number(entry.number) === Number(bibNumber));
+    for (const citation of bib?.citations || []) {
+      add(citation.page, citation.ratio, citation.raw || query, citation.raw || query, {
+        matchIndex: citation.matchIndex,
+        snippet: citation.snippet,
+        kind: 'bibliography'
+      });
     }
+    return results.sort((a,b)=>a.page-b.page || a.ratio-b.ratio || (Number(a.matchIndex)||0)-(Number(b.matchIndex)||0));
+  }
 
+  for (let page=1; page<=pdfDoc.numPages; page+=1) {
     const lines = await pageTextLines(page);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
