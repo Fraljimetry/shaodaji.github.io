@@ -239,7 +239,7 @@ let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
-let mathOcrEngineMode = 'wasm';
+let mathOcrEngineMode = 'webgpu';
 let formulaExtractionMode = 'image';
 let readerWidthObserver = null;
 let readerWidthTimer = null;
@@ -305,7 +305,7 @@ const referenceSnapshotCache = new Map();
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v5', 'wasm');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v6', 'webgpu');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
@@ -2313,15 +2313,15 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   if (mode === 'webgpu') {
-    // Optional accelerator. If it cannot initialize, fall back automatically
-    // to the model-card CPU path instead of failing OCR.
+    // v201 default: fast-start WebGPU accelerator. If it cannot initialize,
+    // fall back automatically to the model-card CPU path instead of failing OCR.
     return [
       { device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false },
       { device: null, dtype: null, label: 'Texify · CPU fallback', official: true }
     ];
   }
   if (mode === 'wasm') {
-    // v200 default: stable CPU/WASM q8 path.
+    // Stable manual alternative when WebGPU inference is too variable.
     return [{ device: 'wasm', dtype: 'q8', label: 'Texify · CPU/WASM q8', official: false }];
   }
   // The model-card browser path is the default. Xenova/texify is packaged
@@ -8671,7 +8671,7 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
     : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v5', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v6', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
 ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
