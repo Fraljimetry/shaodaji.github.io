@@ -1893,36 +1893,34 @@ function repairOcrLatex(value) {
 function assessImageOcrResult(rawValue, latexValue) {
   const raw = String(rawValue || '').trim();
   const latex = String(latexValue || '').trim();
-  const reasons = [];
-  if (!latex) reasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
+  const hardReasons = [];
+  const warnings = [];
+
+  // Hard rejection is intentionally narrow. It is only for output that is
+  // clearly unusable/corrupted, not merely imperfect mathematics. The editable
+  // preview is more useful than an automatic vector fallback for uncertain but
+  // still plausible LaTeX.
+  if (!latex) hardReasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
   if (/\\includegraphics\b/i.test(raw) || /\\includegraphics\b/i.test(latex)) {
-    reasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));
+    hardReasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));
   }
   if (/\\(?:begin|end)\{(?:document|figure|table)\}/i.test(raw)) {
-    reasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
+    hardReasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
   }
-  // PDF/font private-use glyphs (for example U+F8xx delimiters) are not
-  // meaningful LaTeX. If Texify leaks them into its answer, the reconstruction
-  // is structurally corrupted and should be rejected rather than presented as
-  // editable mathematics.
   if (/[\uE000-\uF8FF\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/u.test(raw + latex)) {
-    reasons.push(t('private-use font glyphs leaked into the OCR output', 'OCR 输出中混入了私用区字体字形'));
+    hardReasons.push(t('private-use font glyphs leaked into the OCR output', 'OCR 输出中混入了私用区字体字形'));
   }
   if (/\uFFFD/.test(raw + latex)) {
-    reasons.push(t('unrecoverable replacement glyphs were produced', '生成了无法恢复的替代字形'));
+    hardReasons.push(t('unrecoverable replacement glyphs were produced', '生成了无法恢复的替代字形'));
   }
-  if (latex.length > 1800) reasons.push(t('the output is implausibly long for one selected formula', '单个框选公式的输出异常过长'));
-  const includeCount = (raw.match(/\\includegraphics\b/gi) || []).length;
-  if (includeCount >= 2) reasons.push(t('the output contains repeated image placeholders', '输出包含重复图像占位符'));
-  const commandLoop = raw.match(/(\\[A-Za-z]+(?:\{[^{}]{0,30}\})?)(?:\s*\1){4,}/);
-  if (commandLoop) reasons.push(t('the model entered a repeated-token loop', '模型进入了重复 token 循环'));
-  const compact = latex.replace(/\s+/g, ' ');
-  if (/(.{18,90})(?:\s*\1){3,}/.test(compact)) reasons.push(t('large repeated fragments were detected', '检测到大段重复片段'));
 
-  // Texify can occasionally run away on continued fractions: the visual crop
-  // contains only a few levels, but generation keeps nesting \\frac/\\cfrac and
-  // repeats coefficient sequences for hundreds of tokens. Reject that failure
-  // mode rather than presenting fabricated mathematics as a usable result.
+  const commandLoop = raw.match(/(\\[A-Za-z]+(?:\{[^{}]{0,30}\})?)(?:\s*\1){4,}/);
+  if (commandLoop) hardReasons.push(t('the model entered a repeated-token loop', '模型进入了重复 token 循环'));
+  const compact = latex.replace(/\s+/g, ' ');
+  if (/(.{18,90})(?:\s*\1){3,}/.test(compact)) {
+    hardReasons.push(t('large repeated fragments were detected', '检测到大段重复片段'));
+  }
+
   const fracCount = (latex.match(/\\(?:c?frac)\b/g) || []).length;
   let braceDepth = 0;
   let maxBraceDepth = 0;
@@ -1931,16 +1929,14 @@ function assessImageOcrResult(rawValue, latexValue) {
     if (latex[i] === '{') { braceDepth += 1; maxBraceDepth = Math.max(maxBraceDepth, braceDepth); }
     else if (latex[i] === '}' && braceDepth > 0) braceDepth -= 1;
   }
-  if ((fracCount >= 16 && latex.length >= 520) || maxBraceDepth >= 24) {
-    reasons.push(t('the formula contains implausible runaway fraction nesting', '公式包含异常的失控分式嵌套'));
+  if ((fracCount >= 20 && latex.length >= 700) || maxBraceDepth >= 30) {
+    hardReasons.push(t('the formula contains implausible runaway fraction nesting', '公式包含异常的失控分式嵌套'));
   }
 
-  // Token n-grams catch loops whose digits change slightly, which a literal
-  // substring test misses (for example a_10,...,a_19 repeated several times).
   const tokens = compact.match(/\\[A-Za-z]+|[A-Za-z]+|\d+|[^\s]/g) || [];
   let repeatedTokenRun = false;
   for (const width of [6, 8, 10, 12]) {
-    if (repeatedTokenRun || tokens.length < Math.max(120, width * 4)) break;
+    if (repeatedTokenRun || tokens.length < Math.max(140, width * 4)) break;
     const seen = new Map();
     for (let i = 0; i <= tokens.length - width; i += 1) {
       const key = tokens.slice(i, i + width).join(' ');
@@ -1955,18 +1951,29 @@ function assessImageOcrResult(rawValue, latexValue) {
       seen.set(key, previous.slice(-4));
     }
   }
-  if (repeatedTokenRun) reasons.push(t('a repeated LaTeX token sequence indicates decoder runaway', '重复的 LaTeX token 序列表明解码器发生失控循环'));
+  if (repeatedTokenRun) hardReasons.push(t('a repeated LaTeX token sequence indicates decoder runaway', '重复的 LaTeX token 序列表明解码器发生失控循环'));
 
+  // Everything below is advisory. Keep the image-OCR result visible/editable
+  // and label it for review instead of throwing it away.
+  if (latex.length > 1800) warnings.push(t('the output is unusually long', '输出长度异常偏长'));
+  if (braceDepth !== 0) warnings.push(t('brace balance needed repair or review', '花括号平衡需要检查'));
   const mathSignal = /\\[A-Za-z]+|[=<>_^{}]|[+\-*\/]|\d/.test(latex);
   const words = latex.match(/[A-Za-z]{3,}/g) || [];
-  if (!mathSignal && words.length > 3) reasons.push(t('the output looks like prose rather than mathematics', '输出看起来像普通文本而不是数学公式'));
-  return { ok: reasons.length === 0, reasons };
+  if (!mathSignal && words.length > 3) warnings.push(t('the output may contain prose rather than mathematics', '输出可能包含普通文本而非数学公式'));
+  if (fracCount >= 12 || maxBraceDepth >= 18) warnings.push(t('complex nesting should be reviewed', '复杂嵌套结构建议人工核对'));
+
+  return {
+    ok: hardReasons.length === 0,
+    hardReject: hardReasons.length > 0,
+    reasons: hardReasons,
+    warnings
+  };
 }
 
 function requireUsableImageOcr(rawValue, latexValue) {
   const assessment = assessImageOcrResult(rawValue, latexValue);
-  if (assessment.ok) return;
-  const reason = assessment.reasons[0] || t('the output failed formula-quality checks', '输出未通过公式质量检查');
+  if (!assessment.hardReject) return assessment;
+  const reason = assessment.reasons[0] || t('the output is clearly corrupted', '输出存在明显损坏');
   throw new Error(t(`Image OCR result rejected: ${reason}. The previous PDF-vector result was kept.`, `图像 OCR 结果已拒绝：${reason}。已保留之前的 PDF 矢量结果。`));
 }
 
@@ -2995,7 +3002,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
   // Fast-first policy: if the first result passes the quality gate, return it
   // immediately. Complex-looking geometry by itself must never trigger a
   // cascade of extra model calls. v126 did that and could take minutes.
-  if (first.assessment.ok && first.penalty < 8) {
+  if (first.assessment.ok && first.penalty < 20) {
     return { ...first, profile, inferenceCount: 1 };
   }
 
@@ -3023,7 +3030,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
   }
 
   let best = first;
-  if (retry?.latex && retry.assessment.ok) {
+  if (retry?.latex && !retry.assessment.hardReject) {
     const context = {
       expectedRows: profile.expectedRows,
       tensorLike: profile.tensorLike,
@@ -3071,12 +3078,12 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       latex: result.latex,
       preview,
       created: Date.now(),
-      quality: result.penalty === 0 ? 'clean' : 'review',
+      quality: result.penalty === 0 && !(result.assessment?.warnings?.length) ? 'clean' : 'review',
       source: 'image',
       vectorAlternative: vector?.latex || null,
       vectorAlternativeText: vector?.text || null
     };
-    commitFormulaResult(item, result.penalty === 0
+    commitFormulaResult(item, result.penalty === 0 && !(result.assessment?.warnings?.length)
       ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
       : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
   } catch (error) {
