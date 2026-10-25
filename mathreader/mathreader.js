@@ -194,6 +194,11 @@ const contrastValue = el('contrast-value');
 const gapRange = el('gap-range');
 const gapValue = el('gap-value');
 const pageShadow = el('page-shadow');
+const settingAutoOpenSections = el('setting-auto-open-sections');
+const settingAutoOpenOcr = el('setting-auto-open-ocr');
+const settingReadingTrail = el('setting-reading-trail');
+const settingRememberPosition = el('setting-remember-position');
+const settingRememberWidths = el('setting-remember-widths');
 
 let pdfjsLib = null;
 let pdfDoc = null;
@@ -311,6 +316,30 @@ const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 5;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
+const GENERAL_PREFS_KEY = 'mathreader-general-prefs-v1';
+let generalPrefs = { autoOpenSections: true, autoOpenOcr: true, recordReadingTrail: true, rememberReadingPosition: true, rememberSidebarWidths: true };
+
+function loadGeneralPreferences() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(GENERAL_PREFS_KEY, 'null')); } catch (_) { saved = null; }
+  if (saved && typeof saved === 'object') generalPrefs = { ...generalPrefs, ...saved };
+  if (settingAutoOpenSections) settingAutoOpenSections.checked = generalPrefs.autoOpenSections !== false;
+  if (settingAutoOpenOcr) settingAutoOpenOcr.checked = generalPrefs.autoOpenOcr !== false;
+  if (settingReadingTrail) settingReadingTrail.checked = generalPrefs.recordReadingTrail !== false;
+  if (settingRememberPosition) settingRememberPosition.checked = generalPrefs.rememberReadingPosition !== false;
+  if (settingRememberWidths) settingRememberWidths.checked = generalPrefs.rememberSidebarWidths !== false;
+}
+
+function persistGeneralPreferences() {
+  generalPrefs = {
+    autoOpenSections: Boolean(settingAutoOpenSections?.checked),
+    autoOpenOcr: Boolean(settingAutoOpenOcr?.checked),
+    recordReadingTrail: Boolean(settingReadingTrail?.checked),
+    rememberReadingPosition: Boolean(settingRememberPosition?.checked),
+    rememberSidebarWidths: Boolean(settingRememberWidths?.checked)
+  };
+  safeSet(GENERAL_PREFS_KEY, JSON.stringify(generalPrefs));
+}
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -925,7 +954,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  const defaults = new Set(['settings-section','display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -1248,17 +1277,17 @@ function loadDocumentState(cachedSession = null) {
     undoHistory = normalizeUndoHistory(session.undoHistory);
     if (searchFuzzy) searchFuzzy.checked = Boolean(session.searchFuzzy);
     const savedPage = Number(session.page || 1);
-    currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
+    currentPage = generalPrefs.rememberReadingPosition !== false && Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
     const savedPinned = Number(session.pinnedPage || 0);
     pinnedPage = savedPinned >= 1 && savedPinned <= pdfDoc.numPages ? savedPinned : null;
     zoomMode = ['fit-width','fit-page','custom'].includes(session.zoomMode) ? session.zoomMode : 'fit-width';
     const savedScale = Number(session.zoomScale || 1.2);
     zoomScale = Number.isFinite(savedScale) ? Math.min(Math.max(.35, savedScale), 4) : 1.2;
-    scrollByPage = session.scrollByPage && typeof session.scrollByPage === 'object' ? session.scrollByPage : {};
+    scrollByPage = generalPrefs.rememberReadingPosition !== false && session.scrollByPage && typeof session.scrollByPage === 'object' ? session.scrollByPage : {};
     referenceScrollByPage = session.referenceScrollByPage && typeof session.referenceScrollByPage === 'object' ? session.referenceScrollByPage : {};
-    continuousScrollTop = Number.isFinite(Number(session.continuousScrollTop)) ? Math.max(0, Number(session.continuousScrollTop)) : 0;
+    continuousScrollTop = generalPrefs.rememberReadingPosition !== false && Number.isFinite(Number(session.continuousScrollTop)) ? Math.max(0, Number(session.continuousScrollTop)) : 0;
     const savedAnchor = session.continuousAnchor;
-    if (savedAnchor && Number.isFinite(Number(savedAnchor.page))) {
+    if (generalPrefs.rememberReadingPosition !== false && savedAnchor && Number.isFinite(Number(savedAnchor.page))) {
       continuousSavedAnchor = {
         page: Math.min(Math.max(1, Number(savedAnchor.page)), pdfDoc.numPages),
         ratio: Math.min(1, Math.max(0, Number(savedAnchor.ratio) || 0))
@@ -1302,7 +1331,7 @@ function loadDocumentState(cachedSession = null) {
     try { if (rawBookmarks) bookmarks = normalizeBookmarks(JSON.parse(rawBookmarks)); } catch (_) {}
     try { if (rawNotes) notes = JSON.parse(rawNotes); } catch (_) {}
     const savedPage = Number(safeGet(stateKey('page'), '1'));
-    currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
+    currentPage = generalPrefs.rememberReadingPosition !== false && Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
     const savedPinned = Number(safeGet(stateKey('pinned'), '0'));
     pinnedPage = savedPinned >= 1 && savedPinned <= pdfDoc.numPages ? savedPinned : null;
   }
@@ -1435,7 +1464,7 @@ function setOcrProcessing(active) {
     // workspace. Reopen it for every OCR invocation so returning to the tab,
     // a previously collapsed sidebar, or a collapsed section cannot hide the
     // next processing state.
-    openRightSectionShortcut('ocr-section');
+    if (generalPrefs.autoOpenOcr !== false) autoOpenRightSection('ocr-section');
     ocrProcessing.classList.remove('is-hidden');
     if (ocrProcessingText) ocrProcessingText.textContent = t('Processing…', '处理中…');
   } else {
@@ -3636,7 +3665,7 @@ function addOcrToPageNote() {
   scheduleNotePreview();
   persistDocumentState();
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
-  openRightSectionShortcut('note-section', pageNote);
+  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('note-section');
   setOcrStatus(t(`Added to page ${targetPage} note.`, `已添加到第 ${targetPage} 页注。`));
 }
 
@@ -3932,7 +3961,7 @@ function addSelectionAnnotation(type) {
   };
   annotations.push(item);
   persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations();
-  if (type === 'margin') { openRightSectionShortcut('annotations-section'); setTimeout(() => focusAnnotationEditor(item.id), 0); }
+  if (type === 'margin' && generalPrefs.autoOpenSections !== false) autoOpenRightSection('annotations-section');
 }
 
 async function appendAnnotationToPageNote(item) {
@@ -3945,11 +3974,12 @@ async function appendAnnotationToPageNote(item) {
   const existing = notes[String(page)] || '';
   notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
   persistDocumentState();
-  if (page !== currentPage) await goToPage(page);
-  pageNote.value = notes[String(page)] || '';
-  scheduleNotePreview();
-  noteSaveState.textContent = t('Saved locally', '已保存到本地');
-  openRightSectionShortcut('note-section', pageNote);
+  if (page === currentPage) {
+    pageNote.value = notes[String(page)] || '';
+    scheduleNotePreview();
+    noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  }
+  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('note-section');
 }
 
 function renderAnnotationList() {
@@ -3997,7 +4027,7 @@ function capturePdfSelection() {
     const rects = normalizedSelectionRects(range, startLayer);
     currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary'), rects, ratio: Number(rects[0]?.y) || 0 };
     refreshSelectionUI();
-    expandWorkspaceSection('selection-section');
+    if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('selection-section');
     persistDocumentState();
     const rect = range.getBoundingClientRect();
     if (rect.width || rect.height) positionSelectionToolbar(rect);
@@ -4758,7 +4788,7 @@ function navigationTargetLeadPx() {
 
 async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
   if (!pdfDoc) return;
-  if (!suppressReadingHistory) {
+  if (!suppressReadingHistory && generalPrefs.recordReadingTrail !== false) {
     const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
     const targetPage = Math.min(Math.max(1, Number(page) || 1), pdfDoc.numPages);
     if (here && (Number(here.page) !== targetPage || Math.abs(Number(here.ratio || 0) - Number(ratio || 0)) > 0.02)) {
@@ -6255,7 +6285,7 @@ async function updateBacklinksForTarget(query, target) {
   renderBacklinks();
   try { backlinkEntries = await collectBacklinks(query, target); } catch (error) { console.warn('Backlink indexing unavailable', error); backlinkEntries = []; }
   renderBacklinks();
-  expandWorkspaceSection('backlinks-section');
+  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('backlinks-section');
 }
 
 async function resolveReferenceTarget(query, originPage = null, originRatio = null) {
@@ -6654,14 +6684,14 @@ async function addGlossaryEntry(symbolValue = null, meaningValue = null) {
   }
   if (glossarySymbolInput) glossarySymbolInput.value = '';
   if (glossaryMeaningInput) glossaryMeaningInput.value = '';
-  persistDocumentState(); renderSymbolGlossary(); expandWorkspaceSection('symbol-glossary-section');
+  persistDocumentState(); renderSymbolGlossary(); if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('symbol-glossary-section');
 }
 
 function addSelectionToGlossary() {
   const selected = String(currentSelection?.latex || currentSelection?.text || '').replace(/\s+/g, ' ').trim();
   if (!selected) return;
   if (glossarySymbolInput) glossarySymbolInput.value = selected;
-  expandWorkspaceSection('symbol-glossary-section');
+  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('symbol-glossary-section');
   glossaryMeaningInput?.focus();
 }
 
@@ -7278,8 +7308,8 @@ function saveCurrentOcrAsEquation() {
   };
   bookmarks.push(item); editingBookmarkId = item.id;
   persistDocumentState(); renderBookmarks();
-  openLeftPanelShortcut('bookmarks-panel');
 }
+
 
 async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null }) {
   setLoading(true, cachedRecord ? t('Restoring local reading session…', '正在恢复本地阅读现场……') : t('Opening PDF…', '正在打开 PDF……'));
@@ -8012,6 +8042,15 @@ function scrollRightPanelToSection(section, behavior = 'smooth') {
   rightSidebar.scrollTo({ top: rightPanelNavigationTop(section), behavior });
 }
 
+[settingAutoOpenSections, settingAutoOpenOcr, settingReadingTrail, settingRememberPosition, settingRememberWidths].forEach((node) => node?.addEventListener('change', () => {
+  persistGeneralPreferences();
+  if (node === settingRememberWidths && generalPrefs.rememberSidebarWidths === false) {
+    shell?.style.setProperty('--left-sidebar-width', '250px');
+    shell?.style.setProperty('--right-sidebar-width', '260px');
+  }
+  if (node === settingReadingTrail && generalPrefs.recordReadingTrail === false) updateReadingBackButton();
+}));
+
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
 
@@ -8040,6 +8079,11 @@ const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 460;
 
 function loadSidebarWidths() {
+  if (generalPrefs.rememberSidebarWidths === false) {
+    shell?.style.setProperty('--left-sidebar-width', '250px');
+    shell?.style.setProperty('--right-sidebar-width', '260px');
+    return;
+  }
   try {
     const saved = JSON.parse(localStorage.getItem(SIDEBAR_WIDTHS_KEY) || '{}');
     const left = clamp(saved.left, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 250);
@@ -8050,7 +8094,7 @@ function loadSidebarWidths() {
 }
 
 function saveSidebarWidths() {
-  if (!shell) return;
+  if (!shell || generalPrefs.rememberSidebarWidths === false) return;
   try {
     const styles = getComputedStyle(shell);
     const left = clamp(parseFloat(styles.getPropertyValue('--left-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 250);
@@ -8096,6 +8140,7 @@ function bindSidebarResizer(handle, side) {
   });
 }
 
+loadGeneralPreferences();
 loadSidebarWidths();
 bindSidebarResizer(leftSidebarResizer, 'left');
 bindSidebarResizer(rightSidebarResizer, 'right');
@@ -8125,6 +8170,19 @@ function toggleBothSidePanels() {
   }, { delay: 220 });
 }
 
+
+function autoOpenRightSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  expandWorkspaceSection(sectionId);
+  if (matchMedia('(max-width: 860px)').matches) {
+    shell.classList.add('mobile-right-open');
+    shell.classList.remove('mobile-left-open');
+  } else {
+    shell.classList.remove('right-collapsed');
+  }
+  if (pdfDoc) persistDocumentState();
+}
 
 function openLeftPanelShortcut(panelId, focusTarget = null) {
   activatePanel(panelId);

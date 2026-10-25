@@ -248,6 +248,17 @@
 
     <div class="sidebar-resizer sidebar-resizer-right" id="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize reading workspace"></div>
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <section class="workspace-section settings-section" id="settings-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Personalize automatic workspace behavior. These preferences stay local to this browser. Display, OCR and search-specific choices remain in their own sections." data-zh="个性化工作区的自动行为。这些偏好仅保存在当前浏览器。显示、OCR 与搜索相关选项仍保留在各自模块中。">Personalize automatic workspace behavior. These preferences stay local to this browser. Display, OCR and search-specific choices remain in their own sections.</div></details></span>
+        </div>
+        <label class="toggle-setting"><input id="setting-auto-open-sections" type="checkbox" checked><span data-en="Auto-open related sections" data-zh="自动展开相关模块">Auto-open related sections</span></label>
+        <label class="toggle-setting"><input id="setting-auto-open-ocr" type="checkbox" checked><span data-en="Auto-open Formula OCR while processing" data-zh="处理时自动展开公式 OCR">Auto-open Formula OCR while processing</span></label>
+        <label class="toggle-setting"><input id="setting-reading-trail" type="checkbox" checked><span data-en="Record reading trail" data-zh="记录阅读轨迹">Record reading trail</span></label>
+        <label class="toggle-setting"><input id="setting-remember-position" type="checkbox" checked><span data-en="Remember reading position" data-zh="记住阅读位置">Remember reading position</span></label>
+        <label class="toggle-setting"><input id="setting-remember-widths" type="checkbox" checked><span data-en="Remember sidebar widths" data-zh="记住侧栏宽度">Remember sidebar widths</span></label>
+        <p class="display-note" data-en="Automatic actions may expand a section, but they never scroll the sidebar to it or move the PDF reading position." data-zh="自动操作可以展开模块，但不会把侧栏滚动到该模块，也不会改变 PDF 的阅读位置。">Automatic actions may expand a section, but they never scroll the sidebar to it or move the PDF reading position.</p>
+      </section>
       <section class="workspace-section display-section" id="display-section">
         <div class="panel-heading">
           <span class="panel-heading-title"><span data-en="Display" data-zh="显示">Display</span><details class="compact-help compact-help-heading"><summary data-en-title="Display help" data-zh-title="显示帮助" aria-label="Display help">?</summary><div class="compact-help-body" data-en="Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops." data-zh="柔和暗色使用灰白文字以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops.</div></details></span>
