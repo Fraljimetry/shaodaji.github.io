@@ -7650,13 +7650,26 @@ documentTagsInput?.addEventListener('change',()=>{ documentTags=normalizeDocumen
 documentTagsInput?.addEventListener('blur',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
 documentPersonalNoteInput?.addEventListener('input',()=>{ documentPersonalNote=documentPersonalNoteInput.value; clearTimeout(documentMetaTimer); documentMetaTimer=setTimeout(()=>{ renderDocumentMetadata(); persistDocumentState(); },280); });
 
+function rightPanelNavigationTop(section) {
+  if (!rightSidebar || !section) return 0;
+  const navigator = rightSidebar.querySelector('.workspace-navigator');
+  const stickyHeight = navigator?.getBoundingClientRect().height || 0;
+  const breathingRoom = 18;
+  return Math.max(0, section.offsetTop - stickyHeight - breathingRoom);
+}
+
+function scrollRightPanelToSection(section, behavior = 'smooth') {
+  if (!rightSidebar || !section) return;
+  rightSidebar.scrollTo({ top: rightPanelNavigationTop(section), behavior });
+}
+
 workspaceJump?.addEventListener('change', () => {
   const sectionId = workspaceJump.value;
   if (!sectionId) return;
   const section = el(sectionId);
   if (!section) { workspaceJump.value = ''; return; }
   expandWorkspaceSection(sectionId);
-  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  requestAnimationFrame(() => scrollRightPanelToSection(section));
   section.classList.remove('workspace-jump-pulse');
   void section.offsetWidth;
   section.classList.add('workspace-jump-pulse');
@@ -7718,7 +7731,7 @@ function openRightSectionShortcut(sectionId, focusTarget = null) {
   }
   const section = document.getElementById(sectionId);
   setTimeout(() => {
-    if (rightSidebar && section) rightSidebar.scrollTo({ top: Math.max(0, section.offsetTop - 8), behavior: 'smooth' });
+    if (rightSidebar && section) scrollRightPanelToSection(section);
     focusTarget?.focus?.();
   }, 40);
   if (pdfDoc) persistDocumentState();

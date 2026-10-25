@@ -432,6 +432,30 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 /* v132 mathematical-reading context tools */
 
 
-.workspace-navigator{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;margin:0 0 2px;background:color-mix(in srgb,var(--panel) 94%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+.workspace-navigator{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;margin:0 0 2px;background:color-mix(in srgb,var(--surface) 94%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
 .workspace-navigator label{font-size:.72rem;font-weight:700;color:var(--muted);white-space:nowrap}.workspace-navigator select{min-width:0;width:100%;height:30px;padding:3px 28px 3px 8px;font-size:.76rem}
 .workspace-section.workspace-jump-pulse{animation:workspaceJumpPulse .9s ease-out}@keyframes workspaceJumpPulse{0%{box-shadow:inset 3px 0 0 var(--accent)}100%{box-shadow:inset 3px 0 0 transparent}}
+
+/* v137 right-panel navigation and dark form-control polish */
+.sidebar-right select,
+.sidebar-right input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+.sidebar-right textarea{
+  border:1px solid var(--line);
+  color:var(--ink);
+  background:var(--surface);
+  outline:none;
+  color-scheme:inherit;
+}
+.sidebar-right select:focus,
+.sidebar-right input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):focus,
+.sidebar-right textarea:focus{border-color:var(--accent)}
+html[data-theme="dark"] .sidebar-right select,
+html[data-theme="dark"] .sidebar-right input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] .sidebar-right textarea{
+  color:#e7edf2;
+  background:#141e26;
+  border-color:#3d4e5a;
+}
+html[data-theme="dark"] .sidebar-right select option{color:#e7edf2;background:#141e26}
+html[data-theme="dark"] .sidebar-right input::placeholder,
+html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opacity:1}
