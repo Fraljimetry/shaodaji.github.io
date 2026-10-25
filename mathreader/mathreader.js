@@ -1382,6 +1382,7 @@ async function touchCachedPdf(record) {
 
 function enableReaderControls(enabled) {
   [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton,importReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
+  updateOcrInteractionAvailability();
 }
 
 function updateNavigationState() {
@@ -1905,7 +1906,36 @@ function applyOcrModeToSurfaces() {
   continuousStack?.querySelectorAll('.continuous-page-surface').forEach((surface) => surface.classList.toggle('ocr-mode', ocrMode && readingFlow === 'continuous'));
 }
 
+function mathOcrEngineReady() {
+  return Boolean(mathOcrPipeline && mathOcrBackend && !mathOcrLoading);
+}
+
+function updateOcrInteractionAvailability() {
+  const ready = mathOcrEngineReady();
+  if (mathOcrButton) {
+    mathOcrButton.disabled = !pdfDoc || !ready;
+    mathOcrButton.setAttribute('aria-disabled', mathOcrButton.disabled ? 'true' : 'false');
+  }
+  if (!ready && ocrMode) {
+    ocrMode = false;
+    mathOcrButton?.classList.remove('is-active');
+    mathOcrButton?.setAttribute('aria-pressed', 'false');
+    applyOcrModeToSurfaces();
+    resetOcrBoxes();
+    ocrDrag = null;
+  }
+}
+
 function setOcrMode(active) {
+  if (active && !mathOcrEngineReady()) {
+    ocrMode = false;
+    updateOcrInteractionAvailability();
+    setOcrStatus(mathOcrLoading
+      ? t('OCR engine is initializing. Formula selection will activate when it is ready.', '公式 OCR 引擎正在初始化。引擎就绪后才会启用公式框选。')
+      : t('OCR engine is not ready. Preloading it now…', '公式 OCR 引擎尚未就绪。正在预加载……'), true);
+    if (!mathOcrLoading) scheduleMathOcrPreload();
+    return;
+  }
   ocrMode = Boolean(active && pdfDoc);
   mathOcrButton?.classList.toggle('is-active', ocrMode);
   mathOcrButton?.setAttribute('aria-pressed', ocrMode ? 'true' : 'false');
@@ -1968,13 +1998,18 @@ function releaseMathOcrPipelineAfterExtraction() {
   // after a completed/failed generation. A fresh pipeline for each user
   // selection avoids carrying that session state into the next rectangle,
   // while keeping the imported runtime and browser-cached model files.
-  // Detach synchronously so cleanup itself can never keep the UI locked.
+  // Detach synchronously, lock formula selection, then quietly preload the
+  // next fresh engine. Selection becomes available again only after preload
+  // reports the engine ready.
   const pipe = mathOcrPipeline;
   mathOcrPipeline = null;
-  if (!pipe?.dispose) return;
+  mathOcrBackend = null;
+  updateOcrCapability();
+  updateOcrInteractionAvailability();
   Promise.resolve()
-    .then(() => pipe.dispose())
-    .catch((error) => console.warn('MathReader OCR pipeline cleanup failed', error));
+    .then(() => pipe?.dispose?.())
+    .catch((error) => console.warn('MathReader OCR pipeline cleanup failed', error))
+    .finally(() => scheduleMathOcrPreload());
 }
 
 function friendlyOcrError(error, backend = null) {
@@ -1999,6 +2034,8 @@ function detailedOcrError(error, backend = null) {
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
   mathOcrLoading = true;
+  setOcrMode(false);
+  updateOcrInteractionAvailability();
   setOcrStatus(t(`Loading the local formula-image fallback (Texify · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地公式图像备用引擎（Texify · ${TRANSFORMERS_RUNTIME}）……`), true);
   try {
     if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
@@ -2050,6 +2087,7 @@ async function ensureMathOcrPipeline() {
     throw error;
   } finally {
     mathOcrLoading = false;
+    updateOcrInteractionAvailability();
   }
 }
 
@@ -7857,8 +7895,8 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
     : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……')); scheduleMathOcrPreload(); });
-ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
+ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
 pinFromSidebar.addEventListener('click', () => setPinnedPage(currentPage));
