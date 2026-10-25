@@ -157,6 +157,7 @@
         <div class="empty-panel" id="history-empty" data-en="Open a PDF once and MathReader will remember it here." data-zh="打开一次 PDF 后，MathReader 会把它记在这里。">Open a PDF once and MathReader will remember it here.</div>
       </section>
     </aside>
+    <div class="sidebar-resizer sidebar-resizer-left" id="left-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize document navigation"></div>
 
     <section class="reader-main" id="reader-stage">
       <div class="reader-toolbar" id="reader-toolbar">
@@ -171,16 +172,10 @@
           <button class="tool-button" type="button" id="next-page" disabled aria-label="Next page" title="Next page">→</button>
         </div>
 
-        <div class="toolbar-group toolbar-center">
+        <div class="toolbar-group toolbar-right">
           <button class="tool-button" type="button" id="zoom-out" disabled aria-label="Zoom out" title="Zoom out">−</button>
           <button class="zoom-label" type="button" id="zoom-label" disabled title="Switch Fit width / Fit page">Fit width</button>
           <button class="tool-button" type="button" id="zoom-in" disabled aria-label="Zoom in" title="Zoom in">+</button>
-        </div>
-
-        <div class="toolbar-group toolbar-right toolbar-layout-controls">
-          <button class="tool-button sidebar-toggle" type="button" id="left-toggle" aria-label="Toggle document navigation" title="Toggle document navigation">☰</button>
-          <button class="tool-button sidebar-toggle both-panels-toggle" type="button" id="both-panels-toggle" data-en-title="Toggle both side panels · B" data-zh-title="同时展开/收起两侧栏 · B" aria-label="Toggle both side panels · B" title="Toggle both side panels · B">⇔</button>
-          <button class="tool-button sidebar-toggle" type="button" id="right-toggle" aria-label="Toggle workspace" title="Toggle workspace">▤</button>
         </div>
       </div>
 
@@ -251,6 +246,7 @@
       </div>
     </section>
 
+    <div class="sidebar-resizer sidebar-resizer-right" id="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize reading workspace"></div>
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
       <div class="workspace-navigator" aria-label="Workspace tools">
         <label for="workspace-jump" data-en="Workspace" data-zh="工作区">Workspace</label>

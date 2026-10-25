@@ -9,6 +9,8 @@ const LOCAL_DB_VERSION = 1;
 const root = document.documentElement;
 const el = (id) => document.getElementById(id);
 const shell = el('reader-shell');
+const leftSidebarResizer = el('left-sidebar-resizer');
+const rightSidebarResizer = el('right-sidebar-resizer');
 const fileInput = el('file-input');
 const openButton = el('open-button');
 const welcomeOpen = el('welcome-open');
@@ -131,9 +133,6 @@ const themeButton = el('theme-button');
 const themeIcon = el('theme-icon');
 const themeLabel = el('theme-label');
 const referencePreview = el('reference-preview');
-const leftToggle = el('left-toggle');
-const bothPanelsToggle = el('both-panels-toggle');
-const rightToggle = el('right-toggle');
 const rightSidebar = el('right-sidebar');
 const workspaceJump = el('workspace-jump');
 const selectionCard = el('selection-card');
@@ -7965,8 +7964,72 @@ function toggleRightSidePanel() {
   }, { delay: 220 });
 }
 
-leftToggle.addEventListener('click', toggleLeftSidePanel);
-rightToggle.addEventListener('click', toggleRightSidePanel);
+
+const SIDEBAR_WIDTHS_KEY = 'mathreader-sidebar-widths-v1';
+const SIDEBAR_COLLAPSE_THRESHOLD = 92;
+const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 460;
+
+function loadSidebarWidths() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SIDEBAR_WIDTHS_KEY) || '{}');
+    const left = clamp(saved.left, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 250);
+    const right = clamp(saved.right, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 260);
+    shell?.style.setProperty('--left-sidebar-width', `${left}px`);
+    shell?.style.setProperty('--right-sidebar-width', `${right}px`);
+  } catch (_) {}
+}
+
+function saveSidebarWidths() {
+  if (!shell) return;
+  try {
+    const styles = getComputedStyle(shell);
+    const left = clamp(parseFloat(styles.getPropertyValue('--left-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 250);
+    const right = clamp(parseFloat(styles.getPropertyValue('--right-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 260);
+    localStorage.setItem(SIDEBAR_WIDTHS_KEY, JSON.stringify({ left, right }));
+  } catch (_) {}
+}
+
+function bindSidebarResizer(handle, side) {
+  if (!handle || !shell) return;
+  handle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || matchMedia('(max-width: 860px)').matches) return;
+    event.preventDefault();
+    handle.setPointerCapture?.(event.pointerId);
+    shell.classList.add('is-resizing-sidebar');
+
+    const move = (moveEvent) => {
+      const rect = shell.getBoundingClientRect();
+      const raw = side === 'left' ? moveEvent.clientX - rect.left : rect.right - moveEvent.clientX;
+      const collapsedClass = side === 'left' ? 'left-collapsed' : 'right-collapsed';
+      const variable = side === 'left' ? '--left-sidebar-width' : '--right-sidebar-width';
+      if (raw < SIDEBAR_COLLAPSE_THRESHOLD) {
+        shell.classList.add(collapsedClass);
+      } else {
+        shell.classList.remove(collapsedClass);
+        const width = clamp(raw, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, side === 'left' ? 250 : 260);
+        shell.style.setProperty(variable, `${width}px`);
+      }
+    };
+
+    const finish = () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', finish);
+      handle.removeEventListener('pointercancel', finish);
+      shell.classList.remove('is-resizing-sidebar');
+      saveSidebarWidths();
+      if (pdfDoc) persistDocumentState();
+    };
+
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+  });
+}
+
+loadSidebarWidths();
+bindSidebarResizer(leftSidebarResizer, 'left');
+bindSidebarResizer(rightSidebarResizer, 'right');
 
 function collapseWorkspaceSections(container) {
   if (!container) return;
@@ -7993,7 +8056,6 @@ function toggleBothSidePanels() {
   }, { delay: 220 });
 }
 
-bothPanelsToggle?.addEventListener('click', toggleBothSidePanels);
 
 function openLeftPanelShortcut(panelId, focusTarget = null) {
   activatePanel(panelId);
