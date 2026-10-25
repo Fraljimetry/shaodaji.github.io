@@ -176,6 +176,7 @@ const ocrEngineSelect = el('ocr-engine-mode');
 const ocrSourceSwitchButton = el('ocr-source-switch');
 const ocrRetryButton = el('ocr-retry');
 const ocrCapability = el('ocr-capability');
+const ocrTimingDiagnostics = el('ocr-timing-diagnostics');
 const formulaExtractionSelect = el('formula-extraction-mode');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
@@ -249,6 +250,8 @@ let ocrHistory = [];
 let ocrHistoryExpanded = false;
 let ocrRenderedPreviewTimer = null;
 let ocrRenderedPreviewToken = 0;
+let lastOcrEngineTiming = null;
+let lastOcrRunTiming = null;
 let notePreviewTimer = null;
 let continuousScrollTop = 0;
 let continuousSavedAnchor = null;
@@ -868,6 +871,7 @@ function applyLanguage(lang, persist = true) {
   renderReadingTrail();
   refreshSelectionUI();
   refreshOcrUI();
+  renderOcrTimingDiagnostics();
   renderAnnotationList();
   renderNativePdfComments(currentPage);
   renderUndoHistory();
@@ -1408,6 +1412,57 @@ function updateZoomLabel() {
 }
 
 
+
+
+function ocrNow() {
+  return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+}
+
+function ocrMs(value) {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} ms` : '—';
+}
+
+function renderOcrTimingDiagnostics() {
+  if (!ocrTimingDiagnostics) return;
+  const lines = [];
+  if (lastOcrRunTiming) {
+    const r = lastOcrRunTiming;
+    lines.push(`${t('Last run', '最近一次')} · ${r.backend || '—'} · ${r.inferenceCount || 0} ${t('pass(es)', '次推理')}`);
+    if (r.cropSize) lines.push(`  ${t('Crop size', '裁图尺寸')}: ${r.cropSize}`);
+    if (Number.isFinite(r.outputChars)) lines.push(`  ${t('LaTeX length', 'LaTeX 长度')}: ${r.outputChars} ${t('chars', '字符')}`);
+    if (Number.isFinite(r.cropMs)) lines.push(`  ${t('Crop', '裁图')}: ${ocrMs(r.cropMs)}`);
+    if (Number.isFinite(r.analysisMs)) lines.push(`  ${t('Analysis', '分析')}: ${ocrMs(r.analysisMs)}`);
+    (r.passes || []).forEach((pass, index) => {
+      lines.push(`  ${t('Pass', '第')} ${index + 1}${t('', ' 次')} · ${pass.variant}/${pass.preprocess}${pass.careful ? ' · beam 2' : ' · beam 1'}`);
+      lines.push(`    ${t('Normalize crop', '裁图归一化')}: ${ocrMs(pass.normalizeMs)}`);
+      lines.push(`    ${t('Preprocess', '预处理')}: ${ocrMs(pass.preprocessMs)}`);
+      lines.push(`    ${t('Canvas → image', '画布 → 图像')}: ${ocrMs(pass.inputMs)}`);
+      lines.push(`    ${t('Inference', '推理')}: ${ocrMs(pass.inferenceMs)}`);
+      lines.push(`    ${t('LaTeX cleanup/check', 'LaTeX 清理/检查')}: ${ocrMs(pass.postprocessMs)}`);
+      lines.push(`    ${t('Pass total', '本次合计')}: ${ocrMs(pass.totalMs)}`);
+    });
+    if (Number.isFinite(r.commitMs)) lines.push(`  ${t('UI commit', '界面更新')}: ${ocrMs(r.commitMs)}`);
+    lines.push(`  ${t('Recognition total', '识别合计')}: ${ocrMs(r.recognitionMs)}`);
+    const inferenceTotal = (r.passes || []).reduce((sum, pass) => sum + (Number(pass.inferenceMs) || 0), 0);
+    if (Number.isFinite(r.totalMs) && r.totalMs > 0) lines.push(`  ${t('Inference share', '推理占比')}: ${(inferenceTotal / r.totalMs * 100).toFixed(1)}%`);
+    lines.push(`  ${t('End-to-end', '端到端')}: ${ocrMs(r.totalMs)}`);
+  }
+  if (lastOcrEngineTiming) {
+    const e = lastOcrEngineTiming;
+    if (lines.length) lines.push('');
+    lines.push(`${t('Engine load', '引擎加载')} · ${e.backend || '—'}`);
+    lines.push(`  ${t('Runtime import', '运行时导入')}: ${ocrMs(e.importMs)}`);
+    lines.push(`  ${t('Pipeline/model init', '模型初始化')}: ${ocrMs(e.pipelineMs)}`);
+    lines.push(`  ${t('Load total', '加载合计')}: ${ocrMs(e.totalMs)}`);
+  }
+  if (!lines.length) lines.push(ocrTimingDiagnostics.dataset[root.dataset.lang === 'zh' ? 'zhEmpty' : 'enEmpty'] || t('No OCR run yet.', '尚无 OCR 运行记录。'));
+  ocrTimingDiagnostics.textContent = lines.join('\n');
+}
+
+function logOcrTiming(report) {
+  try { console.info('MathReader OCR timing', report); } catch (_) {}
+  renderOcrTimingDiagnostics();
+}
 
 function setOcrStatus(message, working = false) {
   if (!ocrStatus) return;
@@ -1998,13 +2053,23 @@ function detailedOcrError(error, backend = null) {
 
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
+  const engineLoadStart = ocrNow();
+  let runtimeImportMs = 0;
   mathOcrLoading = true;
   setOcrMode(false);
   updateOcrInteractionAvailability();
   setOcrStatus(t(`Loading the local formula-image fallback (Texify · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地公式图像备用引擎（Texify · ${TRANSFORMERS_RUNTIME}）……`), true);
   try {
-    if (!mathOcrModulePromise) mathOcrModulePromise = import(TRANSFORMERS_URL);
-    const { pipeline } = await mathOcrModulePromise;
+    if (!mathOcrModulePromise) {
+      const importStart = ocrNow();
+      mathOcrModulePromise = import(TRANSFORMERS_URL);
+      const imported = await mathOcrModulePromise;
+      runtimeImportMs = ocrNow() - importStart;
+      var pipeline = imported.pipeline;
+    } else {
+      const imported = await mathOcrModulePromise;
+      var pipeline = imported.pipeline;
+    }
     const plan = currentOcrPlan();
     let lastError = null;
     for (let index = 0; index < plan.length; index += 1) {
@@ -2029,11 +2094,20 @@ async function ensureMathOcrPipeline() {
           options.device = backend.device;
           options.dtype = backend.dtype;
         }
+        const pipelineStart = ocrNow();
         const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, options);
+        const pipelineMs = ocrNow() - pipelineStart;
         mathOcrPipeline = pipe;
         mathOcrBackend = backend;
+        lastOcrEngineTiming = {
+          backend: backend.label,
+          importMs: runtimeImportMs,
+          pipelineMs,
+          totalMs: ocrNow() - engineLoadStart
+        };
         updateOcrCapability();
         setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
+        logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
         console.warn('MathReader OCR backend failed', backend, error);
@@ -3355,9 +3429,12 @@ function vectorCandidateScore(vectorCandidate, context = {}) {
 }
 
 async function runImageFormulaRecognition(crop, options = {}) {
+  const recognitionStart = ocrNow();
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
+  const passTimings = [];
   let profile;
+  const analysisStart = ocrNow();
   try {
     profile = analyzeFormulaSelection(crop, options.vectorCandidate || null);
   } catch (error) {
@@ -3372,11 +3449,20 @@ async function runImageFormulaRecognition(crop, options = {}) {
       operatorLoad: 0
     };
   }
+  const analysisMs = ocrNow() - analysisStart;
 
   async function onePass(sourceCanvas, variant = 'tight', preprocess = 'normal', careful = false) {
+    const passStart = ocrNow();
+    const timing = { variant, preprocess, careful };
+    let stageStart = ocrNow();
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
+    timing.normalizeMs = ocrNow() - stageStart;
+    stageStart = ocrNow();
     const processed = preprocessFormulaCanvas(prepared, preprocess);
+    timing.preprocessMs = ocrNow() - stageStart;
+    stageStart = ocrNow();
     const inputImage = await prepareMathOcrInput(processed);
+    timing.inputMs = ocrNow() - stageStart;
     // Stable decoder budget: preserve the v153-era 512-token cap for every
     // formula. Longer caps increased latency without reliably fixing truncation.
     const generation = {
@@ -3386,12 +3472,18 @@ async function runImageFormulaRecognition(crop, options = {}) {
       do_sample: false,
       repetition_penalty: 1.04
     };
+    stageStart = ocrNow();
     const output = await pipe(inputImage, generation);
+    timing.inferenceMs = ocrNow() - stageStart;
+    stageStart = ocrNow();
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
     const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
+    timing.postprocessMs = ocrNow() - stageStart;
+    timing.totalMs = ocrNow() - passStart;
+    passTimings.push(timing);
     return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
   }
 
@@ -3402,7 +3494,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
   // immediately. Complex-looking geometry by itself must never trigger a
   // cascade of extra model calls. v126 did that and could take minutes.
   if (first.assessment.ok && first.penalty < 20) {
-    return { ...first, profile, inferenceCount: 1 };
+    return { ...first, profile, inferenceCount: 1, timing: { analysisMs, passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
   }
 
   // At most one targeted retry. Choose a single transformation from the crop
@@ -3460,7 +3552,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       }
     };
   }
-  return { ...best, profile, inferenceCount: retry ? 2 : 1 };
+  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
 }
 
 function commitFormulaResult(item, statusMessage = '') {
@@ -3471,8 +3563,9 @@ function commitFormulaResult(item, statusMessage = '') {
   if (statusMessage) setOcrStatus(statusMessage);
 }
 
-async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRect = null) {
+async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRect = null, diagnosticsMeta = {}) {
   if (!crop || !page) return;
+  const endToEndStart = Number.isFinite(Number(diagnosticsMeta.startedAt)) ? Number(diagnosticsMeta.startedAt) : ocrNow();
   setOcrMode(false);
   const preview = crop.toDataURL('image/png');
   const vector = ocrLayer && selectionRect ? extractVectorFormulaFromLayer(ocrLayer, selectionRect) : null;
@@ -3505,11 +3598,26 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       vectorAlternative: vector?.latex || null,
       vectorAlternativeText: vector?.text || null
     };
+    const commitStart = ocrNow();
     commitFormulaResult(item, result.assessment?.retainedForReview
       ? t('Image OCR returned uncertain LaTeX · kept for review instead of replacing it with PDF vector.', '图像 OCR 返回不确定的 LaTeX · 已保留供核对，不再自动替换为 PDF 矢量结果。')
       : (result.penalty === 0 && !(result.assessment?.warnings?.length)
         ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
         : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。')));
+    const commitMs = ocrNow() - commitStart;
+    lastOcrRunTiming = {
+      backend: mathOcrBackend?.label || '—',
+      inferenceCount: result.inferenceCount || result.timing?.passes?.length || 1,
+      cropSize: `${crop.width || 0}×${crop.height || 0}`,
+      outputChars: String(result.latex || '').length,
+      cropMs: Number.isFinite(Number(diagnosticsMeta.cropMs)) ? Number(diagnosticsMeta.cropMs) : null,
+      analysisMs: result.timing?.analysisMs,
+      passes: result.timing?.passes || [],
+      commitMs,
+      recognitionMs: result.timing?.recognitionMs,
+      totalMs: ocrNow() - endToEndStart
+    };
+    logOcrTiming({ type: 'recognition', ...lastOcrRunTiming });
   } catch (error) {
     recognitionFailed = true;
     console.error(error);
@@ -3554,8 +3662,9 @@ async function canvasFromDataUrl(dataUrl) {
   return canvas;
 }
 
-async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null, ratio = null) {
+async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null, ratio = null, diagnosticsMeta = {}) {
   if (!crop || !page) return;
+  const endToEndStart = Number.isFinite(Number(diagnosticsMeta.startedAt)) ? Number(diagnosticsMeta.startedAt) : ocrNow();
   mathOcrLoading = true;
   let recognitionFailed = false;
   const imagePreview = preview || crop.toDataURL('image/png');
@@ -3574,9 +3683,24 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
       vectorAlternative,
       vectorAlternativeText
     };
+    const commitStart = ocrNow();
     commitFormulaResult(item, result.penalty === 0
       ? t('Image OCR comparison complete.', '图像 OCR 对照完成。')
       : t('Image OCR comparison complete · review the editable LaTeX.', '图像 OCR 对照完成 · 请核对可编辑 LaTeX。'));
+    const commitMs = ocrNow() - commitStart;
+    lastOcrRunTiming = {
+      backend: mathOcrBackend?.label || '—',
+      inferenceCount: result.inferenceCount || result.timing?.passes?.length || 1,
+      cropSize: `${crop.width || 0}×${crop.height || 0}`,
+      outputChars: String(result.latex || '').length,
+      cropMs: Number.isFinite(Number(diagnosticsMeta.cropMs)) ? Number(diagnosticsMeta.cropMs) : null,
+      analysisMs: result.timing?.analysisMs,
+      passes: result.timing?.passes || [],
+      commitMs,
+      recognitionMs: result.timing?.recognitionMs,
+      totalMs: ocrNow() - endToEndStart
+    };
+    logOcrTiming({ type: 'recognition', comparison: true, ...lastOcrRunTiming });
   } catch (error) {
     recognitionFailed = true;
     console.error(error);
@@ -3599,7 +3723,9 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
 async function tryImageOcrForCurrentResult() {
   if (!currentOcrResult?.preview || mathOcrLoading) return;
   try {
+    const prepStart = ocrNow();
     const crop = await canvasFromDataUrl(currentOcrResult.preview);
+    const cropMs = ocrNow() - prepStart;
     await recognizeImageFallbackCrop(
       crop,
       Number(currentOcrResult.page) || currentPage,
@@ -3607,7 +3733,8 @@ async function tryImageOcrForCurrentResult() {
       currentOcrResult.preview,
       currentOcrResult.vectorAlternative || null,
       currentOcrResult.vectorAlternativeText || null,
-      currentOcrResult.ratio
+      currentOcrResult.ratio,
+      { startedAt: prepStart, cropMs }
     );
   } catch (error) {
     console.error(error);
@@ -3689,9 +3816,11 @@ function bindOcrLayer(layer) {
     const kind = layer.dataset.kind || 'primary';
     const page = Number(layer.dataset.page || (kind === 'reference' ? pinnedPage : currentPage));
     const sourceCanvas = kind === 'reference' ? referenceCanvas : kind === 'continuous' ? layer.closest('.continuous-page-surface')?.querySelector('canvas') : canvas;
+    const startedAt = ocrNow();
     const crop = cropSelectedFormula(sourceCanvas, layer, drag.rect);
+    const cropMs = ocrNow() - startedAt;
     resetOcrBoxes();
-    recognizeMathCrop(crop, page, kind, layer, drag.rect);
+    recognizeMathCrop(crop, page, kind, layer, drag.rect, { startedAt, cropMs });
   };
   layer.addEventListener('pointerup', (event) => finish(event, false));
   layer.addEventListener('pointercancel', (event) => finish(event, true));

@@ -512,6 +512,9 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .settings-section .segmented-control { width: 100%; }
 .settings-section .segmented-control button { flex: 1 1 0; }
 .settings-section .ocr-troubleshooting { margin-top: 1px; }
+.ocr-timing-panel{margin-top:9px;padding-top:8px;border-top:1px solid var(--border)}
+.ocr-timing-title{margin-bottom:5px;color:var(--muted);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+#ocr-timing-diagnostics{margin:0;max-height:220px;overflow:auto;scrollbar-gutter:stable;padding:7px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-subtle,rgba(127,127,127,.05));color:var(--ink);font:9px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
 .settings-section .settings-search-options { gap: 7px; }
 
 /* Equation bookmark landing cue: brief, non-interactive pointer at the saved formula position. */
