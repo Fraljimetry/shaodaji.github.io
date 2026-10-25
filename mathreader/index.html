@@ -255,6 +255,36 @@
     </section>
 
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <div class="workspace-navigator" aria-label="Workspace tools">
+        <label for="workspace-jump" data-en="Workspace" data-zh="工作区">Workspace</label>
+        <select id="workspace-jump" aria-label="Jump to workspace tool">
+          <option value="" data-en="Jump to tool…" data-zh="跳转到工具……">Jump to tool…</option>
+          <optgroup label="View">
+            <option value="display-section" data-en="Display" data-zh="显示">Display</option>
+            <option value="document-info-section" data-en="Document info" data-zh="文档信息">Document info</option>
+          </optgroup>
+          <optgroup label="Formula">
+            <option value="ocr-section" data-en="Formula extraction" data-zh="公式提取">Formula extraction</option>
+            <option value="symbol-glossary-section" data-en="Symbol glossary" data-zh="符号表">Symbol glossary</option>
+          </optgroup>
+          <optgroup label="Notes">
+            <option value="selection-section" data-en="Selection" data-zh="选区">Selection</option>
+            <option value="note-section" data-en="Page note" data-zh="页注">Page note</option>
+            <option value="annotations-section" data-en="Annotations" data-zh="批注">Annotations</option>
+          </optgroup>
+          <optgroup label="Navigation">
+            <option value="backlinks-section" data-en="Backlinks" data-zh="反向引用">Backlinks</option>
+            <option value="reading-sessions-section" data-en="Reading sessions" data-zh="阅读会话">Reading sessions</option>
+            <option value="reading-trail-section" data-en="Reading trail" data-zh="阅读轨迹">Reading trail</option>
+            <option value="reference-section" data-en="Reference view" data-zh="参考视图">Reference view</option>
+            <option value="shortcuts-section" data-en="Shortcuts" data-zh="快捷键">Shortcuts</option>
+          </optgroup>
+          <optgroup label="Safety">
+            <option value="undo-section" data-en="Recently deleted" data-zh="最近删除">Recently deleted</option>
+            <option value="recovery-section" data-en="Recovery" data-zh="恢复">Recovery</option>
+          </optgroup>
+        </select>
+      </div>
       <section class="workspace-section display-section" id="display-section">
         <div class="panel-heading">
           <span class="panel-heading-title"><span data-en="Display" data-zh="显示">Display</span><details class="compact-help compact-help-heading"><summary data-en-title="Display help" data-zh-title="显示帮助" aria-label="Display help">?</summary><div class="compact-help-body" data-en="Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops." data-zh="柔和暗色使用灰白文字以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops.</div></details></span>
@@ -376,7 +406,6 @@
             <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin note" data-zh="页边注">Margin note</button>
             <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
             <button class="secondary-action" type="button" id="selection-find-all" data-en="Find all occurrences" data-zh="查找全部出现位置">Find all occurrences</button>
-            <button class="secondary-action" type="button" id="selection-inspect-math" data-en="Inspect math context" data-zh="查看数学上下文">Inspect math context</button>
             <button class="secondary-action" type="button" id="selection-to-glossary" data-en="Add to glossary" data-zh="加入符号表">Add to glossary</button>
           </div>
         </div>
@@ -421,34 +450,6 @@
         </div>
         <div class="symbol-glossary-list" id="symbol-glossary-list"></div>
         <div class="empty-panel" id="symbol-glossary-empty" data-en="Select a symbol or enter one above." data-zh="选择一个符号，或在上方输入。">Select a symbol or enter one above.</div>
-      </section>
-
-      <section class="workspace-section" id="math-context-section">
-        <div class="panel-heading">
-          <span class="panel-heading-title"><span data-en="Math context" data-zh="数学上下文">Math context</span><details class="compact-help compact-help-heading"><summary data-en-title="Math context help" data-zh-title="数学上下文帮助" aria-label="Math context help">?</summary><div class="compact-help-body" data-en="Inspect a selected symbol or technical term, jump to its likely introduction or definition, and see only the dependencies of the proof you are currently reading." data-zh="查看所选符号或术语，跳转到其可能的引入位置或定义，并仅显示当前证明所依赖的结果。">Inspect a selected symbol or technical term, jump to its likely introduction or definition, and see only the dependencies of the proof you are currently reading.</div></details></span><span class="count-badge" id="math-context-count">0</span>
-        </div>
-        <div class="math-context-term" id="math-context-term"></div>
-        <div class="math-context-actions" id="math-context-actions"></div>
-        <div class="math-context-occurrences" id="math-context-occurrences"></div>
-        <div class="math-context-proof" id="math-context-proof"></div>
-        <div class="empty-panel" id="math-context-empty" data-en="Select a symbol or technical term, or enter a detected proof." data-zh="选择符号或技术术语，或进入一个已检测到的证明。">Select a symbol or technical term, or enter a detected proof.</div>
-      </section>
-
-      <section class="workspace-section" id="equation-compare-section">
-        <div class="panel-heading">
-          <span class="panel-heading-title"><span data-en="Equation compare" data-zh="公式比较">Equation compare</span><details class="compact-help compact-help-heading"><summary data-en-title="Equation compare help" data-zh-title="公式比较帮助" aria-label="Equation compare help">?</summary><div class="compact-help-body" data-en="Compare two saved or extracted equations by rendered appearance, normalized LaTeX, and basic structural features." data-zh="按渲染效果、规范化 LaTeX 和基本结构特征比较两个已保存或提取的公式。">Compare two saved or extracted equations by rendered appearance, normalized LaTeX, and basic structural features.</div></details></span><span class="count-badge" id="equation-compare-count">0</span>
-        </div>
-        <div class="equation-compare-controls">
-          <select id="equation-compare-a" aria-label="Equation A"></select>
-          <select id="equation-compare-b" aria-label="Equation B"></select>
-          <button class="secondary-action" type="button" id="equation-compare-run" data-en="Compare" data-zh="比较">Compare</button>
-        </div>
-        <div class="equation-compare-result is-hidden" id="equation-compare-result">
-          <div class="equation-compare-pane"><strong>A</strong><div class="equation-compare-render" id="equation-compare-render-a"></div><code id="equation-compare-code-a"></code></div>
-          <div class="equation-compare-pane"><strong>B</strong><div class="equation-compare-render" id="equation-compare-render-b"></div><code id="equation-compare-code-b"></code></div>
-          <div class="equation-compare-summary" id="equation-compare-summary"></div>
-        </div>
-        <div class="empty-panel" id="equation-compare-empty" data-en="Save or extract at least two equations to compare them." data-zh="至少保存或提取两个公式后即可比较。">Save or extract at least two equations to compare them.</div>
       </section>
 
       <section class="workspace-section" id="backlinks-section">
@@ -541,7 +542,6 @@
     <button type="button" id="floating-copy-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
     <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
     <button type="button" id="floating-find-all" data-en="Find all" data-zh="查找全部">Find all</button>
-    <button type="button" id="floating-inspect-math" data-en="Math" data-zh="数学">Math</button>
     <button type="button" id="floating-add-note" data-en="Note" data-zh="页注">Note</button>
     <button type="button" id="floating-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
     <button type="button" id="floating-margin-note" data-en="Margin" data-zh="页边注">Margin</button>

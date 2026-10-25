@@ -428,3 +428,10 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .ocr-rendered-preview{min-height:64px;max-height:220px;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;text-align:center}
 .ocr-rendered-preview mjx-container{max-width:100%;margin:.25em 0!important;overflow-x:auto;overflow-y:hidden}
 .ocr-rendered-preview.has-error{justify-content:flex-start;text-align:left;color:var(--danger,#b42318);font-size:10px;line-height:1.45}
+
+/* v132 mathematical-reading context tools */
+
+
+.workspace-navigator{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;margin:0 0 2px;background:color-mix(in srgb,var(--panel) 94%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+.workspace-navigator label{font-size:.72rem;font-weight:700;color:var(--muted);white-space:nowrap}.workspace-navigator select{min-width:0;width:100%;height:30px;padding:3px 28px 3px 8px;font-size:.76rem}
+.workspace-section.workspace-jump-pulse{animation:workspaceJumpPulse .9s ease-out}@keyframes workspaceJumpPulse{0%{box-shadow:inset 3px 0 0 var(--accent)}100%{box-shadow:inset 3px 0 0 transparent}}
