@@ -2168,6 +2168,14 @@ function repairOcrLatex(value) {
   if (depth > 0) out += '}'.repeat(depth);
   out = out.replace(/(\\mathrm\{div\})(?:\s*\1)+/g, '$1');
 
+  // Tensor multi-index repair: Texify can close a subscript too early around
+  // an ellipsis, e.g. `y_{i_{1}}...i_{k}` although the image shows one
+  // multi-index `y_{i_{1}\ldots i_{k}}`. Keep this intentionally narrow:
+  // require the same index letter on both sides of the ellipsis.
+  out = out
+    .replace(/([A-Za-z]|\\[A-Za-z]+)_\{([A-Za-z])_\{([^{}]+)\}\}\s*(?:\.{3}|\\(?:ldots|cdots)(?![A-Za-z]))\s*\2_\{([^{}]+)\}/g, '$1_{$2_{$3}\\ldots $2_{$4}}')
+    .replace(/([A-Za-z]|\\[A-Za-z]+)_\{([A-Za-z])_([^{}\s]+)\}\s*(?:\.{3}|\\(?:ldots|cdots)(?![A-Za-z]))\s*\2_([^{}\s]+)/g, '$1_{$2_$3\\ldots $2_$4}');
+
   // Remove only mechanically duplicated arrow commands. This does not infer
   // mathematical content; it fixes decoder artifacts such as `\mapsto \to`.
   out = out
