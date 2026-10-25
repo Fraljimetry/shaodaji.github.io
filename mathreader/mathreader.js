@@ -1832,10 +1832,10 @@ function refreshOcrUI() {
     const canSwitchToVector = has && source === 'image' && Boolean(currentOcrResult?.vectorAlternative);
     ocrSourceSwitchButton.classList.toggle('is-hidden', !canSwitchToImage && !canSwitchToVector);
     if (canSwitchToImage) {
-      ocrSourceSwitchButton.textContent = t('Compare Image OCR', '对照图像 OCR');
+      ocrSourceSwitchButton.textContent = t('Image OCR', '图像 OCR');
       ocrSourceSwitchButton.dataset.targetSource = 'image';
     } else if (canSwitchToVector) {
-      ocrSourceSwitchButton.textContent = t('Compare PDF vector', '对照 PDF 矢量');
+      ocrSourceSwitchButton.textContent = t('PDF vector', 'PDF 矢量');
       ocrSourceSwitchButton.dataset.targetSource = 'vector';
     } else {
       ocrSourceSwitchButton.removeAttribute('data-target-source');

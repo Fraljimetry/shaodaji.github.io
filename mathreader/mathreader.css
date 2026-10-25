@@ -445,4 +445,4 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .ocr-result-meta .ocr-result-help{margin:0;flex:0 0 auto}
 .ocr-result-meta .ocr-result-help>.compact-help-body{top:26px;left:0;right:0;z-index:60}
 
-.ocr-troubleshooting{margin-top:2px}.ocr-troubleshooting>summary{width:max-content;color:var(--muted);font-size:9px;cursor:pointer}.ocr-troubleshooting>summary:hover{color:var(--ink)}.ocr-troubleshooting .text-button{margin-top:5px;padding-left:0;font-size:9px}.ocr-actions #ocr-source-switch{grid-column:1/-1}
+.ocr-troubleshooting{margin-top:4px;padding-top:2px}.ocr-troubleshooting>summary{width:max-content;color:var(--muted);font-size:9px;cursor:pointer}.ocr-troubleshooting>summary:hover{color:var(--ink)}.ocr-troubleshooting .text-button{width:max-content;min-width:0;min-height:0;margin-top:7px;padding:3px 6px;font-size:9px;justify-self:start}.ocr-actions #ocr-source-switch{grid-column:auto}
