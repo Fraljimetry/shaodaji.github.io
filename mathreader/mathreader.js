@@ -194,15 +194,6 @@ const contrastValue = el('contrast-value');
 const gapRange = el('gap-range');
 const gapValue = el('gap-value');
 const pageShadow = el('page-shadow');
-const settingAutoOpenSections = el('setting-auto-open-sections');
-const settingAutoOpenOcr = el('setting-auto-open-ocr');
-const settingReadingTrail = el('setting-reading-trail');
-const settingRememberPosition = el('setting-remember-position');
-const settingRememberWidths = el('setting-remember-widths');
-const settingRememberPanelOrder = el('setting-remember-panel-order');
-const settingRememberCollapse = el('setting-remember-collapse');
-const settingRememberSidebarVisibility = el('setting-remember-sidebar-visibility');
-const settingRememberActivePanel = el('setting-remember-active-panel');
 
 let pdfjsLib = null;
 let pdfDoc = null;
@@ -320,38 +311,18 @@ const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 5;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
-const GENERAL_PREFS_KEY = 'mathreader-general-prefs-v1';
-let generalPrefs = { autoOpenSections: true, autoOpenOcr: true, recordReadingTrail: true, rememberReadingPosition: true, rememberSidebarWidths: true, rememberPanelOrder: true, rememberSectionCollapse: true, rememberSidebarVisibility: true, rememberActivePanel: true };
+const generalPrefs = {
+  autoOpenSections: true,
+  autoOpenOcr: true,
+  recordReadingTrail: true,
+  rememberReadingPosition: true,
+  rememberSidebarWidths: true,
+  rememberPanelOrder: true,
+  rememberSectionCollapse: true,
+  rememberSidebarVisibility: true,
+  rememberActivePanel: true
+};
 
-function loadGeneralPreferences() {
-  let saved = null;
-  try { saved = JSON.parse(safeGet(GENERAL_PREFS_KEY, 'null')); } catch (_) { saved = null; }
-  if (saved && typeof saved === 'object') generalPrefs = { ...generalPrefs, ...saved };
-  if (settingAutoOpenSections) settingAutoOpenSections.checked = generalPrefs.autoOpenSections !== false;
-  if (settingAutoOpenOcr) settingAutoOpenOcr.checked = generalPrefs.autoOpenOcr !== false;
-  if (settingReadingTrail) settingReadingTrail.checked = generalPrefs.recordReadingTrail !== false;
-  if (settingRememberPosition) settingRememberPosition.checked = generalPrefs.rememberReadingPosition !== false;
-  if (settingRememberWidths) settingRememberWidths.checked = generalPrefs.rememberSidebarWidths !== false;
-  if (settingRememberPanelOrder) settingRememberPanelOrder.checked = generalPrefs.rememberPanelOrder !== false;
-  if (settingRememberCollapse) settingRememberCollapse.checked = generalPrefs.rememberSectionCollapse !== false;
-  if (settingRememberSidebarVisibility) settingRememberSidebarVisibility.checked = generalPrefs.rememberSidebarVisibility !== false;
-  if (settingRememberActivePanel) settingRememberActivePanel.checked = generalPrefs.rememberActivePanel !== false;
-}
-
-function persistGeneralPreferences() {
-  generalPrefs = {
-    autoOpenSections: Boolean(settingAutoOpenSections?.checked),
-    autoOpenOcr: Boolean(settingAutoOpenOcr?.checked),
-    recordReadingTrail: Boolean(settingReadingTrail?.checked),
-    rememberReadingPosition: Boolean(settingRememberPosition?.checked),
-    rememberSidebarWidths: Boolean(settingRememberWidths?.checked),
-    rememberPanelOrder: Boolean(settingRememberPanelOrder?.checked),
-    rememberSectionCollapse: Boolean(settingRememberCollapse?.checked),
-    rememberSidebarVisibility: Boolean(settingRememberSidebarVisibility?.checked),
-    rememberActivePanel: Boolean(settingRememberActivePanel?.checked)
-  };
-  safeSet(GENERAL_PREFS_KEY, JSON.stringify(generalPrefs));
-}
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -8070,16 +8041,6 @@ function scrollRightPanelToSection(section, behavior = 'smooth') {
   rightSidebar.scrollTo({ top: rightPanelNavigationTop(section), behavior });
 }
 
-[settingAutoOpenSections, settingAutoOpenOcr, settingReadingTrail, settingRememberPosition, settingRememberWidths, settingRememberPanelOrder, settingRememberCollapse, settingRememberSidebarVisibility, settingRememberActivePanel].forEach((node) => node?.addEventListener('change', () => {
-  persistGeneralPreferences();
-  if (node === settingRememberWidths && generalPrefs.rememberSidebarWidths === false) {
-    shell?.style.setProperty('--left-sidebar-width', '250px');
-    shell?.style.setProperty('--right-sidebar-width', '260px');
-  }
-  if (node === settingReadingTrail && generalPrefs.recordReadingTrail === false) updateReadingBackButton();
-  if (node === settingRememberPanelOrder && generalPrefs.rememberPanelOrder === false) safeSet(PANEL_ORDER_KEY, 'null');
-  if (node === settingRememberCollapse && generalPrefs.rememberSectionCollapse === false) safeSet(WORKSPACE_COLLAPSE_KEY, 'null');
-}));
 
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
@@ -8170,7 +8131,6 @@ function bindSidebarResizer(handle, side) {
   });
 }
 
-loadGeneralPreferences();
 loadSidebarWidths();
 bindSidebarResizer(leftSidebarResizer, 'left');
 bindSidebarResizer(rightSidebarResizer, 'right');

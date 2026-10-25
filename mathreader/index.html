@@ -121,6 +121,12 @@
             <input id="search-input" type="search" autocomplete="off" placeholder="theorem, curvature, Ricci…">
             <button type="submit" data-en="Find" data-zh="查找">Find</button>
           </div>
+          <div class="search-options">
+            <label><input id="search-match-case" type="checkbox"> <span data-en="Match case" data-zh="区分大小写">Match case</span></label>
+            <label><input id="search-whole-word" type="checkbox"> <span data-en="Whole word" data-zh="全词匹配">Whole word</span></label>
+            <label><input id="search-fuzzy" type="checkbox"> <span data-en="Fuzzy" data-zh="模糊">Fuzzy</span></label>
+            <label><input id="search-equations" type="checkbox"> <span data-en="Equations" data-zh="公式">Equations</span></label>
+          </div>
 
           <p class="search-help" data-en="Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized." data-zh="默认不区分大小写，并规范化 Unicode 连字、软连字符与重复空白。">Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized.</p>
         </form>
@@ -444,28 +450,6 @@
           <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Personalize MathReader without crowding the reading workspace. Preferences stay local to this browser." data-zh="在不挤占阅读工作区的前提下个性化 MathReader。偏好仅保存在当前浏览器。">Personalize MathReader without crowding the reading workspace. Preferences stay local to this browser.</div></details></span>
         </div>
 
-        <details class="settings-group" id="settings-behavior-group" open>
-          <summary><span data-en="Behavior" data-zh="行为">Behavior</span></summary>
-          <div class="settings-group-body">
-            <label class="toggle-setting"><input id="setting-auto-open-sections" type="checkbox" checked><span data-en="Auto-open related sections" data-zh="自动展开相关模块">Auto-open related sections</span></label>
-            <label class="toggle-setting"><input id="setting-auto-open-ocr" type="checkbox" checked><span data-en="Auto-open Formula OCR while processing" data-zh="处理时自动展开公式 OCR">Auto-open Formula OCR while processing</span></label>
-            <label class="toggle-setting"><input id="setting-reading-trail" type="checkbox" checked><span data-en="Record reading trail" data-zh="记录阅读轨迹">Record reading trail</span></label>
-            <label class="toggle-setting"><input id="setting-remember-position" type="checkbox" checked><span data-en="Remember reading position" data-zh="记住阅读位置">Remember reading position</span></label>
-            <p class="display-note" data-en="Automatic actions may open a section, but never scroll the sidebar to it or move the PDF reading position." data-zh="自动操作可以展开模块，但不会把侧栏滚动到该模块，也不会改变 PDF 的阅读位置。">Automatic actions may open a section, but never scroll the sidebar to it or move the PDF reading position.</p>
-          </div>
-        </details>
-
-        <details class="settings-group" id="settings-workspace-group">
-          <summary><span data-en="Workspace" data-zh="工作区">Workspace</span></summary>
-          <div class="settings-group-body">
-            <label class="toggle-setting"><input id="setting-remember-widths" type="checkbox" checked><span data-en="Remember sidebar widths" data-zh="记住侧栏宽度">Remember sidebar widths</span></label>
-            <label class="toggle-setting"><input id="setting-remember-panel-order" type="checkbox" checked><span data-en="Remember section order" data-zh="记住模块顺序">Remember section order</span></label>
-            <label class="toggle-setting"><input id="setting-remember-collapse" type="checkbox" checked><span data-en="Remember collapsed sections" data-zh="记住模块展开状态">Remember collapsed sections</span></label>
-            <label class="toggle-setting"><input id="setting-remember-sidebar-visibility" type="checkbox" checked><span data-en="Remember sidebar visibility" data-zh="记住侧栏展开状态">Remember sidebar visibility</span></label>
-            <label class="toggle-setting"><input id="setting-remember-active-panel" type="checkbox" checked><span data-en="Remember active left tab" data-zh="记住左侧当前标签">Remember active left tab</span></label>
-          </div>
-        </details>
-
         <details class="settings-group" id="settings-display-group">
           <summary><span data-en="Display" data-zh="显示">Display</span></summary>
           <div class="settings-group-body">
@@ -499,16 +483,6 @@
             <label class="display-setting"><span class="display-label" data-en="Default extraction" data-zh="默认提取方式">Default extraction</span><select id="formula-extraction-mode"><option value="image" data-en="Image OCR · recommended" data-zh="图像 OCR · 推荐">Image OCR · recommended</option><option value="vector" data-en="PDF vector · fast" data-zh="PDF 矢量 · 快速">PDF vector · fast</option></select></label>
             <label class="display-setting"><span class="display-label" data-en="Image OCR engine" data-zh="图像 OCR 引擎">Image OCR engine</span><select id="ocr-engine-mode"><option value="webgpu" data-en="Default · WebGPU → CPU fallback" data-zh="默认 · WebGPU → CPU 备用">Default · WebGPU → CPU fallback</option><option value="official" data-en="Compatibility · Texify CPU" data-zh="兼容模式 · Texify CPU">Compatibility · Texify CPU</option><option value="wasm" data-en="Texify · CPU/WASM q8" data-zh="Texify · CPU/WASM q8">Texify · CPU/WASM q8</option></select></label>
             <details class="ocr-troubleshooting"><summary data-en="Troubleshooting" data-zh="故障处理">Troubleshooting</summary><button class="text-button" type="button" id="ocr-retry" data-en="Reset OCR" data-zh="重置 OCR" data-en-title="Unload the current OCR engine and preload a fresh one. Formula selection stays disabled until the engine is ready." data-zh-title="卸载当前 OCR 引擎并预加载新的引擎。引擎就绪前公式框选保持禁用。">Reset OCR</button></details>
-          </div>
-        </details>
-
-        <details class="settings-group" id="settings-search-group">
-          <summary><span data-en="Search" data-zh="搜索">Search</span></summary>
-          <div class="settings-group-body settings-search-options">
-            <label class="toggle-setting"><input id="search-match-case" type="checkbox"><span data-en="Match case" data-zh="区分大小写">Match case</span></label>
-            <label class="toggle-setting"><input id="search-whole-word" type="checkbox"><span data-en="Whole word" data-zh="全词匹配">Whole word</span></label>
-            <label class="toggle-setting"><input id="search-fuzzy" type="checkbox"><span data-en="Fuzzy matching" data-zh="模糊匹配">Fuzzy matching</span></label>
-            <label class="toggle-setting"><input id="search-equations" type="checkbox"><span data-en="Include equations" data-zh="包含公式">Include equations</span></label>
           </div>
         </details>
       </section>
