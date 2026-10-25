@@ -897,7 +897,6 @@ function applyLanguage(lang, persist = true) {
   refreshOcrUI();
   renderAnnotationList();
   renderNativePdfComments(currentPage);
-  renderNamedReadingSessions();
   renderUndoHistory();
   renderRecoverySnapshots();
   updateWorkspaceCollapseButtons();
@@ -1314,7 +1313,6 @@ function loadDocumentState(cachedSession = null) {
   updateZoomLabel();
   updateReadingBackButton();
   renderReadingTrail();
-  renderNamedReadingSessions();
   renderUndoHistory();
   renderRecoverySnapshots();
 }
@@ -7465,36 +7463,6 @@ function formatCompactDate(timestamp) {
   } catch (_) { return ''; }
 }
 
-function renderNamedReadingSessions() {
-  if (!readingSessionsList || !readingSessionsCount || !readingSessionsEmpty) return;
-  readingSessionsList.replaceChildren();
-  readingSessionsCount.textContent = String(namedReadingSessions.length);
-  readingSessionsEmpty.classList.toggle('is-hidden', namedReadingSessions.length > 0);
-  for (const item of [...namedReadingSessions].sort((a,b) => b.updated - a.updated)) {
-    const row = document.createElement('div'); row.className = 'reading-session-item';
-    const head = document.createElement('div'); head.className = 'reading-session-head';
-    const name = document.createElement('div'); name.className = 'reading-session-name'; name.textContent = item.name;
-    const page = document.createElement('span'); page.className = 'page-chip'; page.textContent = t(`Page ${item.state?.page || 1}`, `第 ${item.state?.page || 1} 页`);
-    head.append(name, page);
-    const meta = document.createElement('div'); meta.className = 'reading-session-meta'; meta.textContent = formatCompactDate(item.updated);
-    const actions = document.createElement('div'); actions.className = 'reading-session-actions';
-    const restore = document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreNamedReadingSession(item));
-    const update = document.createElement('button'); update.type='button'; update.className='text-button'; update.textContent=t('Update','更新'); update.addEventListener('click',()=>{ item.state=captureNamedWorkspaceState(); item.updated=Date.now(); persistDocumentState(); renderNamedReadingSessions(); });
-    const remove = document.createElement('button'); remove.type='button'; remove.className='text-button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('reading-session', t(`Reading session “${item.name}”`, `阅读会话“${item.name}”`), item); namedReadingSessions=namedReadingSessions.filter((x)=>x.id!==item.id); persistDocumentState(); renderNamedReadingSessions(); });
-    actions.append(restore, update, remove); row.append(head, meta, actions); readingSessionsList.append(row);
-  }
-}
-
-function saveNamedReadingSession() {
-  if (!pdfDoc) return;
-  let name = String(readingSessionName?.value || '').trim();
-  if (!name) name = t(`Session ${namedReadingSessions.length + 1}`, `会话 ${namedReadingSessions.length + 1}`);
-  const now = Date.now();
-  namedReadingSessions = [{ id:`rs-${now}-${Math.random().toString(36).slice(2,7)}`, name:name.slice(0,120), created:now, updated:now, state:captureNamedWorkspaceState() }, ...namedReadingSessions].slice(0,20);
-  if (readingSessionName) readingSessionName.value='';
-  persistDocumentState(); renderNamedReadingSessions();
-}
-
 async function restoreNamedReadingSession(item) {
   if (!pdfDoc || !item?.state) return;
   const state = item.state;
@@ -7556,7 +7524,6 @@ async function restoreUndoEntry(id = null) {
   else if (item.type === 'glossary') { if (payload && !symbolGlossary.some((x)=>x.id===payload.id)) symbolGlossary.push(payload); renderSymbolGlossary(); }
   else if (item.type === 'reading-trail') { readingBackStack=normalizeReadingTrail(payload); updateReadingBackButton(); renderReadingTrail(); }
   else if (item.type === 'ocr-result') { currentOcrResult=payload; refreshOcrUI(); }
-  else if (item.type === 'reading-session') { if (payload && !namedReadingSessions.some((x)=>x.id===payload.id)) namedReadingSessions.unshift(payload); renderNamedReadingSessions(); }
   else return false;
   undoHistory = undoHistory.filter((x)=>x.id!==item.id);
   renderUndoHistory(); persistDocumentState(); return true;
