@@ -157,6 +157,7 @@ const mathContextActions = el('math-context-actions');
 const mathContextOccurrences = el('math-context-occurrences');
 const mathContextProof = el('math-context-proof');
 const mathContextEmpty = el('math-context-empty');
+const mathContextCount = el('math-context-count');
 const equationCompareA = el('equation-compare-a');
 const equationCompareB = el('equation-compare-b');
 const equationCompareRun = el('equation-compare-run');
@@ -167,10 +168,12 @@ const equationCompareRenderB = el('equation-compare-render-b');
 const equationCompareCodeA = el('equation-compare-code-a');
 const equationCompareCodeB = el('equation-compare-code-b');
 const equationCompareSummary = el('equation-compare-summary');
+const equationCompareCount = el('equation-compare-count');
 const selectionToolbar = el('selection-toolbar');
 const selectionToolbarLabel = el('selection-toolbar-label');
 const floatingCopyText = el('floating-copy-text');
 const floatingFindAll = el('floating-find-all');
+const floatingInspectMath = el('floating-inspect-math');
 const floatingCopyLatex = el('floating-copy-latex');
 const floatingAddNote = el('floating-add-note');
 const floatingHighlight = el('floating-highlight');
@@ -1763,38 +1766,17 @@ async function ensureMathOcrPipeline() {
       const backend = plan[index];
       try {
         setOcrStatus(t(`Initializing ${backend.label}…`, `正在初始化 ${backend.label}……`), true);
-        // Transformers.js reports progress per asset, so raw percentages can
-        // repeatedly jump from ~100 back to 0 as the next model file starts.
-        // Present a single session-level monotonic value instead. It is a
-        // smoothed best-effort indicator (not a byte-exact total), never moves
-        // backward, and stays below completion until pipeline() really returns.
-        let shownDownloadProgress = 1;
-        let progressEventCount = 0;
-        const publishDownloadProgress = (rawPercent = null, nudgeOnly = false) => {
-          progressEventCount += 1;
-          let target = shownDownloadProgress;
-          if (Number.isFinite(rawPercent)) {
-            const normalized = Math.max(0, Math.min(100, rawPercent));
-            const stageBoost = Math.min(22, Math.log2(progressEventCount + 1) * 3.4);
-            target = Math.min(96, normalized * 0.72 + stageBoost);
-          } else if (nudgeOnly) {
-            target = Math.min(96, shownDownloadProgress + 0.8);
-          }
-          if (target > shownDownloadProgress) {
-            const step = Math.max(0.4, Math.min(3.2, (target - shownDownloadProgress) * 0.14));
-            shownDownloadProgress = Math.min(96, shownDownloadProgress + step);
-          }
-          const percent = Math.max(1, Math.floor(shownDownloadProgress));
-          setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${percent}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${percent}%`), true);
-        };
+        // Transformers.js reports progress per individual model asset rather
+        // than one meaningful total. Do not display a fabricated percentage.
+        // Show only truthful loading stages until pipeline() is actually ready.
+        let downloadStageShown = false;
         const progress_callback = (info) => {
           if (!info) return;
-          if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
-            const raw = Number(info.progress);
-            const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
-            publishDownloadProgress(percent);
-          } else if (info.status === 'initiate' || info.status === 'download') {
-            publishDownloadProgress(null, true);
+          if (info.status === 'initiate' || info.status === 'download' || info.status === 'progress') {
+            if (!downloadStageShown) {
+              downloadStageShown = true;
+              setOcrStatus(t(`Loading local image-OCR model (${backend.label})…`, `正在加载本地图像 OCR 模型（${backend.label}）……`), true);
+            }
           }
         };
         const options = { progress_callback };
@@ -6361,7 +6343,7 @@ function renderMathContextProof() {
   mathContextProof.replaceChildren();
   const proof = proofEntryAtAnchor();
   if (mathContextEmpty && !mathContextQuery) mathContextEmpty.classList.toggle('is-hidden', Boolean(proof));
-  if (!proof) return;
+  if (!proof) { if (mathContextCount && !mathContextQuery) mathContextCount.textContent = '0'; return; }
   const heading = document.createElement('div'); heading.className = 'math-context-proof-heading';
   heading.textContent = t(`Current proof · ${proof.label}`, `当前证明 · ${proof.label}`);
   mathContextProof.append(heading);
@@ -6369,6 +6351,7 @@ function renderMathContextProof() {
     ...(proof.proofUses || []).map((item) => ({ ...item, kind: 'structure' })),
     ...(proof.proofEquationReferences || []).map((label) => ({ label, kind: 'equation' }))
   ];
+  if (mathContextCount && !mathContextQuery) mathContextCount.textContent = String(dependencies.length);
   if (!dependencies.length) {
     const note = document.createElement('div'); note.className='empty-panel'; note.textContent=t('No explicit theorem/equation dependencies detected in this proof.','此证明中未检测到明确的定理或公式依赖。'); mathContextProof.append(note); return;
   }
@@ -6401,6 +6384,7 @@ async function inspectMathContext(term) {
     if (mathContextQuery !== clean) return;
     const definition = definitionEntryForTerm(clean) || data.definition || null;
     mathContextActions?.replaceChildren(); mathContextOccurrences?.replaceChildren();
+    if (mathContextCount) mathContextCount.textContent = String(data.occurrences.length);
     if (definition) {
       const button=document.createElement('button'); button.type='button'; button.className='secondary-action'; button.textContent=t(`Go to ${definition.label}`,`跳转到 ${definition.label}`);
       button.addEventListener('click',()=>goToMatchedLocation(definition.page,Number(definition.ratio)||0,definition.label)); mathContextActions?.append(button);
@@ -6430,6 +6414,7 @@ function equationCompareEntries() {
 function renderEquationCompareOptions() {
   if (!equationCompareA || !equationCompareB || !equationCompareEmpty || !equationCompareRun) return;
   const entries=equationCompareEntries(); const oldA=equationCompareA.value; const oldB=equationCompareB.value;
+  if (equationCompareCount) equationCompareCount.textContent = String(entries.length);
   const fill=(select,oldValue,defaultIndex)=>{ select.replaceChildren(); entries.forEach((entry,index)=>{ const option=document.createElement('option'); option.value=String(index); const compact=String(entry.latex||'').replace(/\s+/g,' ').slice(0,54); option.textContent=`p.${entry.page} · ${entry.source} · ${compact}`; select.append(option); }); if(entries.length) select.value=entries[Number(oldValue)]?oldValue:String(Math.min(defaultIndex,entries.length-1)); };
   fill(equationCompareA,oldA,0); fill(equationCompareB,oldB,1);
   const enough=entries.length>=2; equationCompareRun.disabled=!enough; equationCompareEmpty.classList.toggle('is-hidden',enough); if(!enough) equationCompareResult?.classList.add('is-hidden');
@@ -7811,7 +7796,7 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll, floatingInspectMath].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
@@ -7822,6 +7807,7 @@ selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
 floatingFindAll?.addEventListener('click', () => { runFindAllOccurrences(currentSelection?.text); hideSelectionToolbar(); });
+floatingInspectMath?.addEventListener('click', () => { inspectMathContext(currentSelection?.text || currentSelection?.latex); hideSelectionToolbar(); });
 floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });
 floatingHighlight?.addEventListener('click', () => { addSelectionAnnotation('highlight'); hideSelectionToolbar(); });
 floatingMarginNote?.addEventListener('click', () => { addSelectionAnnotation('margin'); hideSelectionToolbar(); });
