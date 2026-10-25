@@ -3517,10 +3517,13 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   setOcrMode(false);
   const preview = crop.toDataURL('image/png');
   const vector = ocrLayer && selectionRect ? extractVectorFormulaFromLayer(ocrLayer, selectionRect) : null;
+  const selectionRatio = selectionRect && ocrLayer
+    ? Math.min(1, Math.max(0, (Number(selectionRect.top || 0) + Number(selectionRect.height || 0) / 2) / Math.max(1, Number(ocrLayer.offsetHeight || ocrLayer.getBoundingClientRect?.().height || 1))))
+    : null;
 
   if (formulaExtractionMode === 'vector' && vector?.latex) {
     commitFormulaResult(
-      { page, kind, latex: stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex)), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
+      { page, kind, ratio: selectionRatio, latex: stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex)), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
     return;
@@ -3534,6 +3537,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     const item = {
       page,
       kind,
+      ratio: selectionRatio,
       latex: result.latex,
       preview,
       created: Date.now(),
@@ -3591,7 +3595,7 @@ async function canvasFromDataUrl(dataUrl) {
   return canvas;
 }
 
-async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null) {
+async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null, ratio = null) {
   if (!crop || !page) return;
   mathOcrLoading = true;
   let recognitionFailed = false;
@@ -3602,6 +3606,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
     const item = {
       page,
       kind,
+      ratio: Number.isFinite(Number(ratio)) ? Math.min(1, Math.max(0, Number(ratio))) : null,
       latex: result.latex,
       preview: imagePreview,
       created: Date.now(),
@@ -3642,7 +3647,8 @@ async function tryImageOcrForCurrentResult() {
       currentOcrResult.kind || 'primary',
       currentOcrResult.preview,
       currentOcrResult.vectorAlternative || null,
-      currentOcrResult.vectorAlternativeText || null
+      currentOcrResult.vectorAlternativeText || null,
+      currentOcrResult.ratio
     );
   } catch (error) {
     console.error(error);
@@ -7214,6 +7220,43 @@ function formatBookmarkTime(timestamp) {
   } catch (_) { return new Date(timestamp).toLocaleString(); }
 }
 
+function showEquationBookmarkCue(page, ratio) {
+  let surface = null;
+  if (readingFlow === 'continuous') surface = continuousPageNodes.get(Number(page))?.surface || null;
+  else if (Number(page) === Number(currentPage)) surface = primaryPageSurface;
+  if (!surface) return;
+  surface.querySelectorAll('.equation-bookmark-cue').forEach((node) => node.remove());
+  const cue = document.createElement('div');
+  cue.className = 'equation-bookmark-cue';
+  cue.setAttribute('aria-hidden', 'true');
+  cue.style.top = `${Math.min(98, Math.max(2, Number(ratio || 0) * 100))}%`;
+  cue.textContent = '➜';
+  surface.append(cue);
+  requestAnimationFrame(() => cue.classList.add('is-visible'));
+  window.setTimeout(() => cue.classList.add('is-fading'), 1200);
+  window.setTimeout(() => cue.remove(), 2100);
+}
+
+async function goToEquationBookmark(bookmark) {
+  const page = Math.min(Math.max(1, Number(bookmark?.page) || 1), pdfDoc?.numPages || 1);
+  const ratio = Math.min(1, Math.max(0, Number(bookmark?.ratio) || 0));
+  await goToLocation(page, ratio, { contextLead: false });
+  let surface = null;
+  if (readingFlow === 'continuous') surface = continuousPageNodes.get(page)?.surface || null;
+  else surface = primaryPageSurface;
+  if (surface) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+    const surfaceRect = surface.getBoundingClientRect();
+    const targetY = surfaceRect.top + surfaceRect.height * ratio;
+    const desiredOffset = Math.min(300, Math.max(150, wrapRect.height * 0.34));
+    primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + targetY - (wrapRect.top + desiredOffset));
+    if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+    persistDocumentState();
+  }
+  showEquationBookmarkCue(page, ratio);
+}
+
 function renderBookmarks() {
   bookmarkList.replaceChildren();
   bookmarkEmpty.classList.toggle('is-hidden', bookmarks.length > 0);
@@ -7225,7 +7268,7 @@ function renderBookmarks() {
     const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || (bookmark.type === 'equation' ? t(`Equation · page ${bookmark.page}`, `公式 · 第 ${bookmark.page} 页`) : t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`));
     const kindLabel = bookmark.type === 'equation' ? t('Equation', '公式') : t('Page', '页面');
     const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${kindLabel} · ${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
-    jump.append(strong, detail); jump.addEventListener('click', () => goToLocation(bookmark.page, 0, { contextLead: false }));
+    jump.append(strong, detail); jump.addEventListener('click', () => bookmark.type === 'equation' ? goToEquationBookmark(bookmark) : goToLocation(bookmark.page, 0, { contextLead: false }));
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'bookmark-edit'; edit.textContent = '✎'; edit.title = t('Edit bookmark', '编辑书签');
     edit.addEventListener('click', () => { editingBookmarkId = editingBookmarkId === bookmark.id ? null : bookmark.id; renderBookmarks(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'bookmark-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', t('Remove bookmark', '删除书签'));
@@ -7302,7 +7345,8 @@ function saveCurrentOcrAsEquation() {
   const page = Number(currentOcrResult.page) || currentPage;
   const item = {
     id: `eq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-    page, title: '', note: '', color: 'purple', created: Date.now(), type: 'equation',
+    page, ratio: Number.isFinite(Number(currentOcrResult.ratio)) ? Math.min(1, Math.max(0, Number(currentOcrResult.ratio))) : 0,
+    title: '', note: '', color: 'purple', created: Date.now(), type: 'equation',
     latex: String(ocrLatexPreview?.value || currentOcrResult.latex).trim(), preview: currentOcrResult.preview || ''
   };
   bookmarks.push(item); editingBookmarkId = item.id;

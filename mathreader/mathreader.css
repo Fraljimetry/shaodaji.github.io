@@ -498,3 +498,8 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .settings-section .segmented-control button { flex: 1 1 0; }
 .settings-section .ocr-troubleshooting { margin-top: 1px; }
 .settings-section .settings-search-options { gap: 7px; }
+
+/* Equation bookmark landing cue: brief, non-interactive pointer at the saved formula position. */
+.equation-bookmark-cue{position:absolute;right:8px;z-index:8;transform:translateY(-50%) translateX(6px);opacity:0;pointer-events:none;color:var(--accent-deep);font-size:20px;font-weight:900;line-height:1;text-shadow:0 1px 2px var(--surface);transition:opacity .16s ease,transform .16s ease}
+.equation-bookmark-cue.is-visible{opacity:.95;transform:translateY(-50%) translateX(0)}
+.equation-bookmark-cue.is-fading{opacity:0;transform:translateY(-50%) translateX(-4px)}
