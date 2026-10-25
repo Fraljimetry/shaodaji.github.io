@@ -459,3 +459,8 @@ html[data-theme="dark"] .sidebar-right textarea{
 html[data-theme="dark"] .sidebar-right select option{color:#e7edf2;background:#141e26}
 html[data-theme="dark"] .sidebar-right input::placeholder,
 html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opacity:1}
+
+/* v138: OCR result help belongs with its result title/badge, not as a detached footer. */
+.ocr-result-meta{position:relative}
+.ocr-result-meta .ocr-result-help{margin:0;flex:0 0 auto}
+.ocr-result-meta .ocr-result-help>.compact-help-body{top:26px;left:0;right:0;z-index:60}

@@ -879,7 +879,12 @@ function applyLanguage(lang, persist = true) {
   });
   updateHeaderControls();
   document.title = next === 'zh' ? 'MathReader｜汲绍达' : 'MathReader | Shaoda Ji';
-  if (!pdfDoc) documentTitle.textContent = t('No PDF open', '尚未打开 PDF');
+  // The document title is live application state, not static translatable copy.
+  // The generic [data-en]/[data-zh] pass above temporarily replaces it with the
+  // placeholder, so always restore the active filename when a PDF is open.
+  documentTitle.textContent = pdfDoc && currentFileName
+    ? currentFileName
+    : t('No PDF open', '尚未打开 PDF');
   updateReferenceStatus();
   updateZoomLabel();
   updateDisplayControls();
@@ -1653,7 +1658,7 @@ function setOcrMode(active) {
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
   } else if (!mathOcrLoading) {
-    setOcrStatus(mathOcrBackend ? t(`Image OCR default · ${mathOcrBackend.label} ready · PDF vector fallback available`, `默认图像 OCR · ${mathOcrBackend.label} 已就绪 · PDF 矢量备用可用`) : t('Ready. Image OCR is the default formula extractor.', '就绪。默认使用图像 OCR 提取公式。')); 
+    setOcrStatus(mathOcrBackend ? t(`Image OCR default · ${mathOcrBackend.label} ready · PDF vector available for manual comparison`, `默认图像 OCR · ${mathOcrBackend.label} 已就绪 · PDF 矢量可手动对照`) : t('Ready. Image OCR is the default formula extractor.', '就绪。默认使用图像 OCR 提取公式。')); 
   }
 }
 
@@ -1720,7 +1725,7 @@ function friendlyOcrError(error, backend = null) {
   if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the browser-compatible Texify formula model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用兼容浏览器的 Texify 公式识别模型。');
   if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The image-OCR preprocessor rejected the selected region. Reload the page; if this persists, report the exact message.', '图像 OCR 预处理拒绝了框选区域。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
   if (/scale|dequant|onnx|session|can't create a session|cannot create.*session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize under ${TRANSFORMERS_RUNTIME}. Recommended mode follows the model card's browser path; reload the engine or try WebGPU as a diagnostic alternative.`, `${backend?.label || 'ONNX'} 引擎在 ${TRANSFORMERS_RUNTIME} 下初始化失败。推荐模式遵循模型卡的浏览器路径；请重新加载引擎，或尝试 WebGPU 作为诊断性备选。`);
-  return raw || t('Image OCR fallback failed to initialize.', '图像 OCR 备用引擎初始化失败。');
+  return raw || t('Image OCR engine failed to initialize.', '图像 OCR 引擎初始化失败。');
 }
 
 function detailedOcrError(error, backend = null) {
