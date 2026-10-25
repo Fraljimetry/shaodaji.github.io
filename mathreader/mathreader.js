@@ -897,6 +897,11 @@ function applyLanguage(lang, persist = true) {
   renderSymbolGlossary();
   renderDocumentMetadata();
   renderDocumentMapAnnotations();
+  renderStructureIndex();
+  renderEquationIndex();
+  renderBibliographyIndex();
+  renderBacklinks();
+  renderReadingTrail();
   refreshSelectionUI();
   refreshOcrUI();
   renderAnnotationList();
