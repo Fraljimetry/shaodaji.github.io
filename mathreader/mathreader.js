@@ -199,6 +199,10 @@ const settingAutoOpenOcr = el('setting-auto-open-ocr');
 const settingReadingTrail = el('setting-reading-trail');
 const settingRememberPosition = el('setting-remember-position');
 const settingRememberWidths = el('setting-remember-widths');
+const settingRememberPanelOrder = el('setting-remember-panel-order');
+const settingRememberCollapse = el('setting-remember-collapse');
+const settingRememberSidebarVisibility = el('setting-remember-sidebar-visibility');
+const settingRememberActivePanel = el('setting-remember-active-panel');
 
 let pdfjsLib = null;
 let pdfDoc = null;
@@ -317,7 +321,7 @@ const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 5;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const GENERAL_PREFS_KEY = 'mathreader-general-prefs-v1';
-let generalPrefs = { autoOpenSections: true, autoOpenOcr: true, recordReadingTrail: true, rememberReadingPosition: true, rememberSidebarWidths: true };
+let generalPrefs = { autoOpenSections: true, autoOpenOcr: true, recordReadingTrail: true, rememberReadingPosition: true, rememberSidebarWidths: true, rememberPanelOrder: true, rememberSectionCollapse: true, rememberSidebarVisibility: true, rememberActivePanel: true };
 
 function loadGeneralPreferences() {
   let saved = null;
@@ -328,6 +332,10 @@ function loadGeneralPreferences() {
   if (settingReadingTrail) settingReadingTrail.checked = generalPrefs.recordReadingTrail !== false;
   if (settingRememberPosition) settingRememberPosition.checked = generalPrefs.rememberReadingPosition !== false;
   if (settingRememberWidths) settingRememberWidths.checked = generalPrefs.rememberSidebarWidths !== false;
+  if (settingRememberPanelOrder) settingRememberPanelOrder.checked = generalPrefs.rememberPanelOrder !== false;
+  if (settingRememberCollapse) settingRememberCollapse.checked = generalPrefs.rememberSectionCollapse !== false;
+  if (settingRememberSidebarVisibility) settingRememberSidebarVisibility.checked = generalPrefs.rememberSidebarVisibility !== false;
+  if (settingRememberActivePanel) settingRememberActivePanel.checked = generalPrefs.rememberActivePanel !== false;
 }
 
 function persistGeneralPreferences() {
@@ -336,7 +344,11 @@ function persistGeneralPreferences() {
     autoOpenOcr: Boolean(settingAutoOpenOcr?.checked),
     recordReadingTrail: Boolean(settingReadingTrail?.checked),
     rememberReadingPosition: Boolean(settingRememberPosition?.checked),
-    rememberSidebarWidths: Boolean(settingRememberWidths?.checked)
+    rememberSidebarWidths: Boolean(settingRememberWidths?.checked),
+    rememberPanelOrder: Boolean(settingRememberPanelOrder?.checked),
+    rememberSectionCollapse: Boolean(settingRememberCollapse?.checked),
+    rememberSidebarVisibility: Boolean(settingRememberSidebarVisibility?.checked),
+    rememberActivePanel: Boolean(settingRememberActivePanel?.checked)
   };
   safeSet(GENERAL_PREFS_KEY, JSON.stringify(generalPrefs));
 }
@@ -945,16 +957,23 @@ function loadSearchPreferences() {
   try { saved = JSON.parse(safeGet(SEARCH_PREFS_KEY, 'null')); } catch (_) { saved = null; }
   if (searchMatchCase) searchMatchCase.checked = Boolean(saved?.matchCase);
   if (searchWholeWord) searchWholeWord.checked = Boolean(saved?.wholeWord);
+  if (searchFuzzy) searchFuzzy.checked = Boolean(saved?.fuzzy);
+  if (searchEquations) searchEquations.checked = Boolean(saved?.equations);
 }
 
 function persistSearchPreferences() {
-  safeSet(SEARCH_PREFS_KEY, JSON.stringify({ matchCase: Boolean(searchMatchCase?.checked), wholeWord: Boolean(searchWholeWord?.checked) }));
+  safeSet(SEARCH_PREFS_KEY, JSON.stringify({
+    matchCase: Boolean(searchMatchCase?.checked),
+    wholeWord: Boolean(searchWholeWord?.checked),
+    fuzzy: Boolean(searchFuzzy?.checked),
+    equations: Boolean(searchEquations?.checked),
+  }));
 }
 
 function loadWorkspaceCollapseState() {
   let saved = null;
-  try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['settings-section','display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  try { saved = generalPrefs.rememberSectionCollapse === false ? null : JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
+  const defaults = new Set(['settings-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -962,6 +981,7 @@ function loadWorkspaceCollapseState() {
 }
 
 function persistWorkspaceCollapseState() {
+  if (generalPrefs.rememberSectionCollapse === false) return;
   const state = {};
   document.querySelectorAll('.workspace-section[id]').forEach((section) => { if (section.id) state[section.id] = section.classList.contains('is-collapsed'); });
   safeSet(WORKSPACE_COLLAPSE_KEY, JSON.stringify(state));
@@ -1011,6 +1031,7 @@ function captureDefaultPanelOrders() {
 function loadPanelOrder() {
   captureDefaultPanelOrders();
   let saved = null;
+  if (generalPrefs.rememberPanelOrder === false) return;
   try { saved = JSON.parse(safeGet(PANEL_ORDER_KEY, 'null')); } catch (_) { saved = null; }
   for (const container of reorderablePanelContainers()) {
     const key = panelOrderKeyFor(container);
@@ -1025,6 +1046,7 @@ function loadPanelOrder() {
 }
 
 function persistPanelOrder() {
+  if (generalPrefs.rememberPanelOrder === false) return;
   const state = {};
   for (const container of reorderablePanelContainers()) {
     const key = panelOrderKeyFor(container);
@@ -1115,6 +1137,12 @@ function expandWorkspaceSection(sectionId) {
   const section = document.getElementById(sectionId);
   if (!section) return;
   section.classList.remove('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons();
+}
+
+function openSettingsGroup(groupId) {
+  expandWorkspaceSection('settings-section');
+  const group = document.getElementById(groupId);
+  if (group instanceof HTMLDetailsElement) group.open = true;
 }
 
 function stateKey(kind) {
@@ -1315,16 +1343,16 @@ function loadDocumentState(cachedSession = null) {
     if (Number(session.version || 0) < 15 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     renderSymbolGlossary();
-    if (Number(session.version || 0) >= 4) {
+    if (generalPrefs.rememberSidebarVisibility !== false && Number(session.version || 0) >= 4) {
       shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
       shell.classList.toggle('right-collapsed', Boolean(session.ui?.rightCollapsed));
     } else {
-      // One-time v46 layout migration: older sessions were created when both
-      // sidebars opened by default. Start them collapsed once; future choices
-      // are saved normally in session v4.
+      // Start from the clean default when sidebar visibility is not remembered,
+      // and for legacy sessions created before sidebar visibility was saved.
       shell.classList.add('left-collapsed', 'right-collapsed');
     }
-    if (session.ui?.activePanel) activatePanel(session.ui.activePanel, false);
+    if (generalPrefs.rememberActivePanel !== false && session.ui?.activePanel) activatePanel(session.ui.activePanel, false);
+    else activatePanel('outline-panel', false);
   } else {
     const rawBookmarks = safeGet(stateKey('bookmarks'));
     const rawNotes = safeGet(stateKey('notes'));
@@ -7926,8 +7954,8 @@ commandInput?.addEventListener('keydown', (event) => {
 commandPalette?.addEventListener('pointerdown', (event) => { if (event.target === commandPalette) closeCommandPalette(); });
 renderSymbolGlossary();
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
-searchFuzzy?.addEventListener('change', () => { persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
-searchEquations?.addEventListener('change', () => { if (searchInput.value.trim()) searchPdf(searchInput.value); });
+searchFuzzy?.addEventListener('change', () => { persistSearchPreferences(); persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
+searchEquations?.addEventListener('change', () => { persistSearchPreferences(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
 glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
 glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
 undoClear?.addEventListener('click', () => { undoHistory = []; renderUndoHistory(); persistDocumentState(); });
@@ -8042,13 +8070,15 @@ function scrollRightPanelToSection(section, behavior = 'smooth') {
   rightSidebar.scrollTo({ top: rightPanelNavigationTop(section), behavior });
 }
 
-[settingAutoOpenSections, settingAutoOpenOcr, settingReadingTrail, settingRememberPosition, settingRememberWidths].forEach((node) => node?.addEventListener('change', () => {
+[settingAutoOpenSections, settingAutoOpenOcr, settingReadingTrail, settingRememberPosition, settingRememberWidths, settingRememberPanelOrder, settingRememberCollapse, settingRememberSidebarVisibility, settingRememberActivePanel].forEach((node) => node?.addEventListener('change', () => {
   persistGeneralPreferences();
   if (node === settingRememberWidths && generalPrefs.rememberSidebarWidths === false) {
     shell?.style.setProperty('--left-sidebar-width', '250px');
     shell?.style.setProperty('--right-sidebar-width', '260px');
   }
   if (node === settingReadingTrail && generalPrefs.recordReadingTrail === false) updateReadingBackButton();
+  if (node === settingRememberPanelOrder && generalPrefs.rememberPanelOrder === false) safeSet(PANEL_ORDER_KEY, 'null');
+  if (node === settingRememberCollapse && generalPrefs.rememberSectionCollapse === false) safeSet(WORKSPACE_COLLAPSE_KEY, 'null');
 }));
 
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
@@ -8231,7 +8261,7 @@ document.addEventListener('keydown', (event) => {
   if (!typing && key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('outline-panel'); return; }
   if (!typing && key === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('history-panel'); return; }
   if (!typing && key === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('bookmarks-panel'); return; }
-  if (!typing && key === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('display-section'); return; }
+  if (!typing && key === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('settings-section'); openSettingsGroup('settings-display-group'); return; }
   if (!typing && key === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('note-section', pageNote); return; }
   if (!typing && pdfDoc && key === 'p' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setPinnedPage(currentPage); return; }
   if (!typing && pdfDoc && event.key === 'ArrowUp') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: -Math.max(70, primaryCanvasWrap.clientHeight * 0.11), behavior: 'auto' }); return; }
