@@ -2010,7 +2010,7 @@ async function ensureMathOcrPipeline() {
     for (let index = 0; index < plan.length; index += 1) {
       const backend = plan[index];
       try {
-        setOcrStatus(t(`Initializing ${backend.label}…`, `正在初始化 ${backend.label}……`), true);
+        setOcrStatus(t('Initializing OCR…', '正在初始化 OCR……'), true);
         // Transformers.js reports progress per individual model asset rather
         // than one meaningful total. Do not display a fabricated percentage.
         // Show only truthful loading stages until pipeline() is actually ready.
@@ -2033,7 +2033,7 @@ async function ensureMathOcrPipeline() {
         mathOcrPipeline = pipe;
         mathOcrBackend = backend;
         updateOcrCapability();
-        setOcrStatus(t(`Formula-image engine ready · ${backend.label}`, `公式图像引擎就绪 · ${backend.label}`));
+        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
         return pipe;
       } catch (error) {
         console.warn('MathReader OCR backend failed', backend, error);
@@ -6151,13 +6151,12 @@ function renderBacklinks() {
   backlinksCount.textContent = String(backlinkEntries.length);
   backlinksContext.textContent = backlinkContext?.label ? t(`References to ${backlinkContext.label}`, `引用 ${backlinkContext.label} 的位置`) : '';
   backlinksEmpty.classList.toggle('is-hidden', visible.length > 0);
-  backlinksEmpty.textContent=t('Follow an equation, citation, theorem, or section reference to see its backlinks.','跟随公式、文献、定理或章节引用后，可在这里查看反向引用。');
+  backlinksEmpty.textContent=t('Follow a reference to see backlinks.','跟随引用后可在这里查看反向引用。');
   for (const entry of visible.slice(0, 120)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'backlink-item';
     const meta = document.createElement('span'); meta.className = 'backlink-meta';
     const proofOwner = entry.proofOwner || proofContextForLocation(entry.page, entry.ratio);
-    const kindLabel={prose:t('Prose','正文'),proof:t('Proof','证明'),equation:t('Equation','公式'),bibliography:t('Bibliography','文献')}[entry.kind] || t('Reference','引用');
-    meta.textContent = proofOwner ? t(`${kindLabel} · page ${entry.page} · proof of ${proofOwner}`, `${kindLabel} · 第 ${entry.page} 页 · ${proofOwner} 的证明`) : t(`${kindLabel} · page ${entry.page}`, `${kindLabel} · 第 ${entry.page} 页`);
+    meta.textContent = proofOwner ? t(`Page ${entry.page} · proof of ${proofOwner}`, `第 ${entry.page} 页 · ${proofOwner} 的证明`) : t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     const snippet = document.createElement('span'); snippet.className = 'backlink-snippet'; snippet.textContent = entry.snippet || entry.text || '';
     button.append(meta, snippet);
     button.addEventListener('click', () => {
