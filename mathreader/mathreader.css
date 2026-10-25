@@ -115,6 +115,7 @@ html[data-theme="dark"] .textLayer ::selection{background:rgba(121,188,228,.42)}
 .ocr-preview-wrap{display:grid;min-height:58px;place-items:center;overflow:auto;padding:7px;border:1px solid var(--line);border-radius:6px;background:#fff}
 .ocr-preview-wrap img{display:block;max-width:100%;max-height:150px;object-fit:contain}
 .ocr-result pre{max-height:145px;overflow:auto;margin:0;padding:8px 9px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:10px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.ocr-latex-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}.ocr-format-select{min-width:0;width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:var(--paper);font-size:11px;line-height:1.2;outline:none}.ocr-format-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}.ocr-format-undo{min-height:32px;white-space:nowrap}.ocr-format-undo.is-disabled{opacity:.55;pointer-events:none}
 .ocr-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.ocr-actions .secondary-action:last-child{grid-column:1/-1}
 html[data-theme="dark"] .ocr-preview-wrap{background:#fff}
 @media(max-width:860px){.ocr-tool-button{display:inline-flex}.ocr-section{padding-top:10px}}

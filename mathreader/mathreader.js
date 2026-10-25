@@ -170,6 +170,8 @@ const ocrStatus = el('ocr-status');
 const ocrResult = el('ocr-result');
 const ocrPreview = el('ocr-preview');
 const ocrLatexPreview = el('ocr-latex-preview');
+const ocrFormatMode = el('ocr-format-mode');
+const ocrFormatUndo = el('ocr-format-undo');
 const ocrRenderedPreview = el('ocr-rendered-preview');
 const copyOcrLatex = el('copy-ocr-latex');
 const ocrToNote = el('ocr-to-note');
@@ -1523,6 +1525,158 @@ function markAlignmentRelation(line) {
   }
   return normalized;
 }
+function unwrapOcrFormattingEnvelope(value) {
+  let text = String(value || '').trim();
+  if (!text) return '';
+  const envMatch = text.match(/^\\begin\{(aligned|gathered|gather|array)\}([\s\S]*?)\\end\{\1\}$/);
+  if (!envMatch) return text;
+  const env = envMatch[1];
+  let inner = String(envMatch[2] || '').trim();
+  if (env === 'array') inner = inner.replace(/^\{[^}]*\}/, '').trim();
+  return inner;
+}
+
+function splitOcrLatexRows(value) {
+  const body = unwrapOcrFormattingEnvelope(value);
+  if (!body) return [];
+  const rows = [];
+  let current = '';
+  let braceDepth = 0;
+  for (let i = 0; i < body.length; i += 1) {
+    const ch = body[i];
+    if (ch === '{') braceDepth += 1;
+    else if (ch === '}' && braceDepth > 0) braceDepth -= 1;
+    if (ch === '\\' && body[i + 1] === '\\' && braceDepth === 0) {
+      rows.push(current.trim());
+      current = '';
+      i += 1;
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) rows.push(current.trim());
+  return rows.filter(Boolean);
+}
+
+function normalizeOcrAlignmentLine(value) {
+  return String(value || '').replace(/(^|[^\\])&/g, '$1').replace(/\s+/g, ' ').trim();
+}
+
+function alignLineByPattern(value, mode = 'relation') {
+  const line = normalizeOcrAlignmentLine(value);
+  if (!line) return '';
+  const pattern = mode === 'equals'
+    ? /(=)/
+    : /(\\Longrightarrow|\\Rightarrow|\\longrightarrow|\\rightarrow|\\to|\\leq|\\le|\\geq|\\ge|\\approx|\\sim|\\equiv|\\mapsto|\\iff|=)/;
+  const match = line.match(pattern);
+  if (!match || typeof match.index !== 'number') return line;
+  return `${line.slice(0, match.index)}&${line.slice(match.index)}`.replace(/\s+&/g, ' &').trim();
+}
+
+function formatOcrRowsAligned(rows, mode = 'relation') {
+  const cleaned = rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  return `\\begin{aligned}\n${cleaned.map((row) => alignLineByPattern(row, mode)).join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
+function formatOcrRowsContinuation(rows) {
+  const cleaned = rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  const formatted = cleaned.map((row, index) => {
+    const aligned = alignLineByPattern(row, 'relation');
+    if (index === 0) return aligned !== row ? aligned : row;
+    if (aligned !== row) return aligned;
+    return `&\\quad ${row}`;
+  });
+  return `\\begin{aligned}\n${formatted.join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
+function formatOcrRowsGathered(rows) {
+  const cleaned = rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  if (cleaned.length === 1) return cleaned[0];
+  return `\\begin{gathered}\n${cleaned.join(latexLineSeparator())}\n\\end{gathered}`;
+}
+
+function formatOcrRowsSingleLine(rows) {
+  return rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function autoFormatOcrLatex(value) {
+  const rows = splitOcrLatexRows(value);
+  if (!rows.length) return String(value || '').trim();
+  if (rows.length === 1) return formatOcrRowsSingleLine(rows);
+  const relationRows = rows.filter((row) => /(=|\\to|\\rightarrow|\\longrightarrow|\\Rightarrow|\\Longrightarrow|\\leq|\\le|\\geq|\\ge|\\approx|\\sim|\\equiv|\\mapsto|\\iff)/.test(row)).length;
+  const continuationLike = rows.slice(1).some((row) => /^\s*(=|\\to|\\rightarrow|\\longrightarrow|\\Rightarrow|\\Longrightarrow|\\leq|\\le|\\geq|\\ge|\\approx|\\sim|\\equiv|\\mapsto|\\iff)/.test(row.trim()));
+  if (continuationLike) return formatOcrRowsContinuation(rows);
+  if (relationRows >= Math.max(2, rows.length - 1)) return formatOcrRowsAligned(rows, 'relation');
+  return formatOcrRowsGathered(rows);
+}
+
+function ensureCurrentOcrFormatState() {
+  if (!currentOcrResult) return;
+  if (typeof currentOcrResult.originalLatex !== 'string' || !currentOcrResult.originalLatex.trim()) currentOcrResult.originalLatex = String(currentOcrResult.latex || '').trim();
+  if (!Array.isArray(currentOcrResult.formatUndoStack)) currentOcrResult.formatUndoStack = [];
+}
+
+function updateOcrFormattingControls() {
+  const has = Boolean(currentOcrResult?.latex);
+  if (ocrFormatMode) {
+    ocrFormatMode.disabled = !has;
+    ocrFormatMode.value = '';
+  }
+  if (ocrFormatUndo) {
+    const undoCount = has && Array.isArray(currentOcrResult?.formatUndoStack) ? currentOcrResult.formatUndoStack.length : 0;
+    ocrFormatUndo.disabled = !undoCount;
+    ocrFormatUndo.classList.toggle('is-disabled', !undoCount);
+  }
+}
+
+function syncCurrentOcrLatexValue(value, options = {}) {
+  if (!currentOcrResult) return;
+  currentOcrResult.latex = String(value || '').trim();
+  const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
+  if (match) {
+    match.latex = currentOcrResult.latex;
+    if (typeof currentOcrResult.originalLatex === 'string') match.originalLatex = currentOcrResult.originalLatex;
+    if (Array.isArray(currentOcrResult.formatUndoStack)) match.formatUndoStack = [...currentOcrResult.formatUndoStack];
+  }
+  if (ocrLatexPreview && ocrLatexPreview.value !== currentOcrResult.latex) ocrLatexPreview.value = currentOcrResult.latex;
+  scheduleOcrRenderedPreview();
+  updateOcrFormattingControls();
+  if (options.status) setOcrStatus(options.status);
+  persistDocumentState();
+}
+
+function applyOcrFormat(mode) {
+  if (!currentOcrResult || !ocrLatexPreview) return;
+  ensureCurrentOcrFormatState();
+  const source = String(ocrLatexPreview.value || currentOcrResult.latex || '').trim();
+  if (!source && mode !== 'original') return;
+  let next = source;
+  const rows = splitOcrLatexRows(source);
+  if (mode === 'original') next = String(currentOcrResult.originalLatex || source).trim();
+  else if (mode === 'auto') next = autoFormatOcrLatex(source);
+  else if (mode === 'align-equals') next = formatOcrRowsAligned(rows.length ? rows : [source], 'equals');
+  else if (mode === 'align-relation') next = formatOcrRowsAligned(rows.length ? rows : [source], 'relation');
+  else if (mode === 'continuation') next = formatOcrRowsContinuation(rows.length ? rows : [source]);
+  else if (mode === 'gathered') next = formatOcrRowsGathered(rows.length ? rows : [source]);
+  else if (mode === 'single-line') next = formatOcrRowsSingleLine(rows.length ? rows : [source]);
+  next = stabilizeOcrLatexSyntax(repairOcrLatex(next)).trim();
+  if (!next || next === source) {
+    updateOcrFormattingControls();
+    return;
+  }
+  currentOcrResult.formatUndoStack.push(source);
+  syncCurrentOcrLatexValue(next, { status: t('Applied one-click LaTeX cleanup.', '已应用一键 LaTeX 整理。') });
+}
+
+function undoOcrFormat() {
+  if (!currentOcrResult || !Array.isArray(currentOcrResult.formatUndoStack) || !currentOcrResult.formatUndoStack.length) return;
+  const previous = currentOcrResult.formatUndoStack.pop();
+  syncCurrentOcrLatexValue(previous, { status: t('Reverted the last LaTeX formatting change.', '已撤销上一条 LaTeX 整理。') });
+}
+
 function ocrPreviewMathSource(value) {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -1565,10 +1719,12 @@ async function renderOcrRenderedPreview() {
 function refreshOcrUI() {
   if (!ocrResult || !ocrHistoryList) return;
   const has = Boolean(currentOcrResult?.latex);
+  if (has) ensureCurrentOcrFormatState();
   ocrResult.classList.toggle('is-hidden', !has);
   ocrPageChip.textContent = has ? String(currentOcrResult.page || '—') : '—';
   ocrLatexPreview.value = has ? currentOcrResult.latex : '';
   scheduleOcrRenderedPreview();
+  updateOcrFormattingControls();
   if (ocrSourceBadge) {
     const source = has ? (currentOcrResult.source || 'image') : '';
     ocrSourceBadge.textContent = !has ? '—' : source === 'vector' ? t('PDF vector', 'PDF 矢量') : t('Image OCR', '图像 OCR');
@@ -7582,13 +7738,17 @@ pageNote.addEventListener('input', () => {
 
 
 copyOcrLatex.addEventListener('click', () => copyPlainText(ocrLatexPreview?.value || currentOcrResult?.latex, copyOcrLatex));
+ocrFormatMode?.addEventListener('change', () => {
+  const mode = ocrFormatMode.value;
+  if (!mode) return;
+  applyOcrFormat(mode);
+  ocrFormatMode.value = '';
+});
+ocrFormatUndo?.addEventListener('click', undoOcrFormat);
 ocrLatexPreview?.addEventListener('input', () => {
   if (!currentOcrResult) return;
-  currentOcrResult.latex = ocrLatexPreview.value;
-  const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
-  if (match) match.latex = currentOcrResult.latex;
-  scheduleOcrRenderedPreview();
-  persistDocumentState();
+  ensureCurrentOcrFormatState();
+  syncCurrentOcrLatexValue(ocrLatexPreview.value);
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
 tryImageOcrButton?.addEventListener('click', tryImageOcrForCurrentResult);

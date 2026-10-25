@@ -367,6 +367,19 @@
           <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span><details class="compact-help compact-help-heading ocr-result-help"><summary data-en-title="Extraction result help" data-zh-title="提取结果帮助" aria-label="Extraction result help">?</summary><div class="compact-help-body" data-en="Image OCR is preferred for formula rectangles. PDF vector is available for manual comparison. Results remain editable and should be checked before reuse." data-zh="矩形公式优先使用图像 OCR。PDF 矢量可用于手动对照。结果均可编辑，复用前应核对。">Image OCR is preferred for formula rectangles. PDF vector is available for manual comparison. Results remain editable and should be checked before reuse.</div></details><button class="text-button ocr-save-equation" type="button" id="save-ocr-equation" data-en="Save equation" data-zh="收藏公式">Save equation</button></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
           <label data-en="Extracted LaTeX · editable" data-zh="提取出的 LaTeX · 可编辑">Extracted LaTeX · editable</label>
+          <div class="ocr-latex-tools">
+            <select id="ocr-format-mode" class="ocr-format-select" aria-label="LaTeX formatting" data-en-title="Apply a one-click LaTeX cleanup to the current extraction." data-zh-title="对当前提取结果应用一键 LaTeX 整理。">
+              <option value="" data-en="Improve LaTeX formatting…" data-zh="改进 LaTeX 排版……">Improve LaTeX formatting…</option>
+              <option value="original" data-en="Restore original extraction" data-zh="恢复原始提取">Restore original extraction</option>
+              <option value="auto" data-en="Auto cleanup" data-zh="自动整理">Auto cleanup</option>
+              <option value="align-equals" data-en="Align at =" data-zh="按 = 对齐">Align at =</option>
+              <option value="align-relation" data-en="Align at first relation" data-zh="按首个关系符对齐">Align at first relation</option>
+              <option value="continuation" data-en="Continuation indent" data-zh="续行缩进">Continuation indent</option>
+              <option value="gathered" data-en="Centered multi-line" data-zh="多行居中">Centered multi-line</option>
+              <option value="single-line" data-en="Merge into one line" data-zh="合并为单行">Merge into one line</option>
+            </select>
+            <button class="secondary-action ocr-format-undo" type="button" id="ocr-format-undo" data-en="Undo format" data-zh="撤销整理">Undo format</button>
+          </div>
           <textarea id="ocr-latex-preview" class="ocr-latex-editor" rows="4" spellcheck="false" aria-label="Extracted LaTeX"></textarea>
           <label data-en="Rendered preview" data-zh="渲染预览">Rendered preview</label>
           <div id="ocr-rendered-preview" class="ocr-rendered-preview is-hidden" aria-live="polite"></div>
