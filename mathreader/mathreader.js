@@ -1537,41 +1537,6 @@ function markAlignmentRelation(line) {
   }
   return normalized;
 }
-function splitAlignedOcrRows(value) {
-  const text = String(value || '').trim();
-  if (!text) return [];
-  const env = text.match(/^\\begin\{aligned\}([\s\S]*?)\\end\{aligned\}$/);
-  const body = env ? env[1].trim() : text;
-  return body.split(/\\\\(?:\s*\[[^\]]*\])?\s*/).map((row) => row.trim()).filter(Boolean);
-}
-
-function normalizeAlignedOcrStructure(value) {
-  let text = String(value || '').trim();
-  if (!text) return '';
-
-  // Repair one conservative, recurrent tensor-identity decoder error: in the
-  // standard covariant-derivative expansion the second summation is subtractive.
-  // Only apply this when OCR already recognized the surrounding +sum(alpha/r)
-  // and =sum(b/s) skeleton; do not infer or rewrite the damaged tensor indices.
-  if (/\\nabla\s*_?\{?m\}?\s*F/.test(text)
-      && /\+\s*\\sum_\{\\alpha=1\}\^\{r\}/.test(text)
-      && /=\s*\\sum_\{b=1\}\^\{s\}/.test(text)) {
-    text = text.replace(/=\s*(\\sum_\{b=1\}\^\{s\})/, '- $1');
-  }
-
-  const hasAligned = /^\\begin\{aligned\}/.test(text) && /\\end\{aligned\}$/.test(text);
-  const rows = splitAlignedOcrRows(text);
-  if (rows.length < 2 && !hasAligned) return text;
-  if (!rows.length) return text;
-
-  // A real multi-row display should use a single relation column. Strip stray
-  // ampersands emitted by OCR and place one before the first relation on each
-  // row. This affects layout only; it does not rewrite mathematical symbols.
-  const normalizedRows = rows.map((row) => markAlignmentRelation(row));
-  if (normalizedRows.length < 2) return normalizedRows[0] || text;
-  return `\\begin{aligned}\n${normalizedRows.join(latexLineSeparator())}\n\\end{aligned}`;
-}
-
 function ocrPreviewMathSource(value) {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -1798,14 +1763,38 @@ async function ensureMathOcrPipeline() {
       const backend = plan[index];
       try {
         setOcrStatus(t(`Initializing ${backend.label}…`, `正在初始化 ${backend.label}……`), true);
+        // Transformers.js reports progress per asset, so raw percentages can
+        // repeatedly jump from ~100 back to 0 as the next model file starts.
+        // Present a single session-level monotonic value instead. It is a
+        // smoothed best-effort indicator (not a byte-exact total), never moves
+        // backward, and stays below completion until pipeline() really returns.
+        let shownDownloadProgress = 1;
+        let progressEventCount = 0;
+        const publishDownloadProgress = (rawPercent = null, nudgeOnly = false) => {
+          progressEventCount += 1;
+          let target = shownDownloadProgress;
+          if (Number.isFinite(rawPercent)) {
+            const normalized = Math.max(0, Math.min(100, rawPercent));
+            const stageBoost = Math.min(22, Math.log2(progressEventCount + 1) * 3.4);
+            target = Math.min(96, normalized * 0.72 + stageBoost);
+          } else if (nudgeOnly) {
+            target = Math.min(96, shownDownloadProgress + 0.8);
+          }
+          if (target > shownDownloadProgress) {
+            const step = Math.max(0.4, Math.min(3.2, (target - shownDownloadProgress) * 0.14));
+            shownDownloadProgress = Math.min(96, shownDownloadProgress + step);
+          }
+          const percent = Math.max(1, Math.floor(shownDownloadProgress));
+          setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${percent}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${percent}%`), true);
+        };
         const progress_callback = (info) => {
           if (!info) return;
           if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
             const raw = Number(info.progress);
             const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
-            setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${Math.round(percent)}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${Math.round(percent)}%`), true);
+            publishDownloadProgress(percent);
           } else if (info.status === 'initiate' || info.status === 'download') {
-            setOcrStatus(t(`First image-only use: downloading Texify for ${backend.label}…`, `首次图像识别：正在下载 ${backend.label} 的 Texify 公式识别模型……`), true);
+            publishDownloadProgress(null, true);
           }
         };
         const options = { progress_callback };
@@ -3145,7 +3134,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
-    const latex = normalizeAlignedOcrStructure(stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex)));
+    const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
     return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
@@ -3235,7 +3224,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
 
   if (formulaExtractionMode === 'vector' && vector?.latex) {
     commitFormulaResult(
-      { page, kind, latex: normalizeAlignedOcrStructure(stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex))), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
+      { page, kind, latex: stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex)), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
     return;
@@ -7809,7 +7798,7 @@ tryPdfVectorButton?.addEventListener('click', () => {
   const item = {
     page: currentOcrResult.page,
     kind: currentOcrResult.kind,
-    latex: normalizeAlignedOcrStructure(stabilizeOcrLatexSyntax(repairOcrLatex(currentOcrResult.vectorAlternative))),
+    latex: stabilizeOcrLatexSyntax(repairOcrLatex(currentOcrResult.vectorAlternative)),
     preview: currentOcrResult.preview,
     created: Date.now(),
     quality: 'vector-comparison',
