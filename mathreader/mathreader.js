@@ -3662,11 +3662,7 @@ function addOcrToPageNote() {
   const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}\n\[\n${currentOcrResult.latex}\n\]`;
   const existing = notes[String(targetPage)] || '';
   notes[String(targetPage)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
-  if (targetPage === currentPage) {
-    pageNote.value = notes[String(targetPage)];
-    scheduleNotePreview();
-    noteSaveState.textContent = t('Saved locally', '已保存到本地');
-  }
+  refreshVisiblePageNote(targetPage);
   persistDocumentState();
   autoOpenRightSection('note-section');
   setOcrStatus(t(`Added to page ${targetPage} note.`, `已添加到第 ${targetPage} 页注。`));
@@ -3971,12 +3967,8 @@ async function appendAnnotationToPageNote(item) {
   const block = `${meta}\n${quoted}${item.note?.trim() ? `\n\n${item.note.trim()}` : ''}`;
   const existing = notes[String(page)] || '';
   notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  refreshVisiblePageNote(page);
   persistDocumentState();
-  if (page === currentPage) {
-    pageNote.value = notes[String(page)] || '';
-    scheduleNotePreview();
-    noteSaveState.textContent = t('Saved locally', '已保存到本地');
-  }
   autoOpenRightSection('note-section');
 }
 
@@ -4058,9 +4050,8 @@ function addSelectionToPageNote() {
   const meta = t(`Page ${page} · position ${position}`, `第 ${page} 页 · 位置 ${position}`);
   const existing = notes[String(page)] || '';
   notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${meta}\n${quoted}`;
+  refreshVisiblePageNote(page);
   persistDocumentState();
-  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
-  noteSaveState.textContent = t('Saved locally', '已保存到本地');
 }
 
 async function renderSelectableText(page, viewport, layer, surface, pageNum, kind = 'primary') {
@@ -7208,6 +7199,15 @@ function scheduleNotePreview() {
   clearTimeout(notePreviewTimer);
   notePreviewTimer = setTimeout(renderNotePreview, 180);
 }
+
+function refreshVisiblePageNote(page) {
+  if (Number(page) !== Number(currentPage)) return;
+  pageNote.value = notes[String(page)] || '';
+  noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  clearTimeout(notePreviewTimer);
+  void renderNotePreview();
+}
+
 async function renderNotePreview() {
   if (!notePreview) return;
   const value = String(pageNote?.value || '').trim();
