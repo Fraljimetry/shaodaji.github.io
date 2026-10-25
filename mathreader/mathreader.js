@@ -1637,7 +1637,7 @@ function alignLineByPattern(value, mode = 'relation') {
 
 function ocrSignedContinuationBody(value) {
   let line = normalizeOcrAlignmentLine(value)
-    .replace(/^\\(?:qquad|quad)\s*/, '')
+    .replace(/^(?:\\(?:qquad|quad)\s*)+/, '')
     .trim();
   // OCR often carries delimiter-continuation helpers from a split formula,
   // e.g. `\left.+...` / `\right.-...`. These are visual delimiter
