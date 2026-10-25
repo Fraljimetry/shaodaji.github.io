@@ -312,8 +312,6 @@ const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 5;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
-  autoOpenSections: true,
-  autoOpenOcr: true,
   recordReadingTrail: true,
   rememberReadingPosition: true,
   rememberSidebarWidths: true,
@@ -1463,7 +1461,7 @@ function setOcrProcessing(active) {
     // workspace. Reopen it for every OCR invocation so returning to the tab,
     // a previously collapsed sidebar, or a collapsed section cannot hide the
     // next processing state.
-    if (generalPrefs.autoOpenOcr !== false) autoOpenRightSection('ocr-section');
+    autoOpenRightSection('ocr-section');
     ocrProcessing.classList.remove('is-hidden');
     if (ocrProcessingText) ocrProcessingText.textContent = t('Processing…', '处理中…');
   } else {
@@ -3670,7 +3668,7 @@ function addOcrToPageNote() {
     noteSaveState.textContent = t('Saved locally', '已保存到本地');
   }
   persistDocumentState();
-  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('note-section');
+  autoOpenRightSection('note-section');
   setOcrStatus(t(`Added to page ${targetPage} note.`, `已添加到第 ${targetPage} 页注。`));
 }
 
@@ -3937,7 +3935,7 @@ function renderAnnotationsForPage(page, surface, kind = 'primary') {
       marker.style.top = `${Math.min(.97, Math.max(0, item.ratio)) * 100}%`;
       marker.title = item.note || item.text || t('Margin note', '页边注');
       marker.setAttribute('aria-label', t(`Margin note on page ${item.page}`, `第 ${item.page} 页页边注`));
-      marker.addEventListener('click', () => { openRightSectionShortcut('annotations-section'); focusAnnotationEditor(item.id); });
+      marker.addEventListener('click', () => { openRightSectionShortcut('annotations-section'); });
       layer.append(marker);
     }
   }
@@ -3951,11 +3949,6 @@ function rerenderVisibleAnnotations() {
   if (pinnedPage) renderAnnotationsForPage(pinnedPage, referencePageSurface, 'reference');
 }
 
-function focusAnnotationEditor(id) {
-  const node = annotationList?.querySelector(`[data-annotation-id="${CSS.escape(String(id))}"] textarea`);
-  if (node) { node.focus(); node.scrollIntoView({ block: 'nearest' }); }
-}
-
 function addSelectionAnnotation(type) {
   if (!pdfDoc || !currentSelection?.text || !currentSelection.rects?.length || !['highlight','margin'].includes(type)) return;
   const item = {
@@ -3966,7 +3959,7 @@ function addSelectionAnnotation(type) {
   };
   annotations.push(item);
   persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations();
-  if (type === 'margin' && generalPrefs.autoOpenSections !== false) autoOpenRightSection('annotations-section');
+  if (type === 'margin') autoOpenRightSection('annotations-section');
 }
 
 async function appendAnnotationToPageNote(item) {
@@ -3984,7 +3977,7 @@ async function appendAnnotationToPageNote(item) {
     scheduleNotePreview();
     noteSaveState.textContent = t('Saved locally', '已保存到本地');
   }
-  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('note-section');
+  autoOpenRightSection('note-section');
 }
 
 function renderAnnotationList() {
@@ -4007,7 +4000,7 @@ function renderAnnotationList() {
       row.append(input);
     }
     const actions = document.createElement('div'); actions.className = 'annotation-actions';
-    const jump = document.createElement('button'); jump.type='button'; jump.textContent=t('Jump','跳转'); jump.addEventListener('click',()=>goToLocation(item.page,item.ratio));
+    const jump = document.createElement('button'); jump.type='button'; jump.textContent=t('Jump','跳转'); jump.addEventListener('click',()=>goToMatchedLocation(item.page,item.ratio,item.text || item.latex || ''));
     const promote = document.createElement('button'); promote.type='button'; promote.textContent=t('Add to page note','加入页注'); promote.addEventListener('click',()=>appendAnnotationToPageNote(item));
     const remove = document.createElement('button'); remove.type='button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('annotation', item.type === 'highlight' ? t('Highlight','高亮') : t('Margin note','页边注'), item); annotations=annotations.filter((ann)=>ann.id!==item.id); persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations(); });
     actions.append(jump,promote,remove); row.append(actions); annotationList.append(row);
@@ -4032,7 +4025,7 @@ function capturePdfSelection() {
     const rects = normalizedSelectionRects(range, startLayer);
     currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary'), rects, ratio: Number(rects[0]?.y) || 0 };
     refreshSelectionUI();
-    if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('selection-section');
+    autoOpenRightSection('selection-section');
     persistDocumentState();
     const rect = range.getBoundingClientRect();
     if (rect.width || rect.height) positionSelectionToolbar(rect);
@@ -6290,7 +6283,7 @@ async function updateBacklinksForTarget(query, target) {
   renderBacklinks();
   try { backlinkEntries = await collectBacklinks(query, target); } catch (error) { console.warn('Backlink indexing unavailable', error); backlinkEntries = []; }
   renderBacklinks();
-  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('backlinks-section');
+  autoOpenRightSection('backlinks-section');
 }
 
 async function resolveReferenceTarget(query, originPage = null, originRatio = null) {
@@ -6689,15 +6682,14 @@ async function addGlossaryEntry(symbolValue = null, meaningValue = null) {
   }
   if (glossarySymbolInput) glossarySymbolInput.value = '';
   if (glossaryMeaningInput) glossaryMeaningInput.value = '';
-  persistDocumentState(); renderSymbolGlossary(); if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('symbol-glossary-section');
+  persistDocumentState(); renderSymbolGlossary(); autoOpenRightSection('symbol-glossary-section');
 }
 
 function addSelectionToGlossary() {
   const selected = String(currentSelection?.latex || currentSelection?.text || '').replace(/\s+/g, ' ').trim();
   if (!selected) return;
   if (glossarySymbolInput) glossarySymbolInput.value = selected;
-  if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('symbol-glossary-section');
-  glossaryMeaningInput?.focus();
+  autoOpenRightSection('symbol-glossary-section');
 }
 
 function selectedReferenceQuery() {
@@ -6813,8 +6805,10 @@ function emphasizeSearchRange(surface, range) {
   const surfaceRect = surface.getBoundingClientRect();
   const layer = document.createElement('div');
   layer.className = 'search-match-emphasis-layer';
+  let firstRect = null;
   for (const rect of range.getClientRects()) {
     if (rect.width < 1 || rect.height < 1) continue;
+    if (!firstRect) firstRect = rect;
     const mark = document.createElement('div');
     mark.className = 'search-match-emphasis';
     mark.style.left = `${rect.left - surfaceRect.left}px`;
@@ -6824,6 +6818,15 @@ function emphasizeSearchRange(surface, range) {
     layer.append(mark);
   }
   if (!layer.childElementCount) return null;
+  if (firstRect) {
+    const cue = document.createElement('div');
+    cue.className = 'target-landing-cue';
+    cue.textContent = '→';
+    cue.setAttribute('aria-hidden', 'true');
+    cue.style.top = `${firstRect.top - surfaceRect.top + firstRect.height / 2}px`;
+    cue.style.left = `${Math.max(4, firstRect.left - surfaceRect.left - 24)}px`;
+    layer.append(cue);
+  }
   surface.append(layer);
   window.setTimeout(() => layer.classList.add('is-fading'), 1700);
   window.setTimeout(() => layer.remove(), 2600);
@@ -6876,7 +6879,14 @@ async function searchPdf(query) {
       const item=document.createElement('button'); item.type='button'; item.className='search-result search-result-equation';
       const label=document.createElement('strong'); label.textContent=t(`Page ${match.page} · ${match.source}`,`第 ${match.page} 页 · ${match.source}`);
       const code=document.createElement('code'); code.textContent=match.latex.length>280?`${match.latex.slice(0,280)}…`:match.latex; item.append(label,code);
-      item.addEventListener('click',()=>goToLocation(match.page,0)); searchResults.append(item);
+      item.addEventListener('click', async () => {
+        const ratio = Number.isFinite(Number(match.ratio)) ? Number(match.ratio) : 0;
+        await goToLocation(match.page, ratio, { contextLead: false });
+        if (Number.isFinite(Number(match.ratio))) {
+          await positionTargetAtReadingLead(match.page, ratio);
+          showEquationBookmarkCue(match.page, ratio);
+        }
+      }); searchResults.append(item);
     }
     return;
   }
@@ -7220,6 +7230,21 @@ function formatBookmarkTime(timestamp) {
   } catch (_) { return new Date(timestamp).toLocaleString(); }
 }
 
+async function positionTargetAtReadingLead(page, ratio) {
+  let surface = null;
+  if (readingFlow === 'continuous') surface = continuousPageNodes.get(Number(page))?.surface || null;
+  else if (Number(page) === Number(currentPage)) surface = primaryPageSurface;
+  if (!surface) return;
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+  const surfaceRect = surface.getBoundingClientRect();
+  const targetY = surfaceRect.top + surfaceRect.height * Math.min(1, Math.max(0, Number(ratio) || 0));
+  const desiredOffset = Math.min(300, Math.max(150, wrapRect.height * 0.34));
+  primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + targetY - (wrapRect.top + desiredOffset));
+  if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+  persistDocumentState();
+}
+
 function showEquationBookmarkCue(page, ratio) {
   let surface = null;
   if (readingFlow === 'continuous') surface = continuousPageNodes.get(Number(page))?.surface || null;
@@ -7230,31 +7255,35 @@ function showEquationBookmarkCue(page, ratio) {
   cue.className = 'equation-bookmark-cue';
   cue.setAttribute('aria-hidden', 'true');
   cue.style.top = `${Math.min(98, Math.max(2, Number(ratio || 0) * 100))}%`;
-  cue.textContent = '➜';
+  cue.textContent = '→';
   surface.append(cue);
   requestAnimationFrame(() => cue.classList.add('is-visible'));
   window.setTimeout(() => cue.classList.add('is-fading'), 1200);
   window.setTimeout(() => cue.remove(), 2100);
 }
 
+function equationBookmarkRatio(bookmark) {
+  if (Number.isFinite(Number(bookmark?.ratio))) return Math.min(1, Math.max(0, Number(bookmark.ratio)));
+  const page = Number(bookmark?.page) || 0;
+  const wanted = normalizeEquationLatexForSearch(bookmark?.latex || '');
+  if (!wanted) return null;
+  const candidates = [currentOcrResult, ...(ocrHistory || [])];
+  for (const item of candidates) {
+    if (Number(item?.page) !== page || !Number.isFinite(Number(item?.ratio))) continue;
+    if (normalizeEquationLatexForSearch(item?.latex || '') === wanted) return Math.min(1, Math.max(0, Number(item.ratio)));
+  }
+  return null;
+}
+
 async function goToEquationBookmark(bookmark) {
   const page = Math.min(Math.max(1, Number(bookmark?.page) || 1), pdfDoc?.numPages || 1);
-  const ratio = Math.min(1, Math.max(0, Number(bookmark?.ratio) || 0));
+  const resolvedRatio = equationBookmarkRatio(bookmark);
+  const ratio = resolvedRatio === null ? 0 : resolvedRatio;
   await goToLocation(page, ratio, { contextLead: false });
-  let surface = null;
-  if (readingFlow === 'continuous') surface = continuousPageNodes.get(page)?.surface || null;
-  else surface = primaryPageSurface;
-  if (surface) {
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    const wrapRect = primaryCanvasWrap.getBoundingClientRect();
-    const surfaceRect = surface.getBoundingClientRect();
-    const targetY = surfaceRect.top + surfaceRect.height * ratio;
-    const desiredOffset = Math.min(300, Math.max(150, wrapRect.height * 0.34));
-    primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + targetY - (wrapRect.top + desiredOffset));
-    if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
-    persistDocumentState();
+  if (resolvedRatio !== null) {
+    await positionTargetAtReadingLead(page, ratio);
+    showEquationBookmarkCue(page, ratio);
   }
-  showEquationBookmarkCue(page, ratio);
 }
 
 function renderBookmarks() {
@@ -7336,7 +7365,7 @@ function addCurrentBookmark() {
     created: Date.now(),
     type: 'page'
   };
-  bookmarks.push(item); editingBookmarkId = item.id;
+  bookmarks.push(item); editingBookmarkId = null;
   persistDocumentState(); renderBookmarks();
 }
 
@@ -7349,7 +7378,7 @@ function saveCurrentOcrAsEquation() {
     title: '', note: '', color: 'purple', created: Date.now(), type: 'equation',
     latex: String(ocrLatexPreview?.value || currentOcrResult.latex).trim(), preview: currentOcrResult.preview || ''
   };
-  bookmarks.push(item); editingBookmarkId = item.id;
+  bookmarks.push(item); editingBookmarkId = null;
   persistDocumentState(); renderBookmarks();
 }
 
@@ -7720,17 +7749,17 @@ function normalizeEquationLatexForSearch(value) {
 function equationSearchEntries() {
   const items = [];
   const seen = new Set();
-  const add = (latex, page, source, created = 0) => {
+  const add = (latex, page, source, created = 0, ratio = null) => {
     const clean = String(latex || '').trim();
     if (!clean) return;
     const key = `${Number(page)||0}:${normalizeEquationLatexForSearch(clean)}`;
     if (seen.has(key)) return;
     seen.add(key);
-    items.push({ latex: clean, page: Number(page) || 1, source, created: Number(created)||0 });
+    items.push({ latex: clean, page: Number(page) || 1, ratio: Number.isFinite(Number(ratio)) ? Math.min(1, Math.max(0, Number(ratio))) : null, source, created: Number(created)||0 });
   };
-  for (const item of ocrHistory || []) add(item?.latex, item?.page, t('OCR history','OCR 历史'), item?.created);
-  for (const item of bookmarks || []) if (item?.type === 'equation') add(item?.latex, item?.page, t('Bookmarked equation','已加书签公式'), item?.created);
-  if (currentOcrResult?.latex) add(currentOcrResult.latex, currentOcrResult.page, t('Current extraction','当前提取'), currentOcrResult.created);
+  for (const item of ocrHistory || []) add(item?.latex, item?.page, t('OCR history','OCR 历史'), item?.created, item?.ratio);
+  for (const item of bookmarks || []) if (item?.type === 'equation') add(item?.latex, item?.page, t('Bookmarked equation','已加书签公式'), item?.created, item?.ratio);
+  if (currentOcrResult?.latex) add(currentOcrResult.latex, currentOcrResult.page, t('Current extraction','当前提取'), currentOcrResult.created, currentOcrResult.ratio);
   return items.sort((a,b) => a.page - b.page || a.created - b.created);
 }
 
@@ -7769,7 +7798,7 @@ function commandPaletteEntities() {
   }
   for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');
   for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => runFindAllOccurrences(item.symbol), item.meaning,'symbol');
-  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, 0, { contextLead: false }), `${item.note||''} ${item.latex||''}`,'bookmark');
+  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => item.type === 'equation' ? goToEquationBookmark(item) : goToLocation(item.page, 0, { contextLead: false }), `${item.note||''} ${item.latex||''}`,'bookmark');
   for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
   return out;
 }
