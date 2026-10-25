@@ -88,12 +88,6 @@ const backlinksList = el('backlinks-list');
 const backlinksEmpty = el('backlinks-empty');
 const backlinksCount = el('backlinks-count');
 const backlinksContext = el('backlinks-context');
-const backlinksFilter = el('backlinks-filter');
-const readingSessionsList = el('reading-sessions-list');
-const readingSessionsEmpty = el('reading-sessions-empty');
-const readingSessionsCount = el('reading-sessions-count');
-const readingSessionName = el('reading-session-name');
-const readingSessionSave = el('reading-session-save');
 const undoList = el('undo-list');
 const undoEmpty = el('undo-empty');
 const undoCount = el('undo-count');
@@ -134,7 +128,6 @@ const themeIcon = el('theme-icon');
 const themeLabel = el('theme-label');
 const referencePreview = el('reference-preview');
 const rightSidebar = el('right-sidebar');
-const workspaceJump = el('workspace-jump');
 const selectionCard = el('selection-card');
 const selectionHelp = el('selection-help');
 const selectionPageChip = el('selection-page-chip');
@@ -174,14 +167,13 @@ const ocrFormatUndo = el('ocr-format-undo');
 const ocrRenderedPreview = el('ocr-rendered-preview');
 const copyOcrLatex = el('copy-ocr-latex');
 const ocrToNote = el('ocr-to-note');
-const tryImageOcrButton = el('try-image-ocr');
-const tryPdfVectorButton = el('try-pdf-vector');
 const clearOcrResultButton = el('clear-ocr-result');
 const ocrHistoryList = el('ocr-history-list');
 const ocrHistoryEmpty = el('ocr-history-empty');
 const ocrHistoryCount = el('ocr-history-count');
 const ocrHistoryToggle = el('ocr-history-toggle');
 const ocrEngineSelect = el('ocr-engine-mode');
+const ocrSourceSwitchButton = el('ocr-source-switch');
 const ocrRetryButton = el('ocr-retry');
 const ocrCapability = el('ocr-capability');
 const formulaExtractionSelect = el('formula-extraction-mode');
@@ -934,7 +926,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -1836,13 +1828,20 @@ function refreshOcrUI() {
     ocrSourceBadge.textContent = !has ? '—' : source === 'vector' ? t('PDF vector', 'PDF 矢量') : t('Image OCR', '图像 OCR');
     ocrSourceBadge.dataset.source = source;
   }
-  if (tryImageOcrButton) {
+  if (ocrSourceSwitchButton) {
     const source = has ? (currentOcrResult.source || 'image') : '';
-    tryImageOcrButton.classList.toggle('is-hidden', !has || source !== 'vector' || !currentOcrResult?.preview);
-  }
-  if (tryPdfVectorButton) {
-    const source = has ? (currentOcrResult.source || 'image') : '';
-    tryPdfVectorButton.classList.toggle('is-hidden', !has || source !== 'image' || !currentOcrResult?.vectorAlternative);
+    const canSwitchToImage = has && source === 'vector' && Boolean(currentOcrResult?.preview);
+    const canSwitchToVector = has && source === 'image' && Boolean(currentOcrResult?.vectorAlternative);
+    ocrSourceSwitchButton.classList.toggle('is-hidden', !canSwitchToImage && !canSwitchToVector);
+    if (canSwitchToImage) {
+      ocrSourceSwitchButton.textContent = t('Compare Image OCR', '对照图像 OCR');
+      ocrSourceSwitchButton.dataset.targetSource = 'image';
+    } else if (canSwitchToVector) {
+      ocrSourceSwitchButton.textContent = t('Compare PDF vector', '对照 PDF 矢量');
+      ocrSourceSwitchButton.dataset.targetSource = 'vector';
+    } else {
+      ocrSourceSwitchButton.removeAttribute('data-target-source');
+    }
   }
   if (has && currentOcrResult.preview) {
     ocrPreview.src = currentOcrResult.preview;
@@ -6161,13 +6160,11 @@ function proofContextForLocation(page, ratio) {
 function renderBacklinks() {
   if (!backlinksList || !backlinksEmpty || !backlinksCount || !backlinksContext) return;
   backlinksList.replaceChildren();
-  const mode=backlinksFilter?.value || 'all';
-  const visible=mode==='all'?backlinkEntries:backlinkEntries.filter((entry)=>entry.kind===mode);
-  backlinksCount.textContent = mode==='all' ? String(backlinkEntries.length) : `${visible.length}/${backlinkEntries.length}`;
+  const visible=backlinkEntries;
+  backlinksCount.textContent = String(backlinkEntries.length);
   backlinksContext.textContent = backlinkContext?.label ? t(`References to ${backlinkContext.label}`, `引用 ${backlinkContext.label} 的位置`) : '';
   backlinksEmpty.classList.toggle('is-hidden', visible.length > 0);
-  if (!visible.length && backlinkEntries.length) backlinksEmpty.textContent=t('No backlinks match this filter.','没有符合此筛选条件的反向引用。');
-  else backlinksEmpty.textContent=t('Follow an equation, citation, theorem, or section reference to see its backlinks.','跟随公式、文献、定理或章节引用后，可在这里查看反向引用。');
+  backlinksEmpty.textContent=t('Follow an equation, citation, theorem, or section reference to see its backlinks.','跟随公式、文献、定理或章节引用后，可在这里查看反向引用。');
   for (const entry of visible.slice(0, 120)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'backlink-item';
     const meta = document.createElement('span'); meta.className = 'backlink-meta';
@@ -7720,7 +7717,6 @@ function commandPaletteEntities() {
   for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => runFindAllOccurrences(item.symbol), item.meaning,'symbol');
   for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, item.type === 'page' ? (Number(item.ratio) || 0) : 0, { contextLead: false }), `${item.note||''} ${item.latex||''}`,'bookmark');
   for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
-  for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name,'session');
   return out;
 }
 
@@ -7849,7 +7845,6 @@ function commandActions() {
     { isCommand:true, kind:t('Command','命令'), label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
     { isCommand:true, kind:t('Command','命令'), label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
     { isCommand:true, kind:t('Command','命令'), label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
-    { isCommand:true, kind:t('Command','命令'), label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
     { isCommand:true, kind:t('Command','命令'), label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
     { isCommand:true, kind:t('Command','命令'), label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() }
   ].filter((item) => !item.needsPdf || pdfDoc);
@@ -7924,8 +7919,6 @@ searchFuzzy?.addEventListener('change', () => { persistDocumentState(); if (sear
 searchEquations?.addEventListener('change', () => { if (searchInput.value.trim()) searchPdf(searchInput.value); });
 glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
 glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
-readingSessionSave?.addEventListener('click', saveNamedReadingSession);
-readingSessionName?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); saveNamedReadingSession(); } });
 undoClear?.addEventListener('click', () => { undoHistory = []; renderUndoHistory(); persistDocumentState(); });
 searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState(); });
 [searchMatchCase, searchWholeWord].forEach((node) => node?.addEventListener('change', () => { persistSearchPreferences(); if (pdfDoc && searchInput.value.trim()) searchPdf(searchInput.value); }));
@@ -7957,9 +7950,13 @@ ocrLatexPreview?.addEventListener('input', () => {
   syncCurrentOcrLatexValue(ocrLatexPreview.value);
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
-tryImageOcrButton?.addEventListener('click', tryImageOcrForCurrentResult);
-tryPdfVectorButton?.addEventListener('click', () => {
-  if (!currentOcrResult?.vectorAlternative) return;
+ocrSourceSwitchButton?.addEventListener('click', async () => {
+  if (!currentOcrResult) return;
+  if (ocrSourceSwitchButton.dataset.targetSource === 'image') {
+    await tryImageOcrForCurrentResult();
+    return;
+  }
+  if (ocrSourceSwitchButton.dataset.targetSource !== 'vector' || !currentOcrResult.vectorAlternative) return;
   const item = {
     page: currentOcrResult.page,
     kind: currentOcrResult.kind,
@@ -8017,7 +8014,6 @@ referenceCanvasWrap.addEventListener('scroll', () => {
 }, { passive: true });
 
 document.querySelectorAll('.map-filter[data-map-target]').forEach((input) => input.addEventListener('input', () => applyDocumentMapFilter(input)));
-backlinksFilter?.addEventListener('change', renderBacklinks);
 documentReadingStatus?.addEventListener('change',()=>{ documentReadingState=['unread','reading','finished'].includes(documentReadingStatus.value)?documentReadingStatus.value:'unread'; renderDocumentMetadata(); persistDocumentState(); });
 documentTagsInput?.addEventListener('change',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
 documentTagsInput?.addEventListener('blur',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
@@ -8025,8 +8021,7 @@ documentPersonalNoteInput?.addEventListener('input',()=>{ documentPersonalNote=d
 
 function rightPanelNavigationTop(section) {
   if (!rightSidebar || !section) return 0;
-  const navigator = rightSidebar.querySelector('.workspace-navigator');
-  const stickyHeight = navigator?.getBoundingClientRect().height || 0;
+  const stickyHeight = 0;
   const breathingRoom = 18;
   return Math.max(0, section.offsetTop - stickyHeight - breathingRoom);
 }
@@ -8035,20 +8030,6 @@ function scrollRightPanelToSection(section, behavior = 'smooth') {
   if (!rightSidebar || !section) return;
   rightSidebar.scrollTo({ top: rightPanelNavigationTop(section), behavior });
 }
-
-workspaceJump?.addEventListener('change', () => {
-  const sectionId = workspaceJump.value;
-  if (!sectionId) return;
-  const section = el(sectionId);
-  if (!section) { workspaceJump.value = ''; return; }
-  expandWorkspaceSection(sectionId);
-  requestAnimationFrame(() => scrollRightPanelToSection(section));
-  section.classList.remove('workspace-jump-pulse');
-  void section.offsetWidth;
-  section.classList.add('workspace-jump-pulse');
-  setTimeout(() => section.classList.remove('workspace-jump-pulse'), 900);
-  workspaceJump.value = '';
-});
 
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));

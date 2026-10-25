@@ -200,7 +200,7 @@
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
-          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。矩形公式默认使用本地图像 OCR，并可手动使用 PDF 矢量提取进行对照。公式图像在浏览器内处理，不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website.</p>
+          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and reading state locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与阅读状态，下次可从离开的位置继续。矩形公式默认使用本地图像 OCR，并可手动使用 PDF 矢量提取进行对照。公式图像在浏览器内处理，不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and reading state locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website.</p>
         </section>
 
         <div class="pdf-workspace is-hidden" id="pdf-workspace">
@@ -248,36 +248,6 @@
 
     <div class="sidebar-resizer sidebar-resizer-right" id="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize reading workspace"></div>
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
-      <div class="workspace-navigator" aria-label="Workspace tools">
-        <label for="workspace-jump" data-en="Workspace" data-zh="工作区">Workspace</label>
-        <select id="workspace-jump" aria-label="Jump to workspace tool">
-          <option value="" selected disabled hidden data-en="Jump to" data-zh="跳转到">Jump to</option>
-          <optgroup label="View">
-            <option value="display-section" data-en="Display" data-zh="显示">Display</option>
-            <option value="document-info-section" data-en="Document info" data-zh="文档信息">Document info</option>
-          </optgroup>
-          <optgroup label="Formula">
-            <option value="ocr-section" data-en="Formula OCR" data-zh="公式 OCR">Formula OCR</option>
-            <option value="symbol-glossary-section" data-en="Symbol glossary" data-zh="符号表">Symbol glossary</option>
-          </optgroup>
-          <optgroup label="Notes">
-            <option value="selection-section" data-en="Selection" data-zh="选区">Selection</option>
-            <option value="note-section" data-en="Page note" data-zh="页注">Page note</option>
-            <option value="annotations-section" data-en="Annotations" data-zh="批注">Annotations</option>
-          </optgroup>
-          <optgroup label="Navigation">
-            <option value="backlinks-section" data-en="Backlinks" data-zh="反向引用">Backlinks</option>
-            <option value="reading-sessions-section" data-en="Reading sessions" data-zh="阅读会话">Reading sessions</option>
-            <option value="reading-trail-section" data-en="Reading trail" data-zh="阅读轨迹">Reading trail</option>
-            <option value="reference-section" data-en="Reference view" data-zh="参考视图">Reference view</option>
-            <option value="shortcuts-section" data-en="Shortcuts" data-zh="快捷键">Shortcuts</option>
-          </optgroup>
-          <optgroup label="Safety">
-            <option value="undo-section" data-en="Recently deleted" data-zh="最近删除">Recently deleted</option>
-            <option value="recovery-section" data-en="Recovery" data-zh="恢复">Recovery</option>
-          </optgroup>
-        </select>
-      </div>
       <section class="workspace-section display-section" id="display-section">
         <div class="panel-heading">
           <span class="panel-heading-title"><span data-en="Display" data-zh="显示">Display</span><details class="compact-help compact-help-heading"><summary data-en-title="Display help" data-zh-title="显示帮助" aria-label="Display help">?</summary><div class="compact-help-body" data-en="Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops." data-zh="柔和暗色使用灰白文字以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops.</div></details></span>
@@ -348,7 +318,10 @@
               <option value="wasm" data-en="Texify · CPU/WASM q8" data-zh="Texify · CPU/WASM q8">Texify · CPU/WASM q8</option>
             </select>
           </label>
-          <button class="text-button" type="button" id="ocr-retry" data-en="Reset engine" data-zh="重置引擎" data-en-title="Unload the current OCR engine and preload a fresh one. Formula selection stays disabled until the engine is ready." data-zh-title="卸载当前 OCR 引擎并预加载新的引擎。引擎就绪前公式框选保持禁用。">Reset engine</button>
+          <details class="ocr-troubleshooting">
+            <summary data-en="Troubleshooting" data-zh="故障处理">Troubleshooting</summary>
+            <button class="text-button" type="button" id="ocr-retry" data-en="Reset OCR engine" data-zh="重置 OCR 引擎" data-en-title="Unload the current OCR engine and preload a fresh one. Formula selection stays disabled until the engine is ready." data-zh-title="卸载当前 OCR 引擎并预加载新的引擎。引擎就绪前公式框选保持禁用。">Reset OCR engine</button>
+          </details>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
         <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量可用于手动对照。">Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison.</div>
@@ -377,8 +350,7 @@
           <div class="ocr-actions">
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
-            <button class="secondary-action is-hidden" type="button" id="try-image-ocr" data-en="Try image OCR" data-zh="尝试图像 OCR">Try image OCR</button>
-            <button class="secondary-action is-hidden" type="button" id="try-pdf-vector" data-en="Try PDF vector" data-zh="尝试 PDF 矢量">Try PDF vector</button>
+            <button class="secondary-action is-hidden" type="button" id="ocr-source-switch">Compare source</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
         </div>
@@ -461,22 +433,8 @@
           <span class="count-badge" id="backlinks-count">0</span>
         </div>
         <div class="backlinks-context" id="backlinks-context"></div>
-        <select class="backlinks-filter" id="backlinks-filter" aria-label="Filter backlinks"><option value="all" data-en="All backlinks" data-zh="全部反向引用">All backlinks</option><option value="prose" data-en="Prose citations" data-zh="正文引用">Prose citations</option><option value="proof" data-en="Proof uses" data-zh="证明中的使用">Proof uses</option><option value="equation" data-en="Equation references" data-zh="公式引用">Equation references</option><option value="bibliography" data-en="Bibliography citations" data-zh="文献引用">Bibliography citations</option></select>
         <div class="backlinks-list" id="backlinks-list"></div>
         <div class="empty-panel" id="backlinks-empty" data-en="Follow an equation, citation, theorem, or section reference to see its backlinks." data-zh="跟随公式、文献、定理或章节引用后，可在这里查看反向引用。">Follow an equation, citation, theorem, or section reference to see its backlinks.</div>
-      </section>
-
-      <section class="workspace-section" id="reading-sessions-section">
-        <div class="panel-heading">
-          <span class="panel-heading-title"><span data-en="Reading sessions" data-zh="阅读会话">Reading sessions</span><details class="compact-help compact-help-heading"><summary data-en-title="Reading sessions help" data-zh-title="阅读会话帮助" aria-label="Reading sessions help">?</summary><div class="compact-help-body" data-en="Save a named workspace state such as Seminar prep. Restoring it changes navigation/view state only; notes and annotations are never rolled back." data-zh="保存命名的阅读工作区状态，例如“研讨会准备”。恢复时只改变导航与视图状态，不会回滚页注或批注。">Save a named workspace state such as Seminar prep. Restoring it changes navigation/view state only; notes and annotations are never rolled back.</div></details></span>
-          <span class="count-badge" id="reading-sessions-count">0</span>
-        </div>
-        <div class="session-save-row">
-          <input id="reading-session-name" type="text" autocomplete="off" data-en-placeholder="Session name" data-zh-placeholder="会话名称" placeholder="Session name">
-          <button class="secondary-action" type="button" id="reading-session-save" data-en="Save current" data-zh="保存当前状态">Save current</button>
-        </div>
-        <div class="reading-sessions-list" id="reading-sessions-list"></div>
-        <div class="empty-panel" id="reading-sessions-empty" data-en="Save a named reading workspace to return to it later." data-zh="保存一个命名阅读工作区，稍后可快速恢复。">Save a named reading workspace to return to it later.</div>
       </section>
 
       <section class="workspace-section" id="undo-section">
