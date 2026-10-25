@@ -42,7 +42,7 @@
     <div class="document-title" id="document-title" data-en="No PDF open" data-zh="尚未打开 PDF">No PDF open</div>
 
     <div class="header-actions">
-      <button class="icon-button" type="button" id="open-button" data-en-title="Open PDF · O" data-zh-title="打开 PDF · O" aria-label="Open PDF · O">Open</button>
+      <button class="icon-button" type="button" id="open-button" data-en="Open" data-zh="打开" data-en-title="Open PDF · O" data-zh-title="打开 PDF · O" aria-label="Open PDF · O">Open</button>
       <button class="icon-button language-button" type="button" id="theme-button" aria-label="Switch to dark mode" title="Switch to dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
       <button class="icon-button language-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文"><span aria-hidden="true">🌐</span><span id="language-label">中文</span></button>
       <a class="icon-button home-link" href="../tools.html" data-en="Tools" data-zh="工具">Tools</a>
@@ -56,18 +56,62 @@
       <div class="sidebar-tabs" role="tablist" aria-label="Document tools">
         <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录" data-en-title="Contents · C" data-zh-title="目录 · C">Contents</button>
         <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索" data-en-title="Search · F" data-zh-title="搜索 · F">Search</button>
-        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Saved" data-zh="收藏" data-en-title="Saved · S" data-zh-title="收藏 · S">Saved</button>
+        <button class="sidebar-tab" type="button" data-panel="bookmarks-panel" data-en="Bookmarks" data-zh="书签" data-en-title="Bookmarks · S" data-zh-title="书签 · S">Bookmarks</button>
         <button class="sidebar-tab" type="button" data-panel="history-panel" data-en="History" data-zh="历史" data-en-title="History · H" data-zh-title="历史 · H">History</button>
       </div>
 
       <section class="sidebar-panel is-active" id="outline-panel">
-        <div class="panel-heading">
-          <span data-en="Document structure" data-zh="文档结构">Document structure</span>
-          <span class="count-badge" id="outline-count">0</span>
-        </div>
-        <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
-        <p class="history-explainer is-hidden" id="outline-source"></p>
-        <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
+        <section class="workspace-section contents-section" id="contents-structure-section">
+          <div class="panel-heading">
+            <span data-en="Document structure" data-zh="文档结构">Document structure</span>
+            <span class="count-badge" id="outline-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-structure" type="search" autocomplete="off" data-map-target="outline-list" data-en-placeholder="Filter structure…" data-zh-placeholder="筛选结构…" placeholder="Filter structure…">
+          <div class="empty-panel" id="outline-empty" data-en="Open a PDF to see its outline." data-zh="打开 PDF 后可查看目录。">Open a PDF to see its outline.</div>
+          <p class="history-explainer is-hidden" id="outline-source"></p>
+          <nav class="outline-list" id="outline-list" aria-label="PDF outline"></nav>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-theorems-section">
+          <div class="panel-heading">
+            <span data-en="Theorems & definitions" data-zh="定理与定义">Theorems & definitions</span>
+            <span class="count-badge" id="structure-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-theorems" type="search" autocomplete="off" data-map-target="structure-index" data-en-placeholder="Filter theorems…" data-zh-placeholder="筛选定理…" placeholder="Filter theorems…">
+          <button class="text-button structure-build" id="build-structure-index" type="button" disabled data-en="Rebuild structure" data-zh="重新生成结构索引">Rebuild structure</button>
+          <div class="structure-index" id="structure-index"></div>
+          <div class="empty-panel" id="structure-empty" data-en="The theorem, definition, and proof index is prepared automatically for this document." data-zh="此文档的定理、定义与证明索引会自动生成。">The theorem, definition, and proof index is prepared automatically for this document.</div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-equations-section">
+          <div class="panel-heading">
+            <span data-en="Equations" data-zh="公式">Equations</span>
+            <span class="count-badge" id="equation-index-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-equations" type="search" autocomplete="off" data-map-target="equation-index" data-en-placeholder="Filter equations…" data-zh-placeholder="筛选公式…" placeholder="Filter equations…">
+          <div class="equation-index" id="equation-index"></div>
+          <div class="empty-panel" id="equation-index-empty" data-en="Expand this section to prepare the equation-label index." data-zh="展开此模块以生成公式编号索引。">Expand this section to prepare the equation-label index.</div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-bibliography-section">
+          <div class="panel-heading">
+            <span data-en="Bibliography" data-zh="参考文献">Bibliography</span>
+            <span class="count-badge" id="bibliography-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-bibliography" type="search" autocomplete="off" data-map-target="bibliography-index" data-en-placeholder="Filter references…" data-zh-placeholder="筛选文献…" placeholder="Filter references…">
+          <div class="bibliography-index" id="bibliography-index"></div>
+          <div class="empty-panel" id="bibliography-empty" data-en="Bibliography entries are detected automatically when numbered references are present." data-zh="存在编号参考文献时会自动检测条目。">Bibliography entries are detected automatically when numbered references are present.</div>
+        </section>
+
+        <section class="workspace-section contents-section" id="contents-annotations-section">
+          <div class="panel-heading">
+            <span data-en="Annotations" data-zh="批注">Annotations</span>
+            <span class="count-badge" id="map-annotations-count">0</span>
+          </div>
+          <input class="map-filter" id="map-filter-annotations" type="search" autocomplete="off" data-map-target="map-annotations-list" data-en-placeholder="Filter annotations…" data-zh-placeholder="筛选批注…" placeholder="Filter annotations…">
+          <div class="document-map-list" id="map-annotations-list"></div>
+          <div class="empty-panel" id="map-annotations-empty" data-en="Highlights and margin notes appear here." data-zh="高亮和页边注会显示在这里。">Highlights and margin notes appear here.</div>
+        </section>
       </section>
 
       <section class="sidebar-panel" id="search-panel">
@@ -80,6 +124,8 @@
           <div class="search-options">
             <label><input id="search-match-case" type="checkbox"> <span data-en="Match case" data-zh="区分大小写">Match case</span></label>
             <label><input id="search-whole-word" type="checkbox"> <span data-en="Whole word" data-zh="全词匹配">Whole word</span></label>
+            <label><input id="search-fuzzy" type="checkbox"> <span data-en="Fuzzy" data-zh="模糊">Fuzzy</span></label>
+            <label><input id="search-equations" type="checkbox"> <span data-en="Equations" data-zh="公式">Equations</span></label>
           </div>
           <p class="search-help" data-en="Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized." data-zh="默认不区分大小写，并规范化 Unicode 连字、软连字符与重复空白。">Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized.</p>
         </form>
@@ -93,7 +139,7 @@
           <button class="text-button" id="add-bookmark" type="button" disabled data-en="+ Current page" data-zh="+ 当前页">+ Current page</button>
         </div>
         <div class="bookmark-list" id="bookmark-list"></div>
-        <div class="empty-panel" id="bookmark-empty" data-en="Bookmark pages you want to return to." data-zh="收藏需要再次查看的页面。">Bookmark pages you want to return to.</div>
+        <div class="empty-panel" id="bookmark-empty" data-en="Bookmark pages and equations you want to return to." data-zh="为需要再次查看的页面和公式添加书签。">Bookmark pages and equations you want to return to.</div>
       </section>
 
       <section class="sidebar-panel" id="history-panel">
@@ -101,7 +147,12 @@
           <span data-en="Local library" data-zh="本地资料库">Local library</span>
           <span class="count-badge" id="history-count">0</span>
         </div>
-        <p class="history-explainer" data-en="PDFs and reading sessions cached on this device." data-zh="缓存在本设备上的 PDF 与阅读现场。">PDFs and reading sessions cached on this device.</p>
+        <p class="history-explainer" data-en="Stored locally on this device." data-zh="保存在本设备。">Stored locally on this device.</p>
+        <div class="library-tools">
+          <button class="text-button" id="export-reading-data" type="button" disabled data-en="Export reading data" data-zh="导出阅读数据">Export reading data</button>
+          <button class="text-button" id="import-reading-data" type="button" disabled data-en="Import" data-zh="导入">Import</button>
+          <input id="import-reading-input" type="file" accept="application/json,.json" hidden>
+        </div>
         <div class="history-list" id="history-list"></div>
         <div class="empty-panel" id="history-empty" data-en="Open a PDF once and MathReader will remember it here." data-zh="打开一次 PDF 后，MathReader 会把它记在这里。">Open a PDF once and MathReader will remember it here.</div>
       </section>
@@ -112,6 +163,7 @@
         <div class="toolbar-group">
           <button class="tool-button sidebar-toggle" type="button" id="left-toggle" aria-label="Toggle document navigation" title="Toggle document navigation">☰</button>
           <button class="tool-button sidebar-toggle both-panels-toggle" type="button" id="both-panels-toggle" data-en-title="Toggle both side panels · B" data-zh-title="同时展开/收起两侧栏 · B" aria-label="Toggle both side panels · B" title="Toggle both side panels · B">⇔</button>
+          <button class="tool-button" type="button" id="reading-back" disabled data-en-title="Back in reading trail" data-zh-title="返回阅读轨迹上一位置" aria-label="Back in reading trail" title="Back in reading trail">↶</button>
           <button class="tool-button" type="button" id="prev-page" disabled aria-label="Previous page" title="Previous page">←</button>
           <div class="page-control">
             <input id="page-number" type="number" min="1" value="1" disabled aria-label="Page number">
@@ -123,15 +175,11 @@
 
         <div class="toolbar-group toolbar-center">
           <button class="tool-button" type="button" id="zoom-out" disabled aria-label="Zoom out" title="Zoom out">−</button>
-          <button class="zoom-label" type="button" id="zoom-label" disabled title="Reset to fit width">Fit width</button>
+          <button class="zoom-label" type="button" id="zoom-label" disabled title="Switch Fit width / Fit page">Fit width</button>
           <button class="tool-button" type="button" id="zoom-in" disabled aria-label="Zoom in" title="Zoom in">+</button>
-          <button class="tool-button text-tool" type="button" id="fit-page" disabled data-en="Fit page" data-zh="适合页面">Fit page</button>
-          <button class="tool-button text-tool" type="button" id="flow-button" disabled data-en="Continuous" data-zh="连续阅读">Continuous</button>
         </div>
 
         <div class="toolbar-group toolbar-right">
-          <button class="tool-button text-tool ocr-tool-button" type="button" id="math-ocr-button" disabled data-en="Extract formula" data-zh="提取公式">Extract formula</button>
-          <button class="tool-button text-tool" type="button" id="pin-page" disabled data-en="Pin page" data-zh="固定此页">Pin page</button>
           <button class="tool-button sidebar-toggle" type="button" id="right-toggle" aria-label="Toggle workspace" title="Toggle workspace">▤</button>
         </div>
       </div>
@@ -157,7 +205,7 @@
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
-          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available as a fast fallback. Formula images are processed in your browser and are not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。矩形公式默认使用本地图像 OCR，并保留 PDF 矢量提取作为快速备用路径。公式图像在浏览器内处理，不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available as a fast fallback. Formula images are processed in your browser and are not uploaded to this website.</p>
+          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与完整阅读现场，下次可从离开的位置继续。矩形公式默认使用本地图像 OCR，并可手动使用 PDF 矢量提取进行对照。公式图像在浏览器内处理，不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and their reading sessions locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website.</p>
         </section>
 
         <div class="pdf-workspace is-hidden" id="pdf-workspace">
@@ -167,6 +215,7 @@
               <div class="page-surface" id="primary-page-surface">
                 <canvas id="pdf-canvas" aria-label="PDF page"></canvas>
                 <div class="textLayer" id="primary-text-layer" aria-label="Selectable PDF text"></div>
+                <div class="annotation-layer" id="primary-annotation-layer" aria-label="Reading annotations"></div>
                 <div class="ocr-select-layer" id="primary-ocr-layer" data-kind="primary" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
               <div class="continuous-stack is-hidden" id="continuous-stack" aria-label="Continuous PDF pages"></div>
@@ -186,6 +235,7 @@
               <div class="page-surface" id="reference-page-surface">
                 <canvas id="reference-canvas" aria-label="Pinned PDF page"></canvas>
                 <div class="textLayer" id="reference-text-layer" aria-label="Selectable pinned PDF text"></div>
+                <div class="annotation-layer" id="reference-annotation-layer" aria-label="Reading annotations"></div>
                 <div class="ocr-select-layer" id="reference-ocr-layer" data-kind="reference" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
             </div>
@@ -202,9 +252,39 @@
     </section>
 
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <div class="workspace-navigator" aria-label="Workspace tools">
+        <label for="workspace-jump" data-en="Workspace" data-zh="工作区">Workspace</label>
+        <select id="workspace-jump" aria-label="Jump to workspace tool">
+          <option value="" selected disabled hidden data-en="Jump to" data-zh="跳转到">Jump to</option>
+          <optgroup label="View">
+            <option value="display-section" data-en="Display" data-zh="显示">Display</option>
+            <option value="document-info-section" data-en="Document info" data-zh="文档信息">Document info</option>
+          </optgroup>
+          <optgroup label="Formula">
+            <option value="ocr-section" data-en="Formula extraction" data-zh="公式提取">Formula extraction</option>
+            <option value="symbol-glossary-section" data-en="Symbol glossary" data-zh="符号表">Symbol glossary</option>
+          </optgroup>
+          <optgroup label="Notes">
+            <option value="selection-section" data-en="Selection" data-zh="选区">Selection</option>
+            <option value="note-section" data-en="Page note" data-zh="页注">Page note</option>
+            <option value="annotations-section" data-en="Annotations" data-zh="批注">Annotations</option>
+          </optgroup>
+          <optgroup label="Navigation">
+            <option value="backlinks-section" data-en="Backlinks" data-zh="反向引用">Backlinks</option>
+            <option value="reading-sessions-section" data-en="Reading sessions" data-zh="阅读会话">Reading sessions</option>
+            <option value="reading-trail-section" data-en="Reading trail" data-zh="阅读轨迹">Reading trail</option>
+            <option value="reference-section" data-en="Reference view" data-zh="参考视图">Reference view</option>
+            <option value="shortcuts-section" data-en="Shortcuts" data-zh="快捷键">Shortcuts</option>
+          </optgroup>
+          <optgroup label="Safety">
+            <option value="undo-section" data-en="Recently deleted" data-zh="最近删除">Recently deleted</option>
+            <option value="recovery-section" data-en="Recovery" data-zh="恢复">Recovery</option>
+          </optgroup>
+        </select>
+      </div>
       <section class="workspace-section display-section" id="display-section">
         <div class="panel-heading">
-          <span data-en="Display" data-zh="显示">Display</span>
+          <span class="panel-heading-title"><span data-en="Display" data-zh="显示">Display</span><details class="compact-help compact-help-heading"><summary data-en-title="Display help" data-zh-title="显示帮助" aria-label="Display help">?</summary><div class="compact-help-body" data-en="Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops." data-zh="柔和暗色使用灰白文字以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark uses gray-white text to reduce glare. Display filters never alter formula-extraction crops.</div></details></span>
           <button class="text-button" type="button" id="reset-display" data-en="Reset" data-zh="重置">Reset</button>
         </div>
         <div class="display-setting">
@@ -239,15 +319,23 @@
           <input id="page-shadow" type="checkbox" checked>
           <span data-en="Page shadow" data-zh="页面阴影">Page shadow</span>
         </label>
-        <p class="display-note" data-en="Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter formula-extraction crops." data-zh="柔和暗色会使用灰白文字而非纯白，以降低眩光。显示滤镜不会改变公式提取使用的原始裁图。">Soft dark intentionally uses gray-white text rather than pure white to reduce glare. PDF display filters do not alter formula-extraction crops.</p>
       </section>
+      <section class="workspace-section" id="document-info-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Document info" data-zh="文档信息">Document info</span><details class="compact-help compact-help-heading"><summary aria-label="Document info help">?</summary><div class="compact-help-body" data-en="Local-only tags, reading status, and a personal note for this PDF." data-zh="仅保存在本机的标签、阅读状态和个人文档备注。">Local-only tags, reading status, and a personal note for this PDF.</div></details></span>
+        </div>
+        <label class="document-meta-field"><span data-en="Status" data-zh="状态">Status</span><select id="document-reading-status"><option value="unread" data-en="Unread" data-zh="未读">Unread</option><option value="reading" data-en="Reading" data-zh="阅读中">Reading</option><option value="finished" data-en="Finished" data-zh="已完成">Finished</option></select></label>
+        <label class="document-meta-field"><span data-en="Tags" data-zh="标签">Tags</span><input id="document-tags" type="text" autocomplete="off" data-en-placeholder="Yamabe, PMT, seminar" data-zh-placeholder="Yamabe, PMT, seminar" placeholder="Yamabe, PMT, seminar"></label>
+        <label class="document-meta-field"><span data-en="Personal document note" data-zh="个人文档备注">Personal document note</span><textarea id="document-personal-note" rows="4" data-en-placeholder="Why this paper matters, what to revisit…" data-zh-placeholder="这篇论文的重要性、需要回看的内容……" placeholder="Why this paper matters, what to revisit…"></textarea></label>
+        <div class="document-meta-summary" id="document-meta-summary"></div>
+      </section>
+
       <section class="workspace-section ocr-section" id="ocr-section">
         <div class="panel-heading">
-          <span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span>
+          <span class="panel-heading-title"><span data-en="Formula extraction" data-zh="公式提取">Formula extraction</span><details class="compact-help compact-help-heading"><summary data-en-title="Formula extraction help" data-zh-title="公式提取帮助" aria-label="Formula extraction help">?</summary><div class="compact-help-body" data-en="Image OCR (Texify) is the default because it handles two-dimensional formula layout. PDF vector is a fast local manual-comparison path for text-bearing PDFs. Formula OCR is not a reliable structured parser for algebraic or commutative diagrams." data-zh="默认使用 Texify 图像 OCR，因为它更适合二维公式排版。对于含文本层的 PDF，PDF 矢量提取是快速的本地手动对照路径。公式 OCR 不能可靠地把代数图或交换图解析为结构化对象。">Image OCR (Texify) is the default because it handles two-dimensional formula layout. PDF vector is a fast local manual-comparison path for text-bearing PDFs. Formula OCR is not a reliable structured parser for algebraic or commutative diagrams.</div></details></span>
           <span class="page-chip" id="ocr-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="ocr-help" data-en="Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs." data-zh="在公式周围拖出矩形。默认使用 Texify 图像 OCR，因为它更适合二维数学排版；对于含文本层的 PDF，PDF 矢量提取仍作为快速本地备用与对照路径。">Drag a rectangle around one formula. Image OCR (Texify) is the default extraction method because it handles two-dimensional mathematical layout more naturally. PDF vector remains available as a fast local fallback and comparison path for text-bearing PDFs.</p>
-        <p class="display-note" data-en="Formula OCR recognizes equations and mathematical text; it does not reliably interpret algebraic or commutative diagrams as structured objects." data-zh="公式 OCR 用于识别公式与数学文本；它不能可靠地把代数图、交换图等图示解析成结构化对象。">Formula OCR recognizes equations and mathematical text; it does not reliably interpret algebraic or commutative diagrams as structured objects.</p>
+        <p class="workspace-copy compact-instruction" id="ocr-help" data-en="Drag a rectangle around a formula." data-zh="在公式周围拖出矩形。">Drag a rectangle around a formula.</p>
         <div class="ocr-engine-controls">
           <label>
             <span data-en="Default extraction" data-zh="默认提取方式">Default extraction</span>
@@ -259,24 +347,37 @@
           <label>
             <span data-en="Image OCR engine" data-zh="图像 OCR 引擎">Image OCR engine</span>
             <select id="ocr-engine-mode">
-              <option value="official" data-en="Recommended · Texify CPU" data-zh="推荐 · Texify CPU">Recommended · Texify CPU</option>
-              <option value="webgpu" data-en="Texify · WebGPU q4f16" data-zh="Texify · WebGPU q4f16">Texify · WebGPU q4f16</option>
-              <option value="wasm" data-en="Texify · CPU q8" data-zh="Texify · CPU q8">Texify · CPU q8</option>
+              <option value="webgpu" data-en="Default · WebGPU → CPU fallback" data-zh="默认 · WebGPU → CPU 备用">Default · WebGPU → CPU fallback</option>
+              <option value="official" data-en="Compatibility · Texify CPU" data-zh="兼容模式 · Texify CPU">Compatibility · Texify CPU</option>
+              <option value="wasm" data-en="Texify · CPU/WASM q8" data-zh="Texify · CPU/WASM q8">Texify · CPU/WASM q8</option>
             </select>
           </label>
-          <button class="text-button" type="button" id="ocr-retry" data-en="Reload" data-zh="重载" data-en-title="Reload image OCR engine" data-zh-title="重新加载图像 OCR 引擎">Reload</button>
+          <button class="text-button" type="button" id="ocr-retry" data-en="Reset engine" data-zh="重置引擎" data-en-title="Unload the current OCR engine. The next image extraction reloads it; use this only if OCR initialization is stuck or failed." data-zh-title="卸载当前 OCR 引擎。下一次图像提取时会重新加载；仅在 OCR 初始化卡住或失败时使用。">Reset engine</button>
         </div>
         <div class="ocr-capability" id="ocr-capability"></div>
-        <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available as a fast fallback." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量保留为快速备用路径。">Ready · Image OCR is the default formula extractor. PDF vector remains available as a fast fallback.</div>
+        <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量可用于手动对照。">Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison.</div>
         <div class="ocr-processing is-hidden" id="ocr-processing" role="status" aria-live="polite" aria-atomic="true">
           <span class="spinner" aria-hidden="true"></span>
           <span class="ocr-processing-copy"><strong data-en="Processing formula" data-zh="正在处理公式">Processing formula</strong><span id="ocr-processing-text" data-en="Processing…" data-zh="处理中…">Processing…</span></span>
         </div>
         <div class="ocr-result is-hidden" id="ocr-result">
-          <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span></div>
+          <div class="ocr-result-meta"><span class="source-badge" id="ocr-source-badge">—</span><details class="compact-help compact-help-heading ocr-result-help"><summary data-en-title="Extraction result help" data-zh-title="提取结果帮助" aria-label="Extraction result help">?</summary><div class="compact-help-body" data-en="Image OCR is preferred for formula rectangles. PDF vector is available for manual comparison. Results remain editable and should be checked before reuse." data-zh="矩形公式优先使用图像 OCR。PDF 矢量可用于手动对照。结果均可编辑，复用前应核对。">Image OCR is preferred for formula rectangles. PDF vector is available for manual comparison. Results remain editable and should be checked before reuse.</div></details><button class="text-button ocr-save-equation" type="button" id="save-ocr-equation" data-en="Save equation" data-zh="收藏公式">Save equation</button></div>
           <div class="ocr-preview-wrap"><img id="ocr-preview" alt="Selected formula crop"></div>
           <label data-en="Extracted LaTeX · editable" data-zh="提取出的 LaTeX · 可编辑">Extracted LaTeX · editable</label>
+          <div class="ocr-latex-tools">
+            <select id="ocr-format-mode" class="ocr-format-select" aria-label="LaTeX formatting" data-en-title="Apply a one-click LaTeX cleanup to the current extraction." data-zh-title="对当前提取结果应用一键 LaTeX 整理。">
+              <option value="" selected disabled hidden data-en="Improve LaTeX" data-zh="改进 LaTeX">Improve LaTeX</option>
+              <option value="auto" data-en="Auto" data-zh="自动">Auto</option>
+              <option value="align" data-en="Align" data-zh="对齐">Align</option>
+              <option value="gathered" data-en="Centered" data-zh="居中">Centered</option>
+              <option value="single-line" data-en="Single line" data-zh="单行">Single line</option>
+              <option value="original" data-en="Original" data-zh="原始">Original</option>
+            </select>
+            <button class="secondary-action ocr-format-undo" type="button" id="ocr-format-undo" data-en="Undo format" data-zh="撤销整理">Undo format</button>
+          </div>
           <textarea id="ocr-latex-preview" class="ocr-latex-editor" rows="4" spellcheck="false" aria-label="Extracted LaTeX"></textarea>
+          <label data-en="Rendered preview" data-zh="渲染预览">Rendered preview</label>
+          <div id="ocr-rendered-preview" class="ocr-rendered-preview is-hidden" aria-live="polite"></div>
           <div class="ocr-actions">
             <button class="secondary-action" type="button" id="copy-ocr-latex" data-en="Copy LaTeX" data-zh="复制 LaTeX">Copy LaTeX</button>
             <button class="secondary-action" type="button" id="ocr-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
@@ -284,22 +385,21 @@
             <button class="secondary-action is-hidden" type="button" id="try-pdf-vector" data-en="Try PDF vector" data-zh="尝试 PDF 矢量">Try PDF vector</button>
             <button class="secondary-action" type="button" id="clear-ocr-result" data-en="Clear" data-zh="清除">Clear</button>
           </div>
-          <p class="selection-caveat" data-en="Image OCR is the default for formula rectangles. PDF vector is faster and deterministic when embedded text is clean, and is used automatically if image OCR fails. Both outputs remain editable and should be checked before reuse." data-zh="矩形公式默认使用图像 OCR。若 PDF 原生文本干净，PDF 矢量更快且确定性更高；当图像 OCR 失败时会自动使用它。两种结果都可编辑，复用前应核对。">Image OCR is the default for formula rectangles. PDF vector is faster and deterministic when embedded text is clean, and is used automatically if image OCR fails. Both outputs remain editable and should be checked before reuse.</p>
         </div>
         <div class="ocr-history-block">
           <div class="panel-heading ocr-history-heading"><span data-en="Recent formula extraction" data-zh="最近公式提取">Recent formula extraction</span><span class="count-badge" id="ocr-history-count">0</span></div>
           <div class="ocr-history-list" id="ocr-history-list"></div>
           <button class="ocr-history-toggle is-hidden" type="button" id="ocr-history-toggle" data-en="More" data-zh="更多">More</button>
-          <div class="empty-panel" id="ocr-history-empty" data-en="Extracted formulas from this PDF will be remembered here." data-zh="这份 PDF 中提取过的公式会保存在这里。">Extracted formulas from this PDF will be remembered here.</div>
+          <div class="empty-panel" id="ocr-history-empty" data-en="Recent results appear here." data-zh="最近结果显示在这里。">Recent results appear here.</div>
         </div>
       </section>
 
       <section class="workspace-section selection-section" id="selection-section">
         <div class="panel-heading">
-          <span data-en="Selection" data-zh="选区">Selection</span>
+          <span class="panel-heading-title"><span data-en="Selection" data-zh="选区">Selection</span><details class="compact-help compact-help-heading"><summary data-en-title="Selection help" data-zh-title="选区帮助" aria-label="Selection help">?</summary><div class="compact-help-body" data-en="LaTeX β is reconstructed from ordinary text selection. For formulas, rectangle Formula extraction is more reliable." data-zh="LaTeX β 根据普通文字选区重建。公式请优先使用矩形“公式提取”。">LaTeX β is reconstructed from ordinary text selection. For formulas, rectangle Formula extraction is more reliable.</div></details></span>
           <span class="page-chip" id="selection-page-chip">—</span>
         </div>
-        <p class="workspace-copy" id="selection-help" data-en="Drag across text on the PDF. MathReader will expose the PDF text and a best-effort LaTeX form here." data-zh="在 PDF 上拖选文字。MathReader 会在这里显示 PDF 文本以及尽力转换的 LaTeX。">Drag across text on the PDF. MathReader will expose the PDF text and a best-effort LaTeX form here.</p>
+        <p class="workspace-copy compact-instruction" id="selection-help" data-en="Select PDF text." data-zh="选择 PDF 文字。">Select PDF text.</p>
         <div class="selection-card is-hidden" id="selection-card">
           <label data-en="PDF text" data-zh="PDF 文本">PDF text</label>
           <pre id="selection-text-preview"></pre>
@@ -309,29 +409,117 @@
             <button class="secondary-action" type="button" id="copy-selection-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
             <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
             <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+            <button class="secondary-action" type="button" id="selection-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
+            <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin note" data-zh="页边注">Margin note</button>
+            <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
+            <button class="secondary-action" type="button" id="selection-find-all" data-en="Find all occurrences" data-zh="查找全部出现位置">Find all occurrences</button>
+            <button class="secondary-action" type="button" id="selection-to-glossary" data-en="Add to glossary" data-zh="加入符号表">Add to glossary</button>
           </div>
-          <p class="selection-caveat" data-en="LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback." data-zh="LaTeX β 基于普通文本选区重建。对于公式，请使用矩形“公式提取”；默认使用图像 OCR，并保留 PDF 矢量作为快速备用路径。">LaTeX β is reconstructed from a normal text selection. For formulas, use rectangle Formula extraction; Image OCR is the default and PDF vector remains available as a fast fallback.</p>
         </div>
       </section>
 
       <section class="workspace-section" id="note-section">
         <div class="panel-heading">
-          <span data-en="Page note" data-zh="页注">Page note</span>
+          <span class="panel-heading-title"><span data-en="Page note" data-zh="页注">Page note</span><details class="compact-help compact-help-heading"><summary data-en-title="Page note help" data-zh-title="页注帮助" aria-label="Page note help">?</summary><div class="compact-help-body" data-en="PDF comments are read-only and come from the document. Your page note stays local. LaTeX: use \(...\) inline or \[...\] for display math." data-zh="PDF 原生批注只读并来自文档本身；你的页注保存在本地。LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">PDF comments are read-only and come from the document. Your page note stays local. LaTeX: use \(...\) inline or \[...\] for display math.</div></details></span>
           <span class="page-chip" id="note-page-chip">—</span>
         </div>
+        <div class="pdf-comments is-hidden" id="pdf-comments" aria-live="polite">
+          <div class="pdf-comments-heading">
+            <span data-en="PDF comments" data-zh="PDF 原生批注">PDF comments</span>
+            <span class="count-badge" id="pdf-comments-count">0</span>
+          </div>
+          <div class="pdf-comments-list" id="pdf-comments-list"></div>
+        </div>
         <textarea id="page-note" disabled data-en-placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX." data-zh-placeholder="记录与此页关联的笔记……可用 \(...\) 或 \[...\] 输入 LaTeX。" placeholder="Write a note tied to this page… Use \(...\) or \[...\] for LaTeX."></textarea>
-        <p class="note-latex-help" data-en="LaTeX is supported in notes: use \(...\) inline or \[...\] for display math." data-zh="页注支持 LaTeX：行内使用 \(...\)，陈列公式使用 \[...\]。">LaTeX is supported in notes: use \(...\) inline or \[...\] for display math.</p>
         <div class="note-preview is-hidden" id="note-preview" aria-label="Page note LaTeX preview"></div>
         <div class="save-state" id="note-save-state" data-en="Saved locally" data-zh="已保存到本地">Saved locally</div>
       </section>
 
+
+      <section class="workspace-section" id="annotations-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Annotations" data-zh="批注">Annotations</span><details class="compact-help compact-help-heading"><summary data-en-title="Annotation help" data-zh-title="批注帮助" aria-label="Annotation help">?</summary><div class="compact-help-body" data-en="Highlights and margin notes are position-anchored in this PDF and saved locally." data-zh="高亮与页边注会锚定到此 PDF 的具体位置，并保存在本地。">Highlights and margin notes are position-anchored in this PDF and saved locally.</div></details></span>
+          <span class="count-badge" id="annotation-count">0</span>
+        </div>
+        <div class="annotation-list" id="annotation-list"></div>
+        <div class="empty-panel" id="annotation-empty" data-en="Select text to create a highlight or margin note." data-zh="选择文字后可创建高亮或页边注。">Select text to create a highlight or margin note.</div>
+      </section>
+
+      <section class="workspace-section" id="symbol-glossary-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Symbol glossary" data-zh="符号表">Symbol glossary</span><details class="compact-help compact-help-heading"><summary data-en-title="Symbol glossary help" data-zh-title="符号表帮助" aria-label="Symbol glossary help">?</summary><div class="compact-help-body" data-en="Save a document-local symbol and its meaning, then find every occurrence in the PDF." data-zh="保存此文档中的符号及其含义，并查找它在全文中的全部出现位置。">Save a document-local symbol and its meaning, then find every occurrence in the PDF.</div></details></span>
+          <span class="count-badge" id="symbol-glossary-count">0</span>
+        </div>
+        <div class="glossary-add">
+          <input id="glossary-symbol" type="text" autocomplete="off" data-en-placeholder="Symbol, e.g. Ric or λ₁" data-zh-placeholder="符号，例如 Ric 或 λ₁" placeholder="Symbol, e.g. Ric or λ₁">
+          <input id="glossary-meaning" type="text" autocomplete="off" data-en-placeholder="Meaning" data-zh-placeholder="含义" placeholder="Meaning">
+          <button class="secondary-action" type="button" id="glossary-add" data-en="Add symbol" data-zh="添加符号">Add symbol</button>
+        </div>
+        <div class="symbol-glossary-list" id="symbol-glossary-list"></div>
+        <div class="empty-panel" id="symbol-glossary-empty" data-en="Select a symbol or enter one above." data-zh="选择一个符号，或在上方输入。">Select a symbol or enter one above.</div>
+      </section>
+
+      <section class="workspace-section" id="backlinks-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Backlinks" data-zh="反向引用">Backlinks</span><details class="compact-help compact-help-heading"><summary data-en-title="Backlinks help" data-zh-title="反向引用帮助" aria-label="Backlinks help">?</summary><div class="compact-help-body" data-en="Shows places in this PDF that cite the equation, bibliography item, or mathematical structure you just followed." data-zh="显示本文档中引用你刚刚跳转到的公式、参考文献或数学结构的位置。">Shows places in this PDF that cite the equation, bibliography item, or mathematical structure you just followed.</div></details></span>
+          <span class="count-badge" id="backlinks-count">0</span>
+        </div>
+        <div class="backlinks-context" id="backlinks-context"></div>
+        <select class="backlinks-filter" id="backlinks-filter" aria-label="Filter backlinks"><option value="all" data-en="All backlinks" data-zh="全部反向引用">All backlinks</option><option value="prose" data-en="Prose citations" data-zh="正文引用">Prose citations</option><option value="proof" data-en="Proof uses" data-zh="证明中的使用">Proof uses</option><option value="equation" data-en="Equation references" data-zh="公式引用">Equation references</option><option value="bibliography" data-en="Bibliography citations" data-zh="文献引用">Bibliography citations</option></select>
+        <div class="backlinks-list" id="backlinks-list"></div>
+        <div class="empty-panel" id="backlinks-empty" data-en="Follow an equation, citation, theorem, or section reference to see its backlinks." data-zh="跟随公式、文献、定理或章节引用后，可在这里查看反向引用。">Follow an equation, citation, theorem, or section reference to see its backlinks.</div>
+      </section>
+
+      <section class="workspace-section" id="reading-sessions-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Reading sessions" data-zh="阅读会话">Reading sessions</span><details class="compact-help compact-help-heading"><summary data-en-title="Reading sessions help" data-zh-title="阅读会话帮助" aria-label="Reading sessions help">?</summary><div class="compact-help-body" data-en="Save a named workspace state such as Seminar prep. Restoring it changes navigation/view state only; notes and annotations are never rolled back." data-zh="保存命名的阅读工作区状态，例如“研讨会准备”。恢复时只改变导航与视图状态，不会回滚页注或批注。">Save a named workspace state such as Seminar prep. Restoring it changes navigation/view state only; notes and annotations are never rolled back.</div></details></span>
+          <span class="count-badge" id="reading-sessions-count">0</span>
+        </div>
+        <div class="session-save-row">
+          <input id="reading-session-name" type="text" autocomplete="off" data-en-placeholder="Session name" data-zh-placeholder="会话名称" placeholder="Session name">
+          <button class="secondary-action" type="button" id="reading-session-save" data-en="Save current" data-zh="保存当前状态">Save current</button>
+        </div>
+        <div class="reading-sessions-list" id="reading-sessions-list"></div>
+        <div class="empty-panel" id="reading-sessions-empty" data-en="Save a named reading workspace to return to it later." data-zh="保存一个命名阅读工作区，稍后可快速恢复。">Save a named reading workspace to return to it later.</div>
+      </section>
+
+      <section class="workspace-section" id="undo-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Recently deleted" data-zh="最近删除">Recently deleted</span><details class="compact-help compact-help-heading"><summary data-en-title="Undo help" data-zh-title="撤销帮助" aria-label="Undo help">?</summary><div class="compact-help-body" data-en="Deleted bookmarks, annotations, glossary entries and cleared reading trails can be restored here. Ctrl/Cmd+Z restores the newest item when you are not typing." data-zh="删除的书签、批注、符号表条目以及被清空的阅读轨迹可在此恢复。未输入文字时，Ctrl/Cmd+Z 可恢复最新一项。">Deleted bookmarks, annotations, glossary entries and cleared reading trails can be restored here. Ctrl/Cmd+Z restores the newest item when you are not typing.</div></details></span>
+          <span class="count-badge" id="undo-count">0</span>
+        </div>
+        <div class="undo-list" id="undo-list"></div>
+        <div class="empty-panel" id="undo-empty" data-en="Nothing recently deleted." data-zh="暂无最近删除项目。">Nothing recently deleted.</div>
+        <button class="secondary-action undo-clear" type="button" id="undo-clear" disabled data-en="Clear history" data-zh="清空记录">Clear history</button>
+      </section>
+
+      <section class="workspace-section" id="recovery-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Recovery" data-zh="恢复">Recovery</span><details class="compact-help compact-help-heading"><summary data-en-title="Recovery help" data-zh-title="恢复帮助" aria-label="Recovery help">?</summary><div class="compact-help-body" data-en="MathReader keeps lightweight local snapshots of durable reading data independently of the cached PDF blob. Restoring a snapshot replaces local notes/bookmarks/annotations with that snapshot." data-zh="MathReader 会独立于 PDF 缓存文件保存轻量本地恢复快照。恢复快照会用该快照替换本地页注、书签与批注。">MathReader keeps lightweight local snapshots of durable reading data independently of the cached PDF blob. Restoring a snapshot replaces local notes/bookmarks/annotations with that snapshot.</div></details></span>
+          <span class="count-badge" id="recovery-count">0</span>
+        </div>
+        <div class="recovery-list" id="recovery-list"></div>
+        <div class="empty-panel" id="recovery-empty" data-en="Recovery snapshots appear automatically after your reading data changes." data-zh="阅读数据发生变化后会自动生成恢复快照。">Recovery snapshots appear automatically after your reading data changes.</div>
+      </section>
+
+      <section class="workspace-section" id="reading-trail-section">
+        <div class="panel-heading">
+          <span class="panel-heading-title"><span data-en="Reading trail" data-zh="阅读轨迹">Reading trail</span><details class="compact-help compact-help-heading"><summary data-en-title="Reading trail help" data-zh-title="阅读轨迹帮助" aria-label="Reading trail help">?</summary><div class="compact-help-body" data-en="MathReader saves where you were before navigation jumps. Newest entries appear first; click one to return." data-zh="MathReader 会保存导航跳转前的位置。最新条目在最上方；点击即可返回。">MathReader saves where you were before navigation jumps. Newest entries appear first; click one to return.</div></details></span>
+          <span class="count-badge" id="reading-trail-count">0</span>
+        </div>
+        <div class="reading-trail-list" id="reading-trail-list"></div>
+        <button class="reading-trail-toggle is-hidden" type="button" id="reading-trail-toggle" data-en="More" data-zh="更多">More</button>
+        <div class="empty-panel" id="reading-trail-empty" data-en="Follow a cross-reference or other navigation jump to start a reading trail." data-zh="跟随交叉引用或其他导航跳转后，这里会形成阅读轨迹。">Follow a cross-reference or other navigation jump to start a reading trail.</div>
+        <button class="secondary-action reading-trail-clear" type="button" id="reading-trail-clear" disabled data-en="Clear reading trail" data-zh="清空阅读轨迹">Clear reading trail</button>
+      </section>
+
       <section class="workspace-section" id="reference-section">
-        <div class="panel-heading"><span data-en="Reference view" data-zh="参考视图">Reference view</span></div>
-        <p class="workspace-copy" data-en="Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading." data-zh="固定当前页面后继续阅读其他位置；固定页会始终保留在当前证明旁边。">Pin the current page, then continue reading elsewhere. The pinned page remains beside the proof you are reading.</p>
+        <div class="panel-heading"><span class="panel-heading-title"><span data-en="Reference view" data-zh="参考视图">Reference view</span><details class="compact-help compact-help-heading"><summary data-en-title="Reference view help" data-zh-title="参考视图帮助" aria-label="Reference view help">?</summary><div class="compact-help-body" data-en="Pin a page to keep it visible while reading elsewhere." data-zh="固定页面后，可在阅读其他位置时继续保留它。">Pin a page to keep it visible while reading elsewhere.</div></details></span></div>
         <div class="reference-card" id="reference-card">
           <span class="reference-status" id="reference-status" data-en="No page pinned" data-zh="尚未固定页面">No page pinned</span>
           <button class="secondary-action" type="button" id="pin-from-sidebar" disabled data-en="Pin current page" data-zh="固定当前页">Pin current page</button>
         </div>
+        <div class="reference-stack" id="reference-stack" aria-label="Recent reference pages"></div>
       </section>
 
       <section class="workspace-section shortcuts" id="shortcuts-section">
@@ -339,16 +527,22 @@
         <dl>
           <div><dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd data-en="Scroll reading area" data-zh="滚动阅读区">Scroll reading area</dd></div>
           <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-en="Previous / next page" data-zh="上一页 / 下一页">Previous / next page</dd></div>
-          <div><dt><kbd>F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
+          <div><dt><kbd>Ctrl/⌘ F</kbd></dt><dd data-en="Search PDF" data-zh="搜索 PDF">Search PDF</dd></div>
           <div><dt><kbd>O</kbd></dt><dd data-en="Open PDF" data-zh="打开 PDF">Open PDF</dd></div>
-          <div><dt><kbd>M</kbd></dt><dd data-en="Rectangle formula extraction" data-zh="矩形公式提取">Rectangle formula extraction</dd></div>
+          <div><dt><kbd>F</kbd></dt><dd data-en="Toggle formula extraction" data-zh="切换公式提取">Toggle formula extraction</dd></div>
           <div><dt><kbd>C</kbd></dt><dd data-en="Open Contents" data-zh="打开目录">Open Contents</dd></div>
           <div><dt><kbd>H</kbd></dt><dd data-en="Open History" data-zh="打开历史">Open History</dd></div>
-          <div><dt><kbd>S</kbd></dt><dd data-en="Open Saved pages" data-zh="打开收藏页">Open Saved pages</dd></div>
+          <div><dt><kbd>S</kbd></dt><dd data-en="Open Bookmarks" data-zh="打开书签">Open Bookmarks</dd></div>
           <div><dt><kbd>D</kbd></dt><dd data-en="Open Display settings" data-zh="打开显示设置">Open Display settings</dd></div>
           <div><dt><kbd>N</kbd></dt><dd data-en="Open page note" data-zh="打开页注">Open page note</dd></div>
           <div><dt><kbd>P</kbd></dt><dd data-en="Pin current page" data-zh="固定当前页">Pin current page</dd></div>
+          <div><dt><kbd>L</kbd></dt><dd data-en="Toggle left sidebar" data-zh="展开/收起左侧栏">Toggle left sidebar</dd></div>
+          <div><dt><kbd>R</kbd></dt><dd data-en="Toggle right sidebar" data-zh="展开/收起右侧栏">Toggle right sidebar</dd></div>
           <div><dt><kbd>B</kbd></dt><dd data-en="Toggle both side panels" data-zh="同时展开/收起两侧栏">Toggle both side panels</dd></div>
+          <div><dt><kbd>Shift</kbd> <kbd>L</kbd></dt><dd data-en="Collapse all Contents groups" data-zh="收起目录中的全部分组">Collapse all Contents groups</dd></div>
+          <div><dt><kbd>Shift</kbd> <kbd>R</kbd></dt><dd data-en="Collapse all right-panel sections" data-zh="收起右侧栏全部模块">Collapse all right-panel sections</dd></div>
+          <div><dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>K</kbd></dt><dd data-en="Command palette" data-zh="命令面板">Command palette</dd></div>
+          <div><dt><kbd>Alt</kbd> <kbd>←</kbd></dt><dd data-en="Back in reading trail" data-zh="返回阅读轨迹上一位置">Back in reading trail</dd></div>
         </dl>
       </section>
     </aside>
@@ -358,9 +552,21 @@
     <span class="selection-toolbar-label" id="selection-toolbar-label">Selection</span>
     <button type="button" id="floating-copy-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
     <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
+    <button type="button" id="floating-find-all" data-en="Find all" data-zh="查找全部">Find all</button>
     <button type="button" id="floating-add-note" data-en="Note" data-zh="页注">Note</button>
+    <button type="button" id="floating-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
+    <button type="button" id="floating-margin-note" data-en="Margin" data-zh="页边注">Margin</button>
     <button type="button" id="floating-pin-page" data-en="Pin page" data-zh="固定页">Pin page</button>
   </div>
+
+  <div class="command-palette is-hidden" id="command-palette" role="dialog" aria-modal="true" aria-label="MathReader commands">
+    <div class="command-palette-card">
+      <input id="command-input" type="search" autocomplete="off" data-en-placeholder="Type a command…" data-zh-placeholder="输入命令……" placeholder="Type a command…">
+      <div class="command-list" id="command-list"></div>
+    </div>
+  </div>
+
+  <div class="reference-preview is-hidden" id="reference-preview" role="status" aria-live="polite"></div>
 
   <div class="drop-overlay is-hidden" id="drop-overlay" aria-hidden="true">
     <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>

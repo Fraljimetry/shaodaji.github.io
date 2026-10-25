@@ -32,7 +32,6 @@ const nextPage = el('next-page');
 const zoomIn = el('zoom-in');
 const zoomOut = el('zoom-out');
 const zoomLabel = el('zoom-label');
-const fitPage = el('fit-page');
 const flowButton = el('flow-button');
 const pinPageButton = el('pin-page');
 const pinFromSidebar = el('pin-from-sidebar');
@@ -46,6 +45,9 @@ const pageNote = el('page-note');
 const notePreview = el('note-preview');
 const notePageChip = el('note-page-chip');
 const noteSaveState = el('note-save-state');
+const pdfComments = el('pdf-comments');
+const pdfCommentsList = el('pdf-comments-list');
+const pdfCommentsCount = el('pdf-comments-count');
 const addBookmark = el('add-bookmark');
 const bookmarkList = el('bookmark-list');
 const bookmarkEmpty = el('bookmark-empty');
@@ -58,7 +60,61 @@ const outlineList = el('outline-list');
 const outlineEmpty = el('outline-empty');
 const outlineCount = el('outline-count');
 const outlineSource = el('outline-source');
+const structureIndex = el('structure-index');
+const structureEmpty = el('structure-empty');
+const structureCount = el('structure-count');
+const buildStructureIndexButton = el('build-structure-index');
+const bibliographyIndex = el('bibliography-index');
+const bibliographyEmpty = el('bibliography-empty');
+const bibliographyCount = el('bibliography-count');
+const mapAnnotationsList = el('map-annotations-list');
+const mapAnnotationsEmpty = el('map-annotations-empty');
+const mapAnnotationsCount = el('map-annotations-count');
+const equationIndex = el('equation-index');
+const equationIndexEmpty = el('equation-index-empty');
+const equationIndexCount = el('equation-index-count');
+const exportReadingDataButton = el('export-reading-data');
+const importReadingDataButton = el('import-reading-data');
+const importReadingInput = el('import-reading-input');
+const readingBackButton = el('reading-back');
+const readingTrailList = el('reading-trail-list');
+const readingTrailEmpty = el('reading-trail-empty');
+const readingTrailCount = el('reading-trail-count');
+const readingTrailClear = el('reading-trail-clear');
+const readingTrailToggle = el('reading-trail-toggle');
+const backlinksList = el('backlinks-list');
+const backlinksEmpty = el('backlinks-empty');
+const backlinksCount = el('backlinks-count');
+const backlinksContext = el('backlinks-context');
+const backlinksFilter = el('backlinks-filter');
+const readingSessionsList = el('reading-sessions-list');
+const readingSessionsEmpty = el('reading-sessions-empty');
+const readingSessionsCount = el('reading-sessions-count');
+const readingSessionName = el('reading-session-name');
+const readingSessionSave = el('reading-session-save');
+const undoList = el('undo-list');
+const undoEmpty = el('undo-empty');
+const undoCount = el('undo-count');
+const undoClear = el('undo-clear');
+const recoveryList = el('recovery-list');
+const recoveryEmpty = el('recovery-empty');
+const recoveryCount = el('recovery-count');
+const saveOcrEquation = el('save-ocr-equation');
+const selectionGoReference = el('selection-go-reference');
+const selectionHighlight = el('selection-highlight');
+const selectionMarginNote = el('selection-margin-note');
+const annotationList = el('annotation-list');
+const annotationEmpty = el('annotation-empty');
+const annotationCount = el('annotation-count');
+const primaryAnnotationLayer = el('primary-annotation-layer');
+const referenceAnnotationLayer = el('reference-annotation-layer');
+const referenceStack = el('reference-stack');
+const commandPalette = el('command-palette');
+const commandInput = el('command-input');
+const commandList = el('command-list');
 const searchForm = el('search-form');
+const searchFuzzy = el('search-fuzzy');
+const searchEquations = el('search-equations');
 const searchInput = el('search-input');
 const searchStatus = el('search-status');
 const searchResults = el('search-results');
@@ -74,10 +130,12 @@ const languageLabel = el('language-label');
 const themeButton = el('theme-button');
 const themeIcon = el('theme-icon');
 const themeLabel = el('theme-label');
+const referencePreview = el('reference-preview');
 const leftToggle = el('left-toggle');
 const bothPanelsToggle = el('both-panels-toggle');
 const rightToggle = el('right-toggle');
 const rightSidebar = el('right-sidebar');
+const workspaceJump = el('workspace-jump');
 const selectionCard = el('selection-card');
 const selectionHelp = el('selection-help');
 const selectionPageChip = el('selection-page-chip');
@@ -86,11 +144,22 @@ const selectionLatexPreview = el('selection-latex-preview');
 const copySelectionText = el('copy-selection-text');
 const copySelectionLatex = el('copy-selection-latex');
 const selectionToNote = el('selection-to-note');
+const selectionFindAll = el('selection-find-all');
+const selectionToGlossary = el('selection-to-glossary');
+const glossarySymbolInput = el('glossary-symbol');
+const glossaryMeaningInput = el('glossary-meaning');
+const glossaryAddButton = el('glossary-add');
+const symbolGlossaryList = el('symbol-glossary-list');
+const symbolGlossaryEmpty = el('symbol-glossary-empty');
+const symbolGlossaryCount = el('symbol-glossary-count');
 const selectionToolbar = el('selection-toolbar');
 const selectionToolbarLabel = el('selection-toolbar-label');
 const floatingCopyText = el('floating-copy-text');
+const floatingFindAll = el('floating-find-all');
 const floatingCopyLatex = el('floating-copy-latex');
 const floatingAddNote = el('floating-add-note');
+const floatingHighlight = el('floating-highlight');
+const floatingMarginNote = el('floating-margin-note');
 const floatingPinPage = el('floating-pin-page');
 const mathOcrButton = el('math-ocr-button');
 const primaryOcrLayer = el('primary-ocr-layer');
@@ -101,6 +170,9 @@ const ocrStatus = el('ocr-status');
 const ocrResult = el('ocr-result');
 const ocrPreview = el('ocr-preview');
 const ocrLatexPreview = el('ocr-latex-preview');
+const ocrFormatMode = el('ocr-format-mode');
+const ocrFormatUndo = el('ocr-format-undo');
+const ocrRenderedPreview = el('ocr-rendered-preview');
 const copyOcrLatex = el('copy-ocr-latex');
 const ocrToNote = el('ocr-to-note');
 const tryImageOcrButton = el('try-image-ocr');
@@ -116,6 +188,10 @@ const ocrCapability = el('ocr-capability');
 const formulaExtractionSelect = el('formula-extraction-mode');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
+const documentReadingStatus = el('document-reading-status');
+const documentTagsInput = el('document-tags');
+const documentPersonalNoteInput = el('document-personal-note');
+const documentMetaSummary = el('document-meta-summary');
 const resetDisplay = el('reset-display');
 const flowSingle = el('flow-single');
 const flowContinuous = el('flow-continuous');
@@ -140,9 +216,21 @@ let currentFileKey = null;
 let currentFileName = null;
 let bookmarks = [];
 let notes = {};
+let nativePdfCommentsByPage = new Map();
+let nativePdfCommentLoadToken = 0;
+let annotations = [];
+let symbolGlossary = [];
+let documentTags = [];
+let documentReadingState = 'unread';
+let documentPersonalNote = '';
 let textCache = new Map();
+let lineCache = new Map();
+let referencePageRenderCache = new Map();
+let bibliographyExpanded = new Set();
 let pdfModulePromise = null;
 let noteTimer = null;
+let documentMetaTimer = null;
+let annotationSaveTimer = null;
 let resizeTimer = null;
 let selectionTimer = null;
 let currentSelection = null;
@@ -159,7 +247,7 @@ let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
-let mathOcrEngineMode = 'official';
+let mathOcrEngineMode = 'webgpu';
 let formulaExtractionMode = 'image';
 let readerWidthObserver = null;
 let readerWidthTimer = null;
@@ -168,6 +256,8 @@ let fitWidthStabilizing = false;
 let currentOcrResult = null;
 let ocrHistory = [];
 let ocrHistoryExpanded = false;
+let ocrRenderedPreviewTimer = null;
+let ocrRenderedPreviewToken = 0;
 let notePreviewTimer = null;
 let continuousScrollTop = 0;
 let continuousSavedAnchor = null;
@@ -175,6 +265,10 @@ let continuousLayoutWidth = 0;
 let continuousLayoutHeight = 0;
 let continuousObserver = null;
 let continuousGeneration = 0;
+let continuousRebuilding = false;
+let displayTransitionActive = false;
+let displayTransitionSerial = 0;
+let initialContinuousReady = false;
 let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
 let readingFlow = 'continuous';
@@ -184,24 +278,167 @@ let displayContrast = 100;
 let displayGap = 20;
 let displayShadow = true;
 let inferredOutline = [];
+let inferredOutlineDetectionDone = false;
+let inferredOutlineBuildPromise = null;
 let outlineMode = 'none';
 let editingBookmarkId = null;
 let pendingRecoveryRecordId = null;
+let structureEntries = [];
+let bibliographyEntries = [];
+let structureIndexVersion = 0;
+let structureIndexBuilding = false;
+let structureIndexBuildToken = 0;
+let referencePages = [];
+let readingBackStack = [];
+let readingTrailExpanded = false;
+let suppressReadingHistory = false;
+let equationLabelIndex = null;
+let tocOutlineTargets = null;
+let tocDecorationSerial = 0;
+let backlinkContext = null;
+let backlinkEntries = [];
+let namedReadingSessions = [];
+let undoHistory = [];
+let recoverySnapshots = [];
+let recoverySnapshotTimer = null;
+let lastRecoveryFingerprint = '';
+let recoveryRestoreActive = false;
+let referencePreviewTimer = null;
+let referencePreviewSerial = 0;
+const referenceSnapshotCache = new Map();
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v4', 'official');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v4', 'webgpu');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
-const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v1';
+const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
+const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
+const STRUCTURE_INDEX_VERSION = 5;
+const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 };
+
+
+function jsonClone(value, fallback = null) {
+  try { return JSON.parse(JSON.stringify(value)); } catch (_) { return fallback; }
+}
+
+function workspaceSectionState() {
+  const result = {};
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => { result[section.id] = section.classList.contains('is-collapsed'); });
+  return result;
+}
+
+function captureNamedWorkspaceState() {
+  const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
+  return {
+    version: 1,
+    page: currentPage,
+    pinnedPage,
+    readingFlow,
+    zoomMode,
+    zoomScale,
+    scrollByPage: jsonClone(scrollByPage, {}),
+    referenceScrollByPage: jsonClone(referenceScrollByPage, {}),
+    continuousScrollTop,
+    continuousAnchor: anchor ? { page: Number(anchor.page), ratio: Number(anchor.ratio) || 0 } : null,
+    referencePages: [...referencePages],
+    readingBackStack: jsonClone(readingBackStack, []),
+    searchQuery: searchInput?.value || '',
+    ui: {
+      activePanel: activePanelId(),
+      leftCollapsed: shell.classList.contains('left-collapsed'),
+      rightCollapsed: shell.classList.contains('right-collapsed'),
+      sections: workspaceSectionState()
+    }
+  };
+}
+
+function normalizeNamedReadingSessions(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && typeof item.name === 'string' && item.state && typeof item.state === 'object').map((item, index) => ({
+    id: String(item.id || `rs-${Number(item.created) || Date.now()}-${index}`),
+    name: String(item.name || '').trim().slice(0, 120) || t('Reading session', '阅读会话'),
+    created: Number(item.created) || Date.now(),
+    updated: Number(item.updated) || Number(item.created) || Date.now(),
+    state: item.state
+  })).slice(0, 20);
+}
+
+function normalizeUndoHistory(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && item.type && item.payload !== undefined).map((item, index) => ({
+    id: String(item.id || `undo-${Number(item.created) || Date.now()}-${index}`),
+    type: String(item.type),
+    label: String(item.label || item.type),
+    created: Number(item.created) || Date.now(),
+    payload: item.payload
+  })).slice(0, 12);
+}
+
+function recoveryStorageKey() { return currentFileKey ? `mathreader:${currentFileKey}:recovery-v1` : null; }
+
+function loadRecoverySnapshots() {
+  const key = recoveryStorageKey();
+  if (!key) return [];
+  try {
+    const raw = JSON.parse(safeGet(key, '[]'));
+    return (Array.isArray(raw) ? raw : []).filter((item) => item && item.data).slice(0, 5);
+  } catch (_) { return []; }
+}
+
+function durableRecoveryData() {
+  return {
+    version: 1,
+    page: currentPage,
+    pinnedPage,
+    zoomMode,
+    zoomScale,
+    readingFlow,
+    continuousAnchor: readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor,
+    bookmarks: jsonClone(bookmarks, []),
+    notes: jsonClone(notes, {}),
+    annotations: jsonClone(annotations, []),
+    symbolGlossary: jsonClone(symbolGlossary, []),
+    documentTags: jsonClone(documentTags, []),
+    documentReadingState,
+    documentPersonalNote,
+    referencePages: [...referencePages],
+    readingBackStack: jsonClone(readingBackStack, [])
+  };
+}
+
+function recoveryFingerprint(data) {
+  try { return JSON.stringify({ bookmarks: data.bookmarks, notes: data.notes, annotations: data.annotations, symbolGlossary: data.symbolGlossary, documentTags: data.documentTags, documentReadingState: data.documentReadingState, documentPersonalNote: data.documentPersonalNote }); }
+  catch (_) { return String(Date.now()); }
+}
+
+function scheduleRecoverySnapshot() {
+  if (!currentFileKey || restoringSession || recoveryRestoreActive) return;
+  clearTimeout(recoverySnapshotTimer);
+  recoverySnapshotTimer = setTimeout(() => {
+    const key = recoveryStorageKey();
+    if (!key) return;
+    const data = durableRecoveryData();
+    const fingerprint = recoveryFingerprint(data);
+    if (fingerprint === lastRecoveryFingerprint && recoverySnapshots.length) return;
+    lastRecoveryFingerprint = fingerprint;
+    recoverySnapshots = [{ id: `recovery-${Date.now()}`, created: Date.now(), data }, ...recoverySnapshots].slice(0, 5);
+    safeSet(key, JSON.stringify(recoverySnapshots));
+    renderRecoverySnapshots();
+  }, 900);
+}
+
+function pushUndo(type, label, payload) {
+  undoHistory = [{ id: `undo-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, type, label, created: Date.now(), payload: jsonClone(payload, payload) }, ...undoHistory].slice(0, 12);
+  renderUndoHistory();
+  persistDocumentState();
+}
 
 function loadDisplayPreferences() {
   let saved = null;
@@ -278,17 +515,55 @@ function applyPageDisplay({ persist = true } = {}) {
 async function setReadingFlow(flow, { persist = true, render = true } = {}) {
   const next = flow === 'continuous' ? 'continuous' : 'single';
   const changed = readingFlow !== next;
-  if (readingFlow === 'continuous') continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
-  readingFlow = next;
-  primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
-  primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
-  continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
-  if (next === 'single') clearContinuousObserver();
-  applyOcrModeToSurfaces();
-  updateDisplayControls();
-  if (persist) persistDisplayPreferences();
-  if (pdfDoc && render && (changed || next === 'continuous')) await renderCurrentPage();
-  if (pdfDoc) persistDocumentState();
+  if (!changed) {
+    // Even when the logical flow value is unchanged, the DOM may still be in
+    // its initial single-page visibility state (notably after restoring a saved
+    // continuous session). Always synchronize the reading surfaces.
+    primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
+    primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
+    continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
+    if (next === 'single') clearContinuousObserver();
+    applyOcrModeToSurfaces();
+    updateDisplayControls();
+    if (persist) persistDisplayPreferences();
+    if (pdfDoc && render && next === 'continuous') await renderCurrentPage();
+    if (pdfDoc) persistDocumentState();
+    return;
+  }
+
+  const departureAnchor = readingFlow === 'continuous'
+    ? (captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
+    : { page: currentPage, ratio: 0 };
+  if (departureAnchor?.page) currentPage = Math.max(1, Math.min(pdfDoc?.numPages || currentPage, Number(departureAnchor.page) || currentPage));
+  if (readingFlow === 'continuous') {
+    continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
+    continuousSavedAnchor = departureAnchor ? { ...departureAnchor } : continuousSavedAnchor;
+  }
+
+  // Prepare the destination surface while the current one remains visible.
+  // Only swap visibility after the destination geometry/render is ready, so a
+  // mode change can never expose a stale/default page-1 surface.
+  displayTransitionActive = true;
+  try {
+    readingFlow = next;
+    if (pdfDoc && render) {
+      if (next === 'continuous') {
+        await buildContinuousDocument({ restore: true, anchor: departureAnchor });
+      } else {
+        await renderPage(currentPage, canvas, primaryCanvasWrap, 'primary');
+      }
+    }
+    primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
+    primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
+    continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
+    if (next === 'single') clearContinuousObserver();
+    applyOcrModeToSurfaces();
+    updateDisplayControls();
+    if (persist) persistDisplayPreferences();
+    if (pdfDoc) persistDocumentState();
+  } finally {
+    requestAnimationFrame(() => { displayTransitionActive = false; });
+  }
 }
 
 function resetDisplayPreferences() {
@@ -405,13 +680,21 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 8,
+    version: 17,
     page: currentPage,
     pinnedPage,
     zoomMode,
     zoomScale,
     bookmarks,
     notes,
+    annotations,
+    symbolGlossary,
+    documentTags,
+    documentReadingState,
+    documentPersonalNote,
+    namedReadingSessions,
+    undoHistory,
+    searchFuzzy: Boolean(searchFuzzy?.checked),
     scrollByPage,
     referenceScrollByPage,
     continuousScrollTop,
@@ -420,6 +703,11 @@ function snapshotSession() {
     ocrResult: currentOcrResult,
     ocrHistory,
     inferredOutline,
+    structureEntries,
+    bibliographyEntries,
+    structureIndexVersion,
+    referencePages,
+    readingBackStack,
     searchQuery: searchInput?.value || '',
     ui: {
       activePanel: activePanelId(),
@@ -479,6 +767,10 @@ function renderLocalLibrary() {
     const page = document.createElement('span'); page.textContent = t(`Page ${record.lastPage || record.session?.page || 1}`, `第 ${record.lastPage || record.session?.page || 1} 页`);
     const time = document.createElement('span'); time.textContent = formatHistoryTime(record.openedAt);
     meta.append(page); if (time.textContent) meta.append(time);
+    const statusValue=record.session?.documentReadingState;
+    if (['unread','reading','finished'].includes(statusValue)) { const status=document.createElement('span'); status.textContent={unread:t('Unread','未读'),reading:t('Reading','阅读中'),finished:t('Finished','已完成')}[statusValue]; meta.append(status); }
+    const tags=normalizeDocumentTags(record.session?.documentTags); if(tags.length){ const tag=document.createElement('span'); tag.textContent=tags.slice(0,3).join(' · '); meta.append(tag); }
+    if (record.session?.documentPersonalNote) open.title=String(record.session.documentPersonalNote).slice(0,240);
     if (!record.localAvailable) {
       const missing = document.createElement('span'); missing.className = 'history-unavailable'; missing.textContent = t('Local PDF copy unavailable', '本地 PDF 副本不可用'); meta.append(missing);
     }
@@ -589,7 +881,12 @@ function applyLanguage(lang, persist = true) {
   });
   updateHeaderControls();
   document.title = next === 'zh' ? 'MathReader｜汲绍达' : 'MathReader | Shaoda Ji';
-  if (!pdfDoc) documentTitle.textContent = t('No PDF open', '尚未打开 PDF');
+  // The document title is live application state, not static translatable copy.
+  // The generic [data-en]/[data-zh] pass above temporarily replaces it with the
+  // placeholder, so always restore the active filename when a PDF is open.
+  documentTitle.textContent = pdfDoc && currentFileName
+    ? currentFileName
+    : t('No PDF open', '尚未打开 PDF');
   updateReferenceStatus();
   updateZoomLabel();
   updateDisplayControls();
@@ -597,8 +894,21 @@ function applyLanguage(lang, persist = true) {
   updateOutlineSource();
   renderBookmarks();
   renderLocalLibrary();
+  renderSymbolGlossary();
+  renderDocumentMetadata();
+  renderDocumentMapAnnotations();
+  renderStructureIndex();
+  renderEquationIndex();
+  renderBibliographyIndex();
+  renderBacklinks();
+  renderReadingTrail();
   refreshSelectionUI();
   refreshOcrUI();
+  renderAnnotationList();
+  renderNativePdfComments(currentPage);
+  renderNamedReadingSessions();
+  renderUndoHistory();
+  renderRecoverySnapshots();
   updateWorkspaceCollapseButtons();
   if (persist) safeSet('shaoda-language', next);
 }
@@ -625,8 +935,8 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['selection-section','note-section','reference-section','shortcuts-section']);
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
   });
@@ -634,31 +944,151 @@ function loadWorkspaceCollapseState() {
 
 function persistWorkspaceCollapseState() {
   const state = {};
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => { if (section.id) state[section.id] = section.classList.contains('is-collapsed'); });
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => { if (section.id) state[section.id] = section.classList.contains('is-collapsed'); });
   safeSet(WORKSPACE_COLLAPSE_KEY, JSON.stringify(state));
 }
 
 function updateWorkspaceCollapseButtons() {
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const button = section.querySelector(':scope > .panel-heading .section-collapse-button');
     if (!button) return;
     const collapsed = section.classList.contains('is-collapsed');
     button.textContent = collapsed ? '▸' : '▾';
     const label = collapsed ? t('Expand section', '展开模块') : t('Collapse section', '收起模块');
     button.title = label; button.setAttribute('aria-label', label); button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const handle = section.querySelector(':scope > .panel-heading .section-drag-handle');
+    if (handle) {
+      const dragLabel = t('Drag to reorder · double-click to reset panel order', '拖动重新排序 · 双击恢复默认顺序');
+      handle.title = dragLabel; handle.setAttribute('aria-label', dragLabel);
+    }
   });
+}
+
+const panelOrderDefaults = new Map();
+let draggedWorkspaceSection = null;
+
+function reorderablePanelContainers() {
+  return [
+    document.getElementById('outline-panel'),
+    document.getElementById('right-sidebar'),
+  ].filter(Boolean);
+}
+
+function directWorkspaceSections(container) {
+  return [...container.children].filter((child) => child.classList?.contains('workspace-section') && child.id);
+}
+
+function panelOrderKeyFor(container) {
+  return container?.id === 'outline-panel' ? 'left' : container?.id === 'right-sidebar' ? 'right' : '';
+}
+
+function captureDefaultPanelOrders() {
+  for (const container of reorderablePanelContainers()) {
+    const key = panelOrderKeyFor(container);
+    if (key && !panelOrderDefaults.has(key)) panelOrderDefaults.set(key, directWorkspaceSections(container).map((section) => section.id));
+  }
+}
+
+function loadPanelOrder() {
+  captureDefaultPanelOrders();
+  let saved = null;
+  try { saved = JSON.parse(safeGet(PANEL_ORDER_KEY, 'null')); } catch (_) { saved = null; }
+  for (const container of reorderablePanelContainers()) {
+    const key = panelOrderKeyFor(container);
+    const allowed = new Map(directWorkspaceSections(container).map((section) => [section.id, section]));
+    const order = Array.isArray(saved?.[key]) ? saved[key] : [];
+    for (const id of order) { const section = allowed.get(id); if (section) { container.append(section); allowed.delete(id); } }
+    // Any newly introduced sections remain available and follow the saved ones
+    // in their shipped/default order rather than disappearing from the panel.
+    for (const id of panelOrderDefaults.get(key) || []) { const section = allowed.get(id); if (section) { container.append(section); allowed.delete(id); } }
+    for (const section of allowed.values()) container.append(section);
+  }
+}
+
+function persistPanelOrder() {
+  const state = {};
+  for (const container of reorderablePanelContainers()) {
+    const key = panelOrderKeyFor(container);
+    if (key) state[key] = directWorkspaceSections(container).map((section) => section.id);
+  }
+  safeSet(PANEL_ORDER_KEY, JSON.stringify(state));
+}
+
+function resetPanelOrder(container) {
+  const key = panelOrderKeyFor(container);
+  const byId = new Map(directWorkspaceSections(container).map((section) => [section.id, section]));
+  for (const id of panelOrderDefaults.get(key) || []) { const section = byId.get(id); if (section) { container.append(section); byId.delete(id); } }
+  for (const section of byId.values()) container.append(section);
+  persistPanelOrder();
+}
+
+function setupPanelReordering() {
+  loadPanelOrder();
+  for (const container of reorderablePanelContainers()) {
+    for (const section of directWorkspaceSections(container)) {
+      const heading = section.querySelector(':scope > .panel-heading');
+      if (!heading || heading.querySelector('.section-drag-handle')) continue;
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'section-drag-handle';
+      handle.draggable = true;
+      handle.textContent = '⠿';
+      const dragLabel = t('Drag to reorder · double-click to reset panel order', '拖动重新排序 · 双击恢复默认顺序');
+      handle.title = dragLabel; handle.setAttribute('aria-label', dragLabel);
+      handle.addEventListener('click', (event) => event.preventDefault());
+      handle.addEventListener('dblclick', (event) => { event.preventDefault(); event.stopPropagation(); resetPanelOrder(container); });
+      handle.addEventListener('dragstart', (event) => {
+        draggedWorkspaceSection = section;
+        section.classList.add('is-dragging-section');
+        event.stopPropagation();
+        try { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', section.id); } catch (_) {}
+      });
+      handle.addEventListener('dragend', (event) => {
+        event.stopPropagation();
+        section.classList.remove('is-dragging-section');
+        draggedWorkspaceSection = null;
+        document.querySelectorAll('.workspace-section.drag-target-before,.workspace-section.drag-target-after').forEach((item) => item.classList.remove('drag-target-before','drag-target-after'));
+      });
+      const collapse = heading.querySelector('.section-collapse-button');
+      heading.insertBefore(handle, collapse || null);
+
+      section.addEventListener('dragover', (event) => {
+        if (!draggedWorkspaceSection || draggedWorkspaceSection === section || draggedWorkspaceSection.parentElement !== container) return;
+        event.preventDefault(); event.stopPropagation();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        const rect = section.getBoundingClientRect();
+        const before = event.clientY < rect.top + rect.height / 2;
+        section.classList.toggle('drag-target-before', before);
+        section.classList.toggle('drag-target-after', !before);
+      });
+      section.addEventListener('dragleave', (event) => {
+        event.stopPropagation();
+        section.classList.remove('drag-target-before','drag-target-after');
+      });
+      section.addEventListener('drop', (event) => {
+        if (!draggedWorkspaceSection || draggedWorkspaceSection === section || draggedWorkspaceSection.parentElement !== container) return;
+        event.preventDefault(); event.stopPropagation();
+        const rect = section.getBoundingClientRect();
+        const before = event.clientY < rect.top + rect.height / 2;
+        container.insertBefore(draggedWorkspaceSection, before ? section : section.nextSibling);
+        section.classList.remove('drag-target-before','drag-target-after');
+        persistPanelOrder();
+      });
+    }
+  }
 }
 
 function setupWorkspaceCollapsibles() {
   loadWorkspaceCollapseState();
-  document.querySelectorAll('#right-sidebar > .workspace-section').forEach((section) => {
+  document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     if (!section.id) return;
     const heading = section.querySelector(':scope > .panel-heading');
     if (!heading || heading.querySelector('.section-collapse-button')) return;
     const button = document.createElement('button'); button.type = 'button'; button.className = 'section-collapse-button';
-    button.addEventListener('click', () => { section.classList.toggle('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons(); });
+    button.addEventListener('click', () => { const willExpand = section.classList.contains('is-collapsed'); section.classList.toggle('is-collapsed'); persistWorkspaceCollapseState(); updateWorkspaceCollapseButtons(); if (willExpand && section.id === 'contents-equations-section') ensureEquationIndexRendered(); });
     heading.append(button);
   });
+  setupPanelReordering();
   updateWorkspaceCollapseButtons();
 }
 
@@ -681,13 +1111,108 @@ function normalizeBookmarks(items) {
     title: typeof item.title === 'string' ? item.title : '',
     note: typeof item.note === 'string' ? item.note : '',
     color: normalizedBookmarkColor(item.color),
-    created: Number(item.created) || Date.now()
+    created: Number(item.created) || Date.now(),
+    type: item.type === 'equation' ? 'equation' : 'page',
+    ratio: Math.min(1, Math.max(0, Number(item.ratio) || 0)),
+    latex: typeof item.latex === 'string' ? item.latex : '',
+    preview: typeof item.preview === 'string' ? item.preview : ''
   }));
+}
+
+
+function normalizeDocumentTags(value) {
+  const raw = Array.isArray(value) ? value : String(value || '').split(/[,;\n]/);
+  const seen = new Set();
+  const out = [];
+  for (const item of raw) {
+    const clean = String(item || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    const key = clean.toLocaleLowerCase();
+    if (!clean || seen.has(key)) continue;
+    seen.add(key); out.push(clean);
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
+function renderDocumentMetadata() {
+  if (documentReadingStatus) documentReadingStatus.value = documentReadingState;
+  if (documentTagsInput) documentTagsInput.value = documentTags.join(', ');
+  if (documentPersonalNoteInput && documentPersonalNoteInput.value !== documentPersonalNote) documentPersonalNoteInput.value = documentPersonalNote;
+  if (documentMetaSummary) {
+    const labels = { unread: t('Unread','未读'), reading: t('Reading','阅读中'), finished: t('Finished','已完成') };
+    documentMetaSummary.textContent = `${labels[documentReadingState] || labels.unread} · ${t(`${documentTags.length} tags`, `${documentTags.length} 个标签`)} · ${t(`${bookmarks.length} bookmarks`, `${bookmarks.length} 个书签`)} · ${t(`${annotations.length} annotations`, `${annotations.length} 个批注`)}`;
+  }
+}
+
+function documentMapItemMatches(node, query) {
+  if (!query) return true;
+  return normalizeSearchValue(node?.textContent || '', false).includes(normalizeSearchValue(query, false));
+}
+
+function applyDocumentMapFilter(input) {
+  const target = input?.dataset?.mapTarget ? el(input.dataset.mapTarget) : null;
+  if (!target) return;
+  const query = input.value.trim();
+  for (const child of target.children) child.classList.toggle('map-filter-hidden', !documentMapItemMatches(child, query));
+}
+
+function applyAllDocumentMapFilters() {
+  document.querySelectorAll('.map-filter[data-map-target]').forEach(applyDocumentMapFilter);
+}
+
+function setDocumentMapSelectedNode(node) {
+  document.querySelectorAll('#outline-panel .is-selected-location').forEach((item) => item.classList.remove('is-selected-location'));
+  if (node?.isConnected) node.classList.add('is-selected-location');
+}
+
+function updateDocumentMapCurrentLocation() {
+  const selector = [
+    '.outline-item[data-page]',
+    '.structure-item[data-page]',
+    '.equation-index-item[data-page]',
+    '.document-map-item[data-page]',
+    '.bibliography-smart-item[data-page]'
+  ].join(',');
+  document.querySelectorAll(`#outline-panel ${selector}`).forEach((node) => {
+    node.classList.toggle('is-current-location', Number(node.dataset.page) === Number(currentPage));
+  });
+}
+
+function renderDocumentMapAnnotations() {
+  if (!mapAnnotationsList || !mapAnnotationsEmpty || !mapAnnotationsCount) return;
+  mapAnnotationsList.replaceChildren();
+  const ordered=[...annotations].sort((a,b)=>a.page-b.page||a.ratio-b.ratio||a.created-b.created);
+  mapAnnotationsCount.textContent=String(ordered.length); mapAnnotationsEmpty.classList.toggle('is-hidden',ordered.length>0);
+  for (const item of ordered) {
+    const button=document.createElement('button'); button.type='button'; button.className='document-map-item'; button.dataset.page=String(item.page);
+    const title=document.createElement('strong'); title.textContent=item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注');
+    const meta=document.createElement('span'); meta.textContent=`${t(`Page ${item.page}`,`第 ${item.page} 页`)} · ${(item.note||item.text||item.latex||'').trim().slice(0,90)}`;
+    button.append(title,meta); button.addEventListener('click',()=>goToMatchedLocation(item.page,Number(item.ratio)||0,item.text||'')); mapAnnotationsList.append(button);
+  }
+  applyDocumentMapFilter(el('map-filter-annotations')); updateDocumentMapCurrentLocation();
+}
+
+function bibliographyCitationSummary(entry) {
+  const citations=Array.isArray(entry?.citations)?entry.citations:[];
+  if (!citations.length) return t('No citations detected','未检测到引用');
+  const first=citations[0];
+  return t(`${citations.length} citations · first p. ${first.page}`,`${citations.length} 处引用 · 首次第 ${first.page} 页`);
 }
 
 function loadDocumentState(cachedSession = null) {
   bookmarks = [];
   notes = {};
+  nativePdfCommentsByPage = new Map();
+  nativePdfCommentLoadToken += 1;
+  annotations = [];
+  symbolGlossary = [];
+  documentTags = [];
+  documentReadingState = 'unread';
+  documentPersonalNote = '';
+  namedReadingSessions = [];
+  undoHistory = [];
+  recoverySnapshots = loadRecoverySnapshots();
+  if (searchFuzzy) searchFuzzy.checked = false;
   scrollByPage = {};
   referenceScrollByPage = {};
   continuousScrollTop = 0;
@@ -697,7 +1222,18 @@ function loadDocumentState(cachedSession = null) {
   ocrHistory = [];
   ocrHistoryExpanded = false;
   inferredOutline = [];
+  inferredOutlineDetectionDone = false;
+  inferredOutlineBuildPromise = null;
   outlineMode = 'none';
+  structureEntries = [];
+  bibliographyEntries = [];
+  structureIndexVersion = 0;
+  equationLabelIndex = null;
+  renderEquationIndex();
+  backlinkContext = null; backlinkEntries = []; renderBacklinks();
+  tocOutlineTargets = null;
+  referencePages = [];
+  readingBackStack = [];
   zoomMode = 'fit-width';
   zoomScale = 1.2;
   searchInput.value = '';
@@ -713,6 +1249,14 @@ function loadDocumentState(cachedSession = null) {
   if (session && typeof session === 'object') {
     bookmarks = normalizeBookmarks(session.bookmarks);
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
+    annotations = normalizeAnnotations(session.annotations);
+    symbolGlossary = normalizeSymbolGlossary(session.symbolGlossary);
+    documentTags = Array.isArray(session.documentTags) ? session.documentTags.map((item)=>String(item).trim()).filter(Boolean).slice(0,20) : [];
+    documentReadingState = ['unread','reading','finished'].includes(session.documentReadingState) ? session.documentReadingState : 'unread';
+    documentPersonalNote = typeof session.documentPersonalNote === 'string' ? session.documentPersonalNote : '';
+    namedReadingSessions = normalizeNamedReadingSessions(session.namedReadingSessions);
+    undoHistory = normalizeUndoHistory(session.undoHistory);
+    if (searchFuzzy) searchFuzzy.checked = Boolean(session.searchFuzzy);
     const savedPage = Number(session.page || 1);
     currentPage = Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
     const savedPinned = Number(session.pinnedPage || 0);
@@ -734,11 +1278,24 @@ function loadDocumentState(cachedSession = null) {
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 240) : [];
+    if (inferredOutline.length) inferredOutlineDetectionDone = true;
+    structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
+    bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
+    structureIndexVersion = Number(session.structureIndexVersion || 0);
+    if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
+      structureEntries = [];
+      bibliographyEntries = [];
+      structureIndexVersion = 0;
+    }
+    referencePages = Array.isArray(session.referencePages) ? session.referencePages.map(Number).filter((page, index, values) => page >= 1 && page <= pdfDoc.numPages && values.indexOf(page) === index).slice(0, 4) : [];
+    readingBackStack = normalizeReadingTrail(session.readingBackStack);
+    if (pinnedPage && !referencePages.includes(pinnedPage)) referencePages.unshift(pinnedPage);
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
-    if (Number(session.version || 0) < 7 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
+    if (Number(session.version || 0) < 15 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
+    renderSymbolGlossary();
     if (Number(session.version || 0) >= 4) {
       shell.classList.toggle('left-collapsed', Boolean(session.ui?.leftCollapsed));
       shell.classList.toggle('right-collapsed', Boolean(session.ui?.rightCollapsed));
@@ -759,9 +1316,16 @@ function loadDocumentState(cachedSession = null) {
     const savedPinned = Number(safeGet(stateKey('pinned'), '0'));
     pinnedPage = savedPinned >= 1 && savedPinned <= pdfDoc.numPages ? savedPinned : null;
   }
+  renderSymbolGlossary();
   refreshSelectionUI();
   refreshOcrUI();
+  renderAnnotationList();
   updateZoomLabel();
+  updateReadingBackButton();
+  renderReadingTrail();
+  renderNamedReadingSessions();
+  renderUndoHistory();
+  renderRecoverySnapshots();
 }
 
 function persistDocumentState() {
@@ -773,6 +1337,7 @@ function persistDocumentState() {
   safeSet(stateKey('pinned'), pinnedPage ? String(pinnedPage) : '0');
   safeSet(stateKey('session-v2'), JSON.stringify(session));
   scheduleDbSessionSave();
+  scheduleRecoverySnapshot();
 }
 
 async function cacheOpenedPdf(meta, blob) {
@@ -817,7 +1382,7 @@ async function touchCachedPdf(record) {
 }
 
 function enableReaderControls(enabled) {
-  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,fitPage,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark].forEach((node) => node.disabled = !enabled);
+  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton,importReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
 }
 
 function updateNavigationState() {
@@ -832,6 +1397,9 @@ function updateNavigationState() {
   pageNote.disabled = false;
   pageNote.value = notes[String(currentPage)] || ''; scheduleNotePreview();
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  renderNativePdfComments(currentPage);
+  updateDocumentMapCurrentLocation();
+  void refreshNativePdfComments(currentPage);
   persistDocumentState();
 }
 
@@ -848,13 +1416,18 @@ function updateReferenceStatus() {
 }
 
 function updateZoomLabel() {
-  if (!pdfDoc) {
+  if (!pdfDoc || zoomMode === 'fit-width') {
     zoomLabel.textContent = t('Fit width', '适合宽度');
+    zoomLabel.title = t('Switch to Fit page', '切换到适合页面');
     return;
   }
-  if (zoomMode === 'fit-width') zoomLabel.textContent = t('Fit width', '适合宽度');
-  else if (zoomMode === 'fit-page') zoomLabel.textContent = t('Fit page', '适合页面');
-  else zoomLabel.textContent = `${Math.round(zoomScale * 100)}%`;
+  if (zoomMode === 'fit-page') {
+    zoomLabel.textContent = t('Fit page', '适合页面');
+    zoomLabel.title = t('Switch to Fit width', '切换到适合宽度');
+    return;
+  }
+  zoomLabel.textContent = `${Math.round(zoomScale * 100)}%`;
+  zoomLabel.title = t('Return to Fit width', '返回适合宽度');
 }
 
 
@@ -909,8 +1482,37 @@ function normalizeOcrLatex(value) {
   const blocks = matches.map((m) => m.value).filter(Boolean);
   if (blocks.length === 1) text = blocks[0];
   else if (blocks.length > 1) {
-    const clean = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1]);
-    if (clean.some((block) => /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(block))) {
+    let clean = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1]);
+
+    // Texify occasionally emits a good main formula surrounded by tiny stray
+    // math blocks (for example a lone \blacksquare or an index fragment).
+    // When there are at least three explicit blocks and one block clearly
+    // dominates the others, keep that dominant block instead of fabricating
+    // an aligned environment from unrelated fragments. Two-block output is
+    // intentionally left untouched because it can be a genuine two-line
+    // formula.
+    if (clean.length >= 3) {
+      const ranked = clean
+        .map((block, index) => ({ block, index, length: block.replace(/\s+/g, '').length }))
+        .sort((a, b) => b.length - a.length);
+      const first = ranked[0];
+      const second = ranked[1];
+      const looksSubstantive = (block) => {
+        const compact = String(block || '').replace(/\s+/g, '');
+        if (!compact) return false;
+        if (/[=<>_^]/.test(compact)) return true;
+        if (/\\(?:frac|int|iint|iiint|oint|sum|prod|sqrt|left|right|nabla|partial|operatorname|mathbb|mathrm|mathbf|mathcal)\b/.test(compact)) return true;
+        if (/\\(?:leq?|geq?|lesssim|gtrsim|sim|simeq|approx|equiv|neq?|to|rightarrow|leftarrow|leftrightarrow|longrightarrow|longleftarrow|longleftrightarrow|Rightarrow|Leftarrow|Leftrightarrow)\b/.test(compact)) return true;
+        return compact.length > 10;
+      };
+      const remainderIsTinyNoise = ranked.slice(1).every((item) => item.length <= 10 && !looksSubstantive(item.block));
+      if (first.length >= 72 && first.length >= Math.max(2.6 * second.length, second.length + 48) && remainderIsTinyNoise) {
+        clean = [first.block];
+      }
+    }
+
+    if (clean.length === 1) text = clean[0];
+    else if (clean.some((block) => /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(block))) {
       text = clean.join(' \\\\ ');
     } else {
       text = `\\begin{aligned}\n${clean.map(markAlignmentRelation).join(latexLineSeparator())}\n\\end{aligned}`;
@@ -924,21 +1526,286 @@ function normalizeOcrLatex(value) {
 }
 
 function markAlignmentRelation(line) {
-  const value = String(line || '').trim();
-  if (!value || /&(?:=|\\le|\\ge|\\approx|\\sim|\\to|\\Rightarrow)/.test(value)) return value;
-  const patterns = ['\\\\leq?', '\\\\geq?', '\\\\approx', '\\\\sim', '\\\\equiv', '\\\\to', '='];
-  for (const pattern of patterns) {
-    const re = new RegExp(`(${pattern})`);
-    if (re.test(value)) return value.replace(re, '&$1');
-  }
-  return value;
+  return alignLineByPattern(line, 'relation');
 }
+function unwrapOcrFormattingEnvelope(value) {
+  let text = String(value || '').trim();
+  if (!text) return '';
+  const envMatch = text.match(/^\\begin\{(aligned|split|gathered|gather|array)\}([\s\S]*?)\\end\{\1\}$/);
+  if (!envMatch) return text;
+  const env = envMatch[1];
+  let inner = String(envMatch[2] || '').trim();
+  if (env === 'array') inner = inner.replace(/^\{[^}]*\}/, '').trim();
+  return inner;
+}
+
+function splitOcrLatexRows(value) {
+  const body = unwrapOcrFormattingEnvelope(value);
+  if (!body) return [];
+  const rows = [];
+  let current = '';
+  let braceDepth = 0;
+  for (let i = 0; i < body.length; i += 1) {
+    const ch = body[i];
+    if (ch === '{') braceDepth += 1;
+    else if (ch === '}' && braceDepth > 0) braceDepth -= 1;
+    if (ch === '\\' && body[i + 1] === '\\' && braceDepth === 0) {
+      rows.push(current.trim());
+      current = '';
+      i += 1;
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) rows.push(current.trim());
+  return rows.filter(Boolean);
+}
+
+function hasBalancedOuterBraces(value) {
+  const text = String(value || '').trim();
+  if (text.length < 2 || text[0] !== '{' || text[text.length - 1] !== '}') return false;
+  let depth = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '\\') { i += 1; continue; }
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') depth -= 1;
+    if (depth === 0 && i < text.length - 1) return false;
+    if (depth < 0) return false;
+  }
+  return depth === 0;
+}
+
+function stripRedundantOuterBraces(value) {
+  let text = String(value || '').trim();
+  let guard = 0;
+  while (guard < 4 && hasBalancedOuterBraces(text)) {
+    text = text.slice(1, -1).trim();
+    guard += 1;
+  }
+  return text;
+}
+
+function cleanOcrFormattingRow(value) {
+  let row = String(value || '').trim();
+  if (!row) return '';
+  // Common Texify array artifact: an empty first cell followed by a doubly
+  // braced mathematical cell, e.g. {{}}&{{=...}}.
+  row = row.replace(/^\{\{\}\}\s*&\s*\{\{([\s\S]*)\}\}\s*$/, '&$1');
+  row = row.replace(/^\{\}\s*&\s*\{([\s\S]*)\}\s*$/, '&$1');
+  row = stripRedundantOuterBraces(row);
+  // After unwrapping, repeat once because OCR often emits two brace layers.
+  row = row.replace(/^\{\{\}\}\s*&\s*\{\{([\s\S]*)\}\}\s*$/, '&$1');
+  row = stripRedundantOuterBraces(row);
+  return row.replace(/\s+/g, ' ').trim();
+}
+
+function cleanOcrFormattingRows(rows) {
+  const cleaned = [];
+  let previousKey = '';
+  for (const raw of Array.isArray(rows) ? rows : []) {
+    const row = cleanOcrFormattingRow(raw);
+    if (!row) continue;
+    // Preserve alignment markers for later formatting, but ignore harmless
+    // whitespace/bracing differences when detecting accidental duplicate rows.
+    const key = row.replace(/&/g, '').replace(/\s+/g, '').trim();
+    if (key && key === previousKey) continue;
+    cleaned.push(row);
+    previousKey = key;
+  }
+  return cleaned;
+}
+
+function cleanOcrFormattingArtifacts(value) {
+  const rows = cleanOcrFormattingRows(splitOcrLatexRows(value));
+  if (!rows.length) return String(value || '').trim();
+  return rows.length === 1 ? rows[0] : rows.join(latexLineSeparator());
+}
+
+function normalizeOcrAlignmentLine(value) {
+  return String(value || '').replace(/(^|[^\\])&/g, '$1').replace(/\s+/g, ' ').trim();
+}
+
+function alignLineByPattern(value, mode = 'relation') {
+  const line = normalizeOcrAlignmentLine(value);
+  if (!line) return '';
+  const pattern = mode === 'equals'
+    ? /(=)/
+    : /(\\(?:Longleftrightarrow|Leftrightarrow|longleftrightarrow|leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|longleftarrow|leftarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z])|<=|>=|=|<|>)/;
+  const match = line.match(pattern);
+  if (!match || typeof match.index !== 'number') return line;
+  return `${line.slice(0, match.index)}&${line.slice(match.index)}`.replace(/\s+&/g, ' &').trim();
+}
+
+function ocrSignedContinuationBody(value) {
+  const line = normalizeOcrAlignmentLine(value)
+    .replace(/^\\(?:qquad|quad)\s*/, '')
+    .trim();
+  return /^(?:[+\-]|\\(?:pm|mp)(?![A-Za-z]))/.test(line) ? line : '';
+}
+
+function formatOcrRowsSemanticAlign(rows) {
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  const formatted = cleaned.map((row) => {
+    const aligned = alignLineByPattern(row, 'relation');
+    if (aligned !== row) return aligned;
+    const continuation = ocrSignedContinuationBody(row);
+    if (continuation) return `&\\qquad ${continuation}`;
+    return row;
+  });
+  return `\\begin{aligned}\n${formatted.join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
+function formatOcrRowsAligned(rows, mode = 'relation') {
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  return `\\begin{aligned}\n${cleaned.map((row) => alignLineByPattern(row, mode)).join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
+function formatOcrRowsContinuation(rows) {
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  const formatted = cleaned.map((row, index) => {
+    const aligned = alignLineByPattern(row, 'relation');
+    if (index === 0) return aligned !== row ? aligned : row;
+    if (aligned !== row) return aligned;
+    return `&\\quad ${row}`;
+  });
+  return `\\begin{aligned}\n${formatted.join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
+function formatOcrRowsGathered(rows) {
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  if (!cleaned.length) return '';
+  if (cleaned.length === 1) return cleaned[0];
+  return `\\begin{gathered}\n${cleaned.join(latexLineSeparator())}\n\\end{gathered}`;
+}
+
+function formatOcrRowsSingleLine(rows) {
+  return cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function autoFormatOcrLatex(value) {
+  const rows = cleanOcrFormattingRows(splitOcrLatexRows(value));
+  if (!rows.length) return String(value || '').trim();
+  if (rows.length === 1) return formatOcrRowsSingleLine(rows);
+  const relationPattern = /(=|<=|>=|<|>|\\(?:Longleftrightarrow|Leftrightarrow|longleftrightarrow|leftrightarrow|Longrightarrow|Rightarrow|longrightarrow|rightarrow|longleftarrow|leftarrow|mapsto|lesssim|gtrsim|simeq|cong|neq|ne|leq|le|geq|ge|subseteq|supseteq|subset|supset|approx|sim|equiv|to|iff)(?![A-Za-z]))/;
+  const relationRows = rows.filter((row) => relationPattern.test(normalizeOcrAlignmentLine(row))).length;
+  const signedContinuations = rows.slice(1).filter((row) => Boolean(ocrSignedContinuationBody(row))).length;
+  if (relationRows || signedContinuations) return formatOcrRowsSemanticAlign(rows);
+  return formatOcrRowsGathered(rows);
+}
+
+function ensureCurrentOcrFormatState() {
+  if (!currentOcrResult) return;
+  if (typeof currentOcrResult.originalLatex !== 'string' || !currentOcrResult.originalLatex.trim()) currentOcrResult.originalLatex = String(currentOcrResult.latex || '').trim();
+  if (!Array.isArray(currentOcrResult.formatUndoStack)) currentOcrResult.formatUndoStack = [];
+}
+
+function updateOcrFormattingControls() {
+  const has = Boolean(currentOcrResult?.latex);
+  if (ocrFormatMode) {
+    ocrFormatMode.disabled = !has;
+    ocrFormatMode.value = '';
+  }
+  if (ocrFormatUndo) {
+    const undoCount = has && Array.isArray(currentOcrResult?.formatUndoStack) ? currentOcrResult.formatUndoStack.length : 0;
+    ocrFormatUndo.disabled = !undoCount;
+    ocrFormatUndo.classList.toggle('is-disabled', !undoCount);
+  }
+}
+
+function syncCurrentOcrLatexValue(value, options = {}) {
+  if (!currentOcrResult) return;
+  currentOcrResult.latex = String(value || '').trim();
+  const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
+  if (match) {
+    match.latex = currentOcrResult.latex;
+    if (typeof currentOcrResult.originalLatex === 'string') match.originalLatex = currentOcrResult.originalLatex;
+    if (Array.isArray(currentOcrResult.formatUndoStack)) match.formatUndoStack = [...currentOcrResult.formatUndoStack];
+  }
+  if (ocrLatexPreview && ocrLatexPreview.value !== currentOcrResult.latex) ocrLatexPreview.value = currentOcrResult.latex;
+  scheduleOcrRenderedPreview();
+  updateOcrFormattingControls();
+  if (options.status) setOcrStatus(options.status);
+  persistDocumentState();
+}
+
+function applyOcrFormat(mode) {
+  if (!currentOcrResult || !ocrLatexPreview) return;
+  ensureCurrentOcrFormatState();
+  const source = String(ocrLatexPreview.value || currentOcrResult.latex || '').trim();
+  if (!source && mode !== 'original') return;
+  let next = source;
+  const rows = cleanOcrFormattingRows(splitOcrLatexRows(source));
+  if (mode === 'original') next = String(currentOcrResult.originalLatex || source).trim();
+  else if (mode === 'auto') next = autoFormatOcrLatex(source);
+  else if (mode === 'align') next = formatOcrRowsSemanticAlign(rows.length ? rows : [source]);
+  else if (mode === 'gathered') next = formatOcrRowsGathered(rows.length ? rows : [source]);
+  else if (mode === 'single-line') next = formatOcrRowsSingleLine(rows.length ? rows : [source]);
+  next = stabilizeOcrLatexSyntax(repairOcrLatex(next)).trim();
+  if (!next || next === source) {
+    updateOcrFormattingControls();
+    return;
+  }
+  currentOcrResult.formatUndoStack.push(source);
+  syncCurrentOcrLatexValue(next, { status: t('Applied one-click LaTeX cleanup.', '已应用一键 LaTeX 整理。') });
+}
+
+function undoOcrFormat() {
+  if (!currentOcrResult || !Array.isArray(currentOcrResult.formatUndoStack) || !currentOcrResult.formatUndoStack.length) return;
+  const previous = currentOcrResult.formatUndoStack.pop();
+  syncCurrentOcrLatexValue(previous, { status: t('Reverted the last LaTeX formatting change.', '已撤销上一条 LaTeX 整理。') });
+}
+
+function ocrPreviewMathSource(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if ((text.startsWith('\\[') && text.endsWith('\\]')) || (text.startsWith('$$') && text.endsWith('$$'))) return text;
+  return `\\[${text}\\]`;
+}
+
+function scheduleOcrRenderedPreview() {
+  clearTimeout(ocrRenderedPreviewTimer);
+  ocrRenderedPreviewTimer = setTimeout(renderOcrRenderedPreview, 120);
+}
+
+async function renderOcrRenderedPreview() {
+  if (!ocrRenderedPreview) return;
+  const value = String(ocrLatexPreview?.value || currentOcrResult?.latex || '').trim();
+  const token = ++ocrRenderedPreviewToken;
+  ocrRenderedPreview.classList.toggle('is-hidden', !value);
+  if (!value) {
+    try { window.MathJax?.typesetClear?.([ocrRenderedPreview]); } catch (_) {}
+    ocrRenderedPreview.replaceChildren();
+    return;
+  }
+  try { window.MathJax?.typesetClear?.([ocrRenderedPreview]); } catch (_) {}
+  ocrRenderedPreview.textContent = ocrPreviewMathSource(value);
+  if (window.MathJax?.typesetPromise) {
+    try {
+      await window.MathJax.typesetPromise([ocrRenderedPreview]);
+      if (token !== ocrRenderedPreviewToken) scheduleOcrRenderedPreview();
+    } catch (error) {
+      if (token !== ocrRenderedPreviewToken) return;
+      console.warn('MathReader OCR LaTeX preview failed', error);
+      ocrRenderedPreview.textContent = t('Preview unavailable for the current LaTeX. Edit the source and it will retry automatically.', '当前 LaTeX 无法渲染预览。编辑源码后将自动重试。');
+      ocrRenderedPreview.classList.add('has-error');
+      return;
+    }
+  }
+  if (token === ocrRenderedPreviewToken) ocrRenderedPreview.classList.remove('has-error');
+}
+
 function refreshOcrUI() {
   if (!ocrResult || !ocrHistoryList) return;
   const has = Boolean(currentOcrResult?.latex);
+  if (has) ensureCurrentOcrFormatState();
   ocrResult.classList.toggle('is-hidden', !has);
   ocrPageChip.textContent = has ? String(currentOcrResult.page || '—') : '—';
   ocrLatexPreview.value = has ? currentOcrResult.latex : '';
+  scheduleOcrRenderedPreview();
+  updateOcrFormattingControls();
   if (ocrSourceBadge) {
     const source = has ? (currentOcrResult.source || 'image') : '';
     ocrSourceBadge.textContent = !has ? '—' : source === 'vector' ? t('PDF vector', 'PDF 矢量') : t('Image OCR', '图像 OCR');
@@ -1028,7 +1895,7 @@ function setOcrMode(active) {
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
   } else if (!mathOcrLoading) {
-    setOcrStatus(mathOcrBackend ? t(`Image OCR default · ${mathOcrBackend.label} ready · PDF vector fallback available`, `默认图像 OCR · ${mathOcrBackend.label} 已就绪 · PDF 矢量备用可用`) : t('Ready. Image OCR is the default formula extractor.', '就绪。默认使用图像 OCR 提取公式。')); 
+    setOcrStatus(mathOcrBackend ? t(`Image OCR default · ${mathOcrBackend.label} ready · PDF vector available for manual comparison`, `默认图像 OCR · ${mathOcrBackend.label} 已就绪 · PDF 矢量可手动对照`) : t('Ready. Image OCR is the default formula extractor.', '就绪。默认使用图像 OCR 提取公式。')); 
   }
 }
 
@@ -1039,8 +1906,12 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   if (mode === 'webgpu') {
-    // Xenova/texify ships Transformers.js-ready merged q4f16 weights.
-    return [{ device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false }];
+    // WebGPU is the default accelerator. If it cannot initialize, fall back
+    // automatically to the model-card CPU path instead of failing OCR.
+    return [
+      { device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false },
+      { device: null, dtype: null, label: 'Texify · CPU fallback', official: true }
+    ];
   }
   if (mode === 'wasm') {
     return [{ device: 'wasm', dtype: 'q8', label: 'Texify · CPU/WASM q8', official: false }];
@@ -1060,11 +1931,26 @@ function updateOcrCapability(extra = '') {
 }
 
 async function disposeMathOcrPipeline() {
-  try { await mathOcrPipeline?.dispose?.(); } catch (_) {}
+  const pipe = mathOcrPipeline;
   mathOcrPipeline = null;
   mathOcrBackend = null;
   mathOcrModulePromise = null;
   updateOcrCapability();
+  try { await pipe?.dispose?.(); } catch (_) {}
+}
+
+function releaseMathOcrPipelineAfterExtraction() {
+  // Transformers.js 4.3.1 can leave a browser inference session unusable
+  // after a completed/failed generation. A fresh pipeline for each user
+  // selection avoids carrying that session state into the next rectangle,
+  // while keeping the imported runtime and browser-cached model files.
+  // Detach synchronously so cleanup itself can never keep the UI locked.
+  const pipe = mathOcrPipeline;
+  mathOcrPipeline = null;
+  if (!pipe?.dispose) return;
+  Promise.resolve()
+    .then(() => pipe.dispose())
+    .catch((error) => console.warn('MathReader OCR pipeline cleanup failed', error));
 }
 
 function friendlyOcrError(error, backend = null) {
@@ -1076,7 +1962,7 @@ function friendlyOcrError(error, backend = null) {
   if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the browser-compatible Texify formula model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用兼容浏览器的 Texify 公式识别模型。');
   if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The image-OCR preprocessor rejected the selected region. Reload the page; if this persists, report the exact message.', '图像 OCR 预处理拒绝了框选区域。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
   if (/scale|dequant|onnx|session|can't create a session|cannot create.*session/.test(lower)) return t(`The ${backend?.label || 'ONNX'} engine failed to initialize under ${TRANSFORMERS_RUNTIME}. Recommended mode follows the model card's browser path; reload the engine or try WebGPU as a diagnostic alternative.`, `${backend?.label || 'ONNX'} 引擎在 ${TRANSFORMERS_RUNTIME} 下初始化失败。推荐模式遵循模型卡的浏览器路径；请重新加载引擎，或尝试 WebGPU 作为诊断性备选。`);
-  return raw || t('Image OCR fallback failed to initialize.', '图像 OCR 备用引擎初始化失败。');
+  return raw || t('Image OCR engine failed to initialize.', '图像 OCR 引擎初始化失败。');
 }
 
 function detailedOcrError(error, backend = null) {
@@ -1099,14 +1985,17 @@ async function ensureMathOcrPipeline() {
       const backend = plan[index];
       try {
         setOcrStatus(t(`Initializing ${backend.label}…`, `正在初始化 ${backend.label}……`), true);
+        // Transformers.js reports progress per individual model asset rather
+        // than one meaningful total. Do not display a fabricated percentage.
+        // Show only truthful loading stages until pipeline() is actually ready.
+        let downloadStageShown = false;
         const progress_callback = (info) => {
           if (!info) return;
-          if (info.status === 'progress' && Number.isFinite(Number(info.progress))) {
-            const raw = Number(info.progress);
-            const percent = Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
-            setOcrStatus(t(`Downloading image-OCR fallback (${backend.label})… ${Math.round(percent)}%`, `正在下载图像 OCR 备用模型（${backend.label}）…… ${Math.round(percent)}%`), true);
-          } else if (info.status === 'initiate' || info.status === 'download') {
-            setOcrStatus(t(`First image-only use: downloading Texify for ${backend.label}…`, `首次图像识别：正在下载 ${backend.label} 的 Texify 公式识别模型……`), true);
+          if (info.status === 'initiate' || info.status === 'download' || info.status === 'progress') {
+            if (!downloadStageShown) {
+              downloadStageShown = true;
+              setOcrStatus(t(`Loading local image-OCR model (${backend.label})…`, `正在加载本地图像 OCR 模型（${backend.label}）……`), true);
+            }
           }
         };
         const options = { progress_callback };
@@ -1173,13 +2062,14 @@ function formulaInkBounds(canvas) {
 }
 
 function normalizeFormulaCropForOcr(crop, variant = 'tight') {
-  const bounds = formulaInkBounds(crop) || { left: 0, top: 0, width: crop.width, height: crop.height };
+  const normalizedCrop = normalizeFormulaPolarity(crop);
+  const bounds = formulaInkBounds(normalizedCrop) || { left: 0, top: 0, width: normalizedCrop.width, height: normalizedCrop.height };
   const padRatio = variant === 'relaxed' ? 0.115 : 0.055;
   const sourcePad = Math.max(5, Math.round(Math.max(bounds.width, bounds.height) * padRatio));
   const sx = Math.max(0, bounds.left - sourcePad);
   const sy = Math.max(0, bounds.top - sourcePad);
-  const sw = Math.min(crop.width - sx, bounds.width + sourcePad * 2);
-  const sh = Math.min(crop.height - sy, bounds.height + sourcePad * 2);
+  const sw = Math.min(normalizedCrop.width - sx, bounds.width + sourcePad * 2);
+  const sh = Math.min(normalizedCrop.height - sy, bounds.height + sourcePad * 2);
   // Texify's processor accepts variable-size formula images. Preserve the
   // formula aspect ratio, remove irrelevant whitespace, and upscale small
   // selections so fine scripts/radicals do not disappear before encoding.
@@ -1197,7 +2087,7 @@ function normalizeFormulaCropForOcr(crop, variant = 'tight') {
   ctx.fillRect(0, 0, dw, dh);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(crop, sx, sy, sw, sh, 0, 0, dw, dh);
+  ctx.drawImage(normalizedCrop, sx, sy, sw, sh, 0, 0, dw, dh);
   return out;
 }
 
@@ -1236,39 +2126,172 @@ function repairOcrLatex(value) {
   }
   if (depth > 0) out += '}'.repeat(depth);
   out = out.replace(/(\\mathrm\{div\})(?:\s*\1)+/g, '$1');
+
+  // Remove only mechanically duplicated arrow commands. This does not infer
+  // mathematical content; it fixes decoder artifacts such as `\mapsto \to`.
+  out = out
+    .replace(/\\mapsto\s*(?:\\to|\\rightarrow)\b/g, '\\mapsto')
+    .replace(/(?:\\to|\\rightarrow)\s*\\mapsto\b/g, '\\mapsto');
   return out.replace(/[ \t]+/g, ' ').trim();
+}
+
+
+function stabilizeOcrLatexSyntax(value) {
+  let text = String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim();
+  if (!text) return '';
+
+  // normalizeOcrLatex already removes ordinary display wrappers. Guard
+  // against partial wrappers that a decoder can leave behind after truncation.
+  text = text
+    .replace(/^\s*\\\[\s*/, '')
+    .replace(/\s*\\\]\s*$/, '')
+    .replace(/^\s*\$\$\s*/, '')
+    .replace(/\s*\$\$\s*$/, '')
+    .replace(/\\begin\{(?:equation|equation\*|displaymath)\}/g, '')
+    .replace(/\\end\{(?:equation|equation\*|displaymath)\}/g, '')
+    .replace(/\\begin\{align\*?\}/g, '\\begin{aligned}')
+    .replace(/\\end\{align\*?\}/g, '\\end{aligned}')
+    .trim();
+
+  // A lone sizing command is a common decoder truncation and causes MathJax
+  // failures. If the counts disagree, remove only the sizing commands; the
+  // actual delimiters remain visible and mathematically readable.
+  text = text.replace(/\\(?:left|right)\b\s*$/g, '');
+  const leftCount = (text.match(/\\left\b/g) || []).length;
+  const rightCount = (text.match(/\\right\b/g) || []).length;
+  if (leftCount !== rightCount) text = text.replace(/\\(?:left|right)\b\s*/g, '');
+
+  // Keep only well-nested math environments. Orphan/mismatched \end tokens
+  // are discarded, and unclosed environments are closed at the end. This is
+  // syntax stabilization only; it does not invent mathematical symbols.
+  const safeEnvs = new Set(['aligned','alignedat','array','cases','matrix','pmatrix','bmatrix','Bmatrix','vmatrix','Vmatrix','gathered','split']);
+  const stack = [];
+  text = text.replace(/\\(begin|end)\{([A-Za-z*]+)\}/g, (full, kind, env) => {
+    if (!safeEnvs.has(env)) return full;
+    if (kind === 'begin') {
+      stack.push(env);
+      return full;
+    }
+    if (stack.at(-1) === env) {
+      stack.pop();
+      return full;
+    }
+    return '';
+  });
+  while (stack.length) text += `\\end{${stack.pop()}}`;
+
+  // repairOcrLatex balances ordinary braces. Re-run a lightweight balance in
+  // case environment cleanup exposed a truncated group.
+  let depth = 0;
+  let balanced = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '\\' && i + 1 < text.length) {
+      balanced += ch + text[i + 1];
+      i += 1;
+      continue;
+    }
+    if (ch === '{') {
+      depth += 1;
+      balanced += ch;
+    } else if (ch === '}') {
+      if (depth > 0) {
+        depth -= 1;
+        balanced += ch;
+      }
+    } else {
+      balanced += ch;
+    }
+  }
+  if (depth > 0) balanced += '}'.repeat(depth);
+
+  // A decoder can terminate immediately after a script marker. Make that
+  // syntactically harmless while keeping the uncertainty visible in source.
+  balanced = balanced
+    .replace(/([_^])\s*(?=[_^])/g, '$1{}')
+    .replace(/([_^])\s*$/, '$1{}');
+  return balanced.replace(/[ \t]+/g, ' ').trim();
 }
 
 
 function assessImageOcrResult(rawValue, latexValue) {
   const raw = String(rawValue || '').trim();
   const latex = String(latexValue || '').trim();
-  const reasons = [];
-  if (!latex) reasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
+  const hardReasons = [];
+  const warnings = [];
+
+  // Hard rejection is intentionally narrow. It is only for output that is
+  // clearly unusable/corrupted, not merely imperfect mathematics. The editable
+  // preview is more useful than an automatic vector fallback for uncertain but
+  // still plausible LaTeX.
+  if (!latex) hardReasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
   if (/\\includegraphics\b/i.test(raw) || /\\includegraphics\b/i.test(latex)) {
-    reasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));
+    hardReasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));
   }
   if (/\\(?:begin|end)\{(?:document|figure|table)\}/i.test(raw)) {
-    reasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
+    hardReasons.push(t('document markup was produced instead of a formula', '生成了文档标记而不是公式'));
   }
-  if (latex.length > 1800) reasons.push(t('the output is implausibly long for one selected formula', '单个框选公式的输出异常过长'));
-  const includeCount = (raw.match(/\\includegraphics\b/gi) || []).length;
-  if (includeCount >= 2) reasons.push(t('the output contains repeated image placeholders', '输出包含重复图像占位符'));
+  if (/[\uE000-\uF8FF\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/u.test(raw + latex)) {
+    hardReasons.push(t('private-use font glyphs leaked into the OCR output', 'OCR 输出中混入了私用区字体字形'));
+  }
+  if (/\uFFFD/.test(raw + latex)) {
+    hardReasons.push(t('unrecoverable replacement glyphs were produced', '生成了无法恢复的替代字形'));
+  }
+
   const commandLoop = raw.match(/(\\[A-Za-z]+(?:\{[^{}]{0,30}\})?)(?:\s*\1){4,}/);
-  if (commandLoop) reasons.push(t('the model entered a repeated-token loop', '模型进入了重复 token 循环'));
+  if (commandLoop) hardReasons.push(t('the model entered a repeated-token loop', '模型进入了重复 token 循环'));
   const compact = latex.replace(/\s+/g, ' ');
-  if (/(.{18,90})(?:\s*\1){3,}/.test(compact)) reasons.push(t('large repeated fragments were detected', '检测到大段重复片段'));
+  if (/(.{18,90})(?:\s*\1){3,}/.test(compact)) {
+    hardReasons.push(t('large repeated fragments were detected', '检测到大段重复片段'));
+  }
+
+  const fracCount = (latex.match(/\\(?:c?frac)\b/g) || []).length;
+  let braceDepth = 0;
+  let maxBraceDepth = 0;
+  for (let i = 0; i < latex.length; i += 1) {
+    if (latex[i] === '\\' && i + 1 < latex.length) { i += 1; continue; }
+    if (latex[i] === '{') { braceDepth += 1; maxBraceDepth = Math.max(maxBraceDepth, braceDepth); }
+    else if (latex[i] === '}' && braceDepth > 0) braceDepth -= 1;
+  }
+  if ((fracCount >= 20 && latex.length >= 700) || maxBraceDepth >= 30) {
+    hardReasons.push(t('the formula contains implausible runaway fraction nesting', '公式包含异常的失控分式嵌套'));
+  }
+
+  const tokens = compact.match(/\\[A-Za-z]+|[A-Za-z]+|\d+|[^\s]/g) || [];
+  let repeatedTokenRun = false;
+  for (const width of [6, 8, 10, 12]) {
+    if (repeatedTokenRun || tokens.length < Math.max(140, width * 4)) break;
+    const seen = new Map();
+    for (let i = 0; i <= tokens.length - width; i += 1) {
+      const key = tokens.slice(i, i + width).join(' ');
+      const previous = seen.get(key) || [];
+      if (previous.some((at) => i - at >= width && i - at <= width * 12)) {
+        for (let j = i + width; j <= tokens.length - width; j += 1) {
+          if (tokens.slice(j, j + width).join(' ') === key) { repeatedTokenRun = true; break; }
+        }
+      }
+      if (repeatedTokenRun) break;
+      previous.push(i);
+      seen.set(key, previous.slice(-4));
+    }
+  }
+  if (repeatedTokenRun) hardReasons.push(t('a repeated LaTeX token sequence indicates decoder runaway', '重复的 LaTeX token 序列表明解码器发生失控循环'));
+
+  // Everything below is advisory. Keep the image-OCR result visible/editable
+  // and label it for review instead of throwing it away.
+  if (latex.length > 1800) warnings.push(t('the output is unusually long', '输出长度异常偏长'));
+  if (braceDepth !== 0) warnings.push(t('brace balance needed repair or review', '花括号平衡需要检查'));
   const mathSignal = /\\[A-Za-z]+|[=<>_^{}]|[+\-*\/]|\d/.test(latex);
   const words = latex.match(/[A-Za-z]{3,}/g) || [];
-  if (!mathSignal && words.length > 3) reasons.push(t('the output looks like prose rather than mathematics', '输出看起来像普通文本而不是数学公式'));
-  return { ok: reasons.length === 0, reasons };
-}
+  if (!mathSignal && words.length > 3) warnings.push(t('the output may contain prose rather than mathematics', '输出可能包含普通文本而非数学公式'));
+  if (fracCount >= 12 || maxBraceDepth >= 18) warnings.push(t('complex nesting should be reviewed', '复杂嵌套结构建议人工核对'));
 
-function requireUsableImageOcr(rawValue, latexValue) {
-  const assessment = assessImageOcrResult(rawValue, latexValue);
-  if (assessment.ok) return;
-  const reason = assessment.reasons[0] || t('the output failed formula-quality checks', '输出未通过公式质量检查');
-  throw new Error(t(`Image OCR result rejected: ${reason}. The previous PDF-vector result was kept.`, `图像 OCR 结果已拒绝：${reason}。已保留之前的 PDF 矢量结果。`));
+  return {
+    ok: hardReasons.length === 0,
+    hardReject: hardReasons.length > 0,
+    reasons: hardReasons,
+    warnings
+  };
 }
 
 
@@ -1956,19 +2979,120 @@ function cropSelectedFormula(sourceCanvas, layer, rect) {
 }
 
 
-function formulaRowBands(canvas) {
+function formulaBackgroundIsDark(canvas) {
   const ctx = canvas?.getContext?.('2d', { willReadFrequently: true });
-  if (!ctx || !canvas.width || !canvas.height || canvas.width / Math.max(1, canvas.height) < 1.15) return [];
+  if (!ctx || !canvas.width || !canvas.height) return false;
   const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const samples = [];
+  const stepX = Math.max(1, Math.floor(width / 24));
+  const stepY = Math.max(1, Math.floor(height / 12));
+  const pushLum = (x, y) => {
+    const i = (y * width + x) * 4;
+    samples.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+  };
+  for (let x = 0; x < width; x += stepX) { pushLum(x, 0); pushLum(x, height - 1); }
+  for (let y = 0; y < height; y += stepY) { pushLum(0, y); pushLum(width - 1, y); }
+  return median(samples) < 128;
+}
+
+function normalizeFormulaPolarity(canvas) {
+  if (!canvas || !formulaBackgroundIsDark(canvas)) return canvas;
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, canvas.width);
+  out.height = Math.max(1, canvas.height);
+  const src = canvas.getContext('2d', { willReadFrequently: true });
+  const dst = out.getContext('2d', { alpha: false, willReadFrequently: true });
+  if (!src || !dst) return canvas;
+  const image = src.getImageData(0, 0, out.width, out.height);
+  const border = [];
+  const stepX = Math.max(1, Math.floor(out.width / 24));
+  const stepY = Math.max(1, Math.floor(out.height / 12));
+  const lumAt = (x, y) => {
+    const i = (y * out.width + x) * 4;
+    return 0.2126 * image.data[i] + 0.7152 * image.data[i + 1] + 0.0722 * image.data[i + 2];
+  };
+  for (let x = 0; x < out.width; x += stepX) { border.push(lumAt(x, 0), lumAt(x, out.height - 1)); }
+  for (let y = 0; y < out.height; y += stepY) { border.push(lumAt(0, y), lumAt(out.width - 1, y)); }
+  const background = Math.max(0, Math.min(180, median(border)));
+  const span = Math.max(48, 255 - background);
+  for (let i = 0; i < image.data.length; i += 4) {
+    const lum = 0.2126 * image.data[i] + 0.7152 * image.data[i + 1] + 0.0722 * image.data[i + 2];
+    const signal = Math.max(0, Math.min(1, (lum - background) / span));
+    const value = Math.round(255 * (1 - Math.pow(signal, 0.78)));
+    image.data[i] = value;
+    image.data[i + 1] = value;
+    image.data[i + 2] = value;
+    image.data[i + 3] = 255;
+  }
+  dst.putImageData(image, 0, 0);
+  return out;
+}
+
+function formulaInkProfiles(canvas) {
+  const normalized = normalizeFormulaPolarity(canvas);
+  const ctx = normalized?.getContext?.('2d', { willReadFrequently: true });
+  if (!ctx || !normalized.width || !normalized.height) return null;
+  const { data, width, height } = ctx.getImageData(0, 0, normalized.width, normalized.height);
   const rowInk = new Array(height).fill(0);
   const colInk = new Array(width).fill(0);
+  const rowLongestRun = new Array(height).fill(0);
   for (let y = 0; y < height; y += 1) {
+    let run = 0;
+    let longest = 0;
     for (let x = 0; x < width; x += 1) {
       const i = (y * width + x) * 4;
       const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-      if (lum < 235) { rowInk[y] += 1; colInk[x] += 1; }
+      if (lum < 225) {
+        rowInk[y] += 1;
+        colInk[x] += 1;
+        run += 1;
+        longest = Math.max(longest, run);
+      } else {
+        run = 0;
+      }
     }
+    rowLongestRun[y] = longest;
   }
+  return { canvas: normalized, width, height, rowInk, colInk, rowLongestRun };
+}
+
+function formulaHasDominantFractionRule(canvas) {
+  const profile = formulaInkProfiles(canvas);
+  if (!profile) return false;
+  const { width, height, rowInk, rowLongestRun } = profile;
+  const strongRuleRows = rowLongestRun
+    .map((run, y) => ({ run, y }))
+    .filter((item) => item.run >= width * 0.48);
+  if (!strongRuleRows.length) return false;
+  const ruleY = strongRuleRows[Math.floor(strongRuleRows.length / 2)].y;
+  const aboveInk = rowInk.slice(0, Math.max(0, ruleY - 2)).reduce((a, b) => a + b, 0);
+  const belowInk = rowInk.slice(Math.min(height, ruleY + 3)).reduce((a, b) => a + b, 0);
+  return aboveInk > width * 0.35 && belowInk > width * 0.18;
+}
+
+function formulaRowBands(canvas) {
+  const profile = formulaInkProfiles(canvas);
+  if (!profile || profile.width / Math.max(1, profile.height) < 1.15) return [];
+  const { width, height, rowInk, colInk, rowLongestRun } = profile;
+  // One dominant long fraction bar with substantial ink both above and below
+  // is a single structured quotient, not a multi-row aligned environment.
+  // Keeping it intact is critical for Yamabe/Rayleigh quotients.
+  if (formulaHasDominantFractionRule(canvas)) return [];
+
+  // Several long, thin horizontal rules at distinct heights are a strong sign
+  // of a structured fraction/continued fraction. Treating those rules as row
+  // separators caused the fallback OCR to split one formula into nonsense
+  // fragments and wrap them in `aligned`. Keep such crops intact.
+  const longRuleThreshold = width * 0.28;
+  let longRuleGroups = 0;
+  let inLongRule = false;
+  for (let y = 0; y < height; y += 1) {
+    const isLongRule = rowLongestRun[y] >= longRuleThreshold;
+    if (isLongRule && !inLongRule) longRuleGroups += 1;
+    inLongRule = isLongRule;
+  }
+  if (longRuleGroups >= 2) return [];
+
   // Tall braces/matrix delimiters are a strong sign that row-by-row OCR would
   // destroy a single structured object, so keep those crops intact.
   if (colInk.some((count) => count > height * 0.52)) return [];
@@ -1991,6 +3115,15 @@ function formulaRowBands(canvas) {
     else merged.push({ ...band });
   }
   if (merged.length < 2 || merged.length > 5) return [];
+  // A very wide one-line tensor identity with large \sum/\int limits often
+  // appears as three horizontal bands: upper limits, the main baseline, and
+  // lower limits. Do not mistake those script bands for separate equation rows.
+  const aspect = width / Math.max(1, height);
+  if (aspect >= 6.0 && merged.length === 3) {
+    const heights = merged.map((band) => band.bottom - band.top + 1);
+    const middleDominates = heights[1] >= Math.max(18, heights[0] * 1.8, heights[2] * 1.8);
+    if (middleDominates) return [];
+  }
   return merged.map((band) => ({ top: Math.max(0, band.top - 5), bottom: Math.min(height - 1, band.bottom + 5) }));
 }
 
@@ -2016,64 +3149,266 @@ function latexVisualRowCount(value) {
   return rowBreaks ? rowBreaks + 1 : 1;
 }
 
-async function runImageFormulaRecognition(crop) {
+function latexHasAlignmentRelation(value) {
+  return /(?:&\s*)?(?:=|\\leq?\b|\\geq?\b|\\approx\b|\\sim\b|\\equiv\b|\\to\b|\\Rightarrow\b)/.test(String(value || ''));
+}
+
+function latexHasLargeMathOperator(value) {
+  return /\\(?:int|iint|iiint|oint|sum|prod|lim|sup|inf|bigcup|bigcap)\b/.test(String(value || ''));
+}
+
+function alignedRowsAssessment(lines) {
+  const clean = (Array.isArray(lines) ? lines : []).map((line) => String(line || '').trim()).filter(Boolean);
+  const reasons = [];
+  if (clean.length < 2) reasons.push('too-few-rows');
+  const relationCount = clean.filter(latexHasAlignmentRelation).length;
+  if (clean.length >= 2 && relationCount < Math.max(2, clean.length - 1)) reasons.push('weak-shared-alignment');
+  for (let i = 0; i < clean.length; i += 1) {
+    const compact = clean[i].replace(/\s+/g, '');
+    // A very short, relation-free fragment between equation rows is usually a
+    // decoder artifact (for example `J\\mathbb{R}^{n}` detached from an
+    // integral). Reject the rowwise candidate rather than silently deleting
+    // mathematics or presenting a fabricated aligned block.
+    if (clean.length >= 3 && compact.length <= 22 && !latexHasAlignmentRelation(clean[i]) && !latexHasLargeMathOperator(clean[i])) {
+      reasons.push(`orphan-row-${i + 1}`);
+    }
+  }
+  return { ok: reasons.length === 0, reasons, relationCount };
+}
+
+function alignedCandidateScore(item, expectedRows = 0) {
+  if (!item?.latex) return 10000;
+  const assessmentPenalty = (item.assessment?.reasons?.length || 0) * 50;
+  const structural = Number(item.penalty || 0);
+  const rows = latexVisualRowCount(item.latex);
+  let score = structural + assessmentPenalty;
+  if (expectedRows >= 2) score += Math.abs(rows - expectedRows) * 10;
+  if (/\\begin\{aligned\}/.test(item.latex)) score -= 4;
+  const relationCount = (String(item.latex).match(/&\s*(?:=|\\leq?|\\geq?|\\approx|\\sim|\\equiv|\\to|\\Rightarrow)/g) || []).length;
+  if (expectedRows >= 2) score -= Math.min(expectedRows, relationCount) * 2;
+  return score;
+}
+
+function preprocessFormulaCanvas(sourceCanvas, mode = 'normal') {
+  if (!sourceCanvas || mode === 'normal') return sourceCanvas;
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, sourceCanvas.width || 1);
+  out.height = Math.max(1, sourceCanvas.height || 1);
+  const srcCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  const dstCtx = out.getContext('2d', { alpha: false, willReadFrequently: true });
+  if (!srcCtx || !dstCtx) return sourceCanvas;
+  dstCtx.fillStyle = '#fff';
+  dstCtx.fillRect(0, 0, out.width, out.height);
+  const imageData = srcCtx.getImageData(0, 0, out.width, out.height);
+  const { data } = imageData;
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    let value = lum;
+    if (mode === 'contrast') {
+      if (lum <= 190) value = 0;
+      else if (lum >= 248) value = 255;
+      else value = Math.max(0, Math.min(255, Math.round(((lum - 190) / 58) * 255)));
+    } else if (mode === 'boost') {
+      value = lum < 228 ? 0 : 255;
+    }
+    data[i] = value;
+    data[i + 1] = value;
+    data[i + 2] = value;
+    data[i + 3] = 255;
+  }
+  dstCtx.putImageData(imageData, 0, 0);
+  return out;
+}
+
+function latexMathSignature(value) {
+  const text = String(value || '');
+  const count = (pattern) => (text.match(pattern) || []).length;
+  return {
+    superscripts: count(/\^/g),
+    subscripts: count(/_/g),
+    fractions: count(/\\(?:c?frac)\b/g),
+    radicals: count(/\\sqrt\b/g),
+    integrals: count(/\\(?:int|iint|iiint|oint)\b/g),
+    sums: count(/\\(?:sum|prod|bigcup|bigcap)\b/g),
+    relations: count(/(?:=|\\leq?\b|\\geq?\b|\\approx\b|\\sim\b|\\equiv\b|\\to\b|\\Rightarrow\b)/g)
+  };
+}
+
+function latexSignatureDistance(a, b) {
+  const left = latexMathSignature(a);
+  const right = latexMathSignature(b);
+  return Math.abs(left.superscripts - right.superscripts)
+    + Math.abs(left.subscripts - right.subscripts)
+    + Math.abs(left.fractions - right.fractions) * 2
+    + Math.abs(left.radicals - right.radicals) * 2
+    + Math.abs(left.integrals - right.integrals) * 3
+    + Math.abs(left.sums - right.sums) * 3
+    + Math.abs(left.relations - right.relations) * 2;
+}
+
+function analyzeFormulaSelection(crop, vectorCandidate = null) {
+  const bands = formulaRowBands(crop);
+  const aspect = crop?.width && crop?.height ? crop.width / Math.max(1, crop.height) : 1;
+  const vectorLatex = String(vectorCandidate?.latex || '');
+  const vectorSignature = latexMathSignature(vectorLatex);
+  const scriptLoad = vectorSignature.superscripts + vectorSignature.subscripts;
+  const operatorLoad = vectorSignature.integrals + vectorSignature.sums + vectorSignature.fractions + vectorSignature.radicals;
+  const tensorLike = scriptLoad >= 4 || (aspect >= 4.8 && bands.length <= 1) || (scriptLoad >= 2 && operatorLoad >= 1);
+  const fractionLike = formulaHasDominantFractionRule(crop);
+  return {
+    bands,
+    aspect,
+    tensorLike,
+    fractionLike,
+    expectedRows: bands.length >= 2 ? bands.length : 0,
+    scriptLoad,
+    operatorLoad
+  };
+}
+
+function imageOcrCandidateScore(candidate, context = {}) {
+  if (!candidate?.latex) return 10000;
+  let score = alignedCandidateScore(candidate, context.expectedRows || 0);
+  const signature = latexMathSignature(candidate.latex);
+  if (context.tensorLike) {
+    if (signature.superscripts + signature.subscripts < Math.max(2, context.scriptLoad || 0)) score += 12;
+  }
+  if (context.fractionLike) {
+    if (signature.fractions < 1) score += 14;
+    else score -= 2;
+  }
+  if (context.vectorLatex) score += Math.min(24, latexSignatureDistance(candidate.latex, context.vectorLatex) * 1.4);
+  if (candidate.preprocess === 'contrast') score -= 0.6;
+  if (candidate.variant === 'aligned-rows') score -= 1.2;
+  if (candidate.variant === 'wide-tiles') score -= 1.5;
+  return score;
+}
+
+function vectorCandidateScore(vectorCandidate, context = {}) {
+  if (!vectorCandidate?.latex) return 10000;
+  const latex = stabilizeOcrLatexSyntax(repairOcrLatex(vectorCandidate.latex));
+  const pseudo = {
+    latex,
+    penalty: latexStructuralPenalty(latex),
+    assessment: assessImageOcrResult(latex, latex)
+  };
+  let score = alignedCandidateScore(pseudo, context.expectedRows || 0);
+  if ((vectorCandidate.tokenCount || 0) > 120) score += Math.min(10, ((vectorCandidate.tokenCount || 0) - 120) * 0.08);
+  if (context.imageLatex) score += Math.min(18, latexSignatureDistance(latex, context.imageLatex));
+  if (context.tensorLike) {
+    const signature = latexMathSignature(latex);
+    if (signature.superscripts + signature.subscripts >= Math.max(3, context.scriptLoad || 0)) score -= 4;
+  }
+  return score;
+}
+
+async function runImageFormulaRecognition(crop, options = {}) {
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
-  const generation = {
-    max_new_tokens: 512,
-    num_beams: 2,
-    early_stopping: true,
-    do_sample: false,
-    repetition_penalty: 1.04
-  };
+  let profile;
+  try {
+    profile = analyzeFormulaSelection(crop, options.vectorCandidate || null);
+  } catch (error) {
+    console.warn('MathReader OCR layout analysis failed; using safe single-pass defaults.', error);
+    profile = {
+      bands: [],
+      aspect: crop?.width && crop?.height ? crop.width / Math.max(1, crop.height) : 1,
+      tensorLike: false,
+      fractionLike: false,
+      expectedRows: 0,
+      scriptLoad: 0,
+      operatorLoad: 0
+    };
+  }
 
-  async function onePass(sourceCanvas, variant = 'tight') {
+  async function onePass(sourceCanvas, variant = 'tight', preprocess = 'normal', careful = false) {
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
-    const inputImage = await prepareMathOcrInput(prepared);
+    const processed = preprocessFormulaCanvas(prepared, preprocess);
+    const inputImage = await prepareMathOcrInput(processed);
+    const generation = {
+      max_new_tokens: 512,
+      num_beams: careful ? 2 : 1,
+      early_stopping: Boolean(careful),
+      do_sample: false,
+      repetition_penalty: 1.04
+    };
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
-    const latex = repairOcrLatex(rawLatex);
+    const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
-    return { raw, rawLatex, latex, penalty, assessment, variant };
+    return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
   }
 
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  let best = await onePass(crop, 'tight');
+  const first = await onePass(crop, 'tight', 'normal', false);
 
-  // For visibly separated aligned rows, a whole-block decoder can return only
-  // the first line. When the crop has clean horizontal row bands and no tall
-  // matrix/cases delimiter, recognize each row and rebuild an aligned block.
-  const bands = formulaRowBands(crop);
-  if (bands.length >= 2 && latexVisualRowCount(best.latex) < bands.length) {
-    const lines = [];
-    let rowFailure = false;
-    for (let i = 0; i < bands.length; i += 1) {
-      setOcrStatus(t(`Detected ${bands.length} formula rows · recognizing row ${i + 1}…`, `检测到 ${bands.length} 行公式 · 正在识别第 ${i + 1} 行……`), true);
-      try {
-        const row = await onePass(cropCanvasRows(crop, bands[i]), 'tight');
-        if (!row.assessment.ok || !row.latex) { rowFailure = true; break; }
-        lines.push(markAlignmentRelation(row.latex));
-      } catch (_) { rowFailure = true; break; }
-    }
-    if (!rowFailure && lines.length === bands.length) {
-      const latex = `\\begin{aligned}\n${lines.join(latexLineSeparator())}\n\\end{aligned}`;
-      const candidate = { raw: latex, rawLatex: latex, latex, penalty: latexStructuralPenalty(latex), assessment: assessImageOcrResult(latex, latex), variant: 'rows' };
-      if (candidate.assessment.ok) best = candidate;
-    }
+  // Fast-first policy: if the first result passes the quality gate, return it
+  // immediately. Complex-looking geometry by itself must never trigger a
+  // cascade of extra model calls. v126 did that and could take minutes.
+  if (first.assessment.ok && first.penalty < 20) {
+    return { ...first, profile, inferenceCount: 1 };
   }
 
-  if (!best.assessment.ok || best.penalty >= 8) {
-    setOcrStatus(t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……'), true);
-    const alternate = await onePass(crop, 'relaxed');
-    const score = (item) => item.penalty + item.assessment.reasons.length * 40 + (item.latex ? 0 : 1000) - (looksMultilineLatex(item.latex) ? 3 : 0);
-    if (score(alternate) < score(best)) best = alternate;
+  // At most one targeted retry. Choose a single transformation from the crop
+  // geometry instead of running row OCR, tiled OCR, and several contrast passes.
+  let retryVariant = 'relaxed';
+  let retryPreprocess = 'normal';
+  let retryMessage = t('OCR was uncertain · trying one careful retry…', 'OCR 结果不够稳定 · 正在进行一次精细重试……');
+  if (profile.tensorLike || (profile.aspect >= 6 && profile.expectedRows === 0)) {
+    retryVariant = 'tight';
+    retryPreprocess = 'contrast';
+    retryMessage = t('OCR was uncertain · trying one tensor-friendly contrast pass…', 'OCR 结果不够稳定 · 正在进行一次适合复杂上下标的高对比度重试……');
+  } else if (profile.fractionLike) {
+    retryVariant = 'relaxed';
+    retryPreprocess = 'normal';
+    retryMessage = t('OCR was uncertain · trying one full-fraction retry…', 'OCR 结果不够稳定 · 正在对完整分式进行一次重试……');
   }
+
+  setOcrStatus(retryMessage, true);
+  let retry = null;
+  try {
+    retry = await onePass(crop, retryVariant, retryPreprocess, true);
+  } catch (_) {
+    retry = null;
+  }
+
+  let best = first;
+  if (retry?.latex && !retry.assessment.hardReject) {
+    const context = {
+      expectedRows: profile.expectedRows,
+      tensorLike: profile.tensorLike,
+      scriptLoad: profile.scriptLoad,
+      fractionLike: profile.fractionLike,
+      vectorLatex: options.vectorCandidate?.latex || ''
+    };
+    if (imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context)) best = retry;
+  }
+
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
-  requireUsableImageOcr(best.raw, best.latex);
-  return best;
+
+  // Image mode must remain image-first. A nonempty Texify result is more useful
+  // to the user than silently replacing it with a weak PDF-vector reconstruction.
+  // Preserve hard-reject information as a review warning instead of throwing;
+  // automatic vector fallback is reserved for the true no-output / inference-error case.
+  if (best.assessment?.hardReject) {
+    best = {
+      ...best,
+      assessment: {
+        ...best.assessment,
+        ok: true,
+        retainedForReview: true,
+        warnings: [
+          ...(best.assessment.warnings || []),
+          ...(best.assessment.reasons || [])
+        ]
+      }
+    };
+  }
+  return { ...best, profile, inferenceCount: retry ? 2 : 1 };
 }
+
 function commitFormulaResult(item, statusMessage = '') {
   currentOcrResult = item;
   ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 10);
@@ -2090,7 +3425,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
 
   if (formulaExtractionMode === 'vector' && vector?.latex) {
     commitFormulaResult(
-      { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
+      { page, kind, latex: stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex)), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
     return;
@@ -2099,28 +3434,40 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   mathOcrLoading = true;
   setOcrProcessing(true);
   try {
-    const result = await runImageFormulaRecognition(crop);
-    const item = { page, kind, latex: result.latex, preview, created: Date.now(), quality: result.penalty === 0 ? 'clean' : 'review', source: 'image', vectorAlternative: vector?.latex || null, vectorAlternativeText: vector?.text || null };
-    commitFormulaResult(item, result.penalty === 0
-      ? t('Image OCR complete · structure check passed.', '图像 OCR 完成 · 结构检查通过。')
-      : t('Image OCR complete · review the editable LaTeX before reuse.', '图像 OCR 完成 · 复用前请核对可编辑 LaTeX。'));
+    const result = await runImageFormulaRecognition(crop, { vectorCandidate: vector });
+    const item = {
+      page,
+      kind,
+      latex: result.latex,
+      preview,
+      created: Date.now(),
+      quality: result.penalty === 0 && !(result.assessment?.warnings?.length) ? 'clean' : 'review',
+      source: 'image',
+      vectorAlternative: vector?.latex || null,
+      vectorAlternativeText: vector?.text || null
+    };
+    commitFormulaResult(item, result.assessment?.retainedForReview
+      ? t('Image OCR returned uncertain LaTeX · kept for review instead of replacing it with PDF vector.', '图像 OCR 返回不确定的 LaTeX · 已保留供核对，不再自动替换为 PDF 矢量结果。')
+      : (result.penalty === 0 && !(result.assessment?.warnings?.length)
+        ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
+        : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。')));
   } catch (error) {
     console.error(error);
-    if (vector?.latex) {
-      commitFormulaResult(
-        { page, kind, latex: vector.latex, preview, created: Date.now(), quality: 'vector-fallback', source: 'vector', extractedText: vector.text },
-        t('Image OCR failed or was rejected · PDF vector fallback was used instead.', '图像 OCR 失败或未通过质量检查 · 已改用 PDF 矢量备用结果。')
-      );
-    } else {
-      const detail = detailedOcrError(error, mathOcrBackend);
-      setOcrStatus(detail);
-      showError(detail);
-    }
+    // Do not silently replace Image OCR with PDF vector. Vector reconstruction
+    // can be badly corrupted by PDF font encodings even for simple formulas.
+    // Keep it available only through the explicit "Try PDF Vector" action.
+    const detail = detailedOcrError(error, mathOcrBackend);
+    setOcrStatus(vector?.latex
+      ? `${detail} · ${t('PDF vector is available manually.', '可手动尝试 PDF 矢量结果。')}`
+      : detail);
+    showError(detail);
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
+    releaseMathOcrPipelineAfterExtraction();
   }
 }
+
 
 async function canvasFromDataUrl(dataUrl) {
   if (!dataUrl) return null;
@@ -2160,6 +3507,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null) {
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
+    releaseMathOcrPipelineAfterExtraction();
   }
 }
 
@@ -2176,16 +3524,24 @@ async function tryImageOcrForCurrentResult() {
 
 function addOcrToPageNote() {
   if (!pdfDoc || !currentOcrResult?.latex) return;
-  const page = Number(currentOcrResult.page) || currentPage;
-  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${page}`, `第 ${page} 页`)}\n\\[\n${currentOcrResult.latex}\n\\]`;
-  const existing = notes[String(page)] || '';
-  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  const targetPage = Number(currentPage) || Number(currentOcrResult.page) || 1;
+  const sourcePage = Number(currentOcrResult.page) || targetPage;
+  const sourceLabel = sourcePage !== targetPage
+    ? ` · ${t(`OCR source page ${sourcePage}`, `OCR 来源第 ${sourcePage} 页`)}`
+    : '';
+  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}${sourceLabel}\n\\[\n${currentOcrResult.latex}\n\\]`;
+  const existing = notes[String(targetPage)] || '';
+  notes[String(targetPage)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  pageNote.value = notes[String(targetPage)];
+  scheduleNotePreview();
   persistDocumentState();
-  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  openRightSectionShortcut('note-section', pageNote);
+  setOcrStatus(t(`Added to page ${targetPage} note.`, `已添加到第 ${targetPage} 页注。`));
 }
 
 function clearOcrResultState() {
+  if (currentOcrResult) pushUndo('ocr-result', t('Formula extraction result', '公式提取结果'), currentOcrResult);
   currentOcrResult = null;
   refreshOcrUI();
   persistDocumentState();
@@ -2383,6 +3739,145 @@ function positionSelectionToolbar(rect) {
   selectionToolbar.style.top = `${Math.round(top)}px`;
 }
 
+
+function normalizedSelectionRects(range, layer) {
+  if (!range || !layer) return [];
+  const layerRect = layer.getBoundingClientRect();
+  if (!layerRect.width || !layerRect.height) return [];
+  const out = [];
+  for (const rect of Array.from(range.getClientRects())) {
+    const left = Math.max(rect.left, layerRect.left);
+    const top = Math.max(rect.top, layerRect.top);
+    const right = Math.min(rect.right, layerRect.right);
+    const bottom = Math.min(rect.bottom, layerRect.bottom);
+    if (right - left < 1 || bottom - top < 1) continue;
+    out.push({
+      x: (left - layerRect.left) / layerRect.width,
+      y: (top - layerRect.top) / layerRect.height,
+      w: (right - left) / layerRect.width,
+      h: (bottom - top) / layerRect.height
+    });
+  }
+  return out.slice(0, 80);
+}
+
+function normalizeAnnotations(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && Number(item.page) >= 1 && ['highlight','margin'].includes(item.type)).map((item, index) => ({
+    id: item.id || `ann-${Number(item.created) || Date.now()}-${index}`,
+    type: item.type,
+    page: Number(item.page),
+    text: typeof item.text === 'string' ? item.text : '',
+    latex: typeof item.latex === 'string' ? item.latex : '',
+    note: typeof item.note === 'string' ? item.note : '',
+    rects: Array.isArray(item.rects) ? item.rects.map((r) => ({ x:Number(r.x)||0, y:Number(r.y)||0, w:Number(r.w)||0, h:Number(r.h)||0 })).filter((r) => r.w > 0 && r.h > 0).slice(0,80) : [],
+    ratio: Math.min(1, Math.max(0, Number(item.ratio) || Number(item.rects?.[0]?.y) || 0)),
+    created: Number(item.created) || Date.now()
+  })).filter((item) => item.rects.length || Number.isFinite(item.ratio));
+}
+
+function annotationLayerForSurface(surface, kind = 'primary') {
+  if (!surface) return null;
+  if (surface === primaryPageSurface) return primaryAnnotationLayer;
+  if (surface === referencePageSurface) return referenceAnnotationLayer;
+  return surface.querySelector('.annotation-layer');
+}
+
+function renderAnnotationsForPage(page, surface, kind = 'primary') {
+  const layer = annotationLayerForSurface(surface, kind);
+  if (!layer) return;
+  layer.replaceChildren();
+  layer.dataset.page = String(page);
+  for (const item of annotations.filter((ann) => Number(ann.page) === Number(page))) {
+    if (item.type === 'highlight') {
+      for (const r of item.rects) {
+        const mark = document.createElement('div');
+        mark.className = 'annotation-highlight';
+        mark.style.left = `${r.x * 100}%`; mark.style.top = `${r.y * 100}%`;
+        mark.style.width = `${r.w * 100}%`; mark.style.height = `${r.h * 100}%`;
+        mark.title = item.note || item.text;
+        layer.append(mark);
+      }
+    } else if (item.type === 'margin') {
+      const marker = document.createElement('button');
+      marker.type = 'button'; marker.className = 'annotation-margin-marker';
+      marker.style.top = `${Math.min(.97, Math.max(0, item.ratio)) * 100}%`;
+      marker.title = item.note || item.text || t('Margin note', '页边注');
+      marker.setAttribute('aria-label', t(`Margin note on page ${item.page}`, `第 ${item.page} 页页边注`));
+      marker.addEventListener('click', () => { openRightSectionShortcut('annotations-section'); focusAnnotationEditor(item.id); });
+      layer.append(marker);
+    }
+  }
+}
+
+function rerenderVisibleAnnotations() {
+  if (!pdfDoc) return;
+  if (readingFlow === 'continuous') {
+    for (const [page, record] of continuousPageNodes) if (record.rendered) renderAnnotationsForPage(page, record.surface, 'continuous');
+  } else renderAnnotationsForPage(currentPage, primaryPageSurface, 'primary');
+  if (pinnedPage) renderAnnotationsForPage(pinnedPage, referencePageSurface, 'reference');
+}
+
+function focusAnnotationEditor(id) {
+  const node = annotationList?.querySelector(`[data-annotation-id="${CSS.escape(String(id))}"] textarea`);
+  if (node) { node.focus(); node.scrollIntoView({ block: 'nearest' }); }
+}
+
+function addSelectionAnnotation(type) {
+  if (!pdfDoc || !currentSelection?.text || !currentSelection.rects?.length || !['highlight','margin'].includes(type)) return;
+  const item = {
+    id: `ann-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    type, page: Number(currentSelection.page), text: currentSelection.text, latex: currentSelection.latex || '', note: '',
+    rects: currentSelection.rects.map((r) => ({...r})), ratio: Number(currentSelection.ratio) || Number(currentSelection.rects[0]?.y) || 0,
+    created: Date.now()
+  };
+  annotations.push(item);
+  persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations();
+  if (type === 'margin') { openRightSectionShortcut('annotations-section'); setTimeout(() => focusAnnotationEditor(item.id), 0); }
+}
+
+function appendAnnotationToPageNote(item) {
+  if (!item) return;
+  const page = Number(item.page) || currentPage;
+  const position = `${Math.round((Number(item.ratio) || 0) * 100)}%`;
+  const quoted = String(item.text || '').split('\n').map((line) => `> ${line}`).join('\n');
+  const meta = t(`Page ${page} · position ${position}`, `第 ${page} 页 · 位置 ${position}`);
+  const block = `${meta}\n${quoted}${item.note?.trim() ? `\n\n${item.note.trim()}` : ''}`;
+  const existing = notes[String(page)] || '';
+  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
+  persistDocumentState();
+  if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
+  noteSaveState.textContent = t('Saved locally', '已保存到本地');
+}
+
+function renderAnnotationList() {
+  if (!annotationList || !annotationEmpty || !annotationCount) return;
+  annotationList.replaceChildren();
+  annotationCount.textContent = String(annotations.length);
+  annotationEmpty.classList.toggle('is-hidden', annotations.length > 0);
+  const ordered = [...annotations].sort((a,b) => a.page - b.page || a.ratio - b.ratio || a.created - b.created);
+  for (const item of ordered) {
+    const row = document.createElement('div'); row.className = 'annotation-item'; row.dataset.annotationId = item.id;
+    const head = document.createElement('div'); head.className = 'annotation-item-head';
+    const kind = document.createElement('span'); kind.className = 'annotation-kind'; kind.textContent = item.type === 'highlight' ? t('Highlight','高亮') : t('Margin note','页边注');
+    const page = document.createElement('span'); page.className = 'annotation-page'; page.textContent = t(`Page ${item.page}`, `第 ${item.page} 页`);
+    head.append(kind,page);
+    const quote = document.createElement('p'); quote.className = 'annotation-quote'; quote.textContent = item.text || item.latex || '';
+    row.append(head, quote);
+    if (item.type === 'margin') {
+      const input = document.createElement('textarea'); input.className = 'annotation-note-input'; input.placeholder = t('Write a margin note…','写页边注……'); input.value = item.note || '';
+      input.addEventListener('input', () => { item.note = input.value; clearTimeout(annotationSaveTimer); annotationSaveTimer = setTimeout(() => { persistDocumentState(); rerenderVisibleAnnotations(); }, 250); });
+      row.append(input);
+    }
+    const actions = document.createElement('div'); actions.className = 'annotation-actions';
+    const jump = document.createElement('button'); jump.type='button'; jump.textContent=t('Jump','跳转'); jump.addEventListener('click',()=>goToLocation(item.page,item.ratio));
+    const promote = document.createElement('button'); promote.type='button'; promote.textContent=t('Add to page note','加入页注'); promote.addEventListener('click',()=>appendAnnotationToPageNote(item));
+    const remove = document.createElement('button'); remove.type='button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('annotation', item.type === 'highlight' ? t('Highlight','高亮') : t('Margin note','页边注'), item); annotations=annotations.filter((ann)=>ann.id!==item.id); persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations(); });
+    actions.append(jump,promote,remove); row.append(actions); annotationList.append(row);
+  }
+  renderDocumentMapAnnotations();
+  renderDocumentMetadata();
+}
+
 function capturePdfSelection() {
   clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
@@ -2396,8 +3891,10 @@ function capturePdfSelection() {
     if (!text) { hideSelectionToolbar(); return; }
     const page = Number(startLayer.dataset.page || 0);
     if (!page) { hideSelectionToolbar(); return; }
-    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary') };
+    const rects = normalizedSelectionRects(range, startLayer);
+    currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary'), rects, ratio: Number(rects[0]?.y) || 0 };
     refreshSelectionUI();
+    expandWorkspaceSection('selection-section');
     persistDocumentState();
     const rect = range.getBoundingClientRect();
     if (rect.width || rect.height) positionSelectionToolbar(rect);
@@ -2425,9 +3922,11 @@ async function copyPlainText(text, button = null) {
 function addSelectionToPageNote() {
   if (!pdfDoc || !currentSelection?.text) return;
   const page = currentSelection.page;
+  const position = `${Math.round((Number(currentSelection.ratio) || 0) * 100)}%`;
   const quoted = currentSelection.text.split('\n').map((line) => `> ${line}`).join('\n');
+  const meta = t(`Page ${page} · position ${position}`, `第 ${page} 页 · 位置 ${position}`);
   const existing = notes[String(page)] || '';
-  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${quoted}`;
+  notes[String(page)] = `${existing}${existing.trim() ? '\n\n' : ''}${meta}\n${quoted}`;
   persistDocumentState();
   if (page === currentPage) { pageNote.value = notes[String(page)]; scheduleNotePreview(); }
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
@@ -2447,6 +3946,7 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum, kin
     const textContent = await page.getTextContent({ includeMarkedContent: true });
     const textLayer = new pdfjsLib.TextLayer({ textContentSource: textContent, container: layer, viewport });
     await textLayer.render();
+    decorateReferenceLinks(layer, surface, pageNum);
   } catch (error) {
     console.warn('MathReader text layer unavailable for page', pageNum, error);
   }
@@ -2490,6 +3990,7 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   try {
     await task.promise;
     await renderSelectableText(page, viewport, targetTextLayer, targetSurface, pageNum, kind);
+    renderAnnotationsForPage(pageNum, targetSurface, kind);
     const ocrLayer = kind === 'reference' ? referenceOcrLayer : primaryOcrLayer;
     ocrLayer.dataset.page = String(pageNum);
     ocrLayer.dataset.kind = kind;
@@ -2510,14 +4011,75 @@ function clearContinuousObserver() {
   continuousPageNodes.clear();
 }
 
-async function renderContinuousPage(pageNum, generation) {
-  if (!pdfDoc || generation !== continuousGeneration) return;
+function canvasHasVisibleContent(sourceCanvas) {
+  if (!sourceCanvas?.width || !sourceCanvas?.height) return false;
+  try {
+    const sample = document.createElement('canvas');
+    const size = 48;
+    sample.width = size;
+    sample.height = size;
+    const sampleCtx = sample.getContext('2d', { willReadFrequently: true });
+    sampleCtx.drawImage(sourceCanvas, 0, 0, size, size);
+    const data = sampleCtx.getImageData(0, 0, size, size).data;
+    let minLum = 255;
+    let maxLum = 0;
+    let varied = 0;
+    let firstLum = null;
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = Math.round((data[i] * 0.2126) + (data[i + 1] * 0.7152) + (data[i + 2] * 0.0722));
+      minLum = Math.min(minLum, lum);
+      maxLum = Math.max(maxLum, lum);
+      if (firstLum === null) firstLum = lum;
+      else if (Math.abs(lum - firstLum) > 8) varied += 1;
+    }
+    return (maxLum - minLum) > 18 && varied >= 3;
+  } catch (error) {
+    console.warn('MathReader canvas content check unavailable', error);
+    return true;
+  }
+}
+
+async function recoverInitialContinuousCanvasFromPrimary(pageNum, activeRecord) {
+  if (!activeRecord?.canvas || !canvas || !primaryPageSurface) return false;
+  const previousTop = primaryCanvasWrap?.scrollTop || 0;
+  const previousLeft = primaryCanvasWrap?.scrollLeft || 0;
+  try {
+    await renderPage(pageNum, canvas, primaryCanvasWrap, 'primary');
+    if (!canvasHasVisibleContent(canvas)) return false;
+    const target = activeRecord.canvas;
+    target.width = canvas.width;
+    target.height = canvas.height;
+    target.style.width = canvas.style.width;
+    target.style.height = canvas.style.height;
+    activeRecord.surface.style.width = canvas.style.width;
+    activeRecord.surface.style.height = canvas.style.height;
+    const ctx = target.getContext('2d', { alpha: false });
+    ctx.clearRect(0, 0, target.width, target.height);
+    ctx.drawImage(canvas, 0, 0);
+    activeRecord.surface.classList.remove('is-placeholder', 'is-render-error');
+    activeRecord.surface.removeAttribute('data-placeholder-label');
+    activeRecord.rendered = true;
+    activeRecord.failed = false;
+    return canvasHasVisibleContent(target);
+  } catch (error) {
+    console.warn('MathReader initial continuous primary-render fallback failed', error);
+    return false;
+  } finally {
+    if (primaryCanvasWrap) {
+      primaryCanvasWrap.scrollTop = previousTop;
+      primaryCanvasWrap.scrollLeft = previousLeft;
+    }
+  }
+}
+
+async function renderContinuousPage(pageNum, generation, { retry = true } = {}) {
+  if (!pdfDoc || generation !== continuousGeneration) return false;
   const record = continuousPageNodes.get(pageNum);
-  if (!record || record.rendering || record.rendered) return;
+  if (!record || record.rendering || record.rendered) return Boolean(record?.rendered);
   record.rendering = true;
   try {
     const page = await pdfDoc.getPage(pageNum);
-    if (generation !== continuousGeneration) return;
+    if (generation !== continuousGeneration) return false;
     const baseViewport = page.getViewport({ scale: 1 });
     const scale = continuousScale(baseViewport);
     const viewport = page.getViewport({ scale });
@@ -2531,29 +4093,76 @@ async function renderContinuousPage(pageNum, generation) {
     pageCanvas.style.width = `${viewport.width}px`;
     pageCanvas.style.height = `${viewport.height}px`;
     await page.render({ canvasContext: ctx, viewport, transform: dpr === 1 ? null : [dpr,0,0,dpr,0,0] }).promise;
-    if (generation !== continuousGeneration) return;
-    await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
-    ocrLayer.dataset.page = String(pageNum);
-    ocrLayer.dataset.kind = 'continuous';
-    surface.classList.remove('is-placeholder');
+    if (generation !== continuousGeneration) return false;
+
+    // The PDF canvas is the authoritative visible page. Make it visible as soon
+    // as canvas painting succeeds; selectable text, links and annotations are
+    // secondary overlays and must never be able to strand a successfully
+    // rendered page behind the placeholder state.
+    surface.classList.remove('is-placeholder', 'is-render-error');
     surface.removeAttribute('data-placeholder-label');
     surface.classList.toggle('ocr-mode', ocrMode);
     record.rendered = true;
+    record.failed = false;
+
+    try {
+      await renderSelectableText(page, viewport, textLayer, surface, pageNum, 'continuous');
+      renderAnnotationsForPage(pageNum, surface, 'continuous');
+      ocrLayer.dataset.page = String(pageNum);
+      ocrLayer.dataset.kind = 'continuous';
+    } catch (overlayError) {
+      // Keep the already-painted PDF visible even if a secondary overlay fails.
+      console.warn('Continuous page overlay render failed', pageNum, overlayError);
+    }
+    return true;
   } catch (error) {
     console.warn('Continuous page render failed', pageNum, error);
+    record.failed = true;
+    if (!retry || generation !== continuousGeneration) {
+      record.surface?.classList.add('is-render-error');
+      if (record.surface) record.surface.dataset.placeholderLabel = t(`Page ${pageNum} could not be rendered`, `第 ${pageNum} 页无法渲染`);
+      return false;
+    }
   } finally {
     record.rendering = false;
   }
+  // A cancelled/temporary first attempt should not strand the visible page as a
+  // permanent placeholder. Retry once after yielding so the active page can
+  // recover independently from neighboring lazy renders.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return renderContinuousPage(pageNum, generation, { retry: false });
+}
+
+function continuousViewportAnchorOffset() {
+  if (!primaryCanvasWrap) return 0;
+  // Anchor display transitions to a stable reading point inside the viewport,
+  // rather than to the scroll container's top edge. Keeping the same PDF point
+  // under this screen position removes the small down/up "settling" motion that
+  // otherwise appears when page geometry changes during zoom or fit operations.
+  return Math.max(0, Math.min(140, primaryCanvasWrap.clientHeight * 0.22));
 }
 
 function captureContinuousAnchor() {
   if (readingFlow !== 'continuous' || !pdfDoc || !continuousPageNodes.size || !primaryCanvasWrap) return null;
+  if (continuousRebuilding || displayTransitionActive) return continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
   updateCurrentPageFromContinuousScroll();
   const record = continuousPageNodes.get(currentPage);
   if (!record?.frame) return null;
   const height = Math.max(1, record.frame.offsetHeight || record.surface?.offsetHeight || 1);
-  const local = primaryCanvasWrap.scrollTop - record.frame.offsetTop;
+  const focusY = continuousViewportAnchorOffset();
+  const documentY = primaryCanvasWrap.scrollTop + focusY;
+  const local = documentY - record.frame.offsetTop;
   return { page: currentPage, ratio: Math.min(1, Math.max(0, local / height)) };
+}
+
+function restoreContinuousAnchor(anchor) {
+  if (!primaryCanvasWrap || !anchor?.page) return false;
+  const target = continuousPageNodes.get(Number(anchor.page))?.frame;
+  if (!target) return false;
+  const ratio = Math.min(1, Math.max(0, Number(anchor.ratio) || 0));
+  const focusY = continuousViewportAnchorOffset();
+  primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio - focusY);
+  return true;
 }
 
 function continuousScale(baseViewport) {
@@ -2584,22 +4193,31 @@ function updateCurrentPageFromContinuousScroll() {
   }
 }
 
-async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
-  if (!pdfDoc || !continuousStack) return;
+async function buildInitialContinuousDocument({ anchor = null } = {}) {
+  if (!pdfDoc || !continuousStack || !primaryCanvasWrap) return;
   const generation = ++continuousGeneration;
-  clearContinuousObserver();
-  continuousStack.replaceChildren();
-  // Freeze one layout width/height for this generation. Lazy pages must never
-  // compute fit-width from a later sidebar/scrollbar state than early pages.
+
+  // First load is deliberately deterministic. The workspace may have only just
+  // become visible, so let layout settle before measuring the reader region.
+  await nextFrame();
+  await nextFrame();
+  if (generation !== continuousGeneration || !pdfDoc) return;
+
   continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
   continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
-  const first = await pdfDoc.getPage(Math.min(currentPage, pdfDoc.numPages));
+
+  const pageMetrics = await Promise.all(Array.from({ length: pdfDoc.numPages }, async (_, index) => {
+    const page = await pdfDoc.getPage(index + 1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = continuousScale(base);
+    return { width: base.width * scale, height: base.height * scale };
+  }));
   if (generation !== continuousGeneration) return;
-  const base = first.getViewport({ scale: 1 });
-  const scale = continuousScale(base);
-  const estimateWidth = base.width * scale;
-  const estimateHeight = base.height * scale;
+
+  const replacement = document.createDocumentFragment();
+  const replacementNodes = new Map();
   for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
+    const metric = pageMetrics[pageNum - 1];
     const frame = document.createElement('section');
     frame.className = 'continuous-page-frame';
     frame.dataset.page = String(pageNum);
@@ -2611,14 +4229,17 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     const surface = document.createElement('div');
     surface.className = 'page-surface continuous-page-surface is-placeholder';
     surface.dataset.placeholderLabel = t(`Page ${pageNum}`, `第 ${pageNum} 页`);
-    surface.style.width = `${estimateWidth}px`;
-    surface.style.height = `${estimateHeight}px`;
+    surface.style.width = `${metric.width}px`;
+    surface.style.height = `${metric.height}px`;
     const pageCanvas = document.createElement('canvas');
     pageCanvas.setAttribute('aria-label', t(`PDF page ${pageNum}`, `PDF 第 ${pageNum} 页`));
     const textLayer = document.createElement('div');
     textLayer.className = 'textLayer';
     textLayer.dataset.page = String(pageNum);
     textLayer.dataset.kind = 'continuous';
+    const annotationLayer = document.createElement('div');
+    annotationLayer.className = 'annotation-layer';
+    annotationLayer.dataset.page = String(pageNum);
     const ocrLayer = document.createElement('div');
     ocrLayer.className = 'ocr-select-layer';
     ocrLayer.dataset.kind = 'continuous';
@@ -2627,11 +4248,175 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
     box.className = 'ocr-selection-box';
     ocrLayer.append(box);
     bindOcrLayer(ocrLayer);
-    surface.append(pageCanvas, textLayer, ocrLayer);
+    surface.append(pageCanvas, textLayer, annotationLayer, ocrLayer);
     frame.append(label, surface);
-    continuousStack.append(frame);
-    continuousPageNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, ocrLayer, rendered: false, rendering: false });
+    replacement.append(frame);
+    replacementNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
   }
+
+  // No lazy observer exists yet. Install the final geometry, restore the saved
+  // location, and render the active page through one uncontested code path.
+  clearContinuousObserver();
+  continuousRebuilding = true;
+  continuousStack.replaceChildren(replacement);
+  continuousPageNodes = replacementNodes;
+
+  const restoreAnchor = anchor || continuousSavedAnchor;
+  const activePage = Math.min(Math.max(1, Number(restoreAnchor?.page) || currentPage), pdfDoc.numPages);
+  if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
+    const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
+    const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
+    if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
+  } else {
+    const target = continuousPageNodes.get(activePage)?.frame;
+    if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
+  }
+
+  // Allow anchor capture again, but keep observer/prefetch disabled until the
+  // active page is visibly painted and the placeholder state is actually gone.
+  continuousRebuilding = false;
+  const ok = await renderContinuousPage(activePage, generation);
+  if (generation !== continuousGeneration) return;
+  const activeRecord = continuousPageNodes.get(activePage);
+  let placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
+  let canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+  let canvasContent = canvasReady && canvasHasVisibleContent(activeRecord?.canvas);
+
+  // A resolved PDF.js render task can still leave an effectively blank canvas
+  // in the first continuous view on some PDFs/browser states. Single-page
+  // rendering is an independent, proven path in MathReader, so use it as a
+  // narrowly-scoped first-load recovery source rather than leaving a gray page.
+  if (ok && activeRecord?.rendered && placeholderGone && canvasReady && !canvasContent) {
+    console.warn('[MathReader] initial continuous: blank canvas detected; trying primary-render fallback', { generation, activePage });
+    const recovered = await recoverInitialContinuousCanvasFromPrimary(activePage, activeRecord);
+    if (generation !== continuousGeneration) return;
+    placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
+    canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+    canvasContent = recovered && canvasHasVisibleContent(activeRecord?.canvas);
+    console.info('[MathReader] initial continuous: fallback result', { generation, activePage, recovered, canvasContent });
+  }
+
+  if (!ok || !activeRecord?.rendered || !placeholderGone || !canvasReady || !canvasContent) {
+    initialContinuousReady = false;
+    activeRecord?.surface?.classList.add('is-render-error');
+    if (activeRecord?.surface) activeRecord.surface.dataset.placeholderLabel = t(
+      `Page ${activePage} could not be rendered`,
+      `第 ${activePage} 页无法渲染`,
+    );
+    showError(t('Continuous reading could not render the current page.', '连续阅读无法渲染当前页面。'));
+    console.error('[MathReader] initial continuous: active page verification failed', { generation, activePage });
+    return;
+  }
+
+  // Only after the active page is definitely visible may lazy rendering begin.
+  continuousObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const pageNum = Number(entry.target.dataset.page);
+      if (pageNum && pageNum !== activePage) renderContinuousPage(pageNum, generation);
+    }
+  }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
+  for (const [pageNum, record] of continuousPageNodes) {
+    if (pageNum !== activePage) continuousObserver.observe(record.frame);
+  }
+
+  // Warm immediate neighbors after the active page is already on screen.
+  const neighborPages = [];
+  for (let n = Math.max(1, activePage - 2); n <= Math.min(pdfDoc.numPages, activePage + 2); n += 1) {
+    if (n !== activePage) neighborPages.push(n);
+  }
+  Promise.all(neighborPages.map((n) => renderContinuousPage(n, generation))).catch((error) => {
+    console.warn('[MathReader] initial continuous: neighbor warmup failed', error);
+  });
+
+  updateCurrentPageFromContinuousScroll();
+  continuousSavedAnchor = captureContinuousAnchor() || restoreAnchor || continuousSavedAnchor;
+  initialContinuousReady = true;
+}
+
+async function buildContinuousDocument({ restore = false, anchor = null } = {}) {
+  if (!pdfDoc || !continuousStack) return;
+  const generation = ++continuousGeneration;
+  // Keep the old continuous document on screen while asynchronous PDF metadata
+  // is fetched. Clearing it before this await lets the scroll container collapse
+  // to zero height for a frame, which visibly flashes page 1 during +/- zoom.
+  continuousLayoutWidth = Math.max(220, primaryCanvasWrap.clientWidth - 46);
+  continuousLayoutHeight = Math.max(220, primaryCanvasWrap.clientHeight - 46);
+  // Build exact page metrics while the old document stays visible. Using one
+  // current-page estimate for every placeholder makes mixed-size pages change
+  // height as they render, which then forces a second anchor correction and
+  // produces the visible down-then-back nudge during +/- zoom.
+  const pageMetrics = await Promise.all(Array.from({ length: pdfDoc.numPages }, async (_, index) => {
+    const page = await pdfDoc.getPage(index + 1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = continuousScale(base);
+    return { width: base.width * scale, height: base.height * scale };
+  }));
+  if (generation !== continuousGeneration) return;
+  const replacement = document.createDocumentFragment();
+  const replacementNodes = new Map();
+  for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum += 1) {
+    const metric = pageMetrics[pageNum - 1];
+    const frame = document.createElement('section');
+    frame.className = 'continuous-page-frame';
+    frame.dataset.page = String(pageNum);
+    const label = document.createElement('div');
+    label.className = 'continuous-page-number';
+    label.dataset.en = `Page ${pageNum}`;
+    label.dataset.zh = `第 ${pageNum} 页`;
+    label.textContent = t(label.dataset.en, label.dataset.zh);
+    const surface = document.createElement('div');
+    surface.className = 'page-surface continuous-page-surface is-placeholder';
+    surface.dataset.placeholderLabel = t(`Page ${pageNum}`, `第 ${pageNum} 页`);
+    surface.style.width = `${metric.width}px`;
+    surface.style.height = `${metric.height}px`;
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.setAttribute('aria-label', t(`PDF page ${pageNum}`, `PDF 第 ${pageNum} 页`));
+    const textLayer = document.createElement('div');
+    textLayer.className = 'textLayer';
+    textLayer.dataset.page = String(pageNum);
+    textLayer.dataset.kind = 'continuous';
+    const annotationLayer = document.createElement('div');
+    annotationLayer.className = 'annotation-layer';
+    annotationLayer.dataset.page = String(pageNum);
+    const ocrLayer = document.createElement('div');
+    ocrLayer.className = 'ocr-select-layer';
+    ocrLayer.dataset.kind = 'continuous';
+    ocrLayer.dataset.page = String(pageNum);
+    const box = document.createElement('div');
+    box.className = 'ocr-selection-box';
+    ocrLayer.append(box);
+    bindOcrLayer(ocrLayer);
+    surface.append(pageCanvas, textLayer, annotationLayer, ocrLayer);
+    frame.append(label, surface);
+    replacement.append(frame);
+    replacementNodes.set(pageNum, { frame, surface, canvas: pageCanvas, textLayer, annotationLayer, ocrLayer, rendered: false, rendering: false });
+  }
+  // Swap the complete placeholder skeleton and restore its anchor as one visual
+  // operation. Suppress the scroll-history listener during this swap so a
+  // transient scrollTop=0 can never be interpreted or persisted as page 1.
+  clearContinuousObserver();
+  continuousRebuilding = true;
+  continuousStack.replaceChildren(replacement);
+  continuousPageNodes = replacementNodes;
+  // Restore against the freshly-created placeholders immediately, before any
+  // asynchronous page rendering. Without this, replacing the continuous stack
+  // temporarily exposes scrollTop=0 and the user sees page 1 flash during zoom
+  // or layout rebuilds even though the correct reading anchor is restored later.
+  const restoreAnchor = anchor || continuousSavedAnchor;
+  if (!restoreContinuousAnchor(restoreAnchor)) {
+    const target = continuousPageNodes.get(currentPage)?.frame;
+    if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
+  }
+
+  // Render the restored/current page BEFORE installing IntersectionObserver.
+  // Previously the observer could start rendering this same page first, set its
+  // `rendering` flag, and make the explicit active-page call return immediately.
+  // The result was a permanent-looking placeholder on initial continuous load.
+  const anchorPage = Math.min(Math.max(1, Number(restoreAnchor?.page) || Number(anchor?.page) || currentPage), pdfDoc.numPages);
+  await renderContinuousPage(anchorPage, generation);
+  if (generation !== continuousGeneration) return;
+
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
@@ -2641,30 +4426,18 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   }, { root: primaryCanvasWrap, rootMargin: '1200px 0px', threshold: 0.01 });
   for (const { frame } of continuousPageNodes.values()) continuousObserver.observe(frame);
 
-  // Render the restored/current neighborhood before positioning the scroll
-  // anchor. This prevents giant stale placeholders near the resume point.
-  const anchorPage = Math.min(Math.max(1, Number(anchor?.page) || currentPage), pdfDoc.numPages);
-  const eagerPages = [];
-  for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) eagerPages.push(n);
-  await Promise.all(eagerPages.map((n) => renderContinuousPage(n, generation)));
-  if (generation !== continuousGeneration) return;
+  requestAnimationFrame(() => { if (generation === continuousGeneration) continuousRebuilding = false; });
+  // Do not perform a second anchor correction after rendering. Exact placeholder
+  // metrics mean the first restore is already authoritative; a second restore is
+  // precisely the visible nudge users reported during +/- zoom.
+  continuousSavedAnchor = restoreAnchor ? { ...restoreAnchor } : (captureContinuousAnchor() || continuousSavedAnchor);
 
-  requestAnimationFrame(() => {
-    if (generation !== continuousGeneration) return;
-    const restoreAnchor = anchor || continuousSavedAnchor;
-    if (restoreAnchor?.page && continuousPageNodes.has(Number(restoreAnchor.page))) {
-      const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
-      const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
-      if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
-    } else {
-      // Legacy sessions stored only absolute pixels. Those values depend on the
-      // old viewport width and can land inside oversized placeholders after a
-      // reload, so migrate them to the saved page rather than replaying pixels.
-      const target = continuousPageNodes.get(currentPage)?.frame;
-      if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
-    }
-    updateCurrentPageFromContinuousScroll();
-    continuousSavedAnchor = captureContinuousAnchor();
+  const neighbors = [];
+  for (let n = Math.max(1, anchorPage - 2); n <= Math.min(pdfDoc.numPages, anchorPage + 2); n += 1) {
+    if (n !== anchorPage) neighbors.push(n);
+  }
+  Promise.all(neighbors.map((n) => renderContinuousPage(n, generation))).catch((error) => {
+    console.warn('Continuous neighbor render failed', error);
   });
 }
 
@@ -2674,7 +4447,8 @@ async function renderCurrentPage() {
   if (readingFlow === 'continuous') {
     try {
       const anchor = restoringSession ? continuousSavedAnchor : captureContinuousAnchor();
-      await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0, anchor });
+      if (restoringSession && !initialContinuousReady) await buildInitialContinuousDocument({ anchor });
+      else await buildContinuousDocument({ restore: restoringSession || continuousScrollTop > 0, anchor });
     }
     catch (error) { showError(t('Continuous reading could not be rendered.', '无法渲染连续阅读模式。')); console.error(error); }
     return;
@@ -2699,12 +4473,20 @@ function continuousFitWidthMismatch() {
   return false;
 }
 
-async function stabilizeFitWidthLayout() {
+async function stabilizeFitWidthLayout(anchorOverride = null) {
   if (!pdfDoc || zoomMode !== 'fit-width' || fitWidthStabilizing) return;
   fitWidthStabilizing = true;
   try {
     clearTimeout(readerWidthTimer);
-    const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 }) : null;
+    // On tab/history return the browser may expose scrollTop=0 for the first
+    // frame. When a caller supplies the last stable anchor, never replace it
+    // with that transient page-1 position before fit-width rebuilding.
+    const suppliedAnchor = anchorOverride && Number.isFinite(Number(anchorOverride.page))
+      ? { page: Number(anchorOverride.page), ratio: Math.min(1, Math.max(0, Number(anchorOverride.ratio) || 0)) }
+      : null;
+    const anchor = readingFlow === 'continuous'
+      ? (suppliedAnchor || captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
+      : null;
     // Browser-history restores can report an intermediate grid width for one or
     // more frames. Sample it repeatedly and rebuild until rendered page widths
     // agree with the final reading-region width.
@@ -2714,6 +4496,11 @@ async function stabilizeFitWidthLayout() {
       if (!pdfDoc || zoomMode !== 'fit-width') return;
       lastObservedReaderWidth = Math.round(primaryCanvasWrap?.clientWidth || 0);
       if (readingFlow === 'continuous') {
+        // Initial/open rendering already builds to the current measured width.
+        // Avoid immediately rebuilding it again unless the browser actually
+        // reports a width mismatch; that redundant second build can itself look
+        // like a display jump even when the final anchor is correct.
+        if (!continuousFitWidthMismatch()) break;
         await buildContinuousDocument({ restore: true, anchor });
         await nextFrame();
         if (!continuousFitWidthMismatch()) break;
@@ -2727,10 +4514,14 @@ async function stabilizeFitWidthLayout() {
   }
 }
 function scheduleReaderWidthReflow() {
-  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing) return;
+  // Initial PDF restoration and an in-progress continuous rebuild already own
+  // the page geometry. ResizeObserver callbacks fired while the workspace is
+  // being unhidden must not start a competing build and invalidate the active
+  // page's generation token, otherwise the first page can remain a placeholder.
+  if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing || displayTransitionActive || restoringSession || continuousRebuilding) return;
   clearTimeout(readerWidthTimer);
   readerWidthTimer = setTimeout(async () => {
-    if (!pdfDoc || zoomMode === 'custom') return;
+    if (!pdfDoc || zoomMode === 'custom' || fitWidthStabilizing || displayTransitionActive || restoringSession || continuousRebuilding) return;
     const width = Math.round(primaryCanvasWrap?.clientWidth || 0);
     if (width < 180) return;
     if (lastObservedReaderWidth && Math.abs(width - lastObservedReaderWidth) < 2) return;
@@ -2740,6 +4531,41 @@ function scheduleReaderWidthReflow() {
     else await renderCurrentPage();
     await renderReferencePage();
   }, 140);
+}
+
+function snapshotDisplayAnchor() {
+  if (readingFlow !== 'continuous') return null;
+  const live = captureContinuousAnchor();
+  return live ? { ...live } : (continuousSavedAnchor ? { ...continuousSavedAnchor } : { page: currentPage, ratio: 0 });
+}
+
+async function runDisplayTransition(mutator, { delay = 0, renderReference = true } = {}) {
+  if (!pdfDoc) { mutator?.(); return; }
+  const serial = ++displayTransitionSerial;
+  const anchor = snapshotDisplayAnchor();
+  displayTransitionActive = true;
+  continuousRebuilding = readingFlow === 'continuous';
+  if (anchor) continuousSavedAnchor = { ...anchor };
+  try {
+    mutator?.();
+    if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+    if (serial !== displayTransitionSerial || !pdfDoc) return;
+    if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
+    else await renderCurrentPage();
+    if (renderReference) await renderReferencePage();
+  } finally {
+    if (serial === displayTransitionSerial) {
+      requestAnimationFrame(() => {
+        if (serial !== displayTransitionSerial) return;
+        displayTransitionActive = false;
+        continuousRebuilding = false;
+        if (readingFlow === 'continuous') {
+          continuousSavedAnchor = captureContinuousAnchor() || anchor || continuousSavedAnchor;
+          continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
+        }
+      });
+    }
+  }
 }
 
 async function renderReferencePage() {
@@ -2752,10 +4578,97 @@ async function renderReferencePage() {
   catch (error) { console.error(error); }
 }
 
-async function goToLocation(page, ratio = 0) {
+function normalizeReadingTrail(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => item && Number(item.page) >= 1).slice(-40).map((item) => ({
+    page: Number(item.page),
+    ratio: Math.min(1, Math.max(0, Number(item.ratio) || 0)),
+    snippet: typeof item.snippet === 'string' ? item.snippet.slice(0, 180) : '',
+    created: Number(item.created) || Date.now()
+  }));
+}
+
+async function readingTrailEntry(anchor) {
+  const page = Math.min(Math.max(1, Number(anchor?.page) || currentPage), pdfDoc?.numPages || 1);
+  const ratio = Math.min(1, Math.max(0, Number(anchor?.ratio) || 0));
+  let snippet = '';
+  try {
+    const text = (await pageText(page)).replace(/\s+/g, ' ').trim();
+    if (text) {
+      const center = Math.min(text.length - 1, Math.max(0, Math.round(ratio * text.length)));
+      const from = Math.max(0, center - 55);
+      const to = Math.min(text.length, center + 95);
+      snippet = `${from > 0 ? '…' : ''}${text.slice(from, to).trim()}${to < text.length ? '…' : ''}`;
+    }
+  } catch (_) {}
+  return { page, ratio, snippet, created: Date.now() };
+}
+
+function renderReadingTrail() {
+  if (!readingTrailList) return;
+  readingTrailList.replaceChildren();
+  if (readingTrailCount) readingTrailCount.textContent = String(readingBackStack.length);
+  if (readingTrailEmpty) readingTrailEmpty.classList.toggle('is-hidden', readingBackStack.length > 0);
+  if (readingTrailClear) readingTrailClear.disabled = readingBackStack.length === 0;
+  const allEntries = readingBackStack.map((entry, index) => ({ entry, index })).reverse();
+  const visibleLimit = readingTrailExpanded ? 10 : 3;
+  const entries = allEntries.slice(0, visibleLimit);
+  if (readingTrailToggle) {
+    const hiddenCount = Math.max(0, Math.min(10, allEntries.length) - 3);
+    readingTrailToggle.classList.toggle('is-hidden', allEntries.length <= 3);
+    readingTrailToggle.textContent = readingTrailExpanded ? t('Less', '收起') : t(`More (${hiddenCount})`, `更多 (${hiddenCount})`);
+    readingTrailToggle.setAttribute('aria-expanded', readingTrailExpanded ? 'true' : 'false');
+  }
+  for (const { entry, index } of entries) {
+    const row = document.createElement('div'); row.className = 'reading-trail-item';
+    const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'reading-trail-jump';
+    const title = document.createElement('strong');
+    title.textContent = t(`Page ${entry.page} · ${Math.round(entry.ratio * 100)}%`, `第 ${entry.page} 页 · ${Math.round(entry.ratio * 100)}%`);
+    const preview = document.createElement('span'); preview.textContent = entry.snippet || t('Saved reading position', '已保存的阅读位置');
+    jump.append(title, preview);
+    jump.addEventListener('click', async () => {
+      const target = readingBackStack[index];
+      readingBackStack = readingBackStack.slice(0, index);
+      updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
+      suppressReadingHistory = true;
+      try { await goToLocation(target.page, target.ratio, { contextLead: false }); } finally { suppressReadingHistory = false; }
+    });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'reading-trail-remove';
+    remove.textContent = '×'; remove.title = t('Remove from reading trail', '从阅读轨迹中移除');
+    remove.addEventListener('click', () => {
+      readingBackStack.splice(index, 1);
+      updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
+    });
+    row.append(jump, remove); readingTrailList.append(row);
+  }
+}
+
+function navigationTargetLeadPx() {
+  // Text-derived targets are stored at the PDF text baseline. Leave a modest
+  // amount of reading context above semantic jump targets so the referenced
+  // line itself is fully visible rather than clipped just above the viewport.
+  // Keep this pixel-based: the desired visual context should remain stable
+  // across zoom levels, while the target ratio continues to identify the PDF
+  // location.
+  const height = Number(primaryCanvasWrap?.clientHeight) || 0;
+  return Math.round(Math.min(96, Math.max(72, height ? height * 0.085 : 80)));
+}
+
+async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
   if (!pdfDoc) return;
+  if (!suppressReadingHistory) {
+    const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
+    const targetPage = Math.min(Math.max(1, Number(page) || 1), pdfDoc.numPages);
+    if (here && (Number(here.page) !== targetPage || Math.abs(Number(here.ratio || 0) - Number(ratio || 0)) > 0.02)) {
+      const entry = await readingTrailEntry(here);
+      const last = readingBackStack.at(-1);
+      if (!last || last.page !== entry.page || Math.abs(last.ratio - entry.ratio) > 0.015) readingBackStack.push(entry);
+      if (readingBackStack.length > 40) readingBackStack.shift();
+      updateReadingBackButton(); renderReadingTrail();
+    }
+  }
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const targetLead = contextLead ? navigationTargetLeadPx() : 0;
   const changed = next !== currentPage;
   currentPage = next;
   hideSelectionToolbar();
@@ -2771,7 +4684,7 @@ async function goToLocation(page, ratio = 0) {
       await renderContinuousPage(next, continuousGeneration);
       const surfaceTop = record.frame.offsetTop + (record.surface?.offsetTop || 0);
       const surfaceHeight = Math.max(1, record.surface?.offsetHeight || record.frame.offsetHeight || 1);
-      primaryCanvasWrap.scrollTop = Math.max(0, surfaceTop + surfaceHeight * localRatio - 10);
+      primaryCanvasWrap.scrollTop = Math.max(0, surfaceTop + surfaceHeight * localRatio - targetLead);
       currentPage = next;
       updateNavigationState();
       continuousSavedAnchor = { page: next, ratio: localRatio };
@@ -2781,19 +4694,48 @@ async function goToLocation(page, ratio = 0) {
   }
   if (changed) await renderCurrentPage(); else updateNavigationState();
   const pageHeight = Math.max(1, primaryPageSurface?.offsetHeight || canvas?.getBoundingClientRect().height || 1);
-  primaryCanvasWrap.scrollTop = Math.max(0, pageHeight * localRatio - 10);
+  primaryCanvasWrap.scrollTop = Math.max(0, pageHeight * localRatio - targetLead);
   scrollByPage[String(next)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
   persistDocumentState();
 }
 
+function updateReadingBackButton() {
+  if (readingBackButton) readingBackButton.disabled = !pdfDoc || readingBackStack.length === 0;
+  if (readingTrailCount) readingTrailCount.textContent = String(readingBackStack.length);
+}
+
+async function goBackReadingLocation() {
+  const target = readingBackStack.pop();
+  updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
+  if (!target || !pdfDoc) return;
+  suppressReadingHistory = true;
+  try { await goToLocation(target.page, target.ratio, { contextLead: false }); } finally { suppressReadingHistory = false; }
+}
+
 async function goToPage(page) {
-  return goToLocation(page, 0);
+  return goToLocation(page, 0, { contextLead: false });
+}
+
+function renderReferenceStack() {
+  if (!referenceStack) return;
+  referenceStack.replaceChildren();
+  for (const page of referencePages) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'reference-stack-chip';
+    chip.classList.toggle('is-active', page === pinnedPage);
+    chip.textContent = t(`Page ${page}`, `第 ${page} 页`);
+    chip.addEventListener('click', () => setPinnedPage(page));
+    referenceStack.append(chip);
+  }
 }
 
 function setPinnedPage(page) {
   if (!pdfDoc) return;
   setOcrMode(false);
   pinnedPage = Math.min(Math.max(1, Number(page) || currentPage), pdfDoc.numPages);
+  referencePages = [pinnedPage, ...referencePages.filter((item) => item !== pinnedPage)].slice(0, 4);
+  renderReferenceStack();
   persistDocumentState();
   renderReferencePage();
 }
@@ -2801,6 +4743,7 @@ function setPinnedPage(page) {
 function clearPinnedPage() {
   setOcrMode(false);
   pinnedPage = null;
+  renderReferenceStack();
   persistDocumentState();
   renderReferencePage();
 }
@@ -2954,8 +4897,9 @@ async function detectOutlineFromTypography() {
       const numberedDepth = headingNumberDepth(text);
       const known = isKnownHeading(text);
       const ratio = line.size / Math.max(1, bodySize);
+      const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(text) && ratio >= 1.08;
       const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(text);
-      if (!known && numberedDepth === null && !styleHeading) continue;
+      if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
       if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
       if (isLikelyFormulaHeading(text)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
@@ -3004,11 +4948,1250 @@ function renderInferredOutline(entries) {
     button.type = 'button';
     button.className = 'outline-item';
     button.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
+    button.dataset.page = String(entry.page);
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
-    button.addEventListener('click', () => goToLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0));
+    button.addEventListener('click', () => { setDocumentMapSelectedNode(button); goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title); });
     outlineList.append(button);
   }
+  applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
+}
+
+const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
+const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
+const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
+const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
+const CLICKABLE_REFERENCE_RE = new RegExp(
+  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
+  `\\(\\s*(?:\\d+(?:\\.\\d+)*|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
+  `\\[\\s*\\d{1,3}\\s*\\]`,
+  'gi',
+);
+const GROUPED_BIBLIOGRAPHY_RE = /\[\s*\d{1,3}(?:\s*(?:,|;|[-–—])\s*\d{1,3})+\s*\]/g;
+
+function normalizedReferenceLabel(value) {
+  return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
+}
+
+function normalizeEquationTagCommands(value) {
+  const commandMap = new Map([
+    ['dagger', '†'], ['Dagger', '†'], ['ddagger', '‡'], ['Ddagger', '‡'],
+    ['ast', '*'], ['star', '⋆'], ['bigstar', '★'], ['circ', '○'], ['bullet', '•'],
+    ['triangle', '△'], ['blacktriangle', '▲'], ['triangledown', '▽'], ['blacktriangledown', '▼'],
+    ['square', '□'], ['blacksquare', '■'], ['diamond', '◇'], ['blackdiamond', '◆'],
+    ['odot', '⊙'], ['otimes', '⊗'], ['oplus', '⊕'], ['ominus', '⊖'], ['perp', '⊥'], ['parallel', '∥'],
+  ]);
+  return String(value || '').replace(/\\([A-Za-z]+)\b/g, (match, name) => commandMap.get(name) || match);
+}
+
+function normalizedEquationLabel(value) {
+  let inner = normalizeEquationTagCommands(String(value || '').normalize('NFKC').trim());
+  inner = inner.replace(/^\(\s*|\s*\)$/g, '').replace(/\s+/g, '');
+  return `(${inner})`;
+}
+
+function isSymbolicEquationTagInner(inner) {
+  const compact = String(inner || '').replace(/\s+/g, '');
+  if (!compact || Array.from(compact).length > 8) return false;
+  return Array.from(compact).every((char) => EQUATION_TAG_SYMBOL_CLASS.includes(char));
+}
+
+function isLikelyCalendarYearEquationLabel(value) {
+  const label = normalizedEquationLabel(value);
+  const inner = label.slice(1, -1);
+  if (!/^\d{4}$/.test(inner)) return false;
+  const year = Number(inner);
+  return year >= 1800 && year <= 2099;
+}
+
+function isEquationLabelQuery(value) {
+  const label = normalizedEquationLabel(value);
+  const inner = label.slice(1, -1);
+  if (isLikelyCalendarYearEquationLabel(label)) return false;
+  return /^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner);
+}
+
+function equationLabelCandidatesInLine(text) {
+  const value = normalizeEquationTagCommands(String(text || '').normalize('NFKC'));
+  const out = [];
+  const re = /\(\s*([^()]{1,32}?)\s*\)/g;
+  let match;
+  while ((match = re.exec(value))) {
+    const rawInner = match[1];
+    const compactInner = rawInner.replace(/\s+/g, '');
+    if (!/^\d+(?:\.\d+)*$/.test(compactInner) && !isSymbolicEquationTagInner(rawInner)) continue;
+    const label = normalizedEquationLabel(match[0]);
+    if (isLikelyCalendarYearEquationLabel(label)) continue;
+    out.push({ label, index: match.index, end: match.index + match[0].length });
+  }
+  return out;
+}
+
+function equationTargetScore(lineText, label, originPage, page, originRatio = null, candidateRatio = null) {
+  const text = String(lineText || '').trim();
+  const compact = text.replace(/\s+/g, '').normalize('NFKC');
+  const pos = compact.lastIndexOf(label);
+  let score = 0;
+  if (pos >= 0 && pos + label.length >= compact.length - 1) score += 12;
+  if (compact === label) score += 10;
+  score += Math.min(10, (text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_+−-]/g) || []).length * 1.5);
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\b/i.test(text)) score -= 20;
+  if (/\b(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\s+\d/i.test(text)) score -= 10;
+  // Parenthesized equation numbers inside prose are references, not targets.
+  // Prefer display-math/right-margin style lines and strongly demote prose
+  // phrases that merely cite an equation.
+  if (/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text)) score -= 18;
+  if (page === originPage) score += 0.5;
+  if (page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidateRatio)) {
+    const delta = Math.abs(candidateRatio - originRatio);
+    if (delta < 0.018) score -= 1000;
+    else if (delta < 0.05) score -= 12;
+  }
+  score -= Math.min(4, text.length / 160);
+  return score;
+}
+
+function equationCandidateConfidence(line, label) {
+  const text = String(line?.text || '').trim();
+  if (!text || isLikelyCalendarYearEquationLabel(label)) return -Infinity;
+  const compact = text.replace(/\s+/g, '').normalize('NFKC');
+  const normalized = normalizedEquationLabel(label);
+  const isOnlyTag = compact === normalized;
+  const mathSignals = (text.match(/[=≤≥≠≈≡∈∉⊂⊆⊇→↔∫∑∏√∂∇∞^_+−×·/\-]/g) || []).length;
+  const xStart = Number(line?.xStartRatio);
+  const xEnd = Number(line?.xEndRatio);
+  const nearRight = (Number.isFinite(xStart) && xStart >= 0.62) || (Number.isFinite(xEnd) && xEnd >= 0.78);
+  const nearBottom = Number(line?.ratio) >= 0.90;
+  const proseHeavy = text.length > 55 && mathSignals === 0;
+  const isolatedRightTag = isOnlyTag && Number.isFinite(xStart) && xStart >= 0.62;
+  if (isOnlyTag && nearBottom && !isolatedRightTag) return -Infinity;
+  // A numeric parenthesis embedded in prose is a reference/date/section-like
+  // token, not an equation target. Pure tag lines are accepted only when the
+  // glyph geometry places them at the display-math right margin.
+  if (mathSignals === 0 && !isolatedRightTag) return -Infinity;
+  if (proseHeavy && !isolatedRightTag) return -Infinity;
+  let confidence = equationTargetScore(text, normalized, null, 0, null, Number(line?.ratio));
+  if (mathSignals >= 2) confidence += 5;
+  else if (mathSignals === 1) confidence += 2;
+  if (nearRight) confidence += 6;
+  if (isOnlyTag && nearRight) confidence += 5;
+  if (Number.isFinite(xStart) && xStart < 0.18 && mathSignals === 0) confidence -= 6;
+  return confidence;
+}
+
+function isReliableEquationTargetLine(line, label) {
+  return equationCandidateConfidence(line, label) >= 8;
+}
+
+async function buildEquationLabelIndex() {
+  if (!pdfDoc) return new Map();
+  if (equationLabelIndex) return equationLabelIndex;
+  const index = new Map();
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      for (const candidate of equationLabelCandidatesInLine(line.text)) {
+        if (!isReliableEquationTargetLine(line, candidate.label)) continue;
+        const list = index.get(candidate.label) || [];
+        list.push({ page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence: equationCandidateConfidence(line, candidate.label) });
+        index.set(candidate.label, list);
+      }
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  equationLabelIndex = index;
+  renderEquationIndex();
+  return index;
+}
+
+function equationConfidenceTier(score) {
+  if (score >= 20) return t('high confidence','高置信度');
+  if (score >= 12) return t('medium confidence','中等置信度');
+  return t('review','需核对');
+}
+
+let equationThumbObserver = null;
+function observeEquationThumbnail(img, entry) {
+  const load = async () => {
+    if (img.dataset.loaded === '1' || !pdfDoc) return;
+    img.dataset.loaded = '1';
+    try {
+      const snap = await referenceSnapshotData({ page: entry.page, ratio: entry.ratio }, 'equation');
+      if (snap?.url && img.isConnected) img.src = snap.url;
+    } catch (_) {}
+  };
+  if (!('IntersectionObserver' in window)) { void load(); return; }
+  if (!equationThumbObserver) equationThumbObserver = new IntersectionObserver((items) => {
+    for (const item of items) if (item.isIntersecting) { const fn = item.target._loadEquationThumb; if (fn) void fn(); equationThumbObserver.unobserve(item.target); }
+  }, { root: equationIndex, rootMargin: '80px' });
+  img._loadEquationThumb = load; equationThumbObserver.observe(img);
+}
+
+function renderEquationIndex() {
+  if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
+  equationIndex.replaceChildren();
+  if (!equationLabelIndex) {
+    equationIndexCount.textContent = '0';
+    equationIndexEmpty.classList.remove('is-hidden');
+    equationIndexEmpty.textContent = t('Expand this section to prepare the equation-label index.', '展开此模块以生成公式编号索引。');
+    return;
+  }
+  const rows = [];
+  for (const [label, candidates] of equationLabelIndex.entries()) {
+    let best = null;
+    for (const candidate of candidates || []) {
+      const score = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
+      if (score < 8) continue;
+      if (!best || score > best.score) best = { ...candidate, score };
+    }
+    if (best) rows.push({ label, ...best });
+  }
+  rows.sort((a,b) => a.page - b.page || a.ratio - b.ratio || a.label.localeCompare(b.label));
+  equationIndexCount.textContent = String(rows.length);
+  equationIndexEmpty.classList.toggle('is-hidden', rows.length > 0);
+  if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
+  for (const entry of rows.slice(0, 500)) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item'; button.dataset.page=String(entry.page); button.dataset.confidence=entry.score >= 20 ? 'high' : entry.score >= 12 ? 'medium' : 'review';
+    const img=document.createElement('img'); img.className='equation-index-thumb'; img.alt=''; img.loading='lazy'; observeEquationThumbnail(img,entry);
+    const copy=document.createElement('span'); copy.className='equation-index-copy';
+    const label = document.createElement('strong'); label.textContent = entry.label;
+    const meta = document.createElement('span'); meta.textContent = `${t(`Page ${entry.page}`, `第 ${entry.page} 页`)} · ${equationConfidenceTier(entry.score)}`;
+    copy.append(label,meta); button.append(img,copy);
+    button.title = entry.text || entry.label;
+    button.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
+    equationIndex.append(button);
+  }
+  applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
+}
+
+async function ensureEquationIndexRendered() {
+  if (!pdfDoc) { renderEquationIndex(); return; }
+  if (equationLabelIndex) { renderEquationIndex(); return; }
+  if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Building equation-label index…', '正在生成公式编号索引……'); }
+  try { await buildEquationLabelIndex(); }
+  catch (error) { console.warn('Equation-label index build failed', error); if (equationIndexEmpty) equationIndexEmpty.textContent = t('The equation-label index could not be built.', '无法生成公式编号索引。'); }
+}
+
+async function findEquationLabelLocation(query, originPage = null, originRatio = null) {
+  const label = normalizedEquationLabel(query);
+  const index = await buildEquationLabelIndex();
+  const candidates = index.get(label) || [];
+  let best = null;
+  for (const candidate of candidates) {
+    // Never resolve an inline equation reference back to the exact glyphs
+    // that were clicked. This is the key distinction between a reference
+    // occurrence in prose and the actual equation tag.
+    if (candidate.page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidate.ratio)
+        && Math.abs(candidate.ratio - originRatio) < 0.018) continue;
+    const confidence = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
+    if (confidence < 8) continue;
+    const score = equationTargetScore(candidate.text, label, originPage, candidate.page, originRatio, candidate.ratio) + confidence * 0.2;
+    if (!best || score > best.score) best = { ...candidate, score };
+  }
+  return best ? { page: best.page, ratio: best.ratio } : null;
+}
+
+async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache) {
+  if (cache.has(pageNum)) return cache.get(pageNum);
+  const page = await sourceDoc.getPage(pageNum);
+  const content = await page.getTextContent();
+  const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
+  const yMin = Number(view[1]) || 0;
+  const yMax = Number(view[3]) || 1;
+  const pageHeight = Math.max(1, yMax - yMin);
+  const rows = [];
+  for (const item of content.items || []) {
+    const text = String(item.str || '').replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    const x = Number(item.transform?.[4]) || 0;
+    const width = Math.max(0, Number(item.width) || 0);
+    const y = Number(item.transform?.[5]) || 0;
+    let row = rows.find((candidate) => Math.abs(candidate.y - y) <= 2.2);
+    if (!row) { row = { y, items: [] }; rows.push(row); }
+    row.items.push({ x, width, text });
+  }
+  rows.sort((a, b) => b.y - a.y);
+  const pageWidth = Math.max(1, (Number(view[2]) || 1) - (Number(view[0]) || 0));
+  const lines = rows.map((row) => {
+    const items = row.items.sort((a, b) => a.x - b.x);
+    const xMin = Math.min(...items.map((item) => item.x));
+    const xMax = Math.max(...items.map((item) => item.x + (item.width || 0)));
+    return {
+      text: items.map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim(),
+      ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight)),
+      xStartRatio: Math.min(1, Math.max(0, (xMin - (Number(view[0]) || 0)) / pageWidth)),
+      xEndRatio: Math.min(1, Math.max(0, (xMax - (Number(view[0]) || 0)) / pageWidth))
+    };
+  }).filter((line) => line.text);
+  cache.set(pageNum, lines);
+  if (flatCache && !flatCache.has(pageNum)) flatCache.set(pageNum, lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim());
+  return lines;
+}
+
+function bibliographyMetadata(text) {
+  const value = String(text || '');
+  const doi = value.match(/\b10\.\d{4,9}\/[\-._;()/:A-Z0-9]+/i)?.[0]?.replace(/[.,;)]$/, '') || '';
+  const arxiv = value.match(/\barXiv\s*:\s*([a-z.-]+\/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?/i)?.[1] || '';
+  return { doi, arxiv };
+}
+
+async function buildStructureIndex({ force = false } = {}) {
+  if (!pdfDoc || !structureIndex || structureIndexBuilding) return;
+  if (!force && structureIndexVersion === STRUCTURE_INDEX_VERSION) {
+    renderStructureIndex(); renderBibliographyIndex();
+    return;
+  }
+
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const sourceTextCache = textCache;
+  const sourceLineCache = lineCache;
+  const token = ++structureIndexBuildToken;
+  structureIndexBuilding = true;
+  buildStructureIndexButton.disabled = true;
+  structureEmpty.classList.remove('is-hidden');
+  structureEmpty.textContent = t('Building mathematical structure in the background…', '正在后台生成数学结构索引……');
+  if (bibliographyEmpty) { bibliographyEmpty.classList.remove('is-hidden'); bibliographyEmpty.textContent = t('Detecting bibliography entries…', '正在检测参考文献条目……'); }
+
+  const nextEntries = [];
+  const nextBibliography = [];
+  const bibliographyCitationOccurrences = new Map();
+  let bibliographyMode = false;
+  let activeProofEntry = null;
+  try {
+    const maxPages = Math.min(sourceDoc.numPages, 800);
+    for (let page = 1; page <= maxPages; page += 1) {
+      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+      const lines = await pageTextLines(page, sourceDoc, sourceLineCache, sourceTextCache);
+      for (const line of lines) {
+        const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
+        if (!cleaned) continue;
+        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; activeProofEntry = null; continue; }
+
+        if (!bibliographyMode) {
+          const bracketRe = /\[[^\]]{1,60}\]/g;
+          let bracketMatch;
+          while ((bracketMatch = bracketRe.exec(cleaned))) {
+            const raw = bracketMatch[0];
+            for (const number of groupedBibliographyMembers(raw)) {
+              const list = bibliographyCitationOccurrences.get(number) || [];
+              list.push({ page, ratio: line.ratio, raw, snippet: backlinkSnippet(cleaned, raw, bracketMatch.index), matchIndex: bracketMatch.index });
+              bibliographyCitationOccurrences.set(number, list);
+            }
+          }
+        }
+
+        const structureMatch = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+        if (structureMatch) {
+          const title = structureMatch[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
+          if (STRUCTURE_LABEL_RE.test(title)) {
+            const label = title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80);
+            const key = `${page}:${normalizedReferenceLabel(label)}`;
+            if (!nextEntries.some((entry) => entry.key === key)) {
+              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
+              nextEntries.push(entry); activeProofEntry = entry;
+            }
+          }
+        }
+
+        const proofMatch = cleaned.match(/^Proof(?:\s+of\s+((?:Theorem|Lemma|Proposition|Corollary)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])))?\b[.:]?/i);
+        if (proofMatch) {
+          let target = null;
+          if (proofMatch[1]) {
+            const wanted = normalizedReferenceLabel(proofMatch[1]);
+            target = [...nextEntries].reverse().find((entry) => normalizedReferenceLabel(entry.label) === wanted) || null;
+          }
+          if (!target) target = [...nextEntries].reverse().find((entry) => page - entry.page <= 1 && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(entry.label || '')) || null;
+          if (target && !target.proofPage) {
+            target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch[1] ? `Proof of ${proofMatch[1]}` : 'Proof';
+            activeProofEntry = target;
+          }
+        }
+        if (activeProofEntry && activeProofEntry.proofPage) {
+          const references = cleaned.match(STRUCTURE_REFERENCE_RE) || [];
+          for (const reference of references) {
+            const normalizedRef = normalizedReferenceLabel(reference);
+            if (!normalizedRef || normalizedRef === normalizedReferenceLabel(activeProofEntry.label)) continue;
+            if (!activeProofEntry.proofReferences.includes(reference)) activeProofEntry.proofReferences.push(reference);
+          }
+        }
+
+        if (activeProofEntry && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
+          activeProofEntry.proofEndPage = page; activeProofEntry.proofEndRatio = line.ratio; activeProofEntry = null;
+        }
+
+        if (bibliographyMode) {
+          let bib = cleaned.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
+          if (!bib) bib = cleaned.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
+          if (bib) {
+            const number = Number(bib[1]);
+            const body = bib[2].trim();
+            const label = `[${number}]`;
+            if (!nextBibliography.some((entry) => entry.number === number)) {
+              const meta = bibliographyMetadata(body);
+              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: (bibliographyCitationOccurrences.get(number) || []).slice(0, 500), ...meta });
+            }
+          }
+        }
+      }
+      if (page % 10 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+
+    // Resolve proof dependencies into a directed graph and derive the reverse
+    // relation from the same detected structure index.
+    const structureByLabel = new Map(nextEntries.map((entry) => [normalizedReferenceLabel(entry.label), entry]));
+    for (const owner of nextEntries) {
+      const resolved = [];
+      for (const reference of owner.proofReferences || []) {
+        const target = structureByLabel.get(normalizedReferenceLabel(reference));
+        if (!target || target === owner) continue;
+        if (!resolved.some((item) => item.label === target.label)) resolved.push({ label: target.label, page: target.page, ratio: target.ratio });
+        target.usedByProofs = target.usedByProofs || [];
+        if (!target.usedByProofs.some((item) => item.label === owner.label)) target.usedByProofs.push({ label: owner.label, page: owner.proofPage || owner.page, ratio: owner.proofRatio || owner.ratio });
+      }
+      owner.proofUses = resolved.slice(0, 12);
+    }
+
+    // Corollary edges are intentionally conservative: only create them when
+    // the corollary statement itself explicitly names an earlier structure.
+    for (const entry of nextEntries) {
+      if (!/^corollary\b/i.test(entry.label || '')) continue;
+      const refs = String(entry.title || '').match(STRUCTURE_REFERENCE_RE) || [];
+      for (const ref of refs) {
+        const parent = structureByLabel.get(normalizedReferenceLabel(ref));
+        if (!parent || parent === entry) continue;
+        parent.corollaries = parent.corollaries || [];
+        if (!parent.corollaries.some((item) => item.label === entry.label)) parent.corollaries.push({ label: entry.label, page: entry.page, ratio: entry.ratio });
+        entry.derivedFrom = entry.derivedFrom || [];
+        if (!entry.derivedFrom.some((item) => item.label === parent.label)) entry.derivedFrom.push({ label: parent.label, page: parent.page, ratio: parent.ratio });
+      }
+    }
+
+    structureEntries = nextEntries.slice(0, 500);
+    bibliographyEntries = nextBibliography.slice(0, 400);
+    structureIndexVersion = STRUCTURE_INDEX_VERSION;
+    renderStructureIndex(); renderBibliographyIndex(); rerenderReferenceLinks();
+    persistDocumentState();
+  } catch (error) {
+    console.warn('Mathematical structure index build failed', error);
+    if (pdfDoc === sourceDoc && currentFileKey === sourceKey && token === structureIndexBuildToken) {
+      structureEmpty.classList.remove('is-hidden');
+      structureEmpty.textContent = t('The mathematical structure index could not be built. Use Rebuild index to try again.', '无法生成数学结构索引。可使用“重新生成索引”再次尝试。');
+    }
+  } finally {
+    if (token === structureIndexBuildToken) {
+      structureIndexBuilding = false;
+      buildStructureIndexButton.disabled = !pdfDoc;
+    }
+  }
+}
+
+function scheduleAutomaticStructureIndex() {
+  if (!pdfDoc || structureIndexVersion === STRUCTURE_INDEX_VERSION || structureIndexBuilding) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const run = () => {
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || structureIndexVersion === STRUCTURE_INDEX_VERSION) return;
+    buildStructureIndex();
+  };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 700 });
+  else setTimeout(run, 120);
+}
+
+function renderStructureIndex() {
+  if (!structureIndex || !structureEmpty || !structureCount) return;
+  structureIndex.replaceChildren();
+  structureCount.textContent = String(structureEntries.length);
+  structureEmpty.classList.toggle('is-hidden', structureEntries.length > 0);
+  if (!structureEntries.length) {
+    structureEmpty.textContent = structureIndexBuilding
+      ? t('Building mathematical structure in the background…', '正在后台生成数学结构索引……')
+      : t('The theorem, definition, and proof index is prepared automatically for this document.', '此文档的定理、定义与证明索引会自动生成。');
+    return;
+  }
+  for (const entry of structureEntries) {
+    const row = document.createElement('div'); row.className = 'structure-entry proof-graph-card'; row.dataset.page=String(entry.page);
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'structure-item proof-graph-root'; button.dataset.page=String(entry.page);
+    const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
+    const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
+    button.append(strong, meta); button.title = entry.title;
+    button.addEventListener('click', async () => { setDocumentMapSelectedNode(button); const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
+    row.append(button);
+    if (entry.proofPage) {
+      const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
+      proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
+      proof.title = entry.proofEndPage ? t(`Proof ends on page ${entry.proofEndPage}`, `证明结束于第 ${entry.proofEndPage} 页`) : '';
+      proof.addEventListener('click', async () => { const q = entry.proofTitle || 'Proof'; const target = { page: entry.proofPage, ratio: Number(entry.proofRatio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); });
+      row.append(proof);
+    }
+    const relations = [];
+    if (Array.isArray(entry.proofUses) && entry.proofUses.length) relations.push({ prefix: t('Proof uses', '证明使用'), type:'uses', items: entry.proofUses });
+    if (Array.isArray(entry.usedByProofs) && entry.usedByProofs.length) relations.push({ prefix: t('Used in proofs', '用于证明'), type:'used-in', items: entry.usedByProofs });
+    if (Array.isArray(entry.corollaries) && entry.corollaries.length) relations.push({ prefix: t('Corollaries', '推论'), type:'corollary', items: entry.corollaries });
+    if (Array.isArray(entry.derivedFrom) && entry.derivedFrom.length) relations.push({ prefix: t('Derived from', '源自'), type:'derived', items: entry.derivedFrom });
+    if (relations.length) {
+      const graphWrap=document.createElement('div'); graphWrap.className='proof-graph-relations';
+      for (const relation of relations) {
+        const graph = document.createElement('div'); graph.className = `structure-relations relation-${relation.type}`;
+        const prefix = document.createElement('span'); prefix.className = 'structure-relations-label'; prefix.textContent = `${relation.prefix}:`; graph.append(prefix);
+        for (const related of relation.items.slice(0, 8)) {
+          const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'structure-relation-chip'; chip.textContent = related.label; chip.dataset.page=String(related.page);
+          chip.addEventListener('click', async () => { await goToMatchedLocation(related.page, Number(related.ratio) || 0, related.label); updateBacklinksForTarget(related.label, { page: related.page, ratio: Number(related.ratio) || 0 }); });
+          graph.append(chip);
+        }
+        graphWrap.append(graph);
+      }
+      row.append(graphWrap);
+    }
+    structureIndex.append(row);
+  }
+  applyDocumentMapFilter(el('map-filter-theorems')); updateDocumentMapCurrentLocation();
+}
+
+function renderBibliographyIndex() {
+  if (!bibliographyIndex || !bibliographyEmpty || !bibliographyCount) return;
+  bibliographyIndex.replaceChildren(); bibliographyCount.textContent = String(bibliographyEntries.length);
+  bibliographyEmpty.classList.toggle('is-hidden', bibliographyEntries.length > 0);
+  if (!bibliographyEntries.length) {
+    bibliographyEmpty.textContent = structureIndexBuilding ? t('Detecting bibliography entries…', '正在检测参考文献条目……') : t('No numbered bibliography entries detected.', '未检测到编号参考文献条目。');
+    return;
+  }
+  for (const entry of bibliographyEntries) {
+    const row = document.createElement('div'); row.className = 'bibliography-item bibliography-smart-item'; row.dataset.page=String(entry.page);
+    const main = document.createElement('button'); main.type='button'; main.className='bibliography-jump bibliography-expand'; main.setAttribute('aria-expanded', bibliographyExpanded.has(entry.number)?'true':'false');
+    const label = document.createElement('strong'); label.textContent = entry.label;
+    const copy=document.createElement('span'); copy.className='bibliography-copy';
+    const text = document.createElement('span'); text.className='bibliography-title'; text.textContent = entry.title;
+    const stats=document.createElement('span'); stats.className='bibliography-stats'; stats.textContent=bibliographyCitationSummary(entry);
+    copy.append(text,stats); main.append(label,copy);
+    main.addEventListener('click',()=>{ if (bibliographyExpanded.has(entry.number)) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number); renderBibliographyIndex(); });
+    const actions=document.createElement('div'); actions.className='bibliography-actions';
+    const go=document.createElement('button'); go.type='button'; go.className='bibliography-go'; go.textContent=t('Go','跳转'); go.addEventListener('click',async()=>{ const target={page:entry.page,ratio:Number(entry.ratio)||0}; await goToMatchedLocation(target.page,target.ratio,entry.label); updateBacklinksForTarget(entry.label,target); }); actions.append(go);
+    if (entry.doi || entry.arxiv) {
+      const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
+      if (entry.doi) { external.href = `https://doi.org/${entry.doi}`; external.textContent = 'DOI ↗'; }
+      else { external.href = `https://arxiv.org/abs/${entry.arxiv}`; external.textContent = 'arXiv ↗'; }
+      actions.append(external);
+    }
+    row.append(main,actions);
+    if (bibliographyExpanded.has(entry.number)) {
+      const cites=document.createElement('div'); cites.className='bibliography-citations';
+      const citations=Array.isArray(entry.citations)?entry.citations:[];
+      if (!citations.length) { const empty=document.createElement('div'); empty.className='bibliography-citations-empty'; empty.textContent=t('No in-text citations detected.','未检测到正文引用。'); cites.append(empty); }
+      for (const [index,citation] of citations.entries()) {
+        const button=document.createElement('button'); button.type='button'; button.className='bibliography-citation-item'; button.dataset.page=String(citation.page);
+        const meta=document.createElement('strong'); meta.textContent=index===0?t(`First citation · p. ${citation.page}`,`首次引用 · 第 ${citation.page} 页`):t(`Citation ${index+1} · p. ${citation.page}`,`第 ${index+1} 处引用 · 第 ${citation.page} 页`);
+        const snippet=document.createElement('span'); snippet.textContent=citation.snippet||citation.raw||''; button.append(meta,snippet);
+        button.addEventListener('click',()=>goToMatchedLocation(citation.page,Number(citation.ratio)||0,citation.raw||entry.label)); cites.append(button);
+      }
+      row.append(cites);
+    }
+    bibliographyIndex.append(row);
+  }
+  applyDocumentMapFilter(el('map-filter-bibliography')); updateDocumentMapCurrentLocation();
+}
+
+function textLayerAggregate(layer) {
+  let text = ''; const parts = [];
+  for (const span of layer.querySelectorAll('span')) {
+    const node = [...span.childNodes].find((child) => child.nodeType === Node.TEXT_NODE);
+    if (!node || !node.nodeValue) continue;
+    const start = text.length; text += node.nodeValue; const end = text.length;
+    parts.push({ node, start, end }); text += ' ';
+  }
+  return { text, parts };
+}
+
+function rangeForAggregateMatch(parts, start, end) {
+  const first = parts.find((part) => start >= part.start && start < part.end);
+  const last = [...parts].reverse().find((part) => end > part.start && end <= part.end + 1);
+  if (!first || !last) return null;
+  const range = document.createRange();
+  try {
+    range.setStart(first.node, Math.max(0, Math.min(first.node.length, start - first.start)));
+    range.setEnd(last.node, Math.max(0, Math.min(last.node.length, Math.min(end, last.end) - last.start)));
+    return range;
+  } catch (_) { return null; }
+}
+
+function ensureReferenceLinkLayer(surface) {
+  let layer = surface.querySelector(':scope > .reference-link-layer');
+  if (!layer) { layer = document.createElement('div'); layer.className = 'reference-link-layer'; surface.append(layer); }
+  layer.replaceChildren(); return layer;
+}
+
+async function equationTargetAtLocation(query, pageNum, ratio) {
+  if (!isEquationLabelQuery(query) || !Number.isFinite(Number(ratio))) return null;
+  const label = normalizedEquationLabel(query);
+  const index = await buildEquationLabelIndex();
+  const candidates = index.get(label) || [];
+  let best = null;
+  for (const candidate of candidates) {
+    if (Number(candidate.page) !== Number(pageNum)) continue;
+    const delta = Math.abs((Number(candidate.ratio) || 0) - Number(ratio));
+    if (delta > 0.035) continue;
+    const confidence = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
+    if (confidence < 8) continue;
+    if (!best || delta < best.delta) best = { page: candidate.page, ratio: Number(candidate.ratio) || 0, delta };
+  }
+  return best ? { page: best.page, ratio: best.ratio } : null;
+}
+
+function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
+  if (!range) return;
+  const surfaceRect = surface.getBoundingClientRect();
+  for (const rect of range.getClientRects()) {
+    if (rect.width < 2 || rect.height < 2) continue;
+    const link = document.createElement('button'); link.type = 'button'; link.className = 'pdf-reference-link';
+    link.style.left = `${rect.left - surfaceRect.left}px`; link.style.top = `${rect.top - surfaceRect.top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
+    link.title = t(`Follow ${query}`, `跳转到 ${query}`); link.setAttribute('aria-label', link.title);
+    const sourceRatio = surfaceRect.height > 0
+      ? Math.min(1, Math.max(0, ((rect.top - surfaceRect.top) + rect.height / 2) / surfaceRect.height))
+      : null;
+    link.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hideReferencePreview();
+      // A right-margin equation tag is the destination itself, not a reference
+      // that should resolve to another copy of the same label. Clicking it should
+      // reveal backlinks for that equation without producing "No target found".
+      const equationTarget = await equationTargetAtLocation(query, pageNum, sourceRatio);
+      if (equationTarget) {
+        await updateBacklinksForTarget(query, equationTarget);
+        return;
+      }
+      await goToReferenceQuery(query, pageNum, sourceRatio);
+    });
+    attachReferencePreview(link, query, pageNum, sourceRatio);
+    overlay.append(link);
+  }
+}
+
+function groupedBibliographyMembers(raw) {
+  const inner = String(raw || '').replace(/^\[|\]$/g, '');
+  const members = [];
+  const tokenRe = /\d{1,3}(?:\s*[-–—]\s*\d{1,3})?/g;
+  let token;
+  while ((token = tokenRe.exec(inner))) {
+    const value = token[0];
+    const rangeMatch = value.match(/^(\d{1,3})\s*[-–—]\s*(\d{1,3})$/);
+    if (!rangeMatch) {
+      const number = Number(value);
+      if (number >= 1) members.push(number);
+      continue;
+    }
+    const start = Number(rangeMatch[1]);
+    const end = Number(rangeMatch[2]);
+    if (start < 1 || end < 1 || Math.abs(end - start) > 50) continue;
+    const step = start <= end ? 1 : -1;
+    for (let number = start; number !== end + step; number += step) members.push(number);
+  }
+  return [...new Set(members)].slice(0, 60);
+}
+
+function tocTitlePattern(title) {
+  const clean = String(title || '').replace(/\s+/g, ' ').trim();
+  if (!clean || clean.length < 3) return null;
+  const escape = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const numbered = clean.match(/^([A-Z]?\d+(?:\.\d+)*)(?:[.)])?\s+(.+)$/i);
+  const source = numbered
+    ? `${escape(numbered[1])}\\s*[.)]?\\s+${escape(numbered[2])}`
+    : escape(clean);
+  try { return new RegExp(source, 'ig'); } catch (_) { return null; }
+}
+
+function tocSectionNumber(title) {
+  const clean = String(title || '').replace(/\s+/g, ' ').trim();
+  return clean.match(/^(?:§\s*)?([A-Z]?\d+(?:\.\d+){1,4})(?:[.)])?(?:\s|$)/i)?.[1] || '';
+}
+
+async function findSectionNumberLocation(number, originPage = null) {
+  if (!pdfDoc || !number) return null;
+  const escaped = String(number).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const headingRe = new RegExp(`^(?:§\\s*)?${escaped}(?:[.)])?\\s+\\S`, 'i');
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    if (page === originPage) continue;
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      if (headingRe.test(String(line.text || '').trim())) return { page, ratio: Number(line.ratio) || 0 };
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return null;
+}
+
+async function resolveTocSectionNumber(number, targets, originPage = null) {
+  const direct = (targets || []).find((target) => tocSectionNumber(target.title) === number && Number(target.page) !== Number(originPage));
+  if (direct) return { page: direct.page, ratio: Number(direct.ratio) || 0 };
+  const inferred = inferredOutline.find((entry) => tocSectionNumber(entry?.title) === number && Number(entry?.page) !== Number(originPage));
+  if (inferred) return { page: inferred.page, ratio: Number(inferred.ratio) || 0 };
+  return findSectionNumberLocation(number, originPage);
+}
+
+async function findTocTitleLocation(title, originPage = null) {
+  if (!pdfDoc || !title) return null;
+  const wanted = tocComparableTitle(title);
+  if (!wanted) return null;
+  let best = null;
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    if (Number(page) === Number(originPage)) continue;
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      const text = String(line.text || '').trim();
+      if (!text || text.length > 240) continue;
+      const score = tocTitleSimilarity(text, title);
+      if (score < 0.86) continue;
+      // Prefer heading-like lines over prose mentions of the same words.
+      const number = tocSectionNumber(title);
+      const exactNumber = number && tocSectionNumber(text) === number;
+      const headingBonus = exactNumber ? 0.12 : (text.length <= String(title).length + 24 ? 0.04 : 0);
+      const finalScore = score + headingBonus;
+      if (!best || finalScore > best.score) best = { page, ratio: Number(line.ratio) || 0, score: finalScore };
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return best ? { page: best.page, ratio: best.ratio } : null;
+}
+
+async function resolveTocContentDestination(target, originPage) {
+  if (!target) return null;
+  const targetPage = Number(target.page) || 0;
+  if (targetPage && targetPage !== Number(originPage)) {
+    return { page: targetPage, ratio: Number(target.ratio) || 0 };
+  }
+  const number = tocSectionNumber(target.title);
+  if (number) {
+    const byNumber = await resolveTocSectionNumber(number, [], originPage);
+    if (byNumber) return byNumber;
+  }
+  return findTocTitleLocation(target.title, originPage);
+}
+
+
+function tocLineCore(value) {
+  let clean = String(value || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+  // Drop the visual dot leader and printed page number commonly found in TOCs.
+  clean = clean.replace(/\s*(?:\.{2,}|…+|·{3,})\s*\d{1,4}\s*$/u, '').trim();
+  // Some text layers lose the dot leader but retain the terminal page number.
+  if (/^(?:§\s*)?[A-Z]?\d+(?:\.\d+){0,4}[.)]?\s+\S/i.test(clean) && /\s\d{1,4}$/.test(clean)) {
+    clean = clean.replace(/\s+\d{1,4}\s*$/, '').trim();
+  }
+  return clean;
+}
+
+function tocComparableTitle(value) {
+  return normalizeSearchValue(tocLineCore(value), false)
+    .replace(/^(?:§\s*)?[a-z]?\d+(?:\.\d+){0,4}[.)]?\s*/i, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tocTitleSimilarity(a, b) {
+  const aa = tocComparableTitle(a);
+  const bb = tocComparableTitle(b);
+  if (!aa || !bb) return 0;
+  if (aa === bb) return 1;
+  if ((aa.includes(bb) || bb.includes(aa)) && Math.min(aa.length, bb.length) >= 8) {
+    return Math.min(0.97, Math.min(aa.length, bb.length) / Math.max(aa.length, bb.length) + 0.12);
+  }
+  const aTokens = new Set(aa.split(/\s+/).filter((token) => token.length > 1));
+  const bTokens = new Set(bb.split(/\s+/).filter((token) => token.length > 1));
+  let overlap = 0;
+  for (const token of aTokens) if (bTokens.has(token)) overlap += 1;
+  const union = new Set([...aTokens, ...bTokens]).size || 1;
+  const jaccard = overlap / union;
+  const maxLen = Math.max(aa.length, bb.length, 1);
+  const maxDistance = Math.ceil(maxLen * 0.35);
+  const distance = levenshteinDistance(aa, bb, maxDistance);
+  const edit = distance > maxDistance ? 0 : Math.max(0, 1 - distance / maxLen);
+  return Math.max(jaccard, edit * 0.9 + jaccard * 0.1);
+}
+
+function tocStructureMatchScore(lineText, targetTitle) {
+  const line = tocLineCore(lineText);
+  const lineNumber = tocSectionNumber(line);
+  const targetNumber = tocSectionNumber(targetTitle);
+  if (lineNumber && targetNumber && lineNumber !== targetNumber) return 0;
+  const titleScore = tocTitleSimilarity(line, targetTitle);
+  if (lineNumber && targetNumber && lineNumber === targetNumber) {
+    // Exact section numbering is authoritative; title similarity distinguishes
+    // a real TOC entry from incidental mentions of the same section number.
+    return Math.max(0.82, 0.78 + titleScore * 0.22);
+  }
+  return titleScore;
+}
+
+async function compareTocPageWithStructure(pageNum, targets) {
+  const lines = await pageTextLines(pageNum);
+  const matches = [];
+  const usedTargets = new Set();
+  for (const line of lines) {
+    const core = tocLineCore(line.text);
+    if (!core || core.length < 3) continue;
+    let best = null;
+    for (let i = 0; i < targets.length; i += 1) {
+      const target = targets[i];
+      if (!target || Number(target.page) === Number(pageNum) || usedTargets.has(i)) continue;
+      const score = tocStructureMatchScore(core, target.title);
+      const hasExactNumber = Boolean(tocSectionNumber(core) && tocSectionNumber(core) === tocSectionNumber(target.title));
+      const threshold = hasExactNumber ? 0.80 : 0.84;
+      if (score < threshold) continue;
+      if (!best || score > best.score) best = { line, target, targetIndex: i, score, hasExactNumber };
+    }
+    if (best) {
+      matches.push(best);
+      usedTargets.add(best.targetIndex);
+    }
+  }
+  // Three distinct structural matches are enough to classify a page as a TOC.
+  // Requiring distinct nodes prevents a body page from qualifying because one
+  // heading is repeated in prose.
+  const average = matches.length ? matches.reduce((sum, item) => sum + item.score, 0) / matches.length : 0;
+  return { matches, isToc: matches.length >= 3 && average >= 0.82, average };
+}
+
+function tocLinePattern(lineText) {
+  const core = tocLineCore(lineText);
+  if (!core) return null;
+  const escape = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tokens = core.split(/\s+/).filter(Boolean).slice(0, 24);
+  if (!tokens.length) return null;
+  const source = tokens.map(escape).join('\\s+');
+  try { return new RegExp(source, 'ig'); } catch (_) { return null; }
+}
+
+const HEADING_ALIAS_STOPWORDS = new Set(['a','an','the','of','and','or','in','on','for','to','with','by','from','as','at']);
+
+function headingAliasForTitle(title) {
+  const clean = tocLineCore(title).replace(/^(?:§\s*)?[A-Z]?\d+(?:\.\d+){0,4}[.)]?\s*/i, '').trim();
+  if (!clean) return '';
+  if (/^[A-Z][A-Z0-9]{1,7}$/.test(clean)) return clean;
+  const words = (clean.match(/[A-Za-z][A-Za-z'-]*/g) || []).filter((word) => !HEADING_ALIAS_STOPWORDS.has(word.toLowerCase()));
+  if (words.length < 2 || words.length > 7) return '';
+  const alias = words.map((word) => word[0].toUpperCase()).join('');
+  return /^[A-Z]{2,7}$/.test(alias) ? alias : '';
+}
+
+function unambiguousHeadingAliases(targets) {
+  const buckets = new Map();
+  for (const target of targets || []) {
+    const alias = headingAliasForTitle(target?.title);
+    if (!alias) continue;
+    const list = buckets.get(alias) || [];
+    list.push(target);
+    buckets.set(alias, list);
+  }
+  const result = new Map();
+  for (const [alias, list] of buckets) {
+    const unique = list.filter((item, index, arr) => arr.findIndex((other) => Number(other.page) === Number(item.page) && String(other.title) === String(item.title)) === index);
+    if (unique.length === 1) result.set(alias, unique[0]);
+  }
+  return result;
+}
+
+function appendHeadingAliasLinks(mapped, overlay, surface, pageNum, targets) {
+  const aliases = unambiguousHeadingAliases(targets);
+  for (const [alias, target] of aliases) {
+    const re = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+    let match;
+    while ((match = re.exec(mapped.text))) {
+      if (Number(target.page) === Number(pageNum) && normalizeSearchValue(target.title, false) === normalizeSearchValue(alias, false)) continue;
+      const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+      appendReferenceLinkForRange(overlay, surface, range, alias, pageNum);
+    }
+  }
+}
+
+async function getTocOutlineTargets() {
+  if (!pdfDoc) return [];
+  if (Array.isArray(tocOutlineTargets)) return tocOutlineTargets;
+  const targets = [];
+  const seen = new Set();
+  const addTarget = (title, page, ratio) => {
+    const clean = String(title || '').replace(/\s+/g, ' ').trim();
+    if (!clean || !Number(page)) return;
+    const number = tocSectionNumber(clean);
+    const key = number ? `n:${number}` : `t:${normalizeSearchValue(clean, false)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    targets.push({ title: clean, page: Number(page), ratio: Number(ratio) || 0 });
+  };
+  try {
+    const outline = await pdfDoc.getOutline();
+    const flat = flattenOutline(outline);
+    for (const { item } of flat) {
+      const title = String(item?.title || '').replace(/\s+/g, ' ').trim();
+      if (!title) continue;
+      const location = await resolveOutlineDestination(item.dest);
+      if (location) addTarget(title, location.page, location.ratio);
+    }
+  } catch (_) {}
+  // Merge any detected structure instead of letting a partial embedded outline
+  // suppress valid subsection targets.
+  for (const entry of inferredOutline || []) addTarget(entry?.title, entry?.page, entry?.ratio);
+  if (targets.length) tocOutlineTargets = targets;
+  return targets;
+}
+
+async function decorateTocLinks(mapped, overlay, surface, pageNum, serial) {
+  if (!mapped?.text || !pdfDoc) return;
+  const targets = await getTocOutlineTargets();
+  if (!targets.length || overlay.dataset.tocSerial !== String(serial) || !overlay.isConnected) return;
+
+  const comparison = await compareTocPageWithStructure(pageNum, targets);
+  if (overlay.dataset.tocSerial !== String(serial) || !overlay.isConnected) return;
+  const head = mapped.text.slice(0, 700).replace(/\s+/g, ' ');
+  const hasTocHeading = /(?:table\s+of\s+contents|\bcontents\b|目录)/i.test(head);
+  if (!hasTocHeading && !comparison.isToc) return;
+
+  const seen = new Set();
+  let linked = 0;
+  const surfaceRect = surface.getBoundingClientRect();
+
+  const addLinkForRange = (range, target, label) => {
+    if (!range) return false;
+    let added = false;
+    for (const rect of range.getClientRects()) {
+      if (rect.width < 6 || rect.height < 2) continue;
+      const key = `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${target.page}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'pdf-reference-link pdf-toc-link';
+      link.style.left = `${rect.left - surfaceRect.left}px`;
+      link.style.top = `${rect.top - surfaceRect.top}px`;
+      link.style.width = `${rect.width}px`;
+      link.style.height = `${rect.height}px`;
+      link.title = t(`Go to ${label || target.title}`, `跳转到 ${label || target.title}`);
+      link.setAttribute('aria-label', link.title);
+      attachReferencePreview(link, target.title || label || '', pageNum, null);
+      link.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        hideReferencePreview();
+        const destination = await resolveTocContentDestination(target, pageNum);
+        if (!destination) return;
+        await goToMatchedLocation(destination.page, Number(destination.ratio) || 0, target.title || label || '');
+      });
+      overlay.append(link);
+      added = true;
+    }
+    return added;
+  };
+
+  // Primary path: compare each visual TOC line against the already-detected
+  // document structure. This makes TOC recognition a structure-alignment
+  // problem rather than another independent heading parser.
+  for (const match of comparison.matches) {
+    const patterns = [tocLinePattern(match.line.text), tocTitlePattern(match.target.title)].filter(Boolean);
+    let added = false;
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      let found;
+      while ((found = pattern.exec(mapped.text))) {
+        const range = rangeForAggregateMatch(mapped.parts, found.index, found.index + found[0].length);
+        if (addLinkForRange(range, match.target, match.line.text)) { added = true; break; }
+      }
+      if (added) break;
+    }
+    // PDF.js may split the title beyond recoverable text matching. In that
+    // case, the section number remains a stable visual anchor for the line.
+    if (!added) {
+      const number = tocSectionNumber(match.line.text) || tocSectionNumber(match.target.title);
+      if (number) {
+        const escaped = number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const numberRe = new RegExp(`\\b${escaped}\\b`, 'g');
+        let found;
+        while ((found = numberRe.exec(mapped.text))) {
+          const range = rangeForAggregateMatch(mapped.parts, found.index, found.index + found[0].length);
+          if (!range) continue;
+          const rect = [...range.getClientRects()].find((candidate) => (candidate.left - surfaceRect.left) < surfaceRect.width * 0.42);
+          if (!rect) continue;
+          if (addLinkForRange(range, match.target, match.line.text)) { added = true; break; }
+        }
+      }
+    }
+    if (added) linked += 1;
+  }
+
+  // Secondary exact-title pass fills entries that were not part of the fuzzy
+  // structure comparison but still match an authoritative outline node.
+  for (const target of targets) {
+    const pattern = tocTitlePattern(target.title);
+    if (!pattern) continue;
+    let found;
+    while ((found = pattern.exec(mapped.text))) {
+      const range = rangeForAggregateMatch(mapped.parts, found.index, found.index + found[0].length);
+      if (addLinkForRange(range, target, target.title)) { linked += 1; break; }
+    }
+  }
+
+  // Last-resort section-number links remain useful when PDF text segmentation
+  // destroys the title entirely. Destination resolution still consults the
+  // merged structure before searching the document.
+  const numberedSeen = new Set();
+  const subsectionRe = /\b([A-Z]?\d+(?:\.\d+){1,4})\b/gi;
+  let numberMatch;
+  while ((numberMatch = subsectionRe.exec(mapped.text))) {
+    const number = numberMatch[1];
+    if (numberedSeen.has(number)) continue;
+    const range = rangeForAggregateMatch(mapped.parts, numberMatch.index, numberMatch.index + numberMatch[0].length);
+    if (!range) continue;
+    const rect = [...range.getClientRects()].find((candidate) => candidate.width >= 6 && candidate.height >= 2 && (candidate.left - surfaceRect.left) < surfaceRect.width * 0.42);
+    if (!rect) continue;
+    numberedSeen.add(number);
+    const target = await resolveTocSectionNumber(number, targets, pageNum);
+    if (!target) continue;
+    const synthetic = { title: number, page: target.page, ratio: target.ratio };
+    if (addLinkForRange(range, synthetic, number)) linked += 1;
+  }
+
+  if (linked) overlay.dataset.tocLinked = String(linked);
+  overlay.dataset.tocStructureMatches = String(comparison.matches.length);
+}
+
+function decorateReferenceLinks(textLayer, surface, pageNum) {
+  if (!textLayer || !surface) return;
+  const overlay = ensureReferenceLinkLayer(surface);
+  const mapped = textLayerAggregate(textLayer); if (!mapped.text) return;
+  const tocSerial = ++tocDecorationSerial;
+  overlay.dataset.tocSerial = String(tocSerial);
+
+  // Grouped citations such as [1, 7] or [1-3, 8] need one target per
+  // bibliography member. Prefer the number's own glyph range when it is
+  // explicitly present; generated range members share the group's range.
+  GROUPED_BIBLIOGRAPHY_RE.lastIndex = 0;
+  let grouped;
+  while ((grouped = GROUPED_BIBLIOGRAPHY_RE.exec(mapped.text))) {
+    const raw = grouped[0];
+    const explicitNumbers = [];
+    const numberRe = /\d{1,3}/g;
+    let numberMatch;
+    while ((numberMatch = numberRe.exec(raw))) {
+      explicitNumbers.push({ number: Number(numberMatch[0]), start: grouped.index + numberMatch.index, end: grouped.index + numberMatch.index + numberMatch[0].length });
+    }
+    const members = groupedBibliographyMembers(raw);
+    const explicitSet = new Set(explicitNumbers.map((item) => item.number));
+    for (const item of explicitNumbers) {
+      const range = rangeForAggregateMatch(mapped.parts, item.start, item.end);
+      appendReferenceLinkForRange(overlay, surface, range, `[${item.number}]`, pageNum);
+    }
+    const generated = members.filter((number) => !explicitSet.has(number));
+    if (generated.length) {
+      const groupRange = rangeForAggregateMatch(mapped.parts, grouped.index, grouped.index + raw.length);
+      for (const number of generated) appendReferenceLinkForRange(overlay, surface, groupRange, `[${number}]`, pageNum);
+    }
+  }
+
+  CLICKABLE_REFERENCE_RE.lastIndex = 0;
+  let match;
+  while ((match = CLICKABLE_REFERENCE_RE.exec(mapped.text))) {
+    const query = match[0].replace(/\s+/g, ' ').trim();
+    if (/^\(/.test(query) && isLikelyCalendarYearEquationLabel(query)) continue;
+    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    appendReferenceLinkForRange(overlay, surface, range, query, pageNum);
+  }
+  getTocOutlineTargets().then((targets) => appendHeadingAliasLinks(mapped, overlay, surface, pageNum, targets)).catch(() => {});
+  decorateTocLinks(mapped, overlay, surface, pageNum, tocSerial).catch((error) => console.warn('MathReader TOC links unavailable for page', pageNum, error));
+}
+
+function rerenderReferenceLinks() {
+  if (primaryTextLayer && primaryPageSurface && currentPage) decorateReferenceLinks(primaryTextLayer, primaryPageSurface, currentPage);
+  if (referenceTextLayer && referencePageSurface && pinnedPage) decorateReferenceLinks(referenceTextLayer, referencePageSurface, pinnedPage);
+  for (const [page, record] of continuousPageNodes) if (record?.rendered) decorateReferenceLinks(record.textLayer, record.surface, page);
+}
+
+async function findReferenceTextLocation(query, originPage = null) {
+  const wanted = normalizeSearchValue(query, false);
+  let best = null;
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    const lines = await pageTextLines(page);
+    for (const line of lines) {
+      if (!normalizeSearchValue(line.text, false).includes(wanted)) continue;
+      let score = page === originPage ? -2 : 0;
+      score += Math.max(0, 3 - line.text.length / 100);
+      if (!best || score > best.score) best = { page, ratio: line.ratio, score };
+    }
+    if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return best;
+}
+
+
+function backlinkSnippet(text, query, explicitIndex = null) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!value) return '';
+  const q = String(query || '').replace(/\s+/g, ' ').trim();
+  const lower = value.toLocaleLowerCase();
+  let idx = Number.isFinite(Number(explicitIndex)) ? Number(explicitIndex) : (q ? lower.indexOf(q.toLocaleLowerCase()) : -1);
+  if (idx < 0) idx = 0;
+  const qEnd = Math.min(value.length, idx + Math.max(1, q.length));
+  const leftSlice = value.slice(Math.max(0, idx - 240), idx);
+  const leftBoundary = Math.max(leftSlice.lastIndexOf('. '), leftSlice.lastIndexOf('? '), leftSlice.lastIndexOf('! '), leftSlice.lastIndexOf('; '));
+  const start = leftBoundary >= 0 ? Math.max(0, idx - 240 + leftBoundary + 2) : Math.max(0, idx - 105);
+  const rightSlice = value.slice(qEnd, Math.min(value.length, qEnd + 280));
+  const boundaries = ['. ', '? ', '! ', '; '].map((token) => rightSlice.indexOf(token)).filter((v) => v >= 0);
+  const rightBoundary = boundaries.length ? Math.min(...boundaries) + 1 : -1;
+  const finish = rightBoundary >= 0 ? Math.min(value.length, qEnd + rightBoundary) : Math.min(value.length, start + 250);
+  const snippet = value.slice(start, finish).trim();
+  return `${start > 0 ? '…' : ''}${snippet}${finish < value.length ? '…' : ''}`;
+}
+
+function proofContextForLocation(page, ratio) {
+  const p = Number(page);
+  const r = Number(ratio) || 0;
+  for (const entry of structureEntries || []) {
+    if (!entry?.proofPage) continue;
+    const startPage = Number(entry.proofPage);
+    const endPage = Number(entry.proofEndPage || entry.proofPage);
+    if (p < startPage || p > endPage) continue;
+    if (p === startPage && r + 0.01 < (Number(entry.proofRatio) || 0)) continue;
+    if (p === endPage && entry.proofEndRatio != null && r - 0.01 > Number(entry.proofEndRatio)) continue;
+    return entry.label || entry.title || '';
+  }
+  return '';
+}
+
+function renderBacklinks() {
+  if (!backlinksList || !backlinksEmpty || !backlinksCount || !backlinksContext) return;
+  backlinksList.replaceChildren();
+  const mode=backlinksFilter?.value || 'all';
+  const visible=mode==='all'?backlinkEntries:backlinkEntries.filter((entry)=>entry.kind===mode);
+  backlinksCount.textContent = mode==='all' ? String(backlinkEntries.length) : `${visible.length}/${backlinkEntries.length}`;
+  backlinksContext.textContent = backlinkContext?.label ? t(`References to ${backlinkContext.label}`, `引用 ${backlinkContext.label} 的位置`) : '';
+  backlinksEmpty.classList.toggle('is-hidden', visible.length > 0);
+  if (!visible.length && backlinkEntries.length) backlinksEmpty.textContent=t('No backlinks match this filter.','没有符合此筛选条件的反向引用。');
+  else backlinksEmpty.textContent=t('Follow an equation, citation, theorem, or section reference to see its backlinks.','跟随公式、文献、定理或章节引用后，可在这里查看反向引用。');
+  for (const entry of visible.slice(0, 120)) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'backlink-item';
+    const meta = document.createElement('span'); meta.className = 'backlink-meta';
+    const proofOwner = entry.proofOwner || proofContextForLocation(entry.page, entry.ratio);
+    const kindLabel={prose:t('Prose','正文'),proof:t('Proof','证明'),equation:t('Equation','公式'),bibliography:t('Bibliography','文献')}[entry.kind] || t('Reference','引用');
+    meta.textContent = proofOwner ? t(`${kindLabel} · page ${entry.page} · proof of ${proofOwner}`, `${kindLabel} · 第 ${entry.page} 页 · ${proofOwner} 的证明`) : t(`${kindLabel} · page ${entry.page}`, `${kindLabel} · 第 ${entry.page} 页`);
+    const snippet = document.createElement('span'); snippet.className = 'backlink-snippet'; snippet.textContent = entry.snippet || entry.text || '';
+    button.append(meta, snippet);
+    button.addEventListener('click', () => {
+      if (entry.searchMatch && entry.matchText) goToSearchMatch(entry.searchMatch, entry.matchText);
+      else goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || backlinkContext?.label || '');
+    });
+    backlinksList.append(button);
+  }
+}
+
+async function collectBacklinks(query, target) {
+  if (!pdfDoc || !query || !target) return [];
+  const results = [];
+  const seen = new Set();
+  const add = (page, ratio, text, matchText = query, extra = {}) => {
+    if (Number(page) === Number(target.page) && Math.abs((Number(ratio)||0) - (Number(target.ratio)||0)) < 0.025) return;
+    const occurrenceKey = Number.isFinite(Number(extra.matchIndex)) ? `:${Number(extra.matchIndex)}` : '';
+    const key = `${page}:${Math.round((Number(ratio)||0)*10000)}:${String(text).slice(0,80)}${occurrenceKey}`;
+    if (seen.has(key)) return; seen.add(key);
+    const owner=proofContextForLocation(page, ratio);
+    results.push({ page, ratio:Number(ratio)||0, text, snippet:extra.snippet || backlinkSnippet(text, matchText || query, extra.matchIndex), matchText, proofOwner: owner, kind: extra.kind || (owner ? 'proof' : 'prose'), ...extra });
+  };
+  const normalized = normalizedReferenceLabel(query);
+  const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
+  const bibNumber = /^\[/.test(query) ? Number(String(query).replace(/\D/g,'')) : null;
+  const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query);
+  const acronym = /^[A-Z][A-Z0-9]{1,7}$/.test(String(query).trim()) ? String(query).trim() : null;
+  const structureTarget = structureEntries.find((entry) => Number(entry.page) === Number(target.page) && Math.abs((Number(entry.ratio)||0) - (Number(target.ratio)||0)) < 0.04) || null;
+  const structureAlias = structureTarget ? headingAliasForTitle(structureTarget.title || structureTarget.label || '') : '';
+  const structureLabel = structureTarget?.label || '';
+  // Bibliography citations already have an authoritative occurrence list built
+  // while scanning body text before the References/Bibliography section. Reuse
+  // it here instead of rescanning every page, which could mistakenly count the
+  // bibliography definition itself as a backlink to its own entry.
+  if (bibNumber) {
+    const bib = bibliographyEntries.find((entry) => Number(entry.number) === Number(bibNumber));
+    for (const citation of bib?.citations || []) {
+      add(citation.page, citation.ratio, citation.raw || query, citation.raw || query, {
+        matchIndex: citation.matchIndex,
+        snippet: citation.snippet,
+        kind: 'bibliography'
+      });
+    }
+    return results.sort((a,b)=>a.page-b.page || a.ratio-b.ratio || (Number(a.matchIndex)||0)-(Number(b.matchIndex)||0));
+  }
+
+  for (let page=1; page<=pdfDoc.numPages; page+=1) {
+    const lines = await pageTextLines(page);
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
+      const text = String(line.text || '');
+      const contextText = lines.slice(Math.max(0, lineIndex - 1), Math.min(lines.length, lineIndex + 2)).map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim();
+      if (eq) {
+        for (const c of equationLabelCandidatesInLine(text)) if (c.label === eq) {
+          const contextIndex = Math.max(0, contextText.indexOf(text)) + c.index;
+          add(page, line.ratio, text, eq, { matchIndex: c.index, snippet: backlinkSnippet(contextText, eq, contextIndex), kind: 'equation' });
+        }
+        continue;
+      }
+      if (structureLike || structureTarget) {
+        const normalizedText = normalizedReferenceLabel(text);
+        const literalHit = structureLike && normalizedText.includes(normalized);
+        const labelHit = structureLabel && normalizedText.includes(normalizedReferenceLabel(structureLabel));
+        const aliasHit = structureAlias && new RegExp(`(?:^|\\W)${structureAlias}(?:$|\\W)`).test(text);
+        if (literalHit || labelHit || aliasHit) {
+          const hitText = literalHit ? query : (aliasHit ? structureAlias : structureLabel || query);
+          add(page, line.ratio, text, hitText, { snippet: backlinkSnippet(contextText, hitText) });
+        }
+        continue;
+      }
+      if (acronym && new RegExp(`(?:^|\\W)${acronym}(?:$|\\W)`).test(text)) add(page, line.ratio, text, acronym, { snippet: backlinkSnippet(contextText, acronym) });
+    }
+    if (page % 20 === 0) await new Promise((resolve)=>setTimeout(resolve,0));
+  }
+  return results.sort((a,b)=>a.page-b.page || a.ratio-b.ratio || (Number(a.matchIndex)||0)-(Number(b.matchIndex)||0));
+}
+
+async function updateBacklinksForTarget(query, target) {
+  backlinkContext = { label:String(query || '').replace(/\s+/g,' ').trim(), page:target.page, ratio:Number(target.ratio)||0 };
+  backlinkEntries = [];
+  renderBacklinks();
+  try { backlinkEntries = await collectBacklinks(query, target); } catch (error) { console.warn('Backlink indexing unavailable', error); backlinkEntries = []; }
+  renderBacklinks();
+  expandWorkspaceSection('backlinks-section');
+}
+
+async function resolveReferenceTarget(query, originPage = null, originRatio = null) {
+  const normalized = normalizedReferenceLabel(query);
+  if (isEquationLabelQuery(query)) {
+    const equationTarget = await findEquationLabelLocation(query, originPage, originRatio);
+    if (equationTarget) return equationTarget;
+    return null;
+  }
+  if (/^\[/.test(query)) {
+    const number = Number(query.replace(/\D/g, ''));
+    const bib = bibliographyEntries.find((entry) => entry.number === number);
+    if (bib) return { page: bib.page, ratio: bib.ratio };
+  }
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query)) {
+    const entry = structureEntries.find((item) => normalizedReferenceLabel(item.label) === normalized);
+    if (entry) return { page: entry.page, ratio: entry.ratio };
+  }
+  if (/^section\b/i.test(query)) {
+    const number = query.match(/[A-Z]?\d+(?:\.\d+)*/i)?.[0] || '';
+    const outline = inferredOutline.find((entry) => new RegExp(`^(?:§\\s*)?${number.replace(/\./g, '\\.')}(?:[.)\\s]|$)`, 'i').test(entry.title || ''));
+    if (outline) return { page: outline.page, ratio: Number(outline.ratio) || 0 };
+  }
+  if (/^[A-Z][A-Z0-9]{1,7}$/.test(String(query || '').trim())) {
+    const targets = await getTocOutlineTargets();
+    const aliasTarget = unambiguousHeadingAliases(targets).get(String(query).trim());
+    if (aliasTarget && Number(aliasTarget.page) !== Number(originPage)) return { page: aliasTarget.page, ratio: Number(aliasTarget.ratio) || 0, matchText: aliasTarget.title };
+  }
+  return findReferenceTextLocation(query, originPage);
+}
+
+async function goToReferenceQuery(query, originPage = currentPage, originRatio = null) {
+  if (!pdfDoc || !query) return;
+  const target = await resolveReferenceTarget(query, originPage, originRatio);
+  if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
+  await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.matchText || query);
+  updateBacklinksForTarget(target.matchText || query, target);
 }
 
 async function resolveOutlineDestination(rawDest) {
@@ -3036,6 +6219,33 @@ async function resolveOutlineDestination(rawDest) {
   return { page: pageNum, ratio };
 }
 
+
+function scheduleDetectedOutlineAugmentation() {
+  if (!pdfDoc || inferredOutlineDetectionDone || inferredOutlineBuildPromise) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  inferredOutlineBuildPromise = (async () => {
+    try {
+      const detected = await detectOutlineFromTypography();
+      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+      inferredOutline = Array.isArray(detected) ? detected : [];
+      inferredOutlineDetectionDone = true;
+      tocOutlineTargets = null;
+      persistDocumentState();
+      // TOC pages may already be rendered. Refresh overlays now that the
+      // detected structure can fill gaps in the embedded PDF outline.
+      rerenderReferenceLinks();
+    } catch (error) {
+      if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+        inferredOutlineDetectionDone = true;
+        console.warn('Detected outline augmentation unavailable', error);
+      }
+    } finally {
+      inferredOutlineBuildPromise = null;
+    }
+  })();
+}
+
 async function renderOutline() {
   outlineList.replaceChildren();
   outlineMode = 'none';
@@ -3055,15 +6265,19 @@ async function renderOutline() {
         button.className = 'outline-item';
         button.dataset.depth = String(depth);
         button.textContent = item.title || t('Untitled', '未命名');
+        void resolveOutlineDestination(item.dest).then((location)=>{ if (location && button.isConnected) { button.dataset.page=String(location.page); updateDocumentMapCurrentLocation(); } }).catch(()=>{});
         button.addEventListener('click', async () => {
+          setDocumentMapSelectedNode(button);
           try {
             const location = await resolveOutlineDestination(item.dest);
             if (!location) return;
-            await goToLocation(location.page, location.ratio);
+            await goToMatchedLocation(location.page, location.ratio, item.title || '');
           } catch (error) { console.error(error); }
         });
         outlineList.append(button);
       }
+      applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
+      scheduleDetectedOutlineAugmentation();
       return;
     }
 
@@ -3071,7 +6285,11 @@ async function renderOutline() {
     outlineEmpty.textContent = t('No embedded outline. Detecting document structure…', '没有嵌入式目录，正在自动检测文档结构……');
     if (!inferredOutline.length) {
       inferredOutline = await detectOutlineFromTypography();
+      inferredOutlineDetectionDone = true;
+      tocOutlineTargets = null;
       persistDocumentState();
+    } else {
+      inferredOutlineDetectionDone = true;
     }
     renderInferredOutline(inferredOutline);
   } catch (error) {
@@ -3083,12 +6301,16 @@ async function renderOutline() {
   }
 }
 
-async function pageText(pageNum) {
-  if (textCache.has(pageNum)) return textCache.get(pageNum);
-  const page = await pdfDoc.getPage(pageNum);
+async function pageText(pageNum, sourceDoc = pdfDoc, cache = textCache) {
+  if (cache.has(pageNum)) return cache.get(pageNum);
+  if (sourceDoc === pdfDoc && lineCache.has(pageNum)) {
+    const text = lineCache.get(pageNum).map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
+    cache.set(pageNum, text); return text;
+  }
+  const page = await sourceDoc.getPage(pageNum);
   const content = await page.getTextContent();
   const text = content.items.map((item) => item.str).join(' ').replace(/\s+/g, ' ').trim();
-  textCache.set(pageNum, text);
+  cache.set(pageNum, text);
   return text;
 }
 
@@ -3137,30 +6359,702 @@ function highlightedSnippet(text, query, index = -1) {
   return frag;
 }
 
+
+function exactSearchMatches(text, query) {
+  const matchCase = Boolean(searchMatchCase?.checked);
+  const wholeWord = Boolean(searchWholeWord?.checked);
+  const source = normalizeSearchValue(text, matchCase);
+  const needle = normalizeSearchValue(query, matchCase);
+  if (!needle) return [];
+  const out = [];
+  let from = 0;
+  while (from <= source.length) {
+    const index = source.indexOf(needle, from);
+    if (index < 0) break;
+    let ok = true;
+    if (wholeWord) {
+      const before = index > 0 ? source[index - 1] : '';
+      const after = index + needle.length < source.length ? source[index + needle.length] : '';
+      const isWord = (ch) => /[\p{L}\p{N}_]/u.test(ch || '');
+      ok = !isWord(before) && !isWord(after);
+    }
+    if (ok) out.push({ index, score: 1 });
+    from = index + Math.max(1, needle.length);
+  }
+  return out;
+}
+
+function levenshteinDistance(a, b, maxDistance = Infinity) {
+  const aa = String(a || ''), bb = String(b || '');
+  if (Math.abs(aa.length - bb.length) > maxDistance) return maxDistance + 1;
+  let prev = Array.from({ length: bb.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= aa.length; i += 1) {
+    const curr = [i];
+    let rowMin = curr[0];
+    for (let j = 1; j <= bb.length; j += 1) {
+      const cost = aa[i - 1] === bb[j - 1] ? 0 : 1;
+      const v = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      curr[j] = v; rowMin = Math.min(rowMin, v);
+    }
+    if (rowMin > maxDistance) return maxDistance + 1;
+    prev = curr;
+  }
+  return prev[bb.length];
+}
+
+function fuzzySearchMatches(text, query) {
+  const matchCase = Boolean(searchMatchCase?.checked);
+  const normalizedText = normalizeSearchValue(text, matchCase);
+  const normalizedQuery = normalizeSearchValue(query, matchCase).trim();
+  if (!normalizedQuery) return [];
+  const direct = exactSearchMatches(text, query);
+  if (direct.length) return direct;
+  const qWords = normalizedQuery.split(/\s+/).filter(Boolean);
+  const words = [];
+  const re = /[\p{L}\p{N}_]+/gu;
+  let m;
+  while ((m = re.exec(normalizedText))) words.push({ word: m[0], index: m.index });
+  if (!qWords.length || !words.length) return [];
+  const maxEditsFor = (w) => w.length <= 4 ? 1 : w.length <= 8 ? 2 : 3;
+  const out = [];
+  const span = qWords.length;
+  for (let i = 0; i < words.length; i += 1) {
+    if (i + span > words.length) break;
+    let total = 0, possible = 0, ok = true;
+    for (let j = 0; j < span; j += 1) {
+      const q = qWords[j], w = words[i + j].word;
+      const maxD = maxEditsFor(q);
+      const d = levenshteinDistance(q, w, maxD);
+      if (d > maxD) { ok = false; break; }
+      total += d; possible += Math.max(q.length, w.length, 1);
+    }
+    if (!ok) continue;
+    const score = Math.max(0, 1 - total / possible);
+    if (score >= 0.72) out.push({ index: words[i].index, score });
+  }
+  return out.slice(0, 80);
+}
+
+async function runFindAllOccurrences(query) {
+  const q = String(query || '').replace(/\s+/g, ' ').trim();
+  if (!pdfDoc || !q) return;
+  openLeftPanelShortcut('search-panel', searchInput);
+  searchInput.value = q;
+  if (searchFuzzy) searchFuzzy.checked = false;
+  persistDocumentState();
+  await searchPdf(q);
+}
+
+function normalizeSymbolGlossary(items) {
+  const seen = new Set();
+  const out = [];
+  for (const [index, item] of (Array.isArray(items) ? items : []).entries()) {
+    if (!item) continue;
+    const symbol = String(item.symbol || '').replace(/\s+/g, ' ').trim();
+    if (!symbol) continue;
+    const key = normalizeSearchValue(symbol, false);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      id: item.id || `sym-${Number(item.created) || Date.now()}-${index}`,
+      symbol,
+      meaning: String(item.meaning || '').trim(),
+      created: Number(item.created) || Date.now(),
+      firstPage: Number(item.firstPage) >= 1 ? Number(item.firstPage) : null,
+      firstRatio: Number.isFinite(Number(item.firstRatio)) ? Math.min(1, Math.max(0, Number(item.firstRatio))) : null
+    });
+  }
+  return out;
+}
+
+async function locateFirstOccurrence(symbol) {
+  if (!pdfDoc || !symbol) return null;
+  const needle = normalizeSearchValue(symbol, false);
+  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
+    try {
+      const text = await pageText(page);
+      const hay = normalizeSearchValue(text, false);
+      const index = hay.indexOf(needle);
+      if (index >= 0) return { page, ratio: Math.min(1, Math.max(0, index / Math.max(1, hay.length))) };
+    } catch (_) {}
+  }
+  return null;
+}
+
+
+function currentReadingAnchorForContext() {
+  if (!pdfDoc) return { page: 1, ratio: 0 };
+  if (readingFlow === 'continuous') return captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 };
+  const height = Math.max(1, primaryPageSurface?.offsetHeight || 1);
+  const ratio = Math.max(0, Math.min(1, (primaryCanvasWrap?.scrollTop || 0) / height));
+  return { page: currentPage, ratio };
+}
+
+function proofEntryAtAnchor(anchor = currentReadingAnchorForContext()) {
+  const page = Number(anchor?.page) || currentPage;
+  const ratio = Number(anchor?.ratio) || 0;
+  const entries = structureEntries || [];
+  const candidates = entries.filter((entry, index) => {
+    if (!entry.proofPage) return false;
+    const next = entries.slice(index + 1).find((item) => Number(item.page) >= Number(entry.proofPage));
+    const explicitEndPage = Number(entry.proofEndPage) || 0;
+    const inferredEndPage = next ? Number(next.page) : Number(entry.proofPage);
+    const endPage = explicitEndPage || inferredEndPage;
+    if (page < Number(entry.proofPage) || page > endPage) return false;
+    if (page === Number(entry.proofPage) && Number.isFinite(Number(entry.proofRatio)) && ratio + 0.03 < Number(entry.proofRatio)) return false;
+    if (explicitEndPage && page === explicitEndPage && Number.isFinite(Number(entry.proofEndRatio)) && ratio - 0.03 > Number(entry.proofEndRatio)) return false;
+    if (!explicitEndPage && next && page === Number(next.page) && Number.isFinite(Number(next.ratio)) && ratio >= Number(next.ratio) - 0.02) return false;
+    return true;
+  });
+  return candidates.sort((a,b) => (Number(b.proofPage)||0) - (Number(a.proofPage)||0))[0] || null;
+}
+
+function renderSymbolGlossary() {
+  if (!symbolGlossaryList || !symbolGlossaryEmpty || !symbolGlossaryCount) return;
+  symbolGlossary = normalizeSymbolGlossary(symbolGlossary);
+  symbolGlossaryCount.textContent = String(symbolGlossary.length);
+  symbolGlossaryList.replaceChildren();
+  symbolGlossaryEmpty.classList.toggle('is-hidden', symbolGlossary.length > 0);
+  for (const item of symbolGlossary) {
+    const card = document.createElement('div'); card.className = 'symbol-glossary-item';
+    const head = document.createElement('div'); head.className = 'symbol-glossary-head';
+    const symbol = document.createElement('strong'); symbol.textContent = item.symbol;
+    const meaning = document.createElement('span'); meaning.textContent = item.meaning || t('No meaning yet', '尚未填写含义');
+    head.append(symbol, meaning);
+    const actions = document.createElement('div'); actions.className = 'symbol-glossary-actions';
+    const all = document.createElement('button'); all.type = 'button'; all.className = 'text-button'; all.textContent = t('Find all', '查找全部');
+    all.addEventListener('click', () => runFindAllOccurrences(item.symbol));
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-button'; edit.textContent = t('Edit', '编辑');
+    edit.addEventListener('click', () => {
+      const next = window.prompt(t(`Meaning of ${item.symbol}`, `${item.symbol} 的含义`), item.meaning || '');
+      if (next === null) return;
+      item.meaning = String(next).trim(); persistDocumentState(); renderSymbolGlossary();
+    });
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'text-button'; del.textContent = t('Delete', '删除');
+    del.addEventListener('click', () => { pushUndo('glossary', t(`Symbol ${item.symbol}`, `符号 ${item.symbol}`), item); symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
+    actions.append(all, edit, del);
+    card.append(head, actions);
+    symbolGlossaryList.append(card);
+  }
+}
+
+async function addGlossaryEntry(symbolValue = null, meaningValue = null) {
+  if (!pdfDoc) return;
+  const symbol = String(symbolValue ?? glossarySymbolInput?.value ?? '').replace(/\s+/g, ' ').trim();
+  const meaning = String(meaningValue ?? glossaryMeaningInput?.value ?? '').trim();
+  if (!symbol) { glossarySymbolInput?.focus(); return; }
+  const key = normalizeSearchValue(symbol, false);
+  let item = symbolGlossary.find((entry) => normalizeSearchValue(entry.symbol, false) === key);
+  if (item) {
+    if (meaning) item.meaning = meaning;
+  } else {
+    item = { id: `sym-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, symbol, meaning, created: Date.now(), firstPage: null, firstRatio: null };
+    symbolGlossary.push(item);
+  }
+  if (glossarySymbolInput) glossarySymbolInput.value = '';
+  if (glossaryMeaningInput) glossaryMeaningInput.value = '';
+  persistDocumentState(); renderSymbolGlossary(); expandWorkspaceSection('symbol-glossary-section');
+}
+
+function addSelectionToGlossary() {
+  const selected = String(currentSelection?.latex || currentSelection?.text || '').replace(/\s+/g, ' ').trim();
+  if (!selected) return;
+  if (glossarySymbolInput) glossarySymbolInput.value = selected;
+  expandWorkspaceSection('symbol-glossary-section');
+  glossaryMeaningInput?.focus();
+}
+
+function selectedReferenceQuery() {
+  const text = String(currentSelection?.text || '').replace(/\s+/g, ' ').trim();
+  const match = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
+    || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/)
+    || text.match(/\[\s*\d{1,3}\s*\]/);
+  return match?.[0] || '';
+}
+
+async function goToSelectedReference() {
+  if (!pdfDoc) return;
+  const query = selectedReferenceQuery();
+  if (!query) { showError(t('Select a reference such as “Theorem 2.4”, “Section 3”, “(4.7)”, or “[17]”.', '请选择类似“Theorem 2.4”、“Section 3”、“(4.7)”或“[17]”的引用。')); return; }
+  await goToReferenceQuery(query, currentSelection?.page || currentPage);
+}
+
+
+
+function semanticMatchRangeInLayer(layer, surface, query, targetRatio = null) {
+  if (!layer || !surface || !query) return null;
+  const mapped = textLayerAggregate(layer);
+  if (!mapped.text) return null;
+  const pieces = String(query || '').trim().split(/\s+/).filter(Boolean);
+  if (!pieces.length) return null;
+  const escaped = pieces.map((piece) => piece.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  let pattern;
+  try { pattern = new RegExp(escaped.join('\\s+'), 'giu'); } catch (_) { return null; }
+  const surfaceRect = surface.getBoundingClientRect();
+  const candidates = [];
+  let match;
+  while ((match = pattern.exec(mapped.text))) {
+    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    if (!range) continue;
+    const rects = [...range.getClientRects()].filter((rect) => rect.width >= 1 && rect.height >= 1);
+    if (!rects.length) continue;
+    const first = rects[0];
+    const centerY = first.top - surfaceRect.top + first.height / 2;
+    const ratio = surfaceRect.height > 0 ? Math.min(1, Math.max(0, centerY / surfaceRect.height)) : 0;
+    candidates.push({ range, ratio });
+    if (!match[0].length) pattern.lastIndex += 1;
+  }
+  if (!candidates.length) return null;
+  if (!Number.isFinite(Number(targetRatio))) return candidates[0].range;
+  const wanted = Math.min(1, Math.max(0, Number(targetRatio)));
+  candidates.sort((a, b) => Math.abs(a.ratio - wanted) - Math.abs(b.ratio - wanted));
+  return candidates[0].range;
+}
+
+async function emphasizeSemanticDestination(page, ratio, query) {
+  if (!pdfDoc || !query) return;
+  let layer = null;
+  let surface = null;
+  if (readingFlow === 'continuous') {
+    const record = continuousPageNodes.get(Number(page));
+    if (record) {
+      if (!record.rendered) await renderContinuousPage(Number(page), continuousGeneration);
+      layer = record.textLayer;
+      surface = record.surface;
+    }
+  } else {
+    layer = primaryTextLayer;
+    surface = primaryPageSurface;
+  }
+  if (!layer || !surface) return;
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const range = semanticMatchRangeInLayer(layer, surface, query, ratio);
+  if (!range) return;
+  const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
+  if (!rect) return;
+  const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+  const desiredOffset = Math.min(280, Math.max(150, wrapRect.height * 0.34));
+  const delta = rect.top - (wrapRect.top + desiredOffset);
+  primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + delta);
+  if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+  emphasizeSearchRange(surface, range);
+  persistDocumentState();
+}
+
+async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
+  await goToLocation(page, ratio, options);
+  if (query) await emphasizeSemanticDestination(page, ratio, query);
+}
+
+function searchMatchRangeInLayer(layer, query, ordinal = 0) {
+  if (!layer || !query) return null;
+  const mapped = textLayerAggregate(layer);
+  if (!mapped.text) return null;
+  const pieces = String(query || '').trim().split(/\s+/).filter(Boolean);
+  if (!pieces.length) return null;
+  const escaped = pieces.map((piece) => piece.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  let pattern;
+  try { pattern = new RegExp(escaped.join('\\s+'), searchMatchCase?.checked ? 'gu' : 'giu'); } catch (_) { return null; }
+  let match = null;
+  let index = 0;
+  while ((match = pattern.exec(mapped.text))) {
+    if (index === Math.max(0, Number(ordinal) || 0)) {
+      return rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    }
+    index += 1;
+    if (!match[0].length) pattern.lastIndex += 1;
+  }
+  return null;
+}
+
+function clearSearchMatchEmphasis() {
+  document.querySelectorAll('.search-match-emphasis-layer').forEach((node) => node.remove());
+}
+
+function emphasizeSearchRange(surface, range) {
+  if (!surface || !range) return null;
+  clearSearchMatchEmphasis();
+  const surfaceRect = surface.getBoundingClientRect();
+  const layer = document.createElement('div');
+  layer.className = 'search-match-emphasis-layer';
+  for (const rect of range.getClientRects()) {
+    if (rect.width < 1 || rect.height < 1) continue;
+    const mark = document.createElement('div');
+    mark.className = 'search-match-emphasis';
+    mark.style.left = `${rect.left - surfaceRect.left}px`;
+    mark.style.top = `${rect.top - surfaceRect.top}px`;
+    mark.style.width = `${rect.width}px`;
+    mark.style.height = `${rect.height}px`;
+    layer.append(mark);
+  }
+  if (!layer.childElementCount) return null;
+  surface.append(layer);
+  window.setTimeout(() => layer.classList.add('is-fading'), 1700);
+  window.setTimeout(() => layer.remove(), 2600);
+  return layer;
+}
+
+async function goToSearchMatch(match, query) {
+  if (!pdfDoc || !match) return;
+  // First get the correct page rendered without relying on the generic semantic
+  // lead. The exact text-layer range below becomes the authoritative position.
+  await goToLocation(match.page, Math.min(1, Math.max(0, match.index / Math.max(1, match.text.length))), { contextLead: false });
+  let layer = null;
+  let surface = null;
+  if (readingFlow === 'continuous') {
+    const record = continuousPageNodes.get(match.page);
+    if (record) {
+      if (!record.rendered) await renderContinuousPage(match.page, continuousGeneration);
+      layer = record.textLayer;
+      surface = record.surface;
+    }
+  } else {
+    layer = primaryTextLayer;
+    surface = primaryPageSurface;
+  }
+  if (!layer || !surface) return;
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const range = searchMatchRangeInLayer(layer, query, match.ordinal || 0);
+  if (!range) return;
+  const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
+  if (!rect) return;
+  const wrapRect = primaryCanvasWrap.getBoundingClientRect();
+  // Keep the chosen occurrence at a predictable, comfortable position instead
+  // of pinning it close to the top edge. Clamp for short reader windows.
+  const desiredOffset = Math.min(280, Math.max(150, wrapRect.height * 0.34));
+  const delta = rect.top - (wrapRect.top + desiredOffset);
+  primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + delta);
+  if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+  emphasizeSearchRange(surface, range);
+  persistDocumentState();
+}
+
 async function searchPdf(query) {
   searchResults.replaceChildren();
   const q = query.trim();
   if (!pdfDoc || !q) { searchStatus.textContent = ''; return; }
-  searchStatus.textContent = t('Searching…', '正在搜索……');
+  if (searchEquations?.checked) {
+    const matches = equationSearchMatches(q);
+    searchStatus.textContent = t(`${matches.length} saved/extracted equation${matches.length===1?'':'s'}`, `${matches.length} 个已保存/提取公式`);
+    for (const match of matches.slice(0,200)) {
+      const item=document.createElement('button'); item.type='button'; item.className='search-result search-result-equation';
+      const label=document.createElement('strong'); label.textContent=t(`Page ${match.page} · ${match.source}`,`第 ${match.page} 页 · ${match.source}`);
+      const code=document.createElement('code'); code.textContent=match.latex.length>280?`${match.latex.slice(0,280)}…`:match.latex; item.append(label,code);
+      item.addEventListener('click',()=>goToLocation(match.page,0)); searchResults.append(item);
+    }
+    return;
+  }
+  const fuzzy = Boolean(searchFuzzy?.checked);
+  searchStatus.textContent = fuzzy ? t('Fuzzy searching…', '正在模糊搜索……') : t('Searching…', '正在搜索……');
   const matches = [];
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     searchStatus.textContent = t(`Searching page ${page} of ${pdfDoc.numPages}…`, `正在搜索第 ${page} / ${pdfDoc.numPages} 页……`);
     try {
       const text = await pageText(page);
-      const result = searchTextMatch(text, q);
-      if (result.matched) matches.push({ page, text, index: result.index });
+      const hits = fuzzy ? fuzzySearchMatches(text, q) : exactSearchMatches(text, q);
+      for (const [ordinal, hit] of hits.entries()) matches.push({ page, text, index: hit.index, score: hit.score, ordinal });
     } catch (error) { console.error(error); }
     if (page % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  searchStatus.textContent = t(`${matches.length} matching page${matches.length === 1 ? '' : 's'}`, `${matches.length} 个匹配页面`);
-  for (const match of matches.slice(0, 100)) {
+  matches.sort((a,b) => fuzzy ? (b.score - a.score || a.page - b.page || a.index - b.index) : (a.page - b.page || a.index - b.index));
+  searchStatus.textContent = t(`${matches.length} occurrence${matches.length === 1 ? '' : 's'}${fuzzy ? ' · fuzzy ranked' : ''}`, `${matches.length} 个出现位置${fuzzy ? ' · 按模糊匹配排序' : ''}`);
+  for (const match of matches.slice(0, 200)) {
     const item = document.createElement('button');
     item.type = 'button'; item.className = 'search-result';
-    const label = document.createElement('strong'); label.textContent = t(`Page ${match.page}`, `第 ${match.page} 页`);
+    const label = document.createElement('strong');
+    label.textContent = fuzzy && match.score < 0.999 ? t(`Page ${match.page} · ${Math.round(match.score*100)}%`, `第 ${match.page} 页 · ${Math.round(match.score*100)}%`) : t(`Page ${match.page}`, `第 ${match.page} 页`);
     const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, q, match.index));
     item.append(label, snippet);
-    item.addEventListener('click', () => goToPage(match.page));
+    item.addEventListener('click', () => goToSearchMatch(match, q));
     searchResults.append(item);
+  }
+}
+
+function nativeAnnotationString(value) {
+  if (typeof value === 'string') return value.trim();
+  if (!value || typeof value !== 'object') return '';
+  if (typeof value.str === 'string') return value.str.trim();
+  if (typeof value.value === 'string') return value.value.trim();
+  if (typeof value.text === 'string') return value.text.trim();
+  if (typeof value.html === 'string') {
+    const temp = document.createElement('div');
+    temp.innerHTML = value.html;
+    return String(temp.textContent || '').trim();
+  }
+  return '';
+}
+
+function nativeCommentBody(annotation) {
+  const candidates = [
+    annotation?.contentsObj,
+    annotation?.contents,
+    annotation?.richText,
+    annotation?.popup?.contentsObj,
+    annotation?.popup?.contents
+  ];
+  for (const candidate of candidates) {
+    const value = nativeAnnotationString(candidate);
+    if (value) return value;
+  }
+  return '';
+}
+
+function nativeCommentAuthor(annotation) {
+  for (const candidate of [annotation?.titleObj, annotation?.title, annotation?.author]) {
+    const value = nativeAnnotationString(candidate);
+    if (value) return value;
+  }
+  return '';
+}
+
+function nativeCommentKind(annotation) {
+  const subtype = String(annotation?.subtype || annotation?.annotationTypeName || '').trim();
+  if (subtype) return subtype;
+  const type = Number(annotation?.annotationType);
+  const labels = { 1: 'Text', 2: 'Link', 3: 'FreeText', 4: 'Line', 5: 'Square', 6: 'Circle', 7: 'Polygon', 8: 'PolyLine', 9: 'Highlight', 10: 'Underline', 11: 'Squiggly', 12: 'StrikeOut', 13: 'Stamp', 14: 'Caret', 15: 'Ink', 16: 'Popup', 17: 'FileAttachment', 20: 'Widget' };
+  return labels[type] || 'Comment';
+}
+
+function nativeAnnotationId(annotation) {
+  return String(annotation?.id || annotation?.annotationId || annotation?.ref || '').trim();
+}
+
+function nativeAnnotationParentId(annotation) {
+  const values = [
+    annotation?.parentId,
+    annotation?.parentAnnotationId,
+    annotation?.popupParentId,
+    annotation?.parent?.id,
+    annotation?.popupRef?.id,
+    annotation?.parentRef?.id
+  ];
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function nativeAnnotationRect(annotation) {
+  const quad = annotation?.quadPoints;
+  const nums = [];
+  const collect = (value) => {
+    if (Number.isFinite(Number(value))) nums.push(Number(value));
+    else if (value && typeof value === 'object') {
+      if (Number.isFinite(Number(value.x))) nums.push(Number(value.x));
+      if (Number.isFinite(Number(value.y))) nums.push(Number(value.y));
+    }
+  };
+  if (Array.isArray(quad) || ArrayBuffer.isView(quad)) {
+    for (const value of quad) {
+      if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+        for (const part of value) collect(part);
+      } else collect(value);
+    }
+  }
+  if (nums.length >= 4) {
+    const xs = nums.filter((_, i) => i % 2 === 0);
+    const ys = nums.filter((_, i) => i % 2 === 1);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+  const rect = Array.isArray(annotation?.rect) || ArrayBuffer.isView(annotation?.rect) ? Array.from(annotation.rect).map(Number) : [];
+  if (rect.length >= 4 && rect.slice(0, 4).every(Number.isFinite)) {
+    return [Math.min(rect[0], rect[2]), Math.min(rect[1], rect[3]), Math.max(rect[0], rect[2]), Math.max(rect[1], rect[3])];
+  }
+  return null;
+}
+
+function annotationTextFromContent(annotation, textContent) {
+  const rect = nativeAnnotationRect(annotation);
+  if (!rect || !textContent?.items?.length) return '';
+  const [ax1, ay1, ax2, ay2] = rect;
+  const hits = [];
+  for (const item of textContent.items) {
+    const text = String(item?.str || '').trim();
+    if (!text) continue;
+    const tr = item?.transform || [1, 0, 0, 1, 0, 0];
+    const x = Number(tr[4]) || 0;
+    const y = Number(tr[5]) || 0;
+    const w = Math.max(0.5, Number(item?.width) || 0.5);
+    const h = Math.max(1, Number(item?.height) || Math.hypot(Number(tr[2]) || 0, Number(tr[3]) || 0) || Math.hypot(Number(tr[0]) || 0, Number(tr[1]) || 0) || 8);
+    // PDF text y is normally a baseline. Give it a small descender allowance so
+    // native highlight rectangles overlap reliably across fonts.
+    const ix1 = x;
+    const ix2 = x + w;
+    const iy1 = y - Math.max(2, h * 0.28);
+    const iy2 = y + Math.max(2, h * 0.95);
+    const overlapX = Math.min(ax2, ix2) - Math.max(ax1, ix1);
+    const overlapY = Math.min(ay2, iy2) - Math.max(ay1, iy1);
+    if (overlapX <= 0 || overlapY <= 0) continue;
+    const itemArea = Math.max(1, (ix2 - ix1) * (iy2 - iy1));
+    const overlapArea = overlapX * overlapY;
+    if (overlapArea / itemArea < 0.08 && overlapX < Math.min(5, w * 0.25)) continue;
+    hits.push({ text, x, y });
+  }
+  if (!hits.length) return '';
+  hits.sort((a, b) => Math.abs(b.y - a.y) > 2.2 ? b.y - a.y : a.x - b.x);
+  const rows = [];
+  for (const hit of hits) {
+    let row = rows.find((candidate) => Math.abs(candidate.y - hit.y) <= 2.2);
+    if (!row) { row = { y: hit.y, items: [] }; rows.push(row); }
+    row.items.push(hit);
+  }
+  rows.sort((a, b) => b.y - a.y);
+  return rows.map((row) => row.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(' '))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeNativePdfComments(raw, textContent = null) {
+  const annotations = Array.isArray(raw) ? raw : [];
+  const byId = new Map();
+  for (const annotation of annotations) {
+    const id = nativeAnnotationId(annotation);
+    if (id) byId.set(id, annotation);
+  }
+
+  const popupByParent = new Map();
+  const unpairedPopups = [];
+  for (const annotation of annotations) {
+    if (nativeCommentKind(annotation).toLowerCase() !== 'popup') continue;
+    const parentId = nativeAnnotationParentId(annotation);
+    if (parentId) popupByParent.set(parentId, annotation);
+    else unpairedPopups.push(annotation);
+  }
+
+  const result = [];
+  const usedPopups = new Set();
+  const isMarkupKind = (kind) => /^(highlight|underline|squiggly|strikeout)$/i.test(kind);
+
+  for (let index = 0; index < annotations.length; index += 1) {
+    const annotation = annotations[index];
+    const kind = nativeCommentKind(annotation);
+    if (kind.toLowerCase() === 'popup') continue;
+    const id = nativeAnnotationId(annotation) || `pdf-comment-${index}`;
+    let popup = popupByParent.get(id) || null;
+    const annotationBody = nativeCommentBody(annotation);
+
+    // Some PDFs expose the parent linkage incompletely but duplicate the same
+    // comment body on the markup and Popup objects. Pair those conservatively.
+    if (!popup && annotationBody) {
+      popup = unpairedPopups.find((candidate) => !usedPopups.has(candidate) && nativeCommentBody(candidate) === annotationBody) || null;
+    }
+    if (popup) usedPopups.add(popup);
+
+    const popupBody = popup ? nativeCommentBody(popup) : '';
+    const body = popupBody || annotationBody;
+    const sourceText = isMarkupKind(kind) ? annotationTextFromContent(annotation, textContent) : '';
+    if (!body && !sourceText) continue;
+    result.push({
+      id,
+      kind,
+      sourceText,
+      body,
+      author: (popup && nativeCommentAuthor(popup)) || nativeCommentAuthor(annotation),
+      paired: Boolean(popup),
+      ratio: (() => {
+        const rect = nativeAnnotationRect(annotation);
+        return rect ? Number(rect[3]) : null;
+      })()
+    });
+  }
+
+  // Preserve genuine standalone popup/text comments that have no markup parent.
+  for (let index = 0; index < unpairedPopups.length; index += 1) {
+    const popup = unpairedPopups[index];
+    if (usedPopups.has(popup)) continue;
+    const body = nativeCommentBody(popup);
+    if (!body) continue;
+    result.push({
+      id: nativeAnnotationId(popup) || `pdf-popup-${index}`,
+      kind: 'Popup',
+      sourceText: '',
+      body,
+      author: nativeCommentAuthor(popup),
+      paired: false,
+      ratio: null
+    });
+  }
+  return result;
+}
+
+function renderNativePdfComments(page = currentPage) {
+  if (!pdfComments || !pdfCommentsList || !pdfCommentsCount) return;
+  const items = nativePdfCommentsByPage.get(Number(page)) || [];
+  pdfCommentsList.replaceChildren();
+  pdfCommentsCount.textContent = String(items.length);
+  pdfComments.classList.toggle('is-hidden', items.length === 0);
+  for (const item of items) {
+    const row = document.createElement('article');
+    row.className = `pdf-comment-item${item.sourceText ? ' has-source' : ''}${item.paired ? ' is-paired' : ''}`;
+
+    const meta = document.createElement('div');
+    meta.className = 'pdf-comment-meta';
+    const kind = document.createElement('span');
+    kind.textContent = t(`PDF ${item.kind || 'comment'}`, `PDF ${item.kind || '批注'}`);
+    meta.append(kind);
+    if (item.author) {
+      const author = document.createElement('span');
+      author.textContent = t(`By ${item.author}`, `作者：${item.author}`);
+      meta.append(author);
+    }
+    row.append(meta);
+
+    if (item.sourceText) {
+      const source = document.createElement('div');
+      source.className = 'pdf-comment-source';
+      const label = document.createElement('div');
+      label.className = 'pdf-comment-source-label';
+      label.textContent = t('Highlighted text', '高亮原文');
+      const text = document.createElement('blockquote');
+      text.className = 'pdf-comment-source-text';
+      text.textContent = item.sourceText;
+      source.append(label, text);
+      row.append(source);
+    }
+
+    if (item.body) {
+      const reply = document.createElement('div');
+      reply.className = 'pdf-comment-reply';
+      const label = document.createElement('div');
+      label.className = 'pdf-comment-reply-label';
+      label.textContent = item.sourceText ? t('Comment', '批注内容') : t('PDF comment', 'PDF 批注');
+      const body = document.createElement('p');
+      body.className = 'pdf-comment-body';
+      body.textContent = item.body;
+      reply.append(label, body);
+      row.append(reply);
+    }
+    pdfCommentsList.append(row);
+  }
+}
+
+async function refreshNativePdfComments(pageNum) {
+  if (!pdfDoc || !Number.isFinite(Number(pageNum))) return;
+  const page = Number(pageNum);
+  if (nativePdfCommentsByPage.has(page)) {
+    if (page === currentPage) renderNativePdfComments(page);
+    return;
+  }
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const token = nativePdfCommentLoadToken;
+  try {
+    const pdfPage = await sourceDoc.getPage(page);
+    const [raw, textContent] = await Promise.all([
+      pdfPage.getAnnotations({ intent: 'any' }),
+      pdfPage.getTextContent().catch(() => null)
+    ]);
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== nativePdfCommentLoadToken) return;
+    nativePdfCommentsByPage.set(page, normalizeNativePdfComments(raw, textContent));
+    if (page === currentPage) renderNativePdfComments(page);
+  } catch (error) {
+    console.warn('MathReader PDF comment extraction failed', error);
+    if (pdfDoc === sourceDoc && currentFileKey === sourceKey && token === nativePdfCommentLoadToken) {
+      nativePdfCommentsByPage.set(page, []);
+      if (page === currentPage) renderNativePdfComments(page);
+    }
   }
 }
 
@@ -3197,18 +7091,21 @@ function renderBookmarks() {
     const row = document.createElement('div'); row.className = 'bookmark-item'; row.dataset.color = normalizedBookmarkColor(bookmark.color);
     const main = document.createElement('div'); main.className = 'bookmark-main';
     const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'bookmark-jump';
-    const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`);
-    const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
-    jump.append(strong, detail); jump.addEventListener('click', () => goToPage(bookmark.page));
+    const strong = document.createElement('strong'); strong.textContent = bookmark.title?.trim() || (bookmark.type === 'equation' ? t(`Equation · page ${bookmark.page}`, `公式 · 第 ${bookmark.page} 页`) : t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`));
+    const kindLabel = bookmark.type === 'equation' ? t('Equation', '公式') : t('Page', '页面');
+    const detail = document.createElement('span'); detail.className = 'bookmark-meta'; detail.textContent = `${kindLabel} · ${t(`Page ${bookmark.page}`, `第 ${bookmark.page} 页`)} · ${formatBookmarkTime(bookmark.created)}`;
+    jump.append(strong, detail); jump.addEventListener('click', () => goToLocation(bookmark.page, bookmark.type === 'page' ? (Number(bookmark.ratio) || 0) : 0, { contextLead: false }));
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'bookmark-edit'; edit.textContent = '✎'; edit.title = t('Edit bookmark', '编辑书签');
     edit.addEventListener('click', () => { editingBookmarkId = editingBookmarkId === bookmark.id ? null : bookmark.id; renderBookmarks(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'bookmark-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', t('Remove bookmark', '删除书签'));
     remove.addEventListener('click', () => {
+      pushUndo('bookmark', bookmark.title?.trim() || t(`Bookmark · page ${bookmark.page}`, `书签 · 第 ${bookmark.page} 页`), bookmark);
       bookmarks = bookmarks.filter((item) => item.id !== bookmark.id);
       if (editingBookmarkId === bookmark.id) editingBookmarkId = null;
       persistDocumentState(); renderBookmarks();
     });
     main.append(jump, edit, remove); row.append(main);
+    if (bookmark.latex?.trim()) { const formula = document.createElement('code'); formula.className = 'bookmark-equation-preview'; formula.textContent = bookmark.latex.length > 220 ? `${bookmark.latex.slice(0, 220)}…` : bookmark.latex; row.append(formula); }
     if (bookmark.note?.trim()) { const preview = document.createElement('div'); preview.className = 'bookmark-note-preview'; preview.textContent = bookmark.note; row.append(preview); }
     if (editingBookmarkId === bookmark.id) {
       const editor = document.createElement('div'); editor.className = 'bookmark-editor';
@@ -3235,15 +7132,51 @@ function renderBookmarks() {
     }
     bookmarkList.append(row);
   }
+  renderDocumentMetadata();
+}
+
+function currentBookmarkLocation() {
+  if (readingFlow === 'continuous') {
+    const anchor = captureContinuousAnchor() || continuousSavedAnchor;
+    if (anchor && Number(anchor.page) >= 1) return { page: Number(anchor.page), ratio: Math.min(1, Math.max(0, Number(anchor.ratio) || 0)) };
+  }
+  const page = Number(currentPage) || 1;
+  const height = Math.max(1, primaryPageSurface?.offsetHeight || primaryCanvasWrap?.scrollHeight || 1);
+  const ratio = Math.min(1, Math.max(0, Number(primaryCanvasWrap?.scrollTop || 0) / height));
+  return { page, ratio };
 }
 
 function addCurrentBookmark() {
   if (!pdfDoc) return;
-  const existing = bookmarks.find((item) => item.page === currentPage);
-  if (existing) { editingBookmarkId = existing.id; renderBookmarks(); return; }
-  const item = { id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, page: currentPage, title: '', note: '', color: 'blue', created: Date.now() };
+  // Page bookmarks are independent records. Equation bookmarks on the same
+  // page never block them, and users may keep several page bookmarks at
+  // different reading positions on one page.
+  const location = currentBookmarkLocation();
+  const item = {
+    id: `bm-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    page: location.page,
+    ratio: location.ratio,
+    title: '',
+    note: '',
+    color: 'blue',
+    created: Date.now(),
+    type: 'page'
+  };
   bookmarks.push(item); editingBookmarkId = item.id;
   persistDocumentState(); renderBookmarks();
+}
+
+function saveCurrentOcrAsEquation() {
+  if (!pdfDoc || !currentOcrResult?.latex) return;
+  const page = Number(currentOcrResult.page) || currentPage;
+  const item = {
+    id: `eq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    page, title: '', note: '', color: 'purple', created: Date.now(), type: 'equation',
+    latex: String(ocrLatexPreview?.value || currentOcrResult.latex).trim(), preview: currentOcrResult.preview || ''
+  };
+  bookmarks.push(item); editingBookmarkId = item.id;
+  persistDocumentState(); renderBookmarks();
+  openLeftPanelShortcut('bookmarks-panel');
 }
 
 async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null }) {
@@ -3257,7 +7190,12 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     currentFileName = meta.name;
     currentFileKey = meta.id;
     cacheEnabledForCurrent = Boolean(cachedRecord);
+    initialContinuousReady = false;
     textCache = new Map();
+    lineCache = new Map();
+    referencePageRenderCache = new Map();
+    referenceSnapshotCache.clear();
+    bibliographyExpanded = new Set();
     currentSelection = null;
     setOcrMode(false);
     hideSelectionToolbar();
@@ -3272,7 +7210,15 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     pdfWorkspace.classList.remove('is-hidden');
     renderBookmarks();
     await Promise.all([renderOutline(), renderCurrentPage()]);
-    await stabilizeFitWidthLayout();
+    renderStructureIndex();
+    renderBibliographyIndex();
+    renderReferenceStack();
+    updateReadingBackButton();
+    // The initial continuous path already uses the final visible reader width.
+    // Do not immediately rebuild it through the post-load stabilizer; that was
+    // the regression source introduced after v78. Later display changes still
+    // use the universal transition path.
+    if (!(readingFlow === 'continuous' && initialContinuousReady)) await stabilizeFitWidthLayout();
     await renderReferencePage();
     updateReferenceStatus();
     if (cacheBlob) await cacheOpenedPdf(meta, cacheBlob);
@@ -3289,6 +7235,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
   } finally {
     restoringSession = false;
     setLoading(false);
+    if (pdfDoc) scheduleAutomaticStructureIndex();
     fileInput.value = '';
   }
 }
@@ -3348,6 +7295,11 @@ async function openCachedDocument(id, options = {}) {
 
 async function changeZoom(delta) {
   if (!pdfDoc) return;
+  // Capture before any await. A browser/layout frame may transiently report
+  // scrollTop=0 while the continuous document is being rebuilt; that must never
+  // replace the real reading location with page 1.
+  const stableAnchor = snapshotDisplayAnchor();
+  if (stableAnchor) continuousSavedAnchor = { ...stableAnchor };
   if (zoomMode !== 'custom') {
     const page = await pdfDoc.getPage(currentPage);
     const baseViewport = page.getViewport({ scale: 1 });
@@ -3355,19 +7307,22 @@ async function changeZoom(delta) {
     const renderedWidth = visibleCanvas?.getBoundingClientRect().width || canvas.getBoundingClientRect().width;
     zoomScale = renderedWidth > 0 ? renderedWidth / baseViewport.width : 1.2;
   }
-  zoomMode = 'custom';
-  zoomScale = Math.max(.4, Math.min(3.5, zoomScale + delta));
-  updateZoomLabel();
-  persistDocumentState();
-  renderCurrentPage();
+  const nextScale = Math.max(.4, Math.min(3.5, zoomScale + delta));
+  await runDisplayTransition(() => {
+    zoomMode = 'custom';
+    zoomScale = nextScale;
+    updateZoomLabel();
+    persistDocumentState();
+  });
 }
 
-function setFitMode(mode) {
+async function setFitMode(mode) {
   if (!pdfDoc) return;
-  zoomMode = mode;
-  updateZoomLabel();
-  persistDocumentState();
-  renderCurrentPage();
+  await runDisplayTransition(() => {
+    zoomMode = mode;
+    updateZoomLabel();
+    persistDocumentState();
+  });
 }
 
 function activatePanel(panelId, persist = true) {
@@ -3388,10 +7343,9 @@ nextPage.addEventListener('click', () => goToPage(currentPage + 1));
 pageNumberInput.addEventListener('change', () => goToPage(pageNumberInput.value));
 zoomIn.addEventListener('click', () => changeZoom(.15));
 zoomOut.addEventListener('click', () => changeZoom(-.15));
-zoomLabel.addEventListener('click', () => setFitMode('fit-width'));
-fitPage.addEventListener('click', () => setFitMode('fit-page'));
+zoomLabel.addEventListener('click', () => setFitMode(zoomMode === 'fit-width' ? 'fit-page' : 'fit-width'));
 ocrHistoryToggle?.addEventListener('click', () => { ocrHistoryExpanded = !ocrHistoryExpanded; refreshOcrUI(); });
-flowButton.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
+flowButton?.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
 flowSingle?.addEventListener('click', () => setReadingFlow('single'));
 flowContinuous?.addEventListener('click', () => setReadingFlow('continuous'));
 resetDisplay?.addEventListener('click', resetDisplayPreferences);
@@ -3399,7 +7353,433 @@ pageToneSelect?.addEventListener('change', () => { pageTone = pageToneSelect.val
 brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 100); applyPageDisplay(); });
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 100); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
+gapRange?.addEventListener('change', () => { runDisplayTransition(() => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); persistDisplayPreferences(); }, { renderReference: false }); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
+
+function formatCompactDate(timestamp) {
+  try {
+    return new Intl.DateTimeFormat(root.dataset.lang === 'zh' ? 'zh-CN' : 'en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    }).format(new Date(timestamp));
+  } catch (_) { return ''; }
+}
+
+function renderNamedReadingSessions() {
+  if (!readingSessionsList || !readingSessionsCount || !readingSessionsEmpty) return;
+  readingSessionsList.replaceChildren();
+  readingSessionsCount.textContent = String(namedReadingSessions.length);
+  readingSessionsEmpty.classList.toggle('is-hidden', namedReadingSessions.length > 0);
+  for (const item of [...namedReadingSessions].sort((a,b) => b.updated - a.updated)) {
+    const row = document.createElement('div'); row.className = 'reading-session-item';
+    const head = document.createElement('div'); head.className = 'reading-session-head';
+    const name = document.createElement('div'); name.className = 'reading-session-name'; name.textContent = item.name;
+    const page = document.createElement('span'); page.className = 'page-chip'; page.textContent = t(`Page ${item.state?.page || 1}`, `第 ${item.state?.page || 1} 页`);
+    head.append(name, page);
+    const meta = document.createElement('div'); meta.className = 'reading-session-meta'; meta.textContent = formatCompactDate(item.updated);
+    const actions = document.createElement('div'); actions.className = 'reading-session-actions';
+    const restore = document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreNamedReadingSession(item));
+    const update = document.createElement('button'); update.type='button'; update.className='text-button'; update.textContent=t('Update','更新'); update.addEventListener('click',()=>{ item.state=captureNamedWorkspaceState(); item.updated=Date.now(); persistDocumentState(); renderNamedReadingSessions(); });
+    const remove = document.createElement('button'); remove.type='button'; remove.className='text-button'; remove.textContent=t('Delete','删除'); remove.addEventListener('click',()=>{ pushUndo('reading-session', t(`Reading session “${item.name}”`, `阅读会话“${item.name}”`), item); namedReadingSessions=namedReadingSessions.filter((x)=>x.id!==item.id); persistDocumentState(); renderNamedReadingSessions(); });
+    actions.append(restore, update, remove); row.append(head, meta, actions); readingSessionsList.append(row);
+  }
+}
+
+function saveNamedReadingSession() {
+  if (!pdfDoc) return;
+  let name = String(readingSessionName?.value || '').trim();
+  if (!name) name = t(`Session ${namedReadingSessions.length + 1}`, `会话 ${namedReadingSessions.length + 1}`);
+  const now = Date.now();
+  namedReadingSessions = [{ id:`rs-${now}-${Math.random().toString(36).slice(2,7)}`, name:name.slice(0,120), created:now, updated:now, state:captureNamedWorkspaceState() }, ...namedReadingSessions].slice(0,20);
+  if (readingSessionName) readingSessionName.value='';
+  persistDocumentState(); renderNamedReadingSessions();
+}
+
+async function restoreNamedReadingSession(item) {
+  if (!pdfDoc || !item?.state) return;
+  const state = item.state;
+  restoringSession = true;
+  try {
+    currentPage = Math.min(Math.max(1, Number(state.page) || 1), pdfDoc.numPages);
+    pinnedPage = Number(state.pinnedPage) >= 1 && Number(state.pinnedPage) <= pdfDoc.numPages ? Number(state.pinnedPage) : null;
+    zoomMode = ['fit-width','fit-page','custom'].includes(state.zoomMode) ? state.zoomMode : zoomMode;
+    zoomScale = clamp(state.zoomScale, .35, 4, zoomScale);
+    scrollByPage = state.scrollByPage && typeof state.scrollByPage === 'object' ? jsonClone(state.scrollByPage,{}) : {};
+    referenceScrollByPage = state.referenceScrollByPage && typeof state.referenceScrollByPage === 'object' ? jsonClone(state.referenceScrollByPage,{}) : {};
+    continuousScrollTop = Math.max(0, Number(state.continuousScrollTop) || 0);
+    const a = state.continuousAnchor;
+    continuousSavedAnchor = a && Number(a.page) ? { page:Math.min(Math.max(1,Number(a.page)),pdfDoc.numPages), ratio:Math.min(1,Math.max(0,Number(a.ratio)||0)) } : {page:currentPage,ratio:0};
+    referencePages = Array.isArray(state.referencePages) ? state.referencePages.map(Number).filter((n,i,a)=>n>=1&&n<=pdfDoc.numPages&&a.indexOf(n)===i).slice(0,4) : [];
+    readingBackStack = normalizeReadingTrail(state.readingBackStack);
+    if (state.searchQuery != null) searchInput.value = String(state.searchQuery);
+    const desiredFlow = state.readingFlow === 'single' ? 'single' : 'continuous';
+    await setReadingFlow(desiredFlow, { persist:false, render:false });
+    if (state.ui?.sections) {
+      document.querySelectorAll('.workspace-section[id]').forEach((section)=>{
+        if (Object.prototype.hasOwnProperty.call(state.ui.sections, section.id)) section.classList.toggle('is-collapsed', Boolean(state.ui.sections[section.id]));
+      });
+      updateWorkspaceCollapseButtons();
+    }
+    if (state.ui?.activePanel) activatePanel(state.ui.activePanel, false);
+    shell.classList.toggle('left-collapsed', Boolean(state.ui?.leftCollapsed));
+    shell.classList.toggle('right-collapsed', Boolean(state.ui?.rightCollapsed));
+    await Promise.all([renderCurrentPage(), renderReferencePage()]);
+    renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateZoomLabel(); updateNavigationState();
+  } finally { restoringSession = false; }
+  persistWorkspaceCollapseState(); persistDocumentState();
+}
+
+function renderUndoHistory() {
+  if (!undoList || !undoCount || !undoEmpty) return;
+  undoList.replaceChildren();
+  undoCount.textContent = String(undoHistory.length);
+  undoEmpty.classList.toggle('is-hidden', undoHistory.length > 0);
+  if (undoClear) undoClear.disabled = undoHistory.length === 0;
+  for (const item of undoHistory.slice(0,10)) {
+    const row=document.createElement('div'); row.className='undo-item';
+    const head=document.createElement('div'); head.className='undo-item-head';
+    const title=document.createElement('div'); title.className='undo-item-title'; title.textContent=item.label;
+    head.append(title);
+    const meta=document.createElement('div'); meta.className='undo-item-meta'; meta.textContent=formatCompactDate(item.created);
+    const actions=document.createElement('div'); actions.className='undo-item-actions';
+    const restore=document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreUndoEntry(item.id));
+    actions.append(restore); row.append(head,meta,actions); undoList.append(row);
+  }
+}
+
+async function restoreUndoEntry(id = null) {
+  const item = id ? undoHistory.find((x)=>x.id===id) : undoHistory[0];
+  if (!item) return false;
+  const payload = jsonClone(item.payload, item.payload);
+  if (item.type === 'bookmark') { if (payload && !bookmarks.some((x)=>x.id===payload.id)) bookmarks.push(payload); renderBookmarks(); }
+  else if (item.type === 'annotation') { if (payload && !annotations.some((x)=>x.id===payload.id)) annotations.push(payload); renderAnnotationList(); rerenderVisibleAnnotations(); }
+  else if (item.type === 'glossary') { if (payload && !symbolGlossary.some((x)=>x.id===payload.id)) symbolGlossary.push(payload); renderSymbolGlossary(); }
+  else if (item.type === 'reading-trail') { readingBackStack=normalizeReadingTrail(payload); updateReadingBackButton(); renderReadingTrail(); }
+  else if (item.type === 'ocr-result') { currentOcrResult=payload; refreshOcrUI(); }
+  else if (item.type === 'reading-session') { if (payload && !namedReadingSessions.some((x)=>x.id===payload.id)) namedReadingSessions.unshift(payload); renderNamedReadingSessions(); }
+  else return false;
+  undoHistory = undoHistory.filter((x)=>x.id!==item.id);
+  renderUndoHistory(); persistDocumentState(); return true;
+}
+
+function renderRecoverySnapshots() {
+  if (!recoveryList || !recoveryCount || !recoveryEmpty) return;
+  recoveryList.replaceChildren();
+  recoveryCount.textContent=String(recoverySnapshots.length);
+  recoveryEmpty.classList.toggle('is-hidden', recoverySnapshots.length>0);
+  for (const item of recoverySnapshots.slice(0,5)) {
+    const row=document.createElement('div'); row.className='recovery-item';
+    const head=document.createElement('div'); head.className='recovery-item-head';
+    const title=document.createElement('div'); title.className='recovery-item-title'; title.textContent=t(`Snapshot · page ${item.data?.page || 1}`, `快照 · 第 ${item.data?.page || 1} 页`);
+    head.append(title);
+    const meta=document.createElement('div'); meta.className='recovery-item-meta'; meta.textContent=formatCompactDate(item.created);
+    const actions=document.createElement('div'); actions.className='recovery-item-actions';
+    const restore=document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreRecoverySnapshot(item));
+    actions.append(restore); row.append(head,meta,actions); recoveryList.append(row);
+  }
+}
+
+async function restoreRecoverySnapshot(item) {
+  if (!pdfDoc || !item?.data) return;
+  const data=item.data;
+  const currentSafety = durableRecoveryData();
+  const currentFingerprint = recoveryFingerprint(currentSafety);
+  const targetFingerprint = recoveryFingerprint(data);
+  if (currentFingerprint !== targetFingerprint) {
+    recoverySnapshots = [{ id:`recovery-${Date.now()}-safety`, created:Date.now(), data:currentSafety }, ...recoverySnapshots].slice(0,5);
+    const key = recoveryStorageKey(); if (key) safeSet(key, JSON.stringify(recoverySnapshots));
+    renderRecoverySnapshots();
+  }
+  recoveryRestoreActive=true;
+  try {
+    bookmarks=normalizeBookmarks(data.bookmarks);
+    notes=data.notes && typeof data.notes==='object' ? jsonClone(data.notes,{}) : {};
+    annotations=normalizeAnnotations(data.annotations);
+    symbolGlossary=normalizeSymbolGlossary(data.symbolGlossary);
+    documentTags=normalizeDocumentTags(data.documentTags);
+    documentReadingState=['unread','reading','finished'].includes(data.documentReadingState)?data.documentReadingState:'unread';
+    documentPersonalNote=typeof data.documentPersonalNote==='string'?data.documentPersonalNote:'';
+    currentPage=Math.min(Math.max(1,Number(data.page)||1),pdfDoc.numPages);
+    pinnedPage=Number(data.pinnedPage)>=1&&Number(data.pinnedPage)<=pdfDoc.numPages?Number(data.pinnedPage):null;
+    referencePages=Array.isArray(data.referencePages)?data.referencePages.map(Number).filter((n,i,a)=>n>=1&&n<=pdfDoc.numPages&&a.indexOf(n)===i).slice(0,4):[];
+    readingBackStack=normalizeReadingTrail(data.readingBackStack);
+    if (['fit-width','fit-page','custom'].includes(data.zoomMode)) zoomMode=data.zoomMode;
+    zoomScale=clamp(data.zoomScale,.35,4,zoomScale);
+    if (data.continuousAnchor) continuousSavedAnchor={page:Math.min(Math.max(1,Number(data.continuousAnchor.page)||currentPage),pdfDoc.numPages),ratio:Math.min(1,Math.max(0,Number(data.continuousAnchor.ratio)||0))};
+    const flow=data.readingFlow==='single'?'single':'continuous';
+    restoringSession=true;
+    await setReadingFlow(flow,{persist:false,render:false});
+    await Promise.all([renderCurrentPage(),renderReferencePage()]);
+    restoringSession=false;
+    renderBookmarks(); renderAnnotationList(); rerenderVisibleAnnotations(); renderSymbolGlossary(); renderDocumentMetadata(); renderDocumentMapAnnotations(); renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateNavigationState();
+  } catch (error) { console.error(error); showError(t('Recovery snapshot could not be restored.', '无法恢复该快照。')); }
+  finally { restoringSession=false; recoveryRestoreActive=false; }
+  persistDocumentState();
+}
+
+function downloadJsonFile(name, value) {
+  const blob = new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportReadingData() {
+  if (!pdfDoc || !currentFileKey) return;
+  const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
+  downloadJsonFile(`${safeName}-mathreader.json`, {
+    schema: 'mathreader.reading-data@1', exportedAt: new Date().toISOString(),
+    document: { id: currentFileKey, name: currentFileName, pages: pdfDoc.numPages },
+    session: snapshotSession()
+  });
+}
+
+async function importReadingDataFile(file) {
+  if (!pdfDoc || !currentFileKey || !file) return;
+  let payload;
+  try { payload = JSON.parse(await file.text()); } catch (_) { showError(t('The selected reading-data file is not valid JSON.', '所选阅读数据文件不是有效的 JSON。')); return; }
+  if (payload?.schema !== 'mathreader.reading-data@1' || !payload.session) { showError(t('This is not a MathReader reading-data export.', '这不是 MathReader 阅读数据导出文件。')); return; }
+  if (payload.document?.id && payload.document.id !== currentFileKey) {
+    const sameName = String(payload.document?.name || '') === String(currentFileName || '');
+    const samePages = Number(payload.document?.pages || 0) === Number(pdfDoc.numPages || 0);
+    if (!sameName || !samePages) { showError(t('This reading-data export belongs to a different PDF. Open the matching PDF before importing.', '此阅读数据属于另一份 PDF。请先打开匹配的 PDF 再导入。')); return; }
+  }
+  safeSet(stateKey('session-v2'), JSON.stringify(payload.session));
+  loadDocumentState(payload.session);
+  await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
+  renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
+}
+
+
+function normalizeEquationLatexForSearch(value) {
+  return String(value || '')
+    .replace(/\\left|\\right/g, '')
+    .replace(/\\,/g, '')
+    .replace(/\\!/g, '')
+    .replace(/\\;/g, '')
+    .replace(/\\:/g, '')
+    .replace(/\s+/g, '')
+    .replace(/[{}]/g, '')
+    .toLocaleLowerCase();
+}
+
+function equationSearchEntries() {
+  const items = [];
+  const seen = new Set();
+  const add = (latex, page, source, created = 0) => {
+    const clean = String(latex || '').trim();
+    if (!clean) return;
+    const key = `${Number(page)||0}:${normalizeEquationLatexForSearch(clean)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ latex: clean, page: Number(page) || 1, source, created: Number(created)||0 });
+  };
+  for (const item of ocrHistory || []) add(item?.latex, item?.page, t('OCR history','OCR 历史'), item?.created);
+  for (const item of bookmarks || []) if (item?.type === 'equation') add(item?.latex, item?.page, t('Bookmarked equation','已加书签公式'), item?.created);
+  if (currentOcrResult?.latex) add(currentOcrResult.latex, currentOcrResult.page, t('Current extraction','当前提取'), currentOcrResult.created);
+  return items.sort((a,b) => a.page - b.page || a.created - b.created);
+}
+
+function equationSearchMatches(query) {
+  const wanted = normalizeEquationLatexForSearch(query);
+  if (!wanted) return [];
+  return equationSearchEntries().map((item) => {
+    const hay = normalizeEquationLatexForSearch(item.latex);
+    const idx = hay.indexOf(wanted);
+    let score = idx >= 0 ? 1 : 0;
+    if (!score && searchFuzzy?.checked) {
+      const compactNeedle = wanted.slice(0, 80);
+      const tokenHits = compactNeedle.split(/(?=[\\=+\-])/).filter(Boolean).filter((token) => hay.includes(token)).length;
+      const tokenCount = Math.max(1, compactNeedle.split(/(?=[\\=+\-])/).filter(Boolean).length);
+      score = tokenHits / tokenCount;
+    }
+    return { ...item, score };
+  }).filter((item) => item.score >= (searchFuzzy?.checked ? .55 : 1)).sort((a,b) => b.score - a.score || a.page - b.page);
+}
+
+function commandPaletteEntities() {
+  if (!pdfDoc) return [];
+  const out = [];
+  const push = (kind, title, subtitle, run, searchText = '', kindKey='entity') => out.push({ kind, kindKey, title, subtitle, run, searchText: `${title} ${subtitle||''} ${searchText||''}` });
+  for (const entry of inferredOutline || []) push(t('Section','章节'), entry.title || t('Untitled section','未命名章节'), t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.title || ''), entry.title,'section');
+  for (const entry of structureEntries || []) {
+    const relations=[...(entry.proofUses||[]),...(entry.usedByProofs||[]),...(entry.corollaries||[]),...(entry.derivedFrom||[])].map((x)=>x.label).join(' ');
+    push(t('Structure','结构'), entry.label || entry.title, entry.title || t(`Page ${entry.page}`,`第 ${entry.page} 页`), () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label || entry.title), `${entry.title||''} ${relations}`,'structure');
+    if (entry.proofPage) push(t('Proof','证明'), t(`Proof of ${entry.label}`,`${entry.label} 的证明`), t(`Page ${entry.proofPage}`,`第 ${entry.proofPage} 页`), ()=>goToMatchedLocation(entry.proofPage,Number(entry.proofRatio)||0,entry.proofTitle||'Proof'), `${entry.label} ${(entry.proofUses||[]).map((x)=>x.label).join(' ')}`,'proof');
+  }
+  if (equationLabelIndex instanceof Map) {
+    for (const [label, candidates] of equationLabelIndex.entries()) {
+      const target = (candidates || []).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0))[0];
+      if (target) push(t('Equation','公式'), label, t(`Page ${target.page}`,`第 ${target.page} 页`), () => goToMatchedLocation(target.page, Number(target.ratio)||0, label), label,'equation');
+    }
+  }
+  for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');
+  for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => runFindAllOccurrences(item.symbol), item.meaning,'symbol');
+  for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, item.type === 'page' ? (Number(item.ratio) || 0) : 0, { contextLead: false }), `${item.note||''} ${item.latex||''}`,'bookmark');
+  for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
+  for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name,'session');
+  return out;
+}
+
+function commandRecentUseMap() {
+  try { const value=JSON.parse(safeGet(COMMAND_RECENT_KEY,'{}')); return value&&typeof value==='object'?value:{}; } catch (_) { return {}; }
+}
+function commandPaletteUseKey(item) { return `${item.kindKey||'command'}:${normalizeSearchValue(item.title||'',false)}`; }
+function recordCommandPaletteUse(item) { const map=commandRecentUseMap(); map[commandPaletteUseKey(item)]=Date.now(); const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,80); safeSet(COMMAND_RECENT_KEY,JSON.stringify(Object.fromEntries(sorted))); }
+function commandPaletteMatchScore(item,qRaw) {
+  const q=normalizeSearchValue(qRaw,false); if(!q) return item.isCommand?100:0;
+  const title=normalizeSearchValue(item.title||'',false); const search=normalizeSearchValue(item.searchText||`${item.title||''} ${item.subtitle||''}`,false);
+  let match=0;
+  if(title===q) match=1000; else if(title.startsWith(q)) match=820; else if(title.includes(q)) match=680; else if(search.includes(q)) match=560; else {
+    const tokens=q.split(/\s+/).filter(Boolean); const hits=tokens.filter((token)=>search.includes(token)).length; if(tokens.length&&hits===tokens.length) match=360+hits*8; else if(tokens.length&&hits/tokens.length>=.65) match=220+Math.round(80*hits/tokens.length);
+  }
+  if(!match) return 0;
+  const entityPriority={equation:90,structure:85,proof:82,reference:80,section:75,symbol:55,bookmark:50,annotation:48,session:45,entity:40};
+  const typeBoost=item.isCommand?10:(entityPriority[item.kindKey]||40);
+  const recent=commandRecentUseMap()[commandPaletteUseKey(item)]||0; const age=Date.now()-recent; const recentBoost=recent?Math.max(0,30-Math.floor(age/(1000*60*60*24))):0;
+  return match+typeBoost+recentBoost;
+}
+
+function hideReferencePreview() {
+  clearTimeout(referencePreviewTimer);
+  if (referencePreview) referencePreview.classList.add('is-hidden');
+}
+
+function snapshotKindForQuery(query) {
+  const q=String(query||'').trim();
+  if (isEquationLabelQuery(q)) return 'equation';
+  if (/^\[\s*\d+\s*\]$/.test(q)) return 'bibliography';
+  if (/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\b/i.test(q)) return 'structure';
+  return 'generic';
+}
+
+async function referenceRenderedPage(pageNumber) {
+  if (!pdfDoc || !pageNumber) return null;
+  const key=`${currentFileKey||'pdf'}:${pageNumber}`;
+  if (referencePageRenderCache.has(key)) return referencePageRenderCache.get(key);
+  const promise=(async()=>{
+    const page=await pdfDoc.getPage(pageNumber);
+    const base=page.getViewport({scale:1});
+    const renderWidth=760; const scale=renderWidth/Math.max(1,base.width); const viewport=page.getViewport({scale});
+    const canvas=document.createElement('canvas'); canvas.width=Math.max(1,Math.round(viewport.width)); canvas.height=Math.max(1,Math.round(viewport.height));
+    const ctx=canvas.getContext('2d',{alpha:false}); await page.render({canvasContext:ctx,viewport,background:'#ffffff'}).promise;
+    return canvas;
+  })();
+  referencePageRenderCache.set(key,promise);
+  if (referencePageRenderCache.size>6) referencePageRenderCache.delete(referencePageRenderCache.keys().next().value);
+  try { return await promise; } catch (error) { referencePageRenderCache.delete(key); throw error; }
+}
+
+async function referenceSnapshotData(target, kind='generic') {
+  if (!pdfDoc || !target?.page) return null;
+  const ratio = Math.max(0, Math.min(1, Number(target.ratio) || 0));
+  const normalizedKind=['equation','bibliography','structure'].includes(kind)?kind:'generic';
+  const key = `${currentFileKey || 'pdf'}:${target.page}:${Math.round(ratio * 180)}:${normalizedKind}`;
+  if (referenceSnapshotCache.has(key)) return referenceSnapshotCache.get(key);
+  const full=await referenceRenderedPage(target.page); if (!full) return null;
+  const config={equation:{height:150,lead:.50},structure:{height:310,lead:.28},bibliography:{height:210,lead:.34},generic:{height:240,lead:.40}}[normalizedKind];
+  const cropHeight=Math.min(full.height,config.height); const targetY=Math.round(ratio*full.height);
+  const cropY=Math.max(0,Math.min(full.height-cropHeight,Math.round(targetY-cropHeight*config.lead)));
+  const crop=document.createElement('canvas'); crop.width=full.width; crop.height=cropHeight;
+  crop.getContext('2d',{alpha:false}).drawImage(full,0,cropY,full.width,cropHeight,0,0,full.width,cropHeight);
+  const data={url:crop.toDataURL('image/jpeg',.9),targetOffset:Math.max(0,Math.min(1,(targetY-cropY)/Math.max(1,cropHeight))),kind:normalizedKind};
+  referenceSnapshotCache.set(key,data); if(referenceSnapshotCache.size>32) referenceSnapshotCache.delete(referenceSnapshotCache.keys().next().value);
+  return data;
+}
+
+async function referencePreviewData(query, originPage, originRatio) {
+  const target = await resolveReferenceTarget(query, originPage, originRatio);
+  if (!target) return null;
+  const kind=snapshotKindForQuery(query);
+  const snapshot = await referenceSnapshotData(target,kind);
+  return { target, snapshot, kind };
+}
+
+function attachReferencePreview(link, query, originPage, originRatio = null) {
+  if (!link || !referencePreview) return;
+  const show = () => {
+    clearTimeout(referencePreviewTimer);
+    const serial = ++referencePreviewSerial;
+    referencePreviewTimer = setTimeout(async () => {
+      try {
+        const data = await referencePreviewData(query, originPage, originRatio);
+        if (!data || serial !== referencePreviewSerial || !link.isConnected) return;
+        referencePreview.replaceChildren();
+        const header = document.createElement('div'); header.className='reference-preview-header';
+        const strong = document.createElement('strong'); strong.textContent = query;
+        const meta = document.createElement('div'); meta.className='reference-preview-meta'; meta.textContent=t(`Page ${data.target.page}`,`第 ${data.target.page} 页`);
+        header.append(strong, meta); referencePreview.append(header);
+        if (data.snapshot?.url) {
+          const wrap = document.createElement('div'); wrap.className='reference-preview-image-wrap';
+          const image = document.createElement('img'); image.className='reference-preview-image'; image.alt=t(`Preview of ${query}`,`${query} 的预览`); image.src=data.snapshot.url;
+          const marker = document.createElement('span'); marker.className='reference-preview-target'; marker.style.top=`${Math.round((data.snapshot.targetOffset || .42) * 100)}%`;
+          wrap.append(image, marker); referencePreview.append(wrap);
+        } else {
+          const fallback = document.createElement('span'); fallback.className='reference-preview-fallback'; fallback.textContent=t('Visual preview unavailable.','无法显示可视预览。'); referencePreview.append(fallback);
+        }
+        const r = link.getBoundingClientRect();
+        const width = Math.min(480, window.innerWidth - 16);
+        const left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left));
+        referencePreview.style.left=`${left}px`;
+        referencePreview.classList.remove('is-hidden');
+        const cardHeight = Math.min(referencePreview.getBoundingClientRect().height || 260, window.innerHeight - 16);
+        let top = r.bottom + 8;
+        if (top + cardHeight > window.innerHeight - 8) top = Math.max(8, r.top - cardHeight - 8);
+        referencePreview.style.top=`${top}px`;
+      } catch (_) {}
+    }, 260);
+  };
+  link.addEventListener('pointerenter', show);
+  link.addEventListener('focus', show);
+  link.addEventListener('pointerleave', hideReferencePreview);
+  link.addEventListener('blur', hideReferencePreview);
+}
+
+function commandActions() {
+  return [
+    { isCommand:true, kind:t('Command','命令'), label: t('Open PDF', '打开 PDF'), run: () => fileInput.click() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Search this PDF', '搜索此 PDF'), run: () => openLeftPanelShortcut('search-panel', searchInput) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Document contents', '文档目录'), run: () => openLeftPanelShortcut('outline-panel') },
+    { isCommand:true, kind:t('Command','命令'), label: t('Go to selected reference', '跳转到所选引用'), needsPdf: true, run: () => goToSelectedReference() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Rebuild mathematical structure index', '重新生成数学结构索引'), needsPdf: true, run: () => buildStructureIndex({ force: true }) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Bibliography', '参考文献'), needsPdf: true, run: () => { openLeftPanelShortcut('outline-panel'); bibliographyIndex?.scrollIntoView({ block: 'nearest' }); } },
+    { isCommand:true, kind:t('Command','命令'), label: t('Bookmark current page', '收藏当前页'), needsPdf: true, run: () => addCurrentBookmark() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Page note', '页注'), needsPdf: true, run: () => openRightSectionShortcut('note-section', pageNote) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Extract formula', '提取公式'), needsPdf: true, run: () => setOcrMode(true) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Reading sessions', '阅读会话'), needsPdf: true, run: () => openRightSectionShortcut('reading-sessions-section', readingSessionName) },
+    { isCommand:true, kind:t('Command','命令'), label: t('Export reading data', '导出阅读数据'), needsPdf: true, run: () => exportReadingData() },
+    { isCommand:true, kind:t('Command','命令'), label: t('Back in reading trail', '返回阅读轨迹上一位置'), needsPdf: true, run: () => goBackReadingLocation() }
+  ].filter((item) => !item.needsPdf || pdfDoc);
+}
+
+function renderCommandPalette() {
+  if (!commandList) return;
+  const qRaw = String(commandInput?.value || '').trim();
+  commandList.replaceChildren();
+  const items = [];
+  for (const action of commandActions()) items.push({ isCommand:true, kind:action.kind, kindKey:'command', title:action.label, subtitle:'', run:action.run, searchText:action.label });
+  if (qRaw) items.push(...commandPaletteEntities());
+  const filtered = items.map((item)=>({item,score:commandPaletteMatchScore(item,qRaw)})).filter((row)=>row.score>0).sort((a,b)=>b.score-a.score || String(a.item.title).localeCompare(String(b.item.title))).slice(0,80).map((row)=>row.item);
+  for (const [index, item] of filtered.entries()) {
+    const button=document.createElement('button'); button.type='button'; button.className='command-item'; if(index===0) button.classList.add('is-current');
+    const main=document.createElement('span'); main.className='command-main';
+    const title=document.createElement('span'); title.className='command-title'; title.textContent=item.title; main.append(title);
+    if(item.subtitle){ const sub=document.createElement('span'); sub.className='command-subtitle'; sub.textContent=item.subtitle; main.append(sub); }
+    if (item.isCommand) { button.classList.add('is-command-action'); button.append(main); }
+    else { const kind=document.createElement('span'); kind.className='command-kind'; kind.textContent=item.kind || ''; button.append(kind,main); }
+    button.addEventListener('click',()=>{ recordCommandPaletteUse(item); closeCommandPalette(); item.run(); }); commandList.append(button);
+  }
+  if (!filtered.length) { const empty=document.createElement('div'); empty.className='command-hint'; empty.textContent=t('No matching commands or document items.','没有匹配的命令或文档项目。'); commandList.append(empty); }
+}
+
+function openCommandPalette() {
+  if (!commandPalette) return;
+  commandPalette.classList.remove('is-hidden'); commandInput.value = ''; renderCommandPalette(); setTimeout(() => commandInput.focus(), 0);
+  if (pdfDoc && !equationLabelIndex) {
+    buildEquationLabelIndex().then(() => { if (!commandPalette.classList.contains('is-hidden') && commandInput.value.trim()) renderCommandPalette(); }).catch(() => {});
+  }
+}
+function closeCommandPalette() { commandPalette?.classList.add('is-hidden'); }
+
 formulaExtractionSelect?.addEventListener('change', () => {
   formulaExtractionMode = formulaExtractionSelect.value === 'vector' ? 'vector' : 'image';
   safeSet('mathreader-formula-method-v1', formulaExtractionMode);
@@ -3410,14 +7790,39 @@ formulaExtractionSelect?.addEventListener('change', () => {
 });
 ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v4', mathOcrEngineMode); await disposeMathOcrPipeline(); setOcrStatus(t('Image OCR engine preference changed. It will load on the next image extraction.', '图像 OCR 引擎偏好已更改，将在下一次图像提取时加载。')); });
 ocrRetryButton?.addEventListener('click', async () => { await disposeMathOcrPipeline(); setOcrStatus(t('OCR engine reset. Select a formula region to load it again.', '公式 OCR 引擎已重置。重新框选公式即可再次加载。')); });
-mathOcrButton.addEventListener('click', () => setOcrMode(!ocrMode));
-pinPageButton.addEventListener('click', () => setPinnedPage(currentPage));
+mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
+pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
 pinFromSidebar.addEventListener('click', () => setPinnedPage(currentPage));
 unpinPage.addEventListener('click', clearPinnedPage);
 referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1) setPinnedPage(pinnedPage - 1); });
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
+readingBackButton?.addEventListener('click', goBackReadingLocation);
+readingTrailClear?.addEventListener('click', () => { if (readingBackStack.length) pushUndo('reading-trail', t('Reading trail', '阅读轨迹'), readingBackStack); readingBackStack = []; readingTrailExpanded = false; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
+readingTrailToggle?.addEventListener('click', () => { readingTrailExpanded = !readingTrailExpanded; renderReadingTrail(); });
+buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({ force: true }));
+exportReadingDataButton?.addEventListener('click', exportReadingData);
+importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
+importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
+selectionGoReference?.addEventListener('click', goToSelectedReference);
+selectionHighlight?.addEventListener('click', () => addSelectionAnnotation('highlight'));
+selectionMarginNote?.addEventListener('click', () => addSelectionAnnotation('margin'));
+saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
+commandInput?.addEventListener('input', renderCommandPalette);
+commandInput?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') { const first = commandList?.querySelector('.command-item'); if (first) { event.preventDefault(); first.click(); } }
+  if (event.key === 'Escape') { event.preventDefault(); closeCommandPalette(); }
+});
+commandPalette?.addEventListener('pointerdown', (event) => { if (event.target === commandPalette) closeCommandPalette(); });
+renderSymbolGlossary();
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
+searchFuzzy?.addEventListener('change', () => { persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
+searchEquations?.addEventListener('change', () => { if (searchInput.value.trim()) searchPdf(searchInput.value); });
+glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
+glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
+readingSessionSave?.addEventListener('click', saveNamedReadingSession);
+readingSessionName?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); saveNamedReadingSession(); } });
+undoClear?.addEventListener('click', () => { undoHistory = []; renderUndoHistory(); persistDocumentState(); });
 searchInput.addEventListener('input', () => { if (pdfDoc) persistDocumentState(); });
 [searchMatchCase, searchWholeWord].forEach((node) => node?.addEventListener('change', () => { persistSearchPreferences(); if (pdfDoc && searchInput.value.trim()) searchPdf(searchInput.value); }));
 
@@ -3435,12 +7840,17 @@ pageNote.addEventListener('input', () => {
 
 
 copyOcrLatex.addEventListener('click', () => copyPlainText(ocrLatexPreview?.value || currentOcrResult?.latex, copyOcrLatex));
+ocrFormatMode?.addEventListener('change', () => {
+  const mode = ocrFormatMode.value;
+  if (!mode) return;
+  applyOcrFormat(mode);
+  ocrFormatMode.value = '';
+});
+ocrFormatUndo?.addEventListener('click', undoOcrFormat);
 ocrLatexPreview?.addEventListener('input', () => {
   if (!currentOcrResult) return;
-  currentOcrResult.latex = ocrLatexPreview.value;
-  const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
-  if (match) match.latex = currentOcrResult.latex;
-  persistDocumentState();
+  ensureCurrentOcrFormatState();
+  syncCurrentOcrLatexValue(ocrLatexPreview.value);
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
 tryImageOcrButton?.addEventListener('click', tryImageOcrForCurrentResult);
@@ -3449,7 +7859,7 @@ tryPdfVectorButton?.addEventListener('click', () => {
   const item = {
     page: currentOcrResult.page,
     kind: currentOcrResult.kind,
-    latex: currentOcrResult.vectorAlternative,
+    latex: stabilizeOcrLatexSyntax(repairOcrLatex(currentOcrResult.vectorAlternative)),
     preview: currentOcrResult.preview,
     created: Date.now(),
     quality: 'vector-comparison',
@@ -3462,26 +7872,31 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
 selectionToNote.addEventListener('click', addSelectionToPageNote);
+selectionFindAll?.addEventListener('click', () => runFindAllOccurrences(currentSelection?.text));
+selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
+floatingFindAll?.addEventListener('click', () => { runFindAllOccurrences(currentSelection?.text); hideSelectionToolbar(); });
 floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });
+floatingHighlight?.addEventListener('click', () => { addSelectionAnnotation('highlight'); hideSelectionToolbar(); });
+floatingMarginNote?.addEventListener('click', () => { addSelectionAnnotation('margin'); hideSelectionToolbar(); });
 floatingPinPage.addEventListener('click', () => { if (currentSelection?.page) setPinnedPage(currentSelection.page); hideSelectionToolbar(); });
 document.addEventListener('selectionchange', capturePdfSelection);
 primaryCanvasWrap.addEventListener('scroll', () => {
   hideSelectionToolbar();
-  if (!pdfDoc) return;
+  if (!pdfDoc || continuousRebuilding) return;
   if (readingFlow === 'continuous') {
     continuousScrollTop = primaryCanvasWrap.scrollTop;
     clearTimeout(continuousScrollTimer);
     continuousScrollTimer = setTimeout(() => {
       updateCurrentPageFromContinuousScroll();
       continuousSavedAnchor = captureContinuousAnchor();
-      persistDocumentState();
+          persistDocumentState();
     }, 80);
   } else {
     scrollByPage[String(currentPage)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
@@ -3495,31 +7910,87 @@ referenceCanvasWrap.addEventListener('scroll', () => {
   persistDocumentState();
 }, { passive: true });
 
+document.querySelectorAll('.map-filter[data-map-target]').forEach((input) => input.addEventListener('input', () => applyDocumentMapFilter(input)));
+backlinksFilter?.addEventListener('change', renderBacklinks);
+documentReadingStatus?.addEventListener('change',()=>{ documentReadingState=['unread','reading','finished'].includes(documentReadingStatus.value)?documentReadingStatus.value:'unread'; renderDocumentMetadata(); persistDocumentState(); });
+documentTagsInput?.addEventListener('change',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
+documentTagsInput?.addEventListener('blur',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
+documentPersonalNoteInput?.addEventListener('input',()=>{ documentPersonalNote=documentPersonalNoteInput.value; clearTimeout(documentMetaTimer); documentMetaTimer=setTimeout(()=>{ renderDocumentMetadata(); persistDocumentState(); },280); });
+
+function rightPanelNavigationTop(section) {
+  if (!rightSidebar || !section) return 0;
+  const navigator = rightSidebar.querySelector('.workspace-navigator');
+  const stickyHeight = navigator?.getBoundingClientRect().height || 0;
+  const breathingRoom = 18;
+  return Math.max(0, section.offsetTop - stickyHeight - breathingRoom);
+}
+
+function scrollRightPanelToSection(section, behavior = 'smooth') {
+  if (!rightSidebar || !section) return;
+  rightSidebar.scrollTo({ top: rightPanelNavigationTop(section), behavior });
+}
+
+workspaceJump?.addEventListener('change', () => {
+  const sectionId = workspaceJump.value;
+  if (!sectionId) return;
+  const section = el(sectionId);
+  if (!section) { workspaceJump.value = ''; return; }
+  expandWorkspaceSection(sectionId);
+  requestAnimationFrame(() => scrollRightPanelToSection(section));
+  section.classList.remove('workspace-jump-pulse');
+  void section.offsetWidth;
+  section.classList.add('workspace-jump-pulse');
+  setTimeout(() => section.classList.remove('workspace-jump-pulse'), 900);
+  workspaceJump.value = '';
+});
+
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
 
-leftToggle.addEventListener('click', () => {
-  if (matchMedia('(max-width: 860px)').matches) {
-    shell.classList.toggle('mobile-left-open'); shell.classList.remove('mobile-right-open');
-  } else shell.classList.toggle('left-collapsed');
-  if (pdfDoc) persistDocumentState();
-  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
-});
-rightToggle.addEventListener('click', () => {
-  if (matchMedia('(max-width: 860px)').matches) {
-    shell.classList.toggle('mobile-right-open'); shell.classList.remove('mobile-left-open');
-  } else shell.classList.toggle('right-collapsed');
-  if (pdfDoc) persistDocumentState();
-  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
-});
+function toggleLeftSidePanel() {
+  runDisplayTransition(() => {
+    if (matchMedia('(max-width: 860px)').matches) {
+      shell.classList.toggle('mobile-left-open'); shell.classList.remove('mobile-right-open');
+    } else shell.classList.toggle('left-collapsed');
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
+}
+
+function toggleRightSidePanel() {
+  runDisplayTransition(() => {
+    if (matchMedia('(max-width: 860px)').matches) {
+      shell.classList.toggle('mobile-right-open'); shell.classList.remove('mobile-left-open');
+    } else shell.classList.toggle('right-collapsed');
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
+}
+
+leftToggle.addEventListener('click', toggleLeftSidePanel);
+rightToggle.addEventListener('click', toggleRightSidePanel);
+
+function collapseWorkspaceSections(container) {
+  if (!container) return;
+  for (const section of directWorkspaceSections(container)) section.classList.add('is-collapsed');
+  persistWorkspaceCollapseState();
+  updateWorkspaceCollapseButtons();
+}
+
+function collapseRightWorkspaceSections() {
+  collapseWorkspaceSections(rightSidebar);
+}
+
+function collapseLeftContentsSections() {
+  collapseWorkspaceSections(document.getElementById('outline-panel'));
+}
 
 function toggleBothSidePanels() {
   if (matchMedia('(max-width: 860px)').matches) return;
-  const bothClosed = shell.classList.contains('left-collapsed') && shell.classList.contains('right-collapsed');
-  shell.classList.toggle('left-collapsed', !bothClosed);
-  shell.classList.toggle('right-collapsed', !bothClosed);
-  if (pdfDoc) persistDocumentState();
-  setTimeout(() => { if (pdfDoc) { renderCurrentPage(); renderReferencePage(); } }, 200);
+  runDisplayTransition(() => {
+    const bothClosed = shell.classList.contains('left-collapsed') && shell.classList.contains('right-collapsed');
+    shell.classList.toggle('left-collapsed', !bothClosed);
+    shell.classList.toggle('right-collapsed', !bothClosed);
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
 }
 
 bothPanelsToggle?.addEventListener('click', toggleBothSidePanels);
@@ -3546,7 +8017,7 @@ function openRightSectionShortcut(sectionId, focusTarget = null) {
   }
   const section = document.getElementById(sectionId);
   setTimeout(() => {
-    if (rightSidebar && section) rightSidebar.scrollTo({ top: Math.max(0, section.offsetTop - 8), behavior: 'smooth' });
+    if (rightSidebar && section) scrollRightPanelToSection(section);
     focusTarget?.focus?.();
   }, 40);
   if (pdfDoc) persistDocumentState();
@@ -3556,32 +8027,45 @@ document.addEventListener('keydown', (event) => {
   const target = event.target;
   const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target?.isContentEditable;
   const key = event.key.toLowerCase();
+  if ((event.ctrlKey || event.metaKey) && key === 'k') { event.preventDefault(); openCommandPalette(); return; }
+  if (!typing && pdfDoc && (event.ctrlKey || event.metaKey) && key === 'z' && !event.shiftKey && undoHistory.length) { event.preventDefault(); restoreUndoEntry(); return; }
+  if (!typing && event.altKey && event.key === 'ArrowLeft') { event.preventDefault(); goBackReadingLocation(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'o') { event.preventDefault(); fileInput.click(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
   if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'o') { event.preventDefault(); fileInput.click(); return; }
-  if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
+  if (!typing && pdfDoc && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'f') { event.preventDefault(); setOcrMode(!ocrMode); return; }
+  if (!typing && key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) { event.preventDefault(); toggleLeftSidePanel(); return; }
+  if (!typing && key === 'r' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) { event.preventDefault(); toggleRightSidePanel(); return; }
   if (!typing && key === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
+  if (!typing && key === 'r' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); collapseRightWorkspaceSections(); return; }
+  if (!typing && key === 'l' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); collapseLeftContentsSections(); return; }
   if (!typing && key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('outline-panel'); return; }
   if (!typing && key === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('history-panel'); return; }
   if (!typing && key === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('bookmarks-panel'); return; }
   if (!typing && key === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('display-section'); return; }
   if (!typing && key === 'n' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openRightSectionShortcut('note-section', pageNote); return; }
   if (!typing && pdfDoc && key === 'p' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setPinnedPage(currentPage); return; }
-  if (!typing && pdfDoc && key === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); setOcrMode(!ocrMode); return; }
   if (!typing && pdfDoc && event.key === 'ArrowUp') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: -Math.max(70, primaryCanvasWrap.clientHeight * 0.11), behavior: 'auto' }); return; }
   if (!typing && pdfDoc && event.key === 'ArrowDown') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: Math.max(70, primaryCanvasWrap.clientHeight * 0.11), behavior: 'auto' }); return; }
   if (!typing && pdfDoc && event.key === 'PageUp') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: -primaryCanvasWrap.clientHeight * 0.85, behavior: 'auto' }); return; }
   if (!typing && pdfDoc && event.key === 'PageDown') { event.preventDefault(); primaryCanvasWrap.scrollBy({ top: primaryCanvasWrap.clientHeight * 0.85, behavior: 'auto' }); return; }
   if (!typing && pdfDoc && event.key === 'ArrowLeft') { event.preventDefault(); goToPage(currentPage - 1); return; }
   if (!typing && pdfDoc && event.key === 'ArrowRight') { event.preventDefault(); goToPage(currentPage + 1); return; }
-  if (event.key === 'Escape') { setOcrMode(false); shell.classList.remove('mobile-left-open','mobile-right-open'); hideSelectionToolbar(); window.getSelection()?.removeAllRanges(); }
+  if (event.key === 'Escape') { closeCommandPalette(); setOcrMode(false); shell.classList.remove('mobile-left-open','mobile-right-open'); hideSelectionToolbar(); window.getSelection()?.removeAllRanges(); }
 });
 
 let dragDepth = 0;
-window.addEventListener('dragenter', (event) => { event.preventDefault(); dragDepth += 1; dropOverlay.classList.remove('is-hidden'); });
-window.addEventListener('dragover', (event) => { event.preventDefault(); });
-window.addEventListener('dragleave', (event) => { event.preventDefault(); dragDepth -= 1; if (dragDepth <= 0) { dragDepth = 0; dropOverlay.classList.add('is-hidden'); } });
+window.addEventListener('dragenter', (event) => {
+  if (draggedWorkspaceSection) return;
+  event.preventDefault(); dragDepth += 1; dropOverlay.classList.remove('is-hidden');
+});
+window.addEventListener('dragover', (event) => { if (!draggedWorkspaceSection) event.preventDefault(); });
+window.addEventListener('dragleave', (event) => {
+  if (draggedWorkspaceSection) return;
+  event.preventDefault(); dragDepth -= 1; if (dragDepth <= 0) { dragDepth = 0; dropOverlay.classList.add('is-hidden'); }
+});
 window.addEventListener('drop', (event) => {
+  if (draggedWorkspaceSection) return;
   event.preventDefault(); dragDepth = 0; dropOverlay.classList.add('is-hidden');
   const file = [...(event.dataTransfer?.files || [])].find((item) => item.type === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf'));
   if (file) openPdfFile(file); else showError(t('Drop a PDF file to open it.', '请拖入 PDF 文件。'));
@@ -3589,7 +8073,7 @@ window.addEventListener('drop', (event) => {
 
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { if (pdfDoc && zoomMode !== 'custom') { renderCurrentPage(); renderReferencePage(); } }, 180);
+  resizeTimer = setTimeout(() => { if (pdfDoc && zoomMode !== 'custom' && !displayTransitionActive) runDisplayTransition(() => {}, { renderReference: true }); }, 180);
 });
 
 if ('ResizeObserver' in window && primaryCanvasWrap) {
@@ -3598,10 +8082,26 @@ if ('ResizeObserver' in window && primaryCanvasWrap) {
 }
 
 window.addEventListener('pageshow', () => {
-  if (pdfDoc && zoomMode === 'fit-width') { lastObservedReaderWidth = 0; setTimeout(() => stabilizeFitWidthLayout(), 40); setTimeout(() => stabilizeFitWidthLayout(), 320); }
+  if (pdfDoc && zoomMode === 'fit-width') {
+    const anchor = readingFlow === 'continuous' && continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
+    lastObservedReaderWidth = 0;
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 40);
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 320);
+  }
 });
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && pdfDoc && zoomMode === 'fit-width') { lastObservedReaderWidth = 0; setTimeout(() => stabilizeFitWidthLayout(), 60); setTimeout(() => stabilizeFitWidthLayout(), 360); }
+  if (!pdfDoc) return;
+  if (document.hidden) {
+    if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
+    persistDocumentState();
+    return;
+  }
+  if (zoomMode === 'fit-width') {
+    const anchor = readingFlow === 'continuous' && continuousSavedAnchor ? { ...continuousSavedAnchor } : null;
+    lastObservedReaderWidth = 0;
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 60);
+    setTimeout(() => stabilizeFitWidthLayout(anchor), 360);
+  }
 });
 
 loadDisplayPreferences();
@@ -3620,6 +8120,13 @@ updateReferenceStatus();
 refreshSelectionUI();
 refreshOcrUI();
 renderBookmarks();
+renderDocumentMetadata();
+renderDocumentMapAnnotations();
+renderStructureIndex();
+renderBibliographyIndex();
+renderReferenceStack();
+renderAnnotationList();
+updateReadingBackButton();
 
 async function initializeLocalLibrary() {
   await refreshLocalLibrary();
