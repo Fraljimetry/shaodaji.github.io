@@ -1636,9 +1636,14 @@ function alignLineByPattern(value, mode = 'relation') {
 }
 
 function ocrSignedContinuationBody(value) {
-  const line = normalizeOcrAlignmentLine(value)
+  let line = normalizeOcrAlignmentLine(value)
     .replace(/^\\(?:qquad|quad)\s*/, '')
     .trim();
+  // OCR often carries delimiter-continuation helpers from a split formula,
+  // e.g. `\left.+...` / `\right.-...`. These are visual delimiter
+  // continuations, not the mathematical start of the row. Strip only the
+  // invisible-dot form so the leading sign can be detected and indented.
+  line = line.replace(/^\\(?:left|right)\.\s*/, '').trim();
   return /^(?:[+\-]|\\(?:pm|mp)(?![A-Za-z]))/.test(line) ? line : '';
 }
 
@@ -3351,7 +3356,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
     // count, beam policy, or candidate selection.
     const expectedRows = Number(profile?.expectedRows || 0);
     const maxNewTokens = expectedRows >= 3
-      ? Math.min(896, 512 + expectedRows * 64)
+      ? Math.min(1280, 512 + expectedRows * 128)
       : 512;
     const generation = {
       max_new_tokens: maxNewTokens,
