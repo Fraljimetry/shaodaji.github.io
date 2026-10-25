@@ -1497,7 +1497,16 @@ function normalizeOcrLatex(value) {
         .sort((a, b) => b.length - a.length);
       const first = ranked[0];
       const second = ranked[1];
-      if (first.length >= 72 && first.length >= Math.max(2.6 * second.length, second.length + 48)) {
+      const looksSubstantive = (block) => {
+        const compact = String(block || '').replace(/\s+/g, '');
+        if (!compact) return false;
+        if (/[=<>_^]/.test(compact)) return true;
+        if (/\\(?:frac|int|iint|iiint|oint|sum|prod|sqrt|left|right|nabla|partial|operatorname|mathbb|mathrm|mathbf|mathcal)\b/.test(compact)) return true;
+        if (/\\(?:leq?|geq?|lesssim|gtrsim|sim|simeq|approx|equiv|neq?|to|rightarrow|leftarrow|leftrightarrow|longrightarrow|longleftarrow|longleftrightarrow|Rightarrow|Leftarrow|Leftrightarrow)\b/.test(compact)) return true;
+        return compact.length > 10;
+      };
+      const remainderIsTinyNoise = ranked.slice(1).every((item) => item.length <= 10 && !looksSubstantive(item.block));
+      if (first.length >= 72 && first.length >= Math.max(2.6 * second.length, second.length + 48) && remainderIsTinyNoise) {
         clean = [first.block];
       }
     }
@@ -1517,18 +1526,7 @@ function normalizeOcrLatex(value) {
 }
 
 function markAlignmentRelation(line) {
-  const value = String(line || '').trim();
-  if (!value) return value;
-  // Row OCR sometimes puts `&` at a visual indentation point instead of at the
-  // equation relation (for example before a nested parenthesis). For the
-  // rowwise aligned-formula candidate, normalize to one relation column.
-  const normalized = value.replace(/&\s*/g, '');
-  const patterns = ['\\\\leq?', '\\\\geq?', '\\\\approx', '\\\\sim', '\\\\equiv', '\\\\to', '='];
-  for (const pattern of patterns) {
-    const re = new RegExp(`(${pattern})`);
-    if (re.test(normalized)) return normalized.replace(re, '&$1');
-  }
-  return normalized;
+  return alignLineByPattern(line, 'relation');
 }
 function unwrapOcrFormattingEnvelope(value) {
   let text = String(value || '').trim();
