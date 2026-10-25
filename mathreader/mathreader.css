@@ -319,6 +319,12 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
   gap: 8px;
   min-width: 0;
 }
+.undo-item-kind {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 650;
+}
 .undo-item-title,
 .recovery-item-title {
   font-weight: 650;

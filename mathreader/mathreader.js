@@ -7505,13 +7505,22 @@ function renderUndoHistory() {
   if (undoClear) undoClear.disabled = undoHistory.length === 0;
   for (const item of undoHistory.slice(0,10)) {
     const row=document.createElement('div'); row.className='undo-item';
+    const kind=document.createElement('div'); kind.className='undo-item-kind';
+    const kindLabels={
+      bookmark:t('Deleted bookmark','已删除书签'),
+      annotation:t('Deleted annotation','已删除批注'),
+      glossary:t('Deleted glossary entry','已删除符号表条目'),
+      'reading-trail':t('Deleted reading trail','已删除阅读轨迹'),
+      'ocr-result':t('Deleted OCR result','已删除 OCR 结果')
+    };
+    kind.textContent=kindLabels[item.type] || t('Deleted item','已删除项目');
     const head=document.createElement('div'); head.className='undo-item-head';
     const title=document.createElement('div'); title.className='undo-item-title'; title.textContent=item.label;
     head.append(title);
     const meta=document.createElement('div'); meta.className='undo-item-meta'; meta.textContent=formatCompactDate(item.created);
     const actions=document.createElement('div'); actions.className='undo-item-actions';
     const restore=document.createElement('button'); restore.type='button'; restore.className='secondary-action'; restore.textContent=t('Restore','恢复'); restore.addEventListener('click',()=>restoreUndoEntry(item.id));
-    actions.append(restore); row.append(head,meta,actions); undoList.append(row);
+    actions.append(restore); row.append(kind,head,meta,actions); undoList.append(row);
   }
 }
 
