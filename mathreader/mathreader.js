@@ -3669,7 +3669,7 @@ function addOcrToPageNote() {
 }
 
 function clearOcrResultState() {
-  if (currentOcrResult) pushUndo('ocr-result', t('Formula extraction result', '公式提取结果'), currentOcrResult);
+  if (currentOcrResult) pushUndo('ocr-result', t('Formula OCR result', '公式 OCR 结果'), currentOcrResult);
   currentOcrResult = null;
   refreshOcrUI();
   persistDocumentState();
@@ -7384,7 +7384,7 @@ function saveCurrentOcrAsEquation() {
 
 
 async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null }) {
-  setLoading(true, cachedRecord ? t('Restoring local reading session…', '正在恢复本地阅读现场……') : t('Opening PDF…', '正在打开 PDF……'));
+  setLoading(true, cachedRecord ? t('Restoring local reading state…', '正在恢复本地阅读状态……') : t('Opening PDF…', '正在打开 PDF……'));
   restoringSession = true;
   try {
     const lib = await ensurePdfJs();
@@ -7568,61 +7568,51 @@ function formatCompactDate(timestamp) {
   } catch (_) { return ''; }
 }
 
-async function restoreNamedReadingSession(item) {
-  if (!pdfDoc || !item?.state) return;
-  const state = item.state;
-  restoringSession = true;
-  try {
-    currentPage = Math.min(Math.max(1, Number(state.page) || 1), pdfDoc.numPages);
-    pinnedPage = Number(state.pinnedPage) >= 1 && Number(state.pinnedPage) <= pdfDoc.numPages ? Number(state.pinnedPage) : null;
-    zoomMode = ['fit-width','fit-page','custom'].includes(state.zoomMode) ? state.zoomMode : zoomMode;
-    zoomScale = clamp(state.zoomScale, .35, 4, zoomScale);
-    scrollByPage = state.scrollByPage && typeof state.scrollByPage === 'object' ? jsonClone(state.scrollByPage,{}) : {};
-    referenceScrollByPage = state.referenceScrollByPage && typeof state.referenceScrollByPage === 'object' ? jsonClone(state.referenceScrollByPage,{}) : {};
-    continuousScrollTop = Math.max(0, Number(state.continuousScrollTop) || 0);
-    const a = state.continuousAnchor;
-    continuousSavedAnchor = a && Number(a.page) ? { page:Math.min(Math.max(1,Number(a.page)),pdfDoc.numPages), ratio:Math.min(1,Math.max(0,Number(a.ratio)||0)) } : {page:currentPage,ratio:0};
-    referencePages = Array.isArray(state.referencePages) ? state.referencePages.map(Number).filter((n,i,a)=>n>=1&&n<=pdfDoc.numPages&&a.indexOf(n)===i).slice(0,4) : [];
-    readingBackStack = normalizeReadingTrail(state.readingBackStack);
-    if (state.searchQuery != null) searchInput.value = String(state.searchQuery);
-    const desiredFlow = state.readingFlow === 'single' ? 'single' : 'continuous';
-    await setReadingFlow(desiredFlow, { persist:false, render:false });
-    if (state.ui?.sections) {
-      document.querySelectorAll('.workspace-section[id]').forEach((section)=>{
-        if (Object.prototype.hasOwnProperty.call(state.ui.sections, section.id)) section.classList.toggle('is-collapsed', Boolean(state.ui.sections[section.id]));
-      });
-      updateWorkspaceCollapseButtons();
-    }
-    if (state.ui?.activePanel) activatePanel(state.ui.activePanel, false);
-    shell.classList.toggle('left-collapsed', Boolean(state.ui?.leftCollapsed));
-    shell.classList.toggle('right-collapsed', Boolean(state.ui?.rightCollapsed));
-    await Promise.all([renderCurrentPage(), renderReferencePage()]);
-    renderReferenceStack(); updateReadingBackButton(); renderReadingTrail(); updateZoomLabel(); updateNavigationState();
-  } finally { restoringSession = false; }
-  persistWorkspaceCollapseState(); persistDocumentState();
-}
-
 function renderUndoHistory() {
   if (!undoList || !undoCount || !undoEmpty) return;
   undoList.replaceChildren();
   undoCount.textContent = String(undoHistory.length);
   undoEmpty.classList.toggle('is-hidden', undoHistory.length > 0);
   if (undoClear) undoClear.disabled = undoHistory.length === 0;
+
+  const compactText = (value, fallback = '') => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!text) return fallback;
+    return text.length > 140 ? `${text.slice(0, 137).trimEnd()}…` : text;
+  };
+
   for (const item of undoHistory.slice(0,10)) {
+    const payload = item?.payload || {};
     const row=document.createElement('div'); row.className='undo-item';
     const kind=document.createElement('div'); kind.className='undo-item-kind';
-    const kindLabels={
-      bookmark:t('Deleted bookmark','已删除书签'),
-      annotation:t('Deleted annotation','已删除批注'),
-      glossary:t('Deleted symbol','已删除符号'),
-      'reading-trail':t('Deleted reading trail','已删除阅读轨迹'),
-      'ocr-result':t('Deleted OCR result','已删除 OCR 结果')
-    };
-    kind.textContent=kindLabels[item.type] || t('Deleted item','已删除项目');
-    const head=document.createElement('div'); head.className='undo-item-head';
     const title=document.createElement('div'); title.className='undo-item-title';
-    const undoLabel = item.type === 'glossary' ? String(item.label || '').replace(/^(?:Symbol|符号)\s*(?:[|·:\-]\s*)?/i, '').trim() : item.label;
-    title.textContent=undoLabel;
+
+    if (item.type === 'annotation') {
+      const isMargin = payload.type === 'margin';
+      kind.textContent = isMargin ? t('Deleted margin note','已删除页边注') : t('Deleted highlight','已删除高亮');
+      title.textContent = compactText(
+        isMargin ? (payload.note || payload.text || payload.latex) : (payload.text || payload.latex || payload.note),
+        isMargin ? t('Margin note','页边注') : t('Highlight','高亮')
+      );
+    } else if (item.type === 'glossary') {
+      kind.textContent = t('Deleted symbol','已删除符号');
+      title.textContent = compactText(payload.symbol || item.label, t('Symbol','符号')).replace(/^(?:Symbol|符号)\s*(?:[|·:\-]\s*)?/i, '').trim();
+    } else if (item.type === 'bookmark') {
+      kind.textContent = t('Deleted bookmark','已删除书签');
+      title.textContent = compactText(payload.title || item.label, t(`Page ${payload.page || ''}`.trim(), `第 ${payload.page || ''} 页`.trim()));
+    } else if (item.type === 'ocr-result') {
+      kind.textContent = t('Deleted OCR result','已删除 OCR 结果');
+      title.textContent = compactText(payload.latex || payload.text || item.label, t('Formula OCR result','公式 OCR 结果'));
+    } else if (item.type === 'reading-trail') {
+      kind.textContent = t('Deleted reading trail','已删除阅读轨迹');
+      const count = Array.isArray(payload) ? payload.length : 0;
+      title.textContent = count ? t(`${count} navigation ${count === 1 ? 'step' : 'steps'}`, `${count} 个导航步骤`) : t('Reading trail','阅读轨迹');
+    } else {
+      kind.textContent = t('Deleted item','已删除项目');
+      title.textContent = compactText(item.label, t('Deleted item','已删除项目'));
+    }
+
+    const head=document.createElement('div'); head.className='undo-item-head';
     head.append(title);
     const meta=document.createElement('div'); meta.className='undo-item-meta'; meta.textContent=formatCompactDate(item.created);
     const actions=document.createElement('div'); actions.className='undo-item-actions';
