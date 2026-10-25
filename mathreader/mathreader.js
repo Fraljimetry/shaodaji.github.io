@@ -1525,8 +1525,7 @@ function renderOcrTimingDiagnostics() {
     if (e.backendDetail) lines.push(`  ${t('Backend', '后端')}: ${e.backendDetail}`);
     lines.push(`  ${t('Runtime import', '运行时导入')}: ${ocrMs(e.importMs)}`);
     lines.push(`  ${t('Pipeline/model init', '模型初始化')}: ${ocrMs(e.pipelineMs)}`);
-    if (e.warmupAttempted) lines.push(`  ${t('Warm-up inference', '预热推理')}: ${ocrMs(e.warmupMs)}${e.warmupError ? ` · ${t('failed', '失败')}: ${e.warmupError}` : ''}`);
-    lines.push(`  ${t('Ready total', '就绪合计')}: ${ocrMs(e.totalMs)}`);
+    lines.push(`  ${t('Load total', '加载合计')}: ${ocrMs(e.totalMs)}`);
   }
   if (!lines.length) lines.push(ocrTimingDiagnostics.dataset[root.dataset.lang === 'zh' ? 'zhEmpty' : 'enEmpty'] || t('No OCR run yet.', '尚无 OCR 运行记录。'));
   ocrTimingDiagnostics.textContent = lines.join('\n');
@@ -2127,41 +2126,6 @@ function detailedOcrError(error, backend = null) {
 }
 
 
-async function warmMathOcrPipeline(pipe) {
-  const warmupStart = ocrNow();
-  const canvas = document.createElement('canvas');
-  canvas.width = 160;
-  canvas.height = 56;
-  const ctx = canvas.getContext('2d', { alpha: false });
-  if (!ctx) return { attempted: false, ms: 0, error: 'canvas unavailable' };
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#000';
-  ctx.font = '28px serif';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('x = 1', 18, canvas.height / 2);
-
-  try {
-    setOcrStatus(t('Warming OCR…', '正在预热 OCR……'), true);
-    const input = await prepareMathOcrInput(canvas);
-    await pipe(input, {
-      max_new_tokens: 16,
-      num_beams: 1,
-      early_stopping: false,
-      do_sample: false,
-      repetition_penalty: 1.04
-    });
-    return { attempted: true, ms: ocrNow() - warmupStart, error: '' };
-  } catch (error) {
-    console.warn('MathReader OCR warm-up failed; continuing with loaded engine.', error);
-    return {
-      attempted: true,
-      ms: ocrNow() - warmupStart,
-      error: String(error?.message || error || '').replace(/\s+/g, ' ').trim().slice(0, 240)
-    };
-  }
-}
-
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
   const engineLoadStart = ocrNow();
@@ -2208,12 +2172,8 @@ async function ensureMathOcrPipeline() {
         const pipelineStart = ocrNow();
         const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, options);
         const pipelineMs = ocrNow() - pipelineStart;
-        // Keep the pipeline private from the interaction layer until one real
-        // inference has exercised the WebGPU/ONNX execution path. pipeline()
-        // can return before deferred shader/graph compilation has happened.
-        mathOcrBackend = backend;
-        const warmup = await warmMathOcrPipeline(pipe);
         mathOcrPipeline = pipe;
+        mathOcrBackend = backend;
         mathOcrReadyAt = ocrNow();
         mathOcrInferenceRuns = 0;
         lastOcrEngineTiming = {
@@ -2221,15 +2181,10 @@ async function ensureMathOcrPipeline() {
           backendDetail: `${backend.label}${backend.device ? ` · device=${backend.device}` : ''}${backend.dtype ? ` · dtype=${backend.dtype}` : ''}`,
           importMs: runtimeImportMs,
           pipelineMs,
-          warmupMs: warmup.ms,
-          warmupAttempted: warmup.attempted,
-          warmupError: warmup.error || '',
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        setOcrStatus(warmup.error
-          ? t(`OCR ready · ${backend.label} · warm-up incomplete`, `OCR 就绪 · ${backend.label} · 预热未完成`)
-          : t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
+        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
