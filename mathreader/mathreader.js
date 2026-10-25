@@ -1432,6 +1432,9 @@ function renderOcrTimingDiagnostics() {
     if (Number.isFinite(r.outputChars)) lines.push(`  ${t('LaTeX length', 'LaTeX 长度')}: ${r.outputChars} ${t('chars', '字符')}`);
     if (Number.isFinite(r.cropMs)) lines.push(`  ${t('Crop', '裁图')}: ${ocrMs(r.cropMs)}`);
     if (Number.isFinite(r.analysisMs)) lines.push(`  ${t('Analysis', '分析')}: ${ocrMs(r.analysisMs)}`);
+    if (Number.isFinite(r.firstPassPenalty)) lines.push(`  ${t('First-pass structural penalty', '首轮结构惩罚')}: ${Number(r.firstPassPenalty).toFixed(1)}`);
+    if (r.retryReason) lines.push(`  ${t('Retry reason', '重试原因')}: ${r.retryReason}`);
+    if (r.retryProfile) lines.push(`  ${t('Retry profile', '重试方案')}: ${r.retryProfile}`);
     (r.passes || []).forEach((pass, index) => {
       lines.push(`  ${t('Pass', '第')} ${index + 1}${t('', ' 次')} · ${pass.variant}/${pass.preprocess}${pass.careful ? ' · beam 2' : ' · beam 1'}`);
       lines.push(`    ${t('Normalize crop', '裁图归一化')}: ${ocrMs(pass.normalizeMs)}`);
@@ -3494,21 +3497,38 @@ async function runImageFormulaRecognition(crop, options = {}) {
   // immediately. Complex-looking geometry by itself must never trigger a
   // cascade of extra model calls. v126 did that and could take minutes.
   if (first.assessment.ok && first.penalty < 20) {
-    return { ...first, profile, inferenceCount: 1, timing: { analysisMs, passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
+    return { ...first, profile, inferenceCount: 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason: '', retryProfile: '', passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
   }
+
+  const retryReasons = [];
+  if (first.assessment?.hardReject) {
+    const hardReasons = Array.isArray(first.assessment.reasons) ? first.assessment.reasons.filter(Boolean) : [];
+    retryReasons.push(hardReasons.length
+      ? `${t('hard reject', '硬拒绝')}: ${hardReasons.join('; ')}`
+      : t('hard reject', '硬拒绝'));
+  }
+  if (Number(first.penalty) >= 20) {
+    retryReasons.push(`${t('structural penalty', '结构惩罚')} ${Number(first.penalty).toFixed(1)} ≥ 20`);
+  }
+  const retryReason = retryReasons.join(' · ') || t('first pass did not clear the quality gate', '首轮未通过质量门槛');
 
   // At most one targeted retry. Choose a single transformation from the crop
   // geometry instead of running row OCR, tiled OCR, and several contrast passes.
   let retryVariant = 'relaxed';
   let retryPreprocess = 'normal';
+  let retryProfile = t('careful · relaxed/normal · beam 2', '精细 · relaxed/normal · beam 2');
   let retryMessage = t('OCR was uncertain · trying one careful retry…', 'OCR 结果不够稳定 · 正在进行一次精细重试……');
   if (profile.tensorLike || (profile.aspect >= 6 && profile.expectedRows === 0)) {
     retryVariant = 'tight';
     retryPreprocess = 'contrast';
+    retryProfile = profile.tensorLike
+      ? t('tensor-like geometry · tight/contrast · beam 2', '张量型结构 · tight/contrast · beam 2')
+      : t('very wide single line · tight/contrast · beam 2', '超宽单行 · tight/contrast · beam 2');
     retryMessage = t('OCR was uncertain · trying one tensor-friendly contrast pass…', 'OCR 结果不够稳定 · 正在进行一次适合复杂上下标的高对比度重试……');
   } else if (profile.fractionLike) {
     retryVariant = 'relaxed';
     retryPreprocess = 'normal';
+    retryProfile = t('fraction-like geometry · relaxed/normal · beam 2', '分式型结构 · relaxed/normal · beam 2');
     retryMessage = t('OCR was uncertain · trying one full-fraction retry…', 'OCR 结果不够稳定 · 正在对完整分式进行一次重试……');
   }
 
@@ -3552,7 +3572,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       }
     };
   }
-  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
+  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason, retryProfile, passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
 }
 
 function commitFormulaResult(item, statusMessage = '') {
