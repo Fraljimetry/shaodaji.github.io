@@ -1993,25 +1993,6 @@ async function disposeMathOcrPipeline() {
   try { await pipe?.dispose?.(); } catch (_) {}
 }
 
-function releaseMathOcrPipelineAfterExtraction() {
-  // Transformers.js 4.3.1 can leave a browser inference session unusable
-  // after a completed/failed generation. A fresh pipeline for each user
-  // selection avoids carrying that session state into the next rectangle,
-  // while keeping the imported runtime and browser-cached model files.
-  // Detach synchronously, lock formula selection, then quietly preload the
-  // next fresh engine. Selection becomes available again only after preload
-  // reports the engine ready.
-  const pipe = mathOcrPipeline;
-  mathOcrPipeline = null;
-  mathOcrBackend = null;
-  updateOcrCapability();
-  updateOcrInteractionAvailability();
-  Promise.resolve()
-    .then(() => pipe?.dispose?.())
-    .catch((error) => console.warn('MathReader OCR pipeline cleanup failed', error))
-    .finally(() => scheduleMathOcrPreload());
-}
-
 function friendlyOcrError(error, backend = null) {
   const raw = String(error?.message || error || '').trim();
   const lower = raw.toLowerCase();
@@ -3521,6 +3502,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   }
 
   mathOcrLoading = true;
+  let recognitionFailed = false;
   setOcrProcessing(true);
   try {
     const result = await runImageFormulaRecognition(crop, { vectorCandidate: vector });
@@ -3541,6 +3523,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
         ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
         : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。')));
   } catch (error) {
+    recognitionFailed = true;
     console.error(error);
     // Do not silently replace Image OCR with PDF vector. Vector reconstruction
     // can be badly corrupted by PDF font encodings even for simple formulas.
@@ -3553,7 +3536,13 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
-    releaseMathOcrPipelineAfterExtraction();
+    if (recognitionFailed) {
+      await disposeMathOcrPipeline();
+      updateOcrInteractionAvailability();
+      scheduleMathOcrPreload();
+    } else {
+      updateOcrInteractionAvailability();
+    }
   }
 }
 
@@ -3580,6 +3569,7 @@ async function canvasFromDataUrl(dataUrl) {
 async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null) {
   if (!crop || !page) return;
   mathOcrLoading = true;
+  let recognitionFailed = false;
   const imagePreview = preview || crop.toDataURL('image/png');
   setOcrProcessing(true);
   try {
@@ -3599,6 +3589,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
       ? t('Image OCR comparison complete.', '图像 OCR 对照完成。')
       : t('Image OCR comparison complete · review the editable LaTeX.', '图像 OCR 对照完成 · 请核对可编辑 LaTeX。'));
   } catch (error) {
+    recognitionFailed = true;
     console.error(error);
     const detail = detailedOcrError(error, mathOcrBackend);
     setOcrStatus(detail);
@@ -3606,7 +3597,13 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
   } finally {
     mathOcrLoading = false;
     setOcrProcessing(false);
-    releaseMathOcrPipelineAfterExtraction();
+    if (recognitionFailed) {
+      await disposeMathOcrPipeline();
+      updateOcrInteractionAvailability();
+      scheduleMathOcrPreload();
+    } else {
+      updateOcrInteractionAvailability();
+    }
   }
 }
 
