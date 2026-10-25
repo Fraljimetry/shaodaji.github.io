@@ -3617,117 +3617,51 @@ async function runImageFormulaRecognition(crop, options = {}) {
   }
 
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  const first = await onePass(crop, 'tight', 'normal', false);
+  const result = await onePass(crop, 'tight', 'normal', false);
 
-  // Fast-first policy: if the first result passes the quality gate, return it
-  // immediately. Complex-looking geometry by itself must never trigger a
-  // cascade of extra model calls. v126 did that and could take minutes.
-  if (first.assessment.ok && first.penalty < 20) {
-    return { ...first, profile, inferenceCount: 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason: '', retryProfile: '', passes: passTimings, recognitionMs: ocrNow() - recognitionStart, engineWarmMs, engineRunNumber, ...runtimeEnvironment } };
+  if (!result.latex) {
+    throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
   }
 
-  const retryReasons = [];
-  if (first.assessment?.hardReject) {
-    const hardReasons = Array.isArray(first.assessment.reasons) ? first.assessment.reasons.filter(Boolean) : [];
-    retryReasons.push(hardReasons.length
-      ? `${t('hard reject', '硬拒绝')}: ${hardReasons.join('; ')}`
-      : t('hard reject', '硬拒绝'));
-  }
-  if (Number(first.penalty) >= 20) {
-    retryReasons.push(`${t('structural penalty', '结构惩罚')} ${Number(first.penalty).toFixed(1)} ≥ 20`);
-  }
-  const retryReason = retryReasons.join(' · ') || t('first pass did not clear the quality gate', '首轮未通过质量门槛');
-
-  // At most one targeted retry. Decoder-runaway is a special case: beam 2
-  // has repeatedly reproduced the same failure while adding very large latency.
-  // Keep that retry conservative (beam 1). Other failure classes retain the
-  // existing careful beam-2 retry until real diagnostics justify changing them.
-  const firstRejectReasons = Array.isArray(first.assessment?.reasons) ? first.assessment.reasons : [];
-  const decoderRunaway = firstRejectReasons.some((reason) => /decoder runaway|解码器失控|解码器发生失控循环/i.test(String(reason || '')));
-  let retryVariant = 'relaxed';
-  let retryPreprocess = 'normal';
-  let retryCareful = !decoderRunaway;
-  let retryProfile = retryCareful
-    ? t('careful · relaxed/normal · beam 2', '精细 · relaxed/normal · beam 2')
-    : t('decoder-runaway recovery · relaxed/normal · beam 1', '解码失控恢复 · relaxed/normal · beam 1');
-  let retryMessage = retryCareful
-    ? t('OCR was uncertain · trying one careful retry…', 'OCR 结果不够稳定 · 正在进行一次精细重试……')
-    : t('Decoder repetition detected · trying one conservative retry…', '检测到解码重复 · 正在进行一次保守重试……');
-  if (profile.tensorLike || (profile.aspect >= 6 && profile.expectedRows === 0)) {
-    retryVariant = 'tight';
-    retryPreprocess = 'contrast';
-    retryProfile = profile.tensorLike
-      ? t(`tensor-like geometry · tight/contrast · beam ${retryCareful ? 2 : 1}`, `张量型结构 · tight/contrast · beam ${retryCareful ? 2 : 1}`)
-      : t(`very wide single line · tight/contrast · beam ${retryCareful ? 2 : 1}`, `超宽单行 · tight/contrast · beam ${retryCareful ? 2 : 1}`);
-    retryMessage = decoderRunaway
-      ? t('Decoder repetition detected · trying one conservative contrast retry…', '检测到解码重复 · 正在进行一次保守的高对比度重试……')
-      : t('OCR was uncertain · trying one tensor-friendly contrast pass…', 'OCR 结果不够稳定 · 正在进行一次适合复杂上下标的高对比度重试……');
-  } else if (profile.fractionLike) {
-    retryVariant = 'relaxed';
-    retryPreprocess = 'normal';
-    retryProfile = t(`fraction-like geometry · relaxed/normal · beam ${retryCareful ? 2 : 1}`, `分式型结构 · relaxed/normal · beam ${retryCareful ? 2 : 1}`);
-    retryMessage = decoderRunaway
-      ? t('Decoder repetition detected · trying one conservative full-fraction retry…', '检测到解码重复 · 正在对完整分式进行一次保守重试……')
-      : t('OCR was uncertain · trying one full-fraction retry…', 'OCR 结果不够稳定 · 正在对完整分式进行一次重试……');
-  }
-
-  setOcrStatus(retryMessage, true);
-  let retry = null;
-  try {
-    retry = await onePass(crop, retryVariant, retryPreprocess, retryCareful);
-  } catch (_) {
-    retry = null;
-  }
-
-  let best = first;
-  let retryFailed = false;
-  let candidateDecision = t('first pass retained', '保留首轮结果');
-  const context = {
-    expectedRows: profile.expectedRows,
-    tensorLike: profile.tensorLike,
-    scriptLoad: profile.scriptLoad,
-    fractionLike: profile.fractionLike,
-    vectorLatex: options.vectorCandidate?.latex || ''
-  };
-
-  if (retry?.latex) {
-    if (!retry.assessment.hardReject) {
-      if (first.assessment?.hardReject || imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context)) {
-        best = retry;
-        candidateDecision = t('retry passed quality gate and was selected', '重试通过质量门槛并被选中');
-      }
-    } else if (first.assessment?.hardReject) {
-      retryFailed = true;
-      const firstCorruption = imageOcrCorruptionScore(first);
-      const retryCorruption = imageOcrCorruptionScore(retry);
-      if (retryCorruption < firstCorruption ||
-          (retryCorruption === firstCorruption && imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context))) {
-        best = retry;
-        candidateDecision = `${t('both passes failed; retry was less corrupted', '两轮均失败；重试结果损坏较轻')} (${retryCorruption.toFixed(1)} < ${firstCorruption.toFixed(1)})`;
-      } else {
-        candidateDecision = `${t('both passes failed; first pass was less corrupted', '两轮均失败；首轮结果损坏较轻')} (${firstCorruption.toFixed(1)} ≤ ${retryCorruption.toFixed(1)})`;
-      }
-    }
-  }
-
-  if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
-
-  if (best.assessment?.hardReject) {
-    const failureWarning = retryFailed
-      ? t('OCR retry failed; showing the less-corrupted candidate for review', 'OCR 重试失败；显示损坏较轻的候选结果供检查')
-      : t('OCR result failed the quality gate; review carefully', 'OCR 结果未通过质量门槛；请仔细检查');
-    best = {
-      ...best,
+  // v194: recognition is deliberately single-pass again. Quality assessment
+  // remains diagnostic-only and must not trigger another expensive inference.
+  // Keep any nonempty image-OCR result visible/editable for review.
+  let finalResult = result;
+  if (finalResult.assessment?.hardReject) {
+    finalResult = {
+      ...finalResult,
       assessment: {
-        ...best.assessment,
+        ...finalResult.assessment,
         ok: true,
         retainedForReview: true,
-        retryFailed,
-        warnings: [failureWarning, ...(best.assessment.warnings || []), ...(best.assessment.reasons || [])]
+        warnings: [
+          t('OCR result needs review', 'OCR 结果需要检查'),
+          ...(finalResult.assessment.warnings || []),
+          ...(finalResult.assessment.reasons || [])
+        ]
       }
     };
   }
-  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason, retryProfile, retryFailed, candidateDecision, passes: passTimings, recognitionMs: ocrNow() - recognitionStart, engineWarmMs, engineRunNumber, ...runtimeEnvironment } };
+
+  return {
+    ...finalResult,
+    profile,
+    inferenceCount: 1,
+    timing: {
+      analysisMs,
+      firstPassPenalty: result.penalty,
+      retryReason: '',
+      retryProfile: '',
+      retryFailed: false,
+      candidateDecision: t('single-pass result retained', '保留单次识别结果'),
+      passes: passTimings,
+      recognitionMs: ocrNow() - recognitionStart,
+      engineWarmMs,
+      engineRunNumber,
+      ...runtimeEnvironment
+    }
+  };
+
 }
 
 function commitFormulaResult(item, statusMessage = '') {
