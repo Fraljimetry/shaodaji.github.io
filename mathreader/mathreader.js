@@ -7947,22 +7947,41 @@ workspaceJump?.addEventListener('change', () => {
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
 
-leftToggle.addEventListener('click', () => {
+function toggleLeftSidePanel() {
   runDisplayTransition(() => {
     if (matchMedia('(max-width: 860px)').matches) {
       shell.classList.toggle('mobile-left-open'); shell.classList.remove('mobile-right-open');
     } else shell.classList.toggle('left-collapsed');
     if (pdfDoc) persistDocumentState();
   }, { delay: 220 });
-});
-rightToggle.addEventListener('click', () => {
+}
+
+function toggleRightSidePanel() {
   runDisplayTransition(() => {
     if (matchMedia('(max-width: 860px)').matches) {
       shell.classList.toggle('mobile-right-open'); shell.classList.remove('mobile-left-open');
     } else shell.classList.toggle('right-collapsed');
     if (pdfDoc) persistDocumentState();
   }, { delay: 220 });
-});
+}
+
+leftToggle.addEventListener('click', toggleLeftSidePanel);
+rightToggle.addEventListener('click', toggleRightSidePanel);
+
+function collapseWorkspaceSections(container) {
+  if (!container) return;
+  for (const section of directWorkspaceSections(container)) section.classList.add('is-collapsed');
+  persistWorkspaceCollapseState();
+  updateWorkspaceCollapseButtons();
+}
+
+function collapseRightWorkspaceSections() {
+  collapseWorkspaceSections(rightSidebar);
+}
+
+function collapseLeftContentsSections() {
+  collapseWorkspaceSections(document.getElementById('outline-panel'));
+}
 
 function toggleBothSidePanels() {
   if (matchMedia('(max-width: 860px)').matches) return;
@@ -8015,7 +8034,11 @@ document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
   if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'o') { event.preventDefault(); fileInput.click(); return; }
   if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
+  if (!typing && key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) { event.preventDefault(); toggleLeftSidePanel(); return; }
+  if (!typing && key === 'r' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) { event.preventDefault(); toggleRightSidePanel(); return; }
   if (!typing && key === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
+  if (!typing && key === 'r' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); collapseRightWorkspaceSections(); return; }
+  if (!typing && key === 'l' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); collapseLeftContentsSections(); return; }
   if (!typing && key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('outline-panel'); return; }
   if (!typing && key === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('history-panel'); return; }
   if (!typing && key === 's' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); openLeftPanelShortcut('bookmarks-panel'); return; }
