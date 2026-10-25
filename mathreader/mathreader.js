@@ -3652,18 +3652,18 @@ async function tryImageOcrForCurrentResult() {
 
 function addOcrToPageNote() {
   if (!pdfDoc || !currentOcrResult?.latex) return;
-  const targetPage = Number(currentPage) || Number(currentOcrResult.page) || 1;
-  const sourcePage = Number(currentOcrResult.page) || targetPage;
-  const sourceLabel = sourcePage !== targetPage
-    ? ` · ${t(`OCR source page ${sourcePage}`, `OCR 来源第 ${sourcePage} 页`)}`
-    : '';
-  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}${sourceLabel}\n\\[\n${currentOcrResult.latex}\n\\]`;
+  // Save to the OCR result's own page. Do not move the reader just because a
+  // note was added from a result that originated on another page.
+  const targetPage = Math.min(Math.max(1, Number(currentOcrResult.page) || Number(currentPage) || 1), pdfDoc.numPages);
+  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}\n\[\n${currentOcrResult.latex}\n\]`;
   const existing = notes[String(targetPage)] || '';
   notes[String(targetPage)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
-  pageNote.value = notes[String(targetPage)];
-  scheduleNotePreview();
+  if (targetPage === currentPage) {
+    pageNote.value = notes[String(targetPage)];
+    scheduleNotePreview();
+    noteSaveState.textContent = t('Saved locally', '已保存到本地');
+  }
   persistDocumentState();
-  noteSaveState.textContent = t('Saved locally', '已保存到本地');
   if (generalPrefs.autoOpenSections !== false) autoOpenRightSection('note-section');
   setOcrStatus(t(`Added to page ${targetPage} note.`, `已添加到第 ${targetPage} 页注。`));
 }
@@ -8161,6 +8161,10 @@ function toggleBothSidePanels() {
 }
 
 
+// Automatic panel reactions may reveal content, but must never navigate the PDF,
+// switch left-side views, scroll a panel to the item, or steal focus. Actual
+// navigation is reserved for explicit user actions such as Jump, bookmarks,
+// search/index results, backlinks, the reading trail, and page controls.
 function autoOpenRightSection(sectionId) {
   const section = document.getElementById(sectionId);
   if (!section) return;
