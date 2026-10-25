@@ -1558,6 +1558,66 @@ function splitOcrLatexRows(value) {
   return rows.filter(Boolean);
 }
 
+function hasBalancedOuterBraces(value) {
+  const text = String(value || '').trim();
+  if (text.length < 2 || text[0] !== '{' || text[text.length - 1] !== '}') return false;
+  let depth = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '\\') { i += 1; continue; }
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') depth -= 1;
+    if (depth === 0 && i < text.length - 1) return false;
+    if (depth < 0) return false;
+  }
+  return depth === 0;
+}
+
+function stripRedundantOuterBraces(value) {
+  let text = String(value || '').trim();
+  let guard = 0;
+  while (guard < 4 && hasBalancedOuterBraces(text)) {
+    text = text.slice(1, -1).trim();
+    guard += 1;
+  }
+  return text;
+}
+
+function cleanOcrFormattingRow(value) {
+  let row = String(value || '').trim();
+  if (!row) return '';
+  // Common Texify array artifact: an empty first cell followed by a doubly
+  // braced mathematical cell, e.g. {{}}&{{=...}}.
+  row = row.replace(/^\{\{\}\}\s*&\s*\{\{([\s\S]*)\}\}\s*$/, '&$1');
+  row = row.replace(/^\{\}\s*&\s*\{([\s\S]*)\}\s*$/, '&$1');
+  row = stripRedundantOuterBraces(row);
+  // After unwrapping, repeat once because OCR often emits two brace layers.
+  row = row.replace(/^\{\{\}\}\s*&\s*\{\{([\s\S]*)\}\}\s*$/, '&$1');
+  row = stripRedundantOuterBraces(row);
+  return row.replace(/\s+/g, ' ').trim();
+}
+
+function cleanOcrFormattingRows(rows) {
+  const cleaned = [];
+  let previousKey = '';
+  for (const raw of Array.isArray(rows) ? rows : []) {
+    const row = cleanOcrFormattingRow(raw);
+    if (!row) continue;
+    // Preserve alignment markers for later formatting, but ignore harmless
+    // whitespace/bracing differences when detecting accidental duplicate rows.
+    const key = row.replace(/&/g, '').replace(/\s+/g, '').trim();
+    if (key && key === previousKey) continue;
+    cleaned.push(row);
+    previousKey = key;
+  }
+  return cleaned;
+}
+
+function cleanOcrFormattingArtifacts(value) {
+  const rows = cleanOcrFormattingRows(splitOcrLatexRows(value));
+  if (!rows.length) return String(value || '').trim();
+  return rows.length === 1 ? rows[0] : rows.join(latexLineSeparator());
+}
+
 function normalizeOcrAlignmentLine(value) {
   return String(value || '').replace(/(^|[^\\])&/g, '$1').replace(/\s+/g, ' ').trim();
 }
@@ -1574,13 +1634,13 @@ function alignLineByPattern(value, mode = 'relation') {
 }
 
 function formatOcrRowsAligned(rows, mode = 'relation') {
-  const cleaned = rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
   if (!cleaned.length) return '';
   return `\\begin{aligned}\n${cleaned.map((row) => alignLineByPattern(row, mode)).join(latexLineSeparator())}\n\\end{aligned}`;
 }
 
 function formatOcrRowsContinuation(rows) {
-  const cleaned = rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
   if (!cleaned.length) return '';
   const formatted = cleaned.map((row, index) => {
     const aligned = alignLineByPattern(row, 'relation');
@@ -1592,18 +1652,18 @@ function formatOcrRowsContinuation(rows) {
 }
 
 function formatOcrRowsGathered(rows) {
-  const cleaned = rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
+  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
   if (!cleaned.length) return '';
   if (cleaned.length === 1) return cleaned[0];
   return `\\begin{gathered}\n${cleaned.join(latexLineSeparator())}\n\\end{gathered}`;
 }
 
 function formatOcrRowsSingleLine(rows) {
-  return rows.map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  return cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 }
 
 function autoFormatOcrLatex(value) {
-  const rows = splitOcrLatexRows(value);
+  const rows = cleanOcrFormattingRows(splitOcrLatexRows(value));
   if (!rows.length) return String(value || '').trim();
   if (rows.length === 1) return formatOcrRowsSingleLine(rows);
   const relationRows = rows.filter((row) => /(=|\\to|\\rightarrow|\\longrightarrow|\\Rightarrow|\\Longrightarrow|\\leq|\\le|\\geq|\\ge|\\approx|\\sim|\\equiv|\\mapsto|\\iff)/.test(row)).length;
@@ -1654,9 +1714,10 @@ function applyOcrFormat(mode) {
   const source = String(ocrLatexPreview.value || currentOcrResult.latex || '').trim();
   if (!source && mode !== 'original') return;
   let next = source;
-  const rows = splitOcrLatexRows(source);
+  const rows = cleanOcrFormattingRows(splitOcrLatexRows(source));
   if (mode === 'original') next = String(currentOcrResult.originalLatex || source).trim();
   else if (mode === 'auto') next = autoFormatOcrLatex(source);
+  else if (mode === 'clean-artifacts') next = cleanOcrFormattingArtifacts(source);
   else if (mode === 'align-equals') next = formatOcrRowsAligned(rows.length ? rows : [source], 'equals');
   else if (mode === 'align-relation') next = formatOcrRowsAligned(rows.length ? rows : [source], 'relation');
   else if (mode === 'continuation') next = formatOcrRowsContinuation(rows.length ? rows : [source]);
