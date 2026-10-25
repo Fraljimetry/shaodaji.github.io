@@ -252,6 +252,8 @@ let ocrRenderedPreviewTimer = null;
 let ocrRenderedPreviewToken = 0;
 let lastOcrEngineTiming = null;
 let lastOcrRunTiming = null;
+let mathOcrReadyAt = null;
+let mathOcrInferenceRuns = 0;
 let notePreviewTimer = null;
 let continuousScrollTop = 0;
 let continuousSavedAnchor = null;
@@ -1422,14 +1424,52 @@ function ocrMs(value) {
   return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} ms` : '—';
 }
 
+
+function ocrApproxTokenCount(text) {
+  const value = String(text || '');
+  if (!value) return 0;
+  // Diagnostic fallback only. Transformers.js image-to-text does not expose
+  // generated token ids in this pipeline result, so keep this explicitly approximate.
+  return Math.max(1, Math.round(value.length / 2.7));
+}
+
+function ocrRate(value, ms) {
+  const n = Number(value);
+  const tms = Number(ms);
+  return Number.isFinite(n) && Number.isFinite(tms) && tms > 0 ? n / (tms / 1000) : null;
+}
+
+function ocrLikelyBottleneck(report) {
+  const passes = Array.isArray(report?.passes) ? report.passes : [];
+  const totalInference = passes.reduce((sum, pass) => sum + (Number(pass.inferenceMs) || 0), 0);
+  const total = Number(report?.totalMs) || Number(report?.recognitionMs) || 0;
+  const share = total > 0 ? totalInference / total : 0;
+  if (share >= 0.95 && passes.length) {
+    const slowest = passes.slice().sort((a, b) => (Number(b.inferenceMs) || 0) - (Number(a.inferenceMs) || 0))[0];
+    const tokRate = Number(slowest?.approxTokensPerSecond);
+    const charRate = Number(slowest?.charsPerSecond);
+    if (Number.isFinite(tokRate)) return `${t('model inference dominates', '模型推理占主导')} (${(share * 100).toFixed(1)}%) · ${t('slowest pass', '最慢一轮')} ~${tokRate.toFixed(2)} ${t('estimated tok/s', '估算 token/秒')}`;
+    if (Number.isFinite(charRate)) return `${t('model inference dominates', '模型推理占主导')} (${(share * 100).toFixed(1)}%) · ${t('slowest pass', '最慢一轮')} ~${charRate.toFixed(2)} ${t('chars/s', '字符/秒')}`;
+    return `${t('model inference dominates', '模型推理占主导')} (${(share * 100).toFixed(1)}%)`;
+  }
+  if (Number(report?.engineWarmMs) < 2000 && totalInference > 10000) return t('inference is slow immediately after engine load', '引擎加载后立即推理较慢');
+  return t('no single non-inference stage dominates', '没有单一非推理阶段占主导');
+}
+
 function renderOcrTimingDiagnostics() {
   if (!ocrTimingDiagnostics) return;
   const lines = [];
   if (lastOcrRunTiming) {
     const r = lastOcrRunTiming;
     lines.push(`${t('Last run', '最近一次')} · ${r.backend || '—'} · ${r.inferenceCount || 0} ${t('pass(es)', '次推理')}`);
-    if (r.cropSize) lines.push(`  ${t('Crop size', '裁图尺寸')}: ${r.cropSize}`);
-    if (Number.isFinite(r.outputChars)) lines.push(`  ${t('LaTeX length', 'LaTeX 长度')}: ${r.outputChars} ${t('chars', '字符')}`);
+    if (r.cropSize) lines.push(`  ${t('Crop size', '裁图尺寸')}: ${r.cropSize}${Number.isFinite(r.cropAspect) ? ` · ${t('aspect', '宽高比')} ${r.cropAspect.toFixed(2)}:1` : ''}`);
+    if (Number.isFinite(r.outputChars)) lines.push(`  ${t('Final LaTeX', '最终 LaTeX')}: ${r.outputChars} ${t('chars', '字符')} · ~${r.outputApproxTokens || 0} ${t('tokens estimated', '估算 token')}`);
+    if (r.backendDetail) lines.push(`  ${t('Backend', '后端')}: ${r.backendDetail}`);
+    if (Number.isFinite(r.engineWarmMs)) lines.push(`  ${t('Engine warm time before run', '本次运行前引擎已就绪')}: ${ocrMs(r.engineWarmMs)}`);
+    if (Number.isFinite(r.engineRunNumber)) lines.push(`  ${t('Inference run since load', '本次加载后的推理序号')}: #${r.engineRunNumber}`);
+    lines.push(`  ${t('Page visibility', '页面可见性')}: ${r.visibilityState || '—'}`);
+    if (Number.isFinite(r.hardwareConcurrency)) lines.push(`  ${t('Logical CPU threads', '逻辑 CPU 线程')}: ${r.hardwareConcurrency}`);
+    if (Number.isFinite(r.deviceMemoryGb)) lines.push(`  ${t('Reported device memory', '报告的设备内存')}: ${r.deviceMemoryGb} GB`);
     if (Number.isFinite(r.cropMs)) lines.push(`  ${t('Crop', '裁图')}: ${ocrMs(r.cropMs)}`);
     if (Number.isFinite(r.analysisMs)) lines.push(`  ${t('Analysis', '分析')}: ${ocrMs(r.analysisMs)}`);
     if (Number.isFinite(r.firstPassPenalty)) lines.push(`  ${t('First-pass structural penalty', '首轮结构惩罚')}: ${Number(r.firstPassPenalty).toFixed(1)}`);
@@ -1437,10 +1477,20 @@ function renderOcrTimingDiagnostics() {
     if (r.retryProfile) lines.push(`  ${t('Retry profile', '重试方案')}: ${r.retryProfile}`);
     (r.passes || []).forEach((pass, index) => {
       lines.push(`  ${t('Pass', '第')} ${index + 1}${t('', ' 次')} · ${pass.variant}/${pass.preprocess}${pass.careful ? ' · beam 2' : ' · beam 1'}`);
+      if (Number.isFinite(pass.inputWidth) && Number.isFinite(pass.inputHeight)) lines.push(`    ${t('Model input', '模型输入')}: ${pass.inputWidth}×${pass.inputHeight}${Number.isFinite(pass.inputAspect) ? ` · ${t('aspect', '宽高比')} ${pass.inputAspect.toFixed(2)}:1` : ''}`);
+      lines.push(`    ${t('Generation config', '生成配置')}: max_new_tokens=512 · num_beams=${pass.careful ? 2 : 1} · early_stopping=${pass.careful ? 'true' : 'false'}`);
       lines.push(`    ${t('Normalize crop', '裁图归一化')}: ${ocrMs(pass.normalizeMs)}`);
       lines.push(`    ${t('Preprocess', '预处理')}: ${ocrMs(pass.preprocessMs)}`);
       lines.push(`    ${t('Canvas → image', '画布 → 图像')}: ${ocrMs(pass.inputMs)}`);
       lines.push(`    ${t('Inference', '推理')}: ${ocrMs(pass.inferenceMs)}`);
+      if (Number.isFinite(pass.rawChars)) lines.push(`    ${t('Raw output', '原始输出')}: ${pass.rawChars} ${t('chars', '字符')} · ~${pass.approxTokens || 0} ${t('tokens estimated', '估算 token')}`);
+      if (Number.isFinite(pass.approxTokensPerSecond)) lines.push(`    ${t('Estimated throughput', '估算吞吐')}: ${pass.approxTokensPerSecond.toFixed(2)} tok/s · ${pass.charsPerSecond.toFixed(2)} chars/s`);
+      lines.push(`    ${t('First-token latency', '首 token 延迟')}: ${t('not exposed by runtime', '运行时未提供')}`);
+      lines.push(`    ${t('Generated token count', '实际生成 token 数')}: ${t('not exposed by runtime', '运行时未提供')}`);
+      lines.push(`    ${t('Hit 512-token cap', '是否达到 512-token 上限')}: ${t('unknown (token ids not exposed)', '未知（运行时未提供 token id）')}`);
+      if (Number.isFinite(pass.penalty)) lines.push(`    ${t('Structural penalty', '结构惩罚')}: ${pass.penalty.toFixed(1)}`);
+      if (pass.hardReject) lines.push(`    ${t('Hard reject', '硬拒绝')}: ${t('yes', '是')}${pass.rejectReasons ? ` · ${pass.rejectReasons}` : ''}`);
+      else lines.push(`    ${t('Hard reject', '硬拒绝')}: ${t('no', '否')}`);
       lines.push(`    ${t('LaTeX cleanup/check', 'LaTeX 清理/检查')}: ${ocrMs(pass.postprocessMs)}`);
       lines.push(`    ${t('Pass total', '本次合计')}: ${ocrMs(pass.totalMs)}`);
     });
@@ -1449,11 +1499,13 @@ function renderOcrTimingDiagnostics() {
     const inferenceTotal = (r.passes || []).reduce((sum, pass) => sum + (Number(pass.inferenceMs) || 0), 0);
     if (Number.isFinite(r.totalMs) && r.totalMs > 0) lines.push(`  ${t('Inference share', '推理占比')}: ${(inferenceTotal / r.totalMs * 100).toFixed(1)}%`);
     lines.push(`  ${t('End-to-end', '端到端')}: ${ocrMs(r.totalMs)}`);
+    lines.push(`  ${t('Likely bottleneck', '可能瓶颈')}: ${ocrLikelyBottleneck(r)}`);
   }
   if (lastOcrEngineTiming) {
     const e = lastOcrEngineTiming;
     if (lines.length) lines.push('');
     lines.push(`${t('Engine load', '引擎加载')} · ${e.backend || '—'}`);
+    if (e.backendDetail) lines.push(`  ${t('Backend', '后端')}: ${e.backendDetail}`);
     lines.push(`  ${t('Runtime import', '运行时导入')}: ${ocrMs(e.importMs)}`);
     lines.push(`  ${t('Pipeline/model init', '模型初始化')}: ${ocrMs(e.pipelineMs)}`);
     lines.push(`  ${t('Load total', '加载合计')}: ${ocrMs(e.totalMs)}`);
@@ -2030,6 +2082,8 @@ async function disposeMathOcrPipeline() {
   const pipe = mathOcrPipeline;
   mathOcrPipeline = null;
   mathOcrBackend = null;
+  mathOcrReadyAt = null;
+  mathOcrInferenceRuns = 0;
   mathOcrModulePromise = null;
   updateOcrCapability();
   try { await pipe?.dispose?.(); } catch (_) {}
@@ -2102,8 +2156,11 @@ async function ensureMathOcrPipeline() {
         const pipelineMs = ocrNow() - pipelineStart;
         mathOcrPipeline = pipe;
         mathOcrBackend = backend;
+        mathOcrReadyAt = ocrNow();
+        mathOcrInferenceRuns = 0;
         lastOcrEngineTiming = {
           backend: backend.label,
+          backendDetail: `${backend.label}${backend.device ? ` · device=${backend.device}` : ''}${backend.dtype ? ` · dtype=${backend.dtype}` : ''}`,
           importMs: runtimeImportMs,
           pipelineMs,
           totalMs: ocrNow() - engineLoadStart
@@ -3434,6 +3491,14 @@ function vectorCandidateScore(vectorCandidate, context = {}) {
 async function runImageFormulaRecognition(crop, options = {}) {
   const recognitionStart = ocrNow();
   const pipe = await ensureMathOcrPipeline();
+  const engineWarmMs = Number.isFinite(Number(mathOcrReadyAt)) ? Math.max(0, ocrNow() - Number(mathOcrReadyAt)) : null;
+  mathOcrInferenceRuns += 1;
+  const engineRunNumber = mathOcrInferenceRuns;
+  const runtimeEnvironment = {
+    visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+    hardwareConcurrency: Number.isFinite(Number(navigator?.hardwareConcurrency)) ? Number(navigator.hardwareConcurrency) : null,
+    deviceMemoryGb: Number.isFinite(Number(navigator?.deviceMemory)) ? Number(navigator.deviceMemory) : null
+  };
   mathOcrLoading = true;
   const passTimings = [];
   let profile;
@@ -3484,6 +3549,16 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
+    timing.inputWidth = Number(processed?.width || prepared?.width || sourceCanvas?.width || 0);
+    timing.inputHeight = Number(processed?.height || prepared?.height || sourceCanvas?.height || 0);
+    timing.inputAspect = timing.inputHeight ? timing.inputWidth / timing.inputHeight : null;
+    timing.rawChars = String(raw || '').length;
+    timing.approxTokens = ocrApproxTokenCount(raw);
+    timing.approxTokensPerSecond = ocrRate(timing.approxTokens, timing.inferenceMs);
+    timing.charsPerSecond = ocrRate(timing.rawChars, timing.inferenceMs);
+    timing.penalty = Number(penalty) || 0;
+    timing.hardReject = Boolean(assessment?.hardReject);
+    timing.rejectReasons = Array.isArray(assessment?.reasons) ? assessment.reasons.filter(Boolean).join('; ') : '';
     timing.postprocessMs = ocrNow() - stageStart;
     timing.totalMs = ocrNow() - passStart;
     passTimings.push(timing);
@@ -3497,7 +3572,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
   // immediately. Complex-looking geometry by itself must never trigger a
   // cascade of extra model calls. v126 did that and could take minutes.
   if (first.assessment.ok && first.penalty < 20) {
-    return { ...first, profile, inferenceCount: 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason: '', retryProfile: '', passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
+    return { ...first, profile, inferenceCount: 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason: '', retryProfile: '', passes: passTimings, recognitionMs: ocrNow() - recognitionStart, engineWarmMs, engineRunNumber, ...runtimeEnvironment } };
   }
 
   const retryReasons = [];
@@ -3572,7 +3647,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       }
     };
   }
-  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason, retryProfile, passes: passTimings, recognitionMs: ocrNow() - recognitionStart } };
+  return { ...best, profile, inferenceCount: retry ? 2 : 1, timing: { analysisMs, firstPassPenalty: first.penalty, retryReason, retryProfile, passes: passTimings, recognitionMs: ocrNow() - recognitionStart, engineWarmMs, engineRunNumber, ...runtimeEnvironment } };
 }
 
 function commitFormulaResult(item, statusMessage = '') {
@@ -3630,8 +3705,19 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       inferenceCount: result.inferenceCount || result.timing?.passes?.length || 1,
       cropSize: `${crop.width || 0}×${crop.height || 0}`,
       outputChars: String(result.latex || '').length,
+      outputApproxTokens: ocrApproxTokenCount(result.latex),
+      cropAspect: crop?.height ? (Number(crop.width || 0) / Number(crop.height || 1)) : null,
+      backendDetail: `${mathOcrBackend?.label || '—'}${mathOcrBackend?.device ? ` · device=${mathOcrBackend.device}` : ''}${mathOcrBackend?.dtype ? ` · dtype=${mathOcrBackend.dtype}` : ''}`,
       cropMs: Number.isFinite(Number(diagnosticsMeta.cropMs)) ? Number(diagnosticsMeta.cropMs) : null,
       analysisMs: result.timing?.analysisMs,
+      firstPassPenalty: result.timing?.firstPassPenalty,
+      retryReason: result.timing?.retryReason || '',
+      retryProfile: result.timing?.retryProfile || '',
+      engineWarmMs: result.timing?.engineWarmMs,
+      engineRunNumber: result.timing?.engineRunNumber,
+      visibilityState: result.timing?.visibilityState || 'unknown',
+      hardwareConcurrency: result.timing?.hardwareConcurrency,
+      deviceMemoryGb: result.timing?.deviceMemoryGb,
       passes: result.timing?.passes || [],
       commitMs,
       recognitionMs: result.timing?.recognitionMs,
@@ -3713,8 +3799,19 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
       inferenceCount: result.inferenceCount || result.timing?.passes?.length || 1,
       cropSize: `${crop.width || 0}×${crop.height || 0}`,
       outputChars: String(result.latex || '').length,
+      outputApproxTokens: ocrApproxTokenCount(result.latex),
+      cropAspect: crop?.height ? (Number(crop.width || 0) / Number(crop.height || 1)) : null,
+      backendDetail: `${mathOcrBackend?.label || '—'}${mathOcrBackend?.device ? ` · device=${mathOcrBackend.device}` : ''}${mathOcrBackend?.dtype ? ` · dtype=${mathOcrBackend.dtype}` : ''}`,
       cropMs: Number.isFinite(Number(diagnosticsMeta.cropMs)) ? Number(diagnosticsMeta.cropMs) : null,
       analysisMs: result.timing?.analysisMs,
+      firstPassPenalty: result.timing?.firstPassPenalty,
+      retryReason: result.timing?.retryReason || '',
+      retryProfile: result.timing?.retryProfile || '',
+      engineWarmMs: result.timing?.engineWarmMs,
+      engineRunNumber: result.timing?.engineRunNumber,
+      visibilityState: result.timing?.visibilityState || 'unknown',
+      hardwareConcurrency: result.timing?.hardwareConcurrency,
+      deviceMemoryGb: result.timing?.deviceMemoryGb,
       passes: result.timing?.passes || [],
       commitMs,
       recognitionMs: result.timing?.recognitionMs,
