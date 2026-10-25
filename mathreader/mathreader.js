@@ -2732,70 +2732,6 @@ function formulaInkProfiles(canvas) {
   return { canvas: normalized, width, height, rowInk, colInk, rowLongestRun };
 }
 
-function formulaColumnTiles(canvas, maxAspect = 4.2) {
-  const profile = formulaInkProfiles(canvas);
-  if (!profile) return [];
-  const { width, height, colInk } = profile;
-  const aspect = width / Math.max(1, height);
-  if (aspect < 6.0) return [];
-  const tileCount = Math.max(2, Math.min(4, Math.ceil(aspect / maxAspect)));
-  const cuts = [];
-  for (let n = 1; n < tileCount; n += 1) {
-    const target = Math.round((width * n) / tileCount);
-    const radius = Math.round(width * 0.10);
-    let best = null;
-    for (let x = Math.max(8, target - radius); x <= Math.min(width - 8, target + radius); x += 1) {
-      const local = (colInk[x - 1] || 0) + (colInk[x] || 0) + (colInk[x + 1] || 0);
-      const distance = Math.abs(x - target) / Math.max(1, radius);
-      const score = local * 4 + distance;
-      if (!best || score < best.score) best = { x, score, ink: local };
-    }
-    if (!best || best.ink > Math.max(3, height * 0.10)) return [];
-    if (cuts.length && best.x - cuts.at(-1) < width * 0.16) return [];
-    cuts.push(best.x);
-  }
-  const boundaries = [0, ...cuts, width];
-  const tiles = [];
-  for (let i = 0; i < boundaries.length - 1; i += 1) {
-    const left = boundaries[i];
-    const right = boundaries[i + 1];
-    const sx = Math.max(0, left);
-    const ex = Math.min(width, right);
-    const out = document.createElement('canvas');
-    out.width = Math.max(1, ex - sx);
-    out.height = height;
-    const ctx = out.getContext('2d', { alpha: false });
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, out.width, out.height);
-    ctx.drawImage(profile.canvas, sx, 0, out.width, height, 0, 0, out.width, height);
-    tiles.push(out);
-  }
-  return tiles;
-}
-
-function joinWideFormulaFragments(fragments) {
-  const clean = fragments.map((value) => normalizeOcrLatex(value).trim()).filter(Boolean);
-  if (clean.length < 2) return '';
-  let joined = clean.join(' ')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\}\s+\{/g, '} {')
-    .trim();
-  joined = repairOcrLatex(joined);
-  return joined;
-}
-
-function formulaHasDominantFractionRule(canvas) {
-  const profile = formulaInkProfiles(canvas);
-  if (!profile) return false;
-  const { width, height, rowInk, rowLongestRun } = profile;
-  const strongRuleRows = rowLongestRun.map((run, y) => ({ run, y })).filter((item) => item.run >= width * 0.48);
-  if (!strongRuleRows.length) return false;
-  const ruleY = strongRuleRows[Math.floor(strongRuleRows.length / 2)].y;
-  const aboveInk = rowInk.slice(0, Math.max(0, ruleY - 2)).reduce((a, b) => a + b, 0);
-  const belowInk = rowInk.slice(Math.min(height, ruleY + 3)).reduce((a, b) => a + b, 0);
-  return aboveInk > width * 0.35 && belowInk > width * 0.18;
-}
-
 function formulaRowBands(canvas) {
   const profile = formulaInkProfiles(canvas);
   if (!profile || profile.width / Math.max(1, profile.height) < 1.15) return [];
@@ -3031,19 +2967,19 @@ function vectorCandidateScore(vectorCandidate, context = {}) {
 async function runImageFormulaRecognition(crop, options = {}) {
   const pipe = await ensureMathOcrPipeline();
   mathOcrLoading = true;
-  const generation = {
-    max_new_tokens: 512,
-    num_beams: 2,
-    early_stopping: true,
-    do_sample: false,
-    repetition_penalty: 1.04
-  };
   const profile = analyzeFormulaSelection(crop, options.vectorCandidate || null);
 
-  async function onePass(sourceCanvas, variant = 'tight', preprocess = 'normal') {
+  async function onePass(sourceCanvas, variant = 'tight', preprocess = 'normal', careful = false) {
     const prepared = normalizeFormulaCropForOcr(sourceCanvas, variant);
     const processed = preprocessFormulaCanvas(prepared, preprocess);
     const inputImage = await prepareMathOcrInput(processed);
+    const generation = {
+      max_new_tokens: 512,
+      num_beams: careful ? 2 : 1,
+      early_stopping: Boolean(careful),
+      do_sample: false,
+      repetition_penalty: 1.04
+    };
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
@@ -3053,168 +2989,56 @@ async function runImageFormulaRecognition(crop, options = {}) {
     return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
   }
 
-  async function wideTilePass(sourceCanvas, preprocess = 'contrast') {
-    const tiles = formulaColumnTiles(sourceCanvas);
-    if (tiles.length < 2) return null;
-    const fragments = [];
-    for (let i = 0; i < tiles.length; i += 1) {
-      setOcrStatus(t(`Wide formula · recognizing segment ${i + 1} of ${tiles.length}…`, `超宽公式 · 正在识别第 ${i + 1}/${tiles.length} 段……`), true);
-      const part = await onePass(tiles[i], 'tight', preprocess);
-      if (!part.assessment.ok || !part.latex) return null;
-      fragments.push(part.latex);
-    }
-    const latex = joinWideFormulaFragments(fragments);
-    if (!latex) return null;
-    return {
-      raw: latex,
-      rawLatex: latex,
-      latex,
-      penalty: latexStructuralPenalty(latex),
-      assessment: assessImageOcrResult(latex, latex),
-      variant: 'wide-tiles',
-      preprocess
-    };
-  }
-
   setOcrStatus(t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  let best = await onePass(crop, 'tight', 'normal');
-  let bestScore = imageOcrCandidateScore(best, {
-    expectedRows: profile.expectedRows,
-    tensorLike: profile.tensorLike,
-    scriptLoad: profile.scriptLoad,
-    fractionLike: profile.fractionLike,
-    vectorLatex: options.vectorCandidate?.latex || ''
-  });
+  const first = await onePass(crop, 'tight', 'normal', false);
 
-  // Aligned displays need a dedicated recovery path. The whole-block decoder
-  // can produce several rows yet still corrupt one continuation line, so do
-  // not use "already multiline" as evidence that the result is good. When the
-  // image has 2–5 clean horizontal bands, build a second candidate by OCRing
-  // every row independently and compare both candidates structurally.
-  const bands = profile.bands;
-  if (bands.length >= 2) {
-    const lines = [];
-    let rowFailure = false;
-    for (let i = 0; i < bands.length; i += 1) {
-      setOcrStatus(t(`Detected ${bands.length} formula rows · recognizing row ${i + 1}…`, `检测到 ${bands.length} 行公式 · 正在识别第 ${i + 1} 行……`), true);
-      try {
-        const rowCrop = cropCanvasRows(crop, bands[i]);
-        let row = await onePass(rowCrop, 'tight', 'normal');
-        if (rowCrop.width / Math.max(1, rowCrop.height) >= 6.0) {
-          try {
-            const tiledRow = await wideTilePass(rowCrop, 'contrast');
-            if (tiledRow?.assessment?.ok && imageOcrCandidateScore(tiledRow, { tensorLike: true, scriptLoad: profile.scriptLoad }) + 0.5 < imageOcrCandidateScore(row, { tensorLike: true, scriptLoad: profile.scriptLoad })) row = tiledRow;
-          } catch (_) {
-            // Keep the whole-row result if the auxiliary tiled row fails.
-          }
-        }
-        if (!row.assessment.ok || !row.latex) { rowFailure = true; break; }
-        lines.push(markAlignmentRelation(row.latex));
-      } catch (_) { rowFailure = true; break; }
-    }
-    if (!rowFailure && lines.length === bands.length) {
-      const rowAssessment = alignedRowsAssessment(lines);
-      if (rowAssessment.ok) {
-        const latex = `\\begin{aligned}
-${lines.join(latexLineSeparator())}
-\\end{aligned}`;
-        const candidate = {
-          raw: latex,
-          rawLatex: latex,
-          latex,
-          penalty: latexStructuralPenalty(latex),
-          assessment: assessImageOcrResult(latex, latex),
-          variant: 'aligned-rows',
-          preprocess: 'normal'
-        };
-        const score = imageOcrCandidateScore(candidate, {
-          expectedRows: profile.expectedRows,
-          tensorLike: profile.tensorLike,
-          scriptLoad: profile.scriptLoad,
-          fractionLike: profile.fractionLike,
-          vectorLatex: options.vectorCandidate?.latex || ''
-        });
-        if (candidate.assessment.ok && score + 0.5 < bestScore) {
-          best = candidate;
-          bestScore = score;
-        }
-      }
-    }
+  // Fast-first policy: if the first result passes the quality gate, return it
+  // immediately. Complex-looking geometry by itself must never trigger a
+  // cascade of extra model calls. v126 did that and could take minutes.
+  if (first.assessment.ok && first.penalty < 8) {
+    return { ...first, profile, inferenceCount: 1 };
   }
 
-  // Extremely wide single-line formulas are a known weak spot for Texify:
-  // tiny scripts at the far left/right compete for one global decoder context.
-  // Split only at very low-ink whitespace valleys, OCR the fragments, then
-  // compare the fused candidate against the whole-line result. Never tile
-  // detected multi-row formulas or structured fractions.
-  if (profile.expectedRows === 0 && profile.aspect >= 6.0) {
-    try {
-      const candidate = await wideTilePass(crop, profile.tensorLike ? 'contrast' : 'normal');
-      if (candidate?.assessment?.ok) {
-        let score = imageOcrCandidateScore(candidate, {
-          expectedRows: 0,
-          tensorLike: profile.tensorLike,
-          scriptLoad: profile.scriptLoad,
-          fractionLike: profile.fractionLike,
-          vectorLatex: options.vectorCandidate?.latex || ''
-        });
-        const tileSig = latexMathSignature(candidate.latex);
-        const wholeSig = latexMathSignature(best.latex);
-        const tileScripts = tileSig.superscripts + tileSig.subscripts;
-        const wholeScripts = wholeSig.superscripts + wholeSig.subscripts;
-        if (profile.tensorLike) {
-          score -= Math.min(6, Math.max(0, tileScripts - wholeScripts) * 0.6);
-          if (tileScripts + 2 < wholeScripts) score += 8;
-        }
-        if (tileSig.relations < wholeSig.relations) score += (wholeSig.relations - tileSig.relations) * 6;
-        score -= profile.tensorLike ? 5.0 : 3.0;
-        if (score + 0.5 < bestScore) {
-          best = candidate;
-          bestScore = score;
-        }
-      }
-    } catch (_) {
-      // Whole-line OCR remains available if segmented recognition fails.
-    }
+  // At most one targeted retry. Choose a single transformation from the crop
+  // geometry instead of running row OCR, tiled OCR, and several contrast passes.
+  let retryVariant = 'relaxed';
+  let retryPreprocess = 'normal';
+  let retryMessage = t('OCR was uncertain · trying one careful retry…', 'OCR 结果不够稳定 · 正在进行一次精细重试……');
+  if (profile.tensorLike || (profile.aspect >= 6 && profile.expectedRows === 0)) {
+    retryVariant = 'tight';
+    retryPreprocess = 'contrast';
+    retryMessage = t('OCR was uncertain · trying one tensor-friendly contrast pass…', 'OCR 结果不够稳定 · 正在进行一次适合复杂上下标的高对比度重试……');
+  } else if (profile.fractionLike) {
+    retryVariant = 'relaxed';
+    retryPreprocess = 'normal';
+    retryMessage = t('OCR was uncertain · trying one full-fraction retry…', 'OCR 结果不够稳定 · 正在对完整分式进行一次重试……');
   }
 
-  const extraPasses = [];
-  if (!best.assessment.ok || best.penalty >= 8 || profile.tensorLike || profile.fractionLike || Boolean(options.vectorCandidate?.latex)) {
-    extraPasses.push({ variant: 'relaxed', preprocess: 'normal', message: t('First pass was uncertain · refining with a wider crop…', '第一次识别不够稳定 · 正在使用更宽裁图精修……') });
-    extraPasses.push({ variant: 'tight', preprocess: 'contrast', message: t('Comparing a higher-contrast local OCR pass…', '正在比较更高对比度的本地识别结果……') });
-  }
-  if (profile.tensorLike || profile.fractionLike || best.penalty >= 10) {
-    extraPasses.push({ variant: 'relaxed', preprocess: 'contrast', message: t('Trying a tensor-friendly high-contrast pass…', '正在尝试更适合张量/复杂上下标的高对比度识别……') });
+  setOcrStatus(retryMessage, true);
+  let retry = null;
+  try {
+    retry = await onePass(crop, retryVariant, retryPreprocess, true);
+  } catch (_) {
+    retry = null;
   }
 
-  const seenPasses = new Set();
-  for (const pass of extraPasses) {
-    const key = `${pass.variant}:${pass.preprocess}`;
-    if (seenPasses.has(key)) continue;
-    seenPasses.add(key);
-    setOcrStatus(pass.message, true);
-    try {
-      const candidate = await onePass(crop, pass.variant, pass.preprocess);
-      const score = imageOcrCandidateScore(candidate, {
-        expectedRows: profile.expectedRows,
-        tensorLike: profile.tensorLike,
-        scriptLoad: profile.scriptLoad,
-        fractionLike: profile.fractionLike,
-        vectorLatex: options.vectorCandidate?.latex || ''
-      });
-      if (candidate.assessment.ok && score + 0.25 < bestScore) {
-        best = candidate;
-        bestScore = score;
-      }
-    } catch (_) {
-      // Ignore individual auxiliary-pass failures and keep the best valid pass.
-    }
+  let best = first;
+  if (retry?.latex && retry.assessment.ok) {
+    const context = {
+      expectedRows: profile.expectedRows,
+      tensorLike: profile.tensorLike,
+      scriptLoad: profile.scriptLoad,
+      fractionLike: profile.fractionLike,
+      vectorLatex: options.vectorCandidate?.latex || ''
+    };
+    if (imageOcrCandidateScore(retry, context) < imageOcrCandidateScore(first, context)) best = retry;
   }
 
   if (!best.latex) throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
   requireUsableImageOcr(best.raw, best.latex);
-  return { ...best, profile };
+  return { ...best, profile, inferenceCount: retry ? 2 : 1 };
 }
+
 function commitFormulaResult(item, statusMessage = '') {
   currentOcrResult = item;
   ocrHistory = [item, ...ocrHistory.filter((entry) => !(entry.page === item.page && entry.latex === item.latex && entry.source === item.source))].slice(0, 10);
