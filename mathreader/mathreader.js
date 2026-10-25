@@ -145,12 +145,28 @@ const copySelectionLatex = el('copy-selection-latex');
 const selectionToNote = el('selection-to-note');
 const selectionFindAll = el('selection-find-all');
 const selectionToGlossary = el('selection-to-glossary');
+const selectionInspectMath = el('selection-inspect-math');
 const glossarySymbolInput = el('glossary-symbol');
 const glossaryMeaningInput = el('glossary-meaning');
 const glossaryAddButton = el('glossary-add');
 const symbolGlossaryList = el('symbol-glossary-list');
 const symbolGlossaryEmpty = el('symbol-glossary-empty');
 const symbolGlossaryCount = el('symbol-glossary-count');
+const mathContextTerm = el('math-context-term');
+const mathContextActions = el('math-context-actions');
+const mathContextOccurrences = el('math-context-occurrences');
+const mathContextProof = el('math-context-proof');
+const mathContextEmpty = el('math-context-empty');
+const equationCompareA = el('equation-compare-a');
+const equationCompareB = el('equation-compare-b');
+const equationCompareRun = el('equation-compare-run');
+const equationCompareResult = el('equation-compare-result');
+const equationCompareEmpty = el('equation-compare-empty');
+const equationCompareRenderA = el('equation-compare-render-a');
+const equationCompareRenderB = el('equation-compare-render-b');
+const equationCompareCodeA = el('equation-compare-code-a');
+const equationCompareCodeB = el('equation-compare-code-b');
+const equationCompareSummary = el('equation-compare-summary');
 const selectionToolbar = el('selection-toolbar');
 const selectionToolbarLabel = el('selection-toolbar-label');
 const floatingCopyText = el('floating-copy-text');
@@ -217,6 +233,8 @@ let nativePdfCommentsByPage = new Map();
 let nativePdfCommentLoadToken = 0;
 let annotations = [];
 let symbolGlossary = [];
+let mathContextQuery = '';
+let mathContextOccurrencesCache = new Map();
 let documentTags = [];
 let documentReadingState = 'unread';
 let documentPersonalNote = '';
@@ -230,6 +248,7 @@ let documentMetaTimer = null;
 let annotationSaveTimer = null;
 let resizeTimer = null;
 let selectionTimer = null;
+let mathContextScrollTimer = null;
 let currentSelection = null;
 let scrollByPage = {};
 let referenceScrollByPage = {};
@@ -315,7 +334,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 4;
+const STRUCTURE_INDEX_VERSION = 5;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const clamp = (value, min, max, fallback) => {
   const n = Number(value);
@@ -922,7 +941,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  const defaults = new Set(['display-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','math-context-section','equation-compare-section','backlinks-section','reading-sessions-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -1386,6 +1405,7 @@ function updateNavigationState() {
   noteSaveState.textContent = t('Saved locally', '已保存到本地');
   renderNativePdfComments(currentPage);
   updateDocumentMapCurrentLocation();
+  renderMathContextProof();
   void refreshNativePdfComments(currentPage);
   persistDocumentState();
 }
@@ -1517,6 +1537,41 @@ function markAlignmentRelation(line) {
   }
   return normalized;
 }
+function splitAlignedOcrRows(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  const env = text.match(/^\\begin\{aligned\}([\s\S]*?)\\end\{aligned\}$/);
+  const body = env ? env[1].trim() : text;
+  return body.split(/\\\\(?:\s*\[[^\]]*\])?\s*/).map((row) => row.trim()).filter(Boolean);
+}
+
+function normalizeAlignedOcrStructure(value) {
+  let text = String(value || '').trim();
+  if (!text) return '';
+
+  // Repair one conservative, recurrent tensor-identity decoder error: in the
+  // standard covariant-derivative expansion the second summation is subtractive.
+  // Only apply this when OCR already recognized the surrounding +sum(alpha/r)
+  // and =sum(b/s) skeleton; do not infer or rewrite the damaged tensor indices.
+  if (/\\nabla\s*_?\{?m\}?\s*F/.test(text)
+      && /\+\s*\\sum_\{\\alpha=1\}\^\{r\}/.test(text)
+      && /=\s*\\sum_\{b=1\}\^\{s\}/.test(text)) {
+    text = text.replace(/=\s*(\\sum_\{b=1\}\^\{s\})/, '- $1');
+  }
+
+  const hasAligned = /^\\begin\{aligned\}/.test(text) && /\\end\{aligned\}$/.test(text);
+  const rows = splitAlignedOcrRows(text);
+  if (rows.length < 2 && !hasAligned) return text;
+  if (!rows.length) return text;
+
+  // A real multi-row display should use a single relation column. Strip stray
+  // ampersands emitted by OCR and place one before the first relation on each
+  // row. This affects layout only; it does not rewrite mathematical symbols.
+  const normalizedRows = rows.map((row) => markAlignmentRelation(row));
+  if (normalizedRows.length < 2) return normalizedRows[0] || text;
+  return `\\begin{aligned}\n${normalizedRows.join(latexLineSeparator())}\n\\end{aligned}`;
+}
+
 function ocrPreviewMathSource(value) {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -1618,6 +1673,7 @@ function refreshOcrUI() {
     ocrHistoryToggle.textContent = ocrHistoryExpanded ? t('Less', '收起') : t(`More (${Math.min(7, Math.max(0, ocrHistory.length - 3))})`, `更多 (${Math.min(7, Math.max(0, ocrHistory.length - 3))})`);
     ocrHistoryToggle.setAttribute('aria-expanded', ocrHistoryExpanded ? 'true' : 'false');
   }
+  renderEquationCompareOptions();
 }
 
 function allOcrLayers() {
@@ -3089,7 +3145,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const output = await pipe(inputImage, generation);
     const raw = Array.isArray(output) ? output[0]?.generated_text : output?.generated_text;
     const rawLatex = normalizeOcrLatex(raw);
-    const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
+    const latex = normalizeAlignedOcrStructure(stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex)));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
     return { raw, rawLatex, latex, penalty, assessment, variant, preprocess };
@@ -3179,7 +3235,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
 
   if (formulaExtractionMode === 'vector' && vector?.latex) {
     commitFormulaResult(
-      { page, kind, latex: stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex)), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
+      { page, kind, latex: normalizeAlignedOcrStructure(stabilizeOcrLatexSyntax(repairOcrLatex(vector.latex))), preview, created: Date.now(), quality: 'vector', source: 'vector', extractedText: vector.text },
       t('Formula extracted from embedded PDF text and glyph geometry.', '已依据 PDF 原生文本与字形几何提取公式。')
     );
     return;
@@ -5042,7 +5098,7 @@ async function buildStructureIndex({ force = false } = {}) {
             const label = title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80);
             const key = `${page}:${normalizedReferenceLabel(label)}`;
             if (!nextEntries.some((entry) => entry.key === key)) {
-              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
+              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], proofEquationReferences: [], usedByProofs: [] };
               nextEntries.push(entry); activeProofEntry = entry;
             }
           }
@@ -5067,6 +5123,14 @@ async function buildStructureIndex({ force = false } = {}) {
             const normalizedRef = normalizedReferenceLabel(reference);
             if (!normalizedRef || normalizedRef === normalizedReferenceLabel(activeProofEntry.label)) continue;
             if (!activeProofEntry.proofReferences.includes(reference)) activeProofEntry.proofReferences.push(reference);
+          }
+          for (const candidate of equationLabelCandidatesInLine(cleaned)) {
+            const label = candidate.label;
+            if (!label || isObviousYearEquationLabel(label)) continue;
+            // A high-confidence candidate on this line is likely the displayed
+            // equation's own tag, not a dependency referenced by the proof.
+            if (equationCandidateConfidence(line, label) >= 8) continue;
+            if (!activeProofEntry.proofEquationReferences.includes(label)) activeProofEntry.proofEquationReferences.push(label);
           }
         }
 
@@ -6214,6 +6278,187 @@ async function locateFirstOccurrence(symbol) {
   return null;
 }
 
+
+function currentReadingAnchorForContext() {
+  if (!pdfDoc) return { page: 1, ratio: 0 };
+  if (readingFlow === 'continuous') return captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 };
+  const height = Math.max(1, primaryPageSurface?.offsetHeight || 1);
+  const ratio = Math.max(0, Math.min(1, (primaryCanvasWrap?.scrollTop || 0) / height));
+  return { page: currentPage, ratio };
+}
+
+function proofEntryAtAnchor(anchor = currentReadingAnchorForContext()) {
+  const page = Number(anchor?.page) || currentPage;
+  const ratio = Number(anchor?.ratio) || 0;
+  const entries = structureEntries || [];
+  const candidates = entries.filter((entry, index) => {
+    if (!entry.proofPage) return false;
+    const next = entries.slice(index + 1).find((item) => Number(item.page) >= Number(entry.proofPage));
+    const explicitEndPage = Number(entry.proofEndPage) || 0;
+    const inferredEndPage = next ? Number(next.page) : Number(entry.proofPage);
+    const endPage = explicitEndPage || inferredEndPage;
+    if (page < Number(entry.proofPage) || page > endPage) return false;
+    if (page === Number(entry.proofPage) && Number.isFinite(Number(entry.proofRatio)) && ratio + 0.03 < Number(entry.proofRatio)) return false;
+    if (explicitEndPage && page === explicitEndPage && Number.isFinite(Number(entry.proofEndRatio)) && ratio - 0.03 > Number(entry.proofEndRatio)) return false;
+    if (!explicitEndPage && next && page === Number(next.page) && Number.isFinite(Number(next.ratio)) && ratio >= Number(next.ratio) - 0.02) return false;
+    return true;
+  });
+  return candidates.sort((a,b) => (Number(b.proofPage)||0) - (Number(a.proofPage)||0))[0] || null;
+}
+
+function escapeMathRegex(value) { return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function definitionEntryForTerm(term) {
+  const wanted = normalizeSearchValue(term, false);
+  if (!wanted) return null;
+  let best = null;
+  for (const entry of structureEntries || []) {
+    if (!/^definition\b/i.test(entry.label || entry.title || '')) continue;
+    const title = normalizeSearchValue(entry.title || '', false);
+    if (!title.includes(wanted)) continue;
+    let score = 20;
+    if (new RegExp(`\\(${escapeMathRegex(String(term).trim())}\\)`, 'i').test(entry.title || '')) score += 20;
+    if (title.endsWith(wanted)) score += 8;
+    if (!best || score > best.score) best = { entry, score };
+  }
+  return best?.entry || null;
+}
+
+function termIntroductionScore(text, term) {
+  const line = String(text || '');
+  const wanted = String(term || '').trim();
+  if (!wanted) return 0;
+  let score = 0;
+  if (/\b(?:let|denote|denotes|write|set|define|defined|called|where|means|stand[s]?\s+for)\b/i.test(line)) score += 9;
+  if (/:=|=:/.test(line)) score += 12;
+  if (/\b(?:we\s+say|we\s+call|is\s+called|is\s+defined\s+by)\b/i.test(line)) score += 12;
+  const idx = normalizeSearchValue(line, false).indexOf(normalizeSearchValue(wanted, false));
+  if (idx >= 0 && idx < Math.max(18, normalizeSearchValue(line, false).length * .35)) score += 3;
+  return score;
+}
+
+async function collectTermOccurrenceIntelligence(term) {
+  const clean = String(term || '').replace(/\s+/g, ' ').trim();
+  if (!pdfDoc || !clean) return { occurrences: [], introduction: null, definition: null };
+  const cacheKey = `${currentFileKey || 'pdf'}::${normalizeSearchValue(clean, false)}`;
+  if (mathContextOccurrencesCache.has(cacheKey)) return mathContextOccurrencesCache.get(cacheKey);
+  const promise = (async () => {
+    const wanted = normalizeSearchValue(clean, false);
+    const occurrences = [];
+    let introduction = null;
+    const maxPages = Math.min(pdfDoc.numPages, 800);
+    for (let page = 1; page <= maxPages; page += 1) {
+      const lines = await pageTextLines(page);
+      for (const line of lines) {
+        const text = String(line.text || '').replace(/\s+/g, ' ').trim();
+        if (!text || !normalizeSearchValue(text, false).includes(wanted)) continue;
+        const score = termIntroductionScore(text, clean);
+        const occurrence = { page, ratio: Number(line.ratio) || 0, text, score };
+        if (occurrences.length < 120) occurrences.push(occurrence);
+        if (!introduction || score > introduction.score || (score === introduction.score && page < introduction.page)) introduction = occurrence;
+      }
+      if (page % 12 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    const definition = definitionEntryForTerm(clean);
+    if ((!introduction || introduction.score < 5) && occurrences.length) introduction = occurrences[0];
+    return { occurrences, introduction, definition };
+  })();
+  mathContextOccurrencesCache.set(cacheKey, promise);
+  try { return await promise; } catch (error) { mathContextOccurrencesCache.delete(cacheKey); throw error; }
+}
+
+function renderMathContextProof() {
+  if (!mathContextProof) return;
+  mathContextProof.replaceChildren();
+  const proof = proofEntryAtAnchor();
+  if (mathContextEmpty && !mathContextQuery) mathContextEmpty.classList.toggle('is-hidden', Boolean(proof));
+  if (!proof) return;
+  const heading = document.createElement('div'); heading.className = 'math-context-proof-heading';
+  heading.textContent = t(`Current proof · ${proof.label}`, `当前证明 · ${proof.label}`);
+  mathContextProof.append(heading);
+  const dependencies = [
+    ...(proof.proofUses || []).map((item) => ({ ...item, kind: 'structure' })),
+    ...(proof.proofEquationReferences || []).map((label) => ({ label, kind: 'equation' }))
+  ];
+  if (!dependencies.length) {
+    const note = document.createElement('div'); note.className='empty-panel'; note.textContent=t('No explicit theorem/equation dependencies detected in this proof.','此证明中未检测到明确的定理或公式依赖。'); mathContextProof.append(note); return;
+  }
+  for (const item of dependencies.slice(0,16)) {
+    const button=document.createElement('button'); button.type='button'; button.className='math-context-proof-item';
+    const strong=document.createElement('strong'); strong.textContent=item.label;
+    const meta=document.createElement('span'); meta.textContent=item.kind==='equation'?t('Equation used in this proof','此证明使用的公式'):t('Result used in this proof','此证明使用的结果');
+    button.append(strong,meta);
+    button.addEventListener('click', async()=>{
+      if (item.kind==='equation') {
+        const anchor=currentReadingAnchorForContext(); const target=await findEquationLabelLocation(item.label,anchor.page,anchor.ratio); if(target) await goToMatchedLocation(target.page,target.ratio,item.label);
+      } else await goToMatchedLocation(item.page,Number(item.ratio)||0,item.label);
+    });
+    mathContextProof.append(button);
+  }
+}
+
+async function inspectMathContext(term) {
+  const clean = String(term || '').replace(/\s+/g, ' ').trim().slice(0,120);
+  if (!clean || !pdfDoc) return;
+  mathContextQuery = clean;
+  expandWorkspaceSection('math-context-section');
+  if (mathContextTerm) mathContextTerm.textContent = clean;
+  if (mathContextActions) mathContextActions.replaceChildren();
+  if (mathContextOccurrences) mathContextOccurrences.replaceChildren();
+  if (mathContextEmpty) { mathContextEmpty.classList.remove('is-hidden'); mathContextEmpty.textContent=t('Finding likely introduction, definition, and occurrences…','正在查找可能的引入位置、定义与出现位置……'); }
+  renderMathContextProof();
+  try {
+    const data = await collectTermOccurrenceIntelligence(clean);
+    if (mathContextQuery !== clean) return;
+    const definition = definitionEntryForTerm(clean) || data.definition || null;
+    mathContextActions?.replaceChildren(); mathContextOccurrences?.replaceChildren();
+    if (definition) {
+      const button=document.createElement('button'); button.type='button'; button.className='secondary-action'; button.textContent=t(`Go to ${definition.label}`,`跳转到 ${definition.label}`);
+      button.addEventListener('click',()=>goToMatchedLocation(definition.page,Number(definition.ratio)||0,definition.label)); mathContextActions?.append(button);
+    }
+    if (data.introduction) {
+      const button=document.createElement('button'); button.type='button'; button.className='secondary-action'; button.textContent=t('Likely introduction','可能的引入位置');
+      button.addEventListener('click',()=>goToMatchedLocation(data.introduction.page,Number(data.introduction.ratio)||0,clean)); mathContextActions?.append(button);
+    }
+    const find=document.createElement('button'); find.type='button'; find.className='secondary-action'; find.textContent=t(`Occurrences (${data.occurrences.length})`,`出现位置 (${data.occurrences.length})`); find.addEventListener('click',()=>runFindAllOccurrences(clean)); mathContextActions?.append(find);
+    for (const occurrence of data.occurrences.slice(0,5)) {
+      const button=document.createElement('button'); button.type='button'; button.className='math-context-occurrence';
+      const meta=document.createElement('strong'); meta.textContent=t(`Page ${occurrence.page}`,`第 ${occurrence.page} 页`);
+      const snippet=document.createElement('span'); snippet.textContent=occurrence.text.length>170?`${occurrence.text.slice(0,170)}…`:occurrence.text; button.append(meta,snippet);
+      button.addEventListener('click',()=>goToMatchedLocation(occurrence.page,occurrence.ratio,clean)); mathContextOccurrences?.append(button);
+    }
+    if (mathContextEmpty) mathContextEmpty.classList.toggle('is-hidden', Boolean(data.occurrences.length || definition || proofEntryAtAnchor()));
+  } catch (error) {
+    console.warn('Math context inspection failed', error);
+    if (mathContextEmpty) { mathContextEmpty.classList.remove('is-hidden'); mathContextEmpty.textContent=t('Math context could not be prepared for this selection.','无法为此选区生成数学上下文。'); }
+  }
+}
+
+function equationCompareEntries() {
+  return equationSearchEntries().slice(0,80);
+}
+
+function renderEquationCompareOptions() {
+  if (!equationCompareA || !equationCompareB || !equationCompareEmpty || !equationCompareRun) return;
+  const entries=equationCompareEntries(); const oldA=equationCompareA.value; const oldB=equationCompareB.value;
+  const fill=(select,oldValue,defaultIndex)=>{ select.replaceChildren(); entries.forEach((entry,index)=>{ const option=document.createElement('option'); option.value=String(index); const compact=String(entry.latex||'').replace(/\s+/g,' ').slice(0,54); option.textContent=`p.${entry.page} · ${entry.source} · ${compact}`; select.append(option); }); if(entries.length) select.value=entries[Number(oldValue)]?oldValue:String(Math.min(defaultIndex,entries.length-1)); };
+  fill(equationCompareA,oldA,0); fill(equationCompareB,oldB,1);
+  const enough=entries.length>=2; equationCompareRun.disabled=!enough; equationCompareEmpty.classList.toggle('is-hidden',enough); if(!enough) equationCompareResult?.classList.add('is-hidden');
+}
+
+async function runEquationComparison() {
+  const entries=equationCompareEntries(); const a=entries[Number(equationCompareA?.value)]; const b=entries[Number(equationCompareB?.value)]; if(!a||!b) return;
+  const normA=normalizeEquationLatexForSearch(a.latex); const normB=normalizeEquationLatexForSearch(b.latex);
+  if (equationCompareCodeA) equationCompareCodeA.textContent=a.latex; if (equationCompareCodeB) equationCompareCodeB.textContent=b.latex;
+  const render=(node,latex)=>{ if(!node)return; try{window.MathJax?.typesetClear?.([node]);}catch(_){} node.textContent=`\\[${stabilizeOcrLatexSyntax(latex)}\\]`; };
+  render(equationCompareRenderA,a.latex); render(equationCompareRenderB,b.latex);
+  if(window.MathJax?.typesetPromise) { try { await window.MathJax.typesetPromise([equationCompareRenderA,equationCompareRenderB].filter(Boolean)); } catch(error){ console.warn('Equation comparison MathJax preview failed',error); } }
+  const sa=latexMathSignature(a.latex), sb=latexMathSignature(b.latex); const labels=[['superscripts','superscripts'],['subscripts','subscripts'],['fractions','fractions'],['radicals','radicals'],['integrals','integrals'],['sums','sums'],['relations','relations']];
+  const diffs=labels.filter(([key])=>sa[key]!==sb[key]).map(([key,label])=>`${label}: ${sa[key]} → ${sb[key]}`);
+  if(equationCompareSummary) equationCompareSummary.textContent=normA===normB?t('Normalized LaTeX is identical.','规范化后的 LaTeX 相同。'):diffs.length?t(`Structural differences · ${diffs.join(' · ')}`,`结构差异 · ${diffs.join(' · ')}`):t('Different LaTeX, but the basic structural counts are the same.','LaTeX 不同，但基本结构计数相同。');
+  equationCompareResult?.classList.remove('is-hidden'); equationCompareEmpty?.classList.add('is-hidden');
+}
+
 function renderSymbolGlossary() {
   if (!symbolGlossaryList || !symbolGlossaryEmpty || !symbolGlossaryCount) return;
   symbolGlossary = normalizeSymbolGlossary(symbolGlossary);
@@ -6229,6 +6474,8 @@ function renderSymbolGlossary() {
     const actions = document.createElement('div'); actions.className = 'symbol-glossary-actions';
     const all = document.createElement('button'); all.type = 'button'; all.className = 'text-button'; all.textContent = t('Find all', '查找全部');
     all.addEventListener('click', () => runFindAllOccurrences(item.symbol));
+    const inspect = document.createElement('button'); inspect.type = 'button'; inspect.className = 'text-button'; inspect.textContent = t('Inspect', '查看');
+    inspect.addEventListener('click', () => inspectMathContext(item.symbol));
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-button'; edit.textContent = t('Edit', '编辑');
     edit.addEventListener('click', () => {
       const next = window.prompt(t(`Meaning of ${item.symbol}`, `${item.symbol} 的含义`), item.meaning || '');
@@ -6237,7 +6484,7 @@ function renderSymbolGlossary() {
     });
     const del = document.createElement('button'); del.type = 'button'; del.className = 'text-button'; del.textContent = t('Delete', '删除');
     del.addEventListener('click', () => { pushUndo('glossary', t(`Symbol ${item.symbol}`, `符号 ${item.symbol}`), item); symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
-    actions.append(all, edit, del);
+    actions.append(all, inspect, edit, del);
     card.append(head, actions);
     symbolGlossaryList.append(card);
   }
@@ -6849,6 +7096,7 @@ function currentBookmarkLocation() {
   const height = Math.max(1, primaryPageSurface?.offsetHeight || primaryCanvasWrap?.scrollHeight || 1);
   const ratio = Math.min(1, Math.max(0, Number(primaryCanvasWrap?.scrollTop || 0) / height));
   return { page, ratio };
+  renderEquationCompareOptions();
 }
 
 function addCurrentBookmark() {
@@ -7318,7 +7566,7 @@ function commandPaletteEntities() {
     }
   }
   for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');
-  for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => { if (searchInput) searchInput.value=item.symbol; if (searchEquations) searchEquations.checked=false; openLeftPanelShortcut('search-panel', searchInput); searchPdf(item.symbol); }, item.meaning,'symbol');
+  for (const item of symbolGlossary || []) push(t('Symbol','符号'), item.symbol, item.meaning || '', () => inspectMathContext(item.symbol), item.meaning,'symbol');
   for (const item of bookmarks || []) push(t('Bookmark','书签'), item.title || (item.type==='equation'?t('Bookmarked equation','已加书签公式'):t(`Page ${item.page}`,`第 ${item.page} 页`)), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToLocation(item.page, item.type === 'page' ? (Number(item.ratio) || 0) : 0, { contextLead: false }), `${item.note||''} ${item.latex||''}`,'bookmark');
   for (const item of annotations || []) push(t('Annotation','批注'), item.text || (item.type==='highlight'?t('Highlight','高亮'):t('Margin note','页边注')), item.note || t(`Page ${item.page}`,`第 ${item.page} 页`), () => goToMatchedLocation(item.page, Number(item.ratio)||0, item.text || ''), item.note,'annotation');
   for (const item of namedReadingSessions || []) push(t('Session','会话'), item.name, t(`Page ${item.state?.page || 1}`,`第 ${item.state?.page || 1} 页`), () => restoreNamedReadingSession(item), item.name,'session');
@@ -7551,6 +7799,7 @@ ocrLatexPreview?.addEventListener('input', () => {
   const match = ocrHistory.find((item) => item.created === currentOcrResult.created);
   if (match) match.latex = currentOcrResult.latex;
   scheduleOcrRenderedPreview();
+  renderEquationCompareOptions();
   persistDocumentState();
 });
 ocrToNote.addEventListener('click', addOcrToPageNote);
@@ -7560,7 +7809,7 @@ tryPdfVectorButton?.addEventListener('click', () => {
   const item = {
     page: currentOcrResult.page,
     kind: currentOcrResult.kind,
-    latex: stabilizeOcrLatexSyntax(repairOcrLatex(currentOcrResult.vectorAlternative)),
+    latex: normalizeAlignedOcrStructure(stabilizeOcrLatexSyntax(repairOcrLatex(currentOcrResult.vectorAlternative))),
     preview: currentOcrResult.preview,
     created: Date.now(),
     quality: 'vector-comparison',
@@ -7579,6 +7828,7 @@ copySelectionText.addEventListener('click', () => copyPlainText(currentSelection
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
 selectionToNote.addEventListener('click', addSelectionToPageNote);
 selectionFindAll?.addEventListener('click', () => runFindAllOccurrences(currentSelection?.text));
+selectionInspectMath?.addEventListener('click', () => inspectMathContext(currentSelection?.text || currentSelection?.latex));
 selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
@@ -7597,10 +7847,13 @@ primaryCanvasWrap.addEventListener('scroll', () => {
     continuousScrollTimer = setTimeout(() => {
       updateCurrentPageFromContinuousScroll();
       continuousSavedAnchor = captureContinuousAnchor();
+      renderMathContextProof();
       persistDocumentState();
     }, 80);
   } else {
     scrollByPage[String(currentPage)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
+    clearTimeout(mathContextScrollTimer);
+    mathContextScrollTimer = setTimeout(renderMathContextProof, 120);
     persistDocumentState();
   }
 }, { passive: true });
@@ -7613,6 +7866,7 @@ referenceCanvasWrap.addEventListener('scroll', () => {
 
 document.querySelectorAll('.map-filter[data-map-target]').forEach((input) => input.addEventListener('input', () => applyDocumentMapFilter(input)));
 backlinksFilter?.addEventListener('change', renderBacklinks);
+equationCompareRun?.addEventListener('click', runEquationComparison);
 documentReadingStatus?.addEventListener('change',()=>{ documentReadingState=['unread','reading','finished'].includes(documentReadingStatus.value)?documentReadingStatus.value:'unread'; renderDocumentMetadata(); persistDocumentState(); });
 documentTagsInput?.addEventListener('change',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
 documentTagsInput?.addEventListener('blur',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
