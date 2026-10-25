@@ -4752,7 +4752,10 @@ function renderReadingTrail() {
       readingBackStack = readingBackStack.slice(0, index);
       updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
       suppressReadingHistory = true;
-      try { await goToLocation(target.page, target.ratio, { contextLead: false }); } finally { suppressReadingHistory = false; }
+      try {
+        await goToLocation(target.page, target.ratio, { contextLead: false });
+        showNavigationLandingCue(target.page, target.ratio);
+      } finally { suppressReadingHistory = false; }
     });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'reading-trail-remove';
     remove.textContent = '×'; remove.title = t('Remove from reading trail', '从阅读轨迹中移除');
@@ -4831,7 +4834,10 @@ async function goBackReadingLocation() {
   updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
   if (!target || !pdfDoc) return;
   suppressReadingHistory = true;
-  try { await goToLocation(target.page, target.ratio, { contextLead: false }); } finally { suppressReadingHistory = false; }
+  try {
+    await goToLocation(target.page, target.ratio, { contextLead: false });
+    showNavigationLandingCue(target.page, target.ratio);
+  } finally { suppressReadingHistory = false; }
 }
 
 async function goToPage(page) {
@@ -6763,6 +6769,7 @@ async function emphasizeSemanticDestination(page, ratio, query) {
 async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
   await goToLocation(page, ratio, options);
   if (query) await emphasizeSemanticDestination(page, ratio, query);
+  else showNavigationLandingCue(page, ratio);
 }
 
 function searchMatchRangeInLayer(layer, query, ordinal = 0) {
@@ -6815,7 +6822,6 @@ function emphasizeSearchRange(surface, range) {
     cue.textContent = '→';
     cue.setAttribute('aria-hidden', 'true');
     cue.style.top = `${firstRect.top - surfaceRect.top + firstRect.height / 2}px`;
-    cue.style.left = `-54px`;
     layer.append(cue);
   }
   surface.append(layer);
@@ -7245,7 +7251,7 @@ async function positionTargetAtReadingLead(page, ratio) {
   persistDocumentState();
 }
 
-function showEquationBookmarkCue(page, ratio) {
+function showNavigationLandingCue(page, ratio) {
   let surface = null;
   if (readingFlow === 'continuous') surface = continuousPageNodes.get(Number(page))?.surface || null;
   else if (Number(page) === Number(currentPage)) surface = primaryPageSurface;
@@ -7255,11 +7261,14 @@ function showEquationBookmarkCue(page, ratio) {
   cue.className = 'equation-bookmark-cue';
   cue.setAttribute('aria-hidden', 'true');
   cue.style.top = `${Math.min(98, Math.max(2, Number(ratio || 0) * 100))}%`;
-  cue.textContent = '→';
   surface.append(cue);
   requestAnimationFrame(() => cue.classList.add('is-visible'));
   window.setTimeout(() => cue.classList.add('is-fading'), 1200);
   window.setTimeout(() => cue.remove(), 2100);
+}
+
+function showEquationBookmarkCue(page, ratio) {
+  showNavigationLandingCue(page, ratio);
 }
 
 function equationBookmarkRatio(bookmark) {
