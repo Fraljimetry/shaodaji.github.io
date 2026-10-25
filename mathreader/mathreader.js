@@ -6632,7 +6632,7 @@ function renderSymbolGlossary() {
       item.meaning = String(next).trim(); persistDocumentState(); renderSymbolGlossary();
     });
     const del = document.createElement('button'); del.type = 'button'; del.className = 'text-button'; del.textContent = t('Delete', '删除');
-    del.addEventListener('click', () => { pushUndo('glossary', t(`Symbol ${item.symbol}`, `符号 ${item.symbol}`), item); symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
+    del.addEventListener('click', () => { pushUndo('glossary', item.symbol, item); symbolGlossary = symbolGlossary.filter((x) => x.id !== item.id); persistDocumentState(); renderSymbolGlossary(); });
     actions.append(all, edit, del);
     card.append(head, actions);
     symbolGlossaryList.append(card);
@@ -7512,13 +7512,15 @@ function renderUndoHistory() {
     const kindLabels={
       bookmark:t('Deleted bookmark','已删除书签'),
       annotation:t('Deleted annotation','已删除批注'),
-      glossary:t('Deleted glossary entry','已删除符号表条目'),
+      glossary:t('Deleted symbol','已删除符号'),
       'reading-trail':t('Deleted reading trail','已删除阅读轨迹'),
       'ocr-result':t('Deleted OCR result','已删除 OCR 结果')
     };
     kind.textContent=kindLabels[item.type] || t('Deleted item','已删除项目');
     const head=document.createElement('div'); head.className='undo-item-head';
-    const title=document.createElement('div'); title.className='undo-item-title'; title.textContent=item.label;
+    const title=document.createElement('div'); title.className='undo-item-title';
+    const undoLabel = item.type === 'glossary' ? String(item.label || '').replace(/^(?:Symbol|符号)\s*(?:[|·:\-]\s*)?/i, '').trim() : item.label;
+    title.textContent=undoLabel;
     head.append(title);
     const meta=document.createElement('div'); meta.className='undo-item-meta'; meta.textContent=formatCompactDate(item.created);
     const actions=document.createElement('div'); actions.className='undo-item-actions';
