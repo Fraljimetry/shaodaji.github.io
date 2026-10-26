@@ -11,6 +11,9 @@
   --accent:#245f87;
   --accent-deep:#18364f;
   --accent-soft:#e6f0f6;
+  --confidence-high:#2f8f5b;
+  --confidence-medium:#c08a17;
+  --confidence-low:#b34d45;
   --header:rgba(251,250,247,.96);
   --shadow:0 14px 38px rgba(24,54,79,.11);
   --serif:Georgia,"Times New Roman",Times,serif;
@@ -37,6 +40,9 @@ html[data-theme="dark"] {
   --accent:#79bce4;
   --accent-deep:#cce6f5;
   --accent-soft:#193448;
+  --confidence-high:#63c98a;
+  --confidence-medium:#e2b84f;
+  --confidence-low:#e37b72;
   --header:rgba(13,20,26,.96);
   --shadow:0 14px 38px rgba(0,0,0,.36);
 }
@@ -423,7 +429,7 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 #outline-panel .is-selected-location{position:relative;background:var(--surface-soft);box-shadow:inset 3px 0 0 var(--accent)}
 #outline-panel .is-selected-location::after{display:none}
 
-.equation-index-item{grid-template-columns:minmax(0,1fr);align-items:start;min-height:0}.equation-index-thumb{display:none}.equation-index-copy{display:grid;gap:2px;min-width:0;overflow:visible;white-space:normal}.equation-index-item .equation-index-copy span{overflow:visible;text-overflow:clip;white-space:normal}.equation-index-item[data-confidence="review"]{opacity:.78}.equation-index-item[data-confidence="high"] strong::after{content:"";display:inline-block;width:5px;height:5px;margin-left:5px;border-radius:50%;background:var(--accent);vertical-align:middle;opacity:.7}
+.equation-index-item{grid-template-columns:minmax(0,1fr);align-items:start;min-height:0}.equation-index-thumb{display:none}.equation-index-copy{display:grid;gap:2px;min-width:0;overflow:visible;white-space:normal}.equation-index-item .equation-index-copy span{overflow:visible;text-overflow:clip;white-space:normal}.equation-index-item[data-confidence="review"]{opacity:.88}.equation-index-item strong::after{content:"";display:inline-block;width:6px;height:6px;margin-left:5px;border-radius:50%;vertical-align:middle;opacity:1}.equation-index-item[data-confidence="high"] strong::after{background:var(--confidence-high)}.equation-index-item[data-confidence="medium"] strong::after{background:var(--confidence-medium)}.equation-index-item[data-confidence="review"] strong::after{background:var(--confidence-low)}
 
 .proof-graph-card{position:relative;margin:3px 0 6px;padding-left:8px;border-left:1px solid var(--line)}.proof-graph-root{position:relative}.proof-graph-root::before{content:"";position:absolute;left:-9px;top:50%;width:7px;border-top:1px solid var(--line-strong)}.proof-graph-proof{margin-left:.45rem}.proof-graph-relations{display:grid;gap:3px;margin:.1rem .25rem .35rem .7rem}.structure-relations{display:flex;flex-wrap:wrap;align-items:center;gap:4px}.structure-relations-label{color:var(--muted);font-size:.62rem;font-weight:700}.structure-relation-chip{padding:2px 5px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--accent-deep);font-size:.61rem;cursor:pointer}.structure-relation-chip:hover{background:var(--surface-soft);border-color:var(--line-strong)}.relation-corollary .structure-relation-chip{font-weight:700}
 
