@@ -229,7 +229,9 @@ let selectionTimer = null;
 let currentSelection = null;
 let pendingOutlineReselectKey = null;
 let pendingEquationReselectKey = null;
+let pendingEquationAddKey = null;
 let equationEdits = [];
+let equationIndexBuildPromise = null;
 let scrollByPage = {};
 let referenceScrollByPage = {};
 let localLibrary = [];
@@ -1220,6 +1222,8 @@ function loadDocumentState(cachedSession = null) {
   bibliographyEntries = [];
   equationEdits = [];
   pendingEquationReselectKey = null;
+  pendingEquationAddKey = null;
+  equationIndexBuildPromise = null;
   structureIndexVersion = 0;
   equationLabelIndex = null;
   renderEquationIndex();
@@ -1273,7 +1277,7 @@ function loadDocumentState(cachedSession = null) {
     if (inferredOutline.length) inferredOutlineDetectionDone = true;
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
-    equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 500) : [];
+    equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
     if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
       structureEntries = [];
@@ -4629,12 +4633,11 @@ function refreshSelectionUI() {
   selectionLatexPreview.textContent = currentSelection.latex;
   selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
   if (selectionToStructure) {
-    const replacingEquation = Boolean(pendingEquationReselectKey);
     const replacingStructure = Boolean(pendingOutlineReselectKey);
-    const label = replacingEquation ? t('Replace equation', '替换公式编号') : (replacingStructure ? t('Replace', '替换') : t('Structure', '结构'));
+    const label = replacingStructure ? t('Replace', '替换') : t('Structure', '结构');
     selectionToStructure.textContent = label;
-    selectionToStructure.dataset.en = replacingEquation ? 'Replace equation' : (replacingStructure ? 'Replace' : 'Structure');
-    selectionToStructure.dataset.zh = replacingEquation ? '替换公式编号' : (replacingStructure ? '替换' : '结构');
+    selectionToStructure.dataset.en = replacingStructure ? 'Replace' : 'Structure';
+    selectionToStructure.dataset.zh = replacingStructure ? '替换' : '结构';
     if (floatingStructure) {
       floatingStructure.textContent = label;
       floatingStructure.dataset.en = selectionToStructure.dataset.en;
@@ -4880,21 +4883,56 @@ function equationSourceLabelForDisplayed(label) {
 function applyEquationEdits(index) {
   const out = new Map(index || []);
   for (const edit of equationEdits) {
+    if (edit.action === 'add') continue;
     const source = normalizedEquationLabel(edit.sourceLabel);
     out.delete(source);
     if (edit.action !== 'reselect') continue;
     const target = normalizedEquationLabel(edit.label || edit.sourceLabel);
     out.set(target, [{
-      page: Number(edit.page) || 1,
-      ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
-      text: String(edit.text || target),
-      xStartRatio: Number(edit.xStartRatio) || 0,
-      xEndRatio: Number(edit.xEndRatio) || 0,
-      confidence: 100,
-      manualReselect: true,
+      page: Number(edit.page) || 1, ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
+      text: String(edit.text || target), xStartRatio: Number(edit.xStartRatio) || 0, xEndRatio: Number(edit.xEndRatio) || 0,
+      confidence: 100, manualReselect: true,
+    }]);
+  }
+  for (const edit of equationEdits) {
+    if (edit.action !== 'add') continue;
+    const target = normalizedEquationLabel(edit.label || '');
+    if (!target || target === '()') continue;
+    out.set(target, [{
+      page: Number(edit.page) || 1, ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
+      text: String(edit.text || target), confidence: 100, manualAdd: true, manualEditId: String(edit.id || ''),
+      afterRef: String(edit.afterRef || edit.sourceLabel || ''),
     }]);
   }
   return out;
+}
+
+function equationEditTargetFromPending(ref) {
+  if (!ref) return null;
+  if (String(ref).startsWith('edit:')) return equationEdits.find((item) => item.action === 'add' && String(item.id) === String(ref).slice(5)) || null;
+  return null;
+}
+
+function applyEquationLinkCorrection(query, page, ratio) {
+  const label = equationLabelFromSelectionText(query);
+  if (!label) return false;
+  if (pendingEquationReselectKey) {
+    const existingAdd = equationEditTargetFromPending(pendingEquationReselectKey);
+    if (existingAdd) { existingAdd.label = label; existingAdd.page = Number(page) || 1; existingAdd.ratio = Number(ratio) || 0; existingAdd.text = query; }
+    else {
+      const sourceLabel = equationSourceLabelForDisplayed(String(pendingEquationReselectKey).replace(/^label:/,''));
+      equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
+      equationEdits.push({ action:'reselect', sourceLabel, label, page:Number(page)||1, ratio:Number(ratio)||0, text:query });
+    }
+    pendingEquationReselectKey = null;
+  } else if (pendingEquationAddKey) {
+    const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    equationEdits.push({ action:'add', id, sourceLabel:String(pendingEquationAddKey), afterRef:String(pendingEquationAddKey), label, page:Number(page)||1, ratio:Number(ratio)||0, text:query });
+    pendingEquationAddKey = null;
+  } else return false;
+  equationLabelIndex = null; equationIndexBuildPromise = null;
+  persistDocumentState(); refreshSelectionUI(); ensureEquationIndexRendered();
+  return true;
 }
 
 function replaceEquationFromCurrentSelection() {
@@ -4924,7 +4962,7 @@ function replaceEquationFromCurrentSelection() {
 
 function addOrReplaceSelectionStructureItem() {
   if (!pdfDoc || !currentSelection?.text) return;
-  if (pendingEquationReselectKey) { replaceEquationFromCurrentSelection(); return; }
+  if (pendingEquationReselectKey || pendingEquationAddKey) return;
   const selected = outlineEntryFromSelection(currentSelection);
   if (!selected) return;
   if (outlineMode === 'embedded') {
@@ -6602,9 +6640,9 @@ function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
   equationIndex.replaceChildren();
   if (!equationLabelIndex) {
-    equationIndexCount.textContent = '0';
+    equationIndexCount.textContent = '…';
     equationIndexEmpty.classList.remove('is-hidden');
-    equationIndexEmpty.textContent = t('Expand this section to prepare the equation-label index.', '展开此模块以生成公式编号索引。');
+    equationIndexEmpty.textContent = t('Preparing equation-label index…', '正在准备公式编号索引……');
     return;
   }
   const rows = [];
@@ -6618,6 +6656,15 @@ function renderEquationIndex() {
     if (best) rows.push({ label, ...best });
   }
   rows.sort((a,b) => a.page - b.page || a.ratio - b.ratio || a.label.localeCompare(b.label));
+  for (const edit of equationEdits.filter((item) => item.action === 'add')) {
+    const addedIndex = rows.findIndex((row) => row.manualEditId && String(row.manualEditId) === String(edit.id));
+    if (addedIndex < 0) continue;
+    const [added] = rows.splice(addedIndex, 1);
+    let anchorIndex = -1;
+    if (String(edit.afterRef || '').startsWith('edit:')) anchorIndex = rows.findIndex((row) => String(row.manualEditId || '') === String(edit.afterRef).slice(5));
+    else anchorIndex = rows.findIndex((row) => normalizedEquationLabel(row.label) === normalizedEquationLabel(String(edit.afterRef || edit.sourceLabel || '')));
+    rows.splice(anchorIndex >= 0 ? anchorIndex + 1 : rows.length, 0, added);
+  }
   equationIndexCount.textContent = String(rows.length);
   equationIndexEmpty.classList.toggle('is-hidden', rows.length > 0);
   if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
@@ -6634,20 +6681,25 @@ function renderEquationIndex() {
     menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); });
     const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
     const reselect = document.createElement('button'); reselect.type='button'; reselect.className='outline-edit-button'; reselect.textContent=t('Reselect','重新选择');
-    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = equationSourceLabelForDisplayed(entry.label); pendingOutlineReselectKey = null; refreshSelectionUI(); openRightSectionShortcut('selection-section'); });
+    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
     const remove = document.createElement('button'); remove.type='button'; remove.className='outline-edit-button'; remove.textContent=t('Remove','移除');
-    remove.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); const sourceLabel = equationSourceLabelForDisplayed(entry.label); equationEdits = equationEdits.filter((item) => normalizedEquationLabel(item.sourceLabel) !== normalizedEquationLabel(sourceLabel)); equationEdits.push({ action:'remove', sourceLabel }); if (pendingEquationReselectKey === sourceLabel) pendingEquationReselectKey = null; if (equationLabelIndex) equationLabelIndex.delete(normalizedEquationLabel(sourceLabel)); persistDocumentState(); renderEquationIndex(); refreshSelectionUI(); });
-    actions.append(reselect, remove); row.append(button, menu, actions); equationIndex.append(row);
+    remove.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); if (entry.manualEditId) equationEdits = equationEdits.filter((item) => !(item.action === 'add' && String(item.id) === String(entry.manualEditId))); else { const sourceLabel = equationSourceLabelForDisplayed(entry.label); equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel))); equationEdits.push({ action:'remove', sourceLabel }); } pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationIndexBuildPromise = null; persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI(); });
+    const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add below','在下方添加');
+    add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    actions.append(reselect, remove, add); row.append(button, menu, actions); equationIndex.append(row);
   }
   applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
 }
 
 async function ensureEquationIndexRendered() {
   if (!pdfDoc) { renderEquationIndex(); return; }
-  if (equationLabelIndex) { renderEquationIndex(); return; }
+  if (equationLabelIndex) { renderEquationIndex(); return equationLabelIndex; }
   if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Building equation-label index…', '正在生成公式编号索引……'); }
-  try { await buildEquationLabelIndex(); }
-  catch (error) { console.warn('Equation-label index build failed', error); if (equationIndexEmpty) equationIndexEmpty.textContent = t('The equation-label index could not be built.', '无法生成公式编号索引。'); }
+  try {
+    if (!equationIndexBuildPromise) equationIndexBuildPromise = buildEquationLabelIndex().finally(() => { equationIndexBuildPromise = null; });
+    await equationIndexBuildPromise;
+    return equationLabelIndex;
+  } catch (error) { console.warn('Equation-label index build failed', error); if (equationIndexEmpty) equationIndexEmpty.textContent = t('The equation-label index could not be built.', '无法生成公式编号索引。'); }
 }
 
 async function findEquationLabelLocation(query, originPage = null, originRatio = null) {
@@ -7211,6 +7263,9 @@ function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
       event.preventDefault();
       event.stopPropagation();
       hideReferencePreview();
+      if ((pendingEquationReselectKey || pendingEquationAddKey) && isEquationLabelQuery(query)) {
+        if (applyEquationLinkCorrection(query, pageNum, sourceRatio)) return;
+      }
       // A right-margin equation tag is the destination itself, not a reference
       // that should resolve to another copy of the same label. Clicking it should
       // reveal backlinks for that equation without producing "No target found".
@@ -9028,6 +9083,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     await Promise.all([renderOutline(), renderCurrentPage()]);
     renderStructureIndex();
     renderBibliographyIndex();
+    ensureEquationIndexRendered().catch(() => {});
     renderReferenceStack();
     updateReadingBackButton();
     // The initial continuous path already uses the final visible reader width.
