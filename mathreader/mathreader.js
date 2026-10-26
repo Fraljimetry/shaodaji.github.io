@@ -7975,7 +7975,10 @@ async function renderNotePreview() {
   notePreview.classList.toggle('is-hidden', !value);
   if (!value) { notePreview.replaceChildren(); return; }
   try { window.MathJax?.typesetClear?.([notePreview]); } catch (_) {}
-  notePreview.textContent = value;
+  // Keep the saved note exactly as typed, but avoid rendering redundant blank
+  // lines immediately after display math blocks in the preview.
+  const previewValue = value.replace(/(\\\])[ \t]*(?:\r?\n[ \t]*){2,}/g, '$1\n');
+  notePreview.textContent = previewValue;
   if (window.MathJax?.typesetPromise) {
     try { await window.MathJax.typesetPromise([notePreview]); } catch (error) { console.warn('MathReader note MathJax preview failed', error); }
   }
