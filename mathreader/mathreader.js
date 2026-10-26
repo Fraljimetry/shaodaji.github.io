@@ -9027,7 +9027,18 @@ document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && key === 'o') { event.preventDefault(); fileInput.click(); return; }
   if ((event.ctrlKey || event.metaKey) && key === 'f') { event.preventDefault(); openLeftPanelShortcut('search-panel', searchInput); return; }
   if (!typing && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'o') { event.preventDefault(); fileInput.click(); return; }
-  if (!typing && pdfDoc && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'f') { event.preventDefault(); setOcrMode(!ocrMode); return; }
+  if (!typing && pdfDoc && !event.ctrlKey && !event.metaKey && !event.altKey && key === 'f') {
+    event.preventDefault();
+    if (ocrMode) {
+      setOcrMode(false);
+    } else {
+      setOcrMode(true);
+      // F is an explicit navigation shortcut: bring Formula OCR into view now,
+      // before the rectangle drag and before WASM inference can block the UI.
+      openRightSectionShortcut('ocr-section');
+    }
+    return;
+  }
   if (!typing && key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) { event.preventDefault(); toggleLeftSidePanel(); return; }
   if (!typing && key === 'r' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) { event.preventDefault(); toggleRightSidePanel(); return; }
   if (!typing && key === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey && !matchMedia('(max-width: 860px)').matches) { event.preventDefault(); toggleBothSidePanels(); return; }
