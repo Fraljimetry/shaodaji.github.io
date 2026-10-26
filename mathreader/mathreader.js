@@ -3,7 +3,8 @@ const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm';
 const TRANSFORMERS_RUNTIME = 'Transformers.js 4.3.1';
 const MATH_OCR_MODEL = 'Xenova/texify';
-const DOCUMENT_OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js';
+const DOCUMENT_OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js';
+const DOCUMENT_OCR_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
 const DOCUMENT_OCR_CACHE_VERSION = 1;
 const LOCAL_DB_NAME = 'mathreader-local-v1';
 const LOCAL_DB_VERSION = 1;
@@ -963,14 +964,63 @@ async function persistDocumentOcr() {
   }
 }
 
+function documentOcrCreateWorker(module) {
+  const candidates = [
+    module,
+    module?.default,
+    window.Tesseract,
+  ];
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate.createWorker === 'function') return candidate.createWorker.bind(candidate);
+  }
+  return null;
+}
+
+async function loadDocumentOcrModule() {
+  if (documentOcrModulePromise) return documentOcrModulePromise;
+  documentOcrModulePromise = (async () => {
+    try {
+      const module = await import(DOCUMENT_OCR_URL);
+      if (documentOcrCreateWorker(module)) return module;
+    } catch (error) {
+      console.warn('MathReader document OCR ESM loader failed; trying browser build.', error);
+    }
+    if (documentOcrCreateWorker(null)) return window.Tesseract;
+    await new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-mathreader-document-ocr]');
+      if (existing) {
+        if (documentOcrCreateWorker(null)) { resolve(); return; }
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', () => reject(new Error('Document OCR browser build failed to load.')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = DOCUMENT_OCR_SCRIPT_URL;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      script.dataset.mathreaderDocumentOcr = 'true';
+      script.addEventListener('load', resolve, { once: true });
+      script.addEventListener('error', () => reject(new Error('Document OCR browser build failed to load.')), { once: true });
+      document.head.appendChild(script);
+    });
+    return window.Tesseract || null;
+  })();
+  try {
+    return await documentOcrModulePromise;
+  } catch (error) {
+    documentOcrModulePromise = null;
+    throw error;
+  }
+}
+
 async function runFullDocumentOcr() {
   if (!pdfDoc?.numPages) return;
-  if (!documentOcrModulePromise) documentOcrModulePromise = import(DOCUMENT_OCR_URL);
-  const module = await documentOcrModulePromise;
-  if (typeof module.createWorker !== 'function') throw new Error(t('The document OCR engine could not be initialized.', '无法初始化全文 OCR 引擎。'));
+  const module = await loadDocumentOcrModule();
+  const createWorker = documentOcrCreateWorker(module);
+  if (typeof createWorker !== 'function') throw new Error(t('The document OCR engine could not be initialized.', '无法初始化全文 OCR 引擎。'));
   const pageCount = pdfDoc.numPages;
   setLoading(true, t(`Scanned PDF detected · preparing full-document OCR (0/${pageCount})…`, `检测到扫描版 PDF · 正在准备全文 OCR（0/${pageCount}）……`));
-  const worker = await module.createWorker('eng', 1, {
+  const worker = await createWorker('eng', 1, {
     logger: (message) => {
       if (!message || message.status !== 'recognizing text' || !Number.isFinite(Number(message.progress))) return;
       const page = Number(runFullDocumentOcr.currentPage || 1);
@@ -6180,9 +6230,9 @@ function weightedMedianFont(samples) {
 }
 
 function headingNumberDepth(text) {
-  const match = text.match(/^\s*(?:§\s*)?((?:\d+|[A-Z])(?:\.\d+){0,4})[.)]?\s+\S/);
+  const match = text.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+\S/);
   if (!match) return null;
-  return Math.min(3, match[1].split('.').length - 1);
+  return Math.min(3, match[1].replace(/[.)]$/, '').split('.').length - 1);
 }
 
 function isKnownHeading(text) {
@@ -6227,6 +6277,16 @@ function headingDepthFromStyle(line, bodySize) {
   return 2;
 }
 
+function isMarginEquationLabelLineForStructure(line) {
+  const text = String(line?.text || '').trim().normalize('NFKC');
+  if (!/^\(\s*\d+(?:\.\d+)*\s*\)/.test(text)) return false;
+  const start = Number(line?.xStartRatio);
+  const end = Number(line?.xEndRatio);
+  const nearLeft = (Number.isFinite(start) && start <= 0.24) || (Number.isFinite(end) && end <= 0.38);
+  const nearRight = (Number.isFinite(start) && start >= 0.60) || (Number.isFinite(end) && end >= 0.74);
+  return nearLeft || nearRight;
+}
+
 async function detectOutlineFromTypography() {
   const pages = [];
   const fontSamples = [];
@@ -6243,9 +6303,11 @@ async function detectOutlineFromTypography() {
         const text = normalizedHeadingText(ocrLine.text);
         const size = Math.max(1, (Number(ocrLine.heightRatio) || 0.018) * viewport.height);
         const y = viewport.height * (1 - (Number(ocrLine.ratio) || 0));
-        const x = (Number(ocrLine.xStartRatio) || 0) * viewport.width;
+        const xStartRatio = Number(ocrLine.xStartRatio) || 0;
+        const xEndRatio = Number(ocrLine.xEndRatio) || xStartRatio;
+        const x = xStartRatio * viewport.width;
         fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
-        return { page: pageNum, y, x, items: [], size, pageHeight: viewport.height, text };
+        return { page: pageNum, y, x, items: [], size, pageHeight: viewport.height, text, xStartRatio, xEndRatio };
       }).filter((line) => line.text);
     } else {
       const content = await page.getTextContent();
@@ -6274,6 +6336,10 @@ async function detectOutlineFromTypography() {
       for (const line of lines) {
         line.items.sort((a, b) => a.x - b.x);
         line.text = normalizedHeadingText(line.items.map((item) => item.text).join(' '));
+        const xMin = Math.min(...line.items.map((item) => Number(item.x) || 0));
+        const xMax = Math.max(...line.items.map((item) => (Number(item.x) || 0) + Math.max(0, Number(item.width) || 0)));
+        line.xStartRatio = Math.min(1, Math.max(0, xMin / Math.max(1, viewport.width)));
+        line.xEndRatio = Math.min(1, Math.max(0, xMax / Math.max(1, viewport.width)));
       }
     }
     for (const line of lines) {
@@ -6313,18 +6379,49 @@ async function detectOutlineFromTypography() {
       if (line.page === 1) {
         const abstractLine = lines.find((item) => /^abstract$/i.test(item.text));
         if (abstractLine && line.y > abstractLine.y + 1.5) continue;
+        const firstBodyHeading = lines.find((item) => isKnownHeading(item.text) || headingNumberDepth(item.text) !== null);
+        if (firstBodyHeading && line.y > firstBodyHeading.y + 1.5) continue;
       }
       const words = text.split(/\s+/).filter(Boolean);
       if (words.length > 18) continue;
+      // Parenthesized numeric labels sitting in either page margin are display
+      // equation tags, not document headings. This matters especially for older
+      // papers whose equation numbers are consistently left-aligned.
+      if (isMarginEquationLabelLineForStructure(line)) continue;
       const numberedDepth = headingNumberDepth(text);
       const known = isKnownHeading(text);
       const ratio = line.size / Math.max(1, bodySize);
+      const lineCenter = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
+      const lineWidth = Number(line.xEndRatio) - Number(line.xStartRatio);
+      const centered = Number.isFinite(lineCenter) && Math.abs(lineCenter - 0.5) <= 0.12;
+      const numberedTitleMatch = text.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
+      const numberedTitleBody = String(numberedTitleMatch?.[2] || '').trim();
+      const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
+      const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
+      const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(text);
+      const titleLikeNumbered = Boolean(numberedTitleMatch)
+        && !proseLead
+        && /^[A-Z]/.test(numberedTitleBody)
+        && titleWords.length >= 1
+        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
+        && (numberedHasDelimiter || /^[A-Z][A-Za-z]{2,}\b/.test(numberedTitleBody))
+        && (numberedHasDelimiter ? (centered || ratio >= 1.12) : centered)
+        && lineWidth <= 0.74;
       const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(text) && ratio >= 1.08;
-      const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(text);
-      // A bare number at body-text size is often an equation/prose fragment,
-      // not a section heading. Real numbered headings in the two regression
-      // papers are typographically distinguished.
-      if (numberedDepth !== null && ratio < 1.08 && !known) continue;
+      const genericWords = text.match(/[A-Za-z]{3,}/g) || [];
+      const genericProseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|hence|therefore|will|on\s+the\s+other\s+hand|represented|metric)\b/i.test(text);
+      const styleHeading = ratio >= 1.45
+        && words.length <= 10
+        && genericWords.length >= 2
+        && /^[A-Z][A-Za-z]{2,}\b/.test(text)
+        && !genericProseLead
+        && !/[.;,]$/.test(text)
+        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(text)
+        && (centered || ratio >= 1.60);
+      // Older mathematical journals often print section headings at body-text
+      // size but center them. Accept that strong layout pattern while rejecting
+      // numbered theorem/prose lines such as "2.1. Let ..." or "8. To ...".
+      if (numberedDepth !== null && !known && !titleLikeNumbered) continue;
       if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
       if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(text)) continue;
       if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
@@ -6350,6 +6447,46 @@ async function detectOutlineFromTypography() {
         size: Number(line.size.toFixed(2)),
         y: line.y,
         ratio: Math.min(1, Math.max(0, (line.pageHeight - line.y) / Math.max(1, line.pageHeight)))
+      });
+    }
+  }
+
+  // Older journals often wrap a centered section heading onto a second
+  // body-size line (for example, "... More General" / "Right-Hand Side").
+  // Promote only a short centered line immediately below an already accepted
+  // numbered heading; this is deliberately not a general style-heading rule.
+  for (const candidate of [...candidates]) {
+    if (headingNumberDepth(candidate.title) === null) continue;
+    const lines = pages[candidate.page - 1] || [];
+    const continuation = lines
+      .filter((line) => {
+        if (!line?.text || line.text === candidate.title) return false;
+        const center = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
+        const width = Number(line.xEndRatio) - Number(line.xStartRatio);
+        const verticalGap = candidate.y - Number(line.y);
+        const words = String(line.text).trim().split(/\s+/).filter(Boolean);
+        return Number.isFinite(center)
+          && Math.abs(center - 0.5) <= 0.10
+          && width <= 0.42
+          && verticalGap > 0
+          && verticalGap <= Math.max(30, Number(candidate.size) * 2.2)
+          && words.length >= 1
+          && words.length <= 8
+          && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(line.text)
+          && !/[.!?]$/.test(candidate.title);
+      })
+      .sort((a, b) => Number(b.y) - Number(a.y))[0];
+    if (!continuation) continue;
+    const continuationKey = `${candidate.page}:${continuation.text.toLocaleLowerCase()}`;
+    if (!candidates.some((item) => `${item.page}:${item.title.toLocaleLowerCase()}` === continuationKey)) {
+      candidates.push({
+        title: continuation.text,
+        page: candidate.page,
+        depth: candidate.depth,
+        size: Number(continuation.size.toFixed(2)),
+        y: continuation.y,
+        ratio: Math.min(1, Math.max(0, (continuation.pageHeight - continuation.y) / Math.max(1, continuation.pageHeight))),
+        continuationOnly: true,
       });
     }
   }
