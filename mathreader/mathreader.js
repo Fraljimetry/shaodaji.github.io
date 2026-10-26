@@ -228,6 +228,8 @@ let resizeTimer = null;
 let selectionTimer = null;
 let currentSelection = null;
 let pendingOutlineReselectKey = null;
+let pendingEquationReselectKey = null;
+let equationEdits = [];
 let scrollByPage = {};
 let referenceScrollByPage = {};
 let localLibrary = [];
@@ -676,6 +678,7 @@ function snapshotSession() {
     inferredOutline,
     structureEntries,
     bibliographyEntries,
+    equationEdits,
     structureIndexVersion,
     referencePages,
     readingBackStack,
@@ -1215,6 +1218,8 @@ function loadDocumentState(cachedSession = null) {
   outlineMode = 'none';
   structureEntries = [];
   bibliographyEntries = [];
+  equationEdits = [];
+  pendingEquationReselectKey = null;
   structureIndexVersion = 0;
   equationLabelIndex = null;
   renderEquationIndex();
@@ -1268,6 +1273,7 @@ function loadDocumentState(cachedSession = null) {
     if (inferredOutline.length) inferredOutlineDetectionDone = true;
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
+    equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 500) : [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
     if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
       structureEntries = [];
@@ -4623,14 +4629,16 @@ function refreshSelectionUI() {
   selectionLatexPreview.textContent = currentSelection.latex;
   selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
   if (selectionToStructure) {
-    const replacing = Boolean(pendingOutlineReselectKey);
-    selectionToStructure.textContent = replacing ? t('Replace', '替换') : t('Structure', '结构');
-    selectionToStructure.dataset.en = replacing ? 'Replace' : 'Structure';
-    selectionToStructure.dataset.zh = replacing ? '替换' : '结构';
+    const replacingEquation = Boolean(pendingEquationReselectKey);
+    const replacingStructure = Boolean(pendingOutlineReselectKey);
+    const label = replacingEquation ? t('Replace equation', '替换公式编号') : (replacingStructure ? t('Replace', '替换') : t('Structure', '结构'));
+    selectionToStructure.textContent = label;
+    selectionToStructure.dataset.en = replacingEquation ? 'Replace equation' : (replacingStructure ? 'Replace' : 'Structure');
+    selectionToStructure.dataset.zh = replacingEquation ? '替换公式编号' : (replacingStructure ? '替换' : '结构');
     if (floatingStructure) {
-      floatingStructure.textContent = replacing ? t('Replace', '替换') : t('Structure', '结构');
-      floatingStructure.dataset.en = replacing ? 'Replace' : 'Structure';
-      floatingStructure.dataset.zh = replacing ? '替换' : '结构';
+      floatingStructure.textContent = label;
+      floatingStructure.dataset.en = selectionToStructure.dataset.en;
+      floatingStructure.dataset.zh = selectionToStructure.dataset.zh;
     }
   }
 }
@@ -4847,8 +4855,76 @@ function outlineEntryKey(entry) {
   ].join(':');
 }
 
+function equationLabelFromSelectionText(value) {
+  const raw = String(value || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+  if (!raw || raw.length > 32) return null;
+  const normalized = normalizeEquationTagCommands(raw);
+  const match = normalized.match(/^\(\s*([^()]+?)\s*\)$/);
+  if (!match) return null;
+  const inner = String(match[1] || '').replace(/\s+/g, '');
+  if (/^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner)) return normalizedEquationLabel(`(${inner})`);
+  return null;
+}
+
+function equationEditForSourceLabel(label) {
+  const key = normalizedEquationLabel(label);
+  return equationEdits.find((item) => normalizedEquationLabel(item.sourceLabel) === key) || null;
+}
+
+function equationSourceLabelForDisplayed(label) {
+  const key = normalizedEquationLabel(label);
+  const reselect = equationEdits.find((item) => item.action === 'reselect' && normalizedEquationLabel(item.label || item.sourceLabel) === key);
+  return reselect ? reselect.sourceLabel : label;
+}
+
+function applyEquationEdits(index) {
+  const out = new Map(index || []);
+  for (const edit of equationEdits) {
+    const source = normalizedEquationLabel(edit.sourceLabel);
+    out.delete(source);
+    if (edit.action !== 'reselect') continue;
+    const target = normalizedEquationLabel(edit.label || edit.sourceLabel);
+    out.set(target, [{
+      page: Number(edit.page) || 1,
+      ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
+      text: String(edit.text || target),
+      xStartRatio: Number(edit.xStartRatio) || 0,
+      xEndRatio: Number(edit.xEndRatio) || 0,
+      confidence: 100,
+      manualReselect: true,
+    }]);
+  }
+  return out;
+}
+
+function replaceEquationFromCurrentSelection() {
+  if (!pendingEquationReselectKey || !currentSelection?.text) return false;
+  const selectedLabel = equationLabelFromSelectionText(currentSelection.text);
+  if (!selectedLabel) {
+    showError(t('Select only a short equation label such as (12.45), (7), (*), or (†).', '只能选择简短的公式编号，例如 (12.45)、(7)、(*) 或 (†)。'));
+    return true;
+  }
+  const sourceLabel = equationSourceLabelForDisplayed(pendingEquationReselectKey);
+  equationEdits = equationEdits.filter((item) => normalizedEquationLabel(item.sourceLabel) !== normalizedEquationLabel(sourceLabel));
+  const rect = Array.isArray(currentSelection.rects) ? currentSelection.rects[0] : null;
+  equationEdits.push({
+    action: 'reselect', sourceLabel, label: selectedLabel,
+    page: Number(currentSelection.page), ratio: Number(currentSelection.ratio) || 0,
+    text: currentSelection.text,
+    xStartRatio: Number(rect?.x) || 0,
+    xEndRatio: (Number(rect?.x) || 0) + (Number(rect?.w) || 0),
+  });
+  pendingEquationReselectKey = null;
+  if (equationLabelIndex) equationLabelIndex = applyEquationEdits(equationLabelIndex);
+  persistDocumentState();
+  renderEquationIndex();
+  refreshSelectionUI();
+  return true;
+}
+
 function addOrReplaceSelectionStructureItem() {
   if (!pdfDoc || !currentSelection?.text) return;
+  if (pendingEquationReselectKey) { replaceEquationFromCurrentSelection(); return; }
   const selected = outlineEntryFromSelection(currentSelection);
   if (!selected) return;
   if (outlineMode === 'embedded') {
@@ -6039,11 +6115,23 @@ function renderInferredOutline(entries) {
       setDocumentMapSelectedNode(button);
       goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.matchText || entry.title);
     });
-    row.addEventListener('contextmenu', (event) => {
+    const menu = document.createElement('button');
+    menu.type = 'button';
+    menu.className = 'outline-overflow-button';
+    menu.textContent = '⋯';
+    menu.title = t('Edit structure item', '编辑结构条目');
+    menu.setAttribute('aria-label', menu.title);
+    menu.setAttribute('aria-expanded', 'false');
+    menu.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
-      row.classList.add('has-edit-menu');
+      const willOpen = !row.classList.contains('has-edit-menu');
+      outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => {
+        node.classList.remove('has-edit-menu');
+        node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded', 'false');
+      });
+      row.classList.toggle('has-edit-menu', willOpen);
+      menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
     });
 
     const actions = document.createElement('div');
@@ -6116,15 +6204,18 @@ function renderInferredOutline(entries) {
       refreshSelectionUI();
     });
     actions.append(reselect, remove);
-    row.append(button, actions);
+    row.append(button, menu, actions);
     outlineList.append(row);
   }
   applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
 }
 
 document.addEventListener('click', (event) => {
-  if (event.target.closest?.('.outline-edit-actions')) return;
-  document.querySelectorAll('#outline-list .outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+  if (event.target.closest?.('.outline-edit-actions, .outline-overflow-button')) return;
+  document.querySelectorAll('#outline-list .outline-edit-row.has-edit-menu, #equation-index .equation-edit-row.has-edit-menu').forEach((node) => {
+    node.classList.remove('has-edit-menu');
+    node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded', 'false');
+  });
 });
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
@@ -6496,7 +6587,7 @@ async function buildEquationLabelIndex() {
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
   recoverSequentialEquationGaps(index, candidatePool);
-  equationLabelIndex = canonicalizeEquationIndex(index);
+  equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
   renderEquationIndex();
   return equationLabelIndex;
 }
@@ -6531,14 +6622,22 @@ function renderEquationIndex() {
   equationIndexEmpty.classList.toggle('is-hidden', rows.length > 0);
   if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
   for (const entry of rows.slice(0, 500)) {
+    const row = document.createElement('div'); row.className = 'outline-edit-row equation-edit-row';
     const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item'; button.dataset.page=String(entry.page); button.dataset.confidence=entry.score >= 20 ? 'high' : entry.score >= 12 ? 'medium' : 'review';
     const copy=document.createElement('span'); copy.className='equation-index-copy';
     const label = document.createElement('strong'); label.textContent = entry.label;
     const meta = document.createElement('span'); meta.textContent = `${t(`Page ${entry.page}`, `第 ${entry.page} 页`)} · ${equationConfidenceTier(entry.score)}`;
     copy.append(label,meta); button.append(copy);
     button.title = entry.text || entry.label;
-    button.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
-    equationIndex.append(button);
+    button.addEventListener('click', async () => { equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu')); const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
+    const menu = document.createElement('button'); menu.type='button'; menu.className='outline-overflow-button'; menu.textContent='⋯'; menu.title=t('Edit equation','编辑公式'); menu.setAttribute('aria-label',menu.title); menu.setAttribute('aria-expanded','false');
+    menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); });
+    const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
+    const reselect = document.createElement('button'); reselect.type='button'; reselect.className='outline-edit-button'; reselect.textContent=t('Reselect','重新选择');
+    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = equationSourceLabelForDisplayed(entry.label); pendingOutlineReselectKey = null; refreshSelectionUI(); openRightSectionShortcut('selection-section'); });
+    const remove = document.createElement('button'); remove.type='button'; remove.className='outline-edit-button'; remove.textContent=t('Remove','移除');
+    remove.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); const sourceLabel = equationSourceLabelForDisplayed(entry.label); equationEdits = equationEdits.filter((item) => normalizedEquationLabel(item.sourceLabel) !== normalizedEquationLabel(sourceLabel)); equationEdits.push({ action:'remove', sourceLabel }); if (pendingEquationReselectKey === sourceLabel) pendingEquationReselectKey = null; if (equationLabelIndex) equationLabelIndex.delete(normalizedEquationLabel(sourceLabel)); persistDocumentState(); renderEquationIndex(); refreshSelectionUI(); });
+    actions.append(reselect, remove); row.append(button, menu, actions); equationIndex.append(row);
   }
   applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
 }
@@ -9568,7 +9667,7 @@ addBookmark.addEventListener('click', addCurrentBookmark);
 readingBackButton?.addEventListener('click', goBackReadingLocation);
 readingTrailClear?.addEventListener('click', () => { if (readingBackStack.length) pushUndo('reading-trail', t('Reading trail', '阅读轨迹'), readingBackStack); readingBackStack = []; readingTrailExpanded = false; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
 readingTrailToggle?.addEventListener('click', () => { readingTrailExpanded = !readingTrailExpanded; renderReadingTrail(); });
-buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({ force: true }));
+buildStructureIndexButton?.remove();
 exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
 importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
