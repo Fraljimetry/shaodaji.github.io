@@ -303,6 +303,7 @@ let readingBackStack = [];
 let readingTrailExpanded = false;
 let suppressReadingHistory = false;
 let equationLabelIndex = null;
+let equationNumberingSide = 'right';
 let tocOutlineTargets = null;
 let tocDecorationSerial = 0;
 let backlinkContext = null;
@@ -5153,7 +5154,7 @@ function applyEquationLinkCorrection(query, page, ratio) {
     equationEdits.push({ action:'add', id, sourceLabel:String(pendingEquationAddKey), afterRef:String(pendingEquationAddKey), label, page:Number(page)||1, ratio:Number(ratio)||0, text:query });
     pendingEquationAddKey = null;
   } else return false;
-  equationLabelIndex = null; equationIndexBuildPromise = null;
+  equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
   persistDocumentState(); refreshSelectionUI(); ensureEquationIndexRendered();
   return true;
 }
@@ -6771,23 +6772,36 @@ function equationDocumentPosition(item) {
   return Number(item?.page || 0) * 10 + (Number(item?.ratio) || 0);
 }
 
+function equationCandidateAlignedToNumberingSide(item, side = equationNumberingSide) {
+  const start = Number(item?.candidateXStartRatio ?? item?.xStartRatio);
+  const end = Number(item?.candidateXEndRatio ?? item?.xEndRatio);
+  if (side === 'left') return (Number.isFinite(end) && end <= 0.34) || (Number.isFinite(start) && start <= 0.28);
+  return (Number.isFinite(start) && start >= 0.62) || (Number.isFinite(end) && end >= 0.74);
+}
+
 function chooseCanonicalEquationCandidate(candidates) {
   const usable = (candidates || []).filter(Boolean);
   if (!usable.length) return null;
   return [...usable].sort((a, b) => {
-    // Compare the equation-label token itself, not the full text line. A prose
-    // line can extend to the page margin even when its "(13.26)" reference is
-    // far to the left of the real display tag.
+    // Compare the equation-label token itself, not the whole line, and prefer
+    // the document's inferred numbering margin. This handles both modern
+    // right-numbered papers and older left-numbered papers.
+    const aAligned = equationCandidateAlignedToNumberingSide(a);
+    const bAligned = equationCandidateAlignedToNumberingSide(b);
+    if (aAligned !== bAligned) return bAligned ? 1 : -1;
     const aEnd = Number(a.candidateXEndRatio ?? a.xEndRatio);
     const bEnd = Number(b.candidateXEndRatio ?? b.xEndRatio);
     const aStart = Number(a.candidateXStartRatio ?? a.xStartRatio);
     const bStart = Number(b.candidateXStartRatio ?? b.xStartRatio);
-    const aRight = (Number.isFinite(aEnd) && aEnd >= 0.70) || (Number.isFinite(aStart) && aStart >= 0.60);
-    const bRight = (Number.isFinite(bEnd) && bEnd >= 0.70) || (Number.isFinite(bStart) && bStart >= 0.60);
-    if (aRight !== bRight) return bRight ? 1 : -1;
-    const aGeom = Number.isFinite(aEnd) ? aEnd : (Number.isFinite(aStart) ? aStart : -1);
-    const bGeom = Number.isFinite(bEnd) ? bEnd : (Number.isFinite(bStart) ? bStart : -1);
-    if (Math.abs(aGeom - bGeom) > 0.02) return bGeom - aGeom;
+    if (equationNumberingSide === 'left') {
+      const aGeom = Number.isFinite(aStart) ? aStart : (Number.isFinite(aEnd) ? aEnd : 2);
+      const bGeom = Number.isFinite(bStart) ? bStart : (Number.isFinite(bEnd) ? bEnd : 2);
+      if (Math.abs(aGeom - bGeom) > 0.02) return aGeom - bGeom;
+    } else {
+      const aGeom = Number.isFinite(aEnd) ? aEnd : (Number.isFinite(aStart) ? aStart : -1);
+      const bGeom = Number.isFinite(bEnd) ? bEnd : (Number.isFinite(bStart) ? bStart : -1);
+      if (Math.abs(aGeom - bGeom) > 0.02) return bGeom - aGeom;
+    }
     const aPos = equationDocumentPosition(a);
     const bPos = equationDocumentPosition(b);
     if (Math.abs(aPos - bPos) > 1e-6) return aPos - bPos;
@@ -6975,11 +6989,50 @@ function equationCandidateTokenGeometry(line, candidate) {
   };
 }
 
+function inferEquationNumberingSide(records) {
+  let leftScore = 0;
+  let rightScore = 0;
+  for (const item of records || []) {
+    const start = Number(item.candidateXStartRatio);
+    const end = Number(item.candidateXEndRatio);
+    const contextStrong = Boolean(item.standaloneTag || item.nearbyDisplayMath || item.mathSignals >= 2);
+    if (!contextStrong) continue;
+    const weight = item.numeric && item.numeric.prefix ? 2 : 1.5;
+    if ((Number.isFinite(end) && end <= 0.34) || (Number.isFinite(start) && start <= 0.28)) leftScore += weight;
+    if ((Number.isFinite(start) && start >= 0.62) || (Number.isFinite(end) && end >= 0.74)) rightScore += weight;
+  }
+  if (leftScore >= 4 && leftScore > rightScore * 1.35) return 'left';
+  return 'right';
+}
+
+function equationCandidateConfidenceForSide(item) {
+  const text = String(item?.text || '').trim();
+  const label = normalizedEquationLabel(item?.label || '');
+  if (!text || !label || isLikelyCalendarYearEquationLabel(label)) return -Infinity;
+  const compact = text.replace(/\s+/g, '').normalize('NFKC');
+  const isOnlyTag = compact === label || compact === label.slice(1, -1);
+  const mathSignals = Number(item.mathSignals) || 0;
+  const aligned = equationCandidateAlignedToNumberingSide(item);
+  const nearBottom = Number(item.ratio) >= 0.90;
+  const proseHeavy = text.length > 55 && mathSignals === 0;
+  if (isOnlyTag && nearBottom && !aligned) return -Infinity;
+  if (mathSignals === 0 && !(isOnlyTag && aligned)) return -Infinity;
+  if (proseHeavy && !(isOnlyTag && aligned)) return -Infinity;
+  if (/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text) && !isOnlyTag && mathSignals < 2) return -Infinity;
+  let confidence = equationTargetScore(text, label, null, 0, null, Number(item.ratio));
+  if (mathSignals >= 2) confidence += 5;
+  else if (mathSignals === 1) confidence += 2;
+  if (aligned) confidence += 7;
+  if (isOnlyTag && aligned) confidence += 5;
+  return confidence;
+}
+
 async function buildEquationLabelIndex() {
   if (!pdfDoc) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
   const index = new Map();
   const candidatePool = new Map();
+  const rawCandidates = [];
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     const lines = await pageTextLines(page);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -6996,52 +7049,55 @@ async function buildEquationLabelIndex() {
       }
       for (const candidate of [...explicit, ...weakBare]) {
         const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
-        const candidateXStartRatio = tokenGeometry.xStartRatio;
-        const candidateXEndRatio = tokenGeometry.xEndRatio;
         const numeric = parsedEquationNumber(candidate.label);
-        const integerTag = Boolean(numeric && !numeric.prefix);
-        const tokenNearRight = Number(candidateXEndRatio) >= 0.76 || Number(candidateXStartRatio) >= 0.68;
-        const standaloneTag = isStandaloneEquationTagLine(line, candidate.label);
-        const nearbyDisplayMath = hasNearbyDisplayMath(lines, lineIndex);
-        let confidence = equationCandidateConfidence(line, candidate.label);
-        let reliable = confidence >= 8;
-        if (!reliable && standaloneTag && nearbyDisplayMath) {
-          confidence = Math.max(confidence, 12);
-          reliable = true;
-        }
-        // Single-integer numbering is common in papers and books, but an
-        // inline citation such as "by (57)" is not an equation target. Require
-        // the integer tag token itself to live at the display-math right edge,
-        // or to be an isolated right-side tag adjacent to display math.
-        if (integerTag && !(tokenNearRight && (standaloneTag || nearbyDisplayMath || equationLineMathSignalCount(line.text) >= 2))) {
-          reliable = false;
-        }
-        const record = {
+        rawCandidates.push({
+          label: candidate.label,
           page,
           ratio: line.ratio,
           text: line.text,
           xStartRatio: line.xStartRatio,
           xEndRatio: line.xEndRatio,
-          candidateXStartRatio,
-          candidateXEndRatio,
-          confidence,
-        };
-        const pool = candidatePool.get(candidate.label) || [];
-        // Keep weak dotted-number occurrences only as sequence-recovery evidence.
-        // Right-side geometry or neighboring display math gives them priority.
-        const nearRight = Number(candidateXEndRatio) >= 0.70 || Number(candidateXStartRatio) >= 0.60;
-        if (!candidate.sequenceOnly || nearRight || hasNearbyDisplayMath(lines, lineIndex)) {
-          pool.push(record);
-          candidatePool.set(candidate.label, pool);
-        }
-        if (!reliable || candidate.sequenceOnly) continue;
-        const list = index.get(candidate.label) || [];
-        list.push(record);
-        index.set(candidate.label, list);
+          candidateXStartRatio: tokenGeometry.xStartRatio,
+          candidateXEndRatio: tokenGeometry.xEndRatio,
+          numeric,
+          sequenceOnly: Boolean(candidate.sequenceOnly),
+          standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
+          nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
+          mathSignals: equationLineMathSignalCount(line.text),
+        });
       }
     }
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
+
+  equationNumberingSide = inferEquationNumberingSide(rawCandidates);
+
+  for (const record0 of rawCandidates) {
+    const record = { ...record0 };
+    let confidence = equationCandidateConfidenceForSide(record);
+    let reliable = confidence >= 8;
+    if (!reliable && record.standaloneTag && record.nearbyDisplayMath && equationCandidateAlignedToNumberingSide(record)) {
+      confidence = Math.max(confidence, 12);
+      reliable = true;
+    }
+    // Integer numbering is valid on either margin, but only when the token is
+    // aligned with the inferred numbering side and has display-math context.
+    const integerTag = Boolean(record.numeric && !record.numeric.prefix);
+    if (integerTag && !(equationCandidateAlignedToNumberingSide(record) && (record.standaloneTag || record.nearbyDisplayMath || record.mathSignals >= 2))) {
+      reliable = false;
+    }
+    record.confidence = confidence;
+    const pool = candidatePool.get(record.label) || [];
+    if (!record.sequenceOnly || equationCandidateAlignedToNumberingSide(record) || record.nearbyDisplayMath) {
+      pool.push(record);
+      candidatePool.set(record.label, pool);
+    }
+    if (!reliable || record.sequenceOnly) continue;
+    const list = index.get(record.label) || [];
+    list.push(record);
+    index.set(record.label, list);
+  }
+
   recoverSequentialEquationGaps(index, candidatePool);
   equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
   renderEquationIndex();
@@ -7133,7 +7189,7 @@ function renderEquationIndex() {
         equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
         equationEdits.push({ action:'remove', sourceLabel });
       }
-      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationIndexBuildPromise = null;
+      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
       persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
     });
     const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add below','在下方添加');
