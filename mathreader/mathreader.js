@@ -5989,7 +5989,6 @@ function renderInferredOutline(entries) {
       event.preventDefault();
       event.stopPropagation();
       outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
-      if (button.classList.contains('is-selected-location')) return;
       row.classList.add('has-edit-menu');
     });
 
