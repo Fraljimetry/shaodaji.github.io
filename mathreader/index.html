@@ -26,48 +26,6 @@
     };
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-
-  <style>
-    .ocr-init-progress {
-      --ocr-init-progress-angle: 3.6deg;
-      display: inline-grid;
-      place-items: center;
-      width: 22px;
-      height: 22px;
-      margin: 6px 0 8px;
-      border-radius: 50%;
-      background:
-        conic-gradient(
-          from -90deg,
-          rgb(73 166 216) 0deg var(--ocr-init-progress-angle),
-          rgb(73 166 216 / 0.14) var(--ocr-init-progress-angle) 360deg
-        );
-      box-shadow: 0 0 0 1px rgb(73 166 216 / 0.10);
-      transition: --ocr-init-progress-angle .28s linear;
-    }
-    .ocr-init-progress::after {
-      content: "";
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: rgb(14 31 42);
-      box-shadow: inset 0 0 0 1px rgb(124 191 228 / 0.10);
-    }
-    html[data-theme="light"] .ocr-init-progress {
-      background:
-        conic-gradient(
-          from -90deg,
-          rgb(38 125 178) 0deg var(--ocr-init-progress-angle),
-          rgb(38 125 178 / 0.12) var(--ocr-init-progress-angle) 360deg
-        );
-      box-shadow: 0 0 0 1px rgb(38 125 178 / 0.10);
-    }
-    html[data-theme="light"] .ocr-init-progress::after {
-      background: rgb(251 250 247);
-      box-shadow: inset 0 0 0 1px rgb(38 125 178 / 0.08);
-    }
-    .ocr-init-progress.is-hidden { display: none; }
-  </style>
 </head>
 <body>
   <a class="skip-link" href="#reader-stage" data-en="Skip to reader" data-zh="跳到阅读器">Skip to reader</a>
@@ -311,7 +269,6 @@
 
         <div class="ocr-capability" id="ocr-capability"></div>
         <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量可用于手动对照。">Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison.</div>
-        <div id="ocr-init-progress" class="ocr-init-progress is-hidden" aria-hidden="true"></div>
         <div class="ocr-processing is-hidden" id="ocr-processing" role="status" aria-live="polite" aria-atomic="true">
           <span class="spinner" aria-hidden="true"></span>
           <span class="ocr-processing-copy"><strong data-en="Processing formula" data-zh="正在处理公式">Processing formula</strong><span id="ocr-processing-text" data-en="Processing…" data-zh="处理中…">Processing…</span></span>
