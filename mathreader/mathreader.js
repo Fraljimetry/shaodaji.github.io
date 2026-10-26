@@ -234,6 +234,7 @@ let equationEdits = [];
 let embeddedOutlineEdits = [];
 let embeddedOutlineEntries = [];
 let equationIndexBuildPromise = null;
+let equationConfidenceFilter = 'all';
 let scrollByPage = {};
 let referenceScrollByPage = {};
 let localLibrary = [];
@@ -6825,9 +6826,24 @@ function renderEquationIndex() {
     rows.splice(anchorIndex >= 0 ? anchorIndex + 1 : rows.length, 0, added);
   }
   equationIndexCount.textContent = String(rows.length);
-  equationIndexEmpty.classList.toggle('is-hidden', rows.length > 0);
+  const filterBar = document.createElement('div'); filterBar.className = 'equation-confidence-filter';
+  const filterLabel = document.createElement('label'); filterLabel.textContent = t('Confidence', '置信度');
+  const filterSelect = document.createElement('select'); filterSelect.setAttribute('aria-label', t('Filter equations by confidence', '按置信度筛选公式'));
+  const filterOptions = [
+    ['all', t('All', '全部')],
+    ['high', t('High', '高')],
+    ['medium', t('Medium', '中')],
+    ['review', t('Review', '需核对')],
+  ];
+  for (const [value, text] of filterOptions) { const option = document.createElement('option'); option.value = value; option.textContent = text; filterSelect.append(option); }
+  filterSelect.value = equationConfidenceFilter;
+  filterSelect.addEventListener('change', () => { equationConfidenceFilter = filterSelect.value || 'all'; renderEquationIndex(); });
+  filterLabel.append(filterSelect); filterBar.append(filterLabel); equationIndex.append(filterBar);
+  const visibleRows = equationConfidenceFilter === 'all' ? rows : rows.filter((row) => (row.score >= 20 ? 'high' : row.score >= 12 ? 'medium' : 'review') === equationConfidenceFilter);
+  equationIndexEmpty.classList.toggle('is-hidden', visibleRows.length > 0);
   if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
-  for (const entry of rows.slice(0, 500)) {
+  else if (!visibleRows.length) equationIndexEmpty.textContent = t('No equations match this confidence filter.', '没有符合当前置信度筛选的公式。');
+  for (const entry of visibleRows.slice(0, 500)) {
     const row = document.createElement('div'); row.className = 'outline-edit-row equation-edit-row';
     const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item'; button.dataset.page=String(entry.page); button.dataset.confidence=entry.score >= 20 ? 'high' : entry.score >= 12 ? 'medium' : 'review';
     const copy=document.createElement('span'); copy.className='equation-index-copy';

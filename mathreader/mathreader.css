@@ -541,3 +541,8 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .structure-entry{position:relative}
 .result-edit-actions{position:absolute;z-index:9;right:4px;top:8px;display:flex;gap:3px;padding:4px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .12s ease}
 .structure-entry.has-edit-menu .result-edit-actions{opacity:1;pointer-events:auto}
+
+/* v260: Equation confidence filter */
+.equation-confidence-filter{position:sticky;top:0;z-index:1;display:flex;justify-content:flex-end;padding:2px 8px 6px 0;background:var(--surface)}
+.equation-confidence-filter label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.66rem}
+.equation-confidence-filter select{min-width:92px;padding:3px 22px 3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);font:inherit}
