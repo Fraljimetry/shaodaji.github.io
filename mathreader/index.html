@@ -48,7 +48,7 @@
     }
     #note-preview {
       margin-top: 7px;
-      padding: 12px;
+      padding: 12px 24px 24px 12px;
       border: 1px solid var(--line);
       border-radius: 7px;
       color: var(--ink);
@@ -57,11 +57,12 @@
       line-height: 1.55;
       white-space: pre-wrap;
       overflow: auto;
+      scrollbar-gutter: stable;
     }
     #note-preview mjx-container[display="true"] {
       margin: .8em 0 !important;
-      padding: .15em .3em;
-      overflow-x: auto;
+      padding: .15em 12px 10px .3em;
+      overflow-x: visible;
       overflow-y: visible;
     }
   </style>
