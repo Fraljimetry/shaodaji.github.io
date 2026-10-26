@@ -4976,7 +4976,7 @@ function addOrReplaceSelectionStructureItem() {
     pendingOutlineReselectKey = null;
     persistDocumentState();
     renderEmbeddedOutline(embeddedOutlineEntries);
-    rerenderReferenceLinks();
+    rerenderReferenceLinksAfterStructureEdit();
     refreshSelectionUI();
     return;
   }
@@ -5004,7 +5004,7 @@ function addOrReplaceSelectionStructureItem() {
   tocOutlineTargets = null;
   persistDocumentState();
   renderInferredOutline(inferredOutline);
-  rerenderReferenceLinks();
+  rerenderReferenceLinksAfterStructureEdit();
   refreshSelectionUI();
 }
 
@@ -6262,7 +6262,7 @@ function renderEmbeddedOutline(entries) {
       if (pendingOutlineReselectKey === `embedded:${entry.sourceKey}`) pendingOutlineReselectKey = null;
       persistDocumentState();
       renderEmbeddedOutline(embeddedOutlineEntries);
-      rerenderReferenceLinks();
+      rerenderReferenceLinksAfterStructureEdit();
       refreshSelectionUI();
     });
     actions.append(reselect, remove);
@@ -6398,7 +6398,7 @@ function renderInferredOutline(entries) {
       tocOutlineTargets = null;
       persistDocumentState();
       renderInferredOutline(inferredOutline);
-      rerenderReferenceLinks();
+      rerenderReferenceLinksAfterStructureEdit();
       refreshSelectionUI();
     });
     actions.append(reselect, remove);
@@ -7938,6 +7938,17 @@ function rerenderReferenceLinks() {
   if (primaryTextLayer && primaryPageSurface && currentPage) decorateReferenceLinks(primaryTextLayer, primaryPageSurface, currentPage);
   if (referenceTextLayer && referencePageSurface && pinnedPage) decorateReferenceLinks(referenceTextLayer, referencePageSurface, pinnedPage);
   for (const [page, record] of continuousPageNodes) if (record?.rendered) decorateReferenceLinks(record.textLayer, record.surface, page);
+}
+
+function rerenderReferenceLinksAfterStructureEdit() {
+  // Structure edits are local metadata changes. Rebuilding reference overlays for
+  // every rendered page makes edits scale with document length in continuous
+  // reading mode. Refresh only the currently relevant page surfaces; other pages
+  // pick up the revised Structure lazily when they render again.
+  if (primaryTextLayer && primaryPageSurface && currentPage) decorateReferenceLinks(primaryTextLayer, primaryPageSurface, currentPage);
+  if (referenceTextLayer && referencePageSurface && pinnedPage) decorateReferenceLinks(referenceTextLayer, referencePageSurface, pinnedPage);
+  const currentRecord = continuousPageNodes.get(currentPage);
+  if (currentRecord?.rendered) decorateReferenceLinks(currentRecord.textLayer, currentRecord.surface, currentPage);
 }
 
 async function findReferenceTextLocation(query, originPage = null) {
@@ -9532,7 +9543,7 @@ async function restoreUndoEntry(id = null) {
       inferredOutlineDetectionDone = true;
       tocOutlineTargets = null;
       renderInferredOutline(inferredOutline);
-      rerenderReferenceLinks();
+      rerenderReferenceLinksAfterStructureEdit();
       refreshSelectionUI();
     }
   }
