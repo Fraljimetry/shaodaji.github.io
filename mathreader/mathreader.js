@@ -231,6 +231,8 @@ let pendingOutlineReselectKey = null;
 let pendingEquationReselectKey = null;
 let pendingEquationAddKey = null;
 let equationEdits = [];
+let embeddedOutlineEdits = [];
+let embeddedOutlineEntries = [];
 let equationIndexBuildPromise = null;
 let scrollByPage = {};
 let referenceScrollByPage = {};
@@ -681,6 +683,7 @@ function snapshotSession() {
     structureEntries,
     bibliographyEntries,
     equationEdits,
+    embeddedOutlineEdits,
     structureIndexVersion,
     referencePages,
     readingBackStack,
@@ -1273,6 +1276,8 @@ function loadDocumentState(cachedSession = null) {
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
+    embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
+    embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
     if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
       structureEntries = [];
@@ -4960,8 +4965,22 @@ function addOrReplaceSelectionStructureItem() {
   if (pendingEquationReselectKey || pendingEquationAddKey) return;
   const selected = outlineEntryFromSelection(currentSelection);
   if (!selected) return;
+  if (outlineMode === 'embedded' && pendingOutlineReselectKey?.startsWith('embedded:')) {
+    const sourceKey = pendingOutlineReselectKey.slice('embedded:'.length);
+    embeddedOutlineEdits = embeddedOutlineEdits.filter((item) => String(item.sourceKey) !== String(sourceKey));
+    embeddedOutlineEdits.push({
+      action:'reselect', sourceKey, title:selected.title, matchText:selected.matchText,
+      page:selected.page, ratio:selected.ratio,
+    });
+    pendingOutlineReselectKey = null;
+    persistDocumentState();
+    renderEmbeddedOutline(embeddedOutlineEntries);
+    rerenderReferenceLinks();
+    refreshSelectionUI();
+    return;
+  }
   if (outlineMode === 'embedded') {
-    showError(t('Embedded PDF outlines are kept read-only.', 'PDF 内嵌目录保持只读。'));
+    showError(t('Use Reselect on an existing Structure item; embedded outlines do not support adding new items.', '请对现有结构条目使用“重新选择”；PDF 内嵌目录不支持新增条目。'));
     return;
   }
   if (pendingOutlineReselectKey) {
@@ -6132,6 +6151,110 @@ function positionOutlineEditActions(trigger, actions) {
   top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
   actions.style.left = `${Math.round(left)}px`;
   actions.style.top = `${Math.round(top)}px`;
+}
+
+function embeddedOutlineSourceKey(entry) {
+  return String(entry?.sourceKey || '').trim();
+}
+
+function applyEmbeddedOutlineEdits(entries) {
+  const edits = new Map(embeddedOutlineEdits.map((item) => [String(item.sourceKey), item]));
+  const out = [];
+  for (const entry of entries || []) {
+    const key = embeddedOutlineSourceKey(entry);
+    const edit = edits.get(key);
+    if (edit?.action === 'remove') continue;
+    if (edit?.action === 'reselect') {
+      out.push({
+        ...entry,
+        title: String(edit.title || entry.title),
+        matchText: String(edit.matchText || edit.title || entry.title),
+        page: Number(edit.page) || entry.page,
+        ratio: Number(edit.ratio) || 0,
+        userEdited: true,
+      });
+    } else out.push(entry);
+  }
+  return out;
+}
+
+function renderEmbeddedOutline(entries) {
+  outlineList.replaceChildren();
+  const visible = applyEmbeddedOutlineEdits(entries);
+  outlineMode = 'embedded';
+  updateOutlineSource();
+  outlineCount.textContent = String(visible.length);
+  outlineEmpty.classList.toggle('is-hidden', visible.length > 0);
+  for (const entry of visible) {
+    const row = document.createElement('div');
+    row.className = 'outline-edit-row';
+    row.dataset.mapFilterText = entry.title;
+    row.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'outline-item';
+    button.dataset.depth = row.dataset.depth;
+    button.dataset.page = String(entry.page);
+    button.textContent = entry.title || t('Untitled', '未命名');
+    button.title = t(`PDF outline · page ${entry.page}`, `PDF 目录 · 第 ${entry.page} 页`);
+    button.addEventListener('click', async () => {
+      outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+      setDocumentMapSelectedNode(button);
+      await goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || entry.title || '');
+    });
+
+    const menu = document.createElement('button');
+    menu.type = 'button';
+    menu.className = 'outline-overflow-button';
+    menu.textContent = '⋯';
+    menu.title = t('Edit structure item', '编辑结构条目');
+    menu.setAttribute('aria-label', menu.title);
+    menu.setAttribute('aria-expanded', 'false');
+
+    const actions = document.createElement('div');
+    actions.className = 'outline-edit-actions';
+    const reselect = document.createElement('button');
+    reselect.type = 'button';
+    reselect.className = 'outline-edit-button';
+    reselect.textContent = t('Reselect', '重新选择');
+    reselect.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation();
+      row.classList.remove('has-edit-menu');
+      pendingOutlineReselectKey = `embedded:${entry.sourceKey}`;
+      refreshSelectionUI();
+      openRightSectionShortcut('selection-section');
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'outline-edit-button';
+    remove.textContent = t('Remove', '移除');
+    remove.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation();
+      row.classList.remove('has-edit-menu');
+      embeddedOutlineEdits = embeddedOutlineEdits.filter((item) => String(item.sourceKey) !== String(entry.sourceKey));
+      embeddedOutlineEdits.push({ action:'remove', sourceKey:String(entry.sourceKey) });
+      if (pendingOutlineReselectKey === `embedded:${entry.sourceKey}`) pendingOutlineReselectKey = null;
+      persistDocumentState();
+      renderEmbeddedOutline(embeddedOutlineEntries);
+      rerenderReferenceLinks();
+      refreshSelectionUI();
+    });
+    actions.append(reselect, remove);
+    menu.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation();
+      const willOpen = !row.classList.contains('has-edit-menu');
+      outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => {
+        node.classList.remove('has-edit-menu');
+        node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded', 'false');
+      });
+      row.classList.toggle('has-edit-menu', willOpen);
+      menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions));
+    });
+    row.append(button, menu, actions);
+    outlineList.append(row);
+  }
+  applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
 }
 
 function renderInferredOutline(entries) {
@@ -8005,28 +8128,21 @@ async function renderOutline() {
     const outline = await pdfDoc.getOutline();
     const flat = flattenOutline(outline);
     if (flat.length) {
-      outlineMode = 'embedded';
-      updateOutlineSource();
-      outlineCount.textContent = flat.length;
-      outlineEmpty.classList.add('is-hidden');
-      for (const { item, depth } of flat) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'outline-item';
-        button.dataset.depth = String(depth);
-        button.textContent = item.title || t('Untitled', '未命名');
-        void resolveOutlineDestination(item.dest).then((location)=>{ if (location && button.isConnected) { button.dataset.page=String(location.page); updateDocumentMapCurrentLocation(); } }).catch(()=>{});
-        button.addEventListener('click', async () => {
-          setDocumentMapSelectedNode(button);
-          try {
-            const location = await resolveOutlineDestination(item.dest);
-            if (!location) return;
-            await goToMatchedLocation(location.page, location.ratio, item.title || '');
-          } catch (error) { console.error(error); }
-        });
-        outlineList.append(button);
-      }
-      applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
+      const resolved = await Promise.all(flat.map(async ({ item, depth }, index) => {
+        const location = await resolveOutlineDestination(item.dest).catch(() => null);
+        if (!location) return null;
+        return {
+          sourceKey: `${index}:${depth}:${String(item.title || '').trim()}`,
+          title: item.title || t('Untitled', '未命名'),
+          matchText: item.title || '',
+          page: Number(location.page) || 1,
+          ratio: Number(location.ratio) || 0,
+          depth: Number(depth) || 0,
+          userEdited: false,
+        };
+      }));
+      embeddedOutlineEntries = resolved.filter(Boolean);
+      renderEmbeddedOutline(embeddedOutlineEntries);
       scheduleDetectedOutlineAugmentation();
       return;
     }
