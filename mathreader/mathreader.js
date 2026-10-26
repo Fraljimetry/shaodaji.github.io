@@ -178,6 +178,7 @@ const ocrRetryButton = el('ocr-retry');
 const ocrCapability = el('ocr-capability');
 const ocrTimingDiagnostics = el('ocr-timing-diagnostics');
 const formulaExtractionSelect = el('formula-extraction-mode');
+const ocrInitProgress = el('ocr-init-progress');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
 const documentReadingStatus = el('document-reading-status');
@@ -2396,48 +2397,13 @@ async function ensureMathOcrPipeline() {
     for (let index = 0; index < plan.length; index += 1) {
       const backend = plan[index];
       try {
-        // v209: show a smooth monotonic initialization estimate instead of
-        // unstable per-file percentages or file names. The pacing learns from
-        // the previous successful initialization duration for each engine.
-        const progressHistoryKey = `mathreader-ocr-init-ms-v1:${backend.device || 'cpu'}:${backend.dtype || 'default'}`;
-        const previousInitMs = clamp(Number(safeGet(progressHistoryKey, '0')), 3000, 180000, 30000);
-        const progressStartedAt = ocrNow();
-        let displayedInitProgress = 1;
-        let progressTimer = null;
-        let progressFinished = false;
-        const showEstimatedProgress = (value) => {
-          const next = Math.max(displayedInitProgress, Math.min(99, Number(value) || 1));
-          displayedInitProgress = next;
-          setOcrStatus(
-            t(
-              `Initializing OCR · ${backend.label} · ${next.toFixed(1)}%`,
-              `正在初始化 OCR · ${backend.label} · ${next.toFixed(1)}%`
-            ),
-            true
-          );
-        };
-        const updateEstimatedProgress = () => {
-          if (progressFinished) return;
-          const elapsed = Math.max(0, ocrNow() - progressStartedAt);
-          const reference = Math.max(3000, previousInitMs);
-          // Reach about 92% at the learned duration, then continue creeping
-          // toward 99% if this load takes longer. Never move backward.
-          let estimate;
-          if (elapsed <= reference) {
-            estimate = 1 + 91 * (elapsed / reference);
-          } else {
-            const overtime = elapsed - reference;
-            estimate = 92 + 7 * (1 - Math.exp(-overtime / Math.max(4000, reference * 0.35)));
-          }
-          showEstimatedProgress(estimate);
-        };
-        showEstimatedProgress(1);
-        progressTimer = setInterval(updateEstimatedProgress, 250);
-        // Keep the callback so Transformers.js can emit normally, but do not
-        // expose its asset names or bursty per-file percentages in the UI.
-        const progress_callback = () => {
-          updateEstimatedProgress();
-        };
+        // v210: keep initialization feedback non-numeric. A compositor-driven
+        // indeterminate bar remains visually active without pretending to know
+        // the completion percentage.
+        ocrInitProgress?.classList.remove('is-hidden');
+        ocrInitProgress?.setAttribute('aria-hidden', 'false');
+        setOcrStatus(t(`Initializing OCR · ${backend.label}`, `正在初始化 OCR · ${backend.label}`), true);
+        const progress_callback = () => {};
         const options = { progress_callback };
         if (!backend.official) {
           options.device = backend.device;
@@ -2458,29 +2424,14 @@ async function ensureMathOcrPipeline() {
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        progressFinished = true;
-        if (progressTimer) clearInterval(progressTimer);
-        const actualInitMs = Math.max(1, ocrNow() - progressStartedAt);
-        // Exponential smoothing keeps the next estimate stable if one load is
-        // unusually fast or slow.
-        const learnedInitMs = previousInitMs > 0
-          ? Math.round(previousInitMs * 0.65 + actualInitMs * 0.35)
-          : Math.round(actualInitMs);
-        safeSet(progressHistoryKey, String(learnedInitMs));
-        displayedInitProgress = 100;
-        setOcrStatus(
-          t(`Initializing OCR · ${backend.label} · 100.0%`, `正在初始化 OCR · ${backend.label} · 100.0%`),
-          true
-        );
-        setTimeout(() => {
-          if (mathOcrPipeline === pipe) {
-            setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
-          }
-        }, 220);
+        ocrInitProgress?.classList.add('is-hidden');
+        ocrInitProgress?.setAttribute('aria-hidden', 'true');
+        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
-        if (typeof progressTimer !== 'undefined' && progressTimer) clearInterval(progressTimer);
+        ocrInitProgress?.classList.add('is-hidden');
+        ocrInitProgress?.setAttribute('aria-hidden', 'true');
         console.warn('MathReader OCR backend failed', backend, error);
         lastError = error;
         if (index + 1 < plan.length) {
@@ -2490,6 +2441,8 @@ async function ensureMathOcrPipeline() {
     }
     throw lastError || new Error('Image OCR fallback unavailable');
   } catch (error) {
+    ocrInitProgress?.classList.add('is-hidden');
+    ocrInitProgress?.setAttribute('aria-hidden', 'true');
     mathOcrPipeline = null;
     mathOcrBackend = null;
     mathOcrModulePromise = null;
