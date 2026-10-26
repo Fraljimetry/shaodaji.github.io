@@ -239,7 +239,7 @@ let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
-let mathOcrEngineMode = 'webgpu';
+let mathOcrEngineMode = 'wasm';
 let formulaExtractionMode = 'image';
 let readerWidthObserver = null;
 let readerWidthTimer = null;
@@ -305,7 +305,7 @@ const referenceSnapshotCache = new Map();
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v6', 'webgpu');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v7', 'wasm');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
@@ -2313,15 +2313,15 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   if (mode === 'webgpu') {
-    // v201 default: fast-start WebGPU accelerator. If it cannot initialize,
-    // fall back automatically to the model-card CPU path instead of failing OCR.
+    // Optional GPU accelerator. If it cannot initialize, fall back automatically
+    // to the model-card CPU path instead of failing OCR.
     return [
       { device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false },
       { device: null, dtype: null, label: 'Texify · CPU fallback', official: true }
     ];
   }
   if (mode === 'wasm') {
-    // Stable manual alternative when WebGPU inference is too variable.
+    // v202 default: slower one-time initialization, but stable fast inference.
     return [{ device: 'wasm', dtype: 'q8', label: 'Texify · CPU/WASM q8', official: false }];
   }
   // The model-card browser path is the default. Xenova/texify is packaged
@@ -2394,18 +2394,46 @@ async function ensureMathOcrPipeline() {
       const backend = plan[index];
       try {
         setOcrStatus(t('Initializing OCR…', '正在初始化 OCR……'), true);
-        // Transformers.js reports progress per individual model asset rather
-        // than one meaningful total. Do not display a fabricated percentage.
-        // Show only truthful loading stages until pipeline() is actually ready.
-        let downloadStageShown = false;
+        // Transformers.js emits progress per individual model asset. Percentages
+        // are not stable across assets, so show only monotonic facts: assets
+        // discovered, assets completed, or (when names are unavailable) the
+        // number of loader events observed.
+        const discoveredAssets = new Set();
+        const completedAssets = new Set();
+        let loaderEvents = 0;
+        let lastProgressLabel = '';
+        const assetKey = (info) => {
+          const raw = info?.file || info?.name || info?.url || info?.path || info?.key || '';
+          return String(raw || '').trim();
+        };
+        const assetLabel = (key) => {
+          if (!key) return '';
+          const clean = key.split(/[?#]/)[0];
+          const parts = clean.split(/[\\/]/).filter(Boolean);
+          return parts[parts.length - 1] || clean;
+        };
+        const showLoadProgress = (currentKey = '') => {
+          let detail = '';
+          if (discoveredAssets.size || completedAssets.size) {
+            detail = `${completedAssets.size} ${t('loaded', '已加载')} · ${discoveredAssets.size} ${t('found', '已发现')}`;
+            const current = assetLabel(currentKey);
+            if (current && !completedAssets.has(currentKey)) detail += ` · ${t('current', '当前')}: ${current}`;
+          } else {
+            detail = `${t('loader events', '加载事件')}: ${loaderEvents}`;
+          }
+          const label = `${t('Initializing OCR', '正在初始化 OCR')} · ${backend.label} · ${detail}`;
+          if (label !== lastProgressLabel) {
+            lastProgressLabel = label;
+            setOcrStatus(label, true);
+          }
+        };
         const progress_callback = (info) => {
           if (!info) return;
-          if (info.status === 'initiate' || info.status === 'download' || info.status === 'progress') {
-            if (!downloadStageShown) {
-              downloadStageShown = true;
-              setOcrStatus(t(`Loading local image-OCR model (${backend.label})…`, `正在加载本地图像 OCR 模型（${backend.label}）……`), true);
-            }
-          }
+          loaderEvents += 1;
+          const key = assetKey(info);
+          if (key) discoveredAssets.add(key);
+          if (key && ['done', 'ready', 'loaded'].includes(String(info.status || '').toLowerCase())) completedAssets.add(key);
+          showLoadProgress(key);
         };
         const options = { progress_callback };
         if (!backend.official) {
@@ -2427,7 +2455,10 @@ async function ensureMathOcrPipeline() {
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
+        const loadedSummary = discoveredAssets.size
+          ? ` · ${completedAssets.size || discoveredAssets.size} ${t('model files', '个模型文件')}`
+          : '';
+        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`) + loadedSummary);
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
@@ -8671,7 +8702,7 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
     : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v6', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v7', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
 ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
