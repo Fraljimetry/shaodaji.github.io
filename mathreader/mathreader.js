@@ -6517,7 +6517,7 @@ function normalizeSequentialStructureEntries(entries) {
 
 function parsedEquationNumber(label) {
   const inner = normalizedEquationLabel(label).slice(1, -1);
-  if (!/^\d+(?:\.\d+)+$/.test(inner)) return null;
+  if (!/^\d+(?:\.\d+)*$/.test(inner)) return null;
   const parts = inner.split('.').map((part) => Number(part));
   return { parts, prefix: parts.slice(0, -1).join('.'), last: parts[parts.length - 1] };
 }
@@ -6578,7 +6578,7 @@ function recoverSequentialEquationGaps(index, candidatePool) {
     const leftPos = equationDocumentPosition(left.candidate);
     const rightPos = equationDocumentPosition(right.candidate);
     for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
-      const expected = `(${left.parsed.prefix}.${missing})`;
+      const expected = left.parsed.prefix ? `(${left.parsed.prefix}.${missing})` : `(${missing})`;
       if (index.has(expected)) continue;
       const matches = (candidatePool.get(expected) || []).filter((item) => {
         const pos = equationDocumentPosition(item);
@@ -6601,9 +6601,10 @@ function equationLabelCandidatesInLine(text) {
   while ((match = re.exec(value))) {
     const rawInner = match[1];
     const compactInner = rawInner.replace(/\s+/g, '');
-    // Equation-index labels must contain a dot. This excludes local markers
-    // such as (1), (0), (*) and similar non-sequential tags.
-    if (!/^\d+(?:\.\d+)+$/.test(compactInner)) continue;
+    // Numeric equation tags may be hierarchical, e.g. (12.45), or a
+    // document-wide integer sequence, e.g. (56). Integer candidates are
+    // admitted here but are subject to stricter right-margin geometry below.
+    if (!/^\d+(?:\.\d+)*$/.test(compactInner)) continue;
     const label = normalizedEquationLabel(match[0]);
     if (isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
@@ -6613,7 +6614,7 @@ function equationLabelCandidatesInLine(text) {
   // Record that narrow form as a candidate; geometry / neighboring display
   // math still decides whether it is reliable below.
   const trimmed = value.trim();
-  if (/^\d+(?:\.\d+)+$/.test(trimmed)) {
+  if (/^\d+(?:\.\d+)*$/.test(trimmed)) {
     const label = normalizedEquationLabel(trimmed);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = value.indexOf(trimmed);
@@ -6749,15 +6750,27 @@ async function buildEquationLabelIndex() {
         weakBare.push({ label, index: bareMatch.index, end: bareMatch.index + bareMatch[0].length, bare: true, sequenceOnly: true });
       }
       for (const candidate of [...explicit, ...weakBare]) {
-        let confidence = equationCandidateConfidence(line, candidate.label);
-        let reliable = confidence >= 8;
-        if (!reliable && isStandaloneEquationTagLine(line, candidate.label) && hasNearbyDisplayMath(lines, lineIndex)) {
-          confidence = Math.max(confidence, 12);
-          reliable = true;
-        }
         const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
         const candidateXStartRatio = tokenGeometry.xStartRatio;
         const candidateXEndRatio = tokenGeometry.xEndRatio;
+        const numeric = parsedEquationNumber(candidate.label);
+        const integerTag = Boolean(numeric && !numeric.prefix);
+        const tokenNearRight = Number(candidateXEndRatio) >= 0.76 || Number(candidateXStartRatio) >= 0.68;
+        const standaloneTag = isStandaloneEquationTagLine(line, candidate.label);
+        const nearbyDisplayMath = hasNearbyDisplayMath(lines, lineIndex);
+        let confidence = equationCandidateConfidence(line, candidate.label);
+        let reliable = confidence >= 8;
+        if (!reliable && standaloneTag && nearbyDisplayMath) {
+          confidence = Math.max(confidence, 12);
+          reliable = true;
+        }
+        // Single-integer numbering is common in papers and books, but an
+        // inline citation such as "by (57)" is not an equation target. Require
+        // the integer tag token itself to live at the display-math right edge,
+        // or to be an isolated right-side tag adjacent to display math.
+        if (integerTag && !(tokenNearRight && (standaloneTag || nearbyDisplayMath || equationLineMathSignalCount(line.text) >= 2))) {
+          reliable = false;
+        }
         const record = {
           page,
           ratio: line.ratio,
