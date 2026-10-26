@@ -6055,6 +6055,7 @@ function renderInferredOutline(entries) {
       row.classList.remove('has-edit-menu');
       const key = outlineEntryKey(entry);
       if (pendingOutlineReselectKey === key) pendingOutlineReselectKey = null;
+      pushUndo('structure-outline', entry.title || t('Structure item','结构条目'), entry);
       inferredOutline = inferredOutline.filter((item) => outlineEntryKey(item) !== key);
       tocOutlineTargets = null;
       persistDocumentState();
@@ -8746,6 +8747,9 @@ function renderUndoHistory() {
       kind.textContent = t('Deleted reading trail','已删除阅读轨迹');
       const count = Array.isArray(payload) ? payload.length : 0;
       title.textContent = count ? t(`${count} navigation ${count === 1 ? 'step' : 'steps'}`, `${count} 个导航步骤`) : t('Reading trail','阅读轨迹');
+    } else if (item.type === 'structure-outline') {
+      kind.textContent = t('Deleted structure item','已删除结构条目');
+      title.textContent = compactText(payload.title || item.label, t('Structure item','结构条目'));
     } else {
       kind.textContent = t('Deleted item','已删除项目');
       title.textContent = compactText(item.label, t('Deleted item','已删除项目'));
@@ -8769,6 +8773,20 @@ async function restoreUndoEntry(id = null) {
   else if (item.type === 'glossary') { if (payload && !symbolGlossary.some((x)=>x.id===payload.id)) symbolGlossary.push(payload); renderSymbolGlossary(); }
   else if (item.type === 'reading-trail') { readingBackStack=normalizeReadingTrail(payload); updateReadingBackButton(); renderReadingTrail(); }
   else if (item.type === 'ocr-result') { currentOcrResult=payload; refreshOcrUI(); }
+  else if (item.type === 'structure-outline') {
+    if (payload) {
+      const restored = jsonClone(payload, payload);
+      const key = outlineEntryKey(restored);
+      if (!inferredOutline.some((entry) => outlineEntryKey(entry) === key)) inferredOutline.push(restored);
+      inferredOutline.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
+      inferredOutline = inferredOutline.slice(0, 240);
+      inferredOutlineDetectionDone = true;
+      tocOutlineTargets = null;
+      renderInferredOutline(inferredOutline);
+      rerenderReferenceLinks();
+      refreshSelectionUI();
+    }
+  }
   else return false;
   undoHistory = undoHistory.filter((x)=>x.id!==item.id);
   renderUndoHistory(); persistDocumentState(); return true;
