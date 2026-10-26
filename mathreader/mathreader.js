@@ -3,6 +3,8 @@ const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm';
 const TRANSFORMERS_RUNTIME = 'Transformers.js 4.3.1';
 const MATH_OCR_MODEL = 'Xenova/texify';
+const DOCUMENT_OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js';
+const DOCUMENT_OCR_CACHE_VERSION = 1;
 const LOCAL_DB_NAME = 'mathreader-local-v1';
 const LOCAL_DB_VERSION = 1;
 
@@ -218,6 +220,9 @@ let documentReadingState = 'unread';
 let documentPersonalNote = '';
 let textCache = new Map();
 let lineCache = new Map();
+let documentOcrPages = new Map();
+let documentOcrActive = false;
+let documentOcrModulePromise = null;
 let referencePageRenderCache = new Map();
 let bibliographyExpanded = new Set();
 let pdfModulePromise = null;
@@ -824,6 +829,223 @@ async function ensurePdfJs() {
     pdfModulePromise = null;
     throw new Error(t('MathReader could not load its PDF engine. Check your internet connection and reload the page.', 'MathReader 无法加载 PDF 引擎。请检查网络连接并重新载入页面。'));
   }
+}
+
+
+function documentOcrCacheKey(fileKey = currentFileKey) {
+  return fileKey ? `document-ocr-v${DOCUMENT_OCR_CACHE_VERSION}:${fileKey}` : null;
+}
+
+function parseHocrBbox(title) {
+  const match = String(title || '').match(/\bbbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/i);
+  if (!match) return null;
+  const values = match.slice(1).map(Number);
+  if (values.some((value) => !Number.isFinite(value))) return null;
+  return { x0: values[0], y0: values[1], x1: values[2], y1: values[3] };
+}
+
+function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
+  const safeWidth = Math.max(1, Number(width) || 1);
+  const safeHeight = Math.max(1, Number(height) || 1);
+  const lines = [];
+  const words = [];
+  if (hocr) {
+    try {
+      const doc = new DOMParser().parseFromString(String(hocr), 'text/html');
+      for (const lineNode of doc.querySelectorAll('.ocr_line, .ocrx_line')) {
+        const lineBox = parseHocrBbox(lineNode.getAttribute('title'));
+        const lineWords = [];
+        for (const wordNode of lineNode.querySelectorAll('.ocrx_word')) {
+          const text = String(wordNode.textContent || '').replace(/\s+/g, ' ').trim();
+          const box = parseHocrBbox(wordNode.getAttribute('title'));
+          if (!text || !box) continue;
+          lineWords.push({ text, box });
+          words.push({
+            text,
+            xStartRatio: Math.min(1, Math.max(0, box.x0 / safeWidth)),
+            xEndRatio: Math.min(1, Math.max(0, box.x1 / safeWidth)),
+            yStartRatio: Math.min(1, Math.max(0, box.y0 / safeHeight)),
+            yEndRatio: Math.min(1, Math.max(0, box.y1 / safeHeight))
+          });
+        }
+        if (!lineWords.length) continue;
+        const box = lineBox || {
+          x0: Math.min(...lineWords.map((item) => item.box.x0)),
+          y0: Math.min(...lineWords.map((item) => item.box.y0)),
+          x1: Math.max(...lineWords.map((item) => item.box.x1)),
+          y1: Math.max(...lineWords.map((item) => item.box.y1))
+        };
+        let text = '';
+        const parts = [];
+        for (const item of lineWords) {
+          if (text) text += ' ';
+          const start = text.length;
+          text += item.text;
+          parts.push({
+            start,
+            end: text.length,
+            xStartRatio: Math.min(1, Math.max(0, item.box.x0 / safeWidth)),
+            xEndRatio: Math.min(1, Math.max(0, item.box.x1 / safeWidth))
+          });
+        }
+        lines.push({
+          text,
+          parts,
+          ratio: Math.min(1, Math.max(0, box.y0 / safeHeight)),
+          xStartRatio: Math.min(1, Math.max(0, box.x0 / safeWidth)),
+          xEndRatio: Math.min(1, Math.max(0, box.x1 / safeWidth)),
+          heightRatio: Math.min(1, Math.max(0.001, (box.y1 - box.y0) / safeHeight))
+        });
+      }
+    } catch (error) {
+      console.warn('MathReader could not parse document OCR geometry for page', pageNum, error);
+    }
+  }
+  if (!lines.length) {
+    const rawLines = String(fallbackText || '').split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    rawLines.forEach((text, index) => {
+      const ratio = Math.min(0.98, 0.04 + index * (0.92 / Math.max(1, rawLines.length)));
+      lines.push({ text, parts: [{ start: 0, end: text.length, xStartRatio: 0.06, xEndRatio: 0.94 }], ratio, xStartRatio: 0.06, xEndRatio: 0.94, heightRatio: 0.018 });
+    });
+  }
+  const text = lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
+  return { page: pageNum, width: safeWidth, height: safeHeight, text, lines, words };
+}
+
+async function pdfNeedsDocumentOcr(doc = pdfDoc) {
+  if (!doc?.numPages) return false;
+  let totalChars = 0;
+  let pagesWithText = 0;
+  for (let pageNum = 1; pageNum <= doc.numPages; pageNum += 1) {
+    const page = await doc.getPage(pageNum);
+    const content = await page.getTextContent();
+    const text = (content.items || []).map((item) => String(item.str || '')).join('').replace(/\s+/g, '');
+    if (text.length >= 12) pagesWithText += 1;
+    totalChars += text.length;
+    // A few genuinely textual pages are enough to keep the normal PDF path.
+    if (totalChars >= 80 || pagesWithText >= Math.min(3, doc.numPages)) return false;
+  }
+  // Old scans sometimes contain a page number or stray hidden glyph. Treat that
+  // as effectively textless rather than allowing a few characters to suppress OCR.
+  return totalChars < Math.max(24, doc.numPages * 2) || pagesWithText === 0;
+}
+
+async function loadCachedDocumentOcr() {
+  const key = documentOcrCacheKey();
+  if (!key) return false;
+  try {
+    const cached = await dbMetaGet(key);
+    if (!cached || Number(cached.version) !== DOCUMENT_OCR_CACHE_VERSION || Number(cached.pageCount) !== Number(pdfDoc?.numPages) || !Array.isArray(cached.pages)) return false;
+    const map = new Map();
+    for (const record of cached.pages) if (record && Number(record.page) >= 1 && Array.isArray(record.lines)) map.set(Number(record.page), record);
+    if (map.size !== pdfDoc.numPages) return false;
+    documentOcrPages = map;
+    documentOcrActive = true;
+    return true;
+  } catch (error) {
+    console.warn('MathReader could not restore cached document OCR.', error);
+    return false;
+  }
+}
+
+async function persistDocumentOcr() {
+  const key = documentOcrCacheKey();
+  if (!key || !documentOcrActive || documentOcrPages.size !== pdfDoc?.numPages) return;
+  try {
+    await dbMetaSet(key, {
+      version: DOCUMENT_OCR_CACHE_VERSION,
+      pageCount: pdfDoc.numPages,
+      pages: [...documentOcrPages.values()].sort((a, b) => Number(a.page) - Number(b.page))
+    });
+  } catch (error) {
+    console.warn('MathReader could not cache document OCR.', error);
+  }
+}
+
+async function runFullDocumentOcr() {
+  if (!pdfDoc?.numPages) return;
+  if (!documentOcrModulePromise) documentOcrModulePromise = import(DOCUMENT_OCR_URL);
+  const module = await documentOcrModulePromise;
+  if (typeof module.createWorker !== 'function') throw new Error(t('The document OCR engine could not be initialized.', '无法初始化全文 OCR 引擎。'));
+  const pageCount = pdfDoc.numPages;
+  setLoading(true, t(`Scanned PDF detected · preparing full-document OCR (0/${pageCount})…`, `检测到扫描版 PDF · 正在准备全文 OCR（0/${pageCount}）……`));
+  const worker = await module.createWorker('eng', 1, {
+    logger: (message) => {
+      if (!message || message.status !== 'recognizing text' || !Number.isFinite(Number(message.progress))) return;
+      const page = Number(runFullDocumentOcr.currentPage || 1);
+      const pct = Math.round(Number(message.progress) * 100);
+      setLoading(true, t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
+    }
+  });
+  const map = new Map();
+  try {
+    for (let pageNum = 1; pageNum <= pageCount; pageNum += 1) {
+      runFullDocumentOcr.currentPage = pageNum;
+      setLoading(true, t(`Full-document OCR · page ${pageNum}/${pageCount}`, `全文 OCR · 第 ${pageNum}/${pageCount} 页`));
+      const page = await pdfDoc.getPage(pageNum);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.max(1.45, Math.min(2.35, 2400 / Math.max(1, base.width, base.height)));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.ceil(viewport.width));
+      canvas.height = Math.max(1, Math.ceil(viewport.height));
+      const context = canvas.getContext('2d', { alpha: false });
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: context, viewport }).promise;
+      const result = await worker.recognize(canvas, {}, { hocr: true });
+      const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', canvas.width, canvas.height, pageNum);
+      map.set(pageNum, record);
+      canvas.width = 1;
+      canvas.height = 1;
+      await nextFrame();
+    }
+  } finally {
+    runFullDocumentOcr.currentPage = 0;
+    try { await worker.terminate(); } catch (_) {}
+  }
+  if (map.size !== pageCount) throw new Error(t('Full-document OCR did not complete for every page.', '全文 OCR 未能完成所有页面。'));
+  documentOcrPages = map;
+  documentOcrActive = true;
+  await persistDocumentOcr();
+  setLoading(true, t('Full-document OCR complete · building MathReader indexes…', '全文 OCR 完成 · 正在生成 MathReader 索引……'));
+}
+
+async function ensureDocumentTextReady() {
+  documentOcrPages = new Map();
+  documentOcrActive = false;
+  if (await loadCachedDocumentOcr()) {
+    setLoading(true, t('Restoring scanned-document OCR…', '正在恢复扫描文档 OCR……'));
+    return;
+  }
+  setLoading(true, t('Checking PDF text layer…', '正在检查 PDF 文本层……'));
+  const needsOcr = await pdfNeedsDocumentOcr(pdfDoc);
+  if (!needsOcr) return;
+  await runFullDocumentOcr();
+}
+
+function renderDocumentOcrTextLayer(layer, viewport, pageNum) {
+  const record = documentOcrPages.get(Number(pageNum));
+  if (!record) return false;
+  layer.dataset.documentOcr = 'true';
+  const fragment = document.createDocumentFragment();
+  for (const word of record.words || []) {
+    if (!word?.text) continue;
+    const span = document.createElement('span');
+    span.textContent = word.text;
+    span.style.position = 'absolute';
+    span.style.left = `${Math.max(0, Number(word.xStartRatio) || 0) * viewport.width}px`;
+    span.style.top = `${Math.max(0, Number(word.yStartRatio) || 0) * viewport.height}px`;
+    const wordHeight = Math.max(6, ((Number(word.yEndRatio) || 0) - (Number(word.yStartRatio) || 0)) * viewport.height);
+    span.style.fontSize = `${wordHeight}px`;
+    span.style.lineHeight = '1';
+    span.style.whiteSpace = 'pre';
+    span.style.color = 'transparent';
+    span.style.transformOrigin = '0 0';
+    fragment.append(span);
+  }
+  layer.append(fragment);
+  return true;
 }
 
 function updateHeaderControls() {
@@ -3497,7 +3719,7 @@ function extractVectorFormulaFromTokens(tokens, allowMultiline = true, baseHeigh
 
 function extractVectorFormulaFromLayer(ocrLayer, selectionRect) {
   const textLayer = vectorTextLayerForOcrLayer(ocrLayer);
-  if (!textLayer) return null;
+  if (!textLayer || textLayer.dataset.documentOcr === 'true') return null;
   const layerRect = ocrLayer.getBoundingClientRect();
   const selected = {
     left: layerRect.left + selectionRect.left,
@@ -5021,6 +5243,10 @@ function addSelectionToPageNote() {
   persistDocumentState();
 }
 
+function sourceDocumentUsesOcr(pageNum) {
+  return documentOcrActive && documentOcrPages.has(Number(pageNum));
+}
+
 async function renderSelectableText(page, viewport, layer, surface, pageNum, kind = 'primary') {
   surface.style.width = `${viewport.width}px`;
   surface.style.height = `${viewport.height}px`;
@@ -5032,9 +5258,14 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum, kin
   layer.dataset.kind = kind;
   layer.replaceChildren();
   try {
-    const textContent = await page.getTextContent({ includeMarkedContent: true });
-    const textLayer = new pdfjsLib.TextLayer({ textContentSource: textContent, container: layer, viewport });
-    await textLayer.render();
+    layer.removeAttribute('data-document-ocr');
+    if (sourceDocumentUsesOcr(pageNum)) {
+      renderDocumentOcrTextLayer(layer, viewport, pageNum);
+    } else {
+      const textContent = await page.getTextContent({ includeMarkedContent: true });
+      const textLayer = new pdfjsLib.TextLayer({ textContentSource: textContent, container: layer, viewport });
+      await textLayer.render();
+    }
     decorateReferenceLinks(layer, surface, pageNum);
   } catch (error) {
     console.warn('MathReader text layer unavailable for page', pageNum, error);
@@ -6004,41 +6235,55 @@ async function detectOutlineFromTypography() {
   for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1 });
-    const content = await page.getTextContent();
-    const items = [];
-    for (const item of content.items || []) {
-      const text = normalizedHeadingText(item.str);
-      if (!text) continue;
-      const tr = item.transform || [1, 0, 0, 1, 0, 0];
-      const size = Math.max(1, Math.hypot(Number(tr[0]) || 0, Number(tr[1]) || 0) || Number(item.height) || 1);
-      const x = Number(tr[4]) || 0;
-      const y = Number(tr[5]) || 0;
-      items.push({ text, size, x, y, width: Number(item.width) || 0, fontName: item.fontName || '' });
-      fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
-    }
-    items.sort((a, b) => Math.abs(b.y - a.y) > 1.5 ? b.y - a.y : a.x - b.x);
-    const lines = [];
-    for (const item of items) {
-      let line = lines.find((candidate) => Math.abs(candidate.y - item.y) <= Math.max(1.8, item.size * 0.22));
-      if (!line) {
-        line = { page: pageNum, y: item.y, x: item.x, items: [], size: item.size, pageHeight: viewport.height };
-        lines.push(line);
+    let lines = [];
+    if (sourceDocumentUsesOcr(pageNum)) {
+      const record = documentOcrPages.get(pageNum);
+      lines = (record?.lines || []).map((ocrLine) => {
+        const text = normalizedHeadingText(ocrLine.text);
+        const size = Math.max(1, (Number(ocrLine.heightRatio) || 0.018) * viewport.height);
+        const y = viewport.height * (1 - (Number(ocrLine.ratio) || 0));
+        const x = (Number(ocrLine.xStartRatio) || 0) * viewport.width;
+        fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
+        return { page: pageNum, y, x, items: [], size, pageHeight: viewport.height, text };
+      }).filter((line) => line.text);
+    } else {
+      const content = await page.getTextContent();
+      const items = [];
+      for (const item of content.items || []) {
+        const text = normalizedHeadingText(item.str);
+        if (!text) continue;
+        const tr = item.transform || [1, 0, 0, 1, 0, 0];
+        const size = Math.max(1, Math.hypot(Number(tr[0]) || 0, Number(tr[1]) || 0) || Number(item.height) || 1);
+        const x = Number(tr[4]) || 0;
+        const y = Number(tr[5]) || 0;
+        items.push({ text, size, x, y, width: Number(item.width) || 0, fontName: item.fontName || '' });
+        fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
       }
-      line.items.push(item);
-      line.size = Math.max(line.size, item.size);
-      line.x = Math.min(line.x, item.x);
+      items.sort((a, b) => Math.abs(b.y - a.y) > 1.5 ? b.y - a.y : a.x - b.x);
+      for (const item of items) {
+        let line = lines.find((candidate) => Math.abs(candidate.y - item.y) <= Math.max(1.8, item.size * 0.22));
+        if (!line) {
+          line = { page: pageNum, y: item.y, x: item.x, items: [], size: item.size, pageHeight: viewport.height };
+          lines.push(line);
+        }
+        line.items.push(item);
+        line.size = Math.max(line.size, item.size);
+        line.x = Math.min(line.x, item.x);
+      }
+      for (const line of lines) {
+        line.items.sort((a, b) => a.x - b.x);
+        line.text = normalizedHeadingText(line.items.map((item) => item.text).join(' '));
+      }
     }
     for (const line of lines) {
-      line.items.sort((a, b) => a.x - b.x);
-      line.text = normalizedHeadingText(line.items.map((item) => item.text).join(' '));
       line.normalized = line.text.toLocaleLowerCase().replace(/\d+/g, '#').replace(/[^\p{L}#]+/gu, ' ').trim();
       if (line.normalized) {
         const key = line.normalized;
-        const record = repeatMap.get(key) || { pages: new Set(), top: 0, bottom: 0 };
-        record.pages.add(pageNum);
-        if (line.y > viewport.height * 0.88) record.top += 1;
-        if (line.y < viewport.height * 0.10) record.bottom += 1;
-        repeatMap.set(key, record);
+        const repeatRecord = repeatMap.get(key) || { pages: new Set(), top: 0, bottom: 0 };
+        repeatRecord.pages.add(pageNum);
+        if (line.y > viewport.height * 0.88) repeatRecord.top += 1;
+        if (line.y < viewport.height * 0.10) repeatRecord.bottom += 1;
+        repeatMap.set(key, repeatRecord);
       }
     }
     pages.push(lines);
@@ -6930,6 +7175,13 @@ async function findEquationLabelLocation(query, originPage = null, originRatio =
 
 async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache) {
   if (cache.has(pageNum)) return cache.get(pageNum);
+  if (sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
+    const record = documentOcrPages.get(Number(pageNum));
+    const lines = (record?.lines || []).map((line) => ({ ...line, parts: Array.isArray(line.parts) ? line.parts.map((part) => ({ ...part })) : [] }));
+    cache.set(pageNum, lines);
+    if (flatCache) flatCache.set(pageNum, String(record?.text || lines.map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim());
+    return lines;
+  }
   const page = await sourceDoc.getPage(pageNum);
   const content = await page.getTextContent();
   const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
@@ -8253,6 +8505,11 @@ async function renderOutline() {
 
 async function pageText(pageNum, sourceDoc = pdfDoc, cache = textCache) {
   if (cache.has(pageNum)) return cache.get(pageNum);
+  if (sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
+    const text = String(documentOcrPages.get(Number(pageNum))?.text || '').replace(/\s+/g, ' ').trim();
+    cache.set(pageNum, text);
+    return text;
+  }
   if (sourceDoc === pdfDoc && lineCache.has(pageNum)) {
     const text = lineCache.get(pageNum).map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
     cache.set(pageNum, text); return text;
@@ -9263,6 +9520,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     currentFileName = meta.name;
     currentFileKey = meta.id;
     cacheEnabledForCurrent = Boolean(cachedRecord);
+    await ensureDocumentTextReady();
     // Determine freshness from the same two session sources used by
     // loadDocumentState(): IndexedDB first, then the legacy localStorage copy.
     // This flag is captured before opening persists a new session of its own.
