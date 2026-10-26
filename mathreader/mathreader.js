@@ -315,7 +315,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 6;
+const STRUCTURE_INDEX_VERSION = 7;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -4854,12 +4854,14 @@ function addOrReplaceSelectionStructureItem() {
   }
   if (pendingOutlineReselectKey) {
     const index = inferredOutline.findIndex((entry) => outlineEntryKey(entry) === pendingOutlineReselectKey);
-    if (index >= 0) {
-      selected.depth = Number(inferredOutline[index]?.depth) || 0;
-      inferredOutline[index] = selected;
-    } else {
-      inferredOutline.push(selected);
+    if (index < 0) {
+      pendingOutlineReselectKey = null;
+      refreshSelectionUI();
+      showError(t('The Structure item being replaced no longer exists. Reselect it from Structure and try again.', '要替换的结构条目已不存在。请从结构列表重新选择后再试。'));
+      return;
     }
+    selected.depth = Number(inferredOutline[index]?.depth) || 0;
+    inferredOutline[index] = selected;
     pendingOutlineReselectKey = null;
   } else {
     inferredOutline.push(selected);
@@ -6077,7 +6079,7 @@ const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definit
 const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
 const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
 const CLICKABLE_REFERENCE_RE = new RegExp(
-  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
+  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
   `\\(\\s*(?:\\d+(?:\\.\\d+)*|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
   `\\[\\s*\\d{1,3}\\s*\\]`,
   'gi',
@@ -6347,16 +6349,32 @@ function normalizedBibliographyKey(value) {
   return String(value || '').replace(/^\s*\[|\]\s*$/g, '').replace(/\s+/g, '').trim().toLocaleLowerCase();
 }
 
-function bibliographyCitationKeys(raw) {
-  const numeric = groupedBibliographyMembers(raw).map((number) => String(number));
-  if (numeric.length && !/[A-Za-z]/.test(String(raw || ''))) return numeric;
+function bibliographyCitationKeys(raw, knownKeys = null) {
   const inner = String(raw || '').replace(/^\s*\[|\]\s*$/g, '').trim();
+  if (!inner) return [];
   const keys = [];
+  const accept = (value) => {
+    const key = normalizedBibliographyKey(value);
+    if (!key || (knownKeys && !knownKeys.has(key)) || keys.includes(key)) return;
+    keys.push(key);
+  };
   for (const part of inner.split(/[;,]/)) {
     const token = part.trim();
-    if (/^\d{1,3}$/.test(token) || /^[A-Za-z][A-Za-z0-9]{0,9}$/.test(token)) keys.push(normalizedBibliographyKey(token));
+    const numericRange = token.match(/^(\d{1,3})\s*[-–—]\s*(\d{1,3})$/);
+    if (numericRange) {
+      const start = Number(numericRange[1]);
+      const end = Number(numericRange[2]);
+      if (Math.abs(end - start) <= 80) {
+        const step = start <= end ? 1 : -1;
+        for (let value = start; value !== end + step; value += step) accept(String(value));
+      }
+      continue;
+    }
+    // Do not guess the syntax of author-style bibliography keys. When the
+    // bibliography is known, exact normalized key membership is authoritative.
+    accept(token);
   }
-  return [...new Set(keys)];
+  return keys;
 }
 
 function bibliographyMetadata(text) {
@@ -6387,7 +6405,7 @@ async function buildStructureIndex({ force = false } = {}) {
 
   const nextEntries = [];
   const nextBibliography = [];
-  const bibliographyCitationOccurrences = new Map();
+  const bibliographyCitationGroups = [];
   let bibliographyMode = false;
   let activeProofEntry = null;
   try {
@@ -6405,12 +6423,13 @@ async function buildStructureIndex({ force = false } = {}) {
           let bracketMatch;
           while ((bracketMatch = bracketRe.exec(cleaned))) {
             const raw = bracketMatch[0];
-            for (const key of bibliographyCitationKeys(raw)) {
-              const normalizedKey = normalizedBibliographyKey(key);
-              const list = bibliographyCitationOccurrences.get(normalizedKey) || [];
-              list.push({ page, ratio: line.ratio, raw, snippet: backlinkSnippet(cleaned, raw, bracketMatch.index), matchIndex: bracketMatch.index });
-              bibliographyCitationOccurrences.set(normalizedKey, list);
-            }
+            bibliographyCitationGroups.push({
+              page,
+              ratio: line.ratio,
+              raw,
+              snippet: backlinkSnippet(cleaned, raw, bracketMatch.index),
+              matchIndex: bracketMatch.index
+            });
           }
         }
 
@@ -6469,7 +6488,7 @@ async function buildStructureIndex({ force = false } = {}) {
             const normalizedKey = normalizedBibliographyKey(rawKey);
             if (!nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) {
               const meta = bibliographyMetadata(body);
-              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: (bibliographyCitationOccurrences.get(normalizedKey) || []).slice(0, 500), ...meta });
+              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: [], ...meta });
             }
           }
         }
@@ -6477,6 +6496,21 @@ async function buildStructureIndex({ force = false } = {}) {
       if (page % 10 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     }
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+
+    // Resolve body citation groups only after the bibliography keys are known.
+    // The brackets group citations; they do not define the key syntax. This
+    // supports author lists such as [Wg, W1] and unusual real bibliography keys
+    // without broad bracket heuristics or false positives.
+    const bibliographyByKey = new Map(nextBibliography.map((entry) => [normalizedBibliographyKey(entry.number), entry]));
+    const knownBibliographyKeys = new Set(bibliographyByKey.keys());
+    for (const citation of bibliographyCitationGroups) {
+      for (const key of bibliographyCitationKeys(citation.raw, knownBibliographyKeys)) {
+        const entry = bibliographyByKey.get(key);
+        if (!entry) continue;
+        entry.citations.push(citation);
+        if (entry.citations.length > 500) entry.citations.length = 500;
+      }
+    }
 
     // Resolve proof dependencies into a directed graph and derive the reverse
     // relation from the same detected structure index.
@@ -6690,7 +6724,8 @@ function referenceLinkRectAlreadyCovered(overlay, left, top, width, height) {
     const overlapH = Math.max(0, Math.min(bottom, y + h) - Math.max(top, y));
     const overlap = overlapW * overlapH;
     const smaller = Math.min(width * height, w * h);
-    if (smaller > 0 && overlap / smaller >= 0.78) return true;
+    const sameLine = Math.abs((top + height / 2) - (y + h / 2)) <= Math.max(2, Math.min(height, h) * 0.35);
+    if (sameLine && smaller > 0 && overlap / smaller >= 0.55) return true;
   }
   return false;
 }
@@ -7282,7 +7317,7 @@ async function collectBacklinks(query, target) {
   const normalized = normalizedReferenceLabel(query);
   const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
   const bibKey = /^\[[^\]]+\]$/.test(String(query || '').trim()) ? normalizedBibliographyKey(query) : '';
-  const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query);
+  const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\b/i.test(query);
   const acronym = /^[A-Z][A-Z0-9]{1,7}$/.test(String(query).trim()) ? String(query).trim() : null;
   const structureTarget = structureEntries.find((entry) => Number(entry.page) === Number(target.page) && Math.abs((Number(entry.ratio)||0) - (Number(target.ratio)||0)) < 0.04) || null;
   const structureAlias = structureTarget ? headingAliasForTitle(structureTarget.title || structureTarget.label || '') : '';
@@ -7355,7 +7390,7 @@ async function resolveReferenceTarget(query, originPage = null, originRatio = nu
     const bib = bibliographyEntries.find((entry) => normalizedBibliographyKey(entry.number) === key);
     if (bib) return { page: bib.page, ratio: bib.ratio };
   }
-  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query)) {
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\b/i.test(query)) {
     const entry = structureEntries.find((item) => normalizedReferenceLabel(item.label) === normalized);
     if (entry) return { page: entry.page, ratio: entry.ratio };
   }
@@ -7749,12 +7784,19 @@ function addSelectionToGlossary() {
   autoOpenRightSection('symbol-glossary-section');
 }
 
+
 function selectedReferenceQuery() {
   const text = String(currentSelection?.text || '').replace(/\s+/g, ' ').trim();
-  const match = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
-    || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/)
-    || text.match(/\[\s*\d{1,3}\s*\]/);
-  return match?.[0] || '';
+  const direct = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
+    || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/);
+  if (direct) return direct[0];
+  const bracket = text.match(/\[[^\]\n]{1,80}\]/);
+  if (!bracket) return '';
+  const known = new Set(bibliographyEntries.map((entry) => normalizedBibliographyKey(entry.number)));
+  const keys = bibliographyCitationKeys(bracket[0], known);
+  if (keys.length !== 1) return '';
+  const entry = bibliographyEntries.find((item) => normalizedBibliographyKey(item.number) === keys[0]);
+  return entry?.label || '';
 }
 
 async function goToSelectedReference() {
@@ -7763,7 +7805,6 @@ async function goToSelectedReference() {
   if (!query) { showError(t('Select a reference such as “Theorem 2.4”, “Section 3”, “(4.7)”, or “[17]”.', '请选择类似“Theorem 2.4”、“Section 3”、“(4.7)”或“[17]”的引用。')); return; }
   await goToReferenceQuery(query, currentSelection?.page || currentPage);
 }
-
 
 
 function semanticMatchRangeInLayer(layer, surface, query, targetRatio = null) {
@@ -8918,8 +8959,8 @@ function hideReferencePreview() {
 function snapshotKindForQuery(query) {
   const q=String(query||'').trim();
   if (isEquationLabelQuery(q)) return 'equation';
-  if (/^\[\s*\d+\s*\]$/.test(q)) return 'bibliography';
-  if (/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Section)\b/i.test(q)) return 'structure';
+  if (/^\[[^\]\n]+\]$/.test(q) && bibliographyEntries.some((entry) => normalizedBibliographyKey(entry.number) === normalizedBibliographyKey(q))) return 'bibliography';
+  if (/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis|Section)\b/i.test(q)) return 'structure';
   return 'generic';
 }
 
@@ -9186,7 +9227,6 @@ bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
 [selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToStructure, selectionToGlossary, floatingCopyText, floatingCopyLatex, floatingFindAll, floatingHighlight, floatingMarginNote, floatingAddNote, floatingStructure, floatingGlossary].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
-selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
 selectionToNote.addEventListener('click', addSelectionToPageNote);
