@@ -179,7 +179,6 @@ const ocrCapability = el('ocr-capability');
 const ocrTimingDiagnostics = el('ocr-timing-diagnostics');
 const formulaExtractionSelect = el('formula-extraction-mode');
 const ocrInitProgress = el('ocr-init-progress');
-const ocrInitProgressBar = el('ocr-init-progress-bar');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
 const documentReadingStatus = el('document-reading-status');
@@ -2409,7 +2408,7 @@ async function ensureMathOcrPipeline() {
         const renderInitProgress = (value) => {
           const next = Math.max(displayedInitProgress, Math.min(99, Number(value) || 1));
           displayedInitProgress = next;
-          if (ocrInitProgressBar) ocrInitProgressBar.style.transform = `scaleX(${next / 100})`;
+          ocrInitProgress?.style.setProperty('--ocr-init-progress-angle', `${next * 3.6}deg`);
         };
         const updateEstimatedProgress = () => {
           if (progressFinished) return;
@@ -2424,7 +2423,7 @@ async function ensureMathOcrPipeline() {
           }
           renderInitProgress(estimate);
         };
-        if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(0.01)';
+        ocrInitProgress?.style.setProperty('--ocr-init-progress-angle', '3.6deg');
         ocrInitProgress?.classList.remove('is-hidden');
         ocrInitProgress?.setAttribute('aria-hidden', 'false');
         setOcrStatus(t(`Initializing OCR · ${backend.label}`, `正在初始化 OCR · ${backend.label}`), true);
@@ -2460,11 +2459,11 @@ async function ensureMathOcrPipeline() {
           : Math.round(actualInitMs);
         safeSet(progressHistoryKey, String(learnedInitMs));
         displayedInitProgress = 100;
-        if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(1)';
+        ocrInitProgress?.style.setProperty('--ocr-init-progress-angle', '360deg');
         setTimeout(() => {
           ocrInitProgress?.classList.add('is-hidden');
           ocrInitProgress?.setAttribute('aria-hidden', 'true');
-          if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(0)';
+          ocrInitProgress?.style.setProperty('--ocr-init-progress-angle', '3.6deg');
         }, 220);
         setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
@@ -2473,7 +2472,7 @@ async function ensureMathOcrPipeline() {
         if (typeof progressTimer !== 'undefined' && progressTimer) clearInterval(progressTimer);
         ocrInitProgress?.classList.add('is-hidden');
         ocrInitProgress?.setAttribute('aria-hidden', 'true');
-        if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(0)';
+        ocrInitProgress?.style.setProperty('--ocr-init-progress-angle', '3.6deg');
         console.warn('MathReader OCR backend failed', backend, error);
         lastError = error;
         if (index + 1 < plan.length) {
