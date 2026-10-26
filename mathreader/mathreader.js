@@ -6195,6 +6195,36 @@ function equationDocumentPosition(item) {
   return Number(item?.page || 0) * 10 + (Number(item?.ratio) || 0);
 }
 
+function chooseCanonicalEquationCandidate(candidates) {
+  const usable = (candidates || []).filter(Boolean);
+  if (!usable.length) return null;
+  return [...usable].sort((a, b) => {
+    const aEnd = Number(a.xEndRatio);
+    const bEnd = Number(b.xEndRatio);
+    const aStart = Number(a.xStartRatio);
+    const bStart = Number(b.xStartRatio);
+    const aRight = (Number.isFinite(aEnd) && aEnd >= 0.70) || (Number.isFinite(aStart) && aStart >= 0.60);
+    const bRight = (Number.isFinite(bEnd) && bEnd >= 0.70) || (Number.isFinite(bStart) && bStart >= 0.60);
+    if (aRight !== bRight) return bRight ? 1 : -1;
+    const aGeom = Number.isFinite(aEnd) ? aEnd : (Number.isFinite(aStart) ? aStart : -1);
+    const bGeom = Number.isFinite(bEnd) ? bEnd : (Number.isFinite(bStart) ? bStart : -1);
+    if (Math.abs(aGeom - bGeom) > 0.02) return bGeom - aGeom;
+    const aPos = equationDocumentPosition(a);
+    const bPos = equationDocumentPosition(b);
+    if (Math.abs(aPos - bPos) > 1e-6) return aPos - bPos;
+    return (Number(b.confidence) || 0) - (Number(a.confidence) || 0);
+  })[0];
+}
+
+function canonicalizeEquationIndex(index) {
+  const out = new Map();
+  for (const [label, candidates] of index.entries()) {
+    const canonical = chooseCanonicalEquationCandidate(candidates);
+    if (canonical) out.set(label, [canonical]);
+  }
+  return out;
+}
+
 function recoverSequentialEquationGaps(index, candidatePool) {
   const best = [];
   for (const [label, candidates] of index.entries()) {
@@ -6383,7 +6413,7 @@ async function buildEquationLabelIndex() {
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
   recoverSequentialEquationGaps(index, candidatePool);
-  equationLabelIndex = index;
+  equationLabelIndex = canonicalizeEquationIndex(index);
   renderEquationIndex();
   return index;
 }
