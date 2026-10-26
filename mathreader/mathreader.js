@@ -8690,6 +8690,23 @@ function commandActions() {
   ].filter((item) => !item.needsPdf || pdfDoc);
 }
 
+let commandPaletteSelectionIndex = -1;
+
+function commandPaletteButtons() {
+  return commandList ? Array.from(commandList.querySelectorAll('.command-item')) : [];
+}
+
+function setCommandPaletteSelection(index) {
+  const buttons = commandPaletteButtons();
+  for (const button of buttons) button.classList.remove('is-current');
+  if (!buttons.length || index < 0) {
+    commandPaletteSelectionIndex = -1;
+    return;
+  }
+  commandPaletteSelectionIndex = ((index % buttons.length) + buttons.length) % buttons.length;
+  buttons[commandPaletteSelectionIndex].classList.add('is-current');
+}
+
 function renderCommandPalette() {
   if (!commandList) return;
   const qRaw = String(commandInput?.value || '').trim();
@@ -8698,8 +8715,9 @@ function renderCommandPalette() {
   for (const action of commandActions()) items.push({ isCommand:true, kind:action.kind, kindKey:'command', title:action.label, subtitle:'', run:action.run, searchText:action.label });
   if (qRaw) items.push(...commandPaletteEntities());
   const filtered = items.map((item)=>({item,score:commandPaletteMatchScore(item,qRaw)})).filter((row)=>row.score>0).sort((a,b)=>b.score-a.score || String(a.item.title).localeCompare(String(b.item.title))).slice(0,80).map((row)=>row.item);
+  commandPaletteSelectionIndex = qRaw && filtered.length ? 0 : -1;
   for (const [index, item] of filtered.entries()) {
-    const button=document.createElement('button'); button.type='button'; button.className='command-item'; if(index===0) button.classList.add('is-current');
+    const button=document.createElement('button'); button.type='button'; button.className='command-item'; if(index===commandPaletteSelectionIndex) button.classList.add('is-current');
     const main=document.createElement('span'); main.className='command-main';
     const title=document.createElement('span'); title.className='command-title'; title.textContent=item.title; main.append(title);
     if(item.subtitle){ const sub=document.createElement('span'); sub.className='command-subtitle'; sub.textContent=item.subtitle; main.append(sub); }
@@ -8712,12 +8730,18 @@ function renderCommandPalette() {
 
 function openCommandPalette() {
   if (!commandPalette) return;
+  commandPaletteSelectionIndex = -1;
   commandPalette.classList.remove('is-hidden'); commandInput.value = ''; renderCommandPalette(); setTimeout(() => commandInput.focus(), 0);
   if (pdfDoc && !equationLabelIndex) {
     buildEquationLabelIndex().then(() => { if (!commandPalette.classList.contains('is-hidden') && commandInput.value.trim()) renderCommandPalette(); }).catch(() => {});
   }
 }
-function closeCommandPalette() { commandPalette?.classList.add('is-hidden'); }
+function closeCommandPalette() {
+  const active = document.activeElement;
+  commandPalette?.classList.add('is-hidden');
+  commandPaletteSelectionIndex = -1;
+  if (active && commandPalette?.contains(active) && typeof active.blur === 'function') active.blur();
+}
 
 formulaExtractionSelect?.addEventListener('change', () => {
   formulaExtractionMode = formulaExtractionSelect.value === 'vector' ? 'vector' : 'image';
@@ -8749,7 +8773,23 @@ selectionMarginNote?.addEventListener('click', () => addSelectionAnnotation('mar
 saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
 commandInput?.addEventListener('input', renderCommandPalette);
 commandInput?.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') { const first = commandList?.querySelector('.command-item'); if (first) { event.preventDefault(); first.click(); } }
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    const buttons = commandPaletteButtons();
+    if (buttons.length) {
+      event.preventDefault();
+      const next = commandPaletteSelectionIndex < 0
+        ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1)
+        : commandPaletteSelectionIndex + (event.key === 'ArrowDown' ? 1 : -1);
+      setCommandPaletteSelection(next);
+    }
+    return;
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const selected = commandPaletteSelectionIndex >= 0 ? commandPaletteButtons()[commandPaletteSelectionIndex] : null;
+    selected?.click();
+    return;
+  }
   if (event.key === 'Escape') { event.preventDefault(); closeCommandPalette(); }
 });
 commandPalette?.addEventListener('pointerdown', (event) => { if (event.target === commandPalette) closeCommandPalette(); });
