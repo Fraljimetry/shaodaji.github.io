@@ -313,7 +313,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 5;
+const STRUCTURE_INDEX_VERSION = 6;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -650,7 +650,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 17,
+    version: 18,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -1276,7 +1276,7 @@ function loadDocumentState(cachedSession = null) {
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
-    if (Number(session.version || 0) < 15 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
+    if (Number(session.version || 0) < 18 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     renderSymbolGlossary();
     if (generalPrefs.rememberSidebarVisibility !== false && Number(session.version || 0) >= 4) {
@@ -1647,8 +1647,55 @@ function unwrapOcrFormattingEnvelope(value) {
   if (!envMatch) return text;
   const env = envMatch[1];
   let inner = String(envMatch[2] || '').trim();
-  if (env === 'array') inner = inner.replace(/^\{[^}]*\}/, '').trim();
+  if (env === 'array') {
+    inner = inner.replace(/^\{[^}]*\}/, '').trim();
+    // Texify commonly represents aligned equations as a three-column array:
+    // lhs & relation & rhs, followed by empty & empty & continuation rows.
+    // Preserve that semantic structure before the generic formatter removes
+    // alignment markers.
+    const arrayRows = splitOcrLatexRows(inner);
+    inner = arrayRows.map(normalizeOcrArrayFormattingRow).join(latexLineSeparator());
+  }
   return inner;
+}
+
+function splitTopLevelOcrAlignmentCells(value) {
+  const text = String(value || '');
+  const cells = [];
+  let current = '';
+  let braceDepth = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '\\' && i + 1 < text.length) {
+      current += ch + text[i + 1];
+      i += 1;
+      continue;
+    }
+    if (ch === '{') braceDepth += 1;
+    else if (ch === '}' && braceDepth > 0) braceDepth -= 1;
+    if (ch === '&' && braceDepth === 0) {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+function normalizeOcrArrayFormattingRow(value) {
+  const cells = splitTopLevelOcrAlignmentCells(value);
+  if (cells.length !== 3) return String(value || '').trim();
+  const [leftRaw, middleRaw, rightRaw] = cells;
+  const left = stripRedundantOuterBraces(leftRaw);
+  const middle = stripRedundantOuterBraces(middleRaw);
+  const right = stripRedundantOuterBraces(rightRaw);
+  const relation = /^(?:=|<=|>=|<|>|\\(?:leq|le|geq|ge|neq|ne|approx|sim|equiv|to|iff|lesssim|gtrsim|simeq|cong))$/.test(middle);
+  if (relation && right) return `${left} &${middle} ${right}`.trim();
+  if (!left && !middle && right) return `&\\qquad ${right}`;
+  if (!left && middle && right) return `&${middle} ${right}`;
+  return String(value || '').trim();
 }
 
 function splitOcrLatexRows(value) {
@@ -1895,7 +1942,7 @@ function mergeDuplicateLatexScripts(value, changes) {
 
 function repairLatexEnvironments(value, changes) {
   let text = String(value || '');
-  const environments = ['aligned', 'gathered', 'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix', 'cases'];
+  const environments = ['aligned', 'alignedat', 'split', 'gathered', 'array', 'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix', 'cases'];
   for (const env of environments) {
     const beginRe = new RegExp(`\\\\begin\\{${env}\\}`, 'g');
     const endRe = new RegExp(`\\\\end\\{${env}\\}`, 'g');
@@ -1929,11 +1976,30 @@ function repairLatexDelimiters(value, changes) {
   return text;
 }
 
+function repairLatexInnerTags(value, changes) {
+  let text = String(value || '');
+  const environments = ['aligned', 'alignedat', 'gathered', 'split', 'array', 'cases', 'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix'];
+  let repaired = false;
+  for (const env of environments) {
+    const environmentRe = new RegExp(`(\\\\begin\\{${env}\\}(?:\\{[^{}]*\\})?)([\\s\\S]*?)(\\\\end\\{${env}\\})`, 'g');
+    text = text.replace(environmentRe, (whole, begin, body, end) => {
+      const nextBody = body.replace(/\\tag\*?\s*\{([^{}]{1,48})\}/g, (tagWhole, tagValue) => {
+        repaired = true;
+        const compact = String(tagValue || '').trim().replace(/^\((.*)\)$/, '$1');
+        return compact ? `\\qquad(${compact})` : '';
+      });
+      return `${begin}${nextBody}${end}`;
+    });
+  }
+  if (repaired) changes.push('converted invalid inner \\tag to a visible equation label');
+  return text;
+}
+
 function repairLatexAlignment(value, changes) {
   let text = String(value || '').trim();
   const hasRows = /\\\\/.test(text);
   const hasAmp = /(^|[^\\])&/.test(text);
-  const inAlignment = /\\begin\{(?:aligned|align|align\*|gathered|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases)\}/.test(text);
+  const inAlignment = /\\begin\{(?:aligned|alignedat|align|align\*|split|gathered|array|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases)\}/.test(text);
   if ((hasRows || hasAmp) && !inAlignment) {
     text = `\\begin{aligned}\n${text}\n\\end{aligned}`;
     changes.push('wrapped alignment markers in aligned');
@@ -2058,6 +2124,7 @@ function improveOcrLatex(value, options = {}) {
   text = repairLatexBraceBalance(text, changes);
   text = mergeDuplicateLatexScripts(text, changes);
   text = repairLatexDelimiters(text, changes);
+  text = repairLatexInnerTags(text, changes);
   text = repairLatexAlignment(text, changes);
   text = repairLatexEnvironments(text, changes);
   text = repairTensorIndexCorruption(text, options.vectorLatex || '', changes);
@@ -5787,6 +5854,13 @@ async function detectOutlineFromTypography() {
       if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
       if (isLikelyFormulaHeading(text)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
+      // Bibliography/reference fragments can be typographically prominent in
+      // extracted PDFs and used to leak into the detected Contents list.
+      // Reject only strong reference metadata signatures; ordinary headings
+      // remain eligible.
+      if (/https?:\/\/|\b(?:doi|arXiv|ISBN)\b|\b10\.\d{4,9}\//i.test(text)) continue;
+      if (/^\d{4}\b.*\b(?:Springer(?:-Verlag)?|Press|Proceedings?|Journal|Communications?|Lecture Notes)\b/i.test(text)) continue;
+      if (/^\d{4,}\s+[a-z]/.test(text) && words.length >= 5) continue;
 
       const repetition = repeatMap.get(line.normalized);
       const repeatedOn = repetition?.pages?.size || 0;
@@ -6112,6 +6186,18 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
   return lines;
 }
 
+function normalizedBibliographyKey(value) {
+  return String(value || '').replace(/^\s*\[|\]\s*$/g, '').replace(/\s+/g, '').trim().toLocaleLowerCase();
+}
+
+function bibliographyCitationKeys(raw) {
+  const numeric = groupedBibliographyMembers(raw).map((number) => String(number));
+  if (numeric.length) return numeric;
+  const inner = String(raw || '').replace(/^\s*\[|\]\s*$/g, '').trim();
+  if (/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(inner)) return [normalizedBibliographyKey(inner)];
+  return [];
+}
+
 function bibliographyMetadata(text) {
   const value = String(text || '');
   const doi = value.match(/\b10\.\d{4,9}\/[\-._;()/:A-Z0-9]+/i)?.[0]?.replace(/[.,;)]$/, '') || '';
@@ -6157,10 +6243,11 @@ async function buildStructureIndex({ force = false } = {}) {
           let bracketMatch;
           while ((bracketMatch = bracketRe.exec(cleaned))) {
             const raw = bracketMatch[0];
-            for (const number of groupedBibliographyMembers(raw)) {
-              const list = bibliographyCitationOccurrences.get(number) || [];
+            for (const key of bibliographyCitationKeys(raw)) {
+              const normalizedKey = normalizedBibliographyKey(key);
+              const list = bibliographyCitationOccurrences.get(normalizedKey) || [];
               list.push({ page, ratio: line.ratio, raw, snippet: backlinkSnippet(cleaned, raw, bracketMatch.index), matchIndex: bracketMatch.index });
-              bibliographyCitationOccurrences.set(number, list);
+              bibliographyCitationOccurrences.set(normalizedKey, list);
             }
           }
         }
@@ -6206,14 +6293,21 @@ async function buildStructureIndex({ force = false } = {}) {
 
         if (bibliographyMode) {
           let bib = cleaned.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
+          let bracketKey = false;
+          if (!bib) {
+            bib = cleaned.match(/^\[([A-Za-z][A-Za-z0-9]{0,9})\]\s+(.{3,})$/);
+            bracketKey = Boolean(bib);
+          }
           if (!bib) bib = cleaned.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
           if (bib) {
-            const number = Number(bib[1]);
+            const rawKey = bib[1];
+            const number = bracketKey ? rawKey : Number(rawKey);
             const body = bib[2].trim();
-            const label = `[${number}]`;
-            if (!nextBibliography.some((entry) => entry.number === number)) {
+            const label = bracketKey ? `[${rawKey}]` : `[${number}]`;
+            const normalizedKey = normalizedBibliographyKey(rawKey);
+            if (!nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) {
               const meta = bibliographyMetadata(body);
-              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: (bibliographyCitationOccurrences.get(number) || []).slice(0, 500), ...meta });
+              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: (bibliographyCitationOccurrences.get(normalizedKey) || []).slice(0, 500), ...meta });
             }
           }
         }
@@ -6976,7 +7070,7 @@ async function collectBacklinks(query, target) {
   };
   const normalized = normalizedReferenceLabel(query);
   const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
-  const bibNumber = /^\[/.test(query) ? Number(String(query).replace(/\D/g,'')) : null;
+  const bibKey = /^\[[^\]]+\]$/.test(String(query || '').trim()) ? normalizedBibliographyKey(query) : '';
   const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query);
   const acronym = /^[A-Z][A-Z0-9]{1,7}$/.test(String(query).trim()) ? String(query).trim() : null;
   const structureTarget = structureEntries.find((entry) => Number(entry.page) === Number(target.page) && Math.abs((Number(entry.ratio)||0) - (Number(target.ratio)||0)) < 0.04) || null;
@@ -6986,8 +7080,8 @@ async function collectBacklinks(query, target) {
   // while scanning body text before the References/Bibliography section. Reuse
   // it here instead of rescanning every page, which could mistakenly count the
   // bibliography definition itself as a backlink to its own entry.
-  if (bibNumber) {
-    const bib = bibliographyEntries.find((entry) => Number(entry.number) === Number(bibNumber));
+  if (bibKey) {
+    const bib = bibliographyEntries.find((entry) => normalizedBibliographyKey(entry.number) === bibKey);
     for (const citation of bib?.citations || []) {
       add(citation.page, citation.ratio, citation.raw || query, citation.raw || query, {
         matchIndex: citation.matchIndex,
@@ -7045,9 +7139,9 @@ async function resolveReferenceTarget(query, originPage = null, originRatio = nu
     if (equationTarget) return equationTarget;
     return null;
   }
-  if (/^\[/.test(query)) {
-    const number = Number(query.replace(/\D/g, ''));
-    const bib = bibliographyEntries.find((entry) => entry.number === number);
+  if (/^\[[^\]]+\]$/.test(String(query || '').trim())) {
+    const key = normalizedBibliographyKey(query);
+    const bib = bibliographyEntries.find((entry) => normalizedBibliographyKey(entry.number) === key);
     if (bib) return { page: bib.page, ratio: bib.ratio };
   }
   if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim)\b/i.test(query)) {
