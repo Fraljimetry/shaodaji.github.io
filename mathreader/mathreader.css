@@ -398,7 +398,7 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .contents-section>.panel-heading{margin:0}
 .contents-section.is-collapsed{padding-bottom:10px}
 .contents-section .outline-list,.contents-section .structure-index,.contents-section .bibliography-index,.contents-section .equation-index{margin-top:5px}
-.equation-index{display:grid;gap:2px;max-height:34vh;overflow:auto}
+.equation-index{display:grid;gap:2px;max-height:34vh;overflow:auto;padding-right:8px;box-sizing:border-box}
 .equation-index-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px;align-items:center;width:100%;padding:6px 7px;border:0;border-radius:5px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
 .equation-index-item:hover{background:var(--surface-soft)}
 .equation-index-item strong{color:var(--accent-deep);font-size:.72rem}
