@@ -6217,7 +6217,7 @@ function renderEmbeddedOutline(entries) {
     button.addEventListener('click', async () => {
       outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
       setDocumentMapSelectedNode(button);
-      await goToMatchedLocation(entry.page, Number(entry.ratio) || 0, entry.matchText || entry.title || '');
+      await goToMatchedLocation(entry.page, Number(entry.ratio) || 0, '');
     });
 
     const menu = document.createElement('button');
@@ -6309,7 +6309,7 @@ function renderInferredOutline(entries) {
     button.addEventListener('click', () => {
       outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
       setDocumentMapSelectedNode(button);
-      goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.matchText || entry.title);
+      goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, '');
     });
     const menu = document.createElement('button');
     menu.type = 'button';
