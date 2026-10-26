@@ -188,7 +188,6 @@ const resetDisplay = el('reset-display');
 const flowSingle = el('flow-single');
 const flowContinuous = el('flow-continuous');
 const pageToneSelect = el('page-tone');
-const pdfDisplayQualitySelect = el('pdf-display-quality');
 const brightnessRange = el('brightness-range');
 const brightnessValue = el('brightness-value');
 const contrastRange = el('contrast-range');
@@ -270,7 +269,6 @@ let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
 let readingFlow = 'continuous';
 let pageTone = 'auto';
-let pdfDisplayQuality = 3;
 let displayBrightness = 100;
 let displayContrast = 100;
 let displayGap = 20;
@@ -425,7 +423,6 @@ function loadDisplayPreferences() {
   if (saved && typeof saved === 'object') {
     readingFlow = saved.flow === 'single' ? 'single' : 'continuous';
     pageTone = ['auto','original','soft-dark','warm'].includes(saved.tone) ? saved.tone : 'auto';
-    pdfDisplayQuality = [2,3,4].includes(Number(saved.pdfQuality)) ? Number(saved.pdfQuality) : 3;
     const oldDefault = migratedFrom && Number(saved.brightness) === 96;
     const oldContrastDefault = migratedFrom && Number(saved.contrast) === 96;
     displayBrightness = oldDefault ? 100 : clamp(saved.brightness, 70, 115, 100);
@@ -434,7 +431,6 @@ function loadDisplayPreferences() {
     displayShadow = saved.shadow !== false;
   } else {
     readingFlow = 'continuous';
-    pdfDisplayQuality = 3;
     displayBrightness = 100;
     displayContrast = 100;
   }
@@ -444,7 +440,6 @@ function persistDisplayPreferences() {
   safeSet(DISPLAY_PREFS_KEY, JSON.stringify({
     flow: readingFlow,
     tone: pageTone,
-    pdfQuality: pdfDisplayQuality,
     brightness: displayBrightness,
     contrast: displayContrast,
     gap: displayGap,
@@ -461,7 +456,6 @@ function updateDisplayControls() {
   flowSingle?.classList.toggle('is-active', readingFlow === 'single');
   flowContinuous?.classList.toggle('is-active', readingFlow === 'continuous');
   if (pageToneSelect) pageToneSelect.value = pageTone;
-  if (pdfDisplayQualitySelect) pdfDisplayQualitySelect.value = String(pdfDisplayQuality);
   if (brightnessRange) brightnessRange.value = String(displayBrightness);
   if (contrastRange) contrastRange.value = String(displayContrast);
   if (gapRange) gapRange.value = String(displayGap);
@@ -545,7 +539,6 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
 function resetDisplayPreferences() {
   readingFlow = 'continuous';
   pageTone = 'auto';
-  pdfDisplayQuality = 3;
   displayBrightness = 100;
   displayContrast = 100;
   displayGap = 20;
@@ -4835,12 +4828,6 @@ function pageScale(baseViewport, wrap, kind = 'primary') {
   return Math.max(.35, Math.min(scale, 4));
 }
 
-function pdfRenderPixelRatio() {
-  // Display quality is an explicit CSS-pixel render multiplier. Keep visible
-  // page geometry unchanged while increasing only the backing canvas density.
-  return [2,3,4].includes(Number(pdfDisplayQuality)) ? Number(pdfDisplayQuality) : 3;
-}
-
 async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   if (!pdfDoc) return;
   const page = await pdfDoc.getPage(pageNum);
@@ -4851,7 +4838,7 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   const targetSurface = kind === 'reference' ? referencePageSurface : primaryPageSurface;
   targetSurface.style.width = `${viewport.width}px`;
   targetSurface.style.height = `${viewport.height}px`;
-  const dpr = pdfRenderPixelRatio();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const context = targetCanvas.getContext('2d', { alpha: false });
   targetCanvas.width = Math.floor(viewport.width * dpr);
   targetCanvas.height = Math.floor(viewport.height * dpr);
@@ -4961,7 +4948,7 @@ async function renderContinuousPage(pageNum, generation, { retry = true } = {}) 
     const { surface, canvas: pageCanvas, textLayer, ocrLayer } = record;
     surface.style.width = `${viewport.width}px`;
     surface.style.height = `${viewport.height}px`;
-    const dpr = pdfRenderPixelRatio();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const ctx = pageCanvas.getContext('2d', { alpha: false });
     pageCanvas.width = Math.floor(viewport.width * dpr);
     pageCanvas.height = Math.floor(viewport.height * dpr);
@@ -8315,19 +8302,6 @@ flowSingle?.addEventListener('click', () => setReadingFlow('single'));
 flowContinuous?.addEventListener('click', () => setReadingFlow('continuous'));
 resetDisplay?.addEventListener('click', resetDisplayPreferences);
 pageToneSelect?.addEventListener('change', () => { pageTone = pageToneSelect.value; applyPageDisplay(); });
-pdfDisplayQualitySelect?.addEventListener('change', async () => {
-  const next = Number(pdfDisplayQualitySelect.value);
-  pdfDisplayQuality = [2,3,4].includes(next) ? next : 3;
-  persistDisplayPreferences();
-  if (!pdfDoc) return;
-  if (readingFlow === 'continuous') {
-    const anchor = captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 };
-    await buildContinuousDocument({ restore: true, anchor });
-  } else {
-    await renderPage(currentPage, canvas, primaryCanvasWrap, 'primary');
-    if (pinnedPage) await renderPage(pinnedPage, referenceCanvas, referenceCanvasWrap, 'reference');
-  }
-});
 brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 100); applyPageDisplay(); });
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 100); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
