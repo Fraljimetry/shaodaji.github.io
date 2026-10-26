@@ -137,6 +137,7 @@ const copySelectionText = el('copy-selection-text');
 const copySelectionLatex = el('copy-selection-latex');
 const selectionToNote = el('selection-to-note');
 const selectionFindAll = el('selection-find-all');
+const selectionToStructure = el('selection-to-structure');
 const selectionToGlossary = el('selection-to-glossary');
 const glossarySymbolInput = el('glossary-symbol');
 const glossaryMeaningInput = el('glossary-meaning');
@@ -226,6 +227,7 @@ let annotationSaveTimer = null;
 let resizeTimer = null;
 let selectionTimer = null;
 let currentSelection = null;
+let pendingStructureReselectKey = null;
 let scrollByPage = {};
 let referenceScrollByPage = {};
 let localLibrary = [];
@@ -4615,6 +4617,12 @@ function refreshSelectionUI() {
   selectionTextPreview.textContent = currentSelection.text;
   selectionLatexPreview.textContent = currentSelection.latex;
   selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
+  if (selectionToStructure) {
+    const replacing = Boolean(pendingStructureReselectKey);
+    selectionToStructure.textContent = replacing ? t('Replace structure item', '替换结构条目') : t('Add to structure', '加入文档结构');
+    selectionToStructure.dataset.en = replacing ? 'Replace structure item' : 'Add to structure';
+    selectionToStructure.dataset.zh = replacing ? '替换结构条目' : '加入文档结构';
+  }
 }
 
 function hideSelectionToolbar() {
@@ -4806,6 +4814,76 @@ async function copyPlainText(text, button = null) {
     button.textContent = t('Copied', '已复制');
     setTimeout(() => { button.textContent = old; }, 900);
   }
+}
+
+function structureEntryTextFromSelection(selection) {
+  const text = String(selection?.text || '').replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  const matched = text.match(STRUCTURE_REFERENCE_RE)?.[0] || '';
+  const label = matched || text.split(/[\n.!?]/, 1)[0].trim().slice(0, 80) || text.slice(0, 80);
+  return {
+    key: `manual:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    label,
+    page: Number(selection.page),
+    ratio: Number(selection.ratio) || 0,
+    title: text.slice(0, 180),
+    proofReferences: [],
+    usedByProofs: [],
+    userEdited: true
+  };
+}
+
+function pruneStructureRelationLabel(label) {
+  const wanted = normalizedReferenceLabel(label || '');
+  if (!wanted) return;
+  for (const entry of structureEntries) {
+    for (const field of ['proofUses', 'usedByProofs', 'corollaries', 'derivedFrom']) {
+      if (!Array.isArray(entry[field])) continue;
+      entry[field] = entry[field].filter((item) => normalizedReferenceLabel(item?.label || '') !== wanted);
+    }
+  }
+}
+
+function replaceStructureRelationLabel(oldEntry, newEntry) {
+  const wanted = normalizedReferenceLabel(oldEntry?.label || '');
+  if (!wanted) return;
+  for (const entry of structureEntries) {
+    for (const field of ['proofUses', 'usedByProofs', 'corollaries', 'derivedFrom']) {
+      if (!Array.isArray(entry[field])) continue;
+      entry[field] = entry[field].map((item) => normalizedReferenceLabel(item?.label || '') === wanted
+        ? { ...item, label: newEntry.label, page: newEntry.page, ratio: newEntry.ratio }
+        : item);
+    }
+  }
+}
+
+function addOrReplaceSelectionStructureItem() {
+  if (!pdfDoc || !currentSelection?.text) return;
+  const selected = structureEntryTextFromSelection(currentSelection);
+  if (!selected) return;
+  if (pendingStructureReselectKey) {
+    const index = structureEntries.findIndex((entry) => entry.key === pendingStructureReselectKey);
+    if (index >= 0) {
+      const previous = structureEntries[index];
+      selected.key = previous.key;
+      for (const field of ['proofPage','proofRatio','proofTitle','proofEndPage','proofEndRatio','proofReferences','proofUses','usedByProofs','corollaries','derivedFrom']) {
+        if (previous[field] != null) selected[field] = previous[field];
+      }
+      structureEntries[index] = selected;
+      replaceStructureRelationLabel(previous, selected);
+    } else {
+      structureEntries.push(selected);
+    }
+    pendingStructureReselectKey = null;
+  } else {
+    structureEntries.push(selected);
+  }
+  structureEntries.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
+  structureEntries = structureEntries.slice(0, 500);
+  persistDocumentState();
+  renderStructureIndex();
+  rerenderReferenceLinks();
+  refreshSelectionUI();
 }
 
 function addSelectionToPageNote() {
@@ -6207,6 +6285,7 @@ function bibliographyMetadata(text) {
 
 async function buildStructureIndex({ force = false } = {}) {
   if (!pdfDoc || !structureIndex || structureIndexBuilding) return;
+  if (force && pendingStructureReselectKey) { pendingStructureReselectKey = null; refreshSelectionUI(); }
   if (!force && structureIndexVersion === STRUCTURE_INDEX_VERSION) {
     renderStructureIndex(); renderBibliographyIndex();
     return;
@@ -6396,6 +6475,17 @@ function renderStructureIndex() {
     button.append(strong, meta); button.title = entry.title;
     button.addEventListener('click', async () => { setDocumentMapSelectedNode(button); const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
     row.append(button);
+    const editActions = document.createElement('div'); editActions.className = 'structure-edit-actions';
+    const reselect = document.createElement('button'); reselect.type = 'button'; reselect.className = 'structure-edit-button'; reselect.textContent = t('Reselect', '重新选择');
+    reselect.addEventListener('click', () => { pendingStructureReselectKey = entry.key; refreshSelectionUI(); openRightSectionShortcut('selection-section'); });
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'structure-edit-button'; remove.textContent = t('Remove', '移除');
+    remove.addEventListener('click', () => {
+      if (pendingStructureReselectKey === entry.key) pendingStructureReselectKey = null;
+      structureEntries = structureEntries.filter((item) => item.key !== entry.key);
+      pruneStructureRelationLabel(entry.label);
+      persistDocumentState(); renderStructureIndex(); rerenderReferenceLinks(); refreshSelectionUI();
+    });
+    editActions.append(reselect, remove); row.append(editActions);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
@@ -8949,12 +9039,13 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToStructure, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
 selectionToNote.addEventListener('click', addSelectionToPageNote);
 selectionFindAll?.addEventListener('click', () => runFindAllOccurrences(currentSelection?.text));
+selectionToStructure?.addEventListener('click', addOrReplaceSelectionStructureItem);
 selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
