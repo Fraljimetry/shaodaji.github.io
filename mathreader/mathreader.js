@@ -7363,13 +7363,13 @@ function renderBibliographyIndex() {
     copy.append(text,stats); main.append(label,copy);
     main.addEventListener('click',()=>{ if (bibliographyExpanded.has(entry.number)) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number); renderBibliographyIndex(); });
     const actions=document.createElement('div'); actions.className='bibliography-actions';
-    const go=document.createElement('button'); go.type='button'; go.className='bibliography-go'; go.textContent=t('Go','跳转'); go.addEventListener('click',async()=>{ const target={page:entry.page,ratio:Number(entry.ratio)||0}; await goToMatchedLocation(target.page,target.ratio,entry.label); updateBacklinksForTarget(entry.label,target); }); actions.append(go);
     if (entry.doi || entry.arxiv) {
       const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
       if (entry.doi) { external.href = `https://doi.org/${entry.doi}`; external.textContent = 'DOI ↗'; }
       else { external.href = `https://arxiv.org/abs/${entry.arxiv}`; external.textContent = 'arXiv ↗'; }
       actions.append(external);
     }
+    const go=document.createElement('button'); go.type='button'; go.className='bibliography-go'; go.textContent=t('Go','跳转'); go.addEventListener('click',async()=>{ const target={page:entry.page,ratio:Number(entry.ratio)||0}; await goToMatchedLocation(target.page,target.ratio,entry.label); updateBacklinksForTarget(entry.label,target); }); actions.append(go);
     row.append(main,actions);
     if (bibliographyExpanded.has(entry.number)) {
       const cites=document.createElement('div'); cites.className='bibliography-citations';
