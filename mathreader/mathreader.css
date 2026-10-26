@@ -527,3 +527,7 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .outline-edit-actions{position:absolute;z-index:8;right:4px;top:50%;display:flex;gap:3px;padding:4px;transform:translateY(-50%);border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .12s ease}
 .outline-edit-row.has-edit-menu .outline-edit-actions{opacity:1;pointer-events:auto}
 .outline-edit-button{border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);padding:3px 5px;font:inherit;font-size:.64rem;line-height:1.2;cursor:pointer}.outline-edit-button:hover,.outline-edit-button:focus-visible{border-color:var(--accent);background:var(--surface-soft);color:var(--accent-deep)}
+/* v238: Results stay visually clean; deletion is a transient right-click action. */
+.structure-entry{position:relative}
+.result-edit-actions{position:absolute;z-index:9;right:4px;top:8px;display:flex;gap:3px;padding:4px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .12s ease}
+.structure-entry.has-edit-menu .result-edit-actions{opacity:1;pointer-events:auto}

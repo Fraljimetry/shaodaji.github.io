@@ -2257,13 +2257,14 @@ function refreshOcrUI() {
   }
   if (ocrSourceSwitchButton) {
     const source = has ? (currentOcrResult.source || 'image') : '';
-    const canSwitchToImage = has && source === 'vector' && Boolean(currentOcrResult?.preview);
-    const canSwitchToVector = has && source === 'image' && Boolean(currentOcrResult?.vectorAlternative);
-    ocrSourceSwitchButton.classList.toggle('is-hidden', !canSwitchToImage && !canSwitchToVector);
-    if (canSwitchToImage) {
+    // Keep manual comparison controls stable once a result exists. A missing or
+    // poor alternative is reported when invoked; it must not make the button
+    // disappear and shift the OCR action layout.
+    ocrSourceSwitchButton.classList.toggle('is-hidden', !has);
+    if (has && source === 'vector') {
       ocrSourceSwitchButton.textContent = t('Image OCR', '图像 OCR');
       ocrSourceSwitchButton.dataset.targetSource = 'image';
-    } else if (canSwitchToVector) {
+    } else if (has) {
       ocrSourceSwitchButton.textContent = t('PDF vector', 'PDF 矢量');
       ocrSourceSwitchButton.dataset.targetSource = 'vector';
     } else {
@@ -6582,6 +6583,61 @@ function scheduleAutomaticStructureIndex() {
   else setTimeout(run, 120);
 }
 
+function structureResultRelationLabel(item) {
+  return normalizedReferenceLabel(item?.label || '');
+}
+
+function pruneStructureResultRelations(entry) {
+  const label = structureResultRelationLabel(entry);
+  if (!label) return;
+  for (const item of structureEntries) {
+    if (!item || item === entry) continue;
+    for (const field of ['proofUses', 'usedByProofs', 'corollaries', 'derivedFrom']) {
+      if (!Array.isArray(item[field])) continue;
+      item[field] = item[field].filter((related) => structureResultRelationLabel(related) !== label);
+    }
+  }
+}
+
+function restoreStructureResultRelations(entry) {
+  const restoredLabel = structureResultRelationLabel(entry);
+  if (!restoredLabel) return;
+  const byLabel = new Map(structureEntries.map((item) => [structureResultRelationLabel(item), item]).filter(([label]) => label));
+  const addRelation = (owner, field, related) => {
+    if (!owner || !related?.label) return;
+    owner[field] = Array.isArray(owner[field]) ? owner[field] : [];
+    const key = structureResultRelationLabel(related);
+    if (!owner[field].some((item) => structureResultRelationLabel(item) === key)) owner[field].push(related);
+  };
+  for (const targetRef of entry.proofUses || []) {
+    const target = byLabel.get(structureResultRelationLabel(targetRef));
+    if (target) addRelation(target, 'usedByProofs', { label: entry.label, page: entry.proofPage || entry.page, ratio: Number(entry.proofRatio) || Number(entry.ratio) || 0 });
+  }
+  for (const ownerRef of entry.usedByProofs || []) {
+    const owner = byLabel.get(structureResultRelationLabel(ownerRef));
+    if (owner) addRelation(owner, 'proofUses', { label: entry.label, page: entry.page, ratio: Number(entry.ratio) || 0 });
+  }
+  for (const childRef of entry.corollaries || []) {
+    const child = byLabel.get(structureResultRelationLabel(childRef));
+    if (child) addRelation(child, 'derivedFrom', { label: entry.label, page: entry.page, ratio: Number(entry.ratio) || 0 });
+  }
+  for (const parentRef of entry.derivedFrom || []) {
+    const parent = byLabel.get(structureResultRelationLabel(parentRef));
+    if (parent) addRelation(parent, 'corollaries', { label: entry.label, page: entry.page, ratio: Number(entry.ratio) || 0 });
+  }
+}
+
+function deleteStructureResult(entry) {
+  if (!entry) return;
+  pushUndo('structure-result', entry.label || entry.title || t('Result','结果'), entry);
+  pruneStructureResultRelations(entry);
+  structureEntries = structureEntries.filter((item) => item !== entry);
+  persistDocumentState();
+  renderStructureIndex();
+  rerenderReferenceLinks();
+  renderUndoHistory();
+}
+
 function renderStructureIndex() {
   if (!structureIndex || !structureEmpty || !structureCount) return;
   structureIndex.replaceChildren();
@@ -6599,8 +6655,25 @@ function renderStructureIndex() {
     const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     button.append(strong, meta); button.title = entry.title;
-    button.addEventListener('click', async () => { setDocumentMapSelectedNode(button); const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
-    row.append(button);
+    button.addEventListener('click', async () => {
+      structureIndex.querySelectorAll('.structure-entry.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+      setDocumentMapSelectedNode(button);
+      const q = entry.label || entry.title;
+      const target = { page: entry.page, ratio: Number(entry.ratio) || 0 };
+      await goToMatchedLocation(target.page, target.ratio, q);
+      updateBacklinksForTarget(q, target);
+    });
+    row.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      structureIndex.querySelectorAll('.structure-entry.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+      row.classList.add('has-edit-menu');
+    });
+    const editActions = document.createElement('div'); editActions.className = 'result-edit-actions';
+    const deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.className = 'outline-edit-button'; deleteButton.textContent = t('Delete','删除');
+    deleteButton.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); deleteStructureResult(entry); });
+    editActions.append(deleteButton);
+    row.append(button, editActions);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
@@ -6631,6 +6704,11 @@ function renderStructureIndex() {
   }
   applyDocumentMapFilter(el('map-filter-theorems')); updateDocumentMapCurrentLocation();
 }
+
+document.addEventListener('click', (event) => {
+  if (event.target.closest?.('.result-edit-actions')) return;
+  document.querySelectorAll('#structure-index .structure-entry.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+});
 
 function renderBibliographyIndex() {
   if (!bibliographyIndex || !bibliographyEmpty || !bibliographyCount) return;
@@ -8795,6 +8873,9 @@ function renderUndoHistory() {
     } else if (item.type === 'structure-outline') {
       kind.textContent = t('Deleted structure item','已删除结构条目');
       title.textContent = compactText(payload.title || item.label, t('Structure item','结构条目'));
+    } else if (item.type === 'structure-result') {
+      kind.textContent = t('Deleted result','已删除结果');
+      title.textContent = compactText(payload.label || payload.title || item.label, t('Result','结果'));
     } else {
       kind.textContent = t('Deleted item','已删除项目');
       title.textContent = compactText(item.label, t('Deleted item','已删除项目'));
@@ -8830,6 +8911,18 @@ async function restoreUndoEntry(id = null) {
       renderInferredOutline(inferredOutline);
       rerenderReferenceLinks();
       refreshSelectionUI();
+    }
+  }
+  else if (item.type === 'structure-result') {
+    if (payload) {
+      const restored = jsonClone(payload, payload);
+      const key = structureResultRelationLabel(restored);
+      if (!structureEntries.some((entry) => structureResultRelationLabel(entry) === key)) structureEntries.push(restored);
+      structureEntries.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
+      structureEntries = structureEntries.slice(0, 500);
+      restoreStructureResultRelations(restored);
+      renderStructureIndex();
+      rerenderReferenceLinks();
     }
   }
   else return false;
@@ -9270,7 +9363,11 @@ ocrSourceSwitchButton?.addEventListener('click', async () => {
     await tryImageOcrForCurrentResult();
     return;
   }
-  if (ocrSourceSwitchButton.dataset.targetSource !== 'vector' || !currentOcrResult.vectorAlternative) return;
+  if (ocrSourceSwitchButton.dataset.targetSource !== 'vector') return;
+  if (!currentOcrResult.vectorAlternative) {
+    setOcrStatus(t('No usable PDF vector reconstruction was found for this selection.', '此选区未找到可用的 PDF 矢量重建结果。'));
+    return;
+  }
   const item = {
     page: currentOcrResult.page,
     kind: currentOcrResult.kind,
