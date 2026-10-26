@@ -6199,10 +6199,13 @@ function chooseCanonicalEquationCandidate(candidates) {
   const usable = (candidates || []).filter(Boolean);
   if (!usable.length) return null;
   return [...usable].sort((a, b) => {
-    const aEnd = Number(a.xEndRatio);
-    const bEnd = Number(b.xEndRatio);
-    const aStart = Number(a.xStartRatio);
-    const bStart = Number(b.xStartRatio);
+    // Compare the equation-label token itself, not the full text line. A prose
+    // line can extend to the page margin even when its "(13.26)" reference is
+    // far to the left of the real display tag.
+    const aEnd = Number(a.candidateXEndRatio ?? a.xEndRatio);
+    const bEnd = Number(b.candidateXEndRatio ?? b.xEndRatio);
+    const aStart = Number(a.candidateXStartRatio ?? a.xStartRatio);
+    const bStart = Number(b.candidateXStartRatio ?? b.xStartRatio);
     const aRight = (Number.isFinite(aEnd) && aEnd >= 0.70) || (Number.isFinite(aStart) && aStart >= 0.60);
     const bRight = (Number.isFinite(bEnd) && bEnd >= 0.70) || (Number.isFinite(bStart) && bStart >= 0.60);
     if (aRight !== bRight) return bRight ? 1 : -1;
@@ -6269,7 +6272,9 @@ function equationLabelCandidatesInLine(text) {
   while ((match = re.exec(value))) {
     const rawInner = match[1];
     const compactInner = rawInner.replace(/\s+/g, '');
-    if (!/^\d+(?:\.\d+)*$/.test(compactInner) && !isSymbolicEquationTagInner(rawInner)) continue;
+    // Equation-index labels must contain a dot. This excludes local markers
+    // such as (1), (0), (*) and similar non-sequential tags.
+    if (!/^\d+(?:\.\d+)+$/.test(compactInner)) continue;
     const label = normalizedEquationLabel(match[0]);
     if (isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
@@ -6395,11 +6400,27 @@ async function buildEquationLabelIndex() {
           confidence = Math.max(confidence, 12);
           reliable = true;
         }
-        const record = { page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence };
+        const lineText = String(line.text || '');
+        const lineSpan = Math.max(0, Number(line.xEndRatio) - Number(line.xStartRatio));
+        const textLength = Math.max(1, lineText.length);
+        const candidateStartFraction = Math.min(1, Math.max(0, Number(candidate.index || 0) / textLength));
+        const candidateEndFraction = Math.min(1, Math.max(candidateStartFraction, Number(candidate.end || candidate.index || 0) / textLength));
+        const candidateXStartRatio = Number(line.xStartRatio) + lineSpan * candidateStartFraction;
+        const candidateXEndRatio = Number(line.xStartRatio) + lineSpan * candidateEndFraction;
+        const record = {
+          page,
+          ratio: line.ratio,
+          text: line.text,
+          xStartRatio: line.xStartRatio,
+          xEndRatio: line.xEndRatio,
+          candidateXStartRatio,
+          candidateXEndRatio,
+          confidence,
+        };
         const pool = candidatePool.get(candidate.label) || [];
         // Keep weak dotted-number occurrences only as sequence-recovery evidence.
         // Right-side geometry or neighboring display math gives them priority.
-        const nearRight = Number(line.xEndRatio) >= 0.70 || Number(line.xStartRatio) >= 0.60;
+        const nearRight = Number(candidateXEndRatio) >= 0.70 || Number(candidateXStartRatio) >= 0.60;
         if (!candidate.sequenceOnly || nearRight || hasNearbyDisplayMath(lines, lineIndex)) {
           pool.push(record);
           candidatePool.set(candidate.label, pool);
