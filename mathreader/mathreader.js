@@ -315,7 +315,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 7;
+const STRUCTURE_INDEX_VERSION = 8;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6151,6 +6151,18 @@ function equationLabelCandidatesInLine(text) {
     if (isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
   }
+  // PDF.js sometimes drops the visible parentheses around a right-margin
+  // equation number and exposes only a standalone token such as "13.30".
+  // Record that narrow form as a candidate; geometry / neighboring display
+  // math still decides whether it is reliable below.
+  const trimmed = value.trim();
+  if (/^\d+(?:\.\d+)+$/.test(trimmed)) {
+    const label = normalizedEquationLabel(trimmed);
+    if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
+      const index = value.indexOf(trimmed);
+      out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + trimmed.length, bare: true });
+    }
+  }
   return out;
 }
 
@@ -6183,7 +6195,7 @@ function equationCandidateConfidence(line, label) {
   if (!text || isLikelyCalendarYearEquationLabel(label)) return -Infinity;
   const compact = text.replace(/\s+/g, '').normalize('NFKC');
   const normalized = normalizedEquationLabel(label);
-  const isOnlyTag = compact === normalized;
+  const isOnlyTag = compact === normalized || compact === normalized.slice(1, -1);
   const mathSignals = (text.match(/[=≤≥≠≈≡∈∉⊂⊆⊇→↔∫∑∏√∂∇∞^_+−×·/\-]/g) || []).length;
   const xStart = Number(line?.xStartRatio);
   const xEnd = Number(line?.xEndRatio);
@@ -6229,8 +6241,9 @@ function hasNearbyDisplayMath(lines, lineIndex) {
 }
 
 function isStandaloneEquationTagLine(line, label) {
-  const text = String(line?.text || '').trim();
-  return text.replace(/\s+/g, '').normalize('NFKC') === normalizedEquationLabel(label);
+  const text = String(line?.text || '').trim().replace(/\s+/g, '').normalize('NFKC');
+  const normalized = normalizedEquationLabel(label);
+  return text === normalized || text === normalized.slice(1, -1);
 }
 
 async function buildEquationLabelIndex() {
