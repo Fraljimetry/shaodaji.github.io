@@ -1298,8 +1298,10 @@ function loadDocumentState(cachedSession = null) {
     const rawNotes = safeGet(stateKey('notes'));
     try { if (rawBookmarks) bookmarks = normalizeBookmarks(JSON.parse(rawBookmarks)); } catch (_) {}
     try { if (rawNotes) notes = JSON.parse(rawNotes); } catch (_) {}
-    const savedPage = Number(safeGet(stateKey('page'), '1'));
-    currentPage = generalPrefs.rememberReadingPosition !== false && Number.isFinite(savedPage) ? Math.min(Math.max(1, savedPage), pdfDoc.numPages) : 1;
+    // First open must always begin on page 1. Legacy per-document page keys can
+    // outlive a real session and must not masquerade as a saved reading position.
+    // Only a valid session above is authoritative for restoring a later page.
+    currentPage = 1;
     const savedPinned = Number(safeGet(stateKey('pinned'), '0'));
     pinnedPage = savedPinned >= 1 && savedPinned <= pdfDoc.numPages ? savedPinned : null;
   }
