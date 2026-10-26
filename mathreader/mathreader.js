@@ -227,7 +227,7 @@ let annotationSaveTimer = null;
 let resizeTimer = null;
 let selectionTimer = null;
 let currentSelection = null;
-let pendingStructureReselectKey = null;
+let pendingOutlineReselectKey = null;
 let scrollByPage = {};
 let referenceScrollByPage = {};
 let localLibrary = [];
@@ -1133,8 +1133,10 @@ function renderDocumentMetadata() {
 
 function documentMapItemMatches(node, query) {
   if (!query) return true;
-  return normalizeSearchValue(node?.textContent || '', false).includes(normalizeSearchValue(query, false));
+  const filterText = node?.dataset?.mapFilterText || node?.textContent || '';
+  return normalizeSearchValue(filterText, false).includes(normalizeSearchValue(query, false));
 }
+
 
 function applyDocumentMapFilter(input) {
   const target = input?.dataset?.mapTarget ? el(input.dataset.mapTarget) : null;
@@ -4618,7 +4620,7 @@ function refreshSelectionUI() {
   selectionLatexPreview.textContent = currentSelection.latex;
   selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
   if (selectionToStructure) {
-    const replacing = Boolean(pendingStructureReselectKey);
+    const replacing = Boolean(pendingOutlineReselectKey);
     selectionToStructure.textContent = replacing ? t('Replace structure item', '替换结构条目') : t('Add to structure', '加入文档结构');
     selectionToStructure.dataset.en = replacing ? 'Replace structure item' : 'Add to structure';
     selectionToStructure.dataset.zh = replacing ? '替换结构条目' : '加入文档结构';
@@ -4816,72 +4818,52 @@ async function copyPlainText(text, button = null) {
   }
 }
 
-function structureEntryTextFromSelection(selection) {
+function outlineEntryFromSelection(selection) {
   const text = String(selection?.text || '').replace(/\s+/g, ' ').trim();
   if (!text) return null;
-  const matched = text.match(STRUCTURE_REFERENCE_RE)?.[0] || '';
-  const label = matched || text.split(/[\n.!?]/, 1)[0].trim().slice(0, 80) || text.slice(0, 80);
   return {
-    key: `manual:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
-    label,
+    title: text.slice(0, 180),
     page: Number(selection.page),
     ratio: Number(selection.ratio) || 0,
-    title: text.slice(0, 180),
-    proofReferences: [],
-    usedByProofs: [],
+    depth: 0,
     userEdited: true
   };
 }
 
-function pruneStructureRelationLabel(label) {
-  const wanted = normalizedReferenceLabel(label || '');
-  if (!wanted) return;
-  for (const entry of structureEntries) {
-    for (const field of ['proofUses', 'usedByProofs', 'corollaries', 'derivedFrom']) {
-      if (!Array.isArray(entry[field])) continue;
-      entry[field] = entry[field].filter((item) => normalizedReferenceLabel(item?.label || '') !== wanted);
-    }
-  }
-}
-
-function replaceStructureRelationLabel(oldEntry, newEntry) {
-  const wanted = normalizedReferenceLabel(oldEntry?.label || '');
-  if (!wanted) return;
-  for (const entry of structureEntries) {
-    for (const field of ['proofUses', 'usedByProofs', 'corollaries', 'derivedFrom']) {
-      if (!Array.isArray(entry[field])) continue;
-      entry[field] = entry[field].map((item) => normalizedReferenceLabel(item?.label || '') === wanted
-        ? { ...item, label: newEntry.label, page: newEntry.page, ratio: newEntry.ratio }
-        : item);
-    }
-  }
+function outlineEntryKey(entry) {
+  return [
+    Number(entry?.page) || 0,
+    Math.round((Number(entry?.ratio) || 0) * 10000),
+    String(entry?.title || '').trim().toLocaleLowerCase()
+  ].join(':');
 }
 
 function addOrReplaceSelectionStructureItem() {
   if (!pdfDoc || !currentSelection?.text) return;
-  const selected = structureEntryTextFromSelection(currentSelection);
+  const selected = outlineEntryFromSelection(currentSelection);
   if (!selected) return;
-  if (pendingStructureReselectKey) {
-    const index = structureEntries.findIndex((entry) => entry.key === pendingStructureReselectKey);
-    if (index >= 0) {
-      const previous = structureEntries[index];
-      selected.key = previous.key;
-      for (const field of ['proofPage','proofRatio','proofTitle','proofEndPage','proofEndRatio','proofReferences','proofUses','usedByProofs','corollaries','derivedFrom']) {
-        if (previous[field] != null) selected[field] = previous[field];
-      }
-      structureEntries[index] = selected;
-      replaceStructureRelationLabel(previous, selected);
-    } else {
-      structureEntries.push(selected);
-    }
-    pendingStructureReselectKey = null;
-  } else {
-    structureEntries.push(selected);
+  if (outlineMode === 'embedded') {
+    showError(t('Embedded PDF outlines are kept read-only.', 'PDF 内嵌目录保持只读。'));
+    return;
   }
-  structureEntries.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
-  structureEntries = structureEntries.slice(0, 500);
+  if (pendingOutlineReselectKey) {
+    const index = inferredOutline.findIndex((entry) => outlineEntryKey(entry) === pendingOutlineReselectKey);
+    if (index >= 0) {
+      selected.depth = Number(inferredOutline[index]?.depth) || 0;
+      inferredOutline[index] = selected;
+    } else {
+      inferredOutline.push(selected);
+    }
+    pendingOutlineReselectKey = null;
+  } else {
+    inferredOutline.push(selected);
+  }
+  inferredOutline.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
+  inferredOutline = inferredOutline.slice(0, 240);
+  inferredOutlineDetectionDone = true;
+  tocOutlineTargets = null;
   persistDocumentState();
-  renderStructureIndex();
+  renderInferredOutline(inferredOutline);
   rerenderReferenceLinks();
   refreshSelectionUI();
 }
@@ -5980,15 +5962,47 @@ function renderInferredOutline(entries) {
   outlineMode = 'inferred';
   updateOutlineSource();
   for (const entry of entries) {
+    const row = document.createElement('div');
+    row.className = 'outline-edit-row';
+    row.dataset.mapFilterText = entry.title;
+    row.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'outline-item';
-    button.dataset.depth = String(Math.min(3, Math.max(0, Number(entry.depth) || 0)));
+    button.dataset.depth = row.dataset.depth;
     button.dataset.page = String(entry.page);
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
     button.addEventListener('click', () => { setDocumentMapSelectedNode(button); goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title); });
-    outlineList.append(button);
+
+    const actions = document.createElement('div');
+    actions.className = 'outline-edit-actions';
+    const reselect = document.createElement('button');
+    reselect.type = 'button';
+    reselect.className = 'outline-edit-button';
+    reselect.textContent = t('Reselect', '重新选择');
+    reselect.addEventListener('click', () => {
+      pendingOutlineReselectKey = outlineEntryKey(entry);
+      refreshSelectionUI();
+      openRightSectionShortcut('selection-section');
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'outline-edit-button';
+    remove.textContent = t('Remove', '移除');
+    remove.addEventListener('click', () => {
+      const key = outlineEntryKey(entry);
+      if (pendingOutlineReselectKey === key) pendingOutlineReselectKey = null;
+      inferredOutline = inferredOutline.filter((item) => outlineEntryKey(item) !== key);
+      tocOutlineTargets = null;
+      persistDocumentState();
+      renderInferredOutline(inferredOutline);
+      rerenderReferenceLinks();
+      refreshSelectionUI();
+    });
+    actions.append(reselect, remove);
+    row.append(button, actions);
+    outlineList.append(row);
   }
   applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
 }
@@ -6285,7 +6299,7 @@ function bibliographyMetadata(text) {
 
 async function buildStructureIndex({ force = false } = {}) {
   if (!pdfDoc || !structureIndex || structureIndexBuilding) return;
-  if (force && pendingStructureReselectKey) { pendingStructureReselectKey = null; refreshSelectionUI(); }
+  if (force && pendingOutlineReselectKey) { pendingOutlineReselectKey = null; refreshSelectionUI(); }
   if (!force && structureIndexVersion === STRUCTURE_INDEX_VERSION) {
     renderStructureIndex(); renderBibliographyIndex();
     return;
@@ -6475,17 +6489,6 @@ function renderStructureIndex() {
     button.append(strong, meta); button.title = entry.title;
     button.addEventListener('click', async () => { setDocumentMapSelectedNode(button); const q = entry.label || entry.title; const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, q); updateBacklinksForTarget(q, target); });
     row.append(button);
-    const editActions = document.createElement('div'); editActions.className = 'structure-edit-actions';
-    const reselect = document.createElement('button'); reselect.type = 'button'; reselect.className = 'structure-edit-button'; reselect.textContent = t('Reselect', '重新选择');
-    reselect.addEventListener('click', () => { pendingStructureReselectKey = entry.key; refreshSelectionUI(); openRightSectionShortcut('selection-section'); });
-    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'structure-edit-button'; remove.textContent = t('Remove', '移除');
-    remove.addEventListener('click', () => {
-      if (pendingStructureReselectKey === entry.key) pendingStructureReselectKey = null;
-      structureEntries = structureEntries.filter((item) => item.key !== entry.key);
-      pruneStructureRelationLabel(entry.label);
-      persistDocumentState(); renderStructureIndex(); rerenderReferenceLinks(); refreshSelectionUI();
-    });
-    editActions.append(reselect, remove); row.append(editActions);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
