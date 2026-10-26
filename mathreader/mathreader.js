@@ -6248,6 +6248,14 @@ function renderEmbeddedOutline(entries) {
     remove.addEventListener('click', (event) => {
       event.preventDefault(); event.stopPropagation();
       row.classList.remove('has-edit-menu');
+      pushUndo('structure-embedded', entry.title || t('Structure item','结构条目'), {
+        sourceKey: String(entry.sourceKey),
+        title: String(entry.title || ''),
+        page: Number(entry.page) || 1,
+        ratio: Number(entry.ratio) || 0,
+        depth: Math.min(3, Math.max(0, Number(entry.depth) || 0)),
+        matchText: String(entry.matchText || entry.title || '')
+      });
       embeddedOutlineEdits = embeddedOutlineEdits.filter((item) => String(item.sourceKey) !== String(entry.sourceKey));
       embeddedOutlineEdits.push({ action:'remove', sourceKey:String(entry.sourceKey) });
       if (pendingOutlineReselectKey === `embedded:${entry.sourceKey}`) pendingOutlineReselectKey = null;
@@ -6834,7 +6842,26 @@ function renderEquationIndex() {
     const reselect = document.createElement('button'); reselect.type='button'; reselect.className='outline-edit-button'; reselect.textContent=t('Reselect','重新选择');
     reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
     const remove = document.createElement('button'); remove.type='button'; remove.className='outline-edit-button'; remove.textContent=t('Remove','移除');
-    remove.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); if (entry.manualEditId) equationEdits = equationEdits.filter((item) => !(item.action === 'add' && String(item.id) === String(entry.manualEditId))); else { const sourceLabel = equationSourceLabelForDisplayed(entry.label); equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel))); equationEdits.push({ action:'remove', sourceLabel }); } pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationIndexBuildPromise = null; persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI(); });
+    remove.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu');
+      if (entry.manualEditId) {
+        const removedEdit = equationEdits.find((item) => item.action === 'add' && String(item.id) === String(entry.manualEditId));
+        if (removedEdit) pushUndo('equation', entry.label || t('Equation','公式'), { mode:'added', edit: removedEdit });
+        equationEdits = equationEdits.filter((item) => !(item.action === 'add' && String(item.id) === String(entry.manualEditId)));
+      } else {
+        const sourceLabel = equationSourceLabelForDisplayed(entry.label);
+        const previousEdit = equationEdits.find((item) => item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)) || null;
+        pushUndo('equation', entry.label || t('Equation','公式'), {
+          mode:'source', sourceLabel, previousEdit,
+          label:String(entry.label || sourceLabel), page:Number(entry.page)||1,
+          ratio:Number(entry.ratio)||0, text:String(entry.text || entry.label || sourceLabel)
+        });
+        equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
+        equationEdits.push({ action:'remove', sourceLabel });
+      }
+      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationIndexBuildPromise = null;
+      persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
+    });
     const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add below','在下方添加');
     add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
     actions.append(reselect, remove, add); row.append(button, menu, actions); equationIndex.append(row);
@@ -9446,9 +9473,13 @@ function renderUndoHistory() {
       kind.textContent = t('Deleted reading trail','已删除阅读轨迹');
       const count = Array.isArray(payload) ? payload.length : 0;
       title.textContent = count ? t(`${count} navigation ${count === 1 ? 'step' : 'steps'}`, `${count} 个导航步骤`) : t('Reading trail','阅读轨迹');
-    } else if (item.type === 'structure-outline') {
+    } else if (item.type === 'structure-outline' || item.type === 'structure-embedded') {
       kind.textContent = t('Deleted structure item','已删除结构条目');
       title.textContent = compactText(payload.title || item.label, t('Structure item','结构条目'));
+    } else if (item.type === 'equation') {
+      kind.textContent = t('Deleted equation','已删除公式');
+      const equationPayload = payload.mode === 'added' ? payload.edit : payload;
+      title.textContent = compactText(equationPayload?.label || item.label, t('Equation','公式'));
     } else if (item.type === 'structure-result') {
       kind.textContent = t('Deleted result','已删除结果');
       title.textContent = compactText(payload.label || payload.title || item.label, t('Result','结果'));
@@ -9488,6 +9519,28 @@ async function restoreUndoEntry(id = null) {
       rerenderReferenceLinks();
       refreshSelectionUI();
     }
+  }
+  else if (item.type === 'structure-embedded') {
+    if (payload?.sourceKey) {
+      embeddedOutlineEdits = embeddedOutlineEdits.filter((edit) => String(edit.sourceKey) !== String(payload.sourceKey));
+      if (embeddedOutlineEntries?.length) renderEmbeddedOutline(embeddedOutlineEntries);
+      rerenderReferenceLinks();
+      refreshSelectionUI();
+    }
+  }
+  else if (item.type === 'equation') {
+    if (payload?.mode === 'added' && payload.edit) {
+      const restoredEdit = jsonClone(payload.edit, payload.edit);
+      if (!equationEdits.some((edit) => edit.action === 'add' && String(edit.id) === String(restoredEdit.id))) equationEdits.push(restoredEdit);
+    } else if (payload?.mode === 'source' && payload.sourceLabel) {
+      const sourceKey = normalizedEquationLabel(payload.sourceLabel);
+      equationEdits = equationEdits.filter((edit) => !(edit.action !== 'add' && normalizedEquationLabel(edit.sourceLabel) === sourceKey));
+      if (payload.previousEdit) equationEdits.push(jsonClone(payload.previousEdit, payload.previousEdit));
+    }
+    equationLabelIndex = null;
+    equationIndexBuildPromise = null;
+    await ensureEquationIndexRendered();
+    refreshSelectionUI();
   }
   else if (item.type === 'structure-result') {
     if (payload) {
