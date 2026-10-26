@@ -8534,6 +8534,7 @@ function saveCurrentOcrAsEquation() {
 async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null }) {
   setLoading(true, cachedRecord ? t('Restoring local reading state…', '正在恢复本地阅读状态……') : t('Opening PDF…', '正在打开 PDF……'));
   restoringSession = true;
+  let freshReadingSession = false;
   try {
     const lib = await ensurePdfJs();
     if (pdfDoc) { try { await pdfDoc.destroy(); } catch (_) {} }
@@ -8542,6 +8543,15 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     currentFileName = meta.name;
     currentFileKey = meta.id;
     cacheEnabledForCurrent = Boolean(cachedRecord);
+    // Determine freshness from the same two session sources used by
+    // loadDocumentState(): IndexedDB first, then the legacy localStorage copy.
+    // This flag is captured before opening persists a new session of its own.
+    let legacySession = null;
+    if (!cachedRecord?.session) {
+      try { legacySession = JSON.parse(safeGet(stateKey('session-v2'), 'null')); } catch (_) { legacySession = null; }
+    }
+    freshReadingSession = !(cachedRecord?.session && typeof cachedRecord.session === 'object')
+      && !(legacySession && typeof legacySession === 'object');
     initialContinuousReady = false;
     textCache = new Map();
     lineCache = new Map();
@@ -8573,6 +8583,33 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     if (!(readingFlow === 'continuous' && initialContinuousReady)) await stabilizeFitWidthLayout();
     await renderReferencePage();
     updateReferenceStatus();
+
+    // A genuinely new document must finish its *entire* initial layout at the
+    // beginning of page 1. Earlier resets inside the continuous builder happen
+    // before text/outline/reference/layout work has completely settled, so a
+    // later browser/layout adjustment can still leave the viewport lower down.
+    // Clamp only after all initial rendering work is complete, and only when no
+    // saved session existed before this open. Saved reading positions are never
+    // affected by this path.
+    if (freshReadingSession) {
+      currentPage = 1;
+      continuousScrollTop = 0;
+      continuousSavedAnchor = null;
+      if (primaryCanvasWrap) {
+        primaryCanvasWrap.scrollTop = 0;
+        primaryCanvasWrap.scrollLeft = 0;
+      }
+      if (readingFlow === 'continuous') {
+        await nextFrame();
+        await nextFrame();
+        if (primaryCanvasWrap) {
+          primaryCanvasWrap.scrollTop = 0;
+          primaryCanvasWrap.scrollLeft = 0;
+        }
+      }
+      updateNavigationState();
+    }
+
     if (cacheBlob) await cacheOpenedPdf(meta, cacheBlob);
     else if (cachedRecord) await touchCachedPdf(cachedRecord);
     persistDocumentState();
