@@ -40,20 +40,14 @@
     .ocr-init-progress.is-hidden { display: none; }
     .ocr-init-progress-bar {
       position: absolute;
-      inset: 0 auto 0 0;
-      width: 34%;
+      inset: 0;
       border-radius: inherit;
       background: currentColor;
       opacity: .72;
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform .28s linear;
       will-change: transform;
-      animation: ocr-init-progress-slide 1.45s linear infinite;
-    }
-    @keyframes ocr-init-progress-slide {
-      from { transform: translateX(-115%); }
-      to { transform: translateX(395%); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .ocr-init-progress-bar { animation-duration: 2.4s; }
     }
   </style>
 </head>
@@ -299,7 +293,7 @@
 
         <div class="ocr-capability" id="ocr-capability"></div>
         <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量可用于手动对照。">Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison.</div>
-        <div id="ocr-init-progress" class="ocr-init-progress is-hidden" aria-hidden="true"><div class="ocr-init-progress-bar"></div></div>
+        <div id="ocr-init-progress" class="ocr-init-progress is-hidden" aria-hidden="true"><div id="ocr-init-progress-bar" class="ocr-init-progress-bar"></div></div>
         <div class="ocr-processing is-hidden" id="ocr-processing" role="status" aria-live="polite" aria-atomic="true">
           <span class="spinner" aria-hidden="true"></span>
           <span class="ocr-processing-copy"><strong data-en="Processing formula" data-zh="正在处理公式">Processing formula</strong><span id="ocr-processing-text" data-en="Processing…" data-zh="处理中…">Processing…</span></span>

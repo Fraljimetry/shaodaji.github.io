@@ -179,6 +179,7 @@ const ocrCapability = el('ocr-capability');
 const ocrTimingDiagnostics = el('ocr-timing-diagnostics');
 const formulaExtractionSelect = el('formula-extraction-mode');
 const ocrInitProgress = el('ocr-init-progress');
+const ocrInitProgressBar = el('ocr-init-progress-bar');
 const ocrProcessing = el('ocr-processing');
 const ocrProcessingText = el('ocr-processing-text');
 const documentReadingStatus = el('document-reading-status');
@@ -2397,13 +2398,40 @@ async function ensureMathOcrPipeline() {
     for (let index = 0; index < plan.length; index += 1) {
       const backend = plan[index];
       try {
-        // v210: keep initialization feedback non-numeric. A compositor-driven
-        // indeterminate bar remains visually active without pretending to know
-        // the completion percentage.
+        // v211: use the learned monotonic estimate from v209, but render it
+        // only as a determinate bar. No numeric percentage is shown.
+        const progressHistoryKey = `mathreader-ocr-init-ms-v1:${backend.device || 'cpu'}:${backend.dtype || 'default'}`;
+        const previousInitMs = clamp(Number(safeGet(progressHistoryKey, '0')), 3000, 180000, 30000);
+        const progressStartedAt = ocrNow();
+        let displayedInitProgress = 1;
+        let progressTimer = null;
+        let progressFinished = false;
+        const renderInitProgress = (value) => {
+          const next = Math.max(displayedInitProgress, Math.min(99, Number(value) || 1));
+          displayedInitProgress = next;
+          if (ocrInitProgressBar) ocrInitProgressBar.style.transform = `scaleX(${next / 100})`;
+        };
+        const updateEstimatedProgress = () => {
+          if (progressFinished) return;
+          const elapsed = Math.max(0, ocrNow() - progressStartedAt);
+          const reference = Math.max(3000, previousInitMs);
+          let estimate;
+          if (elapsed <= reference) {
+            estimate = 1 + 91 * (elapsed / reference);
+          } else {
+            const overtime = elapsed - reference;
+            estimate = 92 + 7 * (1 - Math.exp(-overtime / Math.max(4000, reference * 0.35)));
+          }
+          renderInitProgress(estimate);
+        };
+        if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(0.01)';
         ocrInitProgress?.classList.remove('is-hidden');
         ocrInitProgress?.setAttribute('aria-hidden', 'false');
         setOcrStatus(t(`Initializing OCR · ${backend.label}`, `正在初始化 OCR · ${backend.label}`), true);
-        const progress_callback = () => {};
+        progressTimer = setInterval(updateEstimatedProgress, 250);
+        const progress_callback = () => {
+          updateEstimatedProgress();
+        };
         const options = { progress_callback };
         if (!backend.official) {
           options.device = backend.device;
@@ -2424,14 +2452,28 @@ async function ensureMathOcrPipeline() {
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        ocrInitProgress?.classList.add('is-hidden');
-        ocrInitProgress?.setAttribute('aria-hidden', 'true');
+        progressFinished = true;
+        if (progressTimer) clearInterval(progressTimer);
+        const actualInitMs = Math.max(1, ocrNow() - progressStartedAt);
+        const learnedInitMs = previousInitMs > 0
+          ? Math.round(previousInitMs * 0.65 + actualInitMs * 0.35)
+          : Math.round(actualInitMs);
+        safeSet(progressHistoryKey, String(learnedInitMs));
+        displayedInitProgress = 100;
+        if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(1)';
+        setTimeout(() => {
+          ocrInitProgress?.classList.add('is-hidden');
+          ocrInitProgress?.setAttribute('aria-hidden', 'true');
+          if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(0)';
+        }, 220);
         setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
+        if (typeof progressTimer !== 'undefined' && progressTimer) clearInterval(progressTimer);
         ocrInitProgress?.classList.add('is-hidden');
         ocrInitProgress?.setAttribute('aria-hidden', 'true');
+        if (ocrInitProgressBar) ocrInitProgressBar.style.transform = 'scaleX(0)';
         console.warn('MathReader OCR backend failed', backend, error);
         lastError = error;
         if (index + 1 < plan.length) {
