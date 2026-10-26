@@ -5282,6 +5282,12 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
     const target = continuousPageNodes.get(Number(restoreAnchor.page))?.frame;
     const ratio = Math.min(1, Math.max(0, Number(restoreAnchor.ratio) || 0));
     if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * ratio);
+  } else if (activePage === 1) {
+    // A genuinely fresh continuous-reading open has no saved anchor. Start at
+    // the scroll origin itself rather than treating page 1 as a generic jump
+    // target; frame offsets include layout gap/labels and can otherwise leave
+    // the first page visibly scrolled on its first open.
+    primaryCanvasWrap.scrollTop = 0;
   } else {
     const target = continuousPageNodes.get(activePage)?.frame;
     if (target) primaryCanvasWrap.scrollTop = Math.max(0, target.offsetTop - 8);
