@@ -29,20 +29,40 @@
 
   <style>
     #page-note {
-      border: 0 !important;
-      outline: 0 !important;
-      box-shadow: none !important;
-      appearance: none;
-      -webkit-appearance: none;
-      resize: none;
-      background: transparent;
+      width: 100%;
+      min-height: 145px;
+      resize: vertical;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--ink);
+      background: var(--paper);
+      outline: none;
+      line-height: 1.5;
+    }
+    #page-note:focus {
+      border-color: var(--accent);
+    }
+    #page-note:disabled {
+      opacity: .6;
     }
     #note-preview {
-      border: 0 !important;
-      outline: 0 !important;
-      box-shadow: none !important;
-      border-radius: 0;
-      background: transparent;
+      margin-top: 7px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--ink);
+      background: var(--paper);
+      font-size: 11px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    #note-preview mjx-container[display="true"] {
+      margin: .8em 0 !important;
+      padding: .15em .3em;
+      overflow-x: auto;
+      overflow-y: visible;
     }
   </style>
 </head>
