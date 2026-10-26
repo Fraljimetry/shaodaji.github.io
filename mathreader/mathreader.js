@@ -5994,6 +5994,43 @@ function renderInferredOutline(entries) {
 
     const actions = document.createElement('div');
     actions.className = 'outline-edit-actions';
+    if (entry.userEdited) {
+      const currentDepth = Math.min(3, Math.max(0, Number(entry.depth) || 0));
+      if (currentDepth > 0) {
+        const moveLeft = document.createElement('button');
+        moveLeft.type = 'button';
+        moveLeft.className = 'outline-edit-button';
+        moveLeft.textContent = '←';
+        moveLeft.title = t('Move left one level', '向左移一级');
+        moveLeft.setAttribute('aria-label', moveLeft.title);
+        moveLeft.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          entry.depth = currentDepth - 1;
+          row.classList.remove('has-edit-menu');
+          persistDocumentState();
+          renderInferredOutline(inferredOutline);
+        });
+        actions.append(moveLeft);
+      }
+      if (currentDepth < 3) {
+        const moveRight = document.createElement('button');
+        moveRight.type = 'button';
+        moveRight.className = 'outline-edit-button';
+        moveRight.textContent = '→';
+        moveRight.title = t('Move right one level', '向右移一级');
+        moveRight.setAttribute('aria-label', moveRight.title);
+        moveRight.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          entry.depth = currentDepth + 1;
+          row.classList.remove('has-edit-menu');
+          persistDocumentState();
+          renderInferredOutline(inferredOutline);
+        });
+        actions.append(moveRight);
+      }
+    }
     const reselect = document.createElement('button');
     reselect.type = 'button';
     reselect.className = 'outline-edit-button';
