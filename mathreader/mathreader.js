@@ -5,7 +5,7 @@ const TRANSFORMERS_RUNTIME = 'Transformers.js 4.3.1';
 const MATH_OCR_MODEL = 'Xenova/texify';
 const DOCUMENT_OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js';
 const DOCUMENT_OCR_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-const DOCUMENT_OCR_CACHE_VERSION = 1;
+const DOCUMENT_OCR_CACHE_VERSION = 2;
 const LOCAL_DB_NAME = 'mathreader-local-v1';
 const LOCAL_DB_VERSION = 1;
 
@@ -846,6 +846,12 @@ function parseHocrBbox(title) {
   return { x0: values[0], y0: values[1], x1: values[2], y1: values[3] };
 }
 
+function parseHocrConfidence(title) {
+  const match = String(title || '').match(/\bx_wconf\s+(\d+(?:\.\d+)?)/i);
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null;
+}
+
 function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
   const safeWidth = Math.max(1, Number(width) || 1);
   const safeHeight = Math.max(1, Number(height) || 1);
@@ -861,9 +867,11 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
           const text = String(wordNode.textContent || '').replace(/\s+/g, ' ').trim();
           const box = parseHocrBbox(wordNode.getAttribute('title'));
           if (!text || !box) continue;
-          lineWords.push({ text, box });
+          const confidence = parseHocrConfidence(wordNode.getAttribute('title'));
+          lineWords.push({ text, box, confidence });
           words.push({
             text,
+            confidence,
             xStartRatio: Math.min(1, Math.max(0, box.x0 / safeWidth)),
             xEndRatio: Math.min(1, Math.max(0, box.x1 / safeWidth)),
             yStartRatio: Math.min(1, Math.max(0, box.y0 / safeHeight)),
@@ -890,9 +898,12 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
             xEndRatio: Math.min(1, Math.max(0, item.box.x1 / safeWidth))
           });
         }
+        const confidenceValues = lineWords.map((item) => item.confidence).filter(Number.isFinite);
+        const confidence = confidenceValues.length ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length : null;
         lines.push({
           text,
           parts,
+          confidence,
           ratio: Math.min(1, Math.max(0, box.y0 / safeHeight)),
           xStartRatio: Math.min(1, Math.max(0, box.x0 / safeWidth)),
           xEndRatio: Math.min(1, Math.max(0, box.x1 / safeWidth)),
@@ -907,7 +918,7 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
     const rawLines = String(fallbackText || '').split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
     rawLines.forEach((text, index) => {
       const ratio = Math.min(0.98, 0.04 + index * (0.92 / Math.max(1, rawLines.length)));
-      lines.push({ text, parts: [{ start: 0, end: text.length, xStartRatio: 0.06, xEndRatio: 0.94 }], ratio, xStartRatio: 0.06, xEndRatio: 0.94, heightRatio: 0.018 });
+      lines.push({ text, parts: [{ start: 0, end: text.length, xStartRatio: 0.06, xEndRatio: 0.94 }], confidence: null, ratio, xStartRatio: 0.06, xEndRatio: 0.94, heightRatio: 0.018 });
     });
   }
   const text = lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
@@ -1028,6 +1039,17 @@ async function runFullDocumentOcr() {
       setLoading(true, t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
     }
   });
+  if (typeof worker.setParameters === 'function') {
+    try {
+      await worker.setParameters({
+        preserve_interword_spaces: '1',
+        user_defined_dpi: '300',
+        tessedit_pageseg_mode: '3'
+      });
+    } catch (error) {
+      console.warn('MathReader could not apply document OCR quality parameters.', error);
+    }
+  }
   const map = new Map();
   try {
     for (let pageNum = 1; pageNum <= pageCount; pageNum += 1) {
@@ -1035,7 +1057,9 @@ async function runFullDocumentOcr() {
       setLoading(true, t(`Full-document OCR · page ${pageNum}/${pageCount}`, `全文 OCR · 第 ${pageNum}/${pageCount} 页`));
       const page = await pdfDoc.getPage(pageNum);
       const base = page.getViewport({ scale: 1 });
-      const scale = Math.max(1.45, Math.min(2.35, 2400 / Math.max(1, base.width, base.height)));
+      // Old mathematical scans need substantially more pixels than ordinary screen rendering.
+      // Aim near a 300-DPI page while keeping memory bounded for long documents.
+      const scale = Math.max(2.20, Math.min(3.60, 3200 / Math.max(1, base.width, base.height)));
       const viewport = page.getViewport({ scale });
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.ceil(viewport.width));
@@ -1083,7 +1107,9 @@ function renderDocumentOcrTextLayer(layer, viewport, pageNum) {
   for (const word of record.words || []) {
     if (!word?.text) continue;
     const span = document.createElement('span');
-    span.textContent = word.text;
+    // Keep a literal trailing space so browser text selection/search does not
+    // concatenate separately positioned OCR words (e.g. "OnTheRicci...").
+    span.textContent = `${word.text} `;
     span.style.position = 'absolute';
     span.style.left = `${Math.max(0, Number(word.xStartRatio) || 0) * viewport.width}px`;
     span.style.top = `${Math.max(0, Number(word.yStartRatio) || 0) * viewport.height}px`;
@@ -6287,6 +6313,25 @@ function isMarginEquationLabelLineForStructure(line) {
   return nearLeft || nearRight;
 }
 
+function ocrLineSuitableForStructure(line) {
+  const text = String(line?.text || '').trim();
+  if (!text) return false;
+  const confidence = Number(line?.confidence);
+  if (Number.isFinite(confidence) && confidence < 58) return false;
+  // OCR of displayed mathematics often produces short pseudo-words mixed with
+  // operators/digits. Such lines are useful for Equation indexing but are poor
+  // Structure candidates.
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const alphaWords = tokens.filter((token) => /^[A-Za-z][A-Za-z'’.-]{2,}$/.test(token));
+  const operatorCount = (text.match(/[=+<>∑∫√∞→←≤≥\\{}_^|]/g) || []).length;
+  const digitCount = (text.match(/\d/g) || []).length;
+  const letterCount = (text.match(/[A-Za-z]/g) || []).length;
+  if (operatorCount >= 2 && alphaWords.length < 3) return false;
+  if (tokens.length >= 3 && alphaWords.length === 0 && digitCount >= Math.max(2, letterCount / 2)) return false;
+  if (/^\(?\d+(?:\.\d+)+\)?\s+/.test(text) && alphaWords.length < 2) return false;
+  return true;
+}
+
 async function detectOutlineFromTypography() {
   const pages = [];
   const fontSamples = [];
@@ -6307,8 +6352,8 @@ async function detectOutlineFromTypography() {
         const xEndRatio = Number(ocrLine.xEndRatio) || xStartRatio;
         const x = xStartRatio * viewport.width;
         fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
-        return { page: pageNum, y, x, items: [], size, pageHeight: viewport.height, text, xStartRatio, xEndRatio };
-      }).filter((line) => line.text);
+        return { page: pageNum, y, x, items: [], size, pageHeight: viewport.height, text, confidence: ocrLine.confidence, xStartRatio, xEndRatio };
+      }).filter((line) => line.text && ocrLineSuitableForStructure(line));
     } else {
       const content = await page.getTextContent();
       const items = [];
