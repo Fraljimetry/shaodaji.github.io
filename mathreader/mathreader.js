@@ -4354,7 +4354,7 @@ function addOcrToPageNote() {
   // Save to the OCR result's own page. Do not move the reader just because a
   // note was added from a result that originated on another page.
   const targetPage = Math.min(Math.max(1, Number(currentOcrResult.page) || Number(currentPage) || 1), pdfDoc.numPages);
-  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}\n\[\n${currentOcrResult.latex}\n\]`;
+  const block = `${t('Math OCR', '公式 OCR')} · ${t(`Page ${targetPage}`, `第 ${targetPage} 页`)}\n\\[\n${currentOcrResult.latex}\n\\]`;
   const existing = notes[String(targetPage)] || '';
   notes[String(targetPage)] = `${existing}${existing.trim() ? '\n\n' : ''}${block}`;
   refreshVisiblePageNote(targetPage);
