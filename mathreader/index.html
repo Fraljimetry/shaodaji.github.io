@@ -364,14 +364,13 @@
           <pre id="selection-latex-preview"></pre>
           <div class="selection-actions">
             <button class="secondary-action" type="button" id="copy-selection-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
-            <button class="secondary-action" type="button" id="copy-selection-latex" data-en="Copy LaTeX β" data-zh="复制 LaTeX β">Copy LaTeX β</button>
-            <button class="secondary-action" type="button" id="selection-to-note" data-en="Add to page note" data-zh="加入页注">Add to page note</button>
+            <button class="secondary-action" type="button" id="copy-selection-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
+            <button class="secondary-action" type="button" id="selection-find-all" data-en="Find all" data-zh="查找全部">Find all</button>
             <button class="secondary-action" type="button" id="selection-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
-            <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin note" data-zh="页边注">Margin note</button>
-            <button class="secondary-action" type="button" id="selection-go-reference" data-en="Go to reference" data-zh="跳转引用">Go to reference</button>
-            <button class="secondary-action" type="button" id="selection-find-all" data-en="Find all occurrences" data-zh="查找全部出现位置">Find all occurrences</button>
-            <button class="secondary-action" type="button" id="selection-to-structure" data-en="Add to structure" data-zh="加入文档结构">Add to structure</button>
-            <button class="secondary-action" type="button" id="selection-to-glossary" data-en="Add to glossary" data-zh="加入符号表">Add to glossary</button>
+            <button class="secondary-action" type="button" id="selection-margin-note" data-en="Margin" data-zh="页边注">Margin</button>
+            <button class="secondary-action" type="button" id="selection-to-note" data-en="Page note" data-zh="页注">Page note</button>
+            <button class="secondary-action" type="button" id="selection-to-structure" data-en="Structure" data-zh="结构">Structure</button>
+            <button class="secondary-action" type="button" id="selection-to-glossary" data-en="Glossary" data-zh="符号表">Glossary</button>
           </div>
         </div>
       </section>
@@ -536,13 +535,16 @@
 
   <div class="selection-toolbar is-hidden" id="selection-toolbar" role="toolbar" aria-label="Selected PDF text actions">
     <span class="selection-toolbar-label" id="selection-toolbar-label">Selection</span>
-    <button type="button" id="floating-copy-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
-    <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
-    <button type="button" id="floating-find-all" data-en="Find all" data-zh="查找全部">Find all</button>
-    <button type="button" id="floating-add-note" data-en="Note" data-zh="页注">Note</button>
-    <button type="button" id="floating-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
-    <button type="button" id="floating-margin-note" data-en="Margin" data-zh="页边注">Margin</button>
-    <button type="button" id="floating-pin-page" data-en="Pin page" data-zh="固定页">Pin page</button>
+    <div class="selection-toolbar-grid">
+      <button type="button" id="floating-copy-text" data-en="Copy text" data-zh="复制文本">Copy text</button>
+      <button type="button" id="floating-copy-latex" data-en="LaTeX β" data-zh="LaTeX β">LaTeX β</button>
+      <button type="button" id="floating-find-all" data-en="Find all" data-zh="查找全部">Find all</button>
+      <button type="button" id="floating-highlight" data-en="Highlight" data-zh="高亮">Highlight</button>
+      <button type="button" id="floating-margin-note" data-en="Margin" data-zh="页边注">Margin</button>
+      <button type="button" id="floating-add-note" data-en="Page note" data-zh="页注">Page note</button>
+      <button type="button" id="floating-structure" data-en="Structure" data-zh="结构">Structure</button>
+      <button type="button" id="floating-glossary" data-en="Glossary" data-zh="符号表">Glossary</button>
+    </div>
   </div>
 
   <div class="command-palette is-hidden" id="command-palette" role="dialog" aria-modal="true" aria-label="MathReader commands">

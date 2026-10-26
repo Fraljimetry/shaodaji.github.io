@@ -96,7 +96,6 @@ const recoveryList = el('recovery-list');
 const recoveryEmpty = el('recovery-empty');
 const recoveryCount = el('recovery-count');
 const saveOcrEquation = el('save-ocr-equation');
-const selectionGoReference = el('selection-go-reference');
 const selectionHighlight = el('selection-highlight');
 const selectionMarginNote = el('selection-margin-note');
 const annotationList = el('annotation-list');
@@ -151,9 +150,10 @@ const floatingCopyText = el('floating-copy-text');
 const floatingFindAll = el('floating-find-all');
 const floatingCopyLatex = el('floating-copy-latex');
 const floatingAddNote = el('floating-add-note');
+const floatingStructure = el('floating-structure');
+const floatingGlossary = el('floating-glossary');
 const floatingHighlight = el('floating-highlight');
 const floatingMarginNote = el('floating-margin-note');
-const floatingPinPage = el('floating-pin-page');
 const mathOcrButton = el('math-ocr-button');
 const primaryOcrLayer = el('primary-ocr-layer');
 const referenceOcrLayer = el('reference-ocr-layer');
@@ -4621,9 +4621,14 @@ function refreshSelectionUI() {
   selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
   if (selectionToStructure) {
     const replacing = Boolean(pendingOutlineReselectKey);
-    selectionToStructure.textContent = replacing ? t('Replace structure item', '替换结构条目') : t('Add to structure', '加入文档结构');
-    selectionToStructure.dataset.en = replacing ? 'Replace structure item' : 'Add to structure';
-    selectionToStructure.dataset.zh = replacing ? '替换结构条目' : '加入文档结构';
+    selectionToStructure.textContent = replacing ? t('Replace', '替换') : t('Structure', '结构');
+    selectionToStructure.dataset.en = replacing ? 'Replace' : 'Structure';
+    selectionToStructure.dataset.zh = replacing ? '替换' : '结构';
+    if (floatingStructure) {
+      floatingStructure.textContent = replacing ? t('Replace', '替换') : t('Structure', '结构');
+      floatingStructure.dataset.en = replacing ? 'Replace' : 'Structure';
+      floatingStructure.dataset.zh = replacing ? '替换' : '结构';
+    }
   }
 }
 
@@ -4867,6 +4872,7 @@ function addOrReplaceSelectionStructureItem() {
   rerenderReferenceLinks();
   refreshSelectionUI();
 }
+
 
 function addSelectionToPageNote() {
   if (!pdfDoc || !currentSelection?.text) return;
@@ -8954,7 +8960,6 @@ buildStructureIndexButton?.addEventListener('click', () => buildStructureIndex({
 exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
 importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
-selectionGoReference?.addEventListener('click', goToSelectedReference);
 selectionHighlight?.addEventListener('click', () => addSelectionAnnotation('highlight'));
 selectionMarginNote?.addEventListener('click', () => addSelectionAnnotation('margin'));
 saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
@@ -9042,7 +9047,7 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToStructure, selectionToGlossary, floatingHighlight, floatingMarginNote, floatingFindAll].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
+[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToStructure, selectionToGlossary, floatingCopyText, floatingCopyLatex, floatingFindAll, floatingHighlight, floatingMarginNote, floatingAddNote, floatingStructure, floatingGlossary].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 selectionToolbar.addEventListener('pointerdown', (event) => event.preventDefault());
 copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
 copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
@@ -9056,7 +9061,8 @@ floatingFindAll?.addEventListener('click', () => { runFindAllOccurrences(current
 floatingAddNote.addEventListener('click', () => { addSelectionToPageNote(); hideSelectionToolbar(); });
 floatingHighlight?.addEventListener('click', () => { addSelectionAnnotation('highlight'); hideSelectionToolbar(); });
 floatingMarginNote?.addEventListener('click', () => { addSelectionAnnotation('margin'); hideSelectionToolbar(); });
-floatingPinPage.addEventListener('click', () => { if (currentSelection?.page) setPinnedPage(currentSelection.page); hideSelectionToolbar(); });
+floatingStructure?.addEventListener('click', () => { addOrReplaceSelectionStructureItem(); hideSelectionToolbar(); });
+floatingGlossary?.addEventListener('click', () => { addSelectionToGlossary(); hideSelectionToolbar(); });
 document.addEventListener('selectionchange', capturePdfSelection);
 primaryCanvasWrap.addEventListener('scroll', () => {
   hideSelectionToolbar();
