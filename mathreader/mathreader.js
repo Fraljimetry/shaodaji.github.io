@@ -6210,17 +6210,51 @@ function isReliableEquationTargetLine(line, label) {
   return equationCandidateConfidence(line, label) >= 8;
 }
 
+function equationLineMathSignalCount(text) {
+  return (String(text || '').match(/[=≤≥≠≈≡∈∉⊂⊆⊇→↔∫∑∏√∂∇∞^_+−×·/\-]/g) || []).length;
+}
+
+function hasNearbyDisplayMath(lines, lineIndex) {
+  const line = lines[lineIndex];
+  if (!line) return false;
+  const ratio = Number(line.ratio);
+  for (const neighborIndex of [lineIndex - 1, lineIndex + 1]) {
+    const neighbor = lines[neighborIndex];
+    if (!neighbor) continue;
+    const neighborRatio = Number(neighbor.ratio);
+    if (Number.isFinite(ratio) && Number.isFinite(neighborRatio) && Math.abs(neighborRatio - ratio) > 0.045) continue;
+    if (equationLineMathSignalCount(neighbor.text) >= 2) return true;
+  }
+  return false;
+}
+
+function isStandaloneEquationTagLine(line, label) {
+  const text = String(line?.text || '').trim();
+  return text.replace(/\s+/g, '').normalize('NFKC') === normalizedEquationLabel(label);
+}
+
 async function buildEquationLabelIndex() {
   if (!pdfDoc) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
   const index = new Map();
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     const lines = await pageTextLines(page);
-    for (const line of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
       for (const candidate of equationLabelCandidatesInLine(line.text)) {
-        if (!isReliableEquationTargetLine(line, candidate.label)) continue;
+        let confidence = equationCandidateConfidence(line, candidate.label);
+        let reliable = confidence >= 8;
+        // Some PDFs extract a right-margin equation number as its own text
+        // line, losing the formula's math signals and sometimes its x geometry.
+        // Accept that tag only when it sits immediately beside a neighboring
+        // math-heavy line, which keeps prose parentheticals excluded.
+        if (!reliable && isStandaloneEquationTagLine(line, candidate.label) && hasNearbyDisplayMath(lines, lineIndex)) {
+          confidence = Math.max(confidence, 12);
+          reliable = true;
+        }
+        if (!reliable) continue;
         const list = index.get(candidate.label) || [];
-        list.push({ page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence: equationCandidateConfidence(line, candidate.label) });
+        list.push({ page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence });
         index.set(candidate.label, list);
       }
     }
@@ -6443,7 +6477,10 @@ async function buildStructureIndex({ force = false } = {}) {
           }
         }
 
-        const structureMatch = cleaned.match(/(?:^|[.;:]\s*)((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+        // Result headings must begin the extracted visual line. Do not promote
+        // ordinary prose references such as "... by Proposition 13.6(a) ..."
+        // into the Results index merely because they follow punctuation.
+        const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
         if (structureMatch) {
           const title = structureMatch[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
           if (STRUCTURE_LABEL_RE.test(title)) {
