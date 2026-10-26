@@ -6218,12 +6218,12 @@ document.addEventListener('click', (event) => {
   });
 });
 
-const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
-const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
+const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
+const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
 const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
 const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
 const CLICKABLE_REFERENCE_RE = new RegExp(
-  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
+  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
   `\\(\\s*(?:\\d+(?:\\.\\d+)*|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
   `\\[\\s*\\d{1,3}\\s*\\]`,
   'gi',
@@ -6275,7 +6275,7 @@ function isEquationLabelQuery(value) {
 
 function parsedSequentialLabel(value) {
   const normalized = normalizedReferenceLabel(value);
-  const match = normalized.match(/^(theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+([a-z]?)(\d+(?:\.\d+)*)$/i);
+  const match = normalized.match(/^(theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\s+([a-z]?)(\d+(?:\.\d+)*)$/i);
   if (!match) return null;
   return {
     type: match[1].toLocaleLowerCase(),
@@ -6815,7 +6815,7 @@ async function buildStructureIndex({ force = false } = {}) {
         // Result headings must begin the extracted visual line. Do not promote
         // ordinary prose references such as "... by Proposition 13.6(a) ..."
         // into the Results index merely because they follow punctuation.
-        const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+        const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
         if (structureMatch) {
           const title = structureMatch[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
           if (STRUCTURE_LABEL_RE.test(title)) {
@@ -7780,7 +7780,7 @@ async function collectBacklinks(query, target) {
   const normalized = normalizedReferenceLabel(query);
   const eq = isEquationLabelQuery(query) ? normalizedEquationLabel(query) : null;
   const bibKey = /^\[[^\]]+\]$/.test(String(query || '').trim()) ? normalizedBibliographyKey(query) : '';
-  const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\b/i.test(query);
+  const structureLike = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b/i.test(query);
   const acronym = /^[A-Z][A-Z0-9]{1,7}$/.test(String(query).trim()) ? String(query).trim() : null;
   const structureTarget = structureEntries.find((entry) => Number(entry.page) === Number(target.page) && Math.abs((Number(entry.ratio)||0) - (Number(target.ratio)||0)) < 0.04) || null;
   const structureAlias = structureTarget ? headingAliasForTitle(structureTarget.title || structureTarget.label || '') : '';
@@ -7853,7 +7853,7 @@ async function resolveReferenceTarget(query, originPage = null, originRatio = nu
     const bib = bibliographyEntries.find((entry) => normalizedBibliographyKey(entry.number) === key);
     if (bib) return { page: bib.page, ratio: bib.ratio };
   }
-  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\b/i.test(query)) {
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b/i.test(query)) {
     const entry = structureEntries.find((item) => normalizedReferenceLabel(item.label) === normalized);
     if (entry) return { page: entry.page, ratio: entry.ratio };
   }
@@ -8250,7 +8250,7 @@ function addSelectionToGlossary() {
 
 function selectedReferenceQuery() {
   const text = String(currentSelection?.text || '').replace(/\s+/g, ' ').trim();
-  const direct = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
+  const direct = text.match(/\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis|Section)\s+[A-Z]?\d+(?:\.\d+)*\b/i)
     || text.match(/\(\s*\d+(?:\.\d+)*\s*\)/);
   if (direct) return direct[0];
   const bracket = text.match(/\[[^\]\n]{1,80}\]/);
@@ -9492,7 +9492,7 @@ function snapshotKindForQuery(query) {
   const q=String(query||'').trim();
   if (isEquationLabelQuery(q)) return 'equation';
   if (/^\[[^\]\n]+\]$/.test(q) && bibliographyEntries.some((entry) => normalizedBibliographyKey(entry.number) === normalizedBibliographyKey(q))) return 'bibliography';
-  if (/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis|Section)\b/i.test(q)) return 'structure';
+  if (/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis|Section)\b/i.test(q)) return 'structure';
   return 'generic';
 }
 
