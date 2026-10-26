@@ -239,7 +239,7 @@ let mathOcrPipeline = null;
 let mathOcrModulePromise = null;
 let mathOcrLoading = false;
 let mathOcrBackend = null;
-let mathOcrEngineMode = 'wasm';
+let mathOcrEngineMode = 'official';
 let formulaExtractionMode = 'image';
 let readerWidthObserver = null;
 let readerWidthTimer = null;
@@ -305,7 +305,7 @@ const referenceSnapshotCache = new Map();
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;
 const safeGet = (key, fallback = null) => { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } };
 const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catch (_) {} };
-mathOcrEngineMode = safeGet('mathreader-ocr-engine-v7', 'wasm');
+mathOcrEngineMode = safeGet('mathreader-ocr-engine-v8', 'official');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
@@ -2325,12 +2325,11 @@ function currentOcrPlan() {
     ];
   }
   if (mode === 'wasm') {
-    // v202 default: slower one-time initialization, but stable fast inference.
     return [{ device: 'wasm', dtype: 'q8', label: 'Texify · CPU/WASM q8', official: false }];
   }
-  // The model-card browser path is the default. Xenova/texify is packaged
-  // specifically for Transformers.js and includes merged decoder weights.
-  return [{ device: null, dtype: null, label: 'Texify · recommended CPU', official: true }];
+  // v208 default: use Texify's model-card CPU/browser path. On the tested
+  // machine this has been fast and stable without WebGPU's latency variance.
+  return [{ device: null, dtype: null, label: 'Texify · CPU', official: true }];
 }
 
 function updateOcrCapability(extra = '') {
@@ -4814,6 +4813,53 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum, kin
   }
 }
 
+function applySinglePageHorizontalOverflow(surface, wrap, pageWidth) {
+  if (!surface || !wrap) return;
+  const overflow = Number(pageWidth) > Math.max(1, wrap.clientWidth);
+  if (overflow) {
+    // A centered flex item wider than its scroll container can create negative
+    // left overflow that scrollLeft cannot reach. Anchor the oversized page at
+    // the scroll origin instead; horizontal scrolling can then reach both edges.
+    wrap.style.justifyContent = 'flex-start';
+    surface.style.marginLeft = '0';
+    surface.style.marginRight = '0';
+    surface.style.alignSelf = 'flex-start';
+  } else {
+    wrap.style.removeProperty('justify-content');
+    surface.style.removeProperty('margin-left');
+    surface.style.removeProperty('margin-right');
+    surface.style.removeProperty('align-self');
+  }
+}
+
+function applyContinuousHorizontalOverflow(pageMetrics) {
+  if (!continuousStack || !primaryCanvasWrap) return;
+  const available = Math.max(1, primaryCanvasWrap.clientWidth);
+  const maxPageWidth = Math.max(0, ...(pageMetrics || []).map((item) => Number(item?.width) || 0));
+  const overflow = maxPageWidth > available;
+  if (!overflow) {
+    continuousStack.style.removeProperty('width');
+    continuousStack.style.removeProperty('min-width');
+    continuousStack.style.removeProperty('align-items');
+    for (const record of continuousPageNodes.values()) {
+      record.frame?.style.removeProperty('width');
+      record.frame?.style.removeProperty('min-width');
+    }
+    return;
+  }
+  // Give the scrolling document a real non-negative width equal to its widest
+  // page. Frames share that width, while individual page surfaces may remain
+  // centered inside it. This avoids an unreachable negative-left overflow.
+  const documentWidth = Math.ceil(maxPageWidth);
+  continuousStack.style.width = `${documentWidth}px`;
+  continuousStack.style.minWidth = `${documentWidth}px`;
+  continuousStack.style.alignItems = 'flex-start';
+  for (const record of continuousPageNodes.values()) {
+    record.frame?.style.setProperty('width', `${documentWidth}px`);
+    record.frame?.style.setProperty('min-width', `${documentWidth}px`);
+  }
+}
+
 function pageScale(baseViewport, wrap, kind = 'primary') {
   let scale;
   if (kind === 'reference') {
@@ -4838,6 +4884,7 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   const targetSurface = kind === 'reference' ? referencePageSurface : primaryPageSurface;
   targetSurface.style.width = `${viewport.width}px`;
   targetSurface.style.height = `${viewport.height}px`;
+  applySinglePageHorizontalOverflow(targetSurface, wrap, viewport.width);
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const context = targetCanvas.getContext('2d', { alpha: false });
   targetCanvas.width = Math.floor(viewport.width * dpr);
@@ -4948,6 +4995,13 @@ async function renderContinuousPage(pageNum, generation, { retry = true } = {}) 
     const { surface, canvas: pageCanvas, textLayer, ocrLayer } = record;
     surface.style.width = `${viewport.width}px`;
     surface.style.height = `${viewport.height}px`;
+    if (viewport.width > Math.max(1, primaryCanvasWrap?.clientWidth || 0)) {
+      surface.style.marginLeft = '0';
+      surface.style.marginRight = '0';
+    } else {
+      surface.style.removeProperty('margin-left');
+      surface.style.removeProperty('margin-right');
+    }
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const ctx = pageCanvas.getContext('2d', { alpha: false });
     pageCanvas.width = Math.floor(viewport.width * dpr);
@@ -5122,6 +5176,7 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
   continuousRebuilding = true;
   continuousStack.replaceChildren(replacement);
   continuousPageNodes = replacementNodes;
+  applyContinuousHorizontalOverflow(pageMetrics);
 
   const restoreAnchor = anchor || continuousSavedAnchor;
   const activePage = Math.min(Math.max(1, Number(restoreAnchor?.page) || currentPage), pdfDoc.numPages);
@@ -5261,6 +5316,7 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   continuousRebuilding = true;
   continuousStack.replaceChildren(replacement);
   continuousPageNodes = replacementNodes;
+  applyContinuousHorizontalOverflow(pageMetrics);
   // Restore against the freshly-created placeholders immediately, before any
   // asynchronous page rendering. Without this, replacing the continuous stack
   // temporarily exposes scrollTop=0 and the user sees page 1 flash during zoom
@@ -8708,7 +8764,7 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
     : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v7', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v8', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
 ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
