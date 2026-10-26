@@ -8879,17 +8879,19 @@ const SIDEBAR_WIDTHS_KEY = 'mathreader-sidebar-widths-v1';
 const SIDEBAR_COLLAPSE_THRESHOLD = 92;
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 460;
+const LEFT_SIDEBAR_DEFAULT_WIDTH = 250;
+const RIGHT_SIDEBAR_DEFAULT_WIDTH = 260;
 
 function loadSidebarWidths() {
   if (generalPrefs.rememberSidebarWidths === false) {
-    shell?.style.setProperty('--left-sidebar-width', '250px');
-    shell?.style.setProperty('--right-sidebar-width', '260px');
+    shell?.style.setProperty('--left-sidebar-width', `${LEFT_SIDEBAR_DEFAULT_WIDTH}px`);
+    shell?.style.setProperty('--right-sidebar-width', `${RIGHT_SIDEBAR_DEFAULT_WIDTH}px`);
     return;
   }
   try {
     const saved = JSON.parse(localStorage.getItem(SIDEBAR_WIDTHS_KEY) || '{}');
-    const left = clamp(saved.left, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 250);
-    const right = clamp(saved.right, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 260);
+    const left = clamp(saved.left, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, LEFT_SIDEBAR_DEFAULT_WIDTH);
+    const right = clamp(saved.right, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, RIGHT_SIDEBAR_DEFAULT_WIDTH);
     shell?.style.setProperty('--left-sidebar-width', `${left}px`);
     shell?.style.setProperty('--right-sidebar-width', `${right}px`);
   } catch (_) {}
@@ -8899,14 +8901,31 @@ function saveSidebarWidths() {
   if (!shell || generalPrefs.rememberSidebarWidths === false) return;
   try {
     const styles = getComputedStyle(shell);
-    const left = clamp(parseFloat(styles.getPropertyValue('--left-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 250);
-    const right = clamp(parseFloat(styles.getPropertyValue('--right-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, 260);
+    const left = clamp(parseFloat(styles.getPropertyValue('--left-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, LEFT_SIDEBAR_DEFAULT_WIDTH);
+    const right = clamp(parseFloat(styles.getPropertyValue('--right-sidebar-width')), SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, RIGHT_SIDEBAR_DEFAULT_WIDTH);
     localStorage.setItem(SIDEBAR_WIDTHS_KEY, JSON.stringify({ left, right }));
   } catch (_) {}
 }
 
+function resetSidebarWidthsToDefault() {
+  if (!shell || matchMedia('(max-width: 860px)').matches) return;
+  runDisplayTransition(() => {
+    shell.style.setProperty('--left-sidebar-width', `${LEFT_SIDEBAR_DEFAULT_WIDTH}px`);
+    shell.style.setProperty('--right-sidebar-width', `${RIGHT_SIDEBAR_DEFAULT_WIDTH}px`);
+    shell.classList.remove('left-collapsed', 'right-collapsed');
+    saveSidebarWidths();
+    if (pdfDoc) persistDocumentState();
+  }, { delay: 220 });
+}
+
 function bindSidebarResizer(handle, side) {
   if (!handle || !shell) return;
+  handle.addEventListener('dblclick', (event) => {
+    if (matchMedia('(max-width: 860px)').matches) return;
+    event.preventDefault();
+    event.stopPropagation();
+    resetSidebarWidthsToDefault();
+  });
   handle.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || matchMedia('(max-width: 860px)').matches) return;
     event.preventDefault();
@@ -8922,7 +8941,7 @@ function bindSidebarResizer(handle, side) {
         shell.classList.add(collapsedClass);
       } else {
         shell.classList.remove(collapsedClass);
-        const width = clamp(raw, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, side === 'left' ? 250 : 260);
+        const width = clamp(raw, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, side === 'left' ? LEFT_SIDEBAR_DEFAULT_WIDTH : RIGHT_SIDEBAR_DEFAULT_WIDTH);
         shell.style.setProperty(variable, `${width}px`);
       }
     };
