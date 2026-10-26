@@ -1160,15 +1160,10 @@ function setDocumentMapSelectedNode(node) {
 }
 
 function updateDocumentMapCurrentLocation() {
-  const selector = [
-    '.outline-item[data-page]',
-    '.structure-item[data-page]',
-    '.equation-index-item[data-page]',
-    '.document-map-item[data-page]',
-    '.bibliography-smart-item[data-page]'
-  ].join(',');
-  document.querySelectorAll(`#outline-panel ${selector}`).forEach((node) => {
-    node.classList.toggle('is-current-location', Number(node.dataset.page) === Number(currentPage));
+  // Current-page dot markers add visual noise without useful navigation value.
+  // Keep the selected-location state separate, but remove any legacy current-page marker.
+  document.querySelectorAll('#outline-panel .is-current-location').forEach((node) => {
+    node.classList.remove('is-current-location');
   });
 }
 
@@ -6124,6 +6119,21 @@ async function detectOutlineFromTypography() {
   return deduped.slice(0, 240);
 }
 
+function positionOutlineEditActions(trigger, actions) {
+  if (!trigger || !actions) return;
+  const rect = trigger.getBoundingClientRect();
+  const gap = 10;
+  const margin = 8;
+  const width = Math.max(1, actions.offsetWidth);
+  const height = Math.max(1, actions.offsetHeight);
+  let left = rect.right + gap;
+  if (left + width > window.innerWidth - margin) left = Math.max(margin, rect.left - gap - width);
+  let top = rect.top + (rect.height - height) / 2;
+  top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+  actions.style.left = `${Math.round(left)}px`;
+  actions.style.top = `${Math.round(top)}px`;
+}
+
 function renderInferredOutline(entries) {
   outlineList.replaceChildren();
   outlineCount.textContent = String(entries.length);
@@ -6170,6 +6180,7 @@ function renderInferredOutline(entries) {
       });
       row.classList.toggle('has-edit-menu', willOpen);
       menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions));
     });
 
     const actions = document.createElement('div');
@@ -6678,7 +6689,7 @@ function renderEquationIndex() {
     button.title = entry.text || entry.label;
     button.addEventListener('click', async () => { equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu')); const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
     const menu = document.createElement('button'); menu.type='button'; menu.className='outline-overflow-button'; menu.textContent='⋯'; menu.title=t('Edit equation','编辑公式'); menu.setAttribute('aria-label',menu.title); menu.setAttribute('aria-expanded','false');
-    menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); });
+    menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions)); });
     const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
     const reselect = document.createElement('button'); reselect.type='button'; reselect.className='outline-edit-button'; reselect.textContent=t('Reselect','重新选择');
     reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
