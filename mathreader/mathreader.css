@@ -523,9 +523,7 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .equation-bookmark-cue.is-fading{opacity:0;transform:translateY(-50%) translateX(6px)}
 
 /* v228: user correction controls for the inferred document Structure only. */
-.outline-edit-row{display:grid;gap:0}
-.outline-edit-actions{display:flex;gap:.45rem;padding:0 7px 3px}
-.outline-edit-row[data-depth="1"] .outline-edit-actions{padding-left:18px}
-.outline-edit-row[data-depth="2"] .outline-edit-actions{padding-left:29px}
-.outline-edit-row[data-depth="3"] .outline-edit-actions{padding-left:40px}
-.outline-edit-row{position:relative}.outline-edit-actions{position:absolute;z-index:8;right:4px;top:50%;display:flex;gap:3px;padding:4px;transform:translateY(-50%);border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .12s ease}.outline-edit-row:hover .outline-edit-actions,.outline-edit-row:focus-within .outline-edit-actions{opacity:1;pointer-events:auto}.outline-edit-button{border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);padding:3px 5px;font:inherit;font-size:.64rem;line-height:1.2;cursor:pointer}.outline-edit-button:hover,.outline-edit-button:focus-visible{border-color:var(--accent);background:var(--surface-soft);color:var(--accent-deep)}
+.outline-edit-row{position:relative;display:grid;gap:0}
+.outline-edit-actions{position:absolute;z-index:8;right:4px;top:50%;display:flex;gap:3px;padding:4px;transform:translateY(-50%);border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .12s ease}
+.outline-edit-row.has-edit-menu .outline-edit-actions{opacity:1;pointer-events:auto}
+.outline-edit-button{border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);padding:3px 5px;font:inherit;font-size:.64rem;line-height:1.2;cursor:pointer}.outline-edit-button:hover,.outline-edit-button:focus-visible{border-color:var(--accent);background:var(--surface-soft);color:var(--accent-deep)}

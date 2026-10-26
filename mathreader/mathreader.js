@@ -4828,6 +4828,7 @@ function outlineEntryFromSelection(selection) {
   if (!text) return null;
   return {
     title: text.slice(0, 180),
+    matchText: text.slice(0, 1200),
     page: Number(selection.page),
     ratio: Number(selection.ratio) || 0,
     depth: 0,
@@ -5979,7 +5980,18 @@ function renderInferredOutline(entries) {
     button.dataset.page = String(entry.page);
     button.textContent = entry.title;
     button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
-    button.addEventListener('click', () => { setDocumentMapSelectedNode(button); goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.title); });
+    button.addEventListener('click', () => {
+      outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+      setDocumentMapSelectedNode(button);
+      goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, entry.matchText || entry.title);
+    });
+    row.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+      if (button.classList.contains('is-selected-location')) return;
+      row.classList.add('has-edit-menu');
+    });
 
     const actions = document.createElement('div');
     actions.className = 'outline-edit-actions';
@@ -5987,7 +5999,10 @@ function renderInferredOutline(entries) {
     reselect.type = 'button';
     reselect.className = 'outline-edit-button';
     reselect.textContent = t('Reselect', '重新选择');
-    reselect.addEventListener('click', () => {
+    reselect.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      row.classList.remove('has-edit-menu');
       pendingOutlineReselectKey = outlineEntryKey(entry);
       refreshSelectionUI();
       openRightSectionShortcut('selection-section');
@@ -5996,7 +6011,10 @@ function renderInferredOutline(entries) {
     remove.type = 'button';
     remove.className = 'outline-edit-button';
     remove.textContent = t('Remove', '移除');
-    remove.addEventListener('click', () => {
+    remove.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      row.classList.remove('has-edit-menu');
       const key = outlineEntryKey(entry);
       if (pendingOutlineReselectKey === key) pendingOutlineReselectKey = null;
       inferredOutline = inferredOutline.filter((item) => outlineEntryKey(item) !== key);
@@ -6012,6 +6030,11 @@ function renderInferredOutline(entries) {
   }
   applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
 }
+
+document.addEventListener('click', (event) => {
+  if (event.target.closest?.('.outline-edit-actions')) return;
+  document.querySelectorAll('#outline-list .outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
+});
 
 const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
 const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
@@ -6290,10 +6313,14 @@ function normalizedBibliographyKey(value) {
 
 function bibliographyCitationKeys(raw) {
   const numeric = groupedBibliographyMembers(raw).map((number) => String(number));
-  if (numeric.length) return numeric;
+  if (numeric.length && !/[A-Za-z]/.test(String(raw || ''))) return numeric;
   const inner = String(raw || '').replace(/^\s*\[|\]\s*$/g, '').trim();
-  if (/^[A-Za-z][A-Za-z0-9]{0,9}$/.test(inner)) return [normalizedBibliographyKey(inner)];
-  return [];
+  const keys = [];
+  for (const part of inner.split(/[;,]/)) {
+    const token = part.trim();
+    if (/^\d{1,3}$/.test(token) || /^[A-Za-z][A-Za-z0-9]{0,9}$/.test(token)) keys.push(normalizedBibliographyKey(token));
+  }
+  return [...new Set(keys)];
 }
 
 function bibliographyMetadata(text) {
@@ -6615,13 +6642,33 @@ async function equationTargetAtLocation(query, pageNum, ratio) {
   return best ? { page: best.page, ratio: best.ratio } : null;
 }
 
+function referenceLinkRectAlreadyCovered(overlay, left, top, width, height) {
+  const right = left + width;
+  const bottom = top + height;
+  for (const node of overlay.querySelectorAll('.pdf-reference-link')) {
+    const x = Number.parseFloat(node.style.left) || 0;
+    const y = Number.parseFloat(node.style.top) || 0;
+    const w = Number.parseFloat(node.style.width) || 0;
+    const h = Number.parseFloat(node.style.height) || 0;
+    const overlapW = Math.max(0, Math.min(right, x + w) - Math.max(left, x));
+    const overlapH = Math.max(0, Math.min(bottom, y + h) - Math.max(top, y));
+    const overlap = overlapW * overlapH;
+    const smaller = Math.min(width * height, w * h);
+    if (smaller > 0 && overlap / smaller >= 0.78) return true;
+  }
+  return false;
+}
+
 function appendReferenceLinkForRange(overlay, surface, range, query, pageNum) {
   if (!range) return;
   const surfaceRect = surface.getBoundingClientRect();
   for (const rect of range.getClientRects()) {
     if (rect.width < 2 || rect.height < 2) continue;
+    const left = rect.left - surfaceRect.left;
+    const top = rect.top - surfaceRect.top;
+    if (referenceLinkRectAlreadyCovered(overlay, left, top, rect.width, rect.height)) continue;
     const link = document.createElement('button'); link.type = 'button'; link.className = 'pdf-reference-link';
-    link.style.left = `${rect.left - surfaceRect.left}px`; link.style.top = `${rect.top - surfaceRect.top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
+    link.style.left = `${left}px`; link.style.top = `${top}px`; link.style.width = `${rect.width}px`; link.style.height = `${rect.height}px`;
     link.title = t(`Follow ${query}`, `跳转到 ${query}`); link.setAttribute('aria-label', link.title);
     const sourceRatio = surfaceRect.height > 0
       ? Math.min(1, Math.max(0, ((rect.top - surfaceRect.top) + rect.height / 2) / surfaceRect.height))
@@ -7060,6 +7107,35 @@ function decorateReferenceLinks(textLayer, surface, pageNum) {
     if (generated.length) {
       const groupRange = rangeForAggregateMatch(mapped.parts, grouped.index, grouped.index + raw.length);
       for (const number of generated) appendReferenceLinkForRange(overlay, surface, groupRange, `[${number}]`, pageNum);
+    }
+  }
+
+  // Author-style and mixed bibliography groups such as [Wg, W1] are
+  // linked token-by-token, but only when a token exists in the detected
+  // bibliography. The brackets themselves are not treated as a key.
+  if (bibliographyEntries.length) {
+    const knownBib = new Map(bibliographyEntries.map((entry) => [normalizedBibliographyKey(entry.number), entry]));
+    const bracketGroupRe = /\[[^\]\n]{1,80}\]/g;
+    let bracketGroup;
+    while ((bracketGroup = bracketGroupRe.exec(mapped.text))) {
+      const raw = bracketGroup[0];
+      const inner = raw.slice(1, -1);
+      const tokenRe = /[^,;]+/g;
+      let tokenMatch;
+      while ((tokenMatch = tokenRe.exec(inner))) {
+        const tokenRaw = tokenMatch[0];
+        const leading = tokenRaw.match(/^\s*/)?.[0].length || 0;
+        const trailing = tokenRaw.match(/\s*$/)?.[0].length || 0;
+        const token = tokenRaw.slice(leading, Math.max(leading, tokenRaw.length - trailing));
+        if (!token || /[-–—]/.test(token) && /^\d/.test(token)) continue;
+        const key = normalizedBibliographyKey(token);
+        const bib = knownBib.get(key);
+        if (!bib) continue;
+        const start = bracketGroup.index + 1 + tokenMatch.index + leading;
+        const end = start + token.length;
+        const range = rangeForAggregateMatch(mapped.parts, start, end);
+        appendReferenceLinkForRange(overlay, surface, range, bib.label || `[${token}]`, pageNum);
+      }
     }
   }
 
@@ -7684,8 +7760,31 @@ function semanticMatchRangeInLayer(layer, surface, query, targetRatio = null) {
   return candidates[0].range;
 }
 
+function nearestTextRangeAtRatio(layer, surface, targetRatio) {
+  if (!layer || !surface || !Number.isFinite(Number(targetRatio))) return null;
+  const surfaceRect = surface.getBoundingClientRect();
+  if (surfaceRect.height <= 0) return null;
+  const wanted = Math.min(1, Math.max(0, Number(targetRatio)));
+  let best = null;
+  for (const node of layer.querySelectorAll('span')) {
+    const text = String(node.textContent || '').trim();
+    if (!text) continue;
+    const rect = node.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) continue;
+    const nodeRatio = Math.min(1, Math.max(0, ((rect.top - surfaceRect.top) + rect.height / 2) / surfaceRect.height));
+    const delta = Math.abs(nodeRatio - wanted);
+    if (!best || delta < best.delta) best = { node, delta };
+  }
+  if (!best?.node) return null;
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(best.node);
+    return range;
+  } catch (_) { return null; }
+}
+
 async function emphasizeSemanticDestination(page, ratio, query) {
-  if (!pdfDoc || !query) return;
+  if (!pdfDoc || !query) return false;
   let layer = null;
   let surface = null;
   if (readingFlow === 'continuous') {
@@ -7699,12 +7798,12 @@ async function emphasizeSemanticDestination(page, ratio, query) {
     layer = primaryTextLayer;
     surface = primaryPageSurface;
   }
-  if (!layer || !surface) return;
+  if (!layer || !surface) return false;
   await new Promise((resolve) => requestAnimationFrame(resolve));
-  const range = semanticMatchRangeInLayer(layer, surface, query, ratio);
-  if (!range) return;
+  const range = semanticMatchRangeInLayer(layer, surface, query, ratio) || nearestTextRangeAtRatio(layer, surface, ratio);
+  if (!range) return false;
   const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
-  if (!rect) return;
+  if (!rect) return false;
   const wrapRect = primaryCanvasWrap.getBoundingClientRect();
   const desiredOffset = Math.min(280, Math.max(150, wrapRect.height * 0.34));
   const delta = rect.top - (wrapRect.top + desiredOffset);
@@ -7712,12 +7811,15 @@ async function emphasizeSemanticDestination(page, ratio, query) {
   if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
   emphasizeSearchRange(surface, range);
   persistDocumentState();
+  return true;
 }
 
 async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
   await goToLocation(page, ratio, options);
-  if (query) await emphasizeSemanticDestination(page, ratio, query);
-  else showNavigationLandingCue(page, ratio);
+  if (query) {
+    const emphasized = await emphasizeSemanticDestination(page, ratio, query);
+    if (!emphasized) showNavigationLandingCue(page, ratio);
+  } else showNavigationLandingCue(page, ratio);
 }
 
 function searchMatchRangeInLayer(layer, query, ordinal = 0) {
