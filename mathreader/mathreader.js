@@ -2396,47 +2396,47 @@ async function ensureMathOcrPipeline() {
     for (let index = 0; index < plan.length; index += 1) {
       const backend = plan[index];
       try {
-        setOcrStatus(t('Initializing OCR…', '正在初始化 OCR……'), true);
-        // Transformers.js emits progress per individual model asset. Percentages
-        // are not stable across assets, so show only monotonic facts: assets
-        // discovered, assets completed, or (when names are unavailable) the
-        // number of loader events observed.
-        const discoveredAssets = new Set();
-        const completedAssets = new Set();
-        let loaderEvents = 0;
-        let lastProgressLabel = '';
-        const assetKey = (info) => {
-          const raw = info?.file || info?.name || info?.url || info?.path || info?.key || '';
-          return String(raw || '').trim();
+        // v209: show a smooth monotonic initialization estimate instead of
+        // unstable per-file percentages or file names. The pacing learns from
+        // the previous successful initialization duration for each engine.
+        const progressHistoryKey = `mathreader-ocr-init-ms-v1:${backend.device || 'cpu'}:${backend.dtype || 'default'}`;
+        const previousInitMs = clamp(Number(safeGet(progressHistoryKey, '0')), 3000, 180000, 30000);
+        const progressStartedAt = ocrNow();
+        let displayedInitProgress = 1;
+        let progressTimer = null;
+        let progressFinished = false;
+        const showEstimatedProgress = (value) => {
+          const next = Math.max(displayedInitProgress, Math.min(99, Number(value) || 1));
+          displayedInitProgress = next;
+          setOcrStatus(
+            t(
+              `Initializing OCR · ${backend.label} · ${next.toFixed(1)}%`,
+              `正在初始化 OCR · ${backend.label} · ${next.toFixed(1)}%`
+            ),
+            true
+          );
         };
-        const assetLabel = (key) => {
-          if (!key) return '';
-          const clean = key.split(/[?#]/)[0];
-          const parts = clean.split(/[\\/]/).filter(Boolean);
-          return parts[parts.length - 1] || clean;
-        };
-        const showLoadProgress = (currentKey = '') => {
-          let detail = '';
-          if (discoveredAssets.size || completedAssets.size) {
-            detail = `${completedAssets.size} ${t('loaded', '已加载')} · ${discoveredAssets.size} ${t('found', '已发现')}`;
-            const current = assetLabel(currentKey);
-            if (current && !completedAssets.has(currentKey)) detail += ` · ${t('current', '当前')}: ${current}`;
+        const updateEstimatedProgress = () => {
+          if (progressFinished) return;
+          const elapsed = Math.max(0, ocrNow() - progressStartedAt);
+          const reference = Math.max(3000, previousInitMs);
+          // Reach about 92% at the learned duration, then continue creeping
+          // toward 99% if this load takes longer. Never move backward.
+          let estimate;
+          if (elapsed <= reference) {
+            estimate = 1 + 91 * (elapsed / reference);
           } else {
-            detail = `${t('loader events', '加载事件')}: ${loaderEvents}`;
+            const overtime = elapsed - reference;
+            estimate = 92 + 7 * (1 - Math.exp(-overtime / Math.max(4000, reference * 0.35)));
           }
-          const label = `${t('Initializing OCR', '正在初始化 OCR')} · ${backend.label} · ${detail}`;
-          if (label !== lastProgressLabel) {
-            lastProgressLabel = label;
-            setOcrStatus(label, true);
-          }
+          showEstimatedProgress(estimate);
         };
-        const progress_callback = (info) => {
-          if (!info) return;
-          loaderEvents += 1;
-          const key = assetKey(info);
-          if (key) discoveredAssets.add(key);
-          if (key && ['done', 'ready', 'loaded'].includes(String(info.status || '').toLowerCase())) completedAssets.add(key);
-          showLoadProgress(key);
+        showEstimatedProgress(1);
+        progressTimer = setInterval(updateEstimatedProgress, 250);
+        // Keep the callback so Transformers.js can emit normally, but do not
+        // expose its asset names or bursty per-file percentages in the UI.
+        const progress_callback = () => {
+          updateEstimatedProgress();
         };
         const options = { progress_callback };
         if (!backend.official) {
@@ -2458,13 +2458,29 @@ async function ensureMathOcrPipeline() {
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        const loadedSummary = discoveredAssets.size
-          ? ` · ${completedAssets.size || discoveredAssets.size} ${t('model files', '个模型文件')}`
-          : '';
-        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`) + loadedSummary);
+        progressFinished = true;
+        if (progressTimer) clearInterval(progressTimer);
+        const actualInitMs = Math.max(1, ocrNow() - progressStartedAt);
+        // Exponential smoothing keeps the next estimate stable if one load is
+        // unusually fast or slow.
+        const learnedInitMs = previousInitMs > 0
+          ? Math.round(previousInitMs * 0.65 + actualInitMs * 0.35)
+          : Math.round(actualInitMs);
+        safeSet(progressHistoryKey, String(learnedInitMs));
+        displayedInitProgress = 100;
+        setOcrStatus(
+          t(`Initializing OCR · ${backend.label} · 100.0%`, `正在初始化 OCR · ${backend.label} · 100.0%`),
+          true
+        );
+        setTimeout(() => {
+          if (mathOcrPipeline === pipe) {
+            setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
+          }
+        }, 220);
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
+        if (typeof progressTimer !== 'undefined' && progressTimer) clearInterval(progressTimer);
         console.warn('MathReader OCR backend failed', backend, error);
         lastError = error;
         if (index + 1 < plan.length) {
