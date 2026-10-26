@@ -2298,6 +2298,10 @@ function setOcrMode(active) {
   if (ocrMode) {
     hideSelectionToolbar();
     window.getSelection()?.removeAllRanges();
+    // v203: reveal Formula OCR as soon as selection mode becomes active.
+    // This happens before the drag and well before WASM inference can block
+    // the main thread, so the user already sees where progress/results live.
+    autoOpenRightSection('ocr-section');
     setOcrStatus(formulaExtractionMode === 'image' ? t('Drag around one formula. Image OCR is the default; press Esc to cancel.', '请框选一个公式。默认使用图像 OCR；按 Esc 取消。') : t('Drag around one formula. PDF vector extraction is selected; press Esc to cancel.', '请框选一个公式。当前选择 PDF 矢量提取；按 Esc 取消。')); 
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
@@ -4435,6 +4439,8 @@ function bindOcrLayer(layer) {
     if (!ocrMode || mathOcrLoading) return;
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault();
+    autoOpenRightSection('ocr-section');
+    setOcrStatus(t('Selecting formula…', '正在框选公式……'));
     const start = ocrPoint(event, layer);
     ocrDrag = { layer, start, rect: { left: start.x, top: start.y, width: 0, height: 0 }, pointerId: event.pointerId };
     layer.classList.add('is-selecting');
