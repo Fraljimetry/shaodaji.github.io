@@ -6141,14 +6141,31 @@ async function detectOutlineFromTypography() {
 function positionOutlineEditActions(trigger, actions) {
   if (!trigger || !actions) return;
   const rect = trigger.getBoundingClientRect();
+  const sidebar = trigger.closest('.sidebar') || trigger.closest('.sidebar-left');
+  const sidebarRect = sidebar?.getBoundingClientRect?.();
   const gap = 10;
   const margin = 8;
   const width = Math.max(1, actions.offsetWidth);
   const height = Math.max(1, actions.offsetHeight);
+
+  // Native scrollbars live outside the element's client box and can win hit testing
+  // even when a fixed element is visually painted above them. Keep the action
+  // surface strictly inside the sidebar client box so it never overlaps the
+  // scrollbar track or thumb.
+  const safeLeft = sidebarRect ? sidebarRect.left + margin : margin;
+  const safeRight = sidebar
+    ? sidebarRect.left + Math.max(1, sidebar.clientWidth) - margin
+    : window.innerWidth - margin;
+
   let left = rect.right + gap;
-  if (left + width > window.innerWidth - margin) left = Math.max(margin, rect.left - gap - width);
+  if (left + width > safeRight) left = rect.left - gap - width;
+  left = Math.max(safeLeft, Math.min(left, safeRight - width));
+
+  const safeTop = sidebarRect ? sidebarRect.top + margin : margin;
+  const safeBottom = sidebarRect ? sidebarRect.bottom - margin : window.innerHeight - margin;
   let top = rect.top + (rect.height - height) / 2;
-  top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+  top = Math.max(safeTop, Math.min(top, safeBottom - height));
+
   actions.style.left = `${Math.round(left)}px`;
   actions.style.top = `${Math.round(top)}px`;
 }

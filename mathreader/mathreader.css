@@ -523,13 +523,13 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .equation-bookmark-cue.is-fading{opacity:0;transform:translateY(-50%) translateX(6px)}
 
 /* v228: user correction controls for the inferred document Structure only. */
-.outline-edit-row{position:relative;display:grid;gap:0}
+.outline-edit-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 28px;align-items:center;column-gap:4px;row-gap:0}
 .outline-edit-actions{position:fixed;z-index:120;left:0;top:0;right:auto;display:flex;gap:3px;padding:4px;transform:none;border:1px solid var(--line-strong);border-radius:6px;background:var(--paper);box-shadow:0 6px 18px rgba(0,0,0,.24);opacity:0;pointer-events:none;transition:opacity .12s ease;isolation:isolate}
 .outline-edit-row.has-edit-menu .outline-edit-actions{opacity:1;pointer-events:auto}
-.outline-overflow-button{position:absolute;z-index:1;right:4px;top:50%;width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--muted);font:700 17px/20px system-ui,sans-serif;letter-spacing:1px;transform:translateY(-50%);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.outline-overflow-button{position:static;z-index:auto;grid-column:2;grid-row:1;justify-self:end;align-self:center;width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--muted);font:700 17px/20px system-ui,sans-serif;letter-spacing:1px;transform:none;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .outline-overflow-button:hover,.outline-overflow-button:focus-visible{border-color:var(--line-strong);background:var(--surface);color:var(--text)}
 .outline-edit-row.has-edit-menu .outline-overflow-button{opacity:1;pointer-events:auto;background:var(--surface);border-color:var(--line-strong);color:var(--text)}
-.outline-edit-row>.outline-item,.outline-edit-row>.equation-index-item{padding-right:34px}
+.outline-edit-row>.outline-item,.outline-edit-row>.equation-index-item{grid-column:1;grid-row:1;min-width:0;padding-right:8px}
 .outline-edit-button{border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);padding:3px 5px;font:inherit;font-size:.64rem;line-height:1.2;cursor:pointer}.outline-edit-button:hover,.outline-edit-button:focus-visible{border-color:var(--accent);background:var(--surface-soft);color:var(--accent-deep)}
 /* v238: Results stay visually clean; deletion is a transient right-click action. */
 .structure-entry{position:relative}
