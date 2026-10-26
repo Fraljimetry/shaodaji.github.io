@@ -315,7 +315,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 8;
+const STRUCTURE_INDEX_VERSION = 9;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6138,6 +6138,99 @@ function isEquationLabelQuery(value) {
   return /^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner);
 }
 
+
+function parsedSequentialLabel(value) {
+  const normalized = normalizedReferenceLabel(value);
+  const match = normalized.match(/^(theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|assumption|hypothesis)\s+([a-z]?)(\d+(?:\.\d+)*)$/i);
+  if (!match) return null;
+  return {
+    type: match[1].toLocaleLowerCase(),
+    prefix: match[2].toLocaleLowerCase(),
+    parts: match[3].split('.').map((part) => Number(part)),
+  };
+}
+
+function compareNumberParts(a, b) {
+  const left = Array.isArray(a) ? a : [];
+  const right = Array.isArray(b) ? b : [];
+  const length = Math.max(left.length, right.length);
+  for (let i = 0; i < length; i += 1) {
+    const av = Number.isFinite(left[i]) ? left[i] : -1;
+    const bv = Number.isFinite(right[i]) ? right[i] : -1;
+    if (av !== bv) return av < bv ? -1 : 1;
+  }
+  return 0;
+}
+
+function normalizeSequentialStructureEntries(entries) {
+  const accepted = [];
+  const seen = new Set();
+  let lastNumeric = null;
+  for (const entry of entries || []) {
+    const labelKey = normalizedReferenceLabel(entry?.label);
+    if (!labelKey || seen.has(labelKey)) continue;
+    const parsed = parsedSequentialLabel(entry?.label);
+    if (parsed && !parsed.prefix) {
+      // Mathematical result numbering normally follows the document order.
+      // Use that global order as a conservative rejection signal for obvious
+      // false headings copied from prose/reference text. Letter-prefixed
+      // appendix labels are kept outside this numeric ordering rule.
+      if (lastNumeric && compareNumberParts(parsed.parts, lastNumeric.parts) < 0) continue;
+      lastNumeric = parsed;
+    }
+    seen.add(labelKey);
+    accepted.push(entry);
+  }
+  return accepted;
+}
+
+function parsedEquationNumber(label) {
+  const inner = normalizedEquationLabel(label).slice(1, -1);
+  if (!/^\d+(?:\.\d+)+$/.test(inner)) return null;
+  const parts = inner.split('.').map((part) => Number(part));
+  return { parts, prefix: parts.slice(0, -1).join('.'), last: parts[parts.length - 1] };
+}
+
+function equationDocumentPosition(item) {
+  return Number(item?.page || 0) * 10 + (Number(item?.ratio) || 0);
+}
+
+function recoverSequentialEquationGaps(index, candidatePool) {
+  const best = [];
+  for (const [label, candidates] of index.entries()) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed || !candidates?.length) continue;
+    const candidate = [...candidates].sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+    best.push({ label, parsed, candidate });
+  }
+  best.sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
+  for (let i = 0; i + 1 < best.length; i += 1) {
+    const left = best[i];
+    const right = best[i + 1];
+    if (left.parsed.prefix !== right.parsed.prefix) continue;
+    const gap = right.parsed.last - left.parsed.last;
+    if (gap < 2 || gap > 4) continue;
+    const leftPos = equationDocumentPosition(left.candidate);
+    const rightPos = equationDocumentPosition(right.candidate);
+    for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
+      const expected = `(${left.parsed.prefix}.${missing})`;
+      if (index.has(expected)) continue;
+      const matches = (candidatePool.get(expected) || []).filter((item) => {
+        const pos = equationDocumentPosition(item);
+        return pos > leftPos && pos < rightPos;
+      });
+      if (!matches.length) continue;
+      matches.sort((a, b) => {
+        const ar = Number(a.xEndRatio || a.xStartRatio || 0);
+        const br = Number(b.xEndRatio || b.xStartRatio || 0);
+        return br - ar || (b.confidence || 0) - (a.confidence || 0);
+      });
+      const recovered = { ...matches[0], confidence: Math.max(10, Number(matches[0].confidence) || 0), recoveredBySequence: true };
+      index.set(expected, [recovered]);
+    }
+  }
+}
+
 function equationLabelCandidatesInLine(text) {
   const value = normalizeEquationTagCommands(String(text || '').normalize('NFKC'));
   const out = [];
@@ -6250,29 +6343,46 @@ async function buildEquationLabelIndex() {
   if (!pdfDoc) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
   const index = new Map();
+  const candidatePool = new Map();
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     const lines = await pageTextLines(page);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
-      for (const candidate of equationLabelCandidatesInLine(line.text)) {
+      const explicit = equationLabelCandidatesInLine(line.text);
+      const weakBare = [];
+      const rawText = String(line.text || '').normalize('NFKC');
+      const bareRe = /\b\d+(?:\.\d+)+\b/g;
+      let bareMatch;
+      while ((bareMatch = bareRe.exec(rawText))) {
+        const label = normalizedEquationLabel(bareMatch[0]);
+        if (isLikelyCalendarYearEquationLabel(label) || explicit.some((item) => item.label === label)) continue;
+        weakBare.push({ label, index: bareMatch.index, end: bareMatch.index + bareMatch[0].length, bare: true, sequenceOnly: true });
+      }
+      for (const candidate of [...explicit, ...weakBare]) {
         let confidence = equationCandidateConfidence(line, candidate.label);
         let reliable = confidence >= 8;
-        // Some PDFs extract a right-margin equation number as its own text
-        // line, losing the formula's math signals and sometimes its x geometry.
-        // Accept that tag only when it sits immediately beside a neighboring
-        // math-heavy line, which keeps prose parentheticals excluded.
         if (!reliable && isStandaloneEquationTagLine(line, candidate.label) && hasNearbyDisplayMath(lines, lineIndex)) {
           confidence = Math.max(confidence, 12);
           reliable = true;
         }
-        if (!reliable) continue;
+        const record = { page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence };
+        const pool = candidatePool.get(candidate.label) || [];
+        // Keep weak dotted-number occurrences only as sequence-recovery evidence.
+        // Right-side geometry or neighboring display math gives them priority.
+        const nearRight = Number(line.xEndRatio) >= 0.70 || Number(line.xStartRatio) >= 0.60;
+        if (!candidate.sequenceOnly || nearRight || hasNearbyDisplayMath(lines, lineIndex)) {
+          pool.push(record);
+          candidatePool.set(candidate.label, pool);
+        }
+        if (!reliable || candidate.sequenceOnly) continue;
         const list = index.get(candidate.label) || [];
-        list.push({ page, ratio: line.ratio, text: line.text, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio, confidence });
+        list.push(record);
         index.set(candidate.label, list);
       }
     }
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
+  recoverSequentialEquationGaps(index, candidatePool);
   equationLabelIndex = index;
   renderEquationIndex();
   return index;
@@ -6282,23 +6392,6 @@ function equationConfidenceTier(score) {
   if (score >= 20) return t('high confidence','高置信度');
   if (score >= 12) return t('medium confidence','中等置信度');
   return t('review','需核对');
-}
-
-let equationThumbObserver = null;
-function observeEquationThumbnail(img, entry) {
-  const load = async () => {
-    if (img.dataset.loaded === '1' || !pdfDoc) return;
-    img.dataset.loaded = '1';
-    try {
-      const snap = await referenceSnapshotData({ page: entry.page, ratio: entry.ratio }, 'equation');
-      if (snap?.url && img.isConnected) img.src = snap.url;
-    } catch (_) {}
-  };
-  if (!('IntersectionObserver' in window)) { void load(); return; }
-  if (!equationThumbObserver) equationThumbObserver = new IntersectionObserver((items) => {
-    for (const item of items) if (item.isIntersecting) { const fn = item.target._loadEquationThumb; if (fn) void fn(); equationThumbObserver.unobserve(item.target); }
-  }, { root: equationIndex, rootMargin: '80px' });
-  img._loadEquationThumb = load; equationThumbObserver.observe(img);
 }
 
 function renderEquationIndex() {
@@ -6326,11 +6419,10 @@ function renderEquationIndex() {
   if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
   for (const entry of rows.slice(0, 500)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item'; button.dataset.page=String(entry.page); button.dataset.confidence=entry.score >= 20 ? 'high' : entry.score >= 12 ? 'medium' : 'review';
-    const img=document.createElement('img'); img.className='equation-index-thumb'; img.alt=''; img.loading='lazy'; observeEquationThumbnail(img,entry);
     const copy=document.createElement('span'); copy.className='equation-index-copy';
     const label = document.createElement('strong'); label.textContent = entry.label;
     const meta = document.createElement('span'); meta.textContent = `${t(`Page ${entry.page}`, `第 ${entry.page} 页`)} · ${equationConfidenceTier(entry.score)}`;
-    copy.append(label,meta); button.append(img,copy);
+    copy.append(label,meta); button.append(copy);
     button.title = entry.text || entry.label;
     button.addEventListener('click', async () => { const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
     equationIndex.append(button);
@@ -6572,10 +6664,16 @@ async function buildStructureIndex({ force = false } = {}) {
       }
     }
 
+    // Apply document-order sequence consistency after local detection. Exact
+    // result labels are unique, and numeric result numbering must not move
+    // backwards through the paper. This removes repeated prose-derived labels
+    // without inventing missing mathematical results.
+    const sequenceCleanEntries = normalizeSequentialStructureEntries(nextEntries);
+
     // Resolve proof dependencies into a directed graph and derive the reverse
-    // relation from the same detected structure index.
-    const structureByLabel = new Map(nextEntries.map((entry) => [normalizedReferenceLabel(entry.label), entry]));
-    for (const owner of nextEntries) {
+    // relation from the same sequence-cleaned structure index.
+    const structureByLabel = new Map(sequenceCleanEntries.map((entry) => [normalizedReferenceLabel(entry.label), entry]));
+    for (const owner of sequenceCleanEntries) {
       const resolved = [];
       for (const reference of owner.proofReferences || []) {
         const target = structureByLabel.get(normalizedReferenceLabel(reference));
@@ -6589,7 +6687,7 @@ async function buildStructureIndex({ force = false } = {}) {
 
     // Corollary edges are intentionally conservative: only create them when
     // the corollary statement itself explicitly names an earlier structure.
-    for (const entry of nextEntries) {
+    for (const entry of sequenceCleanEntries) {
       if (!/^corollary\b/i.test(entry.label || '')) continue;
       const refs = String(entry.title || '').match(STRUCTURE_REFERENCE_RE) || [];
       for (const ref of refs) {
@@ -6602,7 +6700,7 @@ async function buildStructureIndex({ force = false } = {}) {
       }
     }
 
-    structureEntries = nextEntries.slice(0, 500);
+    structureEntries = sequenceCleanEntries.slice(0, 500);
     bibliographyEntries = nextBibliography.slice(0, 400);
     structureIndexVersion = STRUCTURE_INDEX_VERSION;
     renderStructureIndex(); renderBibliographyIndex(); rerenderReferenceLinks();
@@ -6677,17 +6775,6 @@ function restoreStructureResultRelations(entry) {
   }
 }
 
-function deleteStructureResult(entry) {
-  if (!entry) return;
-  pushUndo('structure-result', entry.label || entry.title || t('Result','结果'), entry);
-  pruneStructureResultRelations(entry);
-  structureEntries = structureEntries.filter((item) => item !== entry);
-  persistDocumentState();
-  renderStructureIndex();
-  rerenderReferenceLinks();
-  renderUndoHistory();
-}
-
 function renderStructureIndex() {
   if (!structureIndex || !structureEmpty || !structureCount) return;
   structureIndex.replaceChildren();
@@ -6713,17 +6800,7 @@ function renderStructureIndex() {
       await goToMatchedLocation(target.page, target.ratio, q);
       updateBacklinksForTarget(q, target);
     });
-    row.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      structureIndex.querySelectorAll('.structure-entry.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
-      row.classList.add('has-edit-menu');
-    });
-    const editActions = document.createElement('div'); editActions.className = 'result-edit-actions';
-    const deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.className = 'outline-edit-button'; deleteButton.textContent = t('Delete','删除');
-    deleteButton.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); deleteStructureResult(entry); });
-    editActions.append(deleteButton);
-    row.append(button, editActions);
+    row.append(button);
     if (entry.proofPage) {
       const proof = document.createElement('button'); proof.type = 'button'; proof.className = 'structure-proof proof-graph-proof'; proof.dataset.page=String(entry.proofPage);
       proof.textContent = `${entry.proofTitle || t('Proof', '证明')} → ${t(`p. ${entry.proofPage}`, `第 ${entry.proofPage} 页`)}`;
