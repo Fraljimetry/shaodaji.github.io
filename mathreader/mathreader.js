@@ -315,7 +315,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 9;
+const STRUCTURE_INDEX_VERSION = 10;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -5819,7 +5819,7 @@ function weightedMedianFont(samples) {
 }
 
 function headingNumberDepth(text) {
-  const match = text.match(/^\s*(?:§\s*)?(\d+(?:\.\d+){0,4})[.)]?\s+\S/);
+  const match = text.match(/^\s*(?:§\s*)?((?:\d+|[A-Z])(?:\.\d+){0,4})[.)]?\s+\S/);
   if (!match) return null;
   return Math.min(3, match[1].split('.').length - 1);
 }
@@ -5850,7 +5850,7 @@ function isLikelyFormulaHeading(text) {
   const symbolCount = (remainder.match(/[+\-*\/(){}[\],:;|]/g) || []).length;
   const digitCount = (remainder.match(/\d/g) || []).length;
   const letterCount = (remainder.match(/\p{L}/gu) || []).length;
-  if (headingNumberDepth(value) !== null && asciiWords.length < 2 && hanChars.length < 2) return true;
+  if (headingNumberDepth(value) !== null && asciiWords.length === 0 && hanChars.length < 2) return true;
   if (tokens.length >= 1 && shortVariableTokens / tokens.length >= 0.6 && asciiWords.length < 2 && hanChars.length < 2) return true;
   if (symbolCount >= 2 && asciiWords.length < 2 && hanChars.length < 2) return true;
   if (digitCount > 0 && digitCount >= Math.max(2, letterCount) && asciiWords.length < 2) return true;
@@ -5916,11 +5916,29 @@ async function detectOutlineFromTypography() {
   }
 
   const bodySize = weightedMedianFont(fontSamples);
+  // Contents pages are navigational summaries, not document-body headings.
+  // Detect them from the density of numbered lines ending in page numbers so
+  // their entries do not duplicate the real headings later in the paper.
+  const contentsPages = new Set();
+  for (const lines of pages) {
+    const tocLike = lines.filter((line) => /^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\s+.*(?:\.\s*){3,}.*\d+\s*$/.test(line.text)).length;
+    const hasContents = lines.some((line) => /^contents$/i.test(line.text));
+    if (hasContents || tocLike >= 4) {
+      for (const line of lines) contentsPages.add(line.page);
+    }
+  }
   const candidates = [];
   for (const lines of pages) {
     for (const line of lines) {
       const text = line.text;
       if (!text || text.length < 2 || text.length > 125) continue;
+      if (contentsPages.has(line.page)) continue;
+      // On a title page, material above an Abstract heading is title/author
+      // metadata rather than document structure.
+      if (line.page === 1) {
+        const abstractLine = lines.find((item) => /^abstract$/i.test(item.text));
+        if (abstractLine && line.y > abstractLine.y + 1.5) continue;
+      }
       const words = text.split(/\s+/).filter(Boolean);
       if (words.length > 18) continue;
       const numberedDepth = headingNumberDepth(text);
@@ -5928,7 +5946,12 @@ async function detectOutlineFromTypography() {
       const ratio = line.size / Math.max(1, bodySize);
       const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(text) && ratio >= 1.08;
       const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(text);
+      // A bare number at body-text size is often an equation/prose fragment,
+      // not a section heading. Real numbered headings in the two regression
+      // papers are typographically distinguished.
+      if (numberedDepth !== null && ratio < 1.08 && !known) continue;
       if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
+      if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(text)) continue;
       if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
       if (isLikelyFormulaHeading(text)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
@@ -5956,9 +5979,29 @@ async function detectOutlineFromTypography() {
     }
   }
 
+  const ordered = candidates.sort((a, b) => a.page - b.page || b.y - a.y);
+  const merged = [];
+  for (const candidate of ordered) {
+    const previous = merged[merged.length - 1];
+    const continuation = previous
+      && previous.page === candidate.page
+      && headingNumberDepth(previous.title) !== null
+      && headingNumberDepth(candidate.title) === null
+      && Math.abs(Number(previous.size) - Number(candidate.size)) <= 0.6
+      && previous.y - candidate.y > 0
+      && previous.y - candidate.y <= Math.max(28, Number(previous.size) * 1.9)
+      && !isKnownHeading(candidate.title)
+      && !/[.!?]$/.test(previous.title);
+    if (continuation) {
+      previous.title = normalizedHeadingText(`${previous.title.replace(/-$/, '')}${/-$/.test(previous.title) ? '' : ' '}${candidate.title}`);
+      continue;
+    }
+    merged.push({ ...candidate });
+  }
+
   const deduped = [];
   const seen = new Set();
-  for (const candidate of candidates.sort((a, b) => a.page - b.page || b.y - a.y)) {
+  for (const candidate of merged) {
     const key = `${candidate.page}:${candidate.title.toLocaleLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -6165,18 +6208,17 @@ function compareNumberParts(a, b) {
 function normalizeSequentialStructureEntries(entries) {
   const accepted = [];
   const seen = new Set();
-  let lastNumeric = null;
+  const lastNumericByType = new Map();
   for (const entry of entries || []) {
     const labelKey = normalizedReferenceLabel(entry?.label);
     if (!labelKey || seen.has(labelKey)) continue;
     const parsed = parsedSequentialLabel(entry?.label);
     if (parsed && !parsed.prefix) {
-      // Mathematical result numbering normally follows the document order.
-      // Use that global order as a conservative rejection signal for obvious
-      // false headings copied from prose/reference text. Letter-prefixed
-      // appendix labels are kept outside this numeric ordering rule.
+      // Numbering is monotone within each result family, not across families:
+      // Theorem 5 may legitimately be followed by Lemma 1.
+      const lastNumeric = lastNumericByType.get(parsed.type) || null;
       if (lastNumeric && compareNumberParts(parsed.parts, lastNumeric.parts) < 0) continue;
-      lastNumeric = parsed;
+      lastNumericByType.set(parsed.type, parsed);
     }
     seen.add(labelKey);
     accepted.push(entry);
@@ -6233,7 +6275,8 @@ function recoverSequentialEquationGaps(index, candidatePool) {
   for (const [label, candidates] of index.entries()) {
     const parsed = parsedEquationNumber(label);
     if (!parsed || !candidates?.length) continue;
-    const candidate = [...candidates].sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+    const candidate = chooseCanonicalEquationCandidate(candidates);
+    if (!candidate) continue;
     best.push({ label, parsed, candidate });
   }
   best.sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
@@ -6253,12 +6296,9 @@ function recoverSequentialEquationGaps(index, candidatePool) {
         return pos > leftPos && pos < rightPos;
       });
       if (!matches.length) continue;
-      matches.sort((a, b) => {
-        const ar = Number(a.xEndRatio || a.xStartRatio || 0);
-        const br = Number(b.xEndRatio || b.xStartRatio || 0);
-        return br - ar || (b.confidence || 0) - (a.confidence || 0);
-      });
-      const recovered = { ...matches[0], confidence: Math.max(10, Number(matches[0].confidence) || 0), recoveredBySequence: true };
+      const canonicalMatch = chooseCanonicalEquationCandidate(matches);
+      if (!canonicalMatch) continue;
+      const recovered = { ...canonicalMatch, confidence: Math.max(10, Number(canonicalMatch.confidence) || 0), recoveredBySequence: true };
       index.set(expected, [recovered]);
     }
   }
@@ -6374,6 +6414,32 @@ function isStandaloneEquationTagLine(line, label) {
   return text === normalized || text === normalized.slice(1, -1);
 }
 
+function equationCandidateTokenGeometry(line, candidate) {
+  const start = Number(candidate?.index || 0);
+  const end = Number(candidate?.end || start);
+  const overlaps = (line?.parts || []).filter((part) => Number(part.end) > start && Number(part.start) < end);
+  if (overlaps.length) {
+    const first = overlaps[0];
+    const last = overlaps[overlaps.length - 1];
+    const startSpan = Math.max(1, Number(first.end) - Number(first.start));
+    const endSpan = Math.max(1, Number(last.end) - Number(last.start));
+    const startFraction = Math.min(1, Math.max(0, (start - Number(first.start)) / startSpan));
+    const endFraction = Math.min(1, Math.max(0, (end - Number(last.start)) / endSpan));
+    const xStart = Number(first.xStartRatio) + (Number(first.xEndRatio) - Number(first.xStartRatio)) * startFraction;
+    const xEnd = Number(last.xStartRatio) + (Number(last.xEndRatio) - Number(last.xStartRatio)) * endFraction;
+    return { xStartRatio: xStart, xEndRatio: xEnd };
+  }
+  const lineText = String(line?.text || '');
+  const lineSpan = Math.max(0, Number(line?.xEndRatio) - Number(line?.xStartRatio));
+  const textLength = Math.max(1, lineText.length);
+  const startFraction = Math.min(1, Math.max(0, start / textLength));
+  const endFraction = Math.min(1, Math.max(startFraction, end / textLength));
+  return {
+    xStartRatio: Number(line?.xStartRatio) + lineSpan * startFraction,
+    xEndRatio: Number(line?.xStartRatio) + lineSpan * endFraction
+  };
+}
+
 async function buildEquationLabelIndex() {
   if (!pdfDoc) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
@@ -6400,13 +6466,9 @@ async function buildEquationLabelIndex() {
           confidence = Math.max(confidence, 12);
           reliable = true;
         }
-        const lineText = String(line.text || '');
-        const lineSpan = Math.max(0, Number(line.xEndRatio) - Number(line.xStartRatio));
-        const textLength = Math.max(1, lineText.length);
-        const candidateStartFraction = Math.min(1, Math.max(0, Number(candidate.index || 0) / textLength));
-        const candidateEndFraction = Math.min(1, Math.max(candidateStartFraction, Number(candidate.end || candidate.index || 0) / textLength));
-        const candidateXStartRatio = Number(line.xStartRatio) + lineSpan * candidateStartFraction;
-        const candidateXEndRatio = Number(line.xStartRatio) + lineSpan * candidateEndFraction;
+        const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
+        const candidateXStartRatio = tokenGeometry.xStartRatio;
+        const candidateXEndRatio = tokenGeometry.xEndRatio;
         const record = {
           page,
           ratio: line.ratio,
@@ -6436,7 +6498,7 @@ async function buildEquationLabelIndex() {
   recoverSequentialEquationGaps(index, candidatePool);
   equationLabelIndex = canonicalizeEquationIndex(index);
   renderEquationIndex();
-  return index;
+  return equationLabelIndex;
 }
 
 function equationConfidenceTier(score) {
@@ -6533,8 +6595,22 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
     const items = row.items.sort((a, b) => a.x - b.x);
     const xMin = Math.min(...items.map((item) => item.x));
     const xMax = Math.max(...items.map((item) => item.x + (item.width || 0)));
+    const parts = [];
+    let text = '';
+    for (const item of items) {
+      if (text) text += ' ';
+      const start = text.length;
+      text += item.text;
+      parts.push({
+        start,
+        end: text.length,
+        xStartRatio: Math.min(1, Math.max(0, (item.x - (Number(view[0]) || 0)) / pageWidth)),
+        xEndRatio: Math.min(1, Math.max(0, (item.x + (item.width || 0) - (Number(view[0]) || 0)) / pageWidth))
+      });
+    }
     return {
-      text: items.map((item) => item.text).join(' ').replace(/\s+/g, ' ').trim(),
+      text: text.replace(/\s+/g, ' ').trim(),
+      parts,
       ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight)),
       xStartRatio: Math.min(1, Math.max(0, (xMin - (Number(view[0]) || 0)) / pageWidth)),
       xEndRatio: Math.min(1, Math.max(0, (xMax - (Number(view[0]) || 0)) / pageWidth))
@@ -6607,6 +6683,7 @@ async function buildStructureIndex({ force = false } = {}) {
   const nextBibliography = [];
   const bibliographyCitationGroups = [];
   let bibliographyMode = false;
+  let pendingBibliographyKey = null;
   let activeProofEntry = null;
   try {
     const maxPages = Math.min(sourceDoc.numPages, 800);
@@ -6616,7 +6693,10 @@ async function buildStructureIndex({ force = false } = {}) {
       for (const line of lines) {
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
         if (!cleaned) continue;
-        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; activeProofEntry = null; continue; }
+        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; pendingBibliographyKey = null; activeProofEntry = null; continue; }
+        if (bibliographyMode && /^(?:glossary(?:\s+of\s+notation)?|index)\s*$/i.test(cleaned)) {
+          bibliographyMode = false; pendingBibliographyKey = null; continue;
+        }
 
         if (!bibliographyMode) {
           const bracketRe = /\[[^\]]{1,60}\]/g;
@@ -6676,6 +6756,15 @@ async function buildStructureIndex({ force = false } = {}) {
         }
 
         if (bibliographyMode) {
+          const addBibliographyEntry = (rawKey, body, bracketKey = true) => {
+            const number = bracketKey ? rawKey : Number(rawKey);
+            const label = bracketKey ? `[${rawKey}]` : `[${number}]`;
+            const normalizedKey = normalizedBibliographyKey(rawKey);
+            if (!normalizedKey || nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) return;
+            const meta = bibliographyMetadata(body);
+            nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: [], ...meta });
+          };
+
           let bib = cleaned.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
           let bracketKey = false;
           if (!bib) {
@@ -6684,14 +6773,24 @@ async function buildStructureIndex({ force = false } = {}) {
           }
           if (!bib) bib = cleaned.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
           if (bib) {
-            const rawKey = bib[1];
-            const number = bracketKey ? rawKey : Number(rawKey);
-            const body = bib[2].trim();
-            const label = bracketKey ? `[${rawKey}]` : `[${number}]`;
-            const normalizedKey = normalizedBibliographyKey(rawKey);
-            if (!nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) {
-              const meta = bibliographyMetadata(body);
-              nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: [], ...meta });
+            pendingBibliographyKey = null;
+            addBibliographyEntry(bib[1], bib[2].trim(), bracketKey);
+          } else {
+            const keyOnly = cleaned.match(/^\[(\d{1,3}|[A-Za-z][A-Za-z0-9]{0,9})\]$/);
+            if (keyOnly) {
+              pendingBibliographyKey = { rawKey: keyOnly[1], bracketKey: !/^\d+$/.test(keyOnly[1]), page, ratio: line.ratio };
+            } else if (pendingBibliographyKey && cleaned.length >= 3) {
+              const savedPage = page;
+              const savedRatio = line.ratio;
+              const pending = pendingBibliographyKey;
+              pendingBibliographyKey = null;
+              const number = pending.bracketKey ? pending.rawKey : Number(pending.rawKey);
+              const label = pending.bracketKey ? `[${pending.rawKey}]` : `[${number}]`;
+              const normalizedKey = normalizedBibliographyKey(pending.rawKey);
+              if (normalizedKey && !nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) {
+                const meta = bibliographyMetadata(cleaned);
+                nextBibliography.push({ number, label, page: pending.page || savedPage, ratio: pending.ratio ?? savedRatio, title: cleaned.slice(0, 240), citations: [], ...meta });
+              }
             }
           }
         }
