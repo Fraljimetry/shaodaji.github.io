@@ -666,7 +666,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 18,
+    version: 19,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -1590,7 +1590,7 @@ function loadDocumentState(cachedSession = null) {
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
-    if (Number(session.version || 0) < 18 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
+    if (Number(session.version || 0) < 19 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     renderSymbolGlossary();
     if (generalPrefs.rememberSidebarVisibility !== false && Number(session.version || 0) >= 4) {
@@ -6402,23 +6402,46 @@ async function detectOutlineFromTypography() {
   }
 
   const bodySize = weightedMedianFont(fontSamples);
-  // Contents pages are navigational summaries, not document-body headings.
-  // Detect them from the density of numbered lines ending in page numbers so
-  // their entries do not duplicate the real headings later in the paper.
-  const contentsPages = new Set();
+  // Contents blocks are navigational summaries, not document-body headings.
+  // Do not discard the entire page: older papers often put the real first
+  // section immediately below the table of contents on page 1. Mark only the
+  // actual TOC lines so the body heading remains eligible.
+  const contentsLines = new Set();
+  const shortTocEntry = (text) => {
+    const value = String(text || '').trim();
+    if (!value || value.length > 100) return false;
+    if (/^(?:bibliography|references)$/i.test(value)) return true;
+    if (/^appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s)\s*\S/i.test(value)) return true;
+    if (!/^(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+\S/.test(value)) return false;
+    const words = value.split(/\s+/).filter(Boolean);
+    if (words.length > 12) return false;
+    // A body section that immediately continues into prose is not a TOC row.
+    if (/^[^.!?]{2,90}\.\s+[A-Z][a-z]/.test(value)) return false;
+    return true;
+  };
   for (const lines of pages) {
-    const tocLike = lines.filter((line) => /^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\s+.*(?:\.\s*){3,}.*\d+\s*$/.test(line.text)).length;
-    const hasContents = lines.some((line) => /^contents$/i.test(line.text));
-    if (hasContents || tocLike >= 4) {
-      for (const line of lines) contentsPages.add(line.page);
+    const orderedLines = [...lines].sort((a, b) => Number(b.y) - Number(a.y));
+    const contentsIndex = orderedLines.findIndex((line) => /^contents$/i.test(String(line.text || '').trim()));
+    if (contentsIndex >= 0) {
+      contentsLines.add(orderedLines[contentsIndex]);
+      let tocRows = 0;
+      for (let i = contentsIndex + 1; i < orderedLines.length; i += 1) {
+        const line = orderedLines[i];
+        if (shortTocEntry(line.text)) { contentsLines.add(line); tocRows += 1; continue; }
+        if (tocRows >= 2) break;
+      }
     }
+    // Also cover traditional dotted-leader TOCs even when the word Contents
+    // is absent or extracted poorly.
+    const dottedRows = orderedLines.filter((line) => /^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\s+.*(?:\.\s*){3,}.*\d+\s*$/.test(line.text));
+    if (dottedRows.length >= 4) for (const line of dottedRows) contentsLines.add(line);
   }
   const candidates = [];
   for (const lines of pages) {
     for (const line of lines) {
       const text = line.text;
-      if (!text || text.length < 2 || text.length > 125) continue;
-      if (contentsPages.has(line.page)) continue;
+      if (!text || text.length < 2) continue;
+      if (contentsLines.has(line)) continue;
       // On a title page, material above an Abstract heading is title/author
       // metadata rather than document structure.
       if (line.page === 1) {
@@ -6427,58 +6450,73 @@ async function detectOutlineFromTypography() {
         const firstBodyHeading = lines.find((item) => isKnownHeading(item.text) || headingNumberDepth(item.text) !== null);
         if (firstBodyHeading && line.y > firstBodyHeading.y + 1.5) continue;
       }
-      const words = text.split(/\s+/).filter(Boolean);
+      // A section heading can share one extracted line with the first sentence
+      // of its paragraph, e.g. "1. Introduction. Riemannian ...". Keep the
+      // heading prefix while preserving the original line geometry as anchor.
+      let headingText = text;
+      let headingWasParagraphLead = false;
+      const numberedLead = headingText.match(/^(\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+)(.+)$/);
+      if (numberedLead) {
+        const body = numberedLead[2];
+        const boundary = body.match(/^(.{2,90}?)\.\s+(?=[A-Z][a-z])/);
+        if (boundary) {
+          headingText = normalizedHeadingText(`${numberedLead[1]}${boundary[1]}`);
+          headingWasParagraphLead = true;
+        }
+      }
+      if (headingText.length > 125) continue;
+      const words = headingText.split(/\s+/).filter(Boolean);
       if (words.length > 18) continue;
       // Parenthesized numeric labels sitting in either page margin are display
       // equation tags, not document headings. This matters especially for older
       // papers whose equation numbers are consistently left-aligned.
       if (isMarginEquationLabelLineForStructure(line)) continue;
-      const numberedDepth = headingNumberDepth(text);
-      const known = isKnownHeading(text);
+      const numberedDepth = headingNumberDepth(headingText);
+      const known = isKnownHeading(headingText);
       const ratio = line.size / Math.max(1, bodySize);
       const lineCenter = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
       const lineWidth = Number(line.xEndRatio) - Number(line.xStartRatio);
       const centered = Number.isFinite(lineCenter) && Math.abs(lineCenter - 0.5) <= 0.12;
-      const numberedTitleMatch = text.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
+      const numberedTitleMatch = headingText.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
       const numberedTitleBody = String(numberedTitleMatch?.[2] || '').trim();
       const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
       const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
-      const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(text);
+      const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(headingText);
       const titleLikeNumbered = Boolean(numberedTitleMatch)
         && !proseLead
         && /^[A-Z]/.test(numberedTitleBody)
         && titleWords.length >= 1
         && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
         && (numberedHasDelimiter || /^[A-Z][A-Za-z]{2,}\b/.test(numberedTitleBody))
-        && (numberedHasDelimiter ? (centered || ratio >= 1.12) : centered)
-        && lineWidth <= 0.74;
-      const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(text) && ratio >= 1.08;
-      const genericWords = text.match(/[A-Za-z]{3,}/g) || [];
-      const genericProseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|hence|therefore|will|on\s+the\s+other\s+hand|represented|metric)\b/i.test(text);
+        && (headingWasParagraphLead || (numberedHasDelimiter ? (centered || ratio >= 1.12) : centered))
+        && (headingWasParagraphLead || lineWidth <= 0.74);
+      const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
+      const genericWords = headingText.match(/[A-Za-z]{3,}/g) || [];
+      const genericProseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|hence|therefore|will|on\s+the\s+other\s+hand|represented|metric)\b/i.test(headingText);
       const styleHeading = ratio >= 1.45
         && words.length <= 10
         && genericWords.length >= 2
-        && /^[A-Z][A-Za-z]{2,}\b/.test(text)
+        && /^[A-Z][A-Za-z]{2,}\b/.test(headingText)
         && !genericProseLead
-        && !/[.;,]$/.test(text)
-        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(text)
+        && !/[.;,]$/.test(headingText)
+        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(headingText)
         && (centered || ratio >= 1.60);
       // Older mathematical journals often print section headings at body-text
       // size but center them. Accept that strong layout pattern while rejecting
       // numbered theorem/prose lines such as "2.1. Let ..." or "8. To ...".
       if (numberedDepth !== null && !known && !titleLikeNumbered) continue;
       if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
-      if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(text)) continue;
-      if (isMathEnvironmentLabel(text) && ratio < 1.35) continue;
-      if (isLikelyFormulaHeading(text)) continue;
-      if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(text)) continue;
+      if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(headingText)) continue;
+      if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;
+      if (isLikelyFormulaHeading(headingText)) continue;
+      if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(headingText)) continue;
       // Bibliography/reference fragments can be typographically prominent in
       // extracted PDFs and used to leak into the detected Contents list.
       // Reject only strong reference metadata signatures; ordinary headings
       // remain eligible.
-      if (/https?:\/\/|\b(?:doi|arXiv|ISBN)\b|\b10\.\d{4,9}\//i.test(text)) continue;
-      if (/^\d{4}\b.*\b(?:Springer(?:-Verlag)?|Press|Proceedings?|Journal|Communications?|Lecture Notes)\b/i.test(text)) continue;
-      if (/^\d{4,}\s+[a-z]/.test(text) && words.length >= 5) continue;
+      if (/https?:\/\/|\b(?:doi|arXiv|ISBN)\b|\b10\.\d{4,9}\//i.test(headingText)) continue;
+      if (/^\d{4}\b.*\b(?:Springer(?:-Verlag)?|Press|Proceedings?|Journal|Communications?|Lecture Notes)\b/i.test(headingText)) continue;
+      if (/^\d{4,}\s+[a-z]/.test(headingText) && words.length >= 5) continue;
 
       const repetition = repeatMap.get(line.normalized);
       const repeatedOn = repetition?.pages?.size || 0;
@@ -6486,7 +6524,7 @@ async function detectOutlineFromTypography() {
       if (likelyRunningHeader) continue;
 
       candidates.push({
-        title: text,
+        title: headingText,
         page: line.page,
         depth: headingDepthFromStyle(line, bodySize),
         size: Number(line.size.toFixed(2)),
