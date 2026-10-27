@@ -236,6 +236,7 @@ let currentSelection = null;
 let pendingOutlineReselectKey = null;
 let pendingEquationReselectKey = null;
 let pendingEquationAddKey = null;
+let pendingEquationAddPlacement = 'below';
 let equationEdits = [];
 let embeddedOutlineEdits = [];
 let embeddedOutlineEntries = [];
@@ -692,6 +693,7 @@ function clearDocumentMapForIncomingPdf() {
   equationEdits = [];
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
+  pendingEquationAddPlacement = 'below';
   embeddedOutlineEntries = [];
   embeddedOutlineEdits = [];
   structureIndexVersion = 0;
@@ -1574,6 +1576,7 @@ function loadDocumentState(cachedSession = null) {
   equationEdits = [];
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
+  pendingEquationAddPlacement = 'below';
   equationIndexBuildPromise = null;
   structureIndexVersion = 0;
   equationLabelIndex = null;
@@ -5254,7 +5257,7 @@ function applyEquationEdits(index) {
     out.set(target, [{
       page: Number(edit.page) || 1, ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
       text: String(edit.text || target), confidence: 100, manualAdd: true, manualEditId: String(edit.id || ''),
-      afterRef: String(edit.afterRef || edit.sourceLabel || ''),
+      afterRef: String(edit.afterRef || ''), beforeRef: String(edit.beforeRef || ''), placement: edit.placement === 'above' ? 'above' : 'below',
     }]);
   }
   return out;
@@ -5280,13 +5283,165 @@ function applyEquationLinkCorrection(query, page, ratio) {
     pendingEquationReselectKey = null;
   } else if (pendingEquationAddKey) {
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    equationEdits.push({ action:'add', id, sourceLabel:String(pendingEquationAddKey), afterRef:String(pendingEquationAddKey), label, page:Number(page)||1, ratio:Number(ratio)||0, text:query });
+    const anchorRef = String(pendingEquationAddKey);
+    const placement = pendingEquationAddPlacement === 'above' ? 'above' : 'below';
+    equationEdits.push({
+      action:'add', id, sourceLabel:anchorRef,
+      ...(placement === 'above' ? { beforeRef:anchorRef } : { afterRef:anchorRef }),
+      placement, label, page:Number(page)||1, ratio:Number(ratio)||0, text:query
+    });
     pendingEquationAddKey = null;
+    pendingEquationAddPlacement = 'below';
   } else return false;
   equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
   persistDocumentState(); refreshSelectionUI(); ensureEquationIndexRendered();
   return true;
 }
+
+function pendingEquationDisplayedLabel(ref) {
+  if (!ref) return null;
+  const existingAdd = equationEditTargetFromPending(ref);
+  if (existingAdd) return normalizedEquationLabel(existingAdd.label || '');
+  const source = String(ref).replace(/^label:/, '');
+  const sourceLabel = equationSourceLabelForDisplayed(source);
+  const currentEdit = equationEdits.find((item) => item.action === 'reselect' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel));
+  return normalizedEquationLabel(currentEdit?.label || sourceLabel || source);
+}
+
+function equationLabelsInTextLine(text) {
+  const out = [];
+  const seen = new Set();
+  for (const candidate of equationLabelCandidatesInLine(text)) {
+    const label = normalizedEquationLabel(candidate.label);
+    if (!seen.has(label)) { seen.add(label); out.push({ ...candidate, label }); }
+  }
+  const value = normalizeEquationTagCommands(String(text || '').normalize('NFKC'));
+  for (const match of value.matchAll(/\([^()]{1,32}\)/g)) {
+    const label = equationLabelFromSelectionText(match[0]);
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    out.push({ label, index: match.index || 0, end: (match.index || 0) + match[0].length });
+  }
+  return out;
+}
+
+async function equationLabelNearPagePoint(pageNum, ratio) {
+  const page = Math.max(1, Number(pageNum) || 1);
+  const targetRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const lines = await pageTextLines(page);
+  let best = null;
+  for (const line of lines) {
+    const distance = Math.abs((Number(line.ratio) || 0) - targetRatio);
+    if (distance > 0.065) continue;
+    const candidates = equationLabelsInTextLine(line.text);
+    if (!candidates.length) continue;
+    const textLength = Math.max(1, String(line.text || '').length);
+    const lineStart = Number(line.xStartRatio) || 0;
+    const lineEnd = Number(line.xEndRatio) || lineStart;
+    const span = Math.max(0, lineEnd - lineStart);
+    for (const candidate of candidates) {
+      const start = lineStart + span * Math.min(1, Math.max(0, Number(candidate.index || 0) / textLength));
+      const end = lineStart + span * Math.min(1, Math.max(0, Number(candidate.end || candidate.index || 0) / textLength));
+      const marginBonus = equationNumberingSide === 'left'
+        ? (start <= 0.24 ? 0.018 : 0)
+        : (end >= 0.72 ? 0.018 : 0);
+      const score = distance - marginBonus;
+      if (!best || score < best.score) best = { label:candidate.label, text:String(line.text || candidate.label), ratio:Number(line.ratio)||targetRatio, score };
+    }
+  }
+  return best;
+}
+
+async function applyEquationPointCorrection(pageNum, ratio) {
+  if (!pendingEquationReselectKey && !pendingEquationAddKey) return false;
+  const page = Math.max(1, Number(pageNum) || 1);
+  const anchorRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const nearby = await equationLabelNearPagePoint(page, anchorRatio);
+
+  if (pendingEquationReselectKey) {
+    const existingAdd = equationEditTargetFromPending(pendingEquationReselectKey);
+    const fallbackLabel = pendingEquationDisplayedLabel(pendingEquationReselectKey);
+    const label = nearby?.label || fallbackLabel;
+    if (!label) return false;
+    if (existingAdd) {
+      existingAdd.label = label;
+      existingAdd.page = page;
+      existingAdd.ratio = anchorRatio;
+      existingAdd.text = nearby?.text || label;
+    } else {
+      const sourceLabel = equationSourceLabelForDisplayed(String(pendingEquationReselectKey).replace(/^label:/,''));
+      equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
+      equationEdits.push({ action:'reselect', sourceLabel, label, page, ratio:anchorRatio, text:nearby?.text || label });
+    }
+    pendingEquationReselectKey = null;
+  } else if (pendingEquationAddKey) {
+    let addedLabel = nearby?.label || null;
+    if (!addedLabel) {
+      const typed = window.prompt(t(
+        'Equation label for this point (for example (12.45), (7), (*), or (†)):',
+        '请输入该位置的公式编号（例如 (12.45)、(7)、(*) 或 (†)）：'
+      ), '');
+      if (typed == null || !String(typed).trim()) return true;
+      addedLabel = equationLabelFromSelectionText(typed);
+      if (!addedLabel) {
+        showError(t('Enter only a short equation label such as (12.45), (7), (*), or (†).', '只能输入简短的公式编号，例如 (12.45)、(7)、(*) 或 (†)。'));
+        return true;
+      }
+    }
+    const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const anchorRef = String(pendingEquationAddKey);
+    const placement = pendingEquationAddPlacement === 'above' ? 'above' : 'below';
+    equationEdits.push({
+      action:'add', id, sourceLabel:anchorRef,
+      ...(placement === 'above' ? { beforeRef:anchorRef } : { afterRef:anchorRef }),
+      placement, label:addedLabel, page, ratio:anchorRatio, text:nearby?.text || addedLabel
+    });
+    pendingEquationAddKey = null;
+    pendingEquationAddPlacement = 'below';
+  }
+
+  equationLabelIndex = null;
+  equationNumberingSide = 'right';
+  equationIndexBuildPromise = null;
+  persistDocumentState();
+  refreshSelectionUI();
+  ensureEquationIndexRendered();
+  return true;
+}
+
+function equationPointFromClick(event, surface, pageNum) {
+  if (!surface) return null;
+  const rect = surface.getBoundingClientRect();
+  if (!rect.height) return null;
+  return {
+    page: Math.max(1, Number(pageNum) || 1),
+    ratio: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+  };
+}
+
+primaryPageSurface?.addEventListener('click', async (event) => {
+  if (!pendingEquationReselectKey && !pendingEquationAddKey) return;
+  if (event.target?.closest?.('button, a, .pdf-reference-link')) return;
+  const point = equationPointFromClick(event, primaryPageSurface, currentPage);
+  if (!point) return;
+  event.preventDefault();
+  event.stopPropagation();
+  await applyEquationPointCorrection(point.page, point.ratio);
+});
+
+continuousStack?.addEventListener('click', async (event) => {
+  if (!pendingEquationReselectKey && !pendingEquationAddKey) return;
+  if (event.target?.closest?.('button, a, .pdf-reference-link')) return;
+  const surface = event.target?.closest?.('.continuous-page-surface');
+  if (!surface) return;
+  const frame = surface.closest('.continuous-page-frame');
+  const pageNum = Number(frame?.dataset?.page || surface.querySelector('.textLayer')?.dataset?.page || 0);
+  const point = equationPointFromClick(event, surface, pageNum);
+  if (!point) return;
+  event.preventDefault();
+  event.stopPropagation();
+  await applyEquationPointCorrection(point.page, point.ratio);
+});
 
 function replaceEquationFromCurrentSelection() {
   if (!pendingEquationReselectKey || !currentSelection?.text) return false;
@@ -7522,9 +7677,13 @@ function renderEquationIndex() {
     if (addedIndex < 0) continue;
     const [added] = rows.splice(addedIndex, 1);
     let anchorIndex = -1;
-    if (String(edit.afterRef || '').startsWith('edit:')) anchorIndex = rows.findIndex((row) => String(row.manualEditId || '') === String(edit.afterRef).slice(5));
-    else anchorIndex = rows.findIndex((row) => normalizedEquationLabel(row.label) === normalizedEquationLabel(String(edit.afterRef || edit.sourceLabel || '')));
-    rows.splice(anchorIndex >= 0 ? anchorIndex + 1 : rows.length, 0, added);
+    const anchorRef = String(edit.beforeRef || edit.afterRef || edit.sourceLabel || '');
+    if (anchorRef.startsWith('edit:')) anchorIndex = rows.findIndex((row) => String(row.manualEditId || '') === anchorRef.slice(5));
+    else anchorIndex = rows.findIndex((row) => normalizedEquationLabel(row.label) === normalizedEquationLabel(anchorRef));
+    const insertAt = anchorIndex >= 0
+      ? (edit.beforeRef || edit.placement === 'above' ? anchorIndex : anchorIndex + 1)
+      : rows.length;
+    rows.splice(insertAt, 0, added);
   }
   equationIndexCount.textContent = String(rows.length);
   const filterBar = document.createElement('div'); filterBar.className = 'equation-confidence-filter';
@@ -7557,7 +7716,7 @@ function renderEquationIndex() {
     menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions)); });
     const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
     const reselect = document.createElement('button'); reselect.type='button'; reselect.className='outline-edit-button'; reselect.textContent=t('Reselect','重新选择');
-    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingEquationAddPlacement = 'below'; pendingOutlineReselectKey = null; refreshSelectionUI(); });
     const remove = document.createElement('button'); remove.type='button'; remove.className='outline-edit-button'; remove.textContent=t('Remove','移除');
     remove.addEventListener('click', (event) => {
       event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu');
@@ -7576,12 +7735,14 @@ function renderEquationIndex() {
         equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
         equationEdits.push({ action:'remove', sourceLabel });
       }
-      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
+      pendingEquationReselectKey = null; pendingEquationAddKey = null; pendingEquationAddPlacement = 'below'; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
       persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
     });
-    const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add below','在下方添加');
-    add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
-    actions.append(reselect, remove, add); row.append(button, menu, actions); equationIndex.append(row);
+    const addAbove = document.createElement('button'); addAbove.type='button'; addAbove.className='outline-edit-button'; addAbove.textContent=t('Add above','在上方添加');
+    addAbove.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationAddPlacement = 'above'; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    const addBelow = document.createElement('button'); addBelow.type='button'; addBelow.className='outline-edit-button'; addBelow.textContent=t('Add below','在下方添加');
+    addBelow.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationAddPlacement = 'below'; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    actions.append(reselect, remove, addAbove, addBelow); row.append(button, menu, actions); equationIndex.append(row);
   }
   applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
 }
