@@ -703,7 +703,7 @@ function clearDocumentMapForIncomingPdf() {
   try { backlinksList?.replaceChildren(); } catch (_) {}
   if (structureCount) structureCount.textContent = '0';
   if (bibliographyCount) bibliographyCount.textContent = '0';
-  if (equationLabelCount) equationIndexCount.textContent = '0';
+  if (equationIndexCount) equationIndexCount.textContent = '0';
   if (backlinkCount) backlinksCount.textContent = '0';
 }
 
