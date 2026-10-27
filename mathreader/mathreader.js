@@ -7391,15 +7391,22 @@ function equationCandidateConfidenceForSide(item) {
   const aligned = equationCandidateAlignedToNumberingSide(item);
   const nearBottom = Number(item.ratio) >= 0.90;
   const proseHeavy = text.length > 55 && mathSignals === 0;
+  const explicitMarginTag = Boolean(item?.explicitParenthesized && aligned);
+  const referenceProse = /\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text);
   if (isOnlyTag && nearBottom && !aligned) return -Infinity;
-  if (mathSignals === 0 && !(isOnlyTag && aligned)) return -Infinity;
-  if (proseHeavy && !(isOnlyTag && aligned)) return -Infinity;
-  if (/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text) && !isOnlyTag && mathSignals < 2) return -Infinity;
+  // A visible parenthesized tag already placed on the inferred equation-number
+  // margin is strong target evidence by itself. Older/scanned PDF text layers
+  // often lose the formula operators, so requiring extracted math glyphs here
+  // made the Equation index disagree with MathReader's clickable label layer.
+  if (mathSignals === 0 && !(isOnlyTag && aligned) && !explicitMarginTag) return -Infinity;
+  if (proseHeavy && !(isOnlyTag && aligned) && !explicitMarginTag) return -Infinity;
+  if (referenceProse && !isOnlyTag && mathSignals < 2) return -Infinity;
   let confidence = equationTargetScore(text, label, null, 0, null, Number(item.ratio));
   if (mathSignals >= 2) confidence += 5;
   else if (mathSignals === 1) confidence += 2;
   if (aligned) confidence += 7;
   if (isOnlyTag && aligned) confidence += 5;
+  if (explicitMarginTag) confidence += 6;
   return confidence;
 }
 
@@ -7439,6 +7446,7 @@ async function buildEquationLabelIndex() {
           candidateXEndRatio: tokenGeometry.xEndRatio,
           numeric,
           sequenceOnly: Boolean(candidate.sequenceOnly),
+          explicitParenthesized: !candidate.bare && !candidate.sequenceOnly,
           standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
@@ -7461,7 +7469,7 @@ async function buildEquationLabelIndex() {
     // Integer numbering is valid on either margin, but only when the token is
     // aligned with the inferred numbering side and has display-math context.
     const integerTag = Boolean(record.numeric && !record.numeric.prefix);
-    if (integerTag && !(equationCandidateAlignedToNumberingSide(record) && (record.standaloneTag || record.nearbyDisplayMath || record.mathSignals >= 2))) {
+    if (integerTag && !(equationCandidateAlignedToNumberingSide(record) && (record.explicitParenthesized || record.standaloneTag || record.nearbyDisplayMath || record.mathSignals >= 2))) {
       reliable = false;
     }
     record.confidence = confidence;
