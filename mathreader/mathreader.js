@@ -719,7 +719,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 19,
+    version: 20,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -1643,7 +1643,7 @@ function loadDocumentState(cachedSession = null) {
     // v59 tightens inferred-outline filtering so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
-    if (Number(session.version || 0) < 19 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
+    if (Number(session.version || 0) < 20 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     renderSymbolGlossary();
     if (generalPrefs.rememberSidebarVisibility !== false && Number(session.version || 0) >= 4) {
@@ -6514,13 +6514,18 @@ async function detectOutlineFromTypography() {
       // heading prefix while preserving the original line geometry as anchor.
       let headingText = text;
       let headingWasParagraphLead = false;
-      const numberedLead = headingText.match(/^(\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+)(.+)$/);
-      if (numberedLead) {
-        const body = numberedLead[2];
-        const boundary = body.match(/^(.{2,90}?)\.\s+(?=[A-Z][a-z])/);
-        if (boundary) {
-          headingText = normalizedHeadingText(`${numberedLead[1]}${boundary[1]}`);
-          headingWasParagraphLead = true;
+      // Paragraph-leading section recovery is only for OCR/scanned papers.
+      // Native text PDFs have reliable typography; applying this relaxation to
+      // them turns ordinary numbered prose into false Structure entries.
+      if (documentOcrActive) {
+        const numberedLead = headingText.match(/^(\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+)(.+)$/);
+        if (numberedLead) {
+          const body = numberedLead[2];
+          const boundary = body.match(/^(.{2,90}?)\.\s+(?=[A-Z][a-z])/);
+          if (boundary) {
+            headingText = normalizedHeadingText(`${numberedLead[1]}${boundary[1]}`);
+            headingWasParagraphLead = true;
+          }
         }
       }
       if (headingText.length > 125) continue;
@@ -6536,50 +6541,55 @@ async function detectOutlineFromTypography() {
       const lineCenter = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
       const lineWidth = Number(line.xEndRatio) - Number(line.xStartRatio);
       const centered = Number.isFinite(lineCenter) && Math.abs(lineCenter - 0.5) <= 0.12;
-      const numberedTitleMatch = headingText.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
-      const numberedTitleBody = String(numberedTitleMatch?.[2] || '').trim();
-      const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
-      const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
-      const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(headingText);
-      // Numbered mathematical statements belong to Results, not Structure.
-      // This is a major pattern in older papers: "1.1. LEMMA ...",
-      // "2.3. PROPOSITION ...", etc. A section title like
-      // "§ 3. PROOF OF THEOREM 2" is deliberately not rejected here.
-      const numberedResultStatement = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b/i.test(numberedTitleBody);
-      const titleLikeNumbered = Boolean(numberedTitleMatch)
-        && !proseLead
-        && /^[A-Z]/.test(numberedTitleBody)
-        && titleWords.length >= 1
-        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
-        && (numberedHasDelimiter || /^[A-Z][A-Za-z]{2,}\b/.test(numberedTitleBody))
-        && (headingWasParagraphLead || (numberedHasDelimiter ? (centered || ratio >= 1.12) : centered))
-        && (headingWasParagraphLead || lineWidth <= 0.74);
-      const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
-      const genericWords = headingText.match(/[A-Za-z]{3,}/g) || [];
-      const genericProseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|hence|therefore|will|on\s+the\s+other\s+hand|represented|metric)\b/i.test(headingText);
-      const styleHeading = ratio >= 1.45
-        && words.length <= 10
-        && genericWords.length >= 2
-        && /^[A-Z][A-Za-z]{2,}\b/.test(headingText)
-        && !genericProseLead
-        && !/[.;,]$/.test(headingText)
-        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(headingText)
-        // Generic unnumbered headings must be centered. A very large OCR/PDF
-        // fragment by itself is not enough evidence of document structure.
-        && centered;
-      // Older mathematical journals often print section headings at body-text
-      // size but center them. Accept that strong layout pattern while rejecting
-      // numbered theorem/prose lines such as "2.1. Let ..." or "8. To ...".
-      if (numberedResultStatement) continue;
-      if (numberedDepth !== null && !known && !titleLikeNumbered) continue;
-      if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
+
+      if (!documentOcrActive) {
+        // Native text PDFs: use the stable typography-first detector from the
+        // pre-OCR baseline. Numbering alone is never enough; a heading must be
+        // typographically distinct (or a known conventional heading).
+        const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
+        const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText);
+        if (numberedDepth !== null && ratio < 1.08 && !known) continue;
+        if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
+        if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;
+      } else {
+        // OCR/scanned papers need additional layout grammar because old journal
+        // section headings can be body-sized, centered, or lead a paragraph.
+        const numberedTitleMatch = headingText.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
+        const numberedTitleBody = String(numberedTitleMatch?.[2] || '').trim();
+        const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
+        const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
+        const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(headingText);
+        const numberedResultStatement = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b/i.test(numberedTitleBody);
+        const titleLikeNumbered = Boolean(numberedTitleMatch)
+          && !proseLead
+          && /^[A-Z]/.test(numberedTitleBody)
+          && titleWords.length >= 1
+          && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
+          && (numberedHasDelimiter || /^[A-Z][A-Za-z]{2,}\b/.test(numberedTitleBody))
+          && (headingWasParagraphLead || (numberedHasDelimiter ? (centered || ratio >= 1.12) : centered))
+          && (headingWasParagraphLead || lineWidth <= 0.74);
+        const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
+        const genericWords = headingText.match(/[A-Za-z]{3,}/g) || [];
+        const genericProseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|hence|therefore|will|on\s+the\s+other\s+hand|represented|metric)\b/i.test(headingText);
+        const styleHeading = ratio >= 1.45
+          && words.length <= 10
+          && genericWords.length >= 2
+          && /^[A-Z][A-Za-z]{2,}\b/.test(headingText)
+          && !genericProseLead
+          && !/[.;,]$/.test(headingText)
+          && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(headingText)
+          && centered;
+        if (numberedResultStatement) continue;
+        if (numberedDepth !== null && !known && !titleLikeNumbered) continue;
+        if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
+        if (isMathEnvironmentLabel(headingText)) continue;
+      }
       if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(headingText)) continue;
       // Standalone theorem/lemma/proof headings are indexed by Results/proof
       // relations, not by the document outline. Numbered section titles that
       // merely contain words like "PROOF OF THEOREM 2" have already passed
       // through the numbered-heading grammar above and do not start with a
       // math-environment label themselves.
-      if (isMathEnvironmentLabel(headingText)) continue;
       if (isLikelyFormulaHeading(headingText)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(headingText)) continue;
       // Bibliography/reference fragments can be typographically prominent in
@@ -6610,7 +6620,7 @@ async function detectOutlineFromTypography() {
   // body-size line (for example, "... More General" / "Right-Hand Side").
   // Promote only a short centered line immediately below an already accepted
   // numbered heading; this is deliberately not a general style-heading rule.
-  for (const candidate of [...candidates]) {
+  if (documentOcrActive) for (const candidate of [...candidates]) {
     if (headingNumberDepth(candidate.title) === null) continue;
     const lines = pages[candidate.page - 1] || [];
     const continuation = lines
