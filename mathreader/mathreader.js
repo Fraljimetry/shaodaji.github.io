@@ -5275,6 +5275,34 @@ function equationEditTargetFromPending(ref) {
   return null;
 }
 
+function equationOrderKeyFromRef(ref) {
+  const value = String(ref || '');
+  if (!value) return '';
+  if (value.startsWith('edit:')) return value;
+  const displayed = value.replace(/^label:/, '');
+  const source = equationSourceLabelForDisplayed(displayed);
+  return `label:${normalizedEquationLabel(source || displayed)}`;
+}
+
+function insertEquationManualOrderAfter(sourceRef, newEditId) {
+  const sourceKey = equationOrderKeyFromRef(sourceRef);
+  const newKey = `edit:${String(newEditId || '')}`;
+  if (!sourceKey || newKey === 'edit:') return false;
+  const order = [];
+  const seen = new Set();
+  for (const rawKey of equationManualOrder || []) {
+    const key = String(rawKey || '');
+    if (!key || key === newKey || seen.has(key)) continue;
+    seen.add(key);
+    order.push(key);
+  }
+  const sourceIndex = order.indexOf(sourceKey);
+  if (sourceIndex < 0) return false;
+  order.splice(sourceIndex + 1, 0, newKey);
+  equationManualOrder = order;
+  return true;
+}
+
 function applyEquationLinkCorrection(query, page, ratio) {
   const label = equationLabelFromSelectionText(query);
   if (!label) return false;
@@ -5300,6 +5328,7 @@ function applyEquationLinkCorrection(query, page, ratio) {
       action:'add', id, sourceLabel:anchorRef,
       afterRef:anchorRef, placement, label, page:Number(page)||1, ratio:Number(ratio)||0, text:query
     });
+    insertEquationManualOrderAfter(anchorRef, id);
     pendingEquationAddKey = null;
     } else return false;
   equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
@@ -5411,6 +5440,7 @@ async function applyEquationPointCorrection(pageNum, ratio) {
       action:'add', id, sourceLabel:anchorRef,
       afterRef:anchorRef, placement, label:addedLabel, page, ratio:anchorRatio, text:nearby?.text || addedLabel
     });
+    insertEquationManualOrderAfter(anchorRef, id);
     pendingEquationAddKey = null;
     }
 
@@ -7816,7 +7846,16 @@ function renderEquationIndex() {
       persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
     });
     const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add','添加');
-    add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    add.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu');
+      const sourceOrderKey = equationRowOrderKey(entry);
+      if (!equationManualOrder.includes(sourceOrderKey)) {
+        equationManualOrder = rows.map(equationRowOrderKey);
+        persistDocumentState();
+      }
+      pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label;
+      pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI();
+    });
     actions.append(reselect, remove, add);
 
     const orderKey = equationRowOrderKey(entry);
