@@ -329,7 +329,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 12;
+const STRUCTURE_INDEX_VERSION = 13;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6461,20 +6461,69 @@ async function detectOutlineFromTypography() {
   }
 
   const bodySize = weightedMedianFont(fontSamples);
-  // Some older native-text journal PDFs expose a usable text layer but use an
-  // explicit section-marker grammar (for example "§ 1 ...", "§ 2 ...").
-  // When that grammar repeats, it is much more reliable than generic typography:
-  // use it as the document's Structure authority instead of promoting body prose.
-  const explicitSectionMarkerLines = [];
-  if (!documentOcrActive) {
-    for (const lines of pages) {
-      for (const line of lines) {
-        const value = String(line?.text || '').trim();
-        if (/^§\s*\d+(?:\.\d+)*[.)]?\s+\S/i.test(value)) explicitSectionMarkerLines.push(line);
-      }
-    }
-  }
-  const explicitSectionMarkerMode = explicitSectionMarkerLines.length >= 2;
+  // Infer one heading profile from repeated document-level evidence. This
+  // prevents a fix for one old paper from weakening every other PDF.
+  const allLines = pages.flat();
+  const lineMetrics = (line) => {
+    const value = String(line?.text || '').trim();
+    const ratio = Number(line?.size) / Math.max(1, bodySize);
+    const center = (Number(line?.xStartRatio) + Number(line?.xEndRatio)) / 2;
+    const width = Number(line?.xEndRatio) - Number(line?.xStartRatio);
+    const words = value.split(/\s+/).filter(Boolean);
+    return { value, ratio, center, width, words };
+  };
+
+  const qualifiedSectionMarkerLines = allLines.filter((line) => {
+    const { value, ratio, center, width, words } = lineMetrics(line);
+    const match = value.match(/^§\s*\d+(?:\s*\.\s*\d+)*\s*[.)]?\s+(.+)/i);
+    const title = String(match?.[1] || '').trim();
+    return Boolean(match)
+      && /^[A-Z][A-Za-z]{2,}/.test(title)
+      && (title.match(/[A-Za-z]{3,}/g) || []).length >= 2
+      && words.length <= 14
+      && !/[.!?]$/.test(value)
+      && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)
+      && (ratio >= 1.10 || (Number.isFinite(center) && Math.abs(center - 0.5) <= 0.14 && width <= 0.70));
+  });
+  const sectionMarkerNumbers = new Set(qualifiedSectionMarkerLines.map((line) => String(line.text || '').match(/^§\s*(\d+(?:\s*\.\s*\d+)*)/)?.[1]).filter(Boolean));
+  const explicitSectionMarkerMode = sectionMarkerNumbers.size >= 2;
+
+  const strongModernNumberedLines = allLines.filter((line) => {
+    const { value, ratio, words } = lineMetrics(line);
+    if (words.length > 18 || ratio < 1.15) return false;
+    if (headingNumberDepth(value) === null) return false;
+    const match = value.match(/^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+(.+)$/);
+    const title = String(match?.[1] || '').trim();
+    if (!match || !/^[A-Z][A-Za-z]{2,}/.test(title)) return false;
+    if (/^(?:Let|Assume|Suppose|Then|If|For|Where|When|We|Choose|Since|Using|To)\b/i.test(title)) return false;
+    if (isLikelyFormulaHeading(value) || isMathEnvironmentLabel(value)) return false;
+    return (title.match(/[A-Za-z]{3,}/g) || []).length >= 1;
+  });
+  const modernHierarchyMode = !explicitSectionMarkerMode && strongModernNumberedLines.length >= 5;
+
+  const paragraphLeadLines = allLines.filter((line) => {
+    const value = String(line?.text || '').trim();
+    const match = value.match(/^(\d{1,2})[.)]\s+([^.!?]{2,90})[.]\s+(?=[A-Z][a-z])/);
+    if (!match) return false;
+    const title = match[2].trim();
+    if (!/^[A-Z]/.test(title) || /[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)) return false;
+    return (title.match(/[A-Za-z]{3,}/g) || []).length >= 1;
+  });
+  const paragraphLeadNumbers = new Set(paragraphLeadLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
+  const legacyParagraphMode = !explicitSectionMarkerMode && !modernHierarchyMode && paragraphLeadNumbers.size >= 3;
+
+  const legacyCenteredLines = allLines.filter((line) => {
+    const { value, ratio, center, width, words } = lineMetrics(line);
+    const match = value.match(/^(\d{1,2})[.)]\s+(.+)$/);
+    if (!match || words.length > 12 || ratio < 0.98) return false;
+    const title = match[2].trim();
+    if (!/^[A-Z]/.test(title)) return false;
+    if (/^(?:Let|Assume|Suppose|Then|If|For|Where|When|We|Choose|Since|Using|To)\b/i.test(title)) return false;
+    if (/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)) return false;
+    return Number.isFinite(center) && Math.abs(center - 0.5) <= 0.13 && width <= 0.72;
+  });
+  const legacyCenteredNumbers = new Set(legacyCenteredLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
+  const legacyCenteredMode = !explicitSectionMarkerMode && !modernHierarchyMode && !legacyParagraphMode && legacyCenteredNumbers.size >= 3;
   // Contents blocks are navigational summaries, not document-body headings.
   // Do not discard the entire page: older papers often put the real first
   // section immediately below the table of contents on page 1. Mark only the
@@ -6517,7 +6566,7 @@ async function detectOutlineFromTypography() {
       if (contentsLines.has(line)) continue;
       if (explicitSectionMarkerMode) {
         const value = String(text || '').trim();
-        const explicitSection = /^§\s*\d+(?:\.\d+)*[.)]?\s+\S/i.test(value);
+        const explicitSection = qualifiedSectionMarkerLines.includes(line);
         const conventional = /^(?:abstract|references|bibliography|appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s|$))/i.test(value);
         if (!explicitSection && !conventional) continue;
       }
@@ -6537,7 +6586,7 @@ async function detectOutlineFromTypography() {
       // Paragraph-leading section recovery is only for OCR/scanned papers.
       // Native text PDFs have reliable typography; applying this relaxation to
       // them turns ordinary numbered prose into false Structure entries.
-      if (documentOcrActive) {
+      if (legacyParagraphMode || documentOcrActive) {
         const numberedLead = headingText.match(/^(\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+)(.+)$/);
         if (numberedLead) {
           const body = numberedLead[2];
@@ -6562,46 +6611,33 @@ async function detectOutlineFromTypography() {
       const lineWidth = Number(line.xEndRatio) - Number(line.xStartRatio);
       const centered = Number.isFinite(lineCenter) && Math.abs(lineCenter - 0.5) <= 0.12;
 
-      if (!documentOcrActive) {
-        // Native text PDFs: use the stable typography-first detector from the
-        // pre-OCR baseline. Numbering alone is never enough; a heading must be
-        // typographically distinct (or a known conventional heading).
+      if (modernHierarchyMode || (!documentOcrActive && !legacyParagraphMode && !legacyCenteredMode && !explicitSectionMarkerMode)) {
+        // Modern/default native-text profile: typography first.
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
         const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText);
         if (numberedDepth !== null && ratio < 1.08 && !known) continue;
         if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
         if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;
       } else {
-        // OCR/scanned papers need additional layout grammar because old journal
-        // section headings can be body-sized, centered, or lead a paragraph.
+        // Legacy/OCR profiles admit only the repeated grammar selected above.
         const numberedTitleMatch = headingText.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
         const numberedTitleBody = String(numberedTitleMatch?.[2] || '').trim();
         const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
         const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
-        const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(headingText);
-        const numberedResultStatement = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b/i.test(numberedTitleBody);
-        const titleLikeNumbered = Boolean(numberedTitleMatch)
+        const centeredNumbered = Boolean(numberedTitleMatch)
           && !proseLead
           && /^[A-Z]/.test(numberedTitleBody)
           && titleWords.length >= 1
           && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
-          && (numberedHasDelimiter || /^[A-Z][A-Za-z]{2,}\b/.test(numberedTitleBody))
-          && (headingWasParagraphLead || (numberedHasDelimiter ? (centered || ratio >= 1.12) : centered))
-          && (headingWasParagraphLead || lineWidth <= 0.74);
-        const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
-        const genericWords = headingText.match(/[A-Za-z]{3,}/g) || [];
-        const genericProseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|hence|therefore|will|on\s+the\s+other\s+hand|represented|metric)\b/i.test(headingText);
-        const styleHeading = ratio >= 1.45
-          && words.length <= 10
-          && genericWords.length >= 2
-          && /^[A-Z][A-Za-z]{2,}\b/.test(headingText)
-          && !genericProseLead
-          && !/[.;,]$/.test(headingText)
-          && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(headingText)
-          && centered;
-        if (numberedResultStatement) continue;
-        if (numberedDepth !== null && !known && !titleLikeNumbered) continue;
-        if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
+          && centered
+          && lineWidth <= 0.74;
+        const explicitMarkerHeading = explicitSectionMarkerMode && qualifiedSectionMarkerLines.includes(line);
+        const paragraphNumbered = legacyParagraphMode && headingWasParagraphLead && numberedDepth !== null;
+        const legacyCenteredNumbered = legacyCenteredMode && centeredNumbered;
+        const ocrNumbered = documentOcrActive && centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead);
+        const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08 && centered;
+        const styleHeading = documentOcrActive && ratio >= 1.42 && words.length <= 10 && centered && !/[.;,]$/.test(headingText);
+        if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading) continue;
         if (isMathEnvironmentLabel(headingText)) continue;
       }
       if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(headingText)) continue;
@@ -6640,7 +6676,7 @@ async function detectOutlineFromTypography() {
   // body-size line (for example, "... More General" / "Right-Hand Side").
   // Promote only a short centered line immediately below an already accepted
   // numbered heading; this is deliberately not a general style-heading rule.
-  if (documentOcrActive) for (const candidate of [...candidates]) {
+  if (documentOcrActive || legacyCenteredMode) for (const candidate of [...candidates]) {
     if (headingNumberDepth(candidate.title) === null) continue;
     const lines = pages[candidate.page - 1] || [];
     const continuation = lines
