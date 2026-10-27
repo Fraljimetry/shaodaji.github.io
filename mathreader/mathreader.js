@@ -683,14 +683,19 @@ function clearDocumentMapForIncomingPdf() {
   inferredOutline = [];
   inferredOutlineDetectionDone = false;
   inferredOutlineBuildPromise = null;
+  structureIndexBuildToken += 1;
   outlineMode = 'none';
   structureEntries = [];
   bibliographyEntries = [];
   equationLabelIndex = null;
+  equationIndexBuildPromise = null;
   equationEdits = [];
+  pendingEquationReselectKey = null;
+  pendingEquationAddKey = null;
   embeddedOutlineEntries = [];
   embeddedOutlineEdits = [];
   structureIndexVersion = 0;
+  nativePdfCommentLoadToken += 1;
   backlinkContext = null;
   backlinkEntries = [];
   tocOutlineTargets = null;
@@ -704,7 +709,7 @@ function clearDocumentMapForIncomingPdf() {
   if (structureCount) structureCount.textContent = '0';
   if (bibliographyCount) bibliographyCount.textContent = '0';
   if (equationIndexCount) equationIndexCount.textContent = '0';
-  if (backlinkCount) backlinksCount.textContent = '0';
+  if (backlinksCount) backlinksCount.textContent = '0';
 }
 
 function activePanelId() {
@@ -7335,11 +7340,13 @@ function equationCandidateConfidenceForSide(item) {
 async function buildEquationLabelIndex() {
   if (!pdfDoc) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
   const index = new Map();
   const candidatePool = new Map();
   const rawCandidates = [];
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
-    const lines = await pageTextLines(page);
+    const lines = await pageTextLines(page, sourceDoc);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
       const explicit = equationLabelCandidatesInLine(line.text);
@@ -7404,6 +7411,7 @@ async function buildEquationLabelIndex() {
   }
 
   recoverSequentialEquationGaps(index, candidatePool);
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
   equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
   renderEquationIndex();
   return equationLabelIndex;
