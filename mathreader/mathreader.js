@@ -329,7 +329,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 10;
+const STRUCTURE_INDEX_VERSION = 11;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6305,7 +6305,13 @@ function headingDepthFromStyle(line, bodySize) {
 
 function isMarginEquationLabelLineForStructure(line) {
   const text = String(line?.text || '').trim().normalize('NFKC');
-  if (!/^\(\s*\d+(?:\.\d+)*\s*\)/.test(text)) return false;
+  // Equation numbers in older journals are often bare left-margin tokens such
+  // as "1.2", "1 . 14" or "3 . 4", rather than parenthesized right tags.
+  // Treat only an essentially standalone numeric token as an equation label;
+  // real section headings have title text after the number.
+  const numericOnly = /^(?:\(\s*)?\d+\s*(?:\.\s*\d+\s*)+(?:\))?$/.test(text)
+    || /^\(\s*\d+\s*\)$/.test(text);
+  if (!numericOnly) return false;
   const start = Number(line?.xStartRatio);
   const end = Number(line?.xEndRatio);
   const nearLeft = (Number.isFinite(start) && start <= 0.24) || (Number.isFinite(end) && end <= 0.38);
@@ -6482,6 +6488,11 @@ async function detectOutlineFromTypography() {
       const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
       const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
       const numberedHasDelimiter = /^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H])[.)]\s+/.test(headingText);
+      // Numbered mathematical statements belong to Results, not Structure.
+      // This is a major pattern in older papers: "1.1. LEMMA ...",
+      // "2.3. PROPOSITION ...", etc. A section title like
+      // "§ 3. PROOF OF THEOREM 2" is deliberately not rejected here.
+      const numberedResultStatement = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b/i.test(numberedTitleBody);
       const titleLikeNumbered = Boolean(numberedTitleMatch)
         && !proseLead
         && /^[A-Z]/.test(numberedTitleBody)
@@ -6500,14 +6511,22 @@ async function detectOutlineFromTypography() {
         && !genericProseLead
         && !/[.;,]$/.test(headingText)
         && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(headingText)
-        && (centered || ratio >= 1.60);
+        // Generic unnumbered headings must be centered. A very large OCR/PDF
+        // fragment by itself is not enough evidence of document structure.
+        && centered;
       // Older mathematical journals often print section headings at body-text
       // size but center them. Accept that strong layout pattern while rejecting
       // numbered theorem/prose lines such as "2.1. Let ..." or "8. To ...".
+      if (numberedResultStatement) continue;
       if (numberedDepth !== null && !known && !titleLikeNumbered) continue;
       if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
       if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(headingText)) continue;
-      if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;
+      // Standalone theorem/lemma/proof headings are indexed by Results/proof
+      // relations, not by the document outline. Numbered section titles that
+      // merely contain words like "PROOF OF THEOREM 2" have already passed
+      // through the numbered-heading grammar above and do not start with a
+      // math-environment label themselves.
+      if (isMathEnvironmentLabel(headingText)) continue;
       if (isLikelyFormulaHeading(headingText)) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(headingText)) continue;
       // Bibliography/reference fragments can be typographically prominent in
@@ -7088,13 +7107,31 @@ function equationLabelCandidatesInLine(text) {
     if (isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
   }
-  // PDF.js sometimes drops the visible parentheses around a right-margin
-  // equation number and exposes only a standalone token such as "13.30".
+  // Older journals often print a bare hierarchical number at the left margin
+  // on the same visual line as the display formula, e.g. "1.2   <formula>" or
+  // with extraction spacing such as "1 . 14   <formula>". Admit only a dotted
+  // leading token here; geometry and mathematical context below still decide
+  // whether it is a real equation target. This deliberately does not admit a
+  // bare integer prefix, which would collide heavily with section numbering.
+  const leadingBare = value.match(/^\s*(\d+\s*(?:\.\s*\d+)+)(?=\s|$)/);
+  if (leadingBare) {
+    const raw = leadingBare[1];
+    const compact = raw.replace(/\s+/g, '');
+    const label = normalizedEquationLabel(compact);
+    if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
+      const index = value.indexOf(raw);
+      out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + raw.length, bare: true });
+    }
+  }
+
+  // PDF.js sometimes drops the visible parentheses around a margin equation
+  // number and exposes only a standalone token such as "13.30".
   // Record that narrow form as a candidate; geometry / neighboring display
   // math still decides whether it is reliable below.
   const trimmed = value.trim();
-  if (/^\d+(?:\.\d+)*$/.test(trimmed)) {
-    const label = normalizedEquationLabel(trimmed);
+  const compactBare = trimmed.replace(/\s+/g, '');
+  if (/^\d+(?:\.\d+)*$/.test(compactBare)) {
+    const label = normalizedEquationLabel(compactBare);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = value.indexOf(trimmed);
       out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + trimmed.length, bare: true });
