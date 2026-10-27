@@ -236,7 +236,6 @@ let currentSelection = null;
 let pendingOutlineReselectKey = null;
 let pendingEquationReselectKey = null;
 let pendingEquationAddKey = null;
-let pendingEquationAddPlacement = 'below';
 let equationEdits = [];
 let equationManualOrder = [];
 let embeddedOutlineEdits = [];
@@ -694,9 +693,10 @@ function clearDocumentMapForIncomingPdf() {
   equationIndexBuildPromise = null;
   equationEdits = [];
   equationManualOrder = [];
+  draggedEquationKey = null;
+  try { dragDepth = 0; dropOverlay?.classList.add('is-hidden'); } catch (_) {}
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
-  pendingEquationAddPlacement = 'below';
   embeddedOutlineEntries = [];
   embeddedOutlineEdits = [];
   structureIndexVersion = 0;
@@ -1579,9 +1579,9 @@ function loadDocumentState(cachedSession = null) {
   bibliographyEntries = [];
   equationEdits = [];
   equationManualOrder = [];
+  draggedEquationKey = null;
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
-  pendingEquationAddPlacement = 'below';
   equationIndexBuildPromise = null;
   structureIndexVersion = 0;
   equationLabelIndex = null;
@@ -5290,15 +5290,13 @@ function applyEquationLinkCorrection(query, page, ratio) {
   } else if (pendingEquationAddKey) {
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const anchorRef = String(pendingEquationAddKey);
-    const placement = pendingEquationAddPlacement === 'above' ? 'above' : 'below';
+    const placement = 'below';
     equationEdits.push({
       action:'add', id, sourceLabel:anchorRef,
-      ...(placement === 'above' ? { beforeRef:anchorRef } : { afterRef:anchorRef }),
-      placement, label, page:Number(page)||1, ratio:Number(ratio)||0, text:query
+      afterRef:anchorRef, placement, label, page:Number(page)||1, ratio:Number(ratio)||0, text:query
     });
     pendingEquationAddKey = null;
-    pendingEquationAddPlacement = 'below';
-  } else return false;
+    } else return false;
   equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
   persistDocumentState(); refreshSelectionUI(); ensureEquationIndexRendered();
   return true;
@@ -5396,15 +5394,13 @@ async function applyEquationPointCorrection(pageNum, ratio) {
     }
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const anchorRef = String(pendingEquationAddKey);
-    const placement = pendingEquationAddPlacement === 'above' ? 'above' : 'below';
+    const placement = 'below';
     equationEdits.push({
       action:'add', id, sourceLabel:anchorRef,
-      ...(placement === 'above' ? { beforeRef:anchorRef } : { afterRef:anchorRef }),
-      placement, label:addedLabel, page, ratio:anchorRatio, text:nearby?.text || addedLabel
+      afterRef:anchorRef, placement, label:addedLabel, page, ratio:anchorRatio, text:nearby?.text || addedLabel
     });
     pendingEquationAddKey = null;
-    pendingEquationAddPlacement = 'below';
-  }
+    }
 
   equationLabelIndex = null;
   equationNumberingSide = 'right';
@@ -7682,6 +7678,22 @@ function applyEquationManualOrder(rows) {
   return ordered;
 }
 
+function pruneEquationManualOrder(rows) {
+  if (!Array.isArray(equationManualOrder) || !equationManualOrder.length) return;
+  const valid = new Set((rows || []).map(equationRowOrderKey));
+  const seen = new Set();
+  const cleaned = equationManualOrder.filter((key) => {
+    const normalized = String(key || '');
+    if (!normalized || !valid.has(normalized) || seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+  if (cleaned.length !== equationManualOrder.length || cleaned.some((key, index) => key !== equationManualOrder[index])) {
+    equationManualOrder = cleaned;
+    persistDocumentState();
+  }
+}
+
 function saveEquationDragOrder(rows, visibleRows, draggedKey, targetKey, before) {
   const fullKeys = rows.map(equationRowOrderKey);
   const visibleKeys = visibleRows.map(equationRowOrderKey);
@@ -7733,6 +7745,7 @@ function renderEquationIndex() {
       : rows.length;
     rows.splice(insertAt, 0, added);
   }
+  pruneEquationManualOrder(rows);
   rows = applyEquationManualOrder(rows);
   equationIndexCount.textContent = String(rows.length);
   const filterBar = document.createElement('div'); filterBar.className = 'equation-confidence-filter';
@@ -7765,7 +7778,7 @@ function renderEquationIndex() {
     menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions)); });
     const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
     const reselect = document.createElement('button'); reselect.type='button'; reselect.className='outline-edit-button'; reselect.textContent=t('Reselect','重新选择');
-    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingEquationAddPlacement = 'below'; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    reselect.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationReselectKey = entry.manualEditId ? `edit:${entry.manualEditId}` : `label:${equationSourceLabelForDisplayed(entry.label)}`; pendingEquationAddKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
     const remove = document.createElement('button'); remove.type='button'; remove.className='outline-edit-button'; remove.textContent=t('Remove','移除');
     remove.addEventListener('click', (event) => {
       event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu');
@@ -7784,11 +7797,11 @@ function renderEquationIndex() {
         equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
         equationEdits.push({ action:'remove', sourceLabel });
       }
-      pendingEquationReselectKey = null; pendingEquationAddKey = null; pendingEquationAddPlacement = 'below'; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
+      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
       persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
     });
     const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add','添加');
-    add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationAddPlacement = 'below'; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
     actions.append(reselect, remove, add);
 
     const orderKey = equationRowOrderKey(entry);
@@ -7797,25 +7810,33 @@ function renderEquationIndex() {
     row.title = row.title || t('Drag to reorder equation', '拖动调整公式顺序');
     row.addEventListener('dragstart', (event) => {
       if (event.target?.closest?.('.outline-overflow-button,.outline-edit-actions')) { event.preventDefault(); return; }
+      event.stopPropagation();
       draggedEquationKey = orderKey;
       row.classList.add('is-dragging-equation');
-      try { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', orderKey); } catch (_) {}
+      try {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('application/x-mathreader-equation-row', orderKey);
+        event.dataTransfer.setData('text/plain', orderKey);
+      } catch (_) {}
     });
-    row.addEventListener('dragend', () => {
+    row.addEventListener('dragend', (event) => {
+      event.stopPropagation();
       draggedEquationKey = null;
+      dragDepth = 0;
+      dropOverlay?.classList.add('is-hidden');
       row.classList.remove('is-dragging-equation');
       equationIndex.querySelectorAll('.equation-edit-row.drag-target-before,.equation-edit-row.drag-target-after').forEach((node) => node.classList.remove('drag-target-before','drag-target-after'));
     });
     row.addEventListener('dragover', (event) => {
       if (!draggedEquationKey || draggedEquationKey === orderKey) return;
-      event.preventDefault();
+      event.preventDefault(); event.stopPropagation();
       if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
       const rect = row.getBoundingClientRect();
       const before = event.clientY < rect.top + rect.height / 2;
       row.classList.toggle('drag-target-before', before);
       row.classList.toggle('drag-target-after', !before);
     });
-    row.addEventListener('dragleave', () => row.classList.remove('drag-target-before','drag-target-after'));
+    row.addEventListener('dragleave', (event) => { event.stopPropagation(); row.classList.remove('drag-target-before','drag-target-after'); });
     row.addEventListener('drop', (event) => {
       if (!draggedEquationKey || draggedEquationKey === orderKey) return;
       event.preventDefault(); event.stopPropagation();
@@ -11315,18 +11336,44 @@ document.addEventListener('keydown', (event) => {
 });
 
 let dragDepth = 0;
+function isInternalUiDrag() {
+  return Boolean(draggedWorkspaceSection || draggedEquationKey);
+}
+function isExternalFileDrag(event) {
+  const types = Array.from(event?.dataTransfer?.types || []);
+  return types.includes('Files');
+}
 window.addEventListener('dragenter', (event) => {
-  if (draggedWorkspaceSection) return;
-  event.preventDefault(); dragDepth += 1; dropOverlay.classList.remove('is-hidden');
+  if (isInternalUiDrag() || !isExternalFileDrag(event)) return;
+  event.preventDefault();
+  dragDepth += 1;
+  dropOverlay.classList.remove('is-hidden');
 });
-window.addEventListener('dragover', (event) => { if (!draggedWorkspaceSection) event.preventDefault(); });
+window.addEventListener('dragover', (event) => {
+  if (isInternalUiDrag() || !isExternalFileDrag(event)) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+});
 window.addEventListener('dragleave', (event) => {
-  if (draggedWorkspaceSection) return;
-  event.preventDefault(); dragDepth -= 1; if (dragDepth <= 0) { dragDepth = 0; dropOverlay.classList.add('is-hidden'); }
+  if (isInternalUiDrag() || !isExternalFileDrag(event)) return;
+  event.preventDefault();
+  dragDepth -= 1;
+  if (dragDepth <= 0) {
+    dragDepth = 0;
+    dropOverlay.classList.add('is-hidden');
+  }
 });
 window.addEventListener('drop', (event) => {
-  if (draggedWorkspaceSection) return;
-  event.preventDefault(); dragDepth = 0; dropOverlay.classList.add('is-hidden');
+  if (isInternalUiDrag()) {
+    event.preventDefault();
+    dragDepth = 0;
+    dropOverlay.classList.add('is-hidden');
+    return;
+  }
+  if (!isExternalFileDrag(event)) return;
+  event.preventDefault();
+  dragDepth = 0;
+  dropOverlay.classList.add('is-hidden');
   const file = [...(event.dataTransfer?.files || [])].find((item) => item.type === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf'));
   if (file) openPdfFile(file); else showError(t('Drop a PDF file to open it.', '请拖入 PDF 文件。'));
 });
