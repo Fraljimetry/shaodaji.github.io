@@ -5288,6 +5288,11 @@ function applyEquationLinkCorrection(query, page, ratio) {
     }
     pendingEquationReselectKey = null;
   } else if (pendingEquationAddKey) {
+    const sourceLabel = pendingEquationDisplayedLabel(pendingEquationAddKey);
+    if (sourceLabel && normalizedEquationLabel(label) === normalizedEquationLabel(sourceLabel)) {
+      showError(t('Choose a different equation for Add.', '添加时请选择另一个公式。'));
+      return true;
+    }
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const anchorRef = String(pendingEquationAddKey);
     const placement = 'below';
@@ -5329,9 +5334,10 @@ function equationLabelsInTextLine(text) {
   return out;
 }
 
-async function equationLabelNearPagePoint(pageNum, ratio) {
+async function equationLabelNearPagePoint(pageNum, ratio, excludeLabel = null) {
   const page = Math.max(1, Number(pageNum) || 1);
   const targetRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const excluded = excludeLabel ? normalizedEquationLabel(excludeLabel) : null;
   const lines = await pageTextLines(page);
   let best = null;
   for (const line of lines) {
@@ -5344,6 +5350,7 @@ async function equationLabelNearPagePoint(pageNum, ratio) {
     const lineEnd = Number(line.xEndRatio) || lineStart;
     const span = Math.max(0, lineEnd - lineStart);
     for (const candidate of candidates) {
+      if (excluded && normalizedEquationLabel(candidate.label) === excluded) continue;
       const start = lineStart + span * Math.min(1, Math.max(0, Number(candidate.index || 0) / textLength));
       const end = lineStart + span * Math.min(1, Math.max(0, Number(candidate.end || candidate.index || 0) / textLength));
       const marginBonus = equationNumberingSide === 'left'
@@ -5360,7 +5367,8 @@ async function applyEquationPointCorrection(pageNum, ratio) {
   if (!pendingEquationReselectKey && !pendingEquationAddKey) return false;
   const page = Math.max(1, Number(pageNum) || 1);
   const anchorRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
-  const nearby = await equationLabelNearPagePoint(page, anchorRatio);
+  const addSourceLabel = pendingEquationAddKey ? pendingEquationDisplayedLabel(pendingEquationAddKey) : null;
+  const nearby = await equationLabelNearPagePoint(page, anchorRatio, addSourceLabel);
 
   if (pendingEquationReselectKey) {
     const existingAdd = equationEditTargetFromPending(pendingEquationReselectKey);
@@ -5391,6 +5399,10 @@ async function applyEquationPointCorrection(pageNum, ratio) {
         showError(t('Enter only a short equation label such as (12.45), (7), (*), or (†).', '只能输入简短的公式编号，例如 (12.45)、(7)、(*) 或 (†)。'));
         return true;
       }
+    }
+    if (addSourceLabel && normalizedEquationLabel(addedLabel) === normalizedEquationLabel(addSourceLabel)) {
+      showError(t('Add must use a different equation label from the source equation.', '新增公式的编号必须与当前公式不同。'));
+      return true;
     }
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const anchorRef = String(pendingEquationAddKey);
