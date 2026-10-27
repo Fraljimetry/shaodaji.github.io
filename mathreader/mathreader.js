@@ -329,7 +329,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 11;
+const STRUCTURE_INDEX_VERSION = 12;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6461,6 +6461,20 @@ async function detectOutlineFromTypography() {
   }
 
   const bodySize = weightedMedianFont(fontSamples);
+  // Some older native-text journal PDFs expose a usable text layer but use an
+  // explicit section-marker grammar (for example "§ 1 ...", "§ 2 ...").
+  // When that grammar repeats, it is much more reliable than generic typography:
+  // use it as the document's Structure authority instead of promoting body prose.
+  const explicitSectionMarkerLines = [];
+  if (!documentOcrActive) {
+    for (const lines of pages) {
+      for (const line of lines) {
+        const value = String(line?.text || '').trim();
+        if (/^§\s*\d+(?:\.\d+)*[.)]?\s+\S/i.test(value)) explicitSectionMarkerLines.push(line);
+      }
+    }
+  }
+  const explicitSectionMarkerMode = explicitSectionMarkerLines.length >= 2;
   // Contents blocks are navigational summaries, not document-body headings.
   // Do not discard the entire page: older papers often put the real first
   // section immediately below the table of contents on page 1. Mark only the
@@ -6501,6 +6515,12 @@ async function detectOutlineFromTypography() {
       const text = line.text;
       if (!text || text.length < 2) continue;
       if (contentsLines.has(line)) continue;
+      if (explicitSectionMarkerMode) {
+        const value = String(text || '').trim();
+        const explicitSection = /^§\s*\d+(?:\.\d+)*[.)]?\s+\S/i.test(value);
+        const conventional = /^(?:abstract|references|bibliography|appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s|$))/i.test(value);
+        if (!explicitSection && !conventional) continue;
+      }
       // On a title page, material above an Abstract heading is title/author
       // metadata rather than document structure.
       if (line.page === 1) {
