@@ -238,10 +238,12 @@ let pendingEquationReselectKey = null;
 let pendingEquationAddKey = null;
 let pendingEquationAddPlacement = 'below';
 let equationEdits = [];
+let equationManualOrder = [];
 let embeddedOutlineEdits = [];
 let embeddedOutlineEntries = [];
 let equationIndexBuildPromise = null;
 let equationConfidenceFilter = 'all';
+let draggedEquationKey = null;
 let scrollByPage = {};
 let referenceScrollByPage = {};
 let localLibrary = [];
@@ -691,6 +693,7 @@ function clearDocumentMapForIncomingPdf() {
   equationLabelIndex = null;
   equationIndexBuildPromise = null;
   equationEdits = [];
+  equationManualOrder = [];
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
   pendingEquationAddPlacement = 'below';
@@ -746,6 +749,7 @@ function snapshotSession() {
     structureEntries,
     bibliographyEntries,
     equationEdits,
+    equationManualOrder,
     embeddedOutlineEdits,
     structureIndexVersion,
     referencePages,
@@ -1574,6 +1578,7 @@ function loadDocumentState(cachedSession = null) {
   structureEntries = [];
   bibliographyEntries = [];
   equationEdits = [];
+  equationManualOrder = [];
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
   pendingEquationAddPlacement = 'below';
@@ -1632,6 +1637,7 @@ function loadDocumentState(cachedSession = null) {
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
+    equationManualOrder = Array.isArray(session.equationManualOrder) ? session.equationManualOrder.map((item) => String(item || '')).filter(Boolean).slice(0, 1000) : [];
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
@@ -2073,7 +2079,7 @@ function normalizeOcrArrayFormattingRow(value) {
 function splitOcrLatexRows(value) {
   const body = unwrapOcrFormattingEnvelope(value);
   if (!body) return [];
-  const rows = [];
+  let rows = [];
   let current = '';
   let braceDepth = 0;
   for (let i = 0; i < body.length; i += 1) {
@@ -7652,6 +7658,48 @@ function equationConfidenceTier(score) {
   return t('review','需核对');
 }
 
+function equationRowOrderKey(entry) {
+  if (entry?.manualEditId) return `edit:${String(entry.manualEditId)}`;
+  const source = equationSourceLabelForDisplayed(entry?.label || '');
+  return `label:${normalizedEquationLabel(source || entry?.label || '')}`;
+}
+
+function applyEquationManualOrder(rows) {
+  if (!Array.isArray(rows) || !rows.length || !equationManualOrder.length) return rows;
+  const byKey = new Map(rows.map((row) => [equationRowOrderKey(row), row]));
+  const ordered = [];
+  const seen = new Set();
+  for (const key of equationManualOrder) {
+    const row = byKey.get(String(key));
+    if (!row || seen.has(key)) continue;
+    ordered.push(row); seen.add(String(key));
+  }
+  for (const row of rows) {
+    const key = equationRowOrderKey(row);
+    if (seen.has(key)) continue;
+    ordered.push(row); seen.add(key);
+  }
+  return ordered;
+}
+
+function saveEquationDragOrder(rows, visibleRows, draggedKey, targetKey, before) {
+  const fullKeys = rows.map(equationRowOrderKey);
+  const visibleKeys = visibleRows.map(equationRowOrderKey);
+  const from = visibleKeys.indexOf(draggedKey);
+  const target = visibleKeys.indexOf(targetKey);
+  if (from < 0 || target < 0 || draggedKey === targetKey) return false;
+  visibleKeys.splice(from, 1);
+  let insertAt = visibleKeys.indexOf(targetKey);
+  if (insertAt < 0) insertAt = visibleKeys.length;
+  if (!before) insertAt += 1;
+  visibleKeys.splice(Math.min(insertAt, visibleKeys.length), 0, draggedKey);
+  const visibleSet = new Set(visibleKeys);
+  let cursor = 0;
+  equationManualOrder = fullKeys.map((key) => visibleSet.has(key) ? visibleKeys[cursor++] : key);
+  persistDocumentState();
+  return true;
+}
+
 function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
   equationIndex.replaceChildren();
@@ -7661,7 +7709,7 @@ function renderEquationIndex() {
     equationIndexEmpty.textContent = t('Preparing equation-label index…', '正在准备公式编号索引……');
     return;
   }
-  const rows = [];
+  let rows = [];
   for (const [label, candidates] of equationLabelIndex.entries()) {
     let best = null;
     for (const candidate of candidates || []) {
@@ -7685,6 +7733,7 @@ function renderEquationIndex() {
       : rows.length;
     rows.splice(insertAt, 0, added);
   }
+  rows = applyEquationManualOrder(rows);
   equationIndexCount.textContent = String(rows.length);
   const filterBar = document.createElement('div'); filterBar.className = 'equation-confidence-filter';
   const filterLabel = document.createElement('label'); filterLabel.textContent = t('Confidence', '置信度');
@@ -7738,11 +7787,45 @@ function renderEquationIndex() {
       pendingEquationReselectKey = null; pendingEquationAddKey = null; pendingEquationAddPlacement = 'below'; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
       persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
     });
-    const addAbove = document.createElement('button'); addAbove.type='button'; addAbove.className='outline-edit-button'; addAbove.textContent=t('Add above','在上方添加');
-    addAbove.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationAddPlacement = 'above'; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
-    const addBelow = document.createElement('button'); addBelow.type='button'; addBelow.className='outline-edit-button'; addBelow.textContent=t('Add below','在下方添加');
-    addBelow.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationAddPlacement = 'below'; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
-    actions.append(reselect, remove, addAbove, addBelow); row.append(button, menu, actions); equationIndex.append(row);
+    const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add','添加');
+    add.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); row.classList.remove('has-edit-menu'); pendingEquationAddKey = entry.manualEditId ? `edit:${entry.manualEditId}` : entry.label; pendingEquationAddPlacement = 'below'; pendingEquationReselectKey = null; pendingOutlineReselectKey = null; refreshSelectionUI(); });
+    actions.append(reselect, remove, add);
+
+    const orderKey = equationRowOrderKey(entry);
+    row.draggable = true;
+    row.dataset.equationOrderKey = orderKey;
+    row.title = row.title || t('Drag to reorder equation', '拖动调整公式顺序');
+    row.addEventListener('dragstart', (event) => {
+      if (event.target?.closest?.('.outline-overflow-button,.outline-edit-actions')) { event.preventDefault(); return; }
+      draggedEquationKey = orderKey;
+      row.classList.add('is-dragging-equation');
+      try { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', orderKey); } catch (_) {}
+    });
+    row.addEventListener('dragend', () => {
+      draggedEquationKey = null;
+      row.classList.remove('is-dragging-equation');
+      equationIndex.querySelectorAll('.equation-edit-row.drag-target-before,.equation-edit-row.drag-target-after').forEach((node) => node.classList.remove('drag-target-before','drag-target-after'));
+    });
+    row.addEventListener('dragover', (event) => {
+      if (!draggedEquationKey || draggedEquationKey === orderKey) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+      const rect = row.getBoundingClientRect();
+      const before = event.clientY < rect.top + rect.height / 2;
+      row.classList.toggle('drag-target-before', before);
+      row.classList.toggle('drag-target-after', !before);
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-target-before','drag-target-after'));
+    row.addEventListener('drop', (event) => {
+      if (!draggedEquationKey || draggedEquationKey === orderKey) return;
+      event.preventDefault(); event.stopPropagation();
+      const rect = row.getBoundingClientRect();
+      const before = event.clientY < rect.top + rect.height / 2;
+      row.classList.remove('drag-target-before','drag-target-after');
+      if (saveEquationDragOrder(rows, visibleRows, draggedEquationKey, orderKey, before)) renderEquationIndex();
+    });
+
+    row.append(button, menu, actions); equationIndex.append(row);
   }
   applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
 }

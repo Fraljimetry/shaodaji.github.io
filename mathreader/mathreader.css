@@ -546,3 +546,11 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .equation-confidence-filter{position:sticky;top:0;z-index:1;display:flex;justify-content:flex-end;padding:2px 8px 6px 0;background:var(--surface)}
 .equation-confidence-filter label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.66rem}
 .equation-confidence-filter select{min-width:92px;padding:3px 22px 3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);font:inherit}
+
+/* Equation list manual ordering */
+.equation-edit-row[draggable="true"]{cursor:grab}
+.equation-edit-row.is-dragging-equation{opacity:.55;cursor:grabbing}
+.equation-edit-row.drag-target-before::before,.equation-edit-row.drag-target-after::after{content:"";position:absolute;left:8px;right:8px;height:2px;border-radius:2px;background:var(--accent);z-index:6;pointer-events:none}
+.equation-edit-row.drag-target-before::before{top:-1px}
+.equation-edit-row.drag-target-after::after{bottom:-1px}
+.equation-edit-row .outline-overflow-button,.equation-edit-row .outline-edit-actions{cursor:default}
