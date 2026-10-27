@@ -7672,38 +7672,42 @@ function equationRowOrderKey(entry) {
   return `label:${normalizedEquationLabel(source || entry?.label || '')}`;
 }
 
-function applyEquationManualOrder(rows) {
-  if (!Array.isArray(rows) || !rows.length || !equationManualOrder.length) return rows;
+function reconcileEquationManualOrder(rows) {
+  if (!Array.isArray(rows) || !rows.length) { equationManualOrder = []; return rows || []; }
+  const currentKeys = rows.map(equationRowOrderKey);
+  const valid = new Set(currentKeys);
+  const seen = new Set();
+  const order = [];
+  for (const rawKey of equationManualOrder || []) {
+    const key = String(rawKey || '');
+    if (!key || !valid.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    order.push(key);
+  }
+  if (!order.length) order.push(...currentKeys);
+  for (let i = 0; i < currentKeys.length; i += 1) {
+    const key = currentKeys[i];
+    if (order.includes(key)) continue;
+    let inserted = false;
+    for (let j = i - 1; j >= 0; j -= 1) {
+      const prev = currentKeys[j];
+      const at = order.indexOf(prev);
+      if (at >= 0) { order.splice(at + 1, 0, key); inserted = true; break; }
+    }
+    if (!inserted) {
+      for (let j = i + 1; j < currentKeys.length; j += 1) {
+        const next = currentKeys[j];
+        const at = order.indexOf(next);
+        if (at >= 0) { order.splice(at, 0, key); inserted = true; break; }
+      }
+    }
+    if (!inserted) order.push(key);
+  }
+  const changed = order.length !== equationManualOrder.length || order.some((key, index) => key !== equationManualOrder[index]);
+  equationManualOrder = order;
+  if (changed) persistDocumentState();
   const byKey = new Map(rows.map((row) => [equationRowOrderKey(row), row]));
-  const ordered = [];
-  const seen = new Set();
-  for (const key of equationManualOrder) {
-    const row = byKey.get(String(key));
-    if (!row || seen.has(key)) continue;
-    ordered.push(row); seen.add(String(key));
-  }
-  for (const row of rows) {
-    const key = equationRowOrderKey(row);
-    if (seen.has(key)) continue;
-    ordered.push(row); seen.add(key);
-  }
-  return ordered;
-}
-
-function pruneEquationManualOrder(rows) {
-  if (!Array.isArray(equationManualOrder) || !equationManualOrder.length) return;
-  const valid = new Set((rows || []).map(equationRowOrderKey));
-  const seen = new Set();
-  const cleaned = equationManualOrder.filter((key) => {
-    const normalized = String(key || '');
-    if (!normalized || !valid.has(normalized) || seen.has(normalized)) return false;
-    seen.add(normalized);
-    return true;
-  });
-  if (cleaned.length !== equationManualOrder.length || cleaned.some((key, index) => key !== equationManualOrder[index])) {
-    equationManualOrder = cleaned;
-    persistDocumentState();
-  }
+  return equationManualOrder.map((key) => byKey.get(key)).filter(Boolean);
 }
 
 function saveEquationDragOrder(rows, visibleRows, draggedKey, targetKey, before) {
@@ -7757,8 +7761,7 @@ function renderEquationIndex() {
       : rows.length;
     rows.splice(insertAt, 0, added);
   }
-  pruneEquationManualOrder(rows);
-  rows = applyEquationManualOrder(rows);
+  rows = reconcileEquationManualOrder(rows);
   equationIndexCount.textContent = String(rows.length);
   const filterBar = document.createElement('div'); filterBar.className = 'equation-confidence-filter';
   const filterLabel = document.createElement('label'); filterLabel.textContent = t('Confidence', '置信度');
