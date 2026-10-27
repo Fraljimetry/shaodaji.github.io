@@ -659,6 +659,54 @@ function makeFileKey(name, size, lastModified) {
   return `${name}:${Number(size) || 0}:${Number(lastModified) || 0}`;
 }
 
+async function sha256Hex(data) {
+  try {
+    if (!globalThis.crypto?.subtle || !data) return '';
+    const view = data instanceof Uint8Array ? data : new Uint8Array(data);
+    const start = view.byteOffset;
+    const end = start + view.byteLength;
+    const buffer = view.buffer.slice(start, end);
+    const digest = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  } catch (_) {
+    return '';
+  }
+}
+
+async function exactDocumentKey(data, name, size, lastModified) {
+  const hash = await sha256Hex(data);
+  return hash ? `sha256:${hash}` : makeFileKey(name, size, lastModified);
+}
+
+function clearDocumentMapForIncomingPdf() {
+  // Never leave one document's indexes visible while another document is opening/OCRing.
+  inferredOutline = [];
+  inferredOutlineDetectionDone = false;
+  inferredOutlineBuildPromise = null;
+  outlineMode = 'none';
+  structureEntries = [];
+  bibliographyEntries = [];
+  equationLabelIndex = null;
+  equationEdits = [];
+  embeddedOutlineEntries = [];
+  embeddedOutlineEdits = [];
+  structureIndexVersion = 0;
+  backlinkContext = null;
+  backlinkEntries = [];
+  tocOutlineTargets = null;
+  // Clear visible map rows synchronously. Do not start any renderer here: the new
+  // PDF may still be in its OCR/preparation gate and old rows must become inert now.
+  try { outlineList?.replaceChildren(); } catch (_) {}
+  try { structureIndex?.replaceChildren(); } catch (_) {}
+  try { bibliographyIndex?.replaceChildren(); } catch (_) {}
+  try { equationIndex?.replaceChildren(); } catch (_) {}
+  try { backlinksList?.replaceChildren(); } catch (_) {}
+  if (structureCount) structureCount.textContent = '0';
+  if (bibliographyCount) bibliographyCount.textContent = '0';
+  if (equationLabelCount) equationIndexCount.textContent = '0';
+  if (backlinkCount) backlinksCount.textContent = '0';
+}
+
 function activePanelId() {
   return document.querySelector('.sidebar-tab.is-active')?.dataset.panel || 'outline-panel';
 }
@@ -9833,6 +9881,10 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     currentFileName = meta.name;
     currentFileKey = meta.id;
     cacheEnabledForCurrent = Boolean(cachedRecord);
+    // Clear the previous document's map before any potentially long OCR/index preparation.
+    // This prevents stale Structure/Results/Equations/Bibliography rows from remaining
+    // clickable against the newly opened PDF.
+    clearDocumentMapForIncomingPdf();
     await ensureDocumentTextReady();
     // Determine freshness from the same two session sources used by
     // loadDocumentState(): IndexedDB first, then the legacy localStorage copy.
@@ -9928,24 +9980,51 @@ async function openPdfFile(file, recoveryId = null) {
   }
   try {
     const arrayBuffer = await file.arrayBuffer();
-    let id = makeFileKey(file.name, file.size, file.lastModified || 0);
+    const bytes = new Uint8Array(arrayBuffer);
+    const legacyId = makeFileKey(file.name, file.size, file.lastModified || 0);
+    let id = await exactDocumentKey(bytes, file.name, file.size, file.lastModified || 0);
     let cachedRecord = null;
     if (recoveryId) {
       try {
         const recovery = await dbGet('documents', recoveryId);
         if (recovery && recovery.name === file.name && Number(recovery.size) === Number(file.size)) {
-          id = recovery.id;
-          cachedRecord = recovery;
-          delete cachedRecord.cacheError;
+          let exactMatch = recovery.id === id;
+          if (!exactMatch) {
+            try {
+              const oldFile = await dbGet('files', recovery.id);
+              if (oldFile?.blob) {
+                const oldBytes = new Uint8Array(await oldFile.blob.arrayBuffer());
+                exactMatch = (await exactDocumentKey(oldBytes, recovery.name, recovery.size, recovery.lastModified || 0)) === id;
+              }
+            } catch (_) {}
+          }
+          if (exactMatch) {
+            cachedRecord = recovery;
+            delete cachedRecord.cacheError;
+          } else {
+            showError(t('The selected PDF does not exactly match the cached document. It will be opened as a new document.', '所选 PDF 与缓存文档并非完全相同，将作为新文档打开。'));
+          }
         } else if (recovery) {
           showError(t('The selected PDF does not match the missing cached file. It will be opened as a new document.', '所选 PDF 与缺失的缓存文件不匹配，将作为新文档打开。'));
         }
       } catch (_) {}
     }
     if (!cachedRecord) { try { cachedRecord = await dbGet('documents', id); } catch (_) {} }
+    // One-time safe migration from the old metadata key: reuse a legacy session only
+    // when the cached PDF bytes hash to this exact document. Never trust metadata alone.
+    if (!cachedRecord && legacyId !== id) {
+      try {
+        const [legacyRecord, legacyFile] = await Promise.all([dbGet('documents', legacyId), dbGet('files', legacyId)]);
+        if (legacyRecord && legacyFile?.blob) {
+          const legacyBytes = new Uint8Array(await legacyFile.blob.arrayBuffer());
+          const legacyExactId = await exactDocumentKey(legacyBytes, legacyRecord.name, legacyRecord.size, legacyRecord.lastModified || 0);
+          if (legacyExactId === id) cachedRecord = { ...legacyRecord, id };
+        }
+      } catch (_) {}
+    }
     const blob = file.slice(0, file.size, 'application/pdf');
     await openPdfSource({
-      data: new Uint8Array(arrayBuffer),
+      data: bytes,
       meta: { id, name: file.name, size: file.size, lastModified: file.lastModified || 0 },
       cachedRecord,
       cacheBlob: blob
