@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 16;
+const STRUCTURE_INDEX_VERSION = 17;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -1217,22 +1217,67 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
   return { page: pageNum, width: safeWidth, height: safeHeight, text, lines, words };
 }
 
+function documentNativeTextSamplePages(pageCount) {
+  const count = Math.max(1, Number(pageCount) || 1);
+  // Old scanned books frequently have clean catalog/front-matter text but a bad
+  // hidden OCR layer in the mathematical body. Sample both the front and the
+  // interior instead of accepting the document after the first 80 characters.
+  const candidates = [
+    1, 2, 3,
+    Math.round(1 + (count - 1) * 0.25),
+    Math.round(1 + (count - 1) * 0.50),
+    Math.round(1 + (count - 1) * 0.75),
+    count,
+  ];
+  return [...new Set(candidates.map((value) => Math.min(count, Math.max(1, value))))].sort((a, b) => a - b);
+}
+
+function documentNativeTextQualityStats(rawText) {
+  const raw = String(rawText || '');
+  const nonSpace = raw.replace(/\s+/g, '');
+  const controlChars = (raw.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g) || []).length;
+  const replacementChars = (raw.match(/\uFFFD/g) || []).length;
+  return {
+    rawChars: raw.length,
+    nonSpaceChars: nonSpace.length,
+    controlChars,
+    replacementChars,
+  };
+}
+
 async function pdfNeedsDocumentOcr(doc = pdfDoc) {
   if (!doc?.numPages) return false;
   let totalChars = 0;
+  let rawChars = 0;
+  let controlChars = 0;
+  let replacementChars = 0;
   let pagesWithText = 0;
-  for (let pageNum = 1; pageNum <= doc.numPages; pageNum += 1) {
+  const samplePages = documentNativeTextSamplePages(doc.numPages);
+
+  for (const pageNum of samplePages) {
     const page = await doc.getPage(pageNum);
     const content = await page.getTextContent();
-    const text = (content.items || []).map((item) => String(item.str || '')).join('').replace(/\s+/g, '');
-    if (text.length >= 12) pagesWithText += 1;
-    totalChars += text.length;
-    // A few genuinely textual pages are enough to keep the normal PDF path.
-    if (totalChars >= 80 || pagesWithText >= Math.min(3, doc.numPages)) return false;
+    const raw = (content.items || []).map((item) => String(item.str || '')).join(' ');
+    const stats = documentNativeTextQualityStats(raw);
+    if (stats.nonSpaceChars >= 12) pagesWithText += 1;
+    totalChars += stats.nonSpaceChars;
+    rawChars += stats.rawChars;
+    controlChars += stats.controlChars;
+    replacementChars += stats.replacementChars;
   }
-  // Old scans sometimes contain a page number or stray hidden glyph. Treat that
-  // as effectively textless rather than allowing a few characters to suppress OCR.
-  return totalChars < Math.max(24, doc.numPages * 2) || pagesWithText === 0;
+
+  // A scan can contain a nominal OCR/text layer that is much worse than having
+  // no text at all.  In particular, broken custom-font maps may decode a large
+  // fraction of the page into C0/C1 control bytes.  Such a layer must not bypass
+  // the user's Full-document OCR decision merely because it contains many bytes.
+  const controlRatio = controlChars / Math.max(1, rawChars);
+  const replacementRatio = replacementChars / Math.max(1, rawChars);
+  if (rawChars >= 200 && (controlRatio >= 0.16 || replacementRatio >= 0.08)) return true;
+
+  // Old scans sometimes contain page numbers, catalog text, or a few stray hidden
+  // glyphs.  Distributed sampling keeps those fragments from suppressing OCR.
+  const minimumUsefulPages = Math.min(2, samplePages.length);
+  return totalChars < Math.max(24, samplePages.length * 4) || pagesWithText < minimumUsefulPages;
 }
 
 async function loadCachedDocumentOcr() {
@@ -6894,7 +6939,9 @@ function ocrLineSuitableForStructure(line) {
   const operatorCount = (text.match(/[=+<>∑∫√∞→←≤≥\\{}_^|]/g) || []).length;
   const digitCount = (text.match(/\d/g) || []).length;
   const letterCount = (text.match(/[A-Za-z]/g) || []).length;
-  if (operatorCount >= 2 && alphaWords.length < 3) return false;
+  const hyphenTitleWords = text.match(/[A-Za-z]{2,}/g) || [];
+  const hyphenSectionTitle = /^\d{1,2}-\d{1,2}[.)]?\s+[A-Z]/.test(text) && hyphenTitleWords.length >= 2;
+  if (operatorCount >= 2 && alphaWords.length < 3 && !hyphenSectionTitle) return false;
   if (tokens.length >= 3 && alphaWords.length === 0 && digitCount >= Math.max(2, letterCount / 2)) return false;
   if (/^\(?\d+(?:\.\d+)+\)?\s+/.test(text) && alphaWords.length < 2) return false;
   return true;
@@ -7088,6 +7135,49 @@ async function detectOutlineFromTypography() {
   });
   const legacyCenteredNumbers = new Set(legacyCenteredLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
   const legacyCenteredMode = !explicitSectionMarkerMode && !modernHierarchyMode && !legacyParagraphMode && legacyCenteredNumbers.size >= 3;
+
+  // OCR bounding boxes in old journal scans are not reliable font metrics: a
+  // genuine centered section heading can have the same (or even smaller) box
+  // height as body text.  Promote only a repeated, high-confidence numbered
+  // grammar at the document level.  This keeps OCR typography from becoming a
+  // general prose detector.
+  const ocrCenteredNumberedLines = documentOcrActive ? allLines.filter((line) => {
+    const value = String(line?.text || '').trim();
+    const match = value.match(/^(\d{1,2})[.,)]\s+(.+)$/);
+    if (!match || Number(line?.confidence) < 72) return false;
+    const title = String(match[2] || '').trim();
+    const center = (Number(line?.xStartRatio) + Number(line?.xEndRatio)) / 2;
+    const width = Number(line?.xEndRatio) - Number(line?.xStartRatio);
+    const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
+    return /^[A-Z]/.test(title)
+      && titleWords.length >= 1
+      && titleWords.length <= 12
+      && !numberedBodyLooksLikeProse(title)
+      && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)
+      && Number.isFinite(center) && Math.abs(center - 0.5) <= 0.15
+      && width <= 0.76;
+  }) : [];
+  const ocrCenteredNumbers = new Set(ocrCenteredNumberedLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
+  const ocrCenteredNumberedMode = documentOcrActive && ocrCenteredNumbers.size >= 3;
+
+  // Several classic books/journals number sections with a hyphen (6-2, 6-3)
+  // while equations use the parenthesized form (6-7).  OCR frequently preserves
+  // the former even when font sizing is unreliable.  Require repeated section
+  // grammar plus title words; equation-only lines cannot activate this profile.
+  const ocrHyphenSectionLines = documentOcrActive ? allLines.filter((line) => {
+    const value = String(line?.text || '').trim();
+    const match = value.match(/^(\d{1,2})-(\d{1,2})[.)]?\s+(.+)$/);
+    if (!match || Number(line?.confidence) < 62) return false;
+    const title = String(match[3] || '').trim();
+    const titleWords = title.match(/[A-Za-z]{2,}/g) || [];
+    return titleWords.length >= 1
+      && titleWords.length <= 12
+      && !numberedBodyLooksLikeProse(title)
+      && !/^[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title);
+  }) : [];
+  const ocrHyphenSectionMode = documentOcrActive && new Set(ocrHyphenSectionLines.map((line) => String(line.text || '').match(/^(\d{1,2}-\d{1,2})/)?.[1]).filter(Boolean)).size >= 2;
+  const ocrCenteredLineSet = new Set(ocrCenteredNumberedLines);
+  const ocrHyphenLineSet = new Set(ocrHyphenSectionLines);
   // Contents blocks are navigational summaries, not document-body headings.
   // Do not discard the entire page: older papers often put the real first
   // section immediately below the table of contents on page 1. Mark only the
@@ -7146,6 +7236,7 @@ async function detectOutlineFromTypography() {
       // of its paragraph, e.g. "1. Introduction. Riemannian ...". Keep the
       // heading prefix while preserving the original line geometry as anchor.
       let headingText = text;
+      if (documentOcrActive && /^(\d{1,2}),\s+[A-Z]/.test(headingText)) headingText = headingText.replace(/^(\d{1,2}),/, '$1.');
       let headingWasParagraphLead = false;
       // Paragraph-leading section recovery is only for OCR/scanned papers.
       // Native text PDFs have reliable typography; applying this relaxation to
@@ -7201,11 +7292,12 @@ async function detectOutlineFromTypography() {
         const explicitMarkerHeading = explicitSectionMarkerMode && qualifiedSectionMarkerLines.includes(line);
         const paragraphNumbered = legacyParagraphMode && headingWasParagraphLead && numberedDepth !== null;
         const legacyCenteredNumbered = legacyCenteredMode && centeredNumbered;
-        const ocrNumbered = documentOcrActive && centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead);
+        const ocrProfileNumbered = (ocrCenteredNumberedMode && ocrCenteredLineSet.has(line)) || (ocrHyphenSectionMode && ocrHyphenLineSet.has(line));
+        const ocrNumbered = documentOcrActive && (ocrProfileNumbered || (centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead)));
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08 && centered;
-        const styleHeading = documentOcrActive && ratio >= 1.42 && words.length <= 10 && centered && !/[.;,]$/.test(headingText);
+        const styleHeading = documentOcrActive && ratio >= 1.42 && words.length <= 10 && centered && lineWidth <= 0.65 && /^[A-Z][A-Za-z0-9 &'’()\-–—]+$/.test(headingText);
         if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading && !containerHeading) continue;
-        if (isMathEnvironmentLabel(headingText)) continue;
+        if (isMathEnvironmentLabel(headingText) && !(documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))) continue;
       }
       if (/^(?:©|copyright\b)/i.test(headingText)) continue;
       const metadataHeadingText = headingText.normalize('NFKC');
@@ -7220,7 +7312,7 @@ async function detectOutlineFromTypography() {
       // merely contain words like "PROOF OF THEOREM 2" have already passed
       // through the numbered-heading grammar above and do not start with a
       // math-environment label themselves.
-      if (isLikelyFormulaHeading(headingText)) continue;
+      if (isLikelyFormulaHeading(headingText) && !(documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(headingText)) continue;
       // Bibliography/reference fragments can be typographically prominent in
       // extracted PDFs and used to leak into the detected Contents list.
@@ -7248,7 +7340,9 @@ async function detectOutlineFromTypography() {
       candidates.push({
         title: headingText,
         page: line.page,
-        depth: headingDepthFromStyle(line, bodySize),
+        depth: documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line)
+          ? 1
+          : headingDepthFromStyle({ ...line, text: headingText }, bodySize),
         size: Number(line.size.toFixed(2)),
         y: line.y,
         ratio: Math.min(1, Math.max(0, (line.pageHeight - line.y) / Math.max(1, line.pageHeight)))
@@ -8051,6 +8145,7 @@ function inferEquationNumberingSide(records) {
     const end = Number(item.candidateXEndRatio);
     const contextStrong = Boolean(item.standaloneTag || item.nearbyDisplayMath || item.mathSignals >= 2);
     if (!contextStrong) continue;
+    if (item.ocrSource && !item.standaloneTag && !item.candidateAtLineStart && !item.candidateAtLineEnd) continue;
     const weight = item.numeric && item.numeric.prefix ? 2 : 1.5;
     if ((Number.isFinite(end) && end <= 0.34) || (Number.isFinite(start) && start <= 0.28)) leftScore += weight;
     if ((Number.isFinite(start) && start >= 0.62) || (Number.isFinite(end) && end >= 0.74)) rightScore += weight;
@@ -8089,7 +8184,9 @@ function equationCandidateConfidenceForSide(item) {
   const onNumberingEdge = equationNumberingSide === 'left' ? Boolean(item?.candidateAtLineStart) : Boolean(item?.candidateAtLineEnd);
   const parenthesizedNumericCount = (text.match(/\(\s*\d+(?:(?:\.\d+)+|(?:-\d+)+)?\s*\)/g) || []).length;
   if (parenthesizedNumericCount >= 2 && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
+  if (item?.ocrSource && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
   if (parsed && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge && !item?.nearbyDisplayMath && mathSignals < 2) return -Infinity;
+  if (integerTag && item?.ocrSource && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
   if (integerTag && !item?.standaloneTag && codeLike) return -Infinity;
   if (integerTag && !item?.standaloneTag && mathSignals === 0 && alphaWords.length >= 2) return -Infinity;
   if (integerTag && !item?.standaloneTag && item?.candidateAtLineStart && mathSignals < 2 && !item?.nearbyDisplayMath && alphaWords.length >= 2) return -Infinity;
@@ -8117,20 +8214,67 @@ function reconcileEquationNumberingFamilies(index) {
   const numericEntries = [];
   let hierarchical = 0;
   let integers = 0;
+  let ocrHierarchical = 0;
+  let ocrIntegers = 0;
   for (const label of index.keys()) {
     const parsed = parsedEquationNumber(label);
     if (!parsed) continue;
-    numericEntries.push({ label, parsed });
-    if (parsed.prefix) hierarchical += 1;
-    else integers += 1;
+    const candidates = index.get(label) || [];
+    const ocrSourced = candidates.some((item) => Boolean(item?.ocrSource));
+    numericEntries.push({ label, parsed, ocrSourced });
+    if (parsed.prefix) {
+      hierarchical += 1;
+      if (ocrSourced) ocrHierarchical += 1;
+    } else {
+      integers += 1;
+      if (ocrSourced) ocrIntegers += 1;
+    }
   }
   const numericTotal = hierarchical + integers;
+  // OCR frequently drops the separator in labels such as (1.3) -> (13). If an
+  // OCR document already contains a substantial, clearly dominant hierarchical
+  // family, isolated pure-integer OCR labels are more safely treated as damaged
+  // tags than as a second numbering system. Integer-only OCR documents are not
+  // affected because they have no hierarchical family at all.
+  if (ocrHierarchical >= 8 && ocrHierarchical >= Math.max(8, Math.ceil(ocrIntegers * 1.5))) {
+    for (const { label, parsed, ocrSourced } of numericEntries) if (!parsed.prefix && ocrSourced) index.delete(label);
+    integers = [...index.keys()].filter((label) => {
+      const parsed = parsedEquationNumber(label);
+      return parsed && !parsed.prefix;
+    }).length;
+  }
   // A long, overwhelmingly hierarchical sequence is a document-level numbering
   // profile. In that profile, a handful of isolated integer tags are usually
   // page numbers / damaged text-layer artifacts rather than a second equation
   // numbering system. Integer-only and genuinely mixed documents stay intact.
   if (hierarchical < 10 || numericTotal < 12 || hierarchical / numericTotal < 0.88 || integers > Math.max(12, Math.ceil(hierarchical * 0.08))) return index;
   for (const { label, parsed } of numericEntries) if (!parsed.prefix) index.delete(label);
+  return index;
+}
+
+function reconcileOcrEquationSequenceOrder(index) {
+  const byPrefix = new Map();
+  for (const [label, candidates] of index.entries()) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed?.prefix || !(candidates || []).some((item) => Boolean(item?.ocrSource))) continue;
+    const candidate = chooseCanonicalEquationCandidate(candidates);
+    if (!candidate) continue;
+    const list = byPrefix.get(parsed.prefix) || [];
+    list.push({ label, parsed, candidate });
+    byPrefix.set(parsed.prefix, list);
+  }
+  for (const entries of byPrefix.values()) {
+    if (entries.length < 4) continue;
+    entries.sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
+    let last = -1;
+    for (const entry of entries) {
+      if (last >= 0 && entry.parsed.last < last) {
+        index.delete(entry.label);
+        continue;
+      }
+      last = Math.max(last, entry.parsed.last);
+    }
+  }
   return index;
 }
 
@@ -8149,7 +8293,12 @@ async function buildEquationLabelIndex() {
       const explicit = equationLabelCandidatesInLine(line.text);
       const weakBare = [];
       const rawText = String(line.text || '').normalize('NFKC');
-      const bareRe = /\b\d+(?:\.\d+)+\b/g;
+      // OCR can drop parentheses around hierarchical equation tags. Keep both
+      // dotted and hyphenated bare forms sequence-only so they can fill a local
+      // numbering gap, but never enter the index directly.
+      const bareRe = line.ocrSource
+        ? /\b\d+(?:(?:\.\d+)+|(?:-\d+)+)\b/g
+        : /\b\d+(?:\.\d+)+\b/g;
       let bareMatch;
       while ((bareMatch = bareRe.exec(rawText))) {
         const label = normalizedEquationLabel(bareMatch[0]);
@@ -8177,6 +8326,7 @@ async function buildEquationLabelIndex() {
           standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
+          ocrSource: Boolean(line.ocrSource),
         });
       }
     }
@@ -8236,6 +8386,7 @@ async function buildEquationLabelIndex() {
   reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
   reconcileEquationNumberingFamilies(index);
+  reconcileOcrEquationSequenceOrder(index);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
   equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
   renderEquationIndex();
@@ -8498,7 +8649,11 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
   if (cache.has(pageNum)) return cache.get(pageNum);
   if (sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
     const record = documentOcrPages.get(Number(pageNum));
-    const lines = (record?.lines || []).map((line) => ({ ...line, parts: Array.isArray(line.parts) ? line.parts.map((part) => ({ ...part })) : [] }));
+    const lines = (record?.lines || []).map((line) => ({
+      ...line,
+      ocrSource: true,
+      parts: Array.isArray(line.parts) ? line.parts.map((part) => ({ ...part })) : [],
+    }));
     cache.set(pageNum, lines);
     if (flatCache) flatCache.set(pageNum, String(record?.text || lines.map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim());
     return lines;
