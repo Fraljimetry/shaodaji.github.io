@@ -99,8 +99,6 @@ const recoveryList = el('recovery-list');
 const recoveryEmpty = el('recovery-empty');
 const recoveryCount = el('recovery-count');
 const saveOcrEquation = el('save-ocr-equation');
-const selectionHighlight = el('selection-highlight');
-const selectionMarginNote = el('selection-margin-note');
 const annotationList = el('annotation-list');
 const annotationEmpty = el('annotation-empty');
 const annotationCount = el('annotation-count');
@@ -130,17 +128,6 @@ const themeIcon = el('theme-icon');
 const themeLabel = el('theme-label');
 const referencePreview = el('reference-preview');
 const rightSidebar = el('right-sidebar');
-const selectionCard = el('selection-card');
-const selectionHelp = el('selection-help');
-const selectionPageChip = el('selection-page-chip');
-const selectionTextPreview = el('selection-text-preview');
-const selectionLatexPreview = el('selection-latex-preview');
-const copySelectionText = el('copy-selection-text');
-const copySelectionLatex = el('copy-selection-latex');
-const selectionToNote = el('selection-to-note');
-const selectionFindAll = el('selection-find-all');
-const selectionToStructure = el('selection-to-structure');
-const selectionToGlossary = el('selection-to-glossary');
 const glossarySymbolInput = el('glossary-symbol');
 const glossaryMeaningInput = el('glossary-meaning');
 const glossaryAddButton = el('glossary-add');
@@ -331,7 +318,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 14;
+const STRUCTURE_INDEX_VERSION = 15;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -1280,7 +1267,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = generalPrefs.rememberSectionCollapse === false ? null : JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['settings-section','ocr-section','selection-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  const defaults = new Set(['settings-section','ocr-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -4985,26 +4972,14 @@ function pdfTextToLatex(source) {
 }
 
 function refreshSelectionUI() {
-  if (!selectionCard || !selectionHelp) return;
   const has = Boolean(currentSelection?.text);
-  selectionCard.classList.toggle('is-hidden', !has);
-  selectionHelp.classList.toggle('is-hidden', has);
-  selectionPageChip.textContent = has ? String(currentSelection.page) : '—';
-  if (!has) return;
-  selectionTextPreview.textContent = currentSelection.text;
-  selectionLatexPreview.textContent = currentSelection.latex;
-  selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
-  if (selectionToStructure) {
-    const replacingStructure = Boolean(pendingOutlineReselectKey);
-    const label = replacingStructure ? t('Replace', '替换') : t('Structure', '结构');
-    selectionToStructure.textContent = label;
-    selectionToStructure.dataset.en = replacingStructure ? 'Replace' : 'Structure';
-    selectionToStructure.dataset.zh = replacingStructure ? '替换' : '结构';
-    if (floatingStructure) {
-      floatingStructure.textContent = label;
-      floatingStructure.dataset.en = selectionToStructure.dataset.en;
-      floatingStructure.dataset.zh = selectionToStructure.dataset.zh;
-    }
+  if (has && selectionToolbarLabel) selectionToolbarLabel.textContent = t(`Page ${currentSelection.page}`, `第 ${currentSelection.page} 页`);
+  const replacingStructure = Boolean(pendingOutlineReselectKey);
+  const label = replacingStructure ? t('Replace', '替换') : t('Structure', '结构');
+  if (floatingStructure) {
+    floatingStructure.textContent = label;
+    floatingStructure.dataset.en = replacingStructure ? 'Replace' : 'Structure';
+    floatingStructure.dataset.zh = replacingStructure ? '替换' : '结构';
   }
 }
 
@@ -5228,8 +5203,14 @@ function equationLabelFromSelectionText(value) {
   const normalized = normalizeEquationTagCommands(raw);
   const match = normalized.match(/^\(\s*([^()]+?)\s*\)$/);
   if (!match) return null;
-  const inner = String(match[1] || '').replace(/\s+/g, '');
-  if (/^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner)) return normalizedEquationLabel(`(${inner})`);
+  const rawInner = String(match[1] || '');
+  const numericInner = compactNumericEquationTagInner(rawInner);
+  if (isPlausibleNumericEquationTagInner(numericInner)) {
+    const label = normalizedEquationLabel(`(${numericInner})`);
+    return isLikelyCalendarYearEquationLabel(label) ? null : label;
+  }
+  const symbolicInner = rawInner.replace(/\s+/g, '');
+  if (isSymbolicEquationTagInner(symbolicInner)) return normalizedEquationLabel(`(${symbolicInner})`);
   return null;
 }
 
@@ -6516,7 +6497,7 @@ function headingNumberDepth(text) {
 }
 
 function isKnownHeading(text) {
-  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|appendix(?:\s+[A-Z0-9]+)?|contents)$/i.test(text.trim());
+  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|foreword|preface|appendix(?:\s+[A-Z0-9]+)?|contents)$/i.test(text.trim());
 }
 
 function isMathEnvironmentLabel(text) {
@@ -6596,6 +6577,8 @@ async function detectOutlineFromTypography() {
   const pages = [];
   const fontSamples = [];
   const repeatMap = new Map();
+  let nativeTextChars = 0;
+  let nativeControlChars = 0;
   const maxPages = Math.min(pdfDoc.numPages, 600);
 
   for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
@@ -6618,7 +6601,10 @@ async function detectOutlineFromTypography() {
       const content = await page.getTextContent();
       const items = [];
       for (const item of content.items || []) {
-        const text = normalizedHeadingText(item.str);
+        const rawText = String(item.str || '');
+        nativeTextChars += rawText.length;
+        nativeControlChars += (rawText.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g) || []).length;
+        const text = normalizedHeadingText(rawText);
         if (!text) continue;
         const tr = item.transform || [1, 0, 0, 1, 0, 0];
         const size = Math.max(1, Math.hypot(Number(tr[0]) || 0, Number(tr[1]) || 0) || Number(item.height) || 1);
@@ -6638,6 +6624,26 @@ async function detectOutlineFromTypography() {
         line.size = Math.max(line.size, item.size);
         line.x = Math.min(line.x, item.x);
       }
+      const horizontalLines = [];
+      for (const sourceLine of lines) {
+        sourceLine.items.sort((a, b) => a.x - b.x);
+        let segment = null;
+        let previousRight = null;
+        const splitGap = Math.max(20, viewport.width * 0.055);
+        for (const item of sourceLine.items) {
+          const itemLeft = Number(item.x) || 0;
+          const gap = previousRight === null ? 0 : itemLeft - previousRight;
+          if (!segment || gap > splitGap) {
+            segment = { page: pageNum, y: sourceLine.y, x: itemLeft, items: [], size: item.size, pageHeight: viewport.height };
+            horizontalLines.push(segment);
+          }
+          segment.items.push(item);
+          segment.size = Math.max(segment.size, item.size);
+          segment.x = Math.min(segment.x, itemLeft);
+          previousRight = Math.max(itemLeft, itemLeft + Math.max(0, Number(item.width) || 0));
+        }
+      }
+      lines = horizontalLines;
       for (const line of lines) {
         line.items.sort((a, b) => a.x - b.x);
         line.text = normalizedHeadingText(line.items.map((item) => item.text).join(' '));
@@ -6660,6 +6666,15 @@ async function detectOutlineFromTypography() {
     }
     pages.push(lines);
   }
+
+  // Some digitized books contain a nominal text layer whose custom-font
+  // character map is badly broken: there may be hundreds of thousands of
+  // characters, but a large fraction are C0/C1 control codes.  Such text is
+  // not a trustworthy source for inferred Structure.  Prefer an empty
+  // Structure over a long list of garbage headings; equation/OCR pipelines
+  // remain independent.  The threshold is intentionally high so ordinary old
+  // PDFs with a few damaged glyphs remain on the native-text path.
+  if (nativeTextChars >= 1000 && nativeControlChars / nativeTextChars >= 0.18) return [];
 
   const bodySize = weightedMedianFont(fontSamples);
   // Infer one heading profile from repeated document-level evidence. This
@@ -6807,6 +6822,7 @@ async function detectOutlineFromTypography() {
           }
         }
       }
+      if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/.test(headingText)) continue;
       if (headingText.length > 125) continue;
       const words = headingText.split(/\s+/).filter(Boolean);
       if (words.length > 18) continue;
@@ -6836,6 +6852,7 @@ async function detectOutlineFromTypography() {
         const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
         const centeredNumbered = Boolean(numberedTitleMatch)
           && !proseLead
+          && !/[.!?]\s+(?:Then|Thus|Hence|This|The|We|It|By|Since|For)\b/i.test(numberedTitleBody)
           && /^[A-Z]/.test(numberedTitleBody)
           && titleWords.length >= 1
           && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
@@ -6850,7 +6867,13 @@ async function detectOutlineFromTypography() {
         if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading) continue;
         if (isMathEnvironmentLabel(headingText)) continue;
       }
+      if (/^(?:©|copyright\b)/i.test(headingText)) continue;
+      if (/^(?:\d{4}\s+)?Mathematics Subject Classification\b/i.test(headingText)) continue;
       if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(headingText)) continue;
+      if (!known && numberedDepth === null) {
+        const lexicalWords = headingText.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
+        if (!lexicalWords.length) continue;
+      }
       // Standalone theorem/lemma/proof headings are indexed by Results/proof
       // relations, not by the document outline. Numbered section titles that
       // merely contain words like "PROOF OF THEOREM 2" have already passed
@@ -6922,24 +6945,63 @@ async function detectOutlineFromTypography() {
     }
   }
 
+  // Book/lecture headings are often set across several large-font lines, and
+  // an intermediate title line may end in punctuation (for example a comma).
+  // Once a Chapter/Lecture anchor is accepted, recover only adjacent
+  // same-style lines directly below it. This keeps body prose out while avoiding
+  // fragmented Structure rows for books and lecture notes.
+  for (const anchor of [...candidates]) {
+    if (!/^(?:chapter|lecture)\s+(?:\d+|[IVXLC]+)\b/i.test(String(anchor.title || '').trim())) continue;
+    const pageLines = [...(pages[anchor.page - 1] || [])].filter((line) => Number(line.y) < Number(anchor.y)).sort((a, b) => Number(b.y) - Number(a.y));
+    let tailY = Number(anchor.y);
+    let tailSize = Number(anchor.size);
+    for (const line of pageLines) {
+      const gap = tailY - Number(line.y);
+      if (gap <= 0) continue;
+      if (gap > 86) break;
+      const size = Number(line.size);
+      if (!Number.isFinite(size) || size < Math.max(1, tailSize) * 0.92 || size > Math.max(1, tailSize) * 1.38) continue;
+      const text = normalizedHeadingText(line.text);
+      const words = text.split(/\s+/).filter(Boolean);
+      if (!text || words.length > 16 || headingNumberDepth(text) !== null || isMathEnvironmentLabel(text) || isLikelyFormulaHeading(text)) break;
+      const existing = candidates.find((item) => item.page === anchor.page && normalizedHeadingText(item.title).toLocaleLowerCase() === text.toLocaleLowerCase());
+      if (existing) existing.continuationOnly = true;
+      else candidates.push({
+        title: text, page: anchor.page, depth: anchor.depth, size: Number(size.toFixed(2)), y: line.y,
+        ratio: Math.min(1, Math.max(0, (line.pageHeight - line.y) / Math.max(1, line.pageHeight))), continuationOnly: true,
+      });
+      tailY = Number(line.y);
+      tailSize = size;
+    }
+  }
+
   const ordered = candidates.sort((a, b) => a.page - b.page || b.y - a.y);
   const merged = [];
   for (const candidate of ordered) {
     const previous = merged[merged.length - 1];
+    const previousContainer = previous && /^(?:chapter|lecture)\s+(?:\d+|[IVXLC]+)\b/i.test(previous.title);
+    const tailY = Number(previous?._tailY ?? previous?.y);
+    const tailSize = Number(previous?._tailSize ?? previous?.size);
+    const verticalGap = tailY - Number(candidate.y);
+    const numberedContinuation = previous && headingNumberDepth(previous.title) !== null
+      && (Boolean(candidate.continuationOnly) || (Math.abs(tailSize - Number(candidate.size)) <= 0.85 && !isKnownHeading(candidate.title)));
+    const containerContinuation = previousContainer
+      && Number(candidate.size) >= Math.max(1, tailSize) * 0.95
+      && Number(candidate.size) <= Math.max(1, tailSize) * 1.35;
     const continuation = previous
       && previous.page === candidate.page
-      && headingNumberDepth(previous.title) !== null
       && headingNumberDepth(candidate.title) === null
-      && Math.abs(Number(previous.size) - Number(candidate.size)) <= 0.6
-      && previous.y - candidate.y > 0
-      && previous.y - candidate.y <= Math.max(28, Number(previous.size) * 1.9)
-      && !isKnownHeading(candidate.title)
-      && !/[.!?]$/.test(previous.title);
+      && verticalGap > 0
+      && verticalGap <= (previousContainer ? 82 : Math.max(32, tailSize * 2.1))
+      && !/[.!?]$/.test(previous.title)
+      && (numberedContinuation || containerContinuation);
     if (continuation) {
       previous.title = normalizedHeadingText(`${previous.title.replace(/-$/, '')}${/-$/.test(previous.title) ? '' : ' '}${candidate.title}`);
+      previous._tailY = candidate.y;
+      previous._tailSize = candidate.size;
       continue;
     }
-    merged.push({ ...candidate });
+    merged.push({ ...candidate, _tailY: candidate.y, _tailSize: candidate.size });
   }
 
   const deduped = [];
@@ -6950,7 +7012,25 @@ async function detectOutlineFromTypography() {
     seen.add(key);
     deduped.push(candidate);
   }
-  return deduped.slice(0, 240);
+  const contentsPages = new Set();
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+    if ((pages[pageIndex] || []).some((line) => /^contents$/i.test(String(line?.text || '').trim()))) contentsPages.add(pageIndex + 1);
+  }
+  const cleaned = deduped.filter((candidate, index) => {
+    if (!contentsPages.has(candidate.page)) return true;
+    const key = normalizedHeadingText(candidate.title).toLocaleLowerCase();
+    return !deduped.slice(index + 1).some((later) => later.page > candidate.page && normalizedHeadingText(later.title).toLocaleLowerCase() === key);
+  });
+  const seenTerminalHeadings = new Set();
+  const finalCandidates = cleaned.filter((candidate) => {
+    const terminal = /^(?:bibliography|references)$/i.test(String(candidate.title || '').trim());
+    if (!terminal) return true;
+    const key = String(candidate.title || '').trim().toLocaleLowerCase();
+    if (seenTerminalHeadings.has(key)) return false;
+    seenTerminalHeadings.add(key);
+    return true;
+  });
+  return finalCandidates.slice(0, 240).map(({ _tailY, _tailSize, ...candidate }) => candidate);
 }
 
 function positionOutlineEditActions(trigger, actions) {
@@ -7054,7 +7134,6 @@ function renderEmbeddedOutline(entries) {
       row.classList.remove('has-edit-menu');
       pendingOutlineReselectKey = `embedded:${entry.sourceKey}`;
       refreshSelectionUI();
-      openRightSectionShortcut('selection-section');
     });
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -7195,7 +7274,6 @@ function renderInferredOutline(entries) {
       row.classList.remove('has-edit-menu');
       pendingOutlineReselectKey = outlineEntryKey(entry);
       refreshSelectionUI();
-      openRightSectionShortcut('selection-section');
     });
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -7236,7 +7314,7 @@ const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△�
 const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
 const CLICKABLE_REFERENCE_RE = new RegExp(
   `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
-  `\\(\\s*(?:\\d+(?:\\.\\d+)*|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
+  `\\(\\s*(?:\\d+(?:(?:\\.\\d+)+|(?:-\\d+)+)?|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
   `\\[\\s*\\d{1,3}\\s*\\]`,
   'gi',
 );
@@ -7272,18 +7350,35 @@ function isSymbolicEquationTagInner(inner) {
 function isLikelyCalendarYearEquationLabel(value) {
   const label = normalizedEquationLabel(value);
   const inner = label.slice(1, -1);
-  if (!/^\d{4}$/.test(inner)) return false;
-  const year = Number(inner);
-  return year >= 1800 && year <= 2099;
+  if (/^\d{4}$/.test(inner)) {
+    const year = Number(inner);
+    return year >= 1800 && year <= 2099;
+  }
+  const range = inner.match(/^(\d{4})-(\d{4})$/);
+  if (!range) return false;
+  const start = Number(range[1]);
+  const end = Number(range[2]);
+  return start >= 1800 && start <= 2099 && end >= 1800 && end <= 2099;
+}
+
+function compactNumericEquationTagInner(raw) {
+  const value = String(raw || '').trim();
+  if (/\d\s+\d/.test(value)) return '';
+  return value.replace(/\s+/g, '');
+}
+
+function isPlausibleNumericEquationTagInner(inner) {
+  const value = String(inner || '');
+  if (/^\d+$/.test(value)) return /^(?:0|[1-9]\d{0,3})$/.test(value);
+  return /^\d+(?:(?:\.\d+)+|(?:-\d+)+)$/.test(value);
 }
 
 function isEquationLabelQuery(value) {
   const label = normalizedEquationLabel(value);
   const inner = label.slice(1, -1);
   if (isLikelyCalendarYearEquationLabel(label)) return false;
-  return /^\d+(?:(?:\.\d+)+|(?:-\d+)+)?$/.test(inner) || isSymbolicEquationTagInner(inner);
+  return isPlausibleNumericEquationTagInner(inner) || isSymbolicEquationTagInner(inner);
 }
-
 
 function parsedSequentialLabel(value) {
   const normalized = normalizedReferenceLabel(value);
@@ -7331,7 +7426,7 @@ function normalizeSequentialStructureEntries(entries) {
 
 function parsedEquationNumber(label) {
   const inner = normalizedEquationLabel(label).slice(1, -1);
-  if (!/^\d+(?:(?:\.\d+)+|(?:-\d+)+)?$/.test(inner)) return null;
+  if (!isPlausibleNumericEquationTagInner(inner)) return null;
   const separator = inner.includes('-') ? '-' : '.';
   const parts = inner.split(separator).map((part) => Number(part));
   return { parts, prefix: parts.slice(0, -1).join(separator), last: parts[parts.length - 1], separator };
@@ -7429,13 +7524,17 @@ function equationLabelCandidatesInLine(text) {
   let match;
   while ((match = re.exec(value))) {
     const rawInner = match[1];
-    const compactInner = rawInner.replace(/\s+/g, '');
-    // Numeric equation tags may be hierarchical, e.g. (12.45) or (1-14), or a
-    // document-wide integer sequence, e.g. (56). Integer candidates are
-    // admitted here but are subject to stricter right-margin geometry below.
-    if (!/^\d+(?:(?:\.\d+)+|(?:-\d+)+)?$/.test(compactInner)) continue;
-    const label = normalizedEquationLabel(match[0]);
-    if (isLikelyCalendarYearEquationLabel(label)) continue;
+    const numericInner = compactNumericEquationTagInner(rawInner);
+    const symbolicInner = String(rawInner || '').replace(/\s+/g, '');
+    // Keep one shared parenthesized-tag grammar for the Equation index: numeric
+    // dotted/hyphen labels and the deliberately small symbolic tag alphabet.
+    // Numeric extraction rejects digit-whitespace-digit so a broken text layer
+    // cannot silently turn "2 2" into equation (22).
+    const numeric = isPlausibleNumericEquationTagInner(numericInner);
+    const symbolic = isSymbolicEquationTagInner(symbolicInner);
+    if (!numeric && !symbolic) continue;
+    const label = normalizedEquationLabel(`(${numeric ? numericInner : symbolicInner})`);
+    if (numeric && isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
   }
 
@@ -7476,8 +7575,8 @@ function equationLabelCandidatesInLine(text) {
   // Record that narrow form as a candidate; geometry / neighboring display
   // math still decides whether it is reliable below.
   const trimmed = value.trim();
-  const compactBare = trimmed.replace(/\s+/g, '');
-  if (/^\d+(?:\.\d+)*$/.test(compactBare)) {
+  const compactBare = /\s/.test(trimmed) ? '' : trimmed;
+  if (isPlausibleNumericEquationTagInner(compactBare)) {
     const label = normalizedEquationLabel(compactBare);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = value.indexOf(trimmed);
@@ -7495,12 +7594,12 @@ function equationTargetScore(lineText, label, originPage, page, originRatio = nu
   if (pos >= 0 && pos + label.length >= compact.length - 1) score += 12;
   if (compact === label) score += 10;
   score += Math.min(10, (text.match(/[=≤≥≠≈∫∑∏√∂∇∞^_+−-]/g) || []).length * 1.5);
-  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\b/i.test(text)) score -= 20;
+  if (/^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|proof|section)\b/i.test(text)) score -= 20;
   if (/\b(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|section)\s+\d/i.test(text)) score -= 10;
   // Parenthesized equation numbers inside prose are references, not targets.
   // Prefer display-math/right-margin style lines and strongly demote prose
   // phrases that merely cite an equation.
-  if (/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text)) score -= 18;
+  if (/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in|in\s+view\s+of|contradicts?|rewrit(?:e|ten)|follows?\s+from|inequality\s+(?:like|in)|as\s+required)\b/i.test(text)) score -= 18;
   if (page === originPage) score += 0.5;
   if (page === originPage && Number.isFinite(originRatio) && Number.isFinite(candidateRatio)) {
     const delta = Math.abs(candidateRatio - originRatio);
@@ -7620,7 +7719,17 @@ function equationCandidateConfidenceForSide(item) {
   const nearBottom = Number(item.ratio) >= 0.90;
   const proseHeavy = text.length > 55 && mathSignals === 0;
   const explicitMarginTag = Boolean(item?.explicitParenthesized && aligned);
-  const referenceProse = /\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in)\b/i.test(text);
+  const referenceProse = /\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in|in\s+view\s+of|contradicts?|rewrit(?:e|ten)|follows?\s+from|inequality\s+(?:like|in)|as\s+required)\b/i.test(text);
+  const bibliographyLike = /\b(?:Ann\.?|Journal|Math\.?|Proc\.?|Trans\.?|Springer|Press)\b/i.test(text);
+  const bareHeadingLike = Boolean(item?.bareSource) && /^\s*\d+(?:\.\d+)+\s+[A-Za-z][A-Za-z]/.test(text);
+  const bareRemainder = Boolean(item?.bareSource)
+    ? text.replace(/^\s*\d+(?:\.\d+)+\s*/, '')
+    : '';
+  const bareWords = bareRemainder.match(/\b[A-Za-z]{3,}\b/g) || [];
+  const bareStructuredProse = Boolean(item?.bareSource) && (
+    /^(?:\([ivxlcdm]+\)\s*)?(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|exercise|problem|suppose|let|if|give|prove|show|using)\b/i.test(bareRemainder) ||
+    bareWords.length >= 3
+  );
   if (isOnlyTag && nearBottom && !aligned) return -Infinity;
   // A visible parenthesized tag already placed on the inferred equation-number
   // margin is strong target evidence by itself. Older/scanned PDF text layers
@@ -7629,6 +7738,9 @@ function equationCandidateConfidenceForSide(item) {
   if (mathSignals === 0 && !(isOnlyTag && aligned) && !explicitMarginTag) return -Infinity;
   if (proseHeavy && !(isOnlyTag && aligned) && !explicitMarginTag) return -Infinity;
   if (referenceProse && !isOnlyTag && mathSignals < 2) return -Infinity;
+  if (bibliographyLike && mathSignals < 2) return -Infinity;
+  if (bareStructuredProse) return -Infinity;
+  if (bareHeadingLike && mathSignals < 2) return -Infinity;
   let confidence = equationTargetScore(text, label, null, 0, null, Number(item.ratio));
   if (mathSignals >= 2) confidence += 5;
   else if (mathSignals === 1) confidence += 2;
@@ -7636,6 +7748,27 @@ function equationCandidateConfidenceForSide(item) {
   if (isOnlyTag && aligned) confidence += 5;
   if (explicitMarginTag) confidence += 6;
   return confidence;
+}
+
+function reconcileEquationNumberingFamilies(index) {
+  const numericEntries = [];
+  let hierarchical = 0;
+  let integers = 0;
+  for (const label of index.keys()) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed) continue;
+    numericEntries.push({ label, parsed });
+    if (parsed.prefix) hierarchical += 1;
+    else integers += 1;
+  }
+  const numericTotal = hierarchical + integers;
+  // A long, overwhelmingly hierarchical sequence is a document-level numbering
+  // profile. In that profile, a handful of isolated integer tags are usually
+  // page numbers / damaged text-layer artifacts rather than a second equation
+  // numbering system. Integer-only and genuinely mixed documents stay intact.
+  if (hierarchical < 10 || numericTotal < 12 || hierarchical / numericTotal < 0.88 || integers > Math.max(12, Math.ceil(hierarchical * 0.08))) return index;
+  for (const { label, parsed } of numericEntries) if (!parsed.prefix) index.delete(label);
+  return index;
 }
 
 async function buildEquationLabelIndex() {
@@ -7673,8 +7806,10 @@ async function buildEquationLabelIndex() {
           candidateXStartRatio: tokenGeometry.xStartRatio,
           candidateXEndRatio: tokenGeometry.xEndRatio,
           numeric,
+          bareSource: Boolean(candidate.bare),
           sequenceOnly: Boolean(candidate.sequenceOnly),
           explicitParenthesized: !candidate.bare && !candidate.sequenceOnly,
+          candidateAtLineStart: !String(line.text || '').slice(0, Math.max(0, Number(candidate.index) || 0)).trim(),
           standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
@@ -7697,12 +7832,34 @@ async function buildEquationLabelIndex() {
     // Integer numbering is valid on either margin, but only when the token is
     // aligned with the inferred numbering side and has display-math context.
     const integerTag = Boolean(record.numeric && !record.numeric.prefix);
-    if (integerTag && !(equationCandidateAlignedToNumberingSide(record) && (record.explicitParenthesized || record.standaloneTag || record.nearbyDisplayMath || record.mathSignals >= 2))) {
+    if (integerTag && !(equationCandidateAlignedToNumberingSide(record) && (record.explicitParenthesized || record.nearbyDisplayMath || record.mathSignals >= 2))) {
       reliable = false;
     }
+    if (integerTag && record.bareSource && !(record.nearbyDisplayMath || record.mathSignals >= 2)) reliable = false;
     record.confidence = confidence;
-    const pool = candidatePool.get(record.label) || [];
-    if (!record.sequenceOnly || equationCandidateAlignedToNumberingSide(record) || record.nearbyDisplayMath) {
+    // Sequence recovery must never resurrect a candidate that the direct
+    // classifier already rejected as implausible (for example "1.7 Lemma"
+    // or "3.10 Corollary").  Keep a deliberately narrower recovery pool:
+    // direct candidates need to clear the normal confidence floor, while weak
+    // bare/sequence-only candidates additionally need local display-math
+    // evidence.  This keeps recovery as a gap-filler, not a second detector.
+    const alignedForPool = equationCandidateAlignedToNumberingSide(record);
+    const strongLineStartTag = Boolean(
+      record.explicitParenthesized &&
+      record.candidateAtLineStart &&
+      (alignedForPool || record.nearbyDisplayMath || record.mathSignals >= 1)
+    );
+    const poolEligible = Number.isFinite(confidence) && (
+      (confidence >= 8 && (
+        record.standaloneTag ||
+        alignedForPool ||
+        record.nearbyDisplayMath ||
+        record.mathSignals >= 2
+      )) ||
+      strongLineStartTag
+    ) && (!record.sequenceOnly || record.nearbyDisplayMath || record.mathSignals >= 2);
+    if (poolEligible) {
+      const pool = candidatePool.get(record.label) || [];
       pool.push(record);
       candidatePool.set(record.label, pool);
     }
@@ -7712,7 +7869,9 @@ async function buildEquationLabelIndex() {
     index.set(record.label, list);
   }
 
+  reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
+  reconcileEquationNumberingFamilies(index);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
   equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
   renderEquationIndex();
@@ -11044,8 +11203,6 @@ buildStructureIndexButton?.remove();
 exportReadingDataButton?.addEventListener('click', exportReadingData);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
 importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
-selectionHighlight?.addEventListener('click', () => addSelectionAnnotation('highlight'));
-selectionMarginNote?.addEventListener('click', () => addSelectionAnnotation('margin'));
 saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
 commandInput?.addEventListener('input', renderCommandPalette);
 commandInput?.addEventListener('keydown', (event) => {
@@ -11135,13 +11292,7 @@ clearOcrResultButton.addEventListener('click', clearOcrResultState);
 bindOcrLayer(primaryOcrLayer);
 bindOcrLayer(referenceOcrLayer);
 
-[selectionToolbar, copySelectionText, copySelectionLatex, selectionToNote, selectionHighlight, selectionMarginNote, selectionFindAll, selectionToStructure, selectionToGlossary, floatingCopyText, floatingCopyLatex, floatingFindAll, floatingHighlight, floatingMarginNote, floatingAddNote, floatingStructure, floatingGlossary].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
-copySelectionText.addEventListener('click', () => copyPlainText(currentSelection?.text, copySelectionText));
-copySelectionLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, copySelectionLatex));
-selectionToNote.addEventListener('click', addSelectionToPageNote);
-selectionFindAll?.addEventListener('click', () => runFindAllOccurrences(currentSelection?.text));
-selectionToStructure?.addEventListener('click', addOrReplaceSelectionStructureItem);
-selectionToGlossary?.addEventListener('click', addSelectionToGlossary);
+[selectionToolbar, floatingCopyText, floatingCopyLatex, floatingFindAll, floatingHighlight, floatingMarginNote, floatingAddNote, floatingStructure, floatingGlossary].forEach((node) => node?.addEventListener('pointerdown', (event) => event.preventDefault()));
 floatingCopyText.addEventListener('click', () => copyPlainText(currentSelection?.text, floatingCopyText));
 floatingCopyLatex.addEventListener('click', () => copyPlainText(currentSelection?.latex, floatingCopyLatex));
 floatingFindAll?.addEventListener('click', () => { runFindAllOccurrences(currentSelection?.text); hideSelectionToolbar(); });
