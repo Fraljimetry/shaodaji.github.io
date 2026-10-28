@@ -318,7 +318,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 15;
+const STRUCTURE_INDEX_VERSION = 16;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6689,6 +6689,18 @@ async function detectOutlineFromTypography() {
     return { value, ratio, center, width, words };
   };
 
+  const numberedBodyLooksLikeProse = (body) => {
+    const value = normalizedHeadingText(body);
+    if (!value) return false;
+    const words = value.split(/\s+/).filter(Boolean);
+    const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating|there)\b/i.test(value);
+    const finiteVerb = /\b(?:is|are|was|were|has|have|had|does|do|did|can|could|will|would|shall|should|may|might|must|proved?|shows?|showed|gives?|gave|means?|contains?|concerns?|concerned|becomes?|follows?|implies?|satisfies?|holds?|likes?|came|reflects?)\b/i.test(value);
+    const sentenceLead = /^(?:the|this|that|these|those|we|i|he|she|it|they|there|most|not|in|on|at|by|since|because|although)\b/i.test(value);
+    const citationLike = /\[[^\]]{1,16}\]/.test(value);
+    const clauseCue = /\b(?:and hence|and therefore|and thus|we have|we obtain)\b/i.test(value);
+    return proseLead || clauseCue || (finiteVerb && (words.length >= 5 || sentenceLead || citationLike));
+  };
+
   const qualifiedSectionMarkerLines = allLines.filter((line) => {
     const { value, ratio, center, width, words } = lineMetrics(line);
     const match = value.match(/^§\s*\d+(?:\s*\.\s*\d+)*\s*[.)]?\s+(.+)/i);
@@ -6816,7 +6828,7 @@ async function detectOutlineFromTypography() {
         if (numberedLead) {
           const body = numberedLead[2];
           const boundary = body.match(/^(.{2,90}?)\.\s+(?=[A-Z][a-z])/);
-          if (boundary) {
+          if (boundary && !numberedBodyLooksLikeProse(boundary[1])) {
             headingText = normalizedHeadingText(`${numberedLead[1]}${boundary[1]}`);
             headingWasParagraphLead = true;
           }
@@ -6836,19 +6848,20 @@ async function detectOutlineFromTypography() {
       const lineCenter = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
       const lineWidth = Number(line.xEndRatio) - Number(line.xStartRatio);
       const centered = Number.isFinite(lineCenter) && Math.abs(lineCenter - 0.5) <= 0.12;
+      const containerHeading = /^(?:chapter|lecture)\s+(?:\d+|[IVXLC]+)\s*$/i.test(headingText) && ratio >= 1.25;
 
       if (modernHierarchyMode || (!documentOcrActive && !legacyParagraphMode && !legacyCenteredMode && !explicitSectionMarkerMode)) {
         // Modern/default native-text profile: typography first.
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
         const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText);
         if (numberedDepth !== null && ratio < 1.08 && !known) continue;
-        if (!known && numberedDepth === null && !styleHeading && !acronymHeading) continue;
+        if (!known && numberedDepth === null && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;
       } else {
         // Legacy/OCR profiles admit only the repeated grammar selected above.
         const numberedTitleMatch = headingText.match(/^\s*(?:§\s*)?((?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)]))(?:[.)])?\s+(.+)$/);
         const numberedTitleBody = String(numberedTitleMatch?.[2] || '').trim();
-        const proseLead = /^(?:let|assume|suppose|then|if|for|where|when|by|from|to|we|choose|since|using|applying|combining|conversely|inserting|substituting|differentiating)\b/i.test(numberedTitleBody);
+        const proseLead = numberedBodyLooksLikeProse(numberedTitleBody);
         const titleWords = numberedTitleBody.match(/[A-Za-z]{3,}/g) || [];
         const centeredNumbered = Boolean(numberedTitleMatch)
           && !proseLead
@@ -6864,11 +6877,12 @@ async function detectOutlineFromTypography() {
         const ocrNumbered = documentOcrActive && centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead);
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08 && centered;
         const styleHeading = documentOcrActive && ratio >= 1.42 && words.length <= 10 && centered && !/[.;,]$/.test(headingText);
-        if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading) continue;
+        if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText)) continue;
       }
       if (/^(?:©|copyright\b)/i.test(headingText)) continue;
-      if (/^(?:\d{4}\s+)?Mathematics Subject Classification\b/i.test(headingText)) continue;
+      const metadataHeadingText = headingText.normalize('NFKC');
+      if (/^(?:\d{4}\s+)?Mathematics Subject Classification\b/i.test(metadataHeadingText)) continue;
       if (/\barXiv:|\b(?:department|university|e-?mail|address:)\b/i.test(headingText)) continue;
       if (!known && numberedDepth === null) {
         const lexicalWords = headingText.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
@@ -6891,7 +6905,17 @@ async function detectOutlineFromTypography() {
 
       const repetition = repeatMap.get(line.normalized);
       const repeatedOn = repetition?.pages?.size || 0;
-      const likelyRunningHeader = repeatedOn >= 3 && repeatedOn >= Math.max(3, Math.ceil(maxPages * 0.25)) && ((repetition?.top || 0) + (repetition?.bottom || 0) >= repeatedOn * 0.7);
+      const repeatedPages = [...(repetition?.pages || [])].sort((a, b) => a - b);
+      let consecutiveRepeats = repeatedPages.length ? 1 : 0;
+      let longestConsecutiveRepeats = consecutiveRepeats;
+      for (let i = 1; i < repeatedPages.length; i += 1) {
+        consecutiveRepeats = repeatedPages[i] === repeatedPages[i - 1] + 1 ? consecutiveRepeats + 1 : 1;
+        longestConsecutiveRepeats = Math.max(longestConsecutiveRepeats, consecutiveRepeats);
+      }
+      const edgeRepeat = ((repetition?.top || 0) + (repetition?.bottom || 0)) >= repeatedOn * 0.7;
+      const likelyRunningHeader = repeatedOn >= 3 && edgeRepeat && (
+        repeatedOn >= Math.max(3, Math.ceil(maxPages * 0.25)) || longestConsecutiveRepeats >= 3
+      );
       if (likelyRunningHeader) continue;
 
       candidates.push({
@@ -7358,7 +7382,7 @@ function isLikelyCalendarYearEquationLabel(value) {
   if (!range) return false;
   const start = Number(range[1]);
   const end = Number(range[2]);
-  return start >= 1800 && start <= 2099 && end >= 1800 && end <= 2099;
+  return start >= 1000 && start <= 2199 && end >= 1000 && end <= 2199;
 }
 
 function compactNumericEquationTagInner(raw) {
@@ -7730,6 +7754,18 @@ function equationCandidateConfidenceForSide(item) {
     /^(?:\([ivxlcdm]+\)\s*)?(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|exercise|problem|suppose|let|if|give|prove|show|using)\b/i.test(bareRemainder) ||
     bareWords.length >= 3
   );
+  const parsed = parsedEquationNumber(label);
+  const integerTag = Boolean(parsed && !parsed.prefix);
+  const alphaWords = text.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
+  const codeLike = /(?:=>|;\s*$|\b(?:if|else|while|for|return|var|new|class|public|private|static|int|string)\b)/i.test(text)
+    && (text.match(/[(){}\[\]]/g) || []).length >= 4;
+  const onNumberingEdge = equationNumberingSide === 'left' ? Boolean(item?.candidateAtLineStart) : Boolean(item?.candidateAtLineEnd);
+  const parenthesizedNumericCount = (text.match(/\(\s*\d+(?:(?:\.\d+)+|(?:-\d+)+)?\s*\)/g) || []).length;
+  if (parenthesizedNumericCount >= 2 && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
+  if (parsed && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge && !item?.nearbyDisplayMath && mathSignals < 2) return -Infinity;
+  if (integerTag && !item?.standaloneTag && codeLike) return -Infinity;
+  if (integerTag && !item?.standaloneTag && mathSignals === 0 && alphaWords.length >= 2) return -Infinity;
+  if (integerTag && !item?.standaloneTag && item?.candidateAtLineStart && mathSignals < 2 && !item?.nearbyDisplayMath && alphaWords.length >= 2) return -Infinity;
   if (isOnlyTag && nearBottom && !aligned) return -Infinity;
   // A visible parenthesized tag already placed on the inferred equation-number
   // margin is strong target evidence by itself. Older/scanned PDF text layers
@@ -7810,6 +7846,7 @@ async function buildEquationLabelIndex() {
           sequenceOnly: Boolean(candidate.sequenceOnly),
           explicitParenthesized: !candidate.bare && !candidate.sequenceOnly,
           candidateAtLineStart: !String(line.text || '').slice(0, Math.max(0, Number(candidate.index) || 0)).trim(),
+          candidateAtLineEnd: !String(line.text || '').slice(Math.max(0, Number(candidate.end) || 0)).trim(),
           standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
