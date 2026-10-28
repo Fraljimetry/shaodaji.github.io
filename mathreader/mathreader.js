@@ -119,6 +119,17 @@ const searchWholeWord = el('search-whole-word');
 const documentTitle = el('document-title');
 const loadingOverlay = el('loading-overlay');
 const loadingText = el('loading-text');
+const documentOcrGate = el('document-ocr-gate');
+const documentOcrTitle = el('document-ocr-title');
+const documentOcrCopy = el('document-ocr-copy');
+const documentOcrProgressWrap = el('document-ocr-progress-wrap');
+const documentOcrProgress = el('document-ocr-progress');
+const documentOcrProgressText = el('document-ocr-progress-text');
+const documentOcrPrimary = el('document-ocr-primary');
+const documentOcrSecondary = el('document-ocr-secondary');
+const documentTextUnavailable = el('document-text-unavailable');
+const contentsRunDocumentOcr = el('contents-run-document-ocr');
+const outlinePanel = el('outline-panel');
 const errorBanner = el('error-banner');
 const dropOverlay = el('drop-overlay');
 const languageButton = el('language-button');
@@ -211,6 +222,12 @@ let lineCache = new Map();
 let documentOcrPages = new Map();
 let documentOcrActive = false;
 let documentOcrModulePromise = null;
+let documentTextMode = 'native'; // native | ocr | unavailable
+let imageDocumentDetected = false;
+let documentTextPreference = 'ask'; // native | ocr | skip | ask
+let documentOcrRunController = null;
+let documentOcrGateChoiceResolve = null;
+let documentOcrBusy = false;
 let referencePageRenderCache = new Map();
 let bibliographyExpanded = new Set();
 let pdfModulePromise = null;
@@ -711,7 +728,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 20,
+    version: 21,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -732,6 +749,7 @@ function snapshotSession() {
     selection: currentSelection,
     ocrResult: currentOcrResult,
     ocrHistory,
+    documentTextPreference,
     inferredOutline,
     structureEntries,
     bibliographyEntries,
@@ -860,6 +878,234 @@ function showError(message) {
 function setLoading(active, message = null) {
   if (message) loadingText.textContent = message;
   loadingOverlay.classList.toggle('is-hidden', !active);
+}
+
+function documentTextFeaturesAvailable() {
+  return documentTextMode === 'native' || documentTextMode === 'ocr';
+}
+
+function hideDocumentOcrGate() {
+  if (documentOcrGateChoiceResolve) {
+    documentOcrGateChoiceResolve = null;
+  }
+  if (documentOcrPrimary) documentOcrPrimary.onclick = null;
+  if (documentOcrSecondary) documentOcrSecondary.onclick = null;
+  documentOcrGate?.classList.add('is-hidden');
+  if (!documentOcrBusy) {
+    if (openButton) openButton.disabled = false;
+    if (welcomeOpen) welcomeOpen.disabled = false;
+    if (fileInput) fileInput.disabled = false;
+  }
+}
+
+function documentOcrInteractionLocked() {
+  return documentOcrBusy || Boolean(documentOcrGate && !documentOcrGate.classList.contains('is-hidden'));
+}
+
+function configureDocumentOcrGate(mode, detail = '') {
+  if (!documentOcrGate) return;
+  documentOcrGate.classList.remove('is-hidden');
+  if (openButton) openButton.disabled = true;
+  if (welcomeOpen) welcomeOpen.disabled = true;
+  if (fileInput) fileInput.disabled = true;
+  documentOcrProgressWrap?.classList.toggle('is-hidden', mode !== 'progress');
+  if (documentOcrSecondary) documentOcrSecondary.classList.remove('is-hidden');
+  if (documentOcrPrimary) documentOcrPrimary.disabled = false;
+
+  if (mode === 'decision') {
+    documentOcrTitle.textContent = t('No usable text layer', '没有可用文本层');
+    documentOcrCopy.textContent = t(
+      'This document appears to contain scanned pages. Full-document OCR is required for Contents, Search, Results, Equations, Bibliography, and text backlinks.',
+      '此文档似乎由扫描页面组成。目录、搜索、结果、公式、参考文献和文本反向链接需要先运行全文 OCR。'
+    );
+    documentOcrPrimary.textContent = t('Run OCR', '运行 OCR');
+    documentOcrSecondary.textContent = t('Open without OCR', '不运行 OCR 打开');
+  } else if (mode === 'progress') {
+    documentOcrTitle.textContent = t('Preparing document text', '正在准备文档文本');
+    documentOcrCopy.textContent = t('Full-document OCR is running locally in this browser.', '全文 OCR 正在此浏览器中本地运行。');
+    documentOcrPrimary.textContent = t('Stop OCR', '停止 OCR');
+    documentOcrSecondary.classList.add('is-hidden');
+    if (documentOcrProgressText && detail) documentOcrProgressText.textContent = detail;
+  } else if (mode === 'stopped') {
+    documentOcrTitle.textContent = t('OCR stopped', 'OCR 已停止');
+    documentOcrCopy.textContent = t('The document can be opened without text features, or OCR can be restarted from the beginning.', '可在不启用文本功能的情况下打开文档，也可以从头重新运行 OCR。');
+    documentOcrPrimary.textContent = t('Restart OCR', '重新运行 OCR');
+    documentOcrSecondary.textContent = t('Open without OCR', '不运行 OCR 打开');
+  } else if (mode === 'error') {
+    documentOcrTitle.textContent = t('Document OCR unavailable', '全文 OCR 不可用');
+    documentOcrCopy.textContent = detail || t('OCR could not complete. You can retry or open the document without text features.', 'OCR 未能完成。你可以重试，或在不启用文本功能的情况下打开文档。');
+    documentOcrPrimary.textContent = t('Retry OCR', '重试 OCR');
+    documentOcrSecondary.textContent = t('Open without OCR', '不运行 OCR 打开');
+  }
+}
+
+function waitForDocumentOcrChoice(mode, detail = '') {
+  configureDocumentOcrGate(mode, detail);
+  return new Promise((resolve) => {
+    documentOcrGateChoiceResolve = resolve;
+    if (documentOcrPrimary) documentOcrPrimary.onclick = () => {
+      const action = mode === 'decision' ? 'run' : mode === 'stopped' ? 'restart' : 'retry';
+      documentOcrGateChoiceResolve = null;
+      resolve(action);
+    };
+    if (documentOcrSecondary) documentOcrSecondary.onclick = () => {
+      documentOcrGateChoiceResolve = null;
+      resolve('skip');
+    };
+  });
+}
+
+function setDocumentOcrProgress(page, pageCount, progress = null, message = '') {
+  configureDocumentOcrGate('progress', message);
+  if (!documentOcrProgress) return;
+  if (Number.isFinite(Number(progress)) && Number(pageCount) > 0) {
+    const value = Math.max(0, Math.min(100, ((Math.max(1, Number(page)) - 1) + Math.max(0, Math.min(1, Number(progress)))) / Number(pageCount) * 100));
+    documentOcrProgress.value = value;
+  } else {
+    documentOcrProgress.removeAttribute('value');
+  }
+}
+
+function makeDocumentOcrStoppedError() {
+  const error = new Error('Document OCR stopped');
+  error.code = 'DOCUMENT_OCR_STOPPED';
+  return error;
+}
+
+function isDocumentOcrStoppedError(error) {
+  return error?.code === 'DOCUMENT_OCR_STOPPED';
+}
+
+function requestStopFullDocumentOcr() {
+  const controller = documentOcrRunController;
+  if (!controller || controller.cancelled) return;
+  controller.cancelled = true;
+  if (documentOcrPrimary) documentOcrPrimary.disabled = true;
+  if (documentOcrProgressText) documentOcrProgressText.textContent = t('Stopping OCR…', '正在停止 OCR……');
+  try {
+    const result = controller.worker?.terminate?.();
+    if (result?.catch) result.catch(() => {});
+  } catch (_) {}
+}
+
+function updateDocumentTextAvailabilityUI() {
+  const unavailable = Boolean(pdfDoc && imageDocumentDetected && !documentTextFeaturesAvailable());
+  documentTextUnavailable?.classList.toggle('is-hidden', !unavailable);
+  outlinePanel?.classList.toggle('text-unavailable', unavailable);
+  if (contentsRunDocumentOcr) contentsRunDocumentOcr.disabled = !unavailable || documentOcrBusy;
+
+  if (searchForm) {
+    searchForm.classList.toggle('text-unavailable', unavailable);
+    for (const node of searchForm.querySelectorAll('input,button')) node.disabled = unavailable;
+  }
+  if (unavailable) {
+    searchResults?.replaceChildren();
+    if (searchStatus) searchStatus.textContent = t('Document text is unavailable. Run full-document OCR from Contents to enable Search.', '文档文本不可用。请在“目录”中运行全文 OCR 后再使用搜索。');
+  } else if (searchStatus && !searchInput?.value?.trim()) {
+    searchStatus.textContent = '';
+  }
+}
+
+function clearTextDerivedIndexesForUnavailableDocument() {
+  inferredOutline = [];
+  inferredOutlineDetectionDone = false;
+  inferredOutlineBuildPromise = null;
+  outlineMode = 'none';
+  embeddedOutlineEntries = [];
+  structureEntries = [];
+  bibliographyEntries = [];
+  structureIndexVersion = 0;
+  structureIndexBuildToken += 1;
+  structureIndexBuilding = false;
+  equationLabelIndex = null;
+  equationIndexBuildPromise = null;
+  tocOutlineTargets = null;
+  backlinkContext = null;
+  backlinkEntries = [];
+  try { outlineList?.replaceChildren(); } catch (_) {}
+  try { structureIndex?.replaceChildren(); } catch (_) {}
+  try { bibliographyIndex?.replaceChildren(); } catch (_) {}
+  try { equationIndex?.replaceChildren(); } catch (_) {}
+  try { backlinksList?.replaceChildren(); } catch (_) {}
+  if (outlineCount) outlineCount.textContent = '0';
+  if (structureCount) structureCount.textContent = '0';
+  if (bibliographyCount) bibliographyCount.textContent = '0';
+  if (equationIndexCount) equationIndexCount.textContent = '0';
+  if (backlinksCount) backlinksCount.textContent = '0';
+}
+
+function invalidateTextDerivedIndexesForOcrActivation() {
+  inferredOutline = [];
+  inferredOutlineDetectionDone = false;
+  inferredOutlineBuildPromise = null;
+  outlineMode = 'none';
+  embeddedOutlineEntries = [];
+  structureEntries = [];
+  bibliographyEntries = [];
+  structureIndexVersion = 0;
+  structureIndexBuildToken += 1;
+  structureIndexBuilding = false;
+  equationLabelIndex = null;
+  equationIndexBuildPromise = null;
+  tocOutlineTargets = null;
+  backlinkContext = null;
+  backlinkEntries = [];
+  textCache = new Map();
+  lineCache = new Map();
+}
+
+async function runFullDocumentOcrWithRecovery() {
+  while (pdfDoc && imageDocumentDetected) {
+    try {
+      await runFullDocumentOcr();
+      hideDocumentOcrGate();
+      return 'complete';
+    } catch (error) {
+      if (isDocumentOcrStoppedError(error)) {
+        const action = await waitForDocumentOcrChoice('stopped');
+        if (action === 'restart') continue;
+        hideDocumentOcrGate();
+        return 'skip';
+      }
+      console.warn('MathReader full-document OCR failed.', error);
+      const message = String(error?.message || '').trim();
+      const action = await waitForDocumentOcrChoice('error', message || t('OCR could not complete. You can retry or open without text features.', 'OCR 未能完成。你可以重试，或在不启用文本功能的情况下打开。'));
+      if (action === 'retry') continue;
+      hideDocumentOcrGate();
+      return 'skip';
+    }
+  }
+  hideDocumentOcrGate();
+  return 'skip';
+}
+
+async function enableDocumentOcrFromReader() {
+  if (!pdfDoc || !imageDocumentDetected || documentTextFeaturesAvailable() || documentOcrBusy) return;
+  const result = await runFullDocumentOcrWithRecovery();
+  if (result !== 'complete') {
+    documentTextMode = 'unavailable';
+    documentTextPreference = 'skip';
+    updateDocumentTextAvailabilityUI();
+    persistDocumentState();
+    return;
+  }
+  documentTextMode = 'ocr';
+  documentTextPreference = 'ocr';
+  invalidateTextDerivedIndexesForOcrActivation();
+  updateDocumentTextAvailabilityUI();
+  setLoading(true, t('Full-document OCR complete · rebuilding document text features…', '全文 OCR 完成 · 正在重新生成文档文本功能……'));
+  try {
+    await renderCurrentPage();
+    await renderReferencePage();
+    await renderOutline();
+    renderStructureIndex();
+    renderBibliographyIndex();
+    ensureEquationIndexRendered().catch(() => {});
+    scheduleAutomaticStructureIndex();
+    persistDocumentState();
+  } finally {
+    setLoading(false);
+  }
 }
 
 async function ensurePdfJs() {
@@ -1072,77 +1318,156 @@ async function loadDocumentOcrModule() {
 
 async function runFullDocumentOcr() {
   if (!pdfDoc?.numPages) return;
-  const module = await loadDocumentOcrModule();
-  const createWorker = documentOcrCreateWorker(module);
-  if (typeof createWorker !== 'function') throw new Error(t('The document OCR engine could not be initialized.', '无法初始化全文 OCR 引擎。'));
-  const pageCount = pdfDoc.numPages;
-  setLoading(true, t(`Scanned PDF detected · preparing full-document OCR (0/${pageCount})…`, `检测到扫描版 PDF · 正在准备全文 OCR（0/${pageCount}）……`));
-  const worker = await createWorker('eng', 1, {
-    logger: (message) => {
-      if (!message || message.status !== 'recognizing text' || !Number.isFinite(Number(message.progress))) return;
-      const page = Number(runFullDocumentOcr.currentPage || 1);
-      const pct = Math.round(Number(message.progress) * 100);
-      setLoading(true, t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
-    }
-  });
-  if (typeof worker.setParameters === 'function') {
-    try {
-      await worker.setParameters({
-        preserve_interword_spaces: '1',
-        user_defined_dpi: '300',
-        tessedit_pageseg_mode: '3'
-      });
-    } catch (error) {
-      console.warn('MathReader could not apply document OCR quality parameters.', error);
-    }
-  }
-  const map = new Map();
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const pageCount = sourceDoc.numPages;
+  const controller = { cancelled: false, worker: null };
+  documentOcrRunController = controller;
+  documentOcrBusy = true;
+  if (openButton) openButton.disabled = true;
+  if (welcomeOpen) welcomeOpen.disabled = true;
+  if (fileInput) fileInput.disabled = true;
+  updateDocumentTextAvailabilityUI();
+  setDocumentOcrProgress(1, pageCount, null, t('Preparing OCR engine…', '正在准备 OCR 引擎……'));
+  if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
+
+  const ensureCurrent = () => {
+    if (controller.cancelled || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) throw makeDocumentOcrStoppedError();
+  };
+
+  let worker = null;
   try {
+    const module = await loadDocumentOcrModule();
+    ensureCurrent();
+    const createWorker = documentOcrCreateWorker(module);
+    if (typeof createWorker !== 'function') throw new Error(t('The document OCR engine could not be initialized.', '无法初始化全文 OCR 引擎。'));
+    worker = await createWorker('eng', 1, {
+      logger: (message) => {
+        if (!message || message.status !== 'recognizing text' || !Number.isFinite(Number(message.progress))) return;
+        const page = Number(controller.currentPage || 1);
+        const pct = Math.round(Number(message.progress) * 100);
+        setDocumentOcrProgress(page, pageCount, Number(message.progress), t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
+        if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
+      }
+    });
+    controller.worker = worker;
+    ensureCurrent();
+    if (typeof worker.setParameters === 'function') {
+      try {
+        await worker.setParameters({
+          preserve_interword_spaces: '1',
+          user_defined_dpi: '300',
+          tessedit_pageseg_mode: '3'
+        });
+      } catch (error) {
+        console.warn('MathReader could not apply document OCR quality parameters.', error);
+      }
+    }
+    const map = new Map();
     for (let pageNum = 1; pageNum <= pageCount; pageNum += 1) {
-      runFullDocumentOcr.currentPage = pageNum;
-      setLoading(true, t(`Full-document OCR · page ${pageNum}/${pageCount}`, `全文 OCR · 第 ${pageNum}/${pageCount} 页`));
-      const page = await pdfDoc.getPage(pageNum);
+      ensureCurrent();
+      controller.currentPage = pageNum;
+      setDocumentOcrProgress(pageNum, pageCount, 0, t(`Full-document OCR · page ${pageNum}/${pageCount}`, `全文 OCR · 第 ${pageNum}/${pageCount} 页`));
+      if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
+      const page = await sourceDoc.getPage(pageNum);
+      ensureCurrent();
       const base = page.getViewport({ scale: 1 });
-      // Old mathematical scans need substantially more pixels than ordinary screen rendering.
-      // Aim near a 300-DPI page while keeping memory bounded for long documents.
       const scale = Math.max(2.20, Math.min(3.60, 3200 / Math.max(1, base.width, base.height)));
       const viewport = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.ceil(viewport.width));
-      canvas.height = Math.max(1, Math.ceil(viewport.height));
-      const context = canvas.getContext('2d', { alpha: false });
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = Math.max(1, Math.ceil(viewport.width));
+      pageCanvas.height = Math.max(1, Math.ceil(viewport.height));
+      const context = pageCanvas.getContext('2d', { alpha: false });
       context.fillStyle = '#fff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
       await page.render({ canvasContext: context, viewport }).promise;
-      const result = await worker.recognize(canvas, {}, { hocr: true });
-      const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', canvas.width, canvas.height, pageNum);
+      ensureCurrent();
+      let result;
+      try {
+        result = await worker.recognize(pageCanvas, {}, { hocr: true });
+      } catch (error) {
+        if (controller.cancelled) throw makeDocumentOcrStoppedError();
+        throw error;
+      }
+      ensureCurrent();
+      const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', pageCanvas.width, pageCanvas.height, pageNum);
       map.set(pageNum, record);
-      canvas.width = 1;
-      canvas.height = 1;
+      pageCanvas.width = 1;
+      pageCanvas.height = 1;
       await nextFrame();
     }
+    ensureCurrent();
+    if (map.size !== pageCount) throw new Error(t('Full-document OCR did not complete for every page.', '全文 OCR 未能完成所有页面。'));
+    documentOcrPages = map;
+    documentOcrActive = true;
+    documentTextMode = 'ocr';
+    documentTextPreference = 'ocr';
+    await persistDocumentOcr();
+    setDocumentOcrProgress(pageCount, pageCount, 1, t('Full-document OCR complete · building MathReader indexes…', '全文 OCR 完成 · 正在生成 MathReader 索引……'));
+  } catch (error) {
+    if (controller.cancelled && !isDocumentOcrStoppedError(error)) throw makeDocumentOcrStoppedError();
+    throw error;
   } finally {
-    runFullDocumentOcr.currentPage = 0;
-    try { await worker.terminate(); } catch (_) {}
+    controller.currentPage = 0;
+    try { await worker?.terminate?.(); } catch (_) {}
+    if (documentOcrRunController === controller) documentOcrRunController = null;
+    documentOcrBusy = false;
+    if (openButton) openButton.disabled = false;
+    if (welcomeOpen) welcomeOpen.disabled = false;
+    if (fileInput) fileInput.disabled = false;
+    updateDocumentTextAvailabilityUI();
   }
-  if (map.size !== pageCount) throw new Error(t('Full-document OCR did not complete for every page.', '全文 OCR 未能完成所有页面。'));
-  documentOcrPages = map;
-  documentOcrActive = true;
-  await persistDocumentOcr();
-  setLoading(true, t('Full-document OCR complete · building MathReader indexes…', '全文 OCR 完成 · 正在生成 MathReader 索引……'));
 }
 
-async function ensureDocumentTextReady() {
+async function ensureDocumentTextReady(savedPreference = 'ask') {
   documentOcrPages = new Map();
   documentOcrActive = false;
+  documentTextMode = 'native';
+  imageDocumentDetected = false;
+  documentTextPreference = ['skip', 'ocr', 'native'].includes(savedPreference) ? savedPreference : 'ask';
+
   if (await loadCachedDocumentOcr()) {
+    imageDocumentDetected = true;
+    documentTextMode = 'ocr';
+    documentTextPreference = 'ocr';
     setLoading(true, t('Restoring scanned-document OCR…', '正在恢复扫描文档 OCR……'));
-    return;
+    return true;
   }
+
   setLoading(true, t('Checking PDF text layer…', '正在检查 PDF 文本层……'));
   const needsOcr = await pdfNeedsDocumentOcr(pdfDoc);
-  if (!needsOcr) return;
-  await runFullDocumentOcr();
+  if (!needsOcr) {
+    documentTextMode = 'native';
+    documentTextPreference = 'native';
+    return true;
+  }
+
+  imageDocumentDetected = true;
+  if (savedPreference === 'skip') {
+    documentTextMode = 'unavailable';
+    documentTextPreference = 'skip';
+    return false;
+  }
+
+  setLoading(false);
+  const action = await waitForDocumentOcrChoice('decision');
+  if (action === 'skip') {
+    hideDocumentOcrGate();
+    documentTextMode = 'unavailable';
+    documentTextPreference = 'skip';
+    return false;
+  }
+
+  const result = await runFullDocumentOcrWithRecovery();
+  if (result === 'complete') {
+    documentTextMode = 'ocr';
+    documentTextPreference = 'ocr';
+    setLoading(true, t('Full-document OCR complete · opening document…', '全文 OCR 完成 · 正在打开文档……'));
+    return true;
+  }
+  documentTextMode = 'unavailable';
+  documentTextPreference = 'skip';
+  return false;
 }
 
 function renderDocumentOcrTextLayer(layer, viewport, pageNum) {
@@ -1235,6 +1560,7 @@ function applyLanguage(lang, persist = true) {
   renderUndoHistory();
   renderRecoverySnapshots();
   updateWorkspaceCollapseButtons();
+  updateDocumentTextAvailabilityUI();
   if (persist) safeSet('shaoda-language', next);
 }
 
@@ -5571,6 +5897,7 @@ async function renderSelectableText(page, viewport, layer, surface, pageNum, kin
   layer.replaceChildren();
   try {
     layer.removeAttribute('data-document-ocr');
+    if (!documentTextFeaturesAvailable()) return;
     if (sourceDocumentUsesOcr(pageNum)) {
       renderDocumentOcrTextLayer(layer, viewport, pageNum);
     } else {
@@ -7808,7 +8135,7 @@ function reconcileEquationNumberingFamilies(index) {
 }
 
 async function buildEquationLabelIndex() {
-  if (!pdfDoc) return new Map();
+  if (!pdfDoc || !documentTextFeaturesAvailable()) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
@@ -8132,6 +8459,13 @@ function renderEquationIndex() {
 
 async function ensureEquationIndexRendered() {
   if (!pdfDoc) { renderEquationIndex(); return; }
+  if (!documentTextFeaturesAvailable()) {
+    equationLabelIndex = null;
+    equationIndex?.replaceChildren();
+    if (equationIndexCount) equationIndexCount.textContent = '0';
+    if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Equations.', '文档文本不可用。运行全文 OCR 后才能启用公式索引。'); }
+    return new Map();
+  }
   if (equationLabelIndex) { renderEquationIndex(); return equationLabelIndex; }
   if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Building equation-label index…', '正在生成公式编号索引……'); }
   try {
@@ -8258,7 +8592,7 @@ function bibliographyMetadata(text) {
 }
 
 async function buildStructureIndex({ force = false } = {}) {
-  if (!pdfDoc || !structureIndex || structureIndexBuilding) return;
+  if (!pdfDoc || !documentTextFeaturesAvailable() || !structureIndex || structureIndexBuilding) return;
   if (force && pendingOutlineReselectKey) { pendingOutlineReselectKey = null; refreshSelectionUI(); }
   if (!force && structureIndexVersion === STRUCTURE_INDEX_VERSION) {
     renderStructureIndex(); renderBibliographyIndex();
@@ -8467,7 +8801,7 @@ async function buildStructureIndex({ force = false } = {}) {
 }
 
 function scheduleAutomaticStructureIndex() {
-  if (!pdfDoc || structureIndexVersion === STRUCTURE_INDEX_VERSION || structureIndexBuilding) return;
+  if (!pdfDoc || !documentTextFeaturesAvailable() || structureIndexVersion === STRUCTURE_INDEX_VERSION || structureIndexBuilding) return;
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
   const run = () => {
@@ -9278,7 +9612,7 @@ function renderBacklinks() {
 }
 
 async function collectBacklinks(query, target) {
-  if (!pdfDoc || !query || !target) return [];
+  if (!pdfDoc || !documentTextFeaturesAvailable() || !query || !target) return [];
   const results = [];
   const seen = new Set();
   const add = (page, ratio, text, matchText = query, extra = {}) => {
@@ -9447,6 +9781,12 @@ async function renderOutline() {
   outlineMode = 'none';
   updateOutlineSource();
   if (!pdfDoc) return;
+  if (!documentTextFeaturesAvailable()) {
+    outlineCount.textContent = '0';
+    outlineEmpty.classList.remove('is-hidden');
+    outlineEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Contents.', '文档文本不可用。运行全文 OCR 后才能启用目录。');
+    return;
+  }
   try {
     const outline = await pdfDoc.getOutline();
     const flat = flattenOutline(outline);
@@ -9969,6 +10309,10 @@ async function searchPdf(query) {
   searchResults.replaceChildren();
   const q = query.trim();
   if (!pdfDoc || !q) { searchStatus.textContent = ''; return; }
+  if (!documentTextFeaturesAvailable() && !searchEquations?.checked) {
+    searchStatus.textContent = t('Document text unavailable. Run full-document OCR from Contents to enable Search.', '文档文本不可用。请在“目录”中运行全文 OCR 后再使用搜索。');
+    return;
+  }
   if (searchEquations?.checked) {
     const matches = equationSearchMatches(q);
     searchStatus.textContent = t(`${matches.length} saved/extracted equation${matches.length===1?'':'s'}`, `${matches.length} 个已保存/提取公式`);
@@ -10511,7 +10855,11 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     // This prevents stale Structure/Results/Equations/Bibliography rows from remaining
     // clickable against the newly opened PDF.
     clearDocumentMapForIncomingPdf();
-    await ensureDocumentTextReady();
+    let savedTextPreference = cachedRecord?.session?.documentTextPreference;
+    if (!['skip', 'ocr', 'native'].includes(savedTextPreference)) {
+      try { savedTextPreference = JSON.parse(safeGet(stateKey('session-v2'), 'null'))?.documentTextPreference; } catch (_) { savedTextPreference = 'ask'; }
+    }
+    await ensureDocumentTextReady(savedTextPreference);
     // Determine freshness from the same two session sources used by
     // loadDocumentState(): IndexedDB first, then the legacy localStorage copy.
     // This flag is captured before opening persists a new session of its own.
@@ -10531,6 +10879,8 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     setOcrMode(false);
     hideSelectionToolbar();
     loadDocumentState(cachedRecord?.session || null);
+    if (!documentTextFeaturesAvailable()) clearTextDerivedIndexesForUnavailableDocument();
+    updateDocumentTextAvailabilityUI();
     documentTitle.textContent = meta.name;
     pageCount.textContent = pdfDoc.numPages;
     enableReaderControls(true);
@@ -10594,6 +10944,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
   } finally {
     restoringSession = false;
     setLoading(false);
+    updateDocumentTextAvailabilityUI();
     if (pdfDoc) scheduleAutomaticStructureIndex();
     fileInput.value = '';
   }
@@ -10721,8 +11072,8 @@ function activatePanel(panelId, persist = true) {
 
 document.querySelectorAll('.sidebar-tab').forEach((tab) => tab.addEventListener('click', () => activatePanel(tab.dataset.panel)));
 
-openButton.addEventListener('click', () => fileInput.click());
-welcomeOpen.addEventListener('click', () => fileInput.click());
+openButton.addEventListener('click', () => { if (!documentOcrInteractionLocked()) fileInput.click(); });
+welcomeOpen.addEventListener('click', () => { if (!documentOcrInteractionLocked()) fileInput.click(); });
 fileInput.addEventListener('change', () => { const recoveryId = pendingRecoveryRecordId; pendingRecoveryRecordId = null; openPdfFile(fileInput.files?.[0], recoveryId); });
 prevPage.addEventListener('click', () => goToPage(currentPage - 1));
 nextPage.addEventListener('click', () => goToPage(currentPage + 1));
@@ -11227,6 +11578,7 @@ formulaExtractionSelect?.addEventListener('change', () => {
 ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v8', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
 ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
+contentsRunDocumentOcr?.addEventListener('click', () => { enableDocumentOcrFromReader().catch((error) => { console.warn('Document OCR could not be started from Contents.', error); }); });
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
 pinFromSidebar.addEventListener('click', () => setPinnedPage(currentPage));
 unpinPage.addEventListener('click', clearPinnedPage);
@@ -11615,13 +11967,13 @@ function isExternalFileDrag(event) {
   return types.includes('Files');
 }
 window.addEventListener('dragenter', (event) => {
-  if (isInternalUiDrag() || !isExternalFileDrag(event)) return;
+  if (documentOcrInteractionLocked() || isInternalUiDrag() || !isExternalFileDrag(event)) return;
   event.preventDefault();
   dragDepth += 1;
   dropOverlay.classList.remove('is-hidden');
 });
 window.addEventListener('dragover', (event) => {
-  if (isInternalUiDrag() || !isExternalFileDrag(event)) return;
+  if (documentOcrInteractionLocked() || isInternalUiDrag() || !isExternalFileDrag(event)) return;
   event.preventDefault();
   if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
 });
@@ -11635,6 +11987,10 @@ window.addEventListener('dragleave', (event) => {
   }
 });
 window.addEventListener('drop', (event) => {
+  if (documentOcrInteractionLocked()) {
+    if (isExternalFileDrag(event)) event.preventDefault();
+    return;
+  }
   if (isInternalUiDrag()) {
     event.preventDefault();
     dragDepth = 0;

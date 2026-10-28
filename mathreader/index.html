@@ -106,6 +106,12 @@
       </div>
 
       <section class="sidebar-panel is-active" id="outline-panel">
+        <div class="document-text-unavailable is-hidden" id="document-text-unavailable">
+          <strong data-en="Text unavailable" data-zh="文本不可用">Text unavailable</strong>
+          <p data-en="This scanned document is open without full-document OCR. Run OCR to enable Contents and document text features." data-zh="此扫描文档当前未运行全文 OCR。运行 OCR 后才能启用目录和文档文本功能。">This scanned document is open without full-document OCR. Run OCR to enable Contents and document text features.</p>
+          <button class="secondary-action" id="contents-run-document-ocr" type="button" data-en="Run document OCR" data-zh="运行全文 OCR">Run document OCR</button>
+        </div>
+
         <section class="workspace-section contents-section" id="contents-structure-section">
           <div class="panel-heading">
             <span data-en="Structure" data-zh="结构">Structure</span>
@@ -279,6 +285,21 @@
                 <div class="annotation-layer" id="reference-annotation-layer" aria-label="Reading annotations"></div>
                 <div class="ocr-select-layer" id="reference-ocr-layer" data-kind="reference" aria-label="Formula rectangle selection"><div class="ocr-selection-box"></div></div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="document-ocr-gate is-hidden" id="document-ocr-gate" role="dialog" aria-modal="true" aria-labelledby="document-ocr-title" aria-describedby="document-ocr-copy">
+          <div class="document-ocr-card">
+            <h2 id="document-ocr-title">Scanned document</h2>
+            <p id="document-ocr-copy">This PDF does not have a usable text layer.</p>
+            <div class="document-ocr-progress is-hidden" id="document-ocr-progress-wrap">
+              <progress id="document-ocr-progress" max="100"></progress>
+              <span id="document-ocr-progress-text"></span>
+            </div>
+            <div class="document-ocr-actions">
+              <button class="document-ocr-primary" id="document-ocr-primary" type="button">Run OCR</button>
+              <button id="document-ocr-secondary" type="button">Open without OCR</button>
             </div>
           </div>
         </div>
