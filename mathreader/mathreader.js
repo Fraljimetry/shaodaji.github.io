@@ -7281,7 +7281,7 @@ function isEquationLabelQuery(value) {
   const label = normalizedEquationLabel(value);
   const inner = label.slice(1, -1);
   if (isLikelyCalendarYearEquationLabel(label)) return false;
-  return /^\d+(?:\.\d+)*$/.test(inner) || isSymbolicEquationTagInner(inner);
+  return /^\d+(?:(?:\.\d+)+|(?:-\d+)+)?$/.test(inner) || isSymbolicEquationTagInner(inner);
 }
 
 
@@ -7331,9 +7331,10 @@ function normalizeSequentialStructureEntries(entries) {
 
 function parsedEquationNumber(label) {
   const inner = normalizedEquationLabel(label).slice(1, -1);
-  if (!/^\d+(?:\.\d+)*$/.test(inner)) return null;
-  const parts = inner.split('.').map((part) => Number(part));
-  return { parts, prefix: parts.slice(0, -1).join('.'), last: parts[parts.length - 1] };
+  if (!/^\d+(?:(?:\.\d+)+|(?:-\d+)+)?$/.test(inner)) return null;
+  const separator = inner.includes('-') ? '-' : '.';
+  const parts = inner.split(separator).map((part) => Number(part));
+  return { parts, prefix: parts.slice(0, -1).join(separator), last: parts[parts.length - 1], separator };
 }
 
 function equationDocumentPosition(item) {
@@ -7405,7 +7406,8 @@ function recoverSequentialEquationGaps(index, candidatePool) {
     const leftPos = equationDocumentPosition(left.candidate);
     const rightPos = equationDocumentPosition(right.candidate);
     for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
-      const expected = left.parsed.prefix ? `(${left.parsed.prefix}.${missing})` : `(${missing})`;
+      const separator = left.parsed.separator || '.';
+      const expected = left.parsed.prefix ? `(${left.parsed.prefix}${separator}${missing})` : `(${missing})`;
       if (index.has(expected)) continue;
       const matches = (candidatePool.get(expected) || []).filter((item) => {
         const pos = equationDocumentPosition(item);
@@ -7428,10 +7430,10 @@ function equationLabelCandidatesInLine(text) {
   while ((match = re.exec(value))) {
     const rawInner = match[1];
     const compactInner = rawInner.replace(/\s+/g, '');
-    // Numeric equation tags may be hierarchical, e.g. (12.45), or a
+    // Numeric equation tags may be hierarchical, e.g. (12.45) or (1-14), or a
     // document-wide integer sequence, e.g. (56). Integer candidates are
     // admitted here but are subject to stricter right-margin geometry below.
-    if (!/^\d+(?:\.\d+)*$/.test(compactInner)) continue;
+    if (!/^\d+(?:(?:\.\d+)+|(?:-\d+)+)?$/.test(compactInner)) continue;
     const label = normalizedEquationLabel(match[0]);
     if (isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
@@ -7443,7 +7445,7 @@ function equationLabelCandidatesInLine(text) {
   // closer. Geometry and the document-wide numbering-side model still decide
   // whether it is a canonical equation target, so prose references are not
   // admitted by this extraction repair.
-  const damagedLeadingParen = value.match(/^\s*\(\s*(\d+\s*(?:\.\s*\d+)+)\s*[J\]\}](?=\s|$)/);
+  const damagedLeadingParen = value.match(/^\s*\(\s*(\d+\s*(?:(?:\.\s*\d+)+|(?:-\s*\d+)+))\s*[J\]\}](?=\s|$)/);
   if (damagedLeadingParen) {
     const raw = damagedLeadingParen[0];
     const label = normalizedEquationLabel(damagedLeadingParen[1]);
