@@ -331,7 +331,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 13;
+const STRUCTURE_INDEX_VERSION = 14;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -5174,7 +5174,9 @@ function capturePdfSelection() {
     const rects = normalizedSelectionRects(range, startLayer);
     currentSelection = { text, latex: pdfTextToLatex(text), page, kind: startLayer.dataset.kind || (startLayer === referenceTextLayer ? 'reference' : 'primary'), rects, ratio: Number(rects[0]?.y) || 0 };
     refreshSelectionUI();
-    autoOpenRightSection('selection-section');
+    // Text selection must remain local to the PDF. Update Selection state and
+    // the floating toolbar, but do not automatically reveal/navigate to the
+    // right-side Selection section; opening it is an explicit user action.
     persistDocumentState();
     const rect = range.getBoundingClientRect();
     if (rect.width || rect.height) positionSelectionToolbar(rect);
@@ -6676,13 +6678,22 @@ async function detectOutlineFromTypography() {
     const { value, ratio, center, width, words } = lineMetrics(line);
     const match = value.match(/^§\s*\d+(?:\s*\.\s*\d+)*\s*[.)]?\s+(.+)/i);
     const title = String(match?.[1] || '').trim();
+    const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
+    // Older digitized journals often print genuine §N section headings at
+    // body size and flush left. Requiring enlarged or centered typography made
+    // one such heading disappear, which in turn disabled the document-level
+    // §N profile and let ordinary prose/formula fragments pollute Structure.
+    // A short multi-word all-caps title is itself strong section evidence; the
+    // repeated §N grammar across the document remains the profile gate.
+    const strongLegacyMarker = titleWords.length >= 2
+      && /^[A-Z0-9][A-Z0-9 &'’()\-–—]+[A-Z0-9.)]$/.test(title);
     return Boolean(match)
       && /^[A-Z][A-Za-z]{2,}/.test(title)
-      && (title.match(/[A-Za-z]{3,}/g) || []).length >= 2
+      && titleWords.length >= 2
       && words.length <= 14
-      && !/[.!?]$/.test(value)
+      && (strongLegacyMarker || !/[.!?]$/.test(value))
       && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)
-      && (ratio >= 1.10 || (Number.isFinite(center) && Math.abs(center - 0.5) <= 0.14 && width <= 0.70));
+      && (strongLegacyMarker || ratio >= 1.10 || (Number.isFinite(center) && Math.abs(center - 0.5) <= 0.14 && width <= 0.70));
   });
   const sectionMarkerNumbers = new Set(qualifiedSectionMarkerLines.map((line) => String(line.text || '').match(/^§\s*(\d+(?:\s*\.\s*\d+)*)/)?.[1]).filter(Boolean));
   const explicitSectionMarkerMode = sectionMarkerNumbers.size >= 2;
@@ -6766,7 +6777,7 @@ async function detectOutlineFromTypography() {
       if (explicitSectionMarkerMode) {
         const value = String(text || '').trim();
         const explicitSection = qualifiedSectionMarkerLines.includes(line);
-        const conventional = /^(?:abstract|references|bibliography|appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s|$))/i.test(value);
+        const conventional = /^(?:abstract|introduction|references|bibliography|appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s|$))/i.test(value);
         if (!explicitSection && !conventional) continue;
       }
       // On a title page, material above an Abstract heading is title/author
@@ -7424,6 +7435,22 @@ function equationLabelCandidatesInLine(text) {
     const label = normalizedEquationLabel(match[0]);
     if (isLikelyCalendarYearEquationLabel(label)) continue;
     out.push({ label, index: match.index, end: match.index + match[0].length });
+  }
+
+  // Digitized old journals occasionally expose a visibly parenthesized margin
+  // tag with one corrupted closing glyph in the text layer, e.g. "(2.6J".
+  // Normalize only a line-leading hierarchical number with a single J/]/}
+  // closer. Geometry and the document-wide numbering-side model still decide
+  // whether it is a canonical equation target, so prose references are not
+  // admitted by this extraction repair.
+  const damagedLeadingParen = value.match(/^\s*\(\s*(\d+\s*(?:\.\s*\d+)+)\s*[J\]\}](?=\s|$)/);
+  if (damagedLeadingParen) {
+    const raw = damagedLeadingParen[0];
+    const label = normalizedEquationLabel(damagedLeadingParen[1]);
+    if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
+      const index = value.indexOf(raw);
+      out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + raw.length, extractionRepaired: true });
+    }
   }
   // Older journals often print a bare hierarchical number at the left margin
   // on the same visual line as the display formula, e.g. "1.2   <formula>" or
