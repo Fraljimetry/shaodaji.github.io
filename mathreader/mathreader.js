@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 17;
+const STRUCTURE_INDEX_VERSION = 18;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -7238,10 +7238,11 @@ async function detectOutlineFromTypography() {
       let headingText = text;
       if (documentOcrActive && /^(\d{1,2}),\s+[A-Z]/.test(headingText)) headingText = headingText.replace(/^(\d{1,2}),/, '$1.');
       let headingWasParagraphLead = false;
-      // Paragraph-leading section recovery is only for OCR/scanned papers.
-      // Native text PDFs have reliable typography; applying this relaxation to
-      // them turns ordinary numbered prose into false Structure entries.
-      if (legacyParagraphMode || documentOcrActive) {
+      // Paragraph-leading section recovery is primarily for OCR/scanned papers.
+      // A narrow exception lets an already-established legacy centered profile
+      // recover explicit hierarchical subsections such as 2.1; ordinary native
+      // numbered prose remains excluded from this relaxation.
+      if (legacyParagraphMode || documentOcrActive || (legacyCenteredMode && /^\s*\d+(?:\.\d+)+/.test(headingText))) {
         const numberedLead = headingText.match(/^(\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+)(.+)$/);
         if (numberedLead) {
           const body = numberedLead[2];
@@ -7288,9 +7289,9 @@ async function detectOutlineFromTypography() {
           && titleWords.length >= 1
           && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
           && centered
-          && lineWidth <= 0.74;
+          && (lineWidth <= 0.74 || (lineWidth <= 0.82 && titleWords.length >= 3 && !/[@~]/.test(numberedTitleBody)));
         const explicitMarkerHeading = explicitSectionMarkerMode && qualifiedSectionMarkerLines.includes(line);
-        const paragraphNumbered = legacyParagraphMode && headingWasParagraphLead && numberedDepth !== null;
+        const paragraphNumbered = headingWasParagraphLead && numberedDepth !== null && (legacyParagraphMode || (legacyCenteredMode && numberedDepth >= 1));
         const legacyCenteredNumbered = legacyCenteredMode && centeredNumbered;
         const ocrProfileNumbered = (ocrCenteredNumberedMode && ocrCenteredLineSet.has(line)) || (ocrHyphenSectionMode && ocrHyphenLineSet.has(line));
         const ocrNumbered = documentOcrActive && (ocrProfileNumbered || (centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead)));
@@ -8021,7 +8022,7 @@ function equationLabelCandidatesInLine(text) {
   // math still decides whether it is reliable below.
   const trimmed = value.trim();
   const compactBare = /\s/.test(trimmed) ? '' : trimmed;
-  if (isPlausibleNumericEquationTagInner(compactBare)) {
+  if (isPlausibleNumericEquationTagInner(compactBare) && /[.\-]/.test(compactBare)) {
     const label = normalizedEquationLabel(compactBare);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = value.indexOf(trimmed);
@@ -8172,17 +8173,31 @@ function equationCandidateConfidenceForSide(item) {
     ? text.replace(/^\s*\d+(?:\.\d+)+\s*/, '')
     : '';
   const bareWords = bareRemainder.match(/\b[A-Za-z]{3,}\b/g) || [];
+  const bareHanChars = bareRemainder.match(/\p{Script=Han}/gu) || [];
   const bareStructuredProse = Boolean(item?.bareSource) && (
     /^(?:\([ivxlcdm]+\)\s*)?(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|exercise|problem|suppose|let|if|give|prove|show|using)\b/i.test(bareRemainder) ||
-    bareWords.length >= 3
+    bareWords.length >= 3 ||
+    bareHanChars.length >= 4
   );
   const parsed = parsedEquationNumber(label);
   const integerTag = Boolean(parsed && !parsed.prefix);
   const alphaWords = text.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
-  const codeLike = /(?:=>|;\s*$|\b(?:if|else|while|for|return|var|new|class|public|private|static|int|string)\b)/i.test(text)
+  const codeLike = (/(?:=>|;\s*$|\b(?:if|else|while|return|var|new|class|public|private|static|int|string)\b)/i.test(text)
+    || (/\bfor\b/i.test(text) && /[{};]/.test(text)))
     && (text.match(/[(){}\[\]]/g) || []).length >= 4;
   const onNumberingEdge = equationNumberingSide === 'left' ? Boolean(item?.candidateAtLineStart) : Boolean(item?.candidateAtLineEnd);
+  const strongMarginGeometry = equationNumberingSide === 'left'
+    ? Number(item?.candidateXEndRatio) <= 0.22
+    : Number(item?.candidateXStartRatio) >= 0.75;
   const parenthesizedNumericCount = (text.match(/\(\s*\d+(?:(?:\.\d+)+|(?:-\d+)+)?\s*\)/g) || []).length;
+  const leadingIntegerRemainder = integerTag && item?.explicitParenthesized && item?.candidateAtLineStart
+    ? text.replace(/^\s*\(\s*\d+\s*\)\s*/, '')
+    : '';
+  const leadingIntegerWords = leadingIntegerRemainder.match(/\b[A-Za-z]{3,}\b/g) || [];
+  const leadingIntegerHanChars = leadingIntegerRemainder.match(/\p{Script=Han}/gu) || [];
+  if (integerTag && item?.explicitParenthesized && item?.candidateAtLineStart && !item?.candidateAtLineEnd
+    && (leadingIntegerWords.length >= 4 || leadingIntegerHanChars.length >= 6)) return -Infinity;
+  if (integerTag && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge && !strongMarginGeometry && !item?.nearbyDisplayMath) return -Infinity;
   if (parenthesizedNumericCount >= 2 && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
   if (item?.ocrSource && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
   if (parsed && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge && !item?.nearbyDisplayMath && mathSignals < 2) return -Infinity;
@@ -8851,18 +8866,25 @@ async function buildStructureIndex({ force = false } = {}) {
             nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: [], ...meta });
           };
 
-          let bib = cleaned.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
+          // Old scanned bibliographies commonly lose one square-bracket glyph
+          // during OCR (for example "{14]"). Repair only that narrow numeric
+          // key shape, and only for OCR-derived lines; native PDF text remains
+          // authoritative and unchanged.
+          const bibliographyLine = line.ocrSource
+            ? cleaned.replace(/^[{(]\s*(\d{1,3})\s*\]\s+/, '[$1] ').replace(/^\[\s*(\d{1,3})\s*\}\s+/, '[$1] ')
+            : cleaned;
+          let bib = bibliographyLine.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
           let bracketKey = false;
           if (!bib) {
-            bib = cleaned.match(/^\[([A-Za-z][A-Za-z0-9]{0,9})\]\s+(.{3,})$/);
+            bib = bibliographyLine.match(/^\[([A-Za-z][A-Za-z0-9]{0,9})\]\s+(.{3,})$/);
             bracketKey = Boolean(bib);
           }
-          if (!bib) bib = cleaned.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
+          if (!bib) bib = bibliographyLine.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
           if (bib) {
             pendingBibliographyKey = null;
             addBibliographyEntry(bib[1], bib[2].trim(), bracketKey);
           } else {
-            const keyOnly = cleaned.match(/^\[(\d{1,3}|[A-Za-z][A-Za-z0-9]{0,9})\]$/);
+            const keyOnly = bibliographyLine.match(/^\[(\d{1,3}|[A-Za-z][A-Za-z0-9]{0,9})\]$/);
             if (keyOnly) {
               pendingBibliographyKey = { rawKey: keyOnly[1], bracketKey: !/^\d+$/.test(keyOnly[1]), page, ratio: line.ratio };
             } else if (pendingBibliographyKey && cleaned.length >= 3) {
