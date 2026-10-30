@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 18;
+const STRUCTURE_INDEX_VERSION = 19;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -7110,7 +7110,7 @@ async function detectOutlineFromTypography() {
     if (isLikelyFormulaHeading(value) || isMathEnvironmentLabel(value)) return false;
     return (title.match(/[A-Za-z]{3,}/g) || []).length >= 1;
   });
-  const modernHierarchyMode = !explicitSectionMarkerMode && strongModernNumberedLines.length >= 5;
+  const modernHierarchyMode = !documentOcrActive && !explicitSectionMarkerMode && strongModernNumberedLines.length >= 5;
 
   const paragraphLeadLines = allLines.filter((line) => {
     const value = String(line?.text || '').trim();
@@ -7160,6 +7160,44 @@ async function detectOutlineFromTypography() {
   const ocrCenteredNumbers = new Set(ocrCenteredNumberedLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
   const ocrCenteredNumberedMode = documentOcrActive && ocrCenteredNumbers.size >= 3;
 
+  // Applied-math notes and modern papers often use ordinary left-aligned
+  // numbered section headings. OCR preserves the numbering and words far more
+  // reliably than it preserves relative font height. Infer this grammar only
+  // from repeated, high-confidence, non-prose headings spanning multiple pages.
+  // Once established, the profile suppresses random enlarged OCR fragments
+  // such as short formula residues from becoming Structure entries.
+  const ocrExplicitNumberedStrongLines = documentOcrActive ? allLines.filter((line) => {
+    const value = String(line?.text || '').trim();
+    const match = value.match(/^(\d{1,2})[.)]?\s+(.+)$/);
+    if (!match || Number(line?.confidence) < 70) return false;
+    const title = String(match[2] || '').trim();
+    const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
+    const titleCaseWords = title.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
+    const titleCaseOverride = titleWords.length >= 2 && titleCaseWords.length >= Math.ceil(titleWords.length * 0.6);
+    if (!/^[\"'‘’]?[A-Z]/.test(title) || (titleWords.length < 2 && !isKnownHeading(title.replace(/^[\"'‘’]/, ''))) || titleWords.length > 14) return false;
+    if ((numberedBodyLooksLikeProse(title) && !titleCaseOverride) || isMathEnvironmentLabel(title)) return false;
+    if (/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)) return false;
+    return true;
+  }) : [];
+  const ocrExplicitNumberedStrongNumbers = new Set(ocrExplicitNumberedStrongLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
+  const ocrExplicitNumberedStrongPages = new Set(ocrExplicitNumberedStrongLines.map((line) => Number(line.page)).filter(Number.isFinite));
+  const ocrExplicitNumberedMode = documentOcrActive
+    && ocrExplicitNumberedStrongNumbers.size >= 4
+    && ocrExplicitNumberedStrongPages.size >= 2;
+  const ocrExplicitNumberedLines = ocrExplicitNumberedMode ? allLines.filter((line) => {
+    const value = String(line?.text || '').trim();
+    const match = value.match(/^(\d{1,2})[.)]?\s+(.+)$/);
+    if (!match || Number(line?.confidence) < 66) return false;
+    const title = String(match[2] || '').trim();
+    const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
+    const titleCaseWords = title.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
+    const titleCaseOverride = titleWords.length >= 2 && titleCaseWords.length >= Math.ceil(titleWords.length * 0.6);
+    if (!/^[\"'‘’]?[A-Z]/.test(title) || titleWords.length < 1 || titleWords.length > 14) return false;
+    if ((numberedBodyLooksLikeProse(title) && !titleCaseOverride) || isMathEnvironmentLabel(title)) return false;
+    if (/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)) return false;
+    return true;
+  }) : [];
+
   // Several classic books/journals number sections with a hyphen (6-2, 6-3)
   // while equations use the parenthesized form (6-7).  OCR frequently preserves
   // the former even when font sizing is unreliable.  Require repeated section
@@ -7178,6 +7216,7 @@ async function detectOutlineFromTypography() {
   const ocrHyphenSectionMode = documentOcrActive && new Set(ocrHyphenSectionLines.map((line) => String(line.text || '').match(/^(\d{1,2}-\d{1,2})/)?.[1]).filter(Boolean)).size >= 2;
   const ocrCenteredLineSet = new Set(ocrCenteredNumberedLines);
   const ocrHyphenLineSet = new Set(ocrHyphenSectionLines);
+  const ocrExplicitNumberedLineSet = new Set(ocrExplicitNumberedLines);
   // Contents blocks are navigational summaries, not document-body headings.
   // Do not discard the entire page: older papers often put the real first
   // section immediately below the table of contents on page 1. Mark only the
@@ -7201,9 +7240,24 @@ async function detectOutlineFromTypography() {
     if (contentsIndex >= 0) {
       contentsLines.add(orderedLines[contentsIndex]);
       let tocRows = 0;
+      const tocKeys = new Set();
+      const tocRowKey = (value) => normalizedHeadingText(value)
+        .replace(/(?:\.\s*){3,}.*$/, '')
+        .replace(/\s+\d+\s*$/, '')
+        .toLocaleLowerCase();
       for (let i = contentsIndex + 1; i < orderedLines.length; i += 1) {
         const line = orderedLines[i];
-        if (shortTocEntry(line.text)) { contentsLines.add(line); tocRows += 1; continue; }
+        if (shortTocEntry(line.text)) {
+          const key = tocRowKey(line.text);
+          // A short document may begin its real body on the same page as the
+          // contents. Once a TOC title repeats without its trailing page
+          // number, the duplicate is the body heading, not another TOC row.
+          if (tocRows >= 2 && key && tocKeys.has(key)) break;
+          contentsLines.add(line);
+          if (key) tocKeys.add(key);
+          tocRows += 1;
+          continue;
+        }
         if (tocRows >= 2) break;
       }
     }
@@ -7237,6 +7291,7 @@ async function detectOutlineFromTypography() {
       // heading prefix while preserving the original line geometry as anchor.
       let headingText = text;
       if (documentOcrActive && /^(\d{1,2}),\s+[A-Z]/.test(headingText)) headingText = headingText.replace(/^(\d{1,2}),/, '$1.');
+      if (documentOcrActive) headingText = headingText.replace(/^(\s*\d{1,2}(?:[.)])?\s+)[\"'‘’](?=[A-Z])/, '$1');
       let headingWasParagraphLead = false;
       // Paragraph-leading section recovery is primarily for OCR/scanned papers.
       // A narrow exception lets an already-established legacy centered profile
@@ -7293,10 +7348,15 @@ async function detectOutlineFromTypography() {
         const explicitMarkerHeading = explicitSectionMarkerMode && qualifiedSectionMarkerLines.includes(line);
         const paragraphNumbered = headingWasParagraphLead && numberedDepth !== null && (legacyParagraphMode || (legacyCenteredMode && numberedDepth >= 1));
         const legacyCenteredNumbered = legacyCenteredMode && centeredNumbered;
-        const ocrProfileNumbered = (ocrCenteredNumberedMode && ocrCenteredLineSet.has(line)) || (ocrHyphenSectionMode && ocrHyphenLineSet.has(line));
+        const ocrProfileNumbered = (ocrCenteredNumberedMode && ocrCenteredLineSet.has(line))
+          || (ocrHyphenSectionMode && ocrHyphenLineSet.has(line))
+          || (ocrExplicitNumberedMode && ocrExplicitNumberedLineSet.has(line));
         const ocrNumbered = documentOcrActive && (ocrProfileNumbered || (centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead)));
-        const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08 && centered;
-        const styleHeading = documentOcrActive && ratio >= 1.42 && words.length <= 10 && centered && lineWidth <= 0.65 && /^[A-Z][A-Za-z0-9 &'’()\-–—]+$/.test(headingText);
+        const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText)
+          && ratio >= 1.08 && centered && !ocrExplicitNumberedMode;
+        const styleHeading = documentOcrActive && !ocrExplicitNumberedMode
+          && ratio >= 1.42 && words.length <= 10 && centered && lineWidth <= 0.65
+          && /^[A-Z][A-Za-z0-9 &'’()\-–—]+$/.test(headingText);
         if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText) && !(documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))) continue;
       }
@@ -7346,6 +7406,8 @@ async function detectOutlineFromTypography() {
           : headingDepthFromStyle({ ...line, text: headingText }, bodySize),
         size: Number(line.size.toFixed(2)),
         y: line.y,
+        xStartRatio: Number(line.xStartRatio),
+        xEndRatio: Number(line.xEndRatio),
         ratio: Math.min(1, Math.max(0, (line.pageHeight - line.y) / Math.max(1, line.pageHeight)))
       });
     }
@@ -7385,6 +7447,8 @@ async function detectOutlineFromTypography() {
         depth: candidate.depth,
         size: Number(continuation.size.toFixed(2)),
         y: continuation.y,
+        xStartRatio: Number(continuation.xStartRatio),
+        xEndRatio: Number(continuation.xEndRatio),
         ratio: Math.min(1, Math.max(0, (continuation.pageHeight - continuation.y) / Math.max(1, continuation.pageHeight))),
         continuationOnly: true,
       });
@@ -7421,7 +7485,29 @@ async function detectOutlineFromTypography() {
     }
   }
 
-  const ordered = candidates.sort((a, b) => a.page - b.page || b.y - a.y);
+  const ocrSplitPages = new Set();
+  if (documentOcrActive) {
+    const pageCandidates = new Map();
+    for (const candidate of candidates) {
+      const list = pageCandidates.get(candidate.page) || [];
+      list.push(candidate);
+      pageCandidates.set(candidate.page, list);
+    }
+    for (const [pageNum, list] of pageCandidates) {
+      const hasLeft = list.some((item) => Number(item.xStartRatio) < 0.44);
+      const hasRight = list.some((item) => Number(item.xStartRatio) >= 0.52);
+      if (hasLeft && hasRight) ocrSplitPages.add(pageNum);
+    }
+  }
+  const ordered = candidates.sort((a, b) => {
+    if (a.page !== b.page) return a.page - b.page;
+    if (documentOcrActive && ocrSplitPages.has(a.page)) {
+      const aColumn = Number(a.xStartRatio) >= 0.52 ? 1 : 0;
+      const bColumn = Number(b.xStartRatio) >= 0.52 ? 1 : 0;
+      if (aColumn !== bColumn) return aColumn - bColumn;
+    }
+    return b.y - a.y || (Number(a.xStartRatio) || 0) - (Number(b.xStartRatio) || 0);
+  });
   const merged = [];
   for (const candidate of ordered) {
     const previous = merged[merged.length - 1];
@@ -8785,6 +8871,7 @@ async function buildStructureIndex({ force = false } = {}) {
   const bibliographyCitationGroups = [];
   let bibliographyMode = false;
   let pendingBibliographyKey = null;
+  let syntheticBibliographyMode = null;
   let activeProofEntry = null;
   try {
     const maxPages = Math.min(sourceDoc.numPages, 800);
@@ -8794,7 +8881,7 @@ async function buildStructureIndex({ force = false } = {}) {
       for (const line of lines) {
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
         if (!cleaned) continue;
-        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; pendingBibliographyKey = null; activeProofEntry = null; continue; }
+        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; pendingBibliographyKey = null; syntheticBibliographyMode = null; activeProofEntry = null; continue; }
         if (bibliographyMode && /^(?:glossary(?:\s+of\s+notation)?|index)\s*$/i.test(cleaned)) {
           bibliographyMode = false; pendingBibliographyKey = null; continue;
         }
@@ -8823,7 +8910,8 @@ async function buildStructureIndex({ force = false } = {}) {
           if (STRUCTURE_LABEL_RE.test(title)) {
             const label = title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80);
             const key = `${page}:${normalizedReferenceLabel(label)}`;
-            if (!nextEntries.some((entry) => entry.key === key)) {
+            const lowercaseSingleLetterProse = /^[a-z]/.test(cleaned) && /\s+[a-z]$/.test(label);
+            if (!lowercaseSingleLetterProse && !nextEntries.some((entry) => entry.key === key)) {
               const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
               nextEntries.push(entry); activeProofEntry = entry;
             }
@@ -8871,7 +8959,7 @@ async function buildStructureIndex({ force = false } = {}) {
           // key shape, and only for OCR-derived lines; native PDF text remains
           // authoritative and unchanged.
           const bibliographyLine = line.ocrSource
-            ? cleaned.replace(/^[{(]\s*(\d{1,3})\s*\]\s+/, '[$1] ').replace(/^\[\s*(\d{1,3})\s*\}\s+/, '[$1] ')
+            ? cleaned.replace(/^[\[{(]\s*(\d{1,3})\s*[\]})]\s+/, '[$1] ')
             : cleaned;
           let bib = bibliographyLine.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
           let bracketKey = false;
@@ -8882,11 +8970,19 @@ async function buildStructureIndex({ force = false } = {}) {
           if (!bib) bib = bibliographyLine.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
           if (bib) {
             pendingBibliographyKey = null;
+            if (syntheticBibliographyMode === null) syntheticBibliographyMode = false;
             addBibliographyEntry(bib[1], bib[2].trim(), bracketKey);
           } else {
             const keyOnly = bibliographyLine.match(/^\[(\d{1,3}|[A-Za-z][A-Za-z0-9]{0,9})\]$/);
+            const unnumberedAuthorLead = bibliographyLine.match(/^[A-Z][\p{L}'’.-]{1,40},\s+(?:(?:[A-Z]\.\s*){1,3}|[A-Z][a-z]{2,}\s+(?:de|van|von|del)),\s+.{10,}$/u);
+            const unnumberedBibCue = /(?:\b(?:18|19|20)\d{2}\b|\b(?:J\.|Journal|Math\.|Ann\.|Comm\.|Communications?|Proc\.|Proceedings?|Trans\.|Springer|Press|Verlag|Inventiones)\b)/i.test(bibliographyLine);
             if (keyOnly) {
+              if (syntheticBibliographyMode === null) syntheticBibliographyMode = false;
               pendingBibliographyKey = { rawKey: keyOnly[1], bracketKey: !/^\d+$/.test(keyOnly[1]), page, ratio: line.ratio };
+            } else if ((syntheticBibliographyMode === true || syntheticBibliographyMode === null) && unnumberedAuthorLead && (syntheticBibliographyMode === true || unnumberedBibCue)) {
+              if (syntheticBibliographyMode === null) syntheticBibliographyMode = true;
+              pendingBibliographyKey = null;
+              addBibliographyEntry(String(nextBibliography.length + 1), bibliographyLine, false);
             } else if (pendingBibliographyKey && cleaned.length >= 3) {
               const savedPage = page;
               const savedRatio = line.ratio;
