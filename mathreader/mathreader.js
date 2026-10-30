@@ -245,6 +245,10 @@ let equationManualOrder = [];
 let embeddedOutlineEdits = [];
 let embeddedOutlineEntries = [];
 let equationIndexBuildPromise = null;
+// v304: keep a tiny persisted equation summary so the collapsed Equations
+// badge can restore immediately without serializing or eagerly rebuilding the
+// full label index. null means the count is not known yet.
+let equationIndexKnownCount = null;
 let equationConfidenceFilter = 'all';
 let draggedEquationKey = null;
 let scrollByPage = {};
@@ -336,6 +340,7 @@ const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 23;
+const EQUATION_INDEX_SUMMARY_VERSION = 1;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -695,6 +700,7 @@ function clearDocumentMapForIncomingPdf() {
   bibliographyEntries = [];
   equationLabelIndex = null;
   equationIndexBuildPromise = null;
+  equationIndexKnownCount = null;
   equationEdits = [];
   equationManualOrder = [];
   draggedEquationKey = null;
@@ -728,7 +734,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 21,
+    version: 22,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -755,6 +761,9 @@ function snapshotSession() {
     bibliographyEntries,
     equationEdits,
     equationManualOrder,
+    equationIndexSummary: Number.isInteger(equationIndexKnownCount) && equationIndexKnownCount >= 0
+      ? { version: EQUATION_INDEX_SUMMARY_VERSION, count: equationIndexKnownCount }
+      : null,
     embeddedOutlineEdits,
     structureIndexVersion,
     referencePages,
@@ -1041,6 +1050,7 @@ function clearTextDerivedIndexesForUnavailableDocument() {
   structureIndexBuilding = false;
   equationLabelIndex = null;
   equationIndexBuildPromise = null;
+  equationIndexKnownCount = null;
   tocOutlineTargets = null;
   backlinkContext = null;
   backlinkEntries = [];
@@ -1069,6 +1079,7 @@ function invalidateTextDerivedIndexesForOcrActivation() {
   structureIndexBuilding = false;
   equationLabelIndex = null;
   equationIndexBuildPromise = null;
+  equationIndexKnownCount = null;
   tocOutlineTargets = null;
   backlinkContext = null;
   backlinkEntries = [];
@@ -1963,6 +1974,7 @@ function loadDocumentState(cachedSession = null) {
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
   equationIndexBuildPromise = null;
+  equationIndexKnownCount = null;
   structureIndexVersion = 0;
   equationLabelIndex = null;
   renderEquationIndex();
@@ -2018,6 +2030,16 @@ function loadDocumentState(cachedSession = null) {
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
     equationManualOrder = Array.isArray(session.equationManualOrder) ? session.equationManualOrder.map((item) => String(item || '')).filter(Boolean).slice(0, 1000) : [];
+    const equationSummary = session.equationIndexSummary;
+    if (equationSummary && Number(equationSummary.version) === EQUATION_INDEX_SUMMARY_VERSION
+      && Number.isInteger(Number(equationSummary.count)) && Number(equationSummary.count) >= 0) {
+      equationIndexKnownCount = Math.min(1000, Number(equationSummary.count));
+    } else if (Number(session.version || 0) <= 21 && equationManualOrder.length) {
+      // v303 and earlier already persisted the canonical equation row order.
+      // Reuse its length as a safe legacy count so old exports also avoid the
+      // post-import ellipsis; the background index rebuild still verifies it.
+      equationIndexKnownCount = equationManualOrder.length;
+    }
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
@@ -2058,6 +2080,9 @@ function loadDocumentState(cachedSession = null) {
     pinnedPage = savedPinned >= 1 && savedPinned <= pdfDoc.numPages ? savedPinned : null;
   }
   renderSymbolGlossary();
+  // v304: refresh the collapsed badge after the session (and its lightweight
+  // equation summary) has been restored. This does not build the full index.
+  renderEquationIndex();
   refreshSelectionUI();
   refreshOcrUI();
   renderAnnotationList();
@@ -5728,7 +5753,7 @@ function applyEquationLinkCorrection(query, page, ratio) {
     insertEquationManualOrderAfter(anchorRef, id);
     pendingEquationAddKey = null;
     } else return false;
-  equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
+  equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null; equationIndexKnownCount = null;
   persistDocumentState(); refreshSelectionUI(); ensureEquationIndexRendered();
   return true;
 }
@@ -5844,6 +5869,7 @@ async function applyEquationPointCorrection(pageNum, ratio) {
   equationLabelIndex = null;
   equationNumberingSide = 'right';
   equationIndexBuildPromise = null;
+  equationIndexKnownCount = null;
   persistDocumentState();
   refreshSelectionUI();
   ensureEquationIndexRendered();
@@ -8640,7 +8666,9 @@ async function buildEquationLabelIndex() {
   reconcileOcrEquationSequenceOrder(index);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
   equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
+  const previousKnownEquationCount = equationIndexKnownCount;
   renderEquationIndex();
+  if (equationIndexKnownCount !== previousKnownEquationCount) persistDocumentState();
   return equationLabelIndex;
 }
 
@@ -8716,7 +8744,7 @@ function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
   equationIndex.replaceChildren();
   if (!equationLabelIndex) {
-    equationIndexCount.textContent = '…';
+    equationIndexCount.textContent = Number.isInteger(equationIndexKnownCount) ? String(equationIndexKnownCount) : '…';
     equationIndexEmpty.classList.remove('is-hidden');
     equationIndexEmpty.textContent = t('Preparing equation-label index…', '正在准备公式编号索引……');
     return;
@@ -8746,6 +8774,7 @@ function renderEquationIndex() {
     rows.splice(insertAt, 0, added);
   }
   rows = reconcileEquationManualOrder(rows);
+  equationIndexKnownCount = rows.length;
   equationIndexCount.textContent = String(rows.length);
   const filterBar = document.createElement('div'); filterBar.className = 'equation-confidence-filter';
   const filterLabel = document.createElement('label'); filterLabel.textContent = t('Confidence', '置信度');
@@ -8796,7 +8825,7 @@ function renderEquationIndex() {
         equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
         equationEdits.push({ action:'remove', sourceLabel });
       }
-      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null;
+      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null; equationIndexKnownCount = null;
       persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
     });
     const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add','添加');
@@ -11806,6 +11835,7 @@ async function restoreUndoEntry(id = null) {
     }
     equationLabelIndex = null;
     equationIndexBuildPromise = null;
+    equationIndexKnownCount = null;
     await ensureEquationIndexRendered();
     refreshSelectionUI();
   }
