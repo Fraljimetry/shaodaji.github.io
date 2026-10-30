@@ -9429,13 +9429,33 @@ function renderBibliographyIndex() {
   }
   for (const entry of bibliographyEntries) {
     const row = document.createElement('div'); row.className = 'bibliography-item bibliography-smart-item'; row.dataset.page=String(entry.page);
-    const main = document.createElement('button'); main.type='button'; main.className='bibliography-jump bibliography-expand'; main.setAttribute('aria-expanded', bibliographyExpanded.has(entry.number)?'true':'false');
+    const main = document.createElement('button'); main.type='button'; main.className='bibliography-jump bibliography-expand'; main.setAttribute('aria-expanded', bibliographyExpanded.has(entry.number)?'true':'false'); main.title=t('Click to show citations · Double-click to go','单击查看引用 · 双击跳转');
     const label = document.createElement('strong'); label.textContent = entry.label;
     const copy=document.createElement('span'); copy.className='bibliography-copy';
     const text = document.createElement('span'); text.className='bibliography-title'; text.textContent = entry.title;
     const stats=document.createElement('span'); stats.className='bibliography-stats'; stats.textContent=bibliographyCitationSummary(entry);
     copy.append(text,stats); main.append(label,copy);
-    main.addEventListener('click',()=>{ if (bibliographyExpanded.has(entry.number)) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number); renderBibliographyIndex(); });
+    // v300: keep single-click for citation expansion, but use double-click for
+    // navigation so bibliography rows no longer need a separate Go button.
+    // Delay the single-click action just long enough to distinguish a native
+    // double-click; otherwise the first click would re-render and replace the
+    // target node before the dblclick event can fire.
+    let bibliographyClickTimer = 0;
+    main.addEventListener('click',(event)=>{
+      if (event.detail > 1) return;
+      bibliographyClickTimer = window.setTimeout(()=>{
+        bibliographyClickTimer = 0;
+        if (bibliographyExpanded.has(entry.number)) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number);
+        renderBibliographyIndex();
+      }, 300);
+    });
+    main.addEventListener('dblclick',async(event)=>{
+      event.preventDefault();
+      if (bibliographyClickTimer) { window.clearTimeout(bibliographyClickTimer); bibliographyClickTimer = 0; }
+      const target={page:entry.page,ratio:Number(entry.ratio)||0};
+      await goToMatchedLocation(target.page,target.ratio,entry.label);
+      updateBacklinksForTarget(entry.label,target);
+    });
     const actions=document.createElement('div'); actions.className='bibliography-actions';
     if (entry.doi || entry.arxiv) {
       const external = document.createElement('a'); external.className = 'bibliography-external'; external.target = '_blank'; external.rel = 'noopener noreferrer';
@@ -9443,8 +9463,8 @@ function renderBibliographyIndex() {
       else { external.href = `https://arxiv.org/abs/${entry.arxiv}`; external.textContent = 'arXiv ↗'; }
       actions.append(external);
     }
-    const go=document.createElement('button'); go.type='button'; go.className='bibliography-go'; go.textContent=t('Go','跳转'); go.addEventListener('click',async()=>{ const target={page:entry.page,ratio:Number(entry.ratio)||0}; await goToMatchedLocation(target.page,target.ratio,entry.label); updateBacklinksForTarget(entry.label,target); }); actions.append(go);
-    row.append(main,actions);
+    row.append(main);
+    if (actions.childElementCount) row.append(actions);
     if (bibliographyExpanded.has(entry.number)) {
       const cites=document.createElement('div'); cites.className='bibliography-citations';
       const citations=Array.isArray(entry.citations)?entry.citations:[];
