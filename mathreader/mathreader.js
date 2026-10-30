@@ -3278,6 +3278,12 @@ async function ensureMathOcrPipeline() {
 
 function scheduleMathOcrPreload() {
   const preload = async () => {
+    // v303: never initialize the large Transformers/Texify stack on the welcome
+    // screen.  Its module/model initialization can occupy the browser main
+    // thread long enough to delay the first native file-picker click.  Formula
+    // OCR is nonessential to opening a PDF, so warm it only after a document is
+    // already visible; explicit Formula OCR use still loads it immediately.
+    if (!pdfDoc || restoringSession || documentOcrInteractionLocked()) return;
     if (mathOcrPipeline || mathOcrLoading) return;
     try {
       await ensureMathOcrPipeline();
@@ -3291,6 +3297,17 @@ function scheduleMathOcrPreload() {
   } else {
     setTimeout(preload, 600);
   }
+}
+
+function schedulePdfCorePreload() {
+  const preload = () => {
+    if (pdfjsLib || pdfModulePromise) return;
+    ensurePdfJs().catch((error) => console.warn('MathReader PDF engine background preload failed', error));
+  };
+  // PDF.js is the small, essential first-open dependency.  Warm that instead of
+  // the much heavier formula-OCR stack while the welcome screen is idle.
+  if ('requestIdleCallback' in window) window.requestIdleCallback(preload, { timeout: 1200 });
+  else setTimeout(preload, 250);
 }
 
 async function prepareMathOcrInput(canvas) {
@@ -11482,6 +11499,11 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     if (cacheBlob) await cacheOpenedPdf(meta, cacheBlob);
     else if (cachedRecord) await touchCachedPdf(cachedRecord);
     persistDocumentState();
+    // v303: formula OCR warming belongs after the reader is usable, not before
+    // the first Open action.  Idle scheduling keeps it off the critical render
+    // path and Formula OCR can still initialize on demand if the user presses F
+    // before this callback runs.
+    scheduleMathOcrPreload();
   } catch (error) {
     console.error(error);
     pdfDoc = null;
@@ -11504,6 +11526,18 @@ async function openPdfFile(file, recoveryId = null) {
     showError(t('Please choose a PDF file.', '请选择 PDF 文件。'));
     return;
   }
+  let sourceStarted = false;
+  let pdfEngineError = null;
+  // v303: acknowledge the selection immediately.  Previously the browser could
+  // spend seconds reading/hashing a large PDF and probing IndexedDB before any
+  // loading UI appeared, which made the first Open action feel unresponsive.
+  setLoading(true, recoveryId ? t('Preparing matching PDF…', '正在准备匹配的 PDF……') : t('Preparing PDF…', '正在准备 PDF……'));
+  // Warm the core renderer in parallel with file I/O + exact SHA-256 identity.
+  // openPdfSource() reuses the same promise through ensurePdfJs().
+  const pdfEngineReady = ensurePdfJs().catch((error) => {
+    pdfEngineError = error;
+    return null;
+  });
   try {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
@@ -11549,14 +11583,30 @@ async function openPdfFile(file, recoveryId = null) {
         }
       } catch (_) {}
     }
+    await pdfEngineReady;
+    if (pdfEngineError) throw pdfEngineError;
     const blob = file.slice(0, file.size, 'application/pdf');
+    sourceStarted = true;
     await openPdfSource({
       data: bytes,
       meta: { id, name: file.name, size: file.size, lastModified: file.lastModified || 0 },
       cachedRecord,
       cacheBlob: blob
     });
-  } catch (_) {}
+  } catch (error) {
+    // openPdfSource owns its own error/loading cleanup once control reaches it.
+    // Failures before that point (file read/hash/PDF-engine warm-up) need the same
+    // user-visible handling instead of disappearing behind the file picker.
+    if (!sourceStarted) {
+      console.error(error);
+      showError(error?.message || t('This PDF could not be opened.', '无法打开此 PDF。'));
+    }
+  } finally {
+    if (!sourceStarted) {
+      setLoading(false);
+      fileInput.value = '';
+    }
+  }
 }
 async function openCachedDocument(id, options = {}) {
   try {
@@ -12668,4 +12718,4 @@ async function initializeLocalLibrary() {
 
 window.addEventListener('pagehide', () => persistDocumentState());
 initializeLocalLibrary();
-scheduleMathOcrPreload();
+schedulePdfCorePreload();
