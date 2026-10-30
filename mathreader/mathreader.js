@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 22;
+const STRUCTURE_INDEX_VERSION = 23;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -7221,8 +7221,30 @@ async function detectOutlineFromTypography() {
       && !/^[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title);
   }) : [];
   const ocrHyphenSectionMode = documentOcrActive && new Set(ocrHyphenSectionLines.map((line) => String(line.text || '').match(/^(\d{1,2}-\d{1,2})/)?.[1]).filter(Boolean)).size >= 2;
+  // v299 regression: classic books can use the same 1-2 / 1-3 section
+  // grammar in a native text layer. When that grammar repeats strongly, use
+  // it as the document profile instead of treating every slightly enlarged
+  // prose/formula line as a possible heading.
+  const nativeHyphenSectionLines = !documentOcrActive ? allLines.filter((line) => {
+    const value = String(line?.text || '').trim();
+    const match = value.match(/^(\d{1,2})-(\d{1,2})[.)]?\s+(.+)$/);
+    if (!match) return false;
+    const title = String(match[3] || '').trim();
+    const titleWords = title.match(/[A-Za-z]{2,}/g) || [];
+    const letters = title.replace(/[^A-Za-z]/g, '');
+    const strongUppercaseTitle = letters.length >= 4 && letters === letters.toUpperCase();
+    return strongUppercaseTitle
+      && titleWords.length >= 1
+      && titleWords.length <= 14
+      && !numberedBodyLooksLikeProse(title)
+      && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)
+      && Number(line?.xStartRatio) < 0.30;
+  }) : [];
+  const nativeHyphenSectionMode = !documentOcrActive
+    && new Set(nativeHyphenSectionLines.map((line) => String(line.text || '').match(/^(\d{1,2}-\d{1,2})/)?.[1]).filter(Boolean)).size >= 3;
   const ocrCenteredLineSet = new Set(ocrCenteredNumberedLines);
   const ocrHyphenLineSet = new Set(ocrHyphenSectionLines);
+  const nativeHyphenLineSet = new Set(nativeHyphenSectionLines);
   const ocrExplicitNumberedLineSet = new Set(ocrExplicitNumberedLines);
   // Contents blocks are navigational summaries, not document-body headings.
   // Do not discard the entire page: older papers often put the real first
@@ -7331,7 +7353,7 @@ async function detectOutlineFromTypography() {
       const centered = Number.isFinite(lineCenter) && Math.abs(lineCenter - 0.5) <= 0.12;
       const containerHeading = /^(?:chapter|lecture)\s+(?:\d+|[IVXLC]+)\s*$/i.test(headingText) && ratio >= 1.25;
 
-      if (modernHierarchyMode || (!documentOcrActive && !legacyParagraphMode && !legacyCenteredMode && !explicitSectionMarkerMode)) {
+      if (modernHierarchyMode || (!documentOcrActive && !nativeHyphenSectionMode && !legacyParagraphMode && !legacyCenteredMode && !explicitSectionMarkerMode)) {
         // Modern/default native-text profile: typography first.
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
         const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText);
@@ -7359,12 +7381,13 @@ async function detectOutlineFromTypography() {
           || (ocrHyphenSectionMode && ocrHyphenLineSet.has(line))
           || (ocrExplicitNumberedMode && ocrExplicitNumberedLineSet.has(line));
         const ocrNumbered = documentOcrActive && (ocrProfileNumbered || (centeredNumbered && (ratio >= 1.04 || headingWasParagraphLead)));
+        const nativeHyphenNumbered = nativeHyphenSectionMode && nativeHyphenLineSet.has(line);
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText)
           && ratio >= 1.08 && centered && !ocrExplicitNumberedMode;
         const styleHeading = documentOcrActive && !ocrExplicitNumberedMode
           && ratio >= 1.42 && words.length <= 10 && centered && lineWidth <= 0.65
           && /^[A-Z][A-Za-z0-9 &'’()\-–—]+$/.test(headingText);
-        if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !styleHeading && !acronymHeading && !containerHeading) continue;
+        if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !nativeHyphenNumbered && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText) && !(documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))) continue;
       }
       if (/^(?:©|copyright\b)/i.test(headingText)) continue;
@@ -7408,7 +7431,8 @@ async function detectOutlineFromTypography() {
       candidates.push({
         title: headingText,
         page: line.page,
-        depth: documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line)
+        depth: (documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))
+          || (nativeHyphenSectionMode && nativeHyphenLineSet.has(line))
           ? 1
           : headingDepthFromStyle({ ...line, text: headingText }, bodySize),
         size: Number(line.size.toFixed(2)),
@@ -9094,8 +9118,16 @@ async function buildStructureIndex({ force = false } = {}) {
             .map((entry) => Number(normalizedBibliographyKey(entry.number)))
             .filter((value) => Number.isInteger(value) && value >= 1 && value <= 999);
           const expectedBibliographyNumber = numericBibliographyNumbers.length ? Math.max(...numericBibliographyNumbers) + 1 : 1;
-          if (expectedBibliographyNumber === 1) bibliographyLine = bibliographyLine.replace(/^\[\s*[lI]\s*\]\s+/u, '[1] ');
-          if (expectedBibliographyNumber === 11) bibliographyLine = bibliographyLine.replace(/^\[\s*(?:ll|II)\s*\]\s+/u, '[11] ');
+          if (expectedBibliographyNumber === 1) {
+            bibliographyLine = line.ocrSource
+              ? bibliographyLine.replace(/^[\[{(]\s*[lI]\s*[\]})][.)]?\s+/u, '[1] ')
+              : bibliographyLine.replace(/^\[\s*[lI]\s*\]\s+/u, '[1] ');
+          }
+          if (expectedBibliographyNumber === 11) {
+            bibliographyLine = line.ocrSource
+              ? bibliographyLine.replace(/^[\[{(]\s*[lI]{2}\s*[\]})][.)]?\s+/u, '[11] ')
+              : bibliographyLine.replace(/^\[\s*[lI]{2}\s*\]\s+/u, '[11] ');
+          }
           bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
           let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
           let bracketKey = false;
@@ -9105,6 +9137,36 @@ async function buildStructureIndex({ force = false } = {}) {
             bracketKey = Boolean(bib);
           }
           if (!bib) bib = bibliographyLine.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
+          // v299: once a numeric bibliography sequence is established, recover
+          // old text layers whose author token is damaged or whose leading 5
+          // was misread as 6 (for example visual 50 -> extracted 60). Recovery
+          // is sequence-locked and left-margin-only, so numbered body prose
+          // cannot start a reference merely because Bibliography mode is on.
+          if (!bib && numericBibliographyNumbers.length >= 3 && Number(line.xStartRatio || 0) < 0.18) {
+            const sequentialBare = bibliographyLine.match(/^(\d{1,3})-?\s+(.{8,})$/u);
+            if (sequentialBare) {
+              const rawNumber = Number(sequentialBare[1]);
+              const tenDigitFiveToSixConfusion = expectedBibliographyNumber >= 50
+                && expectedBibliographyNumber <= 59
+                && rawNumber === expectedBibliographyNumber + 10;
+              if (rawNumber === expectedBibliographyNumber
+                  || (tenDigitFiveToSixConfusion && /^[A-ZÀ-ÖØ-Þ]/u.test(sequentialBare[2]))) {
+                bib = [sequentialBare[0], String(expectedBibliographyNumber), sequentialBare[2]];
+              }
+            }
+            if (!bib && expectedBibliographyNumber >= 10 && expectedBibliographyNumber <= 99) {
+              const fuzzyLead = bibliographyLine.match(/^(\S{2,4})\s+([A-ZÀ-ÖØ-Þ].{7,})$/u);
+              const expectedText = String(expectedBibliographyNumber);
+              if (fuzzyLead) {
+                const token = fuzzyLead[1];
+                const tokenDigits = token.replace(/\D/g, '');
+                const oneDigitCorruption = /\D/.test(token)
+                  && token[0] === expectedText[0]
+                  && tokenDigits === expectedText[0];
+                if (oneDigitCorruption) bib = [fuzzyLead[0], expectedText, fuzzyLead[2]];
+              }
+            }
+          }
           // Many older books print bare bibliography numbers in a left column
           // with no brackets or punctuation. Accept that shape only when the
           // body visibly begins like an author entry; this keeps ordinary page
@@ -9152,7 +9214,12 @@ async function buildStructureIndex({ force = false } = {}) {
               // Preserve wrapped old-style references. Continuation lines often
               // contain the journal, volume, year or page range that makes the
               // entry useful, but v295 discarded everything after line one.
-              const footerLike = (Number(line.ratio) > 0.91 && cleaned.length < 100)
+              const topHeaderLike = Number(line.ratio) < 0.10 && (
+                /^\d{1,4}\s+[A-Z][A-Z0-9 .,:;'’"()\-]{4,}$/u.test(cleaned)
+                || /^[A-Z][A-Z0-9 .,:;'’"()\-]{4,}\s+\d{1,4}$/u.test(cleaned)
+              );
+              const footerLike = topHeaderLike
+                || (Number(line.ratio) > 0.91 && cleaned.length < 100)
                 || /^\d{1,4}\s+[A-Z][A-Z .,'’'-]{2,}$/u.test(cleaned)
                 || /^(?:(?:I\s+)?manuscrit\s+reçu|received|revised|department\s+of|annales\s+de|license\s+or\s+copyright\s+restrictions)\b/i.test(cleaned);
               if (!footerLike) appendBibliographyContinuation(activeBibliographyEntry, cleaned);
