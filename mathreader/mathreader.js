@@ -8057,12 +8057,17 @@ function recoverSequentialEquationGaps(index, candidatePool) {
 }
 
 function equationLabelCandidatesInLine(text) {
-  const value = normalizeEquationTagCommands(String(text || '').normalize('NFKC'));
+  const source = String(text || '');
   const out = [];
-  const re = /\(\s*([^()]{1,32}?)\s*\)/g;
+  // v297: keep candidate offsets in the original PDF.js line. Whole-line NFKC
+  // changes UTF-16 length for mathematical alphanumerics (for example 𝜌 -> ρ
+  // or 𝑓 -> f), so an index measured after normalization can point into the
+  // formula rather than the visible right-margin label. Normalize only the tag
+  // payload; match offsets must stay in the string used by line.parts.
+  const re = /[（(]\s*([^()（）]{1,32}?)\s*[)）]/g;
   let match;
-  while ((match = re.exec(value))) {
-    const rawInner = match[1];
+  while ((match = re.exec(source))) {
+    const rawInner = normalizeEquationTagCommands(String(match[1] || '').normalize('NFKC'));
     const numericInner = compactNumericEquationTagInner(rawInner);
     const symbolicInner = String(rawInner || '').replace(/\s+/g, '');
     // Keep one shared parenthesized-tag grammar for the Equation index: numeric
@@ -8079,16 +8084,15 @@ function equationLabelCandidatesInLine(text) {
 
   // Digitized old journals occasionally expose a visibly parenthesized margin
   // tag with one corrupted closing glyph in the text layer, e.g. "(2.6J".
-  // Normalize only a line-leading hierarchical number with a single J/]/}
-  // closer. Geometry and the document-wide numbering-side model still decide
-  // whether it is a canonical equation target, so prose references are not
-  // admitted by this extraction repair.
-  const damagedLeadingParen = value.match(/^\s*\(\s*(\d+\s*(?:(?:\.\s*\d+)+|(?:-\s*\d+)+))\s*[J\]\}](?=\s|$)/);
+  // Normalize only the candidate itself; never normalize preceding formula text
+  // when deriving geometry offsets.
+  const damagedLeadingParen = source.match(/^\s*[（(]\s*([0-9０-９]+\s*(?:(?:[.．]\s*[0-9０-９]+)+|(?:[-－]\s*[0-9０-９]+)+))\s*[J\]\}](?=\s|$)/u);
   if (damagedLeadingParen) {
     const raw = damagedLeadingParen[0];
-    const label = normalizedEquationLabel(damagedLeadingParen[1]);
+    const inner = String(damagedLeadingParen[1] || '').normalize('NFKC');
+    const label = normalizedEquationLabel(inner);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
-      const index = value.indexOf(raw);
+      const index = source.indexOf(raw);
       out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + raw.length, extractionRepaired: true });
     }
   }
@@ -8098,13 +8102,13 @@ function equationLabelCandidatesInLine(text) {
   // leading token here; geometry and mathematical context below still decide
   // whether it is a real equation target. This deliberately does not admit a
   // bare integer prefix, which would collide heavily with section numbering.
-  const leadingBare = value.match(/^\s*(\d+\s*(?:\.\s*\d+)+)(?=\s|$)/);
+  const leadingBare = source.match(/^\s*([0-9０-９]+\s*(?:[.．]\s*[0-9０-９]+)+)(?=\s|$)/u);
   if (leadingBare) {
     const raw = leadingBare[1];
-    const compact = raw.replace(/\s+/g, '');
+    const compact = raw.normalize('NFKC').replace(/\s+/g, '');
     const label = normalizedEquationLabel(compact);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
-      const index = value.indexOf(raw);
+      const index = source.indexOf(raw);
       out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + raw.length, bare: true });
     }
   }
@@ -8113,13 +8117,14 @@ function equationLabelCandidatesInLine(text) {
   // number and exposes only a standalone token such as "13.30".
   // Record that narrow form as a candidate; geometry / neighboring display
   // math still decides whether it is reliable below.
-  const trimmed = value.trim();
+  const trimmedSource = source.trim();
+  const trimmed = trimmedSource.normalize('NFKC');
   const compactBare = /\s/.test(trimmed) ? '' : trimmed;
   if (isPlausibleNumericEquationTagInner(compactBare) && /[.\-]/.test(compactBare)) {
     const label = normalizedEquationLabel(compactBare);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
-      const index = value.indexOf(trimmed);
-      out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + trimmed.length, bare: true });
+      const index = source.indexOf(trimmedSource);
+      out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + trimmedSource.length, bare: true });
     }
   }
   return out;
