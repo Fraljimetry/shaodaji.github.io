@@ -195,6 +195,8 @@ html[data-theme="dark"] .icon-button,html[data-theme="dark"] .tool-button,html[d
 .history-item.is-unavailable{border-color:rgba(190,96,78,.35)}.history-unavailable{color:#c98372!important}.history-recover{padding:4px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--accent);cursor:pointer;font-size:9px;white-space:nowrap}
 @media(max-width:520px){.bookmark-main{grid-template-columns:minmax(0,1fr) auto auto}.search-options{gap:6px 10px}}
 .history-item{grid-template-columns:minmax(0,1fr) auto 28px;align-items:stretch}.history-open:disabled{cursor:default;opacity:.72}.history-recover{align-self:stretch}
+/* v302: imported-session PDF guidance sits below, not inside, the compact History card. */
+.history-entry{display:grid;gap:3px;min-width:0}.history-unavailable-below{display:block;padding:0 4px 1px;font-size:9px;line-height:1.35}
 .ocr-engine-controls{grid-template-columns:1fr}.ocr-engine-controls label{min-width:0}.ocr-engine-controls .text-button{grid-column:1;justify-self:end}
 
 /* v61 interaction polish */

@@ -810,6 +810,7 @@ function renderLocalLibrary() {
   welcomeRecent.classList.toggle('is-hidden', localLibrary.length === 0 || Boolean(pdfDoc));
 
   for (const record of localLibrary) {
+    const entry = document.createElement('div'); entry.className = 'history-entry';
     const row = document.createElement('div'); row.className = 'history-item';
     if (!record.localAvailable) row.classList.add('is-unavailable');
     const open = document.createElement('button'); open.type = 'button'; open.className = 'history-open';
@@ -822,12 +823,19 @@ function renderLocalLibrary() {
     if (['unread','reading','finished'].includes(statusValue)) { const status=document.createElement('span'); status.textContent={unread:t('Unread','未读'),reading:t('Reading','阅读中'),finished:t('Finished','已完成')}[statusValue]; meta.append(status); }
     const tags=normalizeDocumentTags(record.session?.documentTags); if(tags.length){ const tag=document.createElement('span'); tag.textContent=tags.slice(0,3).join(' · '); meta.append(tag); }
     if (record.session?.documentPersonalNote) open.title=String(record.session.documentPersonalNote).slice(0,240);
+    let importedPdfRequired = null;
     if (!record.localAvailable) {
-      const missing = document.createElement('span'); missing.className = 'history-unavailable';
-      missing.textContent = record.importedReadingData
-        ? t('PDF required · Select the matching PDF to restore this reading session.', '需要 PDF · 请选择匹配的 PDF 以恢复此阅读现场。')
-        : t('Local PDF copy unavailable', '本地 PDF 副本不可用');
-      meta.append(missing);
+      if (record.importedReadingData) {
+        // v302: keep recovery guidance outside the compact History item so a
+        // long PDF-required sentence does not enlarge the document card.
+        importedPdfRequired = document.createElement('div');
+        importedPdfRequired.className = 'history-unavailable history-unavailable-below';
+        importedPdfRequired.textContent = t('PDF required · Select the matching PDF to restore this reading session.', '需要 PDF · 请选择匹配的 PDF 以恢复此阅读现场。');
+      } else {
+        const missing = document.createElement('span'); missing.className = 'history-unavailable';
+        missing.textContent = t('Local PDF copy unavailable', '本地 PDF 副本不可用');
+        meta.append(missing);
+      }
     }
     open.append(title, meta);
     open.disabled = !record.localAvailable;
@@ -848,7 +856,10 @@ function renderLocalLibrary() {
         await refreshLocalLibrary();
       } catch (error) { console.warn(error); }
     });
-    row.append(open, recover, remove); historyList.append(row);
+    row.append(open, recover, remove);
+    entry.append(row);
+    if (importedPdfRequired) entry.append(importedPdfRequired);
+    historyList.append(entry);
   }
 
   for (const record of localLibrary.filter((item) => item.localAvailable).slice(0, 4)) {
