@@ -823,12 +823,16 @@ function renderLocalLibrary() {
     const tags=normalizeDocumentTags(record.session?.documentTags); if(tags.length){ const tag=document.createElement('span'); tag.textContent=tags.slice(0,3).join(' · '); meta.append(tag); }
     if (record.session?.documentPersonalNote) open.title=String(record.session.documentPersonalNote).slice(0,240);
     if (!record.localAvailable) {
-      const missing = document.createElement('span'); missing.className = 'history-unavailable'; missing.textContent = t('Local PDF copy unavailable', '本地 PDF 副本不可用'); meta.append(missing);
+      const missing = document.createElement('span'); missing.className = 'history-unavailable';
+      missing.textContent = record.importedReadingData
+        ? t('PDF required · Select the matching PDF to restore this reading session.', '需要 PDF · 请选择匹配的 PDF 以恢复此阅读现场。')
+        : t('Local PDF copy unavailable', '本地 PDF 副本不可用');
+      meta.append(missing);
     }
     open.append(title, meta);
     open.disabled = !record.localAvailable;
     if (record.localAvailable) open.addEventListener('click', () => openCachedDocument(record.id));
-    const recover = document.createElement('button'); recover.type = 'button'; recover.className = 'history-recover'; recover.textContent = t('Reopen', '重新选择');
+    const recover = document.createElement('button'); recover.type = 'button'; recover.className = 'history-recover'; recover.textContent = record.importedReadingData ? t('Select PDF', '选择 PDF') : t('Reopen', '重新选择');
     recover.classList.toggle('is-hidden', record.localAvailable);
     recover.addEventListener('click', () => { pendingRecoveryRecordId = record.id; fileInput.click(); });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'history-remove'; remove.textContent = '×';
@@ -870,9 +874,16 @@ async function refreshLocalLibrary() {
 }
 function showError(message) {
   errorBanner.textContent = message;
-  errorBanner.classList.remove('is-hidden');
-  clearTimeout(showError.timer);
+  errorBanner.classList.remove('is-info', 'is-hidden');
+  clearTimeout(showError.timer); clearTimeout(showNotice.timer);
   showError.timer = setTimeout(() => errorBanner.classList.add('is-hidden'), 6500);
+}
+function showNotice(message) {
+  errorBanner.textContent = message;
+  errorBanner.classList.add('is-info');
+  errorBanner.classList.remove('is-hidden');
+  clearTimeout(showError.timer); clearTimeout(showNotice.timer);
+  showNotice.timer = setTimeout(() => errorBanner.classList.add('is-hidden'), 6500);
 }
 
 function setLoading(active, message = null) {
@@ -9435,23 +9446,40 @@ function renderBibliographyIndex() {
     const text = document.createElement('span'); text.className='bibliography-title'; text.textContent = entry.title;
     const stats=document.createElement('span'); stats.className='bibliography-stats'; stats.textContent=bibliographyCitationSummary(entry);
     copy.append(text,stats); main.append(label,copy);
-    // v300: keep single-click for citation expansion, but use double-click for
-    // navigation so bibliography rows no longer need a separate Go button.
-    // Delay the single-click action just long enough to distinguish a native
-    // double-click; otherwise the first click would re-render and replace the
-    // target node before the dblclick event can fire.
-    let bibliographyClickTimer = 0;
+    // v301: citation expansion is immediate. Update only this row instead of
+    // re-rendering the whole bibliography so the same DOM node survives long
+    // enough for the browser's native dblclick event. If a double-click follows,
+    // restore the pre-click expansion state before navigating.
+    let bibliographyFirstClickWasExpanded = null;
+    const renderBibliographyCitations = () => {
+      row.querySelector('.bibliography-citations')?.remove();
+      const expanded = bibliographyExpanded.has(entry.number);
+      main.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      if (!expanded) return;
+      const cites=document.createElement('div'); cites.className='bibliography-citations';
+      const citations=Array.isArray(entry.citations)?entry.citations:[];
+      if (!citations.length) { const empty=document.createElement('div'); empty.className='bibliography-citations-empty'; empty.textContent=t('No in-text citations detected.','未检测到正文引用。'); cites.append(empty); }
+      for (const [index,citation] of citations.entries()) {
+        const button=document.createElement('button'); button.type='button'; button.className='bibliography-citation-item'; button.dataset.page=String(citation.page);
+        const meta=document.createElement('strong'); meta.textContent=index===0?t(`First citation · p. ${citation.page}`,`首次引用 · 第 ${citation.page} 页`):t(`Citation ${index+1} · p. ${citation.page}`,`第 ${index+1} 处引用 · 第 ${citation.page} 页`);
+        const snippet=document.createElement('span'); snippet.textContent=citation.snippet||citation.raw||''; button.append(meta,snippet);
+        button.addEventListener('click',()=>goToMatchedLocation(citation.page,Number(citation.ratio)||0,citation.raw||entry.label)); cites.append(button);
+      }
+      row.append(cites);
+    };
     main.addEventListener('click',(event)=>{
       if (event.detail > 1) return;
-      bibliographyClickTimer = window.setTimeout(()=>{
-        bibliographyClickTimer = 0;
-        if (bibliographyExpanded.has(entry.number)) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number);
-        renderBibliographyIndex();
-      }, 300);
+      bibliographyFirstClickWasExpanded = bibliographyExpanded.has(entry.number);
+      if (bibliographyFirstClickWasExpanded) bibliographyExpanded.delete(entry.number); else bibliographyExpanded.add(entry.number);
+      renderBibliographyCitations();
     });
     main.addEventListener('dblclick',async(event)=>{
       event.preventDefault();
-      if (bibliographyClickTimer) { window.clearTimeout(bibliographyClickTimer); bibliographyClickTimer = 0; }
+      if (bibliographyFirstClickWasExpanded !== null) {
+        if (bibliographyFirstClickWasExpanded) bibliographyExpanded.add(entry.number); else bibliographyExpanded.delete(entry.number);
+        renderBibliographyCitations();
+        bibliographyFirstClickWasExpanded = null;
+      }
       const target={page:entry.page,ratio:Number(entry.ratio)||0};
       await goToMatchedLocation(target.page,target.ratio,entry.label);
       updateBacklinksForTarget(entry.label,target);
@@ -9465,18 +9493,7 @@ function renderBibliographyIndex() {
     }
     row.append(main);
     if (actions.childElementCount) row.append(actions);
-    if (bibliographyExpanded.has(entry.number)) {
-      const cites=document.createElement('div'); cites.className='bibliography-citations';
-      const citations=Array.isArray(entry.citations)?entry.citations:[];
-      if (!citations.length) { const empty=document.createElement('div'); empty.className='bibliography-citations-empty'; empty.textContent=t('No in-text citations detected.','未检测到正文引用。'); cites.append(empty); }
-      for (const [index,citation] of citations.entries()) {
-        const button=document.createElement('button'); button.type='button'; button.className='bibliography-citation-item'; button.dataset.page=String(citation.page);
-        const meta=document.createElement('strong'); meta.textContent=index===0?t(`First citation · p. ${citation.page}`,`首次引用 · 第 ${citation.page} 页`):t(`Citation ${index+1} · p. ${citation.page}`,`第 ${index+1} 处引用 · 第 ${citation.page} 页`);
-        const snippet=document.createElement('span'); snippet.textContent=citation.snippet||citation.raw||''; button.append(meta,snippet);
-        button.addEventListener('click',()=>goToMatchedLocation(citation.page,Number(citation.ratio)||0,citation.raw||entry.label)); cites.append(button);
-      }
-      row.append(cites);
-    }
+    renderBibliographyCitations();
     bibliographyIndex.append(row);
   }
   applyDocumentMapFilter(el('map-filter-bibliography')); updateDocumentMapCurrentLocation();
@@ -11858,6 +11875,7 @@ async function importReadingDataFile(file) {
       activatePanel('history-panel', false);
       if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-left-open');
       else shell.classList.remove('left-collapsed');
+      showNotice(t('PDF required · Reading data was imported successfully. Select the matching PDF to restore this reading session.', '需要 PDF · 阅读数据已成功导入。请选择匹配的 PDF 以恢复此阅读现场。'));
     } catch (error) {
       console.warn('MathReader could not import local reading data.', error);
       showError(t('The reading data could not be imported into the local library.', '无法将阅读数据导入本地资料库。'));
