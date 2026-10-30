@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 21;
+const STRUCTURE_INDEX_VERSION = 22;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -9117,6 +9117,16 @@ async function buildStructureIndex({ force = false } = {}) {
           } else {
             let keyOnly = bibliographyLine.match(/^\[\s*(\d{1,3}|[A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?$/);
             if (keyOnly) keyOnly[1] = keyOnly[1].trim();
+            // v298: old bibliographies often use a horizontal rule to mean
+            // "same author as above". The rule may be a vector rather than
+            // text, leaving PDF.js with a short fragment such as "[11] ,"
+            // while the title starts on the next extracted line. Treat only
+            // the next expected numeric key, at the bibliography's left edge,
+            // as a pending key; do not broaden ordinary bracket matching.
+            const dittoNumericKey = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\]\s*(?:[-–—_]{1,16}\s*)?[,;:.]?\s*$/u);
+            if (!keyOnly && dittoNumericKey
+                && Number(dittoNumericKey[1]) === expectedBibliographyNumber
+                && Number(line.xStartRatio || 0) < 0.22) keyOnly = dittoNumericKey;
             const bareNumericKey = bibliographyLine.match(/^(\d{1,3})-?$/);
             if (!keyOnly && bareNumericKey && Number(bareNumericKey[1]) === expectedBibliographyNumber && Number(line.xStartRatio || 0) < 0.18) keyOnly = bareNumericKey;
             const surnameInitialAuthor = /^[A-ZÀ-ÖØ-Þ'’][\p{L}0-9"'’.\-\\{}:;]{1,48}(?:\s+(?:de|del|di|du|la|le|van|von))?,\s+(?:[A-Z0]\.?(?:\s*|$)){1,4}(?:,|\s|:).{6,}$/u.test(bibliographyLine);
