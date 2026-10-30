@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 19;
+const STRUCTURE_INDEX_VERSION = 20;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -6869,7 +6869,7 @@ function headingNumberDepth(text) {
 }
 
 function isKnownHeading(text) {
-  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|foreword|preface|appendix(?:\s+[A-Z0-9]+)?|contents)$/i.test(text.trim());
+  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|foreword|afterword|preface|appendix(?:\s+[A-Z0-9]+)?|contents)$/i.test(text.trim());
 }
 
 function isMathEnvironmentLabel(text) {
@@ -7174,16 +7174,18 @@ async function detectOutlineFromTypography() {
     const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
     const titleCaseWords = title.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
     const titleCaseOverride = titleWords.length >= 2 && titleCaseWords.length >= Math.ceil(titleWords.length * 0.6);
-    if (!/^[\"'‘’]?[A-Z]/.test(title) || (titleWords.length < 2 && !isKnownHeading(title.replace(/^[\"'‘’]/, ''))) || titleWords.length > 14) return false;
+    const shortTitleOverride = titleWords.length === 1 && titleCaseWords.length === 1 && title.split(/\s+/).length <= 5 && !numberedBodyLooksLikeProse(title);
+    if (!/^[\"'‘’]?[A-Z]/.test(title) || (titleWords.length < 2 && !shortTitleOverride && !isKnownHeading(title.replace(/^[\"'‘’]/, ''))) || titleWords.length > 14) return false;
     if ((numberedBodyLooksLikeProse(title) && !titleCaseOverride) || isMathEnvironmentLabel(title)) return false;
     if (/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)) return false;
     return true;
   }) : [];
   const ocrExplicitNumberedStrongNumbers = new Set(ocrExplicitNumberedStrongLines.map((line) => String(line.text || '').match(/^(\d{1,2})/)?.[1]).filter(Boolean));
   const ocrExplicitNumberedStrongPages = new Set(ocrExplicitNumberedStrongLines.map((line) => Number(line.page)).filter(Number.isFinite));
-  const ocrExplicitNumberedMode = documentOcrActive
-    && ocrExplicitNumberedStrongNumbers.size >= 4
-    && ocrExplicitNumberedStrongPages.size >= 2;
+  const ocrExplicitNumberedMode = documentOcrActive && (
+    (ocrExplicitNumberedStrongNumbers.size >= 4 && ocrExplicitNumberedStrongPages.size >= 2) ||
+    (ocrExplicitNumberedStrongNumbers.size >= 3 && ocrExplicitNumberedStrongPages.size >= 3)
+  );
   const ocrExplicitNumberedLines = ocrExplicitNumberedMode ? allLines.filter((line) => {
     const value = String(line?.text || '').trim();
     const match = value.match(/^(\d{1,2})[.)]?\s+(.+)$/);
@@ -7192,7 +7194,8 @@ async function detectOutlineFromTypography() {
     const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
     const titleCaseWords = title.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
     const titleCaseOverride = titleWords.length >= 2 && titleCaseWords.length >= Math.ceil(titleWords.length * 0.6);
-    if (!/^[\"'‘’]?[A-Z]/.test(title) || titleWords.length < 1 || titleWords.length > 14) return false;
+    const shortTitleOverride = titleWords.length === 1 && titleCaseWords.length === 1 && title.split(/\s+/).length <= 5 && !numberedBodyLooksLikeProse(title);
+    if (!/^[\"'‘’]?[A-Z]/.test(title) || (titleWords.length < 1 && !shortTitleOverride) || titleWords.length > 14) return false;
     if ((numberedBodyLooksLikeProse(title) && !titleCaseOverride) || isMathEnvironmentLabel(title)) return false;
     if (/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)) return false;
     return true;
@@ -8192,10 +8195,50 @@ function hasNearbyDisplayMath(lines, lineIndex) {
   return false;
 }
 
+function bareEquationHasNearbyHeadingContext(lines, lineIndex) {
+  const line = lines[lineIndex];
+  if (!line) return false;
+  const ratio = Number(line.ratio);
+  for (const neighborIndex of [lineIndex - 2, lineIndex - 1, lineIndex + 1, lineIndex + 2]) {
+    const neighbor = lines[neighborIndex];
+    if (!neighbor) continue;
+    const neighborRatio = Number(neighbor.ratio);
+    if (Number.isFinite(ratio) && Number.isFinite(neighborRatio) && Math.abs(neighborRatio - ratio) > 0.014) continue;
+    const text = String(neighbor.text || '').trim();
+    if (!text || equationLineMathSignalCount(text) >= 2 || /[.!?。！？]$/.test(text)) continue;
+    const asciiWords = text.match(/\b[A-Za-z]{3,}\b/g) || [];
+    const titleCaseWords = text.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
+    const hanChars = text.match(/\p{Script=Han}/gu) || [];
+    if (hanChars.length >= 3) return true;
+    if (/^[A-Z]/.test(text) && asciiWords.length >= 2 && titleCaseWords.length >= 1) return true;
+  }
+  return false;
+}
+
 function isStandaloneEquationTagLine(line, label) {
   const text = String(line?.text || '').trim().replace(/\s+/g, '').normalize('NFKC');
   const normalized = normalizedEquationLabel(label);
   return text === normalized || text === normalized.slice(1, -1);
+}
+
+function bareEquationInHorizontalNumericCluster(lines, lineIndex) {
+  const line = lines[lineIndex];
+  if (!line) return false;
+  const text = String(line.text || '').trim().replace(/\s+/g, '');
+  if (!/^[+-]?\d+(?:\.\d+)?$/.test(text)) return false;
+  const ratio = Number(line.ratio);
+  const centers = [];
+  for (const other of lines) {
+    const otherRatio = Number(other?.ratio);
+    if (Number.isFinite(ratio) && Number.isFinite(otherRatio) && Math.abs(otherRatio - ratio) > 0.0045) continue;
+    const otherText = String(other?.text || '').trim().replace(/\s+/g, '');
+    if (!/^[+-]?\d+(?:\.\d+)?$/.test(otherText)) continue;
+    const start = Number(other?.xStartRatio); const end = Number(other?.xEndRatio);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+    centers.push((start + end) / 2);
+  }
+  if (centers.length < 3) return false;
+  return Math.max(...centers) - Math.min(...centers) >= 0.16;
 }
 
 function equationCandidateTokenGeometry(line, candidate) {
@@ -8391,6 +8434,16 @@ async function buildEquationLabelIndex() {
     const lines = await pageTextLines(page, sourceDoc);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
+      const rawLineText = String(line.text || '').normalize('NFKC');
+      const sectionHeadingMatch = rawLineText.trim().match(/^(\d+(?:\.\d+){1,4})\s+(.{2,120})$/);
+      if (sectionHeadingMatch) {
+        const sectionTitle = String(sectionHeadingMatch[2] || '').trim();
+        const sectionWords = sectionTitle.match(/\b[A-Za-z]{3,}\b/g) || [];
+        const sectionHan = sectionTitle.match(/\p{Script=Han}/gu) || [];
+        if (equationLineMathSignalCount(sectionTitle) <= 1 && (sectionWords.length >= 2 || sectionHan.length >= 3)) {
+          dottedSectionHeadingEvidence.push({ page, label: normalizedEquationLabel(sectionHeadingMatch[1]) });
+        }
+      }
       const explicit = equationLabelCandidatesInLine(line.text);
       const weakBare = [];
       const rawText = String(line.text || '').normalize('NFKC');
@@ -8426,6 +8479,8 @@ async function buildEquationLabelIndex() {
           candidateAtLineEnd: !String(line.text || '').slice(Math.max(0, Number(candidate.end) || 0)).trim(),
           standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
+          nearbyHeadingContext: Boolean(candidate.bare) && bareEquationHasNearbyHeadingContext(lines, lineIndex),
+          axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
           ocrSource: Boolean(line.ocrSource),
         });
@@ -8434,11 +8489,33 @@ async function buildEquationLabelIndex() {
     if (page % 20 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
+  const dottedSectionHeadingPages = new Set(dottedSectionHeadingEvidence.map((item) => item.page));
+  const dottedSectionHeadingLabels = new Set(dottedSectionHeadingEvidence.map((item) => item.label));
+  const dottedSectionNumberingProfile = dottedSectionHeadingEvidence.length >= 6 && dottedSectionHeadingPages.size >= 3;
+
   equationNumberingSide = inferEquationNumberingSide(rawCandidates);
 
   for (const record0 of rawCandidates) {
     const record = { ...record0 };
     let confidence = equationCandidateConfidenceForSide(record);
+    if (record.axisNumericCluster) confidence = -Infinity;
+    if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
+      const strongOuterMargin = equationNumberingSide === 'left'
+        ? Number(record.candidateXEndRatio) <= (record.ocrSource ? 0.24 : 0.13)
+        : Number(record.candidateXStartRatio) >= (record.ocrSource ? 0.76 : 0.87);
+      const bareRemainder = String(record.text || '').replace(/^\s*\d+(?:\s*\.\s*\d+)+\s*/, '').trim();
+      const sameLineWords = bareRemainder.match(/\b[A-Za-z]{3,}\b/g) || [];
+      const sameLineHan = bareRemainder.match(/\p{Script=Han}/gu) || [];
+      const sameLineMathSignals = Number(record.mathSignals) || 0;
+      const sameLineSectionContext = Boolean(bareRemainder) && (
+        (sameLineMathSignals === 0 && (sameLineWords.length >= 2 || sameLineHan.length >= 2)) ||
+        (sameLineMathSignals === 1 && sameLineHan.length >= 1 && (/^[-–—]?[A-Za-z]{2,}/.test(bareRemainder) || sameLineHan.length >= 2))
+      );
+      const sectionLikeBare = sameLineSectionContext
+        || Boolean(record.nearbyHeadingContext)
+        || (!strongOuterMargin && !record.nearbyDisplayMath && (Number(record.mathSignals) || 0) === 0);
+      if (sectionLikeBare) confidence = -Infinity;
+    }
     let reliable = confidence >= 8;
     if (!reliable && record.standaloneTag && record.nearbyDisplayMath && equationCandidateAlignedToNumberingSide(record)) {
       confidence = Math.max(confidence, 12);
@@ -8905,12 +8982,13 @@ async function buildStructureIndex({ force = false } = {}) {
         // ordinary prose references such as "... by Proposition 13.6(a) ..."
         // into the Results index merely because they follow punctuation.
         const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
-        if (structureMatch) {
-          const title = structureMatch[1].replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
-          if (STRUCTURE_LABEL_RE.test(title)) {
-            const label = title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80);
+        const namedResultMatch = !structureMatch ? cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?)/) : null;
+        if (structureMatch || namedResultMatch) {
+          const title = (structureMatch?.[1] || namedResultMatch?.[1] || '').replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
+          const label = structureMatch ? (title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80)) : title.replace(/[.:]+$/, '').trim();
+          if ((structureMatch && STRUCTURE_LABEL_RE.test(title)) || namedResultMatch) {
             const key = `${page}:${normalizedReferenceLabel(label)}`;
-            const lowercaseSingleLetterProse = /^[a-z]/.test(cleaned) && /\s+[a-z]$/.test(label);
+            const lowercaseSingleLetterProse = structureMatch && /^[a-z]/.test(cleaned) && /\s+[a-z]$/.test(label);
             if (!lowercaseSingleLetterProse && !nextEntries.some((entry) => entry.key === key)) {
               const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
               nextEntries.push(entry); activeProofEntry = entry;
