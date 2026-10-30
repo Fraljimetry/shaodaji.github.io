@@ -7095,6 +7095,53 @@ async function detectOutlineFromTypography() {
         line.xStartRatio = Math.min(1, Math.max(0, xMin / Math.max(1, viewport.width)));
         line.xEndRatio = Math.min(1, Math.max(0, xMax / Math.max(1, viewport.width)));
       }
+
+      // v305: Older journal PDFs sometimes encode a centered section heading with a
+      // smaller §N marker on a slightly different baseline from its title.
+      // PDF text extraction then yields two lines (for example, “§ 2.” and
+      // “TANGENT CYLINDERS AT …”), which prevents the repeated §N document
+      // profile below from activating. Rejoin only a standalone short §N
+      // marker with a nearby, right-adjacent all-caps title. This is deliberately
+      // outline-local: page text, equation geometry, search, and OCR stay
+      // untouched.
+      const consumedSectionTitleLines = new Set();
+      for (const markerLine of lines) {
+        const markerText = String(markerLine.text || '').trim();
+        if (!/^§\s*\d{1,2}(?:\s*\.\s*\d+)*\s*[.)]?\s*$/.test(markerText)) continue;
+        const markerStart = Number(markerLine.xStartRatio);
+        const markerEnd = Number(markerLine.xEndRatio);
+        if (!Number.isFinite(markerStart) || !Number.isFinite(markerEnd) || markerStart > 0.48 || markerEnd - markerStart > 0.16) continue;
+        const nearby = lines
+          .filter((candidate) => candidate !== markerLine && !consumedSectionTitleLines.has(candidate))
+          .map((candidate) => {
+            const yGap = Math.abs(Number(candidate.y) - Number(markerLine.y));
+            const xGap = Number(candidate.xStartRatio) - markerEnd;
+            return { candidate, yGap, xGap };
+          })
+          .filter(({ candidate, yGap, xGap }) => {
+            const title = String(candidate.text || '').trim();
+            const titleWords = title.match(/[A-Za-z]{3,}/g) || [];
+            const strongTitle = titleWords.length >= 2
+              && titleWords.length <= 10
+              && /^[A-Z0-9][A-Z0-9 &'’()\-–—]+[A-Z0-9.)]$/.test(title)
+              && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title);
+            return strongTitle
+              && yGap <= Math.max(6, Number(markerLine.size) * 0.85, Number(candidate.size) * 0.70)
+              && xGap >= -0.02
+              && xGap <= 0.10;
+          })
+          .sort((a, b) => a.yGap - b.yGap || a.xGap - b.xGap);
+        const titleLine = nearby[0]?.candidate;
+        if (!titleLine) continue;
+        markerLine.text = normalizedHeadingText(`${markerText} ${titleLine.text}`);
+        markerLine.items.push(...titleLine.items);
+        markerLine.items.sort((a, b) => a.x - b.x);
+        markerLine.size = Math.max(Number(markerLine.size) || 0, Number(titleLine.size) || 0);
+        markerLine.xStartRatio = Math.min(Number(markerLine.xStartRatio), Number(titleLine.xStartRatio));
+        markerLine.xEndRatio = Math.max(Number(markerLine.xEndRatio), Number(titleLine.xEndRatio));
+        consumedSectionTitleLines.add(titleLine);
+      }
+      if (consumedSectionTitleLines.size) lines = lines.filter((line) => !consumedSectionTitleLines.has(line));
     }
     for (const line of lines) {
       line.normalized = line.text.toLocaleLowerCase().replace(/\d+/g, '#').replace(/[^\p{L}#]+/gu, ' ').trim();
