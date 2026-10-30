@@ -335,7 +335,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 20;
+const STRUCTURE_INDEX_VERSION = 21;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -2100,7 +2100,11 @@ async function touchCachedPdf(record) {
 }
 
 function enableReaderControls(enabled) {
-  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton,importReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
+  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
+  // Import belongs to the local library, not to the currently open PDF. Keep it
+  // available on the empty first screen so a reading-data export can restore a
+  // library/session record before the matching PDF is reopened.
+  if (importReadingDataButton) importReadingDataButton.disabled = false;
   updateOcrInteractionAvailability();
 }
 
@@ -8430,6 +8434,7 @@ async function buildEquationLabelIndex() {
   const index = new Map();
   const candidatePool = new Map();
   const rawCandidates = [];
+  const dottedSectionHeadingEvidence = [];
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     const lines = await pageTextLines(page, sourceDoc);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -8949,21 +8954,43 @@ async function buildStructureIndex({ force = false } = {}) {
   let bibliographyMode = false;
   let pendingBibliographyKey = null;
   let syntheticBibliographyMode = null;
+  let activeBibliographyEntry = null;
   let activeProofEntry = null;
   try {
-    const maxPages = Math.min(sourceDoc.numPages, 800);
-    for (let page = 1; page <= maxPages; page += 1) {
+    // Structure stays bounded for performance, but old books and long technical
+    // texts often place References far beyond page 800. Always include a tail
+    // window so Bibliography can still be complete without scanning thousands
+    // of middle pages.
+    const primaryPageCount = Math.min(sourceDoc.numPages, 800);
+    const pageSequence = Array.from({ length: primaryPageCount }, (_, index) => index + 1);
+    if (sourceDoc.numPages > primaryPageCount) {
+      const tailStart = Math.max(primaryPageCount + 1, sourceDoc.numPages - 119);
+      for (let page = tailStart; page <= sourceDoc.numPages; page += 1) pageSequence.push(page);
+    }
+    for (const page of pageSequence) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+      const tailOnlyPage = page > primaryPageCount;
       const lines = await pageTextLines(page, sourceDoc, sourceLineCache, sourceTextCache);
       for (const line of lines) {
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
         if (!cleaned) continue;
-        if (/^(?:references|bibliography)\s*$/i.test(cleaned)) { bibliographyMode = true; pendingBibliographyKey = null; syntheticBibliographyMode = null; activeProofEntry = null; continue; }
-        if (bibliographyMode && /^(?:glossary(?:\s+of\s+notation)?|index)\s*$/i.test(cleaned)) {
-          bibliographyMode = false; pendingBibliographyKey = null; continue;
+        if (/^(?:references(?:\s+and\s+notes)?|notes\s+and\s+references|bibliography|literature\s+cited)\s*[.:]?$/i.test(cleaned)) {
+          // Contents pages in books often contain a standalone "Bibliography"
+          // item near the front. Treat a heading as the real bibliography only
+          // in the latter part of longer documents; repeated running headers on
+          // subsequent bibliography pages keep the established numbering mode.
+          const bibliographyHeadingEligible = sourceDoc.numPages <= 20 || page >= Math.max(2, Math.floor(sourceDoc.numPages * 0.35));
+          if (bibliographyHeadingEligible) {
+            if (!bibliographyMode) syntheticBibliographyMode = null;
+            bibliographyMode = true; pendingBibliographyKey = null; activeBibliographyEntry = null; activeProofEntry = null;
+          }
+          continue;
+        }
+        if (bibliographyMode && /^(?:glossary(?:\s+of\s+notation)?|index)\s*[.:]?$/i.test(cleaned)) {
+          bibliographyMode = false; pendingBibliographyKey = null; activeBibliographyEntry = null; continue;
         }
 
-        if (!bibliographyMode) {
+        if (!bibliographyMode && !tailOnlyPage) {
           const bracketRe = /\[[^\]]{1,60}\]/g;
           let bracketMatch;
           while ((bracketMatch = bracketRe.exec(cleaned))) {
@@ -8978,101 +9005,142 @@ async function buildStructureIndex({ force = false } = {}) {
           }
         }
 
-        // Result headings must begin the extracted visual line. Do not promote
-        // ordinary prose references such as "... by Proposition 13.6(a) ..."
-        // into the Results index merely because they follow punctuation.
-        const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
-        const namedResultMatch = !structureMatch ? cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?)/) : null;
-        if (structureMatch || namedResultMatch) {
-          const title = (structureMatch?.[1] || namedResultMatch?.[1] || '').replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
-          const label = structureMatch ? (title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80)) : title.replace(/[.:]+$/, '').trim();
-          if ((structureMatch && STRUCTURE_LABEL_RE.test(title)) || namedResultMatch) {
-            const key = `${page}:${normalizedReferenceLabel(label)}`;
-            const lowercaseSingleLetterProse = structureMatch && /^[a-z]/.test(cleaned) && /\s+[a-z]$/.test(label);
-            if (!lowercaseSingleLetterProse && !nextEntries.some((entry) => entry.key === key)) {
-              const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
-              nextEntries.push(entry); activeProofEntry = entry;
+        if (!tailOnlyPage) {
+          // Result headings must begin the extracted visual line. Do not promote
+          // ordinary prose references such as "... by Proposition 13.6(a) ..."
+          // into the Results index merely because they follow punctuation.
+          const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
+          const namedResultMatch = !structureMatch ? cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?)/) : null;
+          if (structureMatch || namedResultMatch) {
+            const title = (structureMatch?.[1] || namedResultMatch?.[1] || '').replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
+            const label = structureMatch ? (title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80)) : title.replace(/[.:]+$/, '').trim();
+            if ((structureMatch && STRUCTURE_LABEL_RE.test(title)) || namedResultMatch) {
+              const key = `${page}:${normalizedReferenceLabel(label)}`;
+              const lowercaseSingleLetterProse = structureMatch && /^[a-z]/.test(cleaned) && /\s+[a-z]$/.test(label);
+              if (!lowercaseSingleLetterProse && !nextEntries.some((entry) => entry.key === key)) {
+                const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
+                nextEntries.push(entry); activeProofEntry = entry;
+              }
             }
           }
-        }
-
-        const proofMatch = cleaned.match(/^Proof(?:\s+of\s+((?:Theorem|Lemma|Proposition|Corollary)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])))?\b[.:]?/i);
-        if (proofMatch) {
-          let target = null;
-          if (proofMatch[1]) {
-            const wanted = normalizedReferenceLabel(proofMatch[1]);
-            target = [...nextEntries].reverse().find((entry) => normalizedReferenceLabel(entry.label) === wanted) || null;
+  
+          const proofMatch = cleaned.match(/^Proof(?:\s+of\s+((?:Theorem|Lemma|Proposition|Corollary)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])))?\b[.:]?/i);
+          if (proofMatch) {
+            let target = null;
+            if (proofMatch[1]) {
+              const wanted = normalizedReferenceLabel(proofMatch[1]);
+              target = [...nextEntries].reverse().find((entry) => normalizedReferenceLabel(entry.label) === wanted) || null;
+            }
+            if (!target) target = [...nextEntries].reverse().find((entry) => page - entry.page <= 1 && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(entry.label || '')) || null;
+            if (target && !target.proofPage) {
+              target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch[1] ? `Proof of ${proofMatch[1]}` : 'Proof';
+              activeProofEntry = target;
+            }
           }
-          if (!target) target = [...nextEntries].reverse().find((entry) => page - entry.page <= 1 && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(entry.label || '')) || null;
-          if (target && !target.proofPage) {
-            target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch[1] ? `Proof of ${proofMatch[1]}` : 'Proof';
-            activeProofEntry = target;
+          if (activeProofEntry && activeProofEntry.proofPage) {
+            const references = cleaned.match(STRUCTURE_REFERENCE_RE) || [];
+            for (const reference of references) {
+              const normalizedRef = normalizedReferenceLabel(reference);
+              if (!normalizedRef || normalizedRef === normalizedReferenceLabel(activeProofEntry.label)) continue;
+              if (!activeProofEntry.proofReferences.includes(reference)) activeProofEntry.proofReferences.push(reference);
+            }
           }
-        }
-        if (activeProofEntry && activeProofEntry.proofPage) {
-          const references = cleaned.match(STRUCTURE_REFERENCE_RE) || [];
-          for (const reference of references) {
-            const normalizedRef = normalizedReferenceLabel(reference);
-            if (!normalizedRef || normalizedRef === normalizedReferenceLabel(activeProofEntry.label)) continue;
-            if (!activeProofEntry.proofReferences.includes(reference)) activeProofEntry.proofReferences.push(reference);
+  
+          if (activeProofEntry && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
+            activeProofEntry.proofEndPage = page; activeProofEntry.proofEndRatio = line.ratio; activeProofEntry = null;
           }
-        }
-
-        if (activeProofEntry && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
-          activeProofEntry.proofEndPage = page; activeProofEntry.proofEndRatio = line.ratio; activeProofEntry = null;
         }
 
         if (bibliographyMode) {
-          const addBibliographyEntry = (rawKey, body, bracketKey = true) => {
+          const addBibliographyEntry = (rawKey, body, bracketKey = true, entryPage = page, entryRatio = line.ratio) => {
             const number = bracketKey ? rawKey : Number(rawKey);
             const label = bracketKey ? `[${rawKey}]` : `[${number}]`;
             const normalizedKey = normalizedBibliographyKey(rawKey);
-            if (!normalizedKey || nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) return;
+            if (!normalizedKey) return null;
+            const existing = nextBibliography.find((entry) => normalizedBibliographyKey(entry.number) === normalizedKey);
+            if (existing) return existing;
             const meta = bibliographyMetadata(body);
-            nextBibliography.push({ number, label, page, ratio: line.ratio, title: body.slice(0, 240), citations: [], ...meta });
+            const entry = { number, label, page: entryPage, ratio: entryRatio, title: body.slice(0, 640), citations: [], ...meta };
+            nextBibliography.push(entry);
+            return entry;
           };
 
-          // Old scanned bibliographies commonly lose one square-bracket glyph
-          // during OCR (for example "{14]"). Repair only that narrow numeric
-          // key shape, and only for OCR-derived lines; native PDF text remains
-          // authoritative and unchanged.
-          const bibliographyLine = line.ocrSource
-            ? cleaned.replace(/^[\[{(]\s*(\d{1,3})\s*[\]})]\s+/, '[$1] ')
+          const appendBibliographyContinuation = (entry, fragment) => {
+            if (!entry) return;
+            const addition = String(fragment || '').replace(/\s+/g, ' ').trim();
+            if (!addition || /^\d{1,4}$/.test(addition)) return;
+            const combined = `${entry.title || ''} ${addition}`.replace(/\s+/g, ' ').trim().slice(0, 640);
+            entry.title = combined;
+            const meta = bibliographyMetadata(combined);
+            if (!entry.doi && meta.doi) entry.doi = meta.doi;
+            if (!entry.arxiv && meta.arxiv) entry.arxiv = meta.arxiv;
+          };
+
+          // Old scanned bibliographies commonly lose or swap one bracket glyph.
+          // Repair only a line-leading 1–3 digit key, only inside Bibliography,
+          // and only for OCR-derived lines. Native PDF text remains authoritative.
+          let bibliographyLine = line.ocrSource
+            ? cleaned.replace(/^[\[{(]\s*(\d{1,3})\s*[\]})][.)]?\s*/, '[$1] ')
             : cleaned;
-          let bib = bibliographyLine.match(/^\[(\d{1,3})\]\s+(.{3,})$/);
+          // Native text extraction in older scans can also confuse 1/l and the
+          // closing bracket. Repair only the *next expected* numeric key, so a
+          // malformed [l], [ll], [ 101 or [ 131 cannot invent a new sequence.
+          const numericBibliographyNumbers = nextBibliography
+            .map((entry) => Number(normalizedBibliographyKey(entry.number)))
+            .filter((value) => Number.isInteger(value) && value >= 1 && value <= 999);
+          const expectedBibliographyNumber = numericBibliographyNumbers.length ? Math.max(...numericBibliographyNumbers) + 1 : 1;
+          if (expectedBibliographyNumber === 1) bibliographyLine = bibliographyLine.replace(/^\[\s*[lI]\s*\]\s+/u, '[1] ');
+          if (expectedBibliographyNumber === 11) bibliographyLine = bibliographyLine.replace(/^\[\s*(?:ll|II)\s*\]\s+/u, '[11] ');
+          bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
+          let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
           let bracketKey = false;
           if (!bib) {
-            bib = bibliographyLine.match(/^\[([A-Za-z][A-Za-z0-9]{0,9})\]\s+(.{3,})$/);
+            bib = bibliographyLine.match(/^\[\s*([A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?\s+(.{3,})$/);
+            if (bib) bib[1] = bib[1].trim();
             bracketKey = Boolean(bib);
           }
           if (!bib) bib = bibliographyLine.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
+          // Many older books print bare bibliography numbers in a left column
+          // with no brackets or punctuation. Accept that shape only when the
+          // body visibly begins like an author entry; this keeps ordinary page
+          // numbers and numbered prose out of Bibliography.
+          if (!bib) bib = bibliographyLine.match(/^(\d{1,3})-?\s+([A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40},\s+.{6,})$/u);
           if (bib) {
             pendingBibliographyKey = null;
             if (syntheticBibliographyMode === null) syntheticBibliographyMode = false;
-            addBibliographyEntry(bib[1], bib[2].trim(), bracketKey);
+            activeBibliographyEntry = addBibliographyEntry(bib[1], bib[2].trim(), bracketKey);
           } else {
-            const keyOnly = bibliographyLine.match(/^\[(\d{1,3}|[A-Za-z][A-Za-z0-9]{0,9})\]$/);
-            const unnumberedAuthorLead = bibliographyLine.match(/^[A-Z][\p{L}'’.-]{1,40},\s+(?:(?:[A-Z]\.\s*){1,3}|[A-Z][a-z]{2,}\s+(?:de|van|von|del)),\s+.{10,}$/u);
-            const unnumberedBibCue = /(?:\b(?:18|19|20)\d{2}\b|\b(?:J\.|Journal|Math\.|Ann\.|Comm\.|Communications?|Proc\.|Proceedings?|Trans\.|Springer|Press|Verlag|Inventiones)\b)/i.test(bibliographyLine);
+            let keyOnly = bibliographyLine.match(/^\[\s*(\d{1,3}|[A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?$/);
+            if (keyOnly) keyOnly[1] = keyOnly[1].trim();
+            const bareNumericKey = bibliographyLine.match(/^(\d{1,3})-?$/);
+            if (!keyOnly && bareNumericKey && Number(bareNumericKey[1]) === expectedBibliographyNumber && Number(line.xStartRatio || 0) < 0.18) keyOnly = bareNumericKey;
+            const surnameInitialAuthor = /^[A-ZÀ-ÖØ-Þ'’][\p{L}0-9"'’.\-\\{}:;]{1,48}(?:\s+(?:de|del|di|du|la|le|van|von))?,\s+(?:[A-Z0]\.?(?:\s*|$)){1,4}(?:,|\s|:).{6,}$/u.test(bibliographyLine);
+            const surnameGivenAuthor = /^[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40},\s+[A-Z][\p{Ll}'’.-]{2,}(?:\s+(?:de|del|di|du|la|le|van|von))?(?:,|:).{6,}$/u.test(bibliographyLine);
+            const initialFirstAuthor = /^(?:(?:[A-Z]\.\s*){1,4})[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40}(?:\s+(?:and|&)\s+(?:(?:[A-Z]\.\s*){1,4})?[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40})?\s*,\s+.{6,}$/u.test(bibliographyLine);
+            const unnumberedBibCue = /(?:\b(?:17|18|19|20)\d{2}\b|\b(?:Journal|Communications?|Proceedings?|Springer|Press|Verlag|Inventiones|University\s+Press)\b|(?:\b(?:J|Math|Ann|Comm|Proc|Trans|Vol|No)\.))/i.test(bibliographyLine);
+            const unnumberedAuthorLead = surnameInitialAuthor || initialFirstAuthor || (surnameGivenAuthor && unnumberedBibCue);
+            const authorLineSpan = Math.max(0, Number(line.xEndRatio || 0) - Number(line.xStartRatio || 0));
+            const strongUnnumberedAuthorLead = unnumberedAuthorLead && (bibliographyLine.length >= 60 || authorLineSpan >= 0.45);
             if (keyOnly) {
               if (syntheticBibliographyMode === null) syntheticBibliographyMode = false;
               pendingBibliographyKey = { rawKey: keyOnly[1], bracketKey: !/^\d+$/.test(keyOnly[1]), page, ratio: line.ratio };
-            } else if ((syntheticBibliographyMode === true || syntheticBibliographyMode === null) && unnumberedAuthorLead && (syntheticBibliographyMode === true || unnumberedBibCue)) {
+              activeBibliographyEntry = null;
+            } else if ((syntheticBibliographyMode === true || syntheticBibliographyMode === null) && strongUnnumberedAuthorLead && (syntheticBibliographyMode === true || unnumberedBibCue)) {
               if (syntheticBibliographyMode === null) syntheticBibliographyMode = true;
               pendingBibliographyKey = null;
-              addBibliographyEntry(String(nextBibliography.length + 1), bibliographyLine, false);
+              activeBibliographyEntry = addBibliographyEntry(String(nextBibliography.length + 1), bibliographyLine, false);
             } else if (pendingBibliographyKey && cleaned.length >= 3) {
-              const savedPage = page;
-              const savedRatio = line.ratio;
               const pending = pendingBibliographyKey;
               pendingBibliographyKey = null;
-              const number = pending.bracketKey ? pending.rawKey : Number(pending.rawKey);
-              const label = pending.bracketKey ? `[${pending.rawKey}]` : `[${number}]`;
-              const normalizedKey = normalizedBibliographyKey(pending.rawKey);
-              if (normalizedKey && !nextBibliography.some((entry) => normalizedBibliographyKey(entry.number) === normalizedKey)) {
-                const meta = bibliographyMetadata(cleaned);
-                nextBibliography.push({ number, label, page: pending.page || savedPage, ratio: pending.ratio ?? savedRatio, title: cleaned.slice(0, 240), citations: [], ...meta });
-              }
+              activeBibliographyEntry = addBibliographyEntry(pending.rawKey, cleaned, pending.bracketKey, pending.page || page, pending.ratio ?? line.ratio);
+            } else if (activeBibliographyEntry && cleaned.length >= 3 && !/^(?:references?|bibliography|literature\s+cited)\b/i.test(cleaned)) {
+              // Preserve wrapped old-style references. Continuation lines often
+              // contain the journal, volume, year or page range that makes the
+              // entry useful, but v295 discarded everything after line one.
+              const footerLike = (Number(line.ratio) > 0.91 && cleaned.length < 100)
+                || /^\d{1,4}\s+[A-Z][A-Z .,'’'-]{2,}$/u.test(cleaned)
+                || /^(?:(?:I\s+)?manuscrit\s+reçu|received|revised|department\s+of|annales\s+de|license\s+or\s+copyright\s+restrictions)\b/i.test(cleaned);
+              if (!footerLike) appendBibliographyContinuation(activeBibliographyEntry, cleaned);
             }
           }
         }
@@ -11315,9 +11383,12 @@ async function openPdfFile(file, recoveryId = null) {
     if (recoveryId) {
       try {
         const recovery = await dbGet('documents', recoveryId);
-        if (recovery && recovery.name === file.name && Number(recovery.size) === Number(file.size)) {
+        if (recovery) {
+          // Imported first-screen reading data may not know the original file
+          // size, but its SHA-256 document id is exact. Identity wins over
+          // metadata; metadata is used only for the legacy cached-file fallback.
           let exactMatch = recovery.id === id;
-          if (!exactMatch) {
+          if (!exactMatch && recovery.name === file.name && Number(recovery.size) === Number(file.size)) {
             try {
               const oldFile = await dbGet('files', recovery.id);
               if (oldFile?.blob) {
@@ -11332,8 +11403,6 @@ async function openPdfFile(file, recoveryId = null) {
           } else {
             showError(t('The selected PDF does not exactly match the cached document. It will be opened as a new document.', '所选 PDF 与缓存文档并非完全相同，将作为新文档打开。'));
           }
-        } else if (recovery) {
-          showError(t('The selected PDF does not match the missing cached file. It will be opened as a new document.', '所选 PDF 与缺失的缓存文件不匹配，将作为新文档打开。'));
         }
       } catch (_) {}
     }
@@ -11650,10 +11719,50 @@ function exportReadingData() {
 }
 
 async function importReadingDataFile(file) {
-  if (!pdfDoc || !currentFileKey || !file) return;
+  if (!file) return;
   let payload;
   try { payload = JSON.parse(await file.text()); } catch (_) { showError(t('The selected reading-data file is not valid JSON.', '所选阅读数据文件不是有效的 JSON。')); return; }
   if (payload?.schema !== 'mathreader.reading-data@1' || !payload.session) { showError(t('This is not a MathReader reading-data export.', '这不是 MathReader 阅读数据导出文件。')); return; }
+
+  // Import is also a first-screen local-library operation. If no PDF is open,
+  // retain the exact document identity and its session in IndexedDB; the History
+  // row will offer Reopen so the user can select the matching PDF later. The PDF
+  // bytes are never guessed or substituted.
+  if (!pdfDoc || !currentFileKey) {
+    const importedId = String(payload.document?.id || '').trim();
+    const importedName = String(payload.document?.name || '').trim();
+    if (!importedId || !importedName) {
+      showError(t('This reading-data export does not contain a document identity.', '此阅读数据导出文件缺少文档标识。'));
+      return;
+    }
+    try {
+      await requestPersistentLocalStorage();
+      const existing = await dbGet('documents', importedId);
+      const now = Date.now();
+      await dbPut('documents', {
+        ...(existing || {}),
+        id: importedId,
+        name: importedName,
+        size: Number(existing?.size || payload.document?.size || 0),
+        lastModified: Number(existing?.lastModified || payload.document?.lastModified || 0),
+        createdAt: existing?.createdAt || now,
+        openedAt: existing?.openedAt || now,
+        updatedAt: now,
+        lastPage: Math.max(1, Number(payload.session?.page || 1)),
+        session: payload.session,
+        importedReadingData: true
+      });
+      await refreshLocalLibrary();
+      activatePanel('history-panel', false);
+      if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-left-open');
+      else shell.classList.remove('left-collapsed');
+    } catch (error) {
+      console.warn('MathReader could not import local reading data.', error);
+      showError(t('The reading data could not be imported into the local library.', '无法将阅读数据导入本地资料库。'));
+    }
+    return;
+  }
+
   if (payload.document?.id && payload.document.id !== currentFileKey) {
     const sameName = String(payload.document?.name || '') === String(currentFileName || '');
     const samePages = Number(payload.document?.pages || 0) === Number(pdfDoc.numPages || 0);
