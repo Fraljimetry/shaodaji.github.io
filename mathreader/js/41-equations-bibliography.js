@@ -1,4 +1,4 @@
-// MathReader v306 · Equation indexing, Results/Structure indexing, and Bibliography rendering.
+// MathReader · Equation indexing, Results/Structure indexing, and Bibliography rendering.
 function normalizedReferenceLabel(value) {
   return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
 }
@@ -571,6 +571,284 @@ function reconcileOcrEquationSequenceOrder(index) {
   return index;
 }
 
+
+function equationIndexHasSuspiciousLeadingGap(index) {
+  const byPrefix = new Map();
+  for (const label of index.keys()) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed?.prefix || !Number.isInteger(parsed.last) || parsed.last < 1) continue;
+    const values = byPrefix.get(parsed.prefix) || [];
+    values.push(parsed.last);
+    byPrefix.set(parsed.prefix, values);
+  }
+  for (const values of byPrefix.values()) {
+    const unique = [...new Set(values)].sort((a, b) => a - b);
+    if (unique.length < 2) continue;
+    const first = unique[0];
+    // A family that first appears very late but contains only a few consecutive
+    // labels is a strong sign of an incomplete hidden OCR layer. Do not infer
+    // any missing labels here; this predicate only decides whether a scan-image
+    // margin should be consulted as a second source of evidence.
+    if (first >= 5 && first > unique.length + 3) return true;
+  }
+  return false;
+}
+
+async function equationPageContainsRasterImage(sourceDoc, pageNum) {
+  try {
+    const page = await sourceDoc.getPage(pageNum);
+    const opList = await page.getOperatorList();
+    const ops = pdfjsLib?.OPS || {};
+    const imageOps = new Set([
+      ops.paintImageMaskXObject,
+      ops.paintImageMaskXObjectGroup,
+      ops.paintImageXObject,
+      ops.paintInlineImageXObject,
+      ops.paintInlineImageXObjectGroup,
+      ops.paintImageXObjectRepeat,
+    ].filter(Number.isFinite));
+    return imageOps.size > 0 && (opList?.fnArray || []).some((fn) => imageOps.has(fn));
+  } catch (_) {
+    return false;
+  }
+}
+
+async function equationDocumentLooksImageBacked(sourceDoc, index) {
+  if (!sourceDoc?.numPages || documentTextMode !== 'native' || documentOcrActive) return false;
+  const anchorPages = [];
+  for (const candidates of index.values()) {
+    const candidate = chooseCanonicalEquationCandidate(candidates);
+    const page = Number(candidate?.page);
+    if (Number.isInteger(page) && page >= 1 && page <= sourceDoc.numPages) anchorPages.push(page);
+  }
+  if (!anchorPages.length) return false;
+  anchorPages.sort((a, b) => a - b);
+  const anchor = anchorPages[Math.floor(anchorPages.length / 2)];
+  const sample = [...new Set([anchor - 1, anchor, anchor + 1]
+    .map((page) => Math.min(sourceDoc.numPages, Math.max(1, page))))];
+  if (sample.length < 2) return false;
+  let imagePages = 0;
+  for (const pageNum of sample) if (await equationPageContainsRasterImage(sourceDoc, pageNum)) imagePages += 1;
+  // Requiring every adjacent sample page to contain raster content keeps this
+  // path away from ordinary born-digital papers that merely contain a figure.
+  return imagePages === sample.length;
+}
+
+function equationSupplementalOcrPagePlan(sourceDoc, index) {
+  const pageCount = Math.max(0, Number(sourceDoc?.numPages) || 0);
+  if (!pageCount) return [];
+  if (pageCount <= 60) return Array.from({ length: pageCount }, (_, index) => index + 1);
+  const anchors = [];
+  for (const candidates of index.values()) {
+    const candidate = chooseCanonicalEquationCandidate(candidates);
+    const page = Number(candidate?.page);
+    if (Number.isInteger(page) && page >= 1 && page <= pageCount) anchors.push(page);
+  }
+  const pages = new Set();
+  for (const anchor of anchors) {
+    for (let delta = -12; delta <= 12; delta += 1) {
+      const page = anchor + delta;
+      if (page >= 1 && page <= pageCount) pages.add(page);
+    }
+  }
+  // Keep automatic image assistance bounded on long scanned books. Full
+  // document OCR remains the explicit path when a much larger scan needs it.
+  return [...pages].sort((a, b) => a - b).slice(0, 48);
+}
+
+function remapEquationMarginOcrLine(line, side, marginFraction) {
+  const fraction = Math.min(0.48, Math.max(0.28, Number(marginFraction) || 0.38));
+  const offset = side === 'right' ? 1 - fraction : 0;
+  const mapX = (value) => Math.min(1, Math.max(0, offset + (Number(value) || 0) * fraction));
+  return {
+    ...line,
+    ocrSource: true,
+    supplementalEquationOcr: true,
+    xStartRatio: mapX(line.xStartRatio),
+    xEndRatio: mapX(line.xEndRatio),
+    parts: (line.parts || []).map((part) => ({
+      ...part,
+      xStartRatio: mapX(part.xStartRatio),
+      xEndRatio: mapX(part.xEndRatio),
+    })),
+  };
+}
+
+async function equationMarginOcrLines(sourceDoc, pageNum, side, worker) {
+  const page = await sourceDoc.getPage(pageNum);
+  const base = page.getViewport({ scale: 1 });
+  const scale = Math.max(2.4, Math.min(3.6, 3200 / Math.max(1, base.width, base.height)));
+  const viewport = page.getViewport({ scale });
+  const fullCanvas = document.createElement('canvas');
+  fullCanvas.width = Math.max(1, Math.ceil(viewport.width));
+  fullCanvas.height = Math.max(1, Math.ceil(viewport.height));
+  const fullContext = fullCanvas.getContext('2d', { alpha: false });
+  fullContext.fillStyle = '#fff';
+  fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+  await page.render({ canvasContext: fullContext, viewport }).promise;
+
+  const marginFraction = 0.38;
+  const cropWidth = Math.max(1, Math.ceil(fullCanvas.width * marginFraction));
+  const cropX = side === 'right' ? Math.max(0, fullCanvas.width - cropWidth) : 0;
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropWidth;
+  cropCanvas.height = fullCanvas.height;
+  const cropContext = cropCanvas.getContext('2d', { alpha: false });
+  cropContext.fillStyle = '#fff';
+  cropContext.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+  cropContext.drawImage(fullCanvas, cropX, 0, cropWidth, fullCanvas.height, 0, 0, cropWidth, fullCanvas.height);
+
+  let result;
+  try {
+    result = await worker.recognize(cropCanvas, {}, { hocr: true });
+  } finally {
+    fullCanvas.width = 1;
+    fullCanvas.height = 1;
+    cropCanvas.width = 1;
+    cropCanvas.height = 1;
+  }
+  const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, Math.max(1, Math.ceil(viewport.height)), pageNum);
+  return (record.lines || []).map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
+}
+
+function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
+  const numeric = parsedEquationNumber(candidate.label);
+  if (!numeric?.prefix) return null;
+  const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
+  const atStart = !String(line.text || '').slice(0, Math.max(0, Number(candidate.index) || 0)).trim();
+  const atEnd = !String(line.text || '').slice(Math.max(0, Number(candidate.end) || 0)).trim();
+  const standaloneTag = isStandaloneEquationTagLine(line, candidate.label);
+  if (!standaloneTag && equationNumberingSide === 'left' && !atStart) return null;
+  if (!standaloneTag && equationNumberingSide === 'right' && !atEnd) return null;
+  const record = {
+    label: candidate.label,
+    page,
+    ratio: line.ratio,
+    text: line.text,
+    xStartRatio: line.xStartRatio,
+    xEndRatio: line.xEndRatio,
+    candidateXStartRatio: tokenGeometry.xStartRatio,
+    candidateXEndRatio: tokenGeometry.xEndRatio,
+    numeric,
+    bareSource: Boolean(candidate.bare),
+    sequenceOnly: false,
+    explicitParenthesized: !candidate.bare,
+    candidateAtLineStart: atStart,
+    candidateAtLineEnd: atEnd,
+    standaloneTag,
+    nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
+    nearbyHeadingContext: Boolean(candidate.bare) && bareEquationHasNearbyHeadingContext(lines, lineIndex),
+    axisNumericCluster: false,
+    mathSignals: equationLineMathSignalCount(line.text),
+    ocrSource: true,
+    supplementalEquationOcr: true,
+  };
+  let confidence = equationCandidateConfidenceForSide(record);
+  if (record.axisNumericCluster) confidence = -Infinity;
+  if (!Number.isFinite(confidence) || confidence < 8) {
+    if (!(standaloneTag && equationCandidateAlignedToNumberingSide(record))) return null;
+    confidence = 12;
+  }
+  record.confidence = Math.max(12, confidence);
+  return record;
+}
+
+function denseSupplementalEquationFamilies(records) {
+  const byPrefix = new Map();
+  for (const record of records || []) {
+    const parsed = record?.numeric || parsedEquationNumber(record?.label);
+    if (!parsed?.prefix) continue;
+    const list = byPrefix.get(parsed.prefix) || [];
+    list.push(record);
+    byPrefix.set(parsed.prefix, list);
+  }
+  const accepted = [];
+  for (const recordsForPrefix of byPrefix.values()) {
+    const byLabel = new Map();
+    for (const record of recordsForPrefix) {
+      const list = byLabel.get(record.label) || [];
+      list.push(record);
+      byLabel.set(record.label, list);
+    }
+    const canonical = [...byLabel.entries()].map(([label, candidates]) => ({
+      label,
+      parsed: parsedEquationNumber(label),
+      candidate: chooseCanonicalEquationCandidate(candidates),
+    })).filter((item) => item.parsed && item.candidate);
+    canonical.sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
+    const monotone = [];
+    let last = -1;
+    for (const item of canonical) {
+      if (item.parsed.last < last) continue;
+      if (item.parsed.last === last) continue;
+      last = item.parsed.last;
+      monotone.push(item);
+    }
+    if (monotone.length < 3) continue;
+    const numbers = monotone.map((item) => item.parsed.last);
+    const span = Math.max(...numbers) - Math.min(...numbers) + 1;
+    // Image-derived labels are allowed to fill a small number of OCR holes, but
+    // a sparse collection of isolated numbers is not enough to define a family.
+    if (span > monotone.length + 2) continue;
+    accepted.push(...monotone.map((item) => item.candidate));
+  }
+  return accepted;
+}
+
+async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index) {
+  if (!equationIndexHasSuspiciousLeadingGap(index)) return false;
+  if (!await equationDocumentLooksImageBacked(sourceDoc, index)) return false;
+  const pages = equationSupplementalOcrPagePlan(sourceDoc, index);
+  if (!pages.length || documentOcrBusy) return false;
+
+  let worker = null;
+  try {
+    const module = await loadDocumentOcrModule();
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+    const createWorker = documentOcrCreateWorker(module);
+    if (typeof createWorker !== 'function') return false;
+    worker = await createWorker('eng', 1, { logger: () => {} });
+    if (typeof worker.setParameters === 'function') {
+      try {
+        await worker.setParameters({
+          preserve_interword_spaces: '1',
+          user_defined_dpi: '300',
+          tessedit_pageseg_mode: '11',
+        });
+      } catch (_) {}
+    }
+
+    const records = [];
+    for (const pageNum of pages) {
+      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+      const lines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, worker);
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const line = lines[lineIndex];
+        for (const candidate of equationLabelCandidatesInLine(line.text)) {
+          const record = equationSupplementalRecord(line, pageNum, lineIndex, lines, candidate);
+          if (record) records.push(record);
+        }
+      }
+      await nextFrame();
+    }
+
+    let added = false;
+    for (const record of denseSupplementalEquationFamilies(records)) {
+      if (index.has(record.label)) continue;
+      index.set(record.label, [record]);
+      added = true;
+    }
+    return added;
+  } catch (error) {
+    // Image assistance is deliberately optional. A network/model failure must
+    // never make a native-text Equation index unavailable.
+    console.warn('MathReader equation image-assistance was unavailable.', error);
+    return false;
+  } finally {
+    try { await worker?.terminate?.(); } catch (_) {}
+  }
+}
+
 async function buildEquationLabelIndex() {
   if (!pdfDoc || !documentTextFeaturesAvailable()) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
@@ -711,6 +989,7 @@ async function buildEquationLabelIndex() {
     index.set(record.label, list);
   }
 
+  await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index);
   reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
   reconcileEquationNumberingFamilies(index);
@@ -1077,6 +1356,104 @@ function bibliographyMetadata(text) {
   return { doi, arxiv };
 }
 
+
+function bibliographyReferenceBodyLooksStrong(text) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (value.length < 12 || !/^[\p{L}]/u.test(value)) return false;
+  let score = 0;
+  if (/^[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я]/u.test(value)) score += 1;
+  if (/^(?:(?:[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я][.\-–—·]{1,5}\s+){1,4})[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я][\p{L}'’.-]{1,40}\s*,/u.test(value)
+      || /^[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я][\p{L}'’.-]{1,40},\s+(?:(?:[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я][.\-–—·]{0,5}\s*){1,4})/u.test(value)) score += 2;
+  if (/\b(?:17|18|19|20)\d{2}\b/.test(value)) score += 2;
+  if (/\b(?:Ann\.?|Math\.?|Journal|J\.?\s|Proc\.?|Proceedings?|Trans\.?|Communications?|Comm\.?|Springer|Press|Verlag|University|Acad(?:emy)?|Acta|Inventiones|Topology|Bull\.?)\b/i.test(value)) score += 2;
+  if ((value.match(/,/g) || []).length >= 2) score += 1;
+  if (value.length >= 42) score += 1;
+  return score >= 3;
+}
+
+function malformedNumericBibliographyCandidate(text, line, page) {
+  if (Number(line?.xStartRatio || 0) >= 0.22) return null;
+  const match = String(text || '').match(/^(\S{2,8})\s+(.{8,})$/u);
+  if (!match) return null;
+  const token = match[1];
+  const body = match[2].trim();
+  if (!/^[\[{(]/u.test(token)) return null;
+  if (/^\[\s*\d{1,3}\s*\][.)]?$/u.test(token)) return null;
+  if (/^\[\s*[A-Za-z][A-Za-z0-9\s]{0,12}\s*\][.)]?$/u.test(token)) return null;
+  if (!bibliographyReferenceBodyLooksStrong(body)) return null;
+
+  const compact = Array.from(token).length <= 6;
+  if (!compact) return null;
+  const digitText = (token.match(/\d/g) || []).join('');
+  const bracketedSingleGlyph = /^[\[{(]\s*[^\s\]})]{1}\s*[\]})][.)]?$/u.test(token);
+  const digitBearing = digitText.length >= 1 && digitText.length <= 3;
+  if (!digitBearing && !bracketedSingleGlyph) return null;
+
+  return {
+    token,
+    digitText,
+    bracketedSingleGlyph,
+    body,
+    page,
+    ratio: Number(line?.ratio || 0),
+    xStartRatio: Number(line?.xStartRatio || 0),
+    used: false,
+    continuations: []
+  };
+}
+
+function bibliographyDocumentPosition(item) {
+  return (Number(item?.page || 0) * 2) + Math.min(1, Math.max(0, Number(item?.ratio || 0)));
+}
+
+function recoverSingleGapBibliographyCandidates(entries, candidates) {
+  const numericEntries = entries
+    .map((entry) => ({ entry, value: Number(normalizedBibliographyKey(entry.number)) }))
+    .filter((item) => Number.isInteger(item.value) && item.value >= 1 && item.value <= 999)
+    .sort((a, b) => bibliographyDocumentPosition(a.entry) - bibliographyDocumentPosition(b.entry));
+  if (numericEntries.length < 2 || !Array.isArray(candidates) || !candidates.length) return 0;
+
+  let recoveredCount = 0;
+  const existingKeys = new Set(entries.map((entry) => normalizedBibliographyKey(entry.number)));
+  for (let index = 0; index + 1 < numericEntries.length; index += 1) {
+    const left = numericEntries[index];
+    const right = numericEntries[index + 1];
+    if (right.value !== left.value + 2) continue;
+    const missing = left.value + 1;
+    if (existingKeys.has(String(missing))) continue;
+    const leftPos = bibliographyDocumentPosition(left.entry);
+    const rightPos = bibliographyDocumentPosition(right.entry);
+    const compatible = candidates.filter((candidate) => {
+      if (candidate.used) return false;
+      const position = bibliographyDocumentPosition(candidate);
+      if (!(position > leftPos && position < rightPos)) return false;
+      if (candidate.digitText) return Number(candidate.digitText) === missing;
+      return candidate.bracketedSingleGlyph;
+    });
+    if (compatible.length !== 1) continue;
+
+    const candidate = compatible[0];
+    const fullBody = [candidate.body, ...(candidate.continuations || [])].join(' ').replace(/\s+/g, ' ').trim();
+    if (!bibliographyReferenceBodyLooksStrong(fullBody)) continue;
+    const meta = bibliographyMetadata(fullBody);
+    const recovered = {
+      number: missing,
+      label: `[${missing}]`,
+      page: candidate.page,
+      ratio: candidate.ratio,
+      title: fullBody.slice(0, 640),
+      citations: [],
+      ...meta
+    };
+    const insertAt = entries.indexOf(right.entry);
+    entries.splice(insertAt >= 0 ? insertAt : entries.length, 0, recovered);
+    existingKeys.add(String(missing));
+    candidate.used = true;
+    recoveredCount += 1;
+  }
+  return recoveredCount;
+}
+
 async function buildStructureIndex({ force = false } = {}) {
   if (!pdfDoc || !documentTextFeaturesAvailable() || !structureIndex || structureIndexBuilding) return;
   if (force && pendingOutlineReselectKey) { pendingOutlineReselectKey = null; refreshSelectionUI(); }
@@ -1099,10 +1476,12 @@ async function buildStructureIndex({ force = false } = {}) {
   const nextEntries = [];
   const nextBibliography = [];
   const bibliographyCitationGroups = [];
+  const bibliographyRecoveryCandidates = [];
   let bibliographyMode = false;
   let pendingBibliographyKey = null;
   let syntheticBibliographyMode = null;
   let activeBibliographyEntry = null;
+  let activeBibliographyRecoveryCandidate = null;
   let activeProofEntry = null;
   try {
     // Structure stays bounded for performance, but old books and long technical
@@ -1130,12 +1509,12 @@ async function buildStructureIndex({ force = false } = {}) {
           const bibliographyHeadingEligible = sourceDoc.numPages <= 20 || page >= Math.max(2, Math.floor(sourceDoc.numPages * 0.35));
           if (bibliographyHeadingEligible) {
             if (!bibliographyMode) syntheticBibliographyMode = null;
-            bibliographyMode = true; pendingBibliographyKey = null; activeBibliographyEntry = null; activeProofEntry = null;
+            bibliographyMode = true; pendingBibliographyKey = null; activeBibliographyEntry = null; activeBibliographyRecoveryCandidate = null; activeProofEntry = null;
           }
           continue;
         }
         if (bibliographyMode && /^(?:glossary(?:\s+of\s+notation)?|index)\s*[.:]?$/i.test(cleaned)) {
-          bibliographyMode = false; pendingBibliographyKey = null; activeBibliographyEntry = null; continue;
+          bibliographyMode = false; pendingBibliographyKey = null; activeBibliographyEntry = null; activeBibliographyRecoveryCandidate = null; continue;
         }
 
         if (!bibliographyMode && !tailOnlyPage) {
@@ -1291,11 +1670,20 @@ async function buildStructureIndex({ force = false } = {}) {
           // body visibly begins like an author entry; this keeps ordinary page
           // numbers and numbered prose out of Bibliography.
           if (!bib) bib = bibliographyLine.match(/^(\d{1,3})-?\s+([A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40},\s+.{6,})$/u);
+          const malformedNumericCandidate = !bib ? malformedNumericBibliographyCandidate(bibliographyLine, line, page) : null;
           if (bib) {
             pendingBibliographyKey = null;
+            activeBibliographyRecoveryCandidate = null;
             if (syntheticBibliographyMode === null) syntheticBibliographyMode = false;
             activeBibliographyEntry = addBibliographyEntry(bib[1], bib[2].trim(), bracketKey);
           } else {
+            if (malformedNumericCandidate) {
+              bibliographyRecoveryCandidates.push(malformedNumericCandidate);
+              activeBibliographyRecoveryCandidate = malformedNumericCandidate;
+              pendingBibliographyKey = null;
+              activeBibliographyEntry = null;
+              continue;
+            }
             let keyOnly = bibliographyLine.match(/^\[\s*(\d{1,3}|[A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?$/);
             if (keyOnly) keyOnly[1] = keyOnly[1].trim();
             // Old bibliographies often use a horizontal rule to mean
@@ -1319,15 +1707,28 @@ async function buildStructureIndex({ force = false } = {}) {
             const strongUnnumberedAuthorLead = unnumberedAuthorLead && (bibliographyLine.length >= 60 || authorLineSpan >= 0.45);
             if (keyOnly) {
               if (syntheticBibliographyMode === null) syntheticBibliographyMode = false;
+              activeBibliographyRecoveryCandidate = null;
               pendingBibliographyKey = { rawKey: keyOnly[1], bracketKey: !/^\d+$/.test(keyOnly[1]), page, ratio: line.ratio };
               activeBibliographyEntry = null;
+            } else if (activeBibliographyRecoveryCandidate && cleaned.length >= 3) {
+              const topHeaderLike = Number(line.ratio) < 0.10 && (
+                /^\d{1,4}\s+[A-Z][A-Z0-9 .,:;'’"()\-]{4,}$/u.test(cleaned)
+                || /^[A-Z][A-Z0-9 .,:;'’"()\-]{4,}\s+\d{1,4}$/u.test(cleaned)
+              );
+              const footerLike = topHeaderLike
+                || (Number(line.ratio) > 0.91 && cleaned.length < 100)
+                || /^\d{1,4}\s+[A-Z][A-Z .,'’'-]{2,}$/u.test(cleaned)
+                || /^(?:(?:I\s+)?manuscrit\s+reçu|received|revised|department\s+of|annales\s+de|license\s+or\s+copyright\s+restrictions)\b/i.test(cleaned);
+              if (!footerLike) activeBibliographyRecoveryCandidate.continuations.push(cleaned);
             } else if ((syntheticBibliographyMode === true || syntheticBibliographyMode === null) && strongUnnumberedAuthorLead && (syntheticBibliographyMode === true || unnumberedBibCue)) {
               if (syntheticBibliographyMode === null) syntheticBibliographyMode = true;
+              activeBibliographyRecoveryCandidate = null;
               pendingBibliographyKey = null;
               activeBibliographyEntry = addBibliographyEntry(String(nextBibliography.length + 1), bibliographyLine, false);
             } else if (pendingBibliographyKey && cleaned.length >= 3) {
               const pending = pendingBibliographyKey;
               pendingBibliographyKey = null;
+              activeBibliographyRecoveryCandidate = null;
               activeBibliographyEntry = addBibliographyEntry(pending.rawKey, cleaned, pending.bracketKey, pending.page || page, pending.ratio ?? line.ratio);
             } else if (activeBibliographyEntry && cleaned.length >= 3 && !/^(?:references?|bibliography|literature\s+cited)\b/i.test(cleaned)) {
               // Preserve wrapped old-style references. Continuation lines often
@@ -1349,6 +1750,12 @@ async function buildStructureIndex({ force = false } = {}) {
       if (page % 10 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
     }
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
+
+    // High-confidence exact parsing stays authoritative. A second pass may
+    // promote a provisional malformed key only when two exact numeric neighbors
+    // bound one unique missing number in document order. This recovers damaged
+    // text-layer glyphs without broad OCR substitutions or duplicate entries.
+    recoverSingleGapBibliographyCandidates(nextBibliography, bibliographyRecoveryCandidates);
 
     // Resolve body citation groups only after the bibliography keys are known.
     // The brackets group citations; they do not define the key syntax. This

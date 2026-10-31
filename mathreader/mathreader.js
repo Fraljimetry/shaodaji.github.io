@@ -1,11 +1,11 @@
-// MathReader v306 bootstrap.
+// MathReader bootstrap.
 //
 // The application remains one logical ES module so lexical state, declaration
-// hoisting, and initialization order stay identical to the v305 monolith. The
+// hoisting, and initialization order stay identical to the pre-partition monolith. The
 // source is split only for maintenance: parts are fetched in parallel, assembled
 // in their original order, and imported once. No part executes independently.
 
-const VERSION = '306';
+const VERSION = '308';
 const PARTS = [
   'js/00-core.js',
   'js/10-formula-ocr.js',
