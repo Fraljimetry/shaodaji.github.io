@@ -188,7 +188,13 @@ function recoverSequentialEquationGaps(index, candidatePool) {
         return pos > leftPos && pos < rightPos;
       });
       if (!matches.length) continue;
-      const canonicalMatch = chooseCanonicalEquationCandidate(matches);
+      const ordinaryMatches = matches.filter((item) => !item?.recoveredMarginGapCandidate);
+      const usableMatches = ordinaryMatches.length ? ordinaryMatches : matches;
+      // The prose-like margin fallback is intentionally weaker than the normal
+      // candidate pool. It may fill a gap only when the evidence is unique;
+      // never choose arbitrarily between two low-confidence margin rows.
+      if (!ordinaryMatches.length && usableMatches.length !== 1) continue;
+      const canonicalMatch = chooseCanonicalEquationCandidate(usableMatches);
       if (!canonicalMatch) continue;
       const recovered = { ...canonicalMatch, confidence: Math.max(10, Number(canonicalMatch.confidence) || 0), recoveredBySequence: true };
       index.set(expected, [recovered]);
@@ -978,9 +984,25 @@ async function buildEquationLabelIndex() {
       )) ||
       strongLineStartTag
     ) && (!record.sequenceOnly || record.nearbyDisplayMath || record.mathSignals >= 2);
-    if (poolEligible) {
+    // Some PDFs expose a true displayed equation as a short alphabetic or
+    // badly decoded formula line plus its explicit margin tag. The normal direct
+    // classifier deliberately rejects prose-like integer tags. Keep such a tag
+    // only as sequence evidence: it can fill one bounded numeric gap, but it
+    // cannot enter the index on its own. This preserves the anti-reference
+    // guard while allowing complete equation families.
+    const marginGapCandidate = Boolean(
+      record.explicitParenthesized
+      && alignedForPool
+      && (Number(record.mathSignals) || 0) === 0
+      && (equationNumberingSide === 'left' ? record.candidateAtLineStart : record.candidateAtLineEnd)
+      && (equationNumberingSide === 'left' || Number(record.xStartRatio) >= 0.22)
+      && !/\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in|in\s+view\s+of|contradicts?|rewrit(?:e|ten)|follows?\s+from|inequality\s+(?:like|in)|as\s+required|cf\.?|recall|apply(?:ing)?|combin(?:e|ing)|substitut(?:e|ing)|insert|notice)\b/i.test(String(record.text || ''))
+    );
+    if (poolEligible || marginGapCandidate) {
       const pool = candidatePool.get(record.label) || [];
-      pool.push(record);
+      pool.push(marginGapCandidate && !poolEligible
+        ? { ...record, confidence: 0, sequenceOnly: true, recoveredMarginGapCandidate: true }
+        : record);
       candidatePool.set(record.label, pool);
     }
     if (!reliable || record.sequenceOnly) continue;
