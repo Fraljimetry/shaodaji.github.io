@@ -896,6 +896,22 @@ async function buildEquationLabelIndex() {
       for (const candidate of [...explicit, ...weakBare]) {
         const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
         const numeric = parsedEquationNumber(candidate.label);
+        // OCR of old books can turn a running section header such as
+        // "6.2  <title>  · 239 ·" into a bare dotted equation candidate.  A
+        // genuine display tag may occur near the top of a page, but it should
+        // not also look like a short running header with a trailing page number.
+        // Keep this rejection OCR-only and top-band-only so born-digital and
+        // ordinary display equations retain the mature detector behavior.
+        const ocrTopRunningHeader = Boolean(
+          line.ocrSource
+          && candidate.bare
+          && (Number(candidate.index) || 0) <= 4
+          && Number(line.ratio) <= 0.075
+          && /^\s*\d{1,3}\s*(?:[.．]\s*\d{1,3}){1,3}\s+\S/u.test(rawLineText)
+          && /[A-Za-z\u00C0-\u024F]{2,}/u.test(rawLineText)
+          && /\b\d{1,4}\b\s*[-+·•.]?\s*$/u.test(rawLineText)
+          && rawLineText.length <= 90
+        );
         rawCandidates.push({
           label: candidate.label,
           page,
@@ -917,6 +933,7 @@ async function buildEquationLabelIndex() {
           axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
           ocrSource: Boolean(line.ocrSource),
+          ocrTopRunningHeader,
         });
       }
     }
@@ -932,7 +949,7 @@ async function buildEquationLabelIndex() {
   for (const record0 of rawCandidates) {
     const record = { ...record0 };
     let confidence = equationCandidateConfidenceForSide(record);
-    if (record.axisNumericCluster) confidence = -Infinity;
+    if (record.axisNumericCluster || record.ocrTopRunningHeader) confidence = -Infinity;
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
         ? Number(record.candidateXEndRatio) <= (record.ocrSource ? 0.24 : 0.13)
@@ -991,7 +1008,8 @@ async function buildEquationLabelIndex() {
     // cannot enter the index on its own. This preserves the anti-reference
     // guard while allowing complete equation families.
     const marginGapCandidate = Boolean(
-      record.explicitParenthesized
+      !record.ocrTopRunningHeader
+      && record.explicitParenthesized
       && alignedForPool
       && (Number(record.mathSignals) || 0) === 0
       && (equationNumberingSide === 'left' ? record.candidateAtLineStart : record.candidateAtLineEnd)
