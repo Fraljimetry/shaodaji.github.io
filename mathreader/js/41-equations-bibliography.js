@@ -115,6 +115,225 @@ function equationDocumentPosition(item) {
   return Number(item?.page || 0) * 10 + (Number(item?.ratio) || 0);
 }
 
+
+function equationLineFragmentForColumns(line, parts, columnIndex, columnStartRatio, columnEndRatio) {
+  if (!Array.isArray(parts) || !parts.length) return null;
+  const ordered = [...parts].sort((a, b) => Number(a.start || 0) - Number(b.start || 0));
+  const source = String(line?.text || '');
+  const start = Math.min(...ordered.map((part) => Number(part.start || 0)));
+  const end = Math.max(...ordered.map((part) => Number(part.end || 0)));
+  const raw = source.slice(start, end).replace(/\s+/g, ' ').trim();
+  if (!raw) return null;
+  const leading = source.slice(start, end).search(/\S/);
+  const adjustedStart = start + Math.max(0, leading);
+  const fragmentParts = ordered.map((part) => ({
+    ...part,
+    start: Math.max(0, Number(part.start || 0) - adjustedStart),
+    end: Math.max(0, Number(part.end || 0) - adjustedStart),
+  }));
+  return {
+    ...line,
+    text: raw,
+    parts: fragmentParts,
+    xStartRatio: Math.min(...ordered.map((part) => Number(part.xStartRatio || 0))),
+    xEndRatio: Math.max(...ordered.map((part) => Number(part.xEndRatio || 0))),
+    equationTwoColumn: true,
+    equationColumnIndex: columnIndex,
+    equationColumnStartRatio: columnStartRatio,
+    equationColumnEndRatio: columnEndRatio,
+  };
+}
+
+function equationColumnAwareSupplementLines(rawLines) {
+  const lines = Array.isArray(rawLines) ? rawLines : [];
+  if (!lines.length) return lines;
+  const evidence = [];
+  for (const line of lines) {
+    const parts = Array.isArray(line.parts) ? [...line.parts].sort((a, b) => Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0)) : [];
+    let best = null;
+    for (let index = 0; index + 1 < parts.length; index += 1) {
+      const leftEnd = Number(parts[index].xEndRatio || 0);
+      const rightStart = Number(parts[index + 1].xStartRatio || 0);
+      const gap = rightStart - leftEnd;
+      if (leftEnd < 0.38 || leftEnd > 0.58 || rightStart < 0.42 || rightStart > 0.64 || gap < 0.035) continue;
+      const midpointDistance = Math.abs(((leftEnd + rightStart) / 2) - 0.5);
+      if (midpointDistance > 0.09) continue;
+      if (!best || midpointDistance < best.midpointDistance - 0.005
+          || (Math.abs(midpointDistance - best.midpointDistance) <= 0.005 && gap > best.gap)) {
+        best = { index, gap, midpointDistance };
+      }
+    }
+    if (!best) continue;
+    const lp = parts.slice(0, best.index + 1);
+    const rp = parts.slice(best.index + 1);
+    const leftStart = Math.min(...lp.map((part) => Number(part.xStartRatio || 0)));
+    const leftEnd = Math.max(...lp.map((part) => Number(part.xEndRatio || 0)));
+    const rightStart = Math.min(...rp.map((part) => Number(part.xStartRatio || 0)));
+    const rightEnd = Math.max(...rp.map((part) => Number(part.xEndRatio || 0)));
+    if (leftStart <= 0.20 && leftEnd >= 0.28 && rightStart >= 0.44 && rightEnd >= 0.70) {
+      evidence.push({ leftStart, leftEnd, rightStart, rightEnd });
+    }
+  }
+  // This is a supplement to the mature single-page detector, not a replacement.
+  // Require repeated page-level evidence before treating an inner gutter as a
+  // real column boundary; isolated formula/table gaps remain on the old path.
+  if (evidence.length < 4) return lines;
+  const median = (values) => {
+    const a = values.filter(Number.isFinite).sort((x, y) => x - y);
+    return a.length ? a[Math.floor(a.length / 2)] : NaN;
+  };
+  const leftStart = median(evidence.map((e) => e.leftStart));
+  const leftEnd = median(evidence.map((e) => e.leftEnd));
+  const rightStart = median(evidence.map((e) => e.rightStart));
+  const rightEnd = median(evidence.map((e) => e.rightEnd));
+  if (![leftStart, leftEnd, rightStart, rightEnd].every(Number.isFinite)) return lines;
+  if (!(leftStart < leftEnd && leftEnd < rightStart && rightStart < rightEnd)) return lines;
+
+  const out = [];
+  for (const line of lines) {
+    const parts = Array.isArray(line.parts) ? [...line.parts].sort((a, b) => Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0)) : [];
+    let best = null;
+    for (let index = 0; index + 1 < parts.length; index += 1) {
+      const a = Number(parts[index].xEndRatio || 0);
+      const b = Number(parts[index + 1].xStartRatio || 0);
+      const gap = b - a;
+      if (a < 0.38 || a > 0.58 || b < 0.42 || b > 0.64 || gap < 0.035) continue;
+      const midpointDistance = Math.abs(((a + b) / 2) - 0.5);
+      if (midpointDistance > 0.09) continue;
+      if (!best || midpointDistance < best.midpointDistance - 0.005
+          || (Math.abs(midpointDistance - best.midpointDistance) <= 0.005 && gap > best.gap)) {
+        best = { index, gap, midpointDistance };
+      }
+    }
+    if (!best) { out.push(line); continue; }
+    const left = equationLineFragmentForColumns(line, parts.slice(0, best.index + 1), 0, leftStart, leftEnd);
+    const right = equationLineFragmentForColumns(line, parts.slice(best.index + 1), 1, rightStart, rightEnd);
+    if (left && right) out.push(left, right); else out.push(line);
+  }
+  return out;
+}
+
+function equationCandidateAlignedToLocalColumnRight(item) {
+  if (!item?.equationTwoColumn || item.equationColumnIndex !== 0) return false;
+  const start = Number(item?.candidateXStartRatio);
+  const end = Number(item?.candidateXEndRatio);
+  const columnStart = Number(item?.equationColumnStartRatio);
+  const columnEnd = Number(item?.equationColumnEndRatio);
+  if (![start, end, columnStart, columnEnd].every(Number.isFinite) || columnEnd <= columnStart) return false;
+  const width = columnEnd - columnStart;
+  const tolerance = Math.min(0.10, Math.max(0.055, width * 0.25));
+  return start >= columnEnd - tolerance || end >= columnEnd - tolerance * 0.65;
+}
+
+function twoColumnEquationSupplementCandidates(lines, page) {
+  const out = [];
+  const referenceProse = /\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in|in\s+view\s+of|contradicts?|rewrit(?:e|ten)|follows?\s+from|inequality\s+(?:like|in)|as\s+required|cf\.?|recall|apply(?:ing)?|combin(?:e|ing)|substitut(?:e|ing)|insert|notice)\b/i;
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex];
+    if (!line?.equationTwoColumn || line.equationColumnIndex !== 0) continue;
+    const candidates = equationLabelCandidatesInLine(line.text);
+    for (const candidate of candidates) {
+      const parsed = parsedEquationNumber(candidate.label);
+      if (!parsed || isLikelyCalendarYearEquationLabel(candidate.label)) continue;
+      const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
+      const record = {
+        label: candidate.label,
+        page,
+        ratio: line.ratio,
+        text: line.text,
+        xStartRatio: line.xStartRatio,
+        xEndRatio: line.xEndRatio,
+        candidateXStartRatio: tokenGeometry.xStartRatio,
+        candidateXEndRatio: tokenGeometry.xEndRatio,
+        numeric: parsed,
+        explicitParenthesized: true,
+        candidateAtLineStart: !String(line.text || '').slice(0, Math.max(0, Number(candidate.index) || 0)).trim(),
+        candidateAtLineEnd: !String(line.text || '').slice(Math.max(0, Number(candidate.end) || 0)).trim(),
+        standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
+        nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
+        mathSignals: equationLineMathSignalCount(line.text),
+        equationTwoColumn: true,
+        equationColumnIndex: 0,
+        equationColumnStartRatio: line.equationColumnStartRatio,
+        equationColumnEndRatio: line.equationColumnEndRatio,
+      };
+      if (!record.candidateAtLineEnd || !equationCandidateAlignedToLocalColumnRight(record)) continue;
+      if (referenceProse.test(String(record.text || ''))) continue;
+      if (!record.standaloneTag && !record.nearbyDisplayMath && record.mathSignals < 2) continue;
+      if ((String(record.text || '').match(/[A-Za-z]{3,}/g) || []).length >= 8 && record.mathSignals < 2) continue;
+      record.confidence = Math.max(12, equationTargetScore(record.text, record.label, null, 0, null, Number(record.ratio)) + 7);
+      out.push(record);
+    }
+  }
+  return out;
+}
+
+function supplementRightNumberedTwoColumnEquations(index, rawPageLines) {
+  // Most modern AI/ML/CS/engineering proceedings number equations on the right
+  // edge of each text column. The mature detector already sees the outer/right
+  // column; this supplement only recovers the inner right edge of the left
+  // column and never changes the document's established numbering side.
+  if (equationNumberingSide !== 'right') return false;
+  const all = [];
+  const pageProfiles = new Map();
+  for (const [page, rawLines] of rawPageLines.entries()) {
+    const split = equationColumnAwareSupplementLines(rawLines);
+    const leftProfile = split.find((line) => line?.equationTwoColumn && line.equationColumnIndex === 0);
+    const rightProfile = split.find((line) => line?.equationTwoColumn && line.equationColumnIndex === 1);
+    if (!leftProfile || !rightProfile) continue;
+    pageProfiles.set(page, {
+      leftStart: Number(leftProfile.equationColumnStartRatio),
+      leftEnd: Number(leftProfile.equationColumnEndRatio),
+      rightStart: Number(rightProfile.equationColumnStartRatio),
+      rightEnd: Number(rightProfile.equationColumnEndRatio),
+    });
+    all.push(...twoColumnEquationSupplementCandidates(split, page));
+  }
+  const unique = [];
+  const seen = new Set();
+  for (const item of all) {
+    const key = `${item.page}:${item.label}`;
+    if (seen.has(key) || index.has(item.label)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+  if (unique.length < 2) return false;
+
+  const trustedNumeric = [];
+  for (const [label, candidates] of index.entries()) {
+    const parsed = parsedEquationNumber(label);
+    if (parsed && candidates?.length) trustedNumeric.push(parsed);
+  }
+  const compatible = unique.filter((item) => {
+    if (!trustedNumeric.length) return true;
+    const p = item.numeric;
+    return trustedNumeric.some((q) => p.prefix === q.prefix || (!p.prefix && !q.prefix));
+  });
+  if (compatible.length < 2) return false;
+  for (const item of compatible) index.set(item.label, [item]);
+
+  // Tag already-trusted outer/right-column candidates with the same page
+  // profile. This metadata is used only for initial display order; it does not
+  // alter candidate confidence or acceptance. Without it, horizontally aligned
+  // rows could render as 1,5,2,6 even though the document reads the left column
+  // top-to-bottom before the right column.
+  for (const candidates of index.values()) {
+    for (const candidate of candidates || []) {
+      const profile = pageProfiles.get(Number(candidate?.page));
+      if (!profile) continue;
+      const start = Number(candidate?.candidateXStartRatio ?? candidate?.xStartRatio);
+      const end = Number(candidate?.candidateXEndRatio ?? candidate?.xEndRatio);
+      if (![start, end, profile.rightStart].every(Number.isFinite)) continue;
+      const tolerance = 0.035;
+      if (end < profile.rightStart - tolerance) continue;
+      candidate.equationTwoColumn = true;
+      candidate.equationColumnIndex = 1;
+      candidate.equationColumnStartRatio = profile.rightStart;
+      candidate.equationColumnEndRatio = profile.rightEnd;
+    }
+  }
+  return true;
+}
 function equationCandidateAlignedToNumberingSide(item, side = equationNumberingSide) {
   const start = Number(item?.candidateXStartRatio ?? item?.xStartRatio);
   const end = Number(item?.candidateXEndRatio ?? item?.xEndRatio);
@@ -863,9 +1082,11 @@ async function buildEquationLabelIndex() {
   const index = new Map();
   const candidatePool = new Map();
   const rawCandidates = [];
+  const rawPageLines = new Map();
   const dottedSectionHeadingEvidence = [];
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     const lines = await pageTextLines(page, sourceDoc);
+    rawPageLines.set(page, lines);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
       const rawLineText = String(line.text || '').normalize('NFKC');
@@ -1029,6 +1250,7 @@ async function buildEquationLabelIndex() {
     index.set(record.label, list);
   }
 
+  supplementRightNumberedTwoColumnEquations(index, rawPageLines);
   await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index);
   reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
@@ -1129,7 +1351,14 @@ function renderEquationIndex() {
     }
     if (best) rows.push({ label, ...best });
   }
-  rows.sort((a,b) => a.page - b.page || a.ratio - b.ratio || a.label.localeCompare(b.label));
+  rows.sort((a,b) => {
+    const pageDelta = a.page - b.page;
+    if (pageDelta) return pageDelta;
+    if (a.equationTwoColumn && b.equationTwoColumn
+        && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
+        && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
+    return a.ratio - b.ratio || a.label.localeCompare(b.label);
+  });
   for (const edit of equationEdits.filter((item) => item.action === 'add')) {
     const addedIndex = rows.findIndex((row) => row.manualEditId && String(row.manualEditId) === String(edit.id));
     if (addedIndex < 0) continue;

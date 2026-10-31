@@ -341,7 +341,7 @@ const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 25;
-const EQUATION_INDEX_SUMMARY_VERSION = 4;
+const EQUATION_INDEX_SUMMARY_VERSION = 5;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
