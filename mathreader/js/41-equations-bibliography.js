@@ -1161,8 +1161,12 @@ async function buildEquationLabelIndex() {
   const rawCandidates = [];
   const rawPageLines = new Map();
   const dottedSectionHeadingEvidence = [];
-  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
-    const lines = await pageTextLines(page, sourceDoc);
+  const equationPages = Array.from({ length: sourceDoc.numPages }, (_, index) => index + 1);
+  for await (const { item: page, value: lines } of orderedPrefetch(
+    equationPages,
+    (pageNum) => pageTextLines(pageNum, sourceDoc),
+    3
+  )) {
     rawPageLines.set(page, lines);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
@@ -1614,21 +1618,27 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
     if (flatCache) flatCache.set(pageNum, String(record?.text || lines.map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim());
     return lines;
   }
-  const page = await sourceDoc.getPage(pageNum);
-  const content = await page.getTextContent();
+  const { page, content } = await nativePageTextData(sourceDoc, pageNum);
   const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
   const yMin = Number(view[1]) || 0;
   const yMax = Number(view[3]) || 1;
   const pageHeight = Math.max(1, yMax - yMin);
   const rows = [];
+  const rowBuckets = new Map();
   for (const item of content.items || []) {
     const text = String(item.str || '').replace(/\s+/g, ' ').trim();
     if (!text) continue;
     const x = Number(item.transform?.[4]) || 0;
     const width = Math.max(0, Number(item.width) || 0);
     const y = Number(item.transform?.[5]) || 0;
-    let row = rows.find((candidate) => Math.abs(candidate.y - y) <= 2.2);
-    if (!row) { row = { y, items: [] }; rows.push(row); }
+    // Same first-match semantics as rows.find(), but only inspect y-nearby
+    // rows. Dense PDF text pages otherwise make line construction quadratic.
+    let row = findFirstRowInYBuckets(rowBuckets, y, 2.2, 2.2);
+    if (!row) {
+      row = { y, items: [], _rowOrder: rows.length };
+      rows.push(row);
+      addRowToYBuckets(rowBuckets, row, 2.2);
+    }
     row.items.push({ x, width, text });
   }
   rows.sort((a, b) => b.y - a.y);
@@ -2047,10 +2057,13 @@ async function buildStructureIndex({ force = false } = {}) {
       const tailStart = Math.max(primaryPageCount + 1, sourceDoc.numPages - 119);
       for (let page = tailStart; page <= sourceDoc.numPages; page += 1) pageSequence.push(page);
     }
-    for (const page of pageSequence) {
+    for await (const { item: page, value: rawLines } of orderedPrefetch(
+      pageSequence,
+      (pageNum) => pageTextLines(pageNum, sourceDoc, sourceLineCache, sourceTextCache),
+      3
+    )) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
       const tailOnlyPage = page > primaryPageCount;
-      const rawLines = await pageTextLines(page, sourceDoc, sourceLineCache, sourceTextCache);
       const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode);
       for (const line of lines) {
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();

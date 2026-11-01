@@ -930,6 +930,95 @@ function hideDocumentOcrGate() {
   }
 }
 
+// Performance-only helpers. These preserve the original detector ordering and
+// acceptance rules while avoiding repeated linear scans / serial I/O waits.
+function findFirstRowInYBuckets(rowBuckets, y, tolerance, bucketSize = 4) {
+  const safeBucketSize = Math.max(0.5, Number(bucketSize) || 4);
+  const targetY = Number(y) || 0;
+  const maxDelta = Math.max(0, Number(tolerance) || 0);
+  const center = Math.floor(targetY / safeBucketSize);
+  const radius = Math.max(1, Math.ceil(maxDelta / safeBucketSize) + 1);
+  let best = null;
+  let bestOrder = Infinity;
+  for (let bucket = center - radius; bucket <= center + radius; bucket += 1) {
+    for (const row of rowBuckets.get(bucket) || []) {
+      if (Math.abs((Number(row.y) || 0) - targetY) > maxDelta) continue;
+      const order = Number(row._rowOrder);
+      if (order < bestOrder) { best = row; bestOrder = order; }
+    }
+  }
+  return best;
+}
+
+function addRowToYBuckets(rowBuckets, row, bucketSize = 4) {
+  const safeBucketSize = Math.max(0.5, Number(bucketSize) || 4);
+  const bucket = Math.floor((Number(row?.y) || 0) / safeBucketSize);
+  const list = rowBuckets.get(bucket) || [];
+  list.push(row);
+  rowBuckets.set(bucket, list);
+}
+
+const nativePageTextCacheByDocument = new WeakMap();
+const NATIVE_PAGE_TEXT_CACHE_LIMIT = 24;
+
+function nativePageTextData(sourceDoc, pageNum) {
+  if (!sourceDoc || !Number.isFinite(Number(pageNum))) return Promise.reject(new Error('PDF page is unavailable.'));
+  let cache = nativePageTextCacheByDocument.get(sourceDoc);
+  if (!cache) {
+    cache = new Map();
+    nativePageTextCacheByDocument.set(sourceDoc, cache);
+  }
+  const key = Number(pageNum);
+  const existing = cache.get(key);
+  if (existing) {
+    // Map insertion order doubles as a tiny LRU. Touch on reuse so concurrently
+    // advancing detectors share nearby pages without retaining an entire book.
+    cache.delete(key);
+    cache.set(key, existing);
+    return existing;
+  }
+  const pending = (async () => {
+    const page = await sourceDoc.getPage(key);
+    const content = await page.getTextContent();
+    return { page, content };
+  })();
+  cache.set(key, pending);
+  pending.catch(() => {
+    if (cache.get(key) === pending) cache.delete(key);
+  });
+  while (cache.size > NATIVE_PAGE_TEXT_CACHE_LIMIT) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    cache.delete(oldestKey);
+  }
+  return pending;
+}
+
+async function* orderedPrefetch(values, loader, depth = 3) {
+  const items = Array.from(values || []);
+  const pending = new Map();
+  const lookahead = Math.max(1, Math.floor(Number(depth) || 1));
+  let nextToSchedule = 0;
+  const schedule = () => {
+    while (nextToSchedule < items.length && pending.size < lookahead) {
+      const index = nextToSchedule++;
+      const item = items[index];
+      const outcome = Promise.resolve()
+        .then(() => loader(item, index))
+        .then((value) => ({ ok: true, value }), (error) => ({ ok: false, error }));
+      pending.set(index, outcome);
+    }
+  };
+  schedule();
+  for (let index = 0; index < items.length; index += 1) {
+    const outcome = await pending.get(index);
+    pending.delete(index);
+    schedule();
+    if (!outcome?.ok) throw outcome?.error || new Error('Prefetch failed');
+    yield { item: items[index], index, value: outcome.value };
+  }
+}
+
 function documentOcrInteractionLocked() {
   return documentOcrBusy || Boolean(documentOcrGate && !documentOcrGate.classList.contains('is-hidden'));
 }
@@ -1289,8 +1378,7 @@ async function pdfNeedsDocumentOcr(doc = pdfDoc) {
   const samplePages = documentNativeTextSamplePages(doc.numPages);
 
   for (const pageNum of samplePages) {
-    const page = await doc.getPage(pageNum);
-    const content = await page.getTextContent();
+    const { content } = await nativePageTextData(doc, pageNum);
     const raw = (content.items || []).map((item) => String(item.str || '')).join(' ');
     const stats = documentNativeTextQualityStats(raw);
     if (stats.nonSpaceChars >= 12) pagesWithText += 1;
@@ -1414,7 +1502,29 @@ async function runFullDocumentOcr() {
     if (controller.cancelled || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) throw makeDocumentOcrStoppedError();
   };
 
+  const renderOcrPage = async (pageNum) => {
+    ensureCurrent();
+    const page = await sourceDoc.getPage(pageNum);
+    ensureCurrent();
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.max(2.20, Math.min(3.60, 3200 / Math.max(1, base.width, base.height)));
+    const viewport = page.getViewport({ scale });
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = Math.max(1, Math.ceil(viewport.width));
+    pageCanvas.height = Math.max(1, Math.ceil(viewport.height));
+    const context = pageCanvas.getContext('2d', { alpha: false });
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    await page.render({ canvasContext: context, viewport }).promise;
+    ensureCurrent();
+    return pageCanvas;
+  };
+
   let worker = null;
+  let prefetchedCanvasOutcome = null;
+  let lastProgressPage = 0;
+  let lastProgressPct = -1;
+  let lastProgressAt = 0;
   try {
     const module = await loadDocumentOcrModule();
     ensureCurrent();
@@ -1424,8 +1534,18 @@ async function runFullDocumentOcr() {
       logger: (message) => {
         if (!message || message.status !== 'recognizing text' || !Number.isFinite(Number(message.progress))) return;
         const page = Number(controller.currentPage || 1);
-        const pct = Math.round(Number(message.progress) * 100);
-        setDocumentOcrProgress(page, pageCount, Number(message.progress), t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
+        const progress = Number(message.progress);
+        const pct = Math.round(progress * 100);
+        const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+        // Tesseract can emit dozens of nearly identical progress messages per
+        // second. Throttle only the UI writes; OCR data and cancellation are
+        // untouched.
+        if (page === lastProgressPage && pct === lastProgressPct && now - lastProgressAt < 120) return;
+        if (page === lastProgressPage && pct < 100 && pct - lastProgressPct < 2 && now - lastProgressAt < 90) return;
+        lastProgressPage = page;
+        lastProgressPct = pct;
+        lastProgressAt = now;
+        setDocumentOcrProgress(page, pageCount, progress, t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
         if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
       }
     });
@@ -1443,27 +1563,31 @@ async function runFullDocumentOcr() {
       }
     }
     const map = new Map();
+    // Render the first page up front. Thereafter rendering page n+1 overlaps
+    // Tesseract's worker-side recognition of page n. Pixel dimensions, scale,
+    // OCR parameters and page order are exactly the same as before.
+    prefetchedCanvasOutcome = renderOcrPage(1).then(
+      (canvas) => ({ ok: true, canvas }),
+      (error) => ({ ok: false, error })
+    );
     for (let pageNum = 1; pageNum <= pageCount; pageNum += 1) {
       ensureCurrent();
       controller.currentPage = pageNum;
       setDocumentOcrProgress(pageNum, pageCount, 0, t(`Full-document OCR · page ${pageNum}/${pageCount}`, `全文 OCR · 第 ${pageNum}/${pageCount} 页`));
       if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
-      const page = await sourceDoc.getPage(pageNum);
-      ensureCurrent();
-      const base = page.getViewport({ scale: 1 });
-      const scale = Math.max(2.20, Math.min(3.60, 3200 / Math.max(1, base.width, base.height)));
-      const viewport = page.getViewport({ scale });
-      const pageCanvas = document.createElement('canvas');
-      pageCanvas.width = Math.max(1, Math.ceil(viewport.width));
-      pageCanvas.height = Math.max(1, Math.ceil(viewport.height));
-      const context = pageCanvas.getContext('2d', { alpha: false });
-      context.fillStyle = '#fff';
-      context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-      await page.render({ canvasContext: context, viewport }).promise;
-      ensureCurrent();
+      const currentOutcome = await prefetchedCanvasOutcome;
+      if (!currentOutcome?.ok) throw currentOutcome?.error || new Error('Document OCR page render failed.');
+      const pageCanvas = currentOutcome.canvas;
+      const recognizePromise = worker.recognize(pageCanvas, {}, { hocr: true });
+      prefetchedCanvasOutcome = pageNum < pageCount
+        ? renderOcrPage(pageNum + 1).then(
+          (canvas) => ({ ok: true, canvas }),
+          (error) => ({ ok: false, error })
+        )
+        : null;
       let result;
       try {
-        result = await worker.recognize(pageCanvas, {}, { hocr: true });
+        result = await recognizePromise;
       } catch (error) {
         if (controller.cancelled) throw makeDocumentOcrStoppedError();
         throw error;
@@ -1484,6 +1608,8 @@ async function runFullDocumentOcr() {
     await persistDocumentOcr();
     setDocumentOcrProgress(pageCount, pageCount, 1, t('Full-document OCR complete · building MathReader indexes…', '全文 OCR 完成 · 正在生成 MathReader 索引……'));
   } catch (error) {
+    // A prefetched render is wrapped into a resolved outcome, so there is no
+    // unhandled rejection if recognition fails or the user cancels mid-page.
     if (controller.cancelled && !isDocumentOcrStoppedError(error)) throw makeDocumentOcrStoppedError();
     throw error;
   } finally {

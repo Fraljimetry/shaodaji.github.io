@@ -133,11 +133,23 @@ async function detectOutlineFromTypography() {
   let nativeControlChars = 0;
   const maxPages = Math.min(pdfDoc.numPages, 600);
 
-  for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
-    const page = await pdfDoc.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1 });
+  const outlinePages = Array.from({ length: maxPages }, (_, index) => index + 1);
+  for await (const { item: pageNum, value: pageData } of orderedPrefetch(
+    outlinePages,
+    async (candidatePageNum) => {
+      const ocrSource = sourceDocumentUsesOcr(candidatePageNum);
+      if (ocrSource) {
+        const page = await pdfDoc.getPage(candidatePageNum);
+        return { viewport: page.getViewport({ scale: 1 }), ocrSource, content: null };
+      }
+      const { page, content } = await nativePageTextData(pdfDoc, candidatePageNum);
+      return { viewport: page.getViewport({ scale: 1 }), ocrSource, content };
+    },
+    3
+  )) {
+    const { viewport, ocrSource, content } = pageData;
     let lines = [];
-    if (sourceDocumentUsesOcr(pageNum)) {
+    if (ocrSource) {
       const record = documentOcrPages.get(pageNum);
       lines = (record?.lines || []).map((ocrLine) => {
         const text = normalizedHeadingText(ocrLine.text);
@@ -150,7 +162,6 @@ async function detectOutlineFromTypography() {
         return { page: pageNum, y, x, items: [], size, pageHeight: viewport.height, text, confidence: ocrLine.confidence, xStartRatio, xEndRatio };
       }).filter((line) => line.text && ocrLineSuitableForStructure(line));
     } else {
-      const content = await page.getTextContent();
       const items = [];
       for (const item of content.items || []) {
         const rawText = String(item.str || '');
@@ -166,11 +177,16 @@ async function detectOutlineFromTypography() {
         fontSamples.push({ size, weight: Math.max(1, text.replace(/\s/g, '').length) });
       }
       items.sort((a, b) => Math.abs(b.y - a.y) > 1.5 ? b.y - a.y : a.x - b.x);
+      const lineBuckets = new Map();
       for (const item of items) {
-        let line = lines.find((candidate) => Math.abs(candidate.y - item.y) <= Math.max(1.8, item.size * 0.22));
+        const tolerance = Math.max(1.8, item.size * 0.22);
+        // Preserve the original first-created-line match, but avoid scanning
+        // every prior line for each text item on dense pages.
+        let line = findFirstRowInYBuckets(lineBuckets, item.y, tolerance, 4);
         if (!line) {
-          line = { page: pageNum, y: item.y, x: item.x, items: [], size: item.size, pageHeight: viewport.height };
+          line = { page: pageNum, y: item.y, x: item.x, items: [], size: item.size, pageHeight: viewport.height, _rowOrder: lines.length };
           lines.push(line);
+          addRowToYBuckets(lineBuckets, line, 4);
         }
         line.items.push(item);
         line.size = Math.max(line.size, item.size);
