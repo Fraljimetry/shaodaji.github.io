@@ -1802,7 +1802,9 @@ function fullNameBibliographyLead(text) {
   // Wrapped publication metadata can superficially look like two capitalized
   // person-name tokens (for example “Math. J., ... 1976”). Such lines are
   // continuations, never starts of an unnumbered author-year reference.
-  if (/^(?:J\.?|Math\.?|Ann\.?|Comm\.?|Commun\.?|Proc\.?|Proceedings?|Trans\.?|Arch\.?|Invent\.?|Acta|Bull\.?|Vol\.?|Volume|No\.?|pp?\.?|t\.)\b/i.test(value)) return false;
+  const journalAbbreviationContinuation = /^J\.\s+(?:Math|Amer|Appl|Stat|Comput|Phys|Differential|Funct|Algebra|Geom|Approx|Complex|Number|Fluid|Mech|ACM|IEEE)\b/i.test(value);
+  if (journalAbbreviationContinuation
+      || /^(?:Math\.?|Ann\.?|Comm\.?|Commun\.?|Proc\.?|Proceedings?|Trans\.?|Arch\.?|Invent\.?|Acta|Bull\.?|Vol\.?|Volume|No\.?|pp?\.?|t\.)\b/i.test(value)) return false;
   const yearMatch = value.match(/\b(?:17|18|19|20)\d{2}\b/);
   let authorRegion = yearMatch ? value.slice(0, yearMatch.index) : value.slice(0, 220);
   authorRegion = authorRegion.replace(/[.\s]+$/g, '').replace(/\s+(?:et\s+al\.)$/i, '').trim();
@@ -1812,7 +1814,29 @@ function fullNameBibliographyLead(text) {
     if (!bibliographyPersonNameChunk(chunk)) break;
     count += 1;
   }
-  return count >= 2 || (count >= 1 && Boolean(yearMatch));
+  if (count >= 2 || (count >= 1 && Boolean(yearMatch))) return true;
+
+  // Older AI/CS proceedings and many technical bibliographies use an
+  // unnumbered single-author form such as
+  //   "J. Stephen Judd. Learning in networks is hard. ... 1987."
+  // or "Nimrod Megiddo. On The Complexity ... 1986.".  The period after
+  // the author is a sentence boundary, not part of a comma/and-separated
+  // author list, so the generic multi-author parser above otherwise consumes
+  // the title and rejects the lead.  Accept only a *leading* person-name
+  // prefix ending at a sentence break; final promotion still requires the
+  // existing strong publication/year evidence in
+  // unnumberedBibliographyTextLooksStrong().  Trying successive sentence
+  // breaks also handles initials like "J. Stephen Judd." without treating
+  // the first initial as the whole author.
+  for (const match of authorRegion.matchAll(/\.\s+(?=[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я])/gu)) {
+    let prefix = authorRegion.slice(0, match.index).trim();
+    if (prefix.length > 140) break;
+    prefix = prefix.replace(/,\s*(?:editors?|eds?\.?|compilers?)$/i, '').trim();
+    if (bibliographyPersonNameChunk(prefix)) return true;
+    const prefixChunks = prefix.split(/\s*,\s*|\s+(?:and|&)\s+/).map((chunk) => chunk.trim()).filter(Boolean);
+    if (prefixChunks.length >= 2 && prefixChunks.length <= 8 && prefixChunks.every(bibliographyPersonNameChunk)) return true;
+  }
+  return false;
 }
 
 function unnumberedBibliographyTextLooksStrong(text) {
