@@ -339,12 +339,14 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
         ocrSource: Boolean(line.ocrSource),
         ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
         ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
+        attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
         equationTwoColumn: true,
         equationColumnIndex: targetColumn,
         equationColumnStartRatio: line.equationColumnStartRatio,
         equationColumnEndRatio: line.equationColumnEndRatio,
       };
       const tagAtLocalMargin = side === 'left' ? record.candidateAtLineStart : record.candidateAtLineEnd;
+      if (record.attachedFunctionCall) continue;
       if (!tagAtLocalMargin || !equationCandidateAlignedToLocalColumnSide(record, side)) continue;
       if (referenceProse.test(String(record.text || ''))) continue;
       if (record.bareSource) {
@@ -523,6 +525,16 @@ function recoverSequentialEquationGaps(index, candidatePool) {
   }
 }
 
+function equationCandidateAttachedToFunctionCall(source, index) {
+  const prefix = String(source || '').slice(0, Math.max(0, Number(index) || 0));
+  if (!prefix) return false;
+  // A gapless parenthesis immediately following an identifier is function
+  // application (g(1), f_1(2), Γ(3), h′(4)), not a margin equation tag.
+  // PDF.js inserts a space between separate text items, so a genuine detached
+  // equation number such as "... = 0 (1)" remains on the normal path.
+  return /(?:[\p{L}\p{N}_\]}'’′]|\\[A-Za-z]+)$/u.test(prefix);
+}
+
 function equationLabelCandidatesInLine(text) {
   const source = String(text || '');
   const out = [];
@@ -546,7 +558,12 @@ function equationLabelCandidatesInLine(text) {
     if (!numeric && !symbolic) continue;
     const label = normalizedEquationLabel(`(${numeric ? numericInner : symbolicInner})`);
     if (numeric && isLikelyCalendarYearEquationLabel(label)) continue;
-    out.push({ label, index: match.index, end: match.index + match[0].length });
+    out.push({
+      label,
+      index: match.index,
+      end: match.index + match[0].length,
+      attachedFunctionCall: Boolean(numeric && equationCandidateAttachedToFunctionCall(source, match.index)),
+    });
   }
 
   // Digitized old journals occasionally expose a visibly parenthesized margin
@@ -761,6 +778,7 @@ function inferEquationNumberingSide(records) {
 }
 
 function equationCandidateConfidenceForSide(item) {
+  if (item?.attachedFunctionCall) return -Infinity;
   const text = String(item?.text || '').trim();
   const label = normalizedEquationLabel(item?.label || '');
   if (!text || !label || isLikelyCalendarYearEquationLabel(label)) return -Infinity;
@@ -1192,7 +1210,9 @@ function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
     mathSignals: equationLineMathSignalCount(line.text),
     ocrSource: true,
     supplementalEquationOcr: true,
+    attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
   };
+  if (record.attachedFunctionCall) return null;
   let confidence = equationCandidateConfidenceForSide(record);
   if (record.axisNumericCluster) confidence = -Infinity;
   if (!Number.isFinite(confidence) || confidence < 8) {
@@ -1419,6 +1439,7 @@ async function buildEquationLabelIndex() {
           ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
           ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
           ocrTopRunningHeader,
+          attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
         });
       }
     }
@@ -1498,7 +1519,8 @@ async function buildEquationLabelIndex() {
     // cannot enter the index on its own. This preserves the anti-reference
     // guard while allowing complete equation families.
     const marginGapCandidate = Boolean(
-      !record.ocrTopRunningHeader
+      !record.attachedFunctionCall
+      && !record.ocrTopRunningHeader
       && record.explicitParenthesized
       && alignedForPool
       && (Number(record.mathSignals) || 0) === 0
@@ -2205,6 +2227,26 @@ function recoverSingleGapBibliographyCandidates(entries, candidates) {
   return recoveredCount;
 }
 
+function pruneIsolatedNumericEntriesFromAuthorKeyBibliography(entries) {
+  const list = Array.isArray(entries) ? entries : [];
+  const numeric = list.filter((entry) => /^\d{1,3}$/.test(normalizedBibliographyKey(entry?.number)));
+  const authorKeyed = list.filter((entry) => {
+    const key = normalizedBibliographyKey(entry?.number);
+    return key && !/^\d{1,3}$/.test(key);
+  });
+  // A mature author-key bibliography does not acquire one stray numeric key
+  // from a continuation line. Preserve mixed schemes when a numeric family is
+  // actually present, and preserve any isolated numeric key that is cited in
+  // the body. SPS-style phantom [11] entries have neither form of support.
+  if (authorKeyed.length < 5 || numeric.length === 0 || numeric.length >= 3) return list;
+  const rejected = new Set(
+    numeric
+      .filter((entry) => !Array.isArray(entry?.citations) || entry.citations.length === 0)
+      .map((entry) => entry)
+  );
+  return rejected.size ? list.filter((entry) => !rejected.has(entry)) : list;
+}
+
 async function buildStructureIndex({ force = false } = {}) {
   if (!pdfDoc || !documentTextFeaturesAvailable() || !structureIndex || structureIndexBuilding) return;
   if (force && pendingOutlineReselectKey) { pendingOutlineReselectKey = null; refreshSelectionUI(); }
@@ -2379,8 +2421,8 @@ async function buildStructureIndex({ force = false } = {}) {
           }
           if (expectedBibliographyNumber === 11) {
             bibliographyLine = line.ocrSource
-              ? bibliographyLine.replace(/^[\[{(]\s*[lI]{2}\s*[\]})][.)]?\s+/u, '[11] ')
-              : bibliographyLine.replace(/^\[\s*[lI]{2}\s*\]\s+/u, '[11] ');
+              ? bibliographyLine.replace(/^[\[{(]\s*[1lI]{2}\s*[\]})][.)]?\s+/u, '[11] ')
+              : bibliographyLine.replace(/^\[\s*[1lI]{2}\s*\]\s+/u, '[11] ');
           }
           bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
           let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
@@ -2561,6 +2603,8 @@ async function buildStructureIndex({ force = false } = {}) {
       }
     }
 
+    const cleanedBibliography = pruneIsolatedNumericEntriesFromAuthorKeyBibliography(nextBibliography);
+
     // Apply document-order sequence consistency after local detection. Exact
     // result labels are unique, and numeric result numbering must not move
     // backwards through the paper. This removes repeated prose-derived labels
@@ -2598,7 +2642,7 @@ async function buildStructureIndex({ force = false } = {}) {
     }
 
     structureEntries = sequenceCleanEntries.slice(0, 500);
-    bibliographyEntries = nextBibliography.slice(0, 400);
+    bibliographyEntries = cleanedBibliography.slice(0, 400);
     structureIndexVersion = STRUCTURE_INDEX_VERSION;
     renderStructureIndex(); renderBibliographyIndex(); rerenderReferenceLinks();
     persistDocumentState();
