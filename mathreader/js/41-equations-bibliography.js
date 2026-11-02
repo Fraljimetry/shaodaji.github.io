@@ -40,6 +40,27 @@ function isLikelyCalendarYearEquationLabel(value) {
   return start >= 1000 && start <= 2199 && end >= 1000 && end <= 2199;
 }
 
+
+function equationOcrPageConfidence(pageNum) {
+  if (typeof documentOcrPages === 'undefined' || !(documentOcrPages instanceof Map)) return null;
+  const record = documentOcrPages.get(Number(pageNum));
+  if (!record) return null;
+  const wordValues = (Array.isArray(record.words) ? record.words : [])
+    .map((word) => Number(word?.confidence))
+    .filter(Number.isFinite);
+  if (wordValues.length) return wordValues.reduce((sum, value) => sum + value, 0) / wordValues.length;
+  let weightedSum = 0;
+  let weightedCount = 0;
+  for (const line of Array.isArray(record.lines) ? record.lines : []) {
+    const confidence = Number(line?.confidence);
+    if (!Number.isFinite(confidence)) continue;
+    const weight = Math.max(1, Array.isArray(line?.parts) ? line.parts.length : 1);
+    weightedSum += confidence * weight;
+    weightedCount += weight;
+  }
+  return weightedCount ? weightedSum / weightedCount : null;
+}
+
 function compactNumericEquationTagInner(raw) {
   const value = String(raw || '').trim();
   if (/\d\s+\d/.test(value)) return '';
@@ -1168,6 +1189,7 @@ async function buildEquationLabelIndex() {
     3
   )) {
     rawPageLines.set(page, lines);
+    const pageOcrConfidence = equationOcrPageConfidence(page);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
       const rawLineText = String(line.text || '').normalize('NFKC');
@@ -1235,6 +1257,8 @@ async function buildEquationLabelIndex() {
           axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
           ocrSource: Boolean(line.ocrSource),
+          ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
+          ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
           ocrTopRunningHeader,
         });
       }
@@ -1251,7 +1275,12 @@ async function buildEquationLabelIndex() {
   for (const record0 of rawCandidates) {
     const record = { ...record0 };
     let confidence = equationCandidateConfidenceForSide(record);
-    if (record.axisNumericCluster || record.ocrTopRunningHeader) confidence = -Infinity;
+    const weakOcrPageCandidate = Boolean(
+      record.ocrSource
+      && Number.isFinite(record.ocrPageConfidence)
+      && record.ocrPageConfidence < 50
+    );
+    if (record.axisNumericCluster || record.ocrTopRunningHeader || weakOcrPageCandidate) confidence = -Infinity;
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
         ? Number(record.candidateXEndRatio) <= (record.ocrSource ? 0.24 : 0.13)
