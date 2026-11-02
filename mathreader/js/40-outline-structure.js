@@ -623,7 +623,8 @@ async function detectOutlineFromTypography() {
           && ratio >= 1.08 && centered && !ocrExplicitNumberedMode;
         const styleHeading = documentOcrActive && !ocrExplicitNumberedMode
           && ratio >= 1.42 && words.length <= 10 && centered && lineWidth <= 0.65
-          && /^[A-Z][A-Za-z0-9 &'’()\-–—]+$/.test(headingText);
+          && /^[A-Z][A-Za-z0-9 &'’()\-–—]+$/.test(headingText)
+          && !numberedBodyLooksLikeProse(headingText);
         if (!known && !explicitMarkerHeading && !paragraphNumbered && !legacyCenteredNumbered && !ocrNumbered && !nativeHyphenNumbered && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText) && !(documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))) continue;
       }

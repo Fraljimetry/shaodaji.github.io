@@ -307,6 +307,7 @@ function equationCandidateAlignedToLocalColumnSide(item, side = equationNumberin
 }
 
 function twoColumnEquationSupplementCandidates(lines, page, side = equationNumberingSide) {
+  const pageOcrConfidence = equationOcrPageConfidence(page);
   const out = [];
   const targetColumn = side === 'left' ? 1 : 0;
   const referenceProse = /\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in|in\s+view\s+of|contradicts?|rewrit(?:e|ten)|follows?\s+from|inequality\s+(?:like|in)|as\s+required|cf\.?|recall|apply(?:ing)?|combin(?:e|ing)|substitut(?:e|ing)|insert|notice)\b/i;
@@ -335,6 +336,9 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
         standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
         nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
         mathSignals: equationLineMathSignalCount(line.text),
+        ocrSource: Boolean(line.ocrSource),
+        ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
+        ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
         equationTwoColumn: true,
         equationColumnIndex: targetColumn,
         equationColumnStartRatio: line.equationColumnStartRatio,
@@ -868,6 +872,59 @@ function reconcileEquationNumberingFamilies(index) {
   return index;
 }
 
+function suppressSparseAmbiguousOcrEquationFamilies(index) {
+  // Reapply OCR reliability at the final index boundary because later
+  // supplementation/recovery passes can otherwise resurrect a candidate that
+  // the primary classifier rejected on a low-quality page. Clean handwritten
+  // pages can also receive deceptively strong page confidence while
+  // hallucinating one or two parenthesized numbers. Prefer an empty index to a
+  // precise-looking false target when there is no document-level numbering
+  // family behind such ambiguous OCR evidence.
+  for (const [label, records] of [...index.entries()]) {
+    if (!parsedEquationNumber(label)) continue;
+    const kept = (records || []).filter((record) => {
+      if (!record?.ocrSource) return true;
+      const pageConfidence = Number(record.ocrPageConfidence);
+      // Keep the v316 page-quality contract authoritative even after
+      // two-column supplementation and sequence recovery.
+      if (Number.isFinite(pageConfidence) && pageConfidence < 50) return false;
+      // A bare dotted/hyphen token at the extreme top edge with no nearby
+      // display math is a running page/section marker, not an equation target.
+      if (record.bareSource && record.standaloneTag && Number(record.ratio) <= 0.035 && !record.nearbyDisplayMath) return false;
+      return true;
+    });
+    if (kept.length) index.set(label, kept);
+    else index.delete(label);
+  }
+
+  // Determine numbering-family support only after the final reliability pass;
+  // candidates that were just rejected must not make a surviving hallucination
+  // look like part of a real document-wide sequence.
+  const ocrNumericLabels = new Set();
+  for (const [label, records] of index) {
+    if (!parsedEquationNumber(label)) continue;
+    if ((records || []).some((record) => record?.ocrSource)) ocrNumericLabels.add(label);
+  }
+  if (ocrNumericLabels.size >= 3) return;
+
+  for (const [label, records] of [...index.entries()]) {
+    if (!parsedEquationNumber(label)) continue;
+    const kept = (records || []).filter((record) => {
+      if (!record?.ocrSource) return true;
+      const pageConfidence = Number(record.ocrPageConfidence);
+      // Mid-confidence OCR is usable, but one or two non-standalone numeric
+      // labels are too weak to establish an equation-numbering system.
+      if (!record.standaloneTag && Number.isFinite(pageConfidence) && pageConfidence < 65) return false;
+      // Even an isolated parenthesized token can look convincing on clean
+      // handwriting. Without a numbering family, retain it only when the
+      // existing equation-confidence model supplies strong independent support.
+      if (record.standaloneTag && Number(record.confidence) < 30) return false;
+      return true;
+    });
+    if (kept.length) index.set(label, kept);
+    else index.delete(label);
+  }
+}
 function reconcileOcrEquationSequenceOrder(index) {
   const byPrefix = new Map();
   for (const [label, candidates] of index.entries()) {
@@ -1366,6 +1423,7 @@ async function buildEquationLabelIndex() {
   recoverSequentialEquationGaps(index, candidatePool);
   reconcileEquationNumberingFamilies(index);
   reconcileOcrEquationSequenceOrder(index);
+  suppressSparseAmbiguousOcrEquationFamilies(index);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
   equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
   const previousKnownEquationCount = equationIndexKnownCount;
