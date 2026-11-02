@@ -606,7 +606,18 @@ async function detectOutlineFromTypography() {
       if (modernHierarchyMode || (!documentOcrActive && !nativeHyphenSectionMode && !legacyParagraphMode && !legacyCenteredMode && !explicitSectionMarkerMode)) {
         // Modern/default native-text profile: typography first.
         const acronymHeading = /^(?:[A-Z][A-Z0-9&/+\-]{1,9})(?:\s+[A-Z][A-Z0-9&/+\-]{1,9}){0,3}$/.test(headingText) && ratio >= 1.08;
-        const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText);
+        // Dense tables can pull the document-wide body-size estimate downward,
+        // making ordinary prose look slightly "large".  Reject only prose-shaped
+        // native fallback lines near that threshold; keep the long-established
+        // numbered, multilingual, short-title and continuation behavior intact.
+        const nativeStyleCommaCount = (headingText.match(/[,;]/g) || []).length;
+        const nativeStyleProseLike = ratio < 1.35 && (
+          (words.length >= 9 && lineWidth >= 0.72)
+          || (/^[a-z]/.test(headingText) && words.length >= 5)
+          || (nativeStyleCommaCount >= 2 && words.length >= 6)
+          || /[.!?]\s+[A-Z]/.test(headingText)
+        );
+        const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText) && !nativeStyleProseLike;
         if (numberedDepth !== null && ratio < 1.08 && !known) continue;
         if (!known && numberedDepth === null && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;

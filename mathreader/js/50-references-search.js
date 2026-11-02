@@ -31,7 +31,7 @@ function ensureReferenceLinkLayer(surface) {
 async function equationTargetAtLocation(query, pageNum, ratio) {
   if (!isEquationLabelQuery(query) || !Number.isFinite(Number(ratio))) return null;
   const label = normalizedEquationLabel(query);
-  const index = await buildEquationLabelIndex();
+  const index = (await ensureEquationIndexRendered()) || new Map();
   const candidates = index.get(label) || [];
   let best = null;
   for (const candidate of candidates) {

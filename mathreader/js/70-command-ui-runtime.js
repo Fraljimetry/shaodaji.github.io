@@ -241,7 +241,7 @@ function openCommandPalette() {
   commandPaletteSelectionIndex = -1;
   commandPalette.classList.remove('is-hidden'); commandInput.value = ''; renderCommandPalette(); setTimeout(() => commandInput.focus(), 0);
   if (pdfDoc && !equationLabelIndex) {
-    buildEquationLabelIndex().then(() => { if (!commandPalette.classList.contains('is-hidden') && commandInput.value.trim()) renderCommandPalette(); }).catch(() => {});
+    ensureEquationIndexRendered().then(() => { if (!commandPalette.classList.contains('is-hidden') && commandInput.value.trim()) renderCommandPalette(); }).catch(() => {});
   }
 }
 function closeCommandPalette() {

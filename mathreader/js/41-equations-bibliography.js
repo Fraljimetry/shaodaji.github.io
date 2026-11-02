@@ -347,9 +347,14 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
       };
       const tagAtLocalMargin = side === 'left' ? record.candidateAtLineStart : record.candidateAtLineEnd;
       if (record.attachedFunctionCall) continue;
+      if (record.bareSource && bareEquationInTabularRow(lines, lineIndex)) continue;
       if (!tagAtLocalMargin || !equationCandidateAlignedToLocalColumnSide(record, side)) continue;
       if (referenceProse.test(String(record.text || ''))) continue;
       if (record.bareSource) {
+        const extremeTopBareMarker = record.standaloneTag
+          && (Number(record.ratio) <= 0.040
+            || (!record.nearbyDisplayMath && Number(record.ratio) <= 0.070 && bareEquationHasNearbyHeadingContext(lines, lineIndex)));
+        if (extremeTopBareMarker) continue;
         const remainder = String(record.text || '').replace(/^\s*\d+(?:\.\d+)+\s*/, '').trim();
         const words = remainder.match(/\b[A-Za-z]{3,}\b/g) || [];
         const han = remainder.match(/\p{Script=Han}/gu) || [];
@@ -703,6 +708,7 @@ function bareEquationHasNearbyHeadingContext(lines, lineIndex) {
     const titleCaseWords = text.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
     const hanChars = text.match(/\p{Script=Han}/gu) || [];
     if (hanChars.length >= 3) return true;
+    if (/^[A-Z]{4,}(?:\s+[A-Z]{3,})*[.:]?$/u.test(text) && asciiWords.length >= 1) return true;
     if (/^[A-Z]/.test(text) && asciiWords.length >= 2 && titleCaseWords.length >= 1) return true;
   }
   return false;
@@ -732,6 +738,31 @@ function bareEquationInHorizontalNumericCluster(lines, lineIndex) {
   }
   if (centers.length < 3) return false;
   return Math.max(...centers) - Math.min(...centers) >= 0.16;
+}
+
+function bareEquationInTabularRow(lines, lineIndex) {
+  const line = lines[lineIndex];
+  if (!line) return false;
+  const compact = String(line.text || '').trim().replace(/\s+/g, ' ');
+  // This guard is only for a bare numeric cell (optionally followed by a short
+  // measurement unit). Parenthesized margin labels never enter this path.
+  if (!/^[+-]?\d+(?:\.\d+)?(?:\s*(?:ms|s|sec|µs|us|ns|%|MB|GB|KB|MiB|GiB))?$/i.test(compact)) return false;
+  const ratio = Number(line.ratio);
+  const row = [];
+  for (const other of lines || []) {
+    const otherRatio = Number(other?.ratio);
+    if (Number.isFinite(ratio) && Number.isFinite(otherRatio) && Math.abs(otherRatio - ratio) > 0.0045) continue;
+    const text = String(other?.text || '').trim().replace(/\s+/g, ' ');
+    const start = Number(other?.xStartRatio); const end = Number(other?.xEndRatio);
+    if (!text || text.length > 40 || !Number.isFinite(start) || !Number.isFinite(end)) continue;
+    row.push({ text, center: (start + end) / 2, math: equationLineMathSignalCount(text) });
+  }
+  if (row.length < 3 || row.some((cell) => cell.math >= 2)) return false;
+  const spread = Math.max(...row.map((cell) => cell.center)) - Math.min(...row.map((cell) => cell.center));
+  if (spread < 0.18) return false;
+  const numericCells = row.filter((cell) => /^[+-]?\d+(?:\.\d+)?(?:\s*(?:ms|s|sec|µs|us|ns|%|MB|GB|KB|MiB|GiB))?$/i.test(cell.text)).length;
+  const plainKeyCell = row.some((cell) => /^[A-Za-z][A-Za-z0-9_.+\-]*(?:\([^)]{0,24}\))?$/.test(cell.text));
+  return numericCells >= 3 || (numericCells >= 2 && plainKeyCell);
 }
 
 function equationCandidateTokenGeometry(line, candidate) {
@@ -818,6 +849,25 @@ function equationCandidateConfidenceForSide(item) {
     : '';
   const leadingIntegerWords = leadingIntegerRemainder.match(/\b[A-Za-z]{3,}\b/g) || [];
   const leadingIntegerHanChars = leadingIntegerRemainder.match(/\p{Script=Han}/gu) || [];
+  const shortNumberedProseHeading = Boolean(
+    integerTag
+    && item?.explicitParenthesized
+    && item?.candidateAtLineStart
+    && !item?.candidateAtLineEnd
+    && mathSignals === 0
+    && !item?.nearbyDisplayMath
+    && /^\s*[A-Za-z]{4,}(?:\s+[A-Za-z]{2,})?\s*[.:]?\s*$/.test(leadingIntegerRemainder)
+  );
+  const punctuatedStandaloneIntegerList = Boolean(
+    integerTag
+    && item?.explicitParenthesized
+    && item?.candidateAtLineStart
+    && !item?.candidateAtLineEnd
+    && mathSignals === 0
+    && !item?.nearbyDisplayMath
+    && /^\s*[.:;]\s*$/.test(leadingIntegerRemainder)
+  );
+  if (shortNumberedProseHeading || punctuatedStandaloneIntegerList) return -Infinity;
   if (integerTag && item?.explicitParenthesized && item?.candidateAtLineStart && !item?.candidateAtLineEnd
     && (leadingIntegerWords.length >= 4 || leadingIntegerHanChars.length >= 6)) return -Infinity;
   if (integerTag && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge && !strongMarginGeometry && !item?.nearbyDisplayMath) return -Infinity;
@@ -901,6 +951,10 @@ function suppressSparseAmbiguousOcrEquationFamilies(index) {
   for (const [label, records] of [...index.entries()]) {
     if (!parsedEquationNumber(label)) continue;
     const kept = (records || []).filter((record) => {
+      // Apply this geometry safeguard to both OCR and native hidden-text
+      // candidates. Late two-column recovery can otherwise resurrect a bare
+      // section/page marker that the primary classifier already rejected.
+      if (record?.bareSource && record?.standaloneTag && Number(record?.ratio) <= 0.040) return false;
       if (!record?.ocrSource || record?.nativeGapCorroborated) return true;
       const pageConfidence = Number(record.ocrPageConfidence);
       // Keep the v316 page-quality contract authoritative even after
@@ -943,6 +997,41 @@ function suppressSparseAmbiguousOcrEquationFamilies(index) {
     else index.delete(label);
   }
 }
+function suppressSparseAmbiguousNativeBareEquationFamilies(index) {
+  // A scan-backed/hidden text layer can expose ordinary decimal values as
+  // standalone tokens.  Do not let one or two unsupported interior decimals
+  // establish an Equation numbering system merely because they happen to look
+  // like dotted labels.  Preserve real small documents when the tag is on the
+  // strong outer numbering margin, has nearby display math, or has any
+  // explicit/strong equation evidence.
+  const numeric = [];
+  let strongEvidence = 0;
+  for (const [label, records] of index.entries()) {
+    if (!parsedEquationNumber(label)) continue;
+    numeric.push({ label, records: records || [] });
+    if ((records || []).some((record) => (
+      record?.ocrSource
+      || record?.explicitParenthesized
+      || record?.nearbyDisplayMath
+      || (Number(record?.mathSignals) || 0) >= 2
+      || !record?.bareSource
+      || !record?.standaloneTag
+    ))) strongEvidence += 1;
+  }
+  if (!numeric.length || numeric.length > 2 || strongEvidence > 0) return index;
+  for (const { label, records } of numeric) {
+    const allUnsupportedInteriorBare = records.length > 0 && records.every((record) => {
+      if (record?.ocrSource || !record?.bareSource || !record?.standaloneTag || record?.nearbyDisplayMath || (Number(record?.mathSignals) || 0) > 0) return false;
+      const strongOuterMargin = equationNumberingSide === 'left'
+        ? Number(record?.candidateXEndRatio) <= 0.16
+        : Number(record?.candidateXStartRatio) >= 0.87;
+      return !strongOuterMargin;
+    });
+    if (allUnsupportedInteriorBare) index.delete(label);
+  }
+  return index;
+}
+
 function reconcileOcrEquationSequenceOrder(index) {
   const byPrefix = new Map();
   for (const [label, candidates] of index.entries()) {
@@ -1464,6 +1553,7 @@ async function buildEquationLabelIndex() {
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           nearbyHeadingContext: Boolean(candidate.bare) && bareEquationHasNearbyHeadingContext(lines, lineIndex),
           axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
+          tabularNumericCell: Boolean(candidate.bare) && bareEquationInTabularRow(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
           ocrSource: Boolean(line.ocrSource),
           ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
@@ -1490,7 +1580,17 @@ async function buildEquationLabelIndex() {
       && Number.isFinite(record.ocrPageConfidence)
       && record.ocrPageConfidence < 50
     );
-    if (record.axisNumericCluster || record.ocrTopRunningHeader || weakOcrPageCandidate) confidence = -Infinity;
+    const extremeTopBareMarker = Boolean(
+      record.bareSource
+      && record.standaloneTag
+      && !record.nearbyDisplayMath
+      && (
+        Number(record.ratio) <= 0.040
+        || (Number(record.ratio) <= 0.070 && record.nearbyHeadingContext)
+      )
+    );
+    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate);
+    if (hardRejectedCandidate) confidence = -Infinity;
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
         ? Number(record.candidateXEndRatio) <= (record.ocrSource ? 0.24 : 0.13)
@@ -1506,10 +1606,13 @@ async function buildEquationLabelIndex() {
       const sectionLikeBare = sameLineSectionContext
         || Boolean(record.nearbyHeadingContext)
         || (!strongOuterMargin && !record.nearbyDisplayMath && (Number(record.mathSignals) || 0) === 0);
-      if (sectionLikeBare) confidence = -Infinity;
+      if (sectionLikeBare) {
+        confidence = -Infinity;
+        hardRejectedCandidate = true;
+      }
     }
     let reliable = confidence >= 8;
-    if (!reliable && record.standaloneTag && record.nearbyDisplayMath && equationCandidateAlignedToNumberingSide(record)) {
+    if (!hardRejectedCandidate && !reliable && record.standaloneTag && record.nearbyDisplayMath && equationCandidateAlignedToNumberingSide(record)) {
       confidence = Math.max(confidence, 12);
       reliable = true;
     }
@@ -1577,6 +1680,7 @@ async function buildEquationLabelIndex() {
   reconcileEquationNumberingFamilies(index);
   reconcileOcrEquationSequenceOrder(index);
   suppressSparseAmbiguousOcrEquationFamilies(index);
+  suppressSparseAmbiguousNativeBareEquationFamilies(index);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
 
   const publishAutomaticIndex = () => {
@@ -1605,6 +1709,7 @@ async function buildEquationLabelIndex() {
       reconcileEquationNumberingFamilies(assistIndex);
       reconcileOcrEquationSequenceOrder(assistIndex);
       suppressSparseAmbiguousOcrEquationFamilies(assistIndex);
+      suppressSparseAmbiguousNativeBareEquationFamilies(assistIndex);
       publishAutomaticIndex();
     })().catch((error) => {
       console.warn('MathReader posterior equation OCR was unavailable.', error);
@@ -1863,7 +1968,7 @@ async function ensureEquationIndexRendered() {
 
 async function findEquationLabelLocation(query, originPage = null, originRatio = null) {
   const label = normalizedEquationLabel(query);
-  const index = await buildEquationLabelIndex();
+  const index = (await ensureEquationIndexRendered()) || new Map();
   const candidates = index.get(label) || [];
   let best = null;
   for (const candidate of candidates) {
@@ -1953,6 +2058,43 @@ function bibliographyHeadingText(value) {
   return /^(?:references(?:\s+and\s+notes)?|notes\s+and\s+references|bibliography|literature\s+cited)\s*[.:]?$/i.test(String(value || '').replace(/\s+/g, ' ').trim());
 }
 
+function bibliographyEntryLooksCompleteForPostscript(entry) {
+  const text = String(entry?.title || '').replace(/\s+/g, ' ').trim();
+  if (!text) return false;
+  return /\b(?:17|18|19|20)\d{2}\b/.test(text)
+    && (/(?:\d{1,4}\s*[-–—]\s*\d{1,4}|\b(?:MR|Zbl)\s*\d+|\b(?:doi|arXiv)\b)/i.test(text) || /[.)]\s*$/.test(text));
+}
+
+function bibliographyPostscriptContactLine(line, text, activeEntry, entryCount) {
+  if (!activeEntry || entryCount < 3 || !bibliographyEntryLooksCompleteForPostscript(activeEntry)) return false;
+  const cleaned = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!cleaned || cleaned.length > 120) return false;
+  if (/^E-?mail\s+address\b/i.test(cleaned)) return true;
+  if (/^(?:School|Department|Faculty)\s+of\b/i.test(cleaned)) return true;
+  if (/^(?:Institute|Instituto|Institut|Équipe|Equipe|EQU\s*IPE)\b/i.test(cleaned)) return true;
+  if (/^(?:University\s+of\b|[A-Z][A-Za-zÀ-ÖØ-öø-ÿ.'’&\- ]{2,60}\s+University\b)/u.test(cleaned)) return true;
+  const ratio = Number(line?.ratio || 0);
+  const xStart = Number(line?.xStartRatio || 0);
+  const authorSignature = /^(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ.'’\-]+\s+){1,3}[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ.'’\-]+$/u.test(cleaned);
+  return authorSignature && ratio >= 0.55 && xStart >= 0.45;
+}
+
+function repeatedBibliographyAuthorPrefix(entries) {
+  const rows = Array.isArray(entries) ? entries : [];
+  for (let index = rows.length - 1; index >= Math.max(0, rows.length - 6); index -= 1) {
+    const title = String(rows[index]?.title || '').replace(/\s+/g, ' ').trim();
+    const match = title.match(/^([^,]{2,80}),\s+/);
+    if (!match) continue;
+    const author = match[1].trim();
+    const initialStyle = author.includes('.')
+      && /^[A-Za-zÀ-ÖØ-öø-ÿ.'’&\- ]+$/u.test(author)
+      && !/\b(?:of|the|in|on|for|with|sets|points)\b/i.test(author);
+    const fullNameStyle = /^[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'’.-]{2,}\s+[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]{2,}$/u.test(author);
+    if (initialStyle || fullNameStyle) return author;
+  }
+  return '';
+}
+
 function bibliographyLineFragment(line, parts, columnIndex = null) {
   if (!Array.isArray(parts) || !parts.length) return null;
   const ordered = [...parts].sort((a, b) => Number(a.start || 0) - Number(b.start || 0));
@@ -2032,10 +2174,20 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
   const substantialRightCount = rightLines.filter(substantialColumnLine).length;
   const headingOnLeft = headingLines.some((line) => line.columnIndex === 0);
   const headingOnRight = headingLines.some((line) => line.columnIndex === 1);
-  const twoColumn = strongSplitCount >= 2
+  // A single-column bibliography with hanging keys can superficially resemble
+  // two columns: short "[16]" rows sit at the left margin while their bodies
+  // begin farther right. Do not reorder such pages unless there is comparable
+  // key evidence in the right half. Reordering separates a key from its body.
+  const leftHangingKeys = splitRows.filter((line) => Number(line.xStartRatio || 0) < 0.36 && /^\[\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9 ]{0,8})\s*\][.)]?$/.test(String(line.text || '').trim())).length;
+  const rightHangingKeys = splitRows.filter((line) => Number(line.xStartRatio || 0) > 0.52 && /^\[\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9 ]{0,8})\s*\][.)]?$/.test(String(line.text || '').trim())).length;
+  const hangingBodies = lines.filter((line) => Number(line.xStartRatio || 0) >= 0.18 && Number(line.xStartRatio || 0) <= 0.36 && Number(line.xEndRatio || 0) >= 0.62 && String(line.text || '').trim().length >= 24).length;
+  const singleColumnHangingBibliography = leftHangingKeys >= 3 && rightHangingKeys === 0 && hangingBodies >= 3;
+  const twoColumn = !singleColumnHangingBibliography && (
+    strongSplitCount >= 2
     || (substantialLeftCount >= 3 && substantialRightCount >= 3)
     || (headingOnRight && substantialRightCount >= 3 && (strongSplitCount >= 1 || substantialLeftCount >= 1))
-    || (headingOnLeft && substantialLeftCount >= 3 && (strongSplitCount >= 1 || substantialRightCount >= 1));
+    || (headingOnLeft && substantialLeftCount >= 3 && (strongSplitCount >= 1 || substantialRightCount >= 1))
+  );
   if (!twoColumn) {
     // Do not retain speculative row splits when the page as a whole did not
     // establish a bibliography column layout. A single-column reference line
@@ -2043,7 +2195,19 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
     // but splitting it changes reading order and can manufacture entries.
     const starts = lines.map((line) => Number(line.xStartRatio || 0)).filter(Number.isFinite).sort((a, b) => a - b);
     const base = starts.length ? starts[Math.min(starts.length - 1, Math.floor(starts.length * 0.12))] : 0;
-    return lines.map((line) => ({ ...line, columnStartRatio: base }));
+    const annotated = lines.map((line) => ({ ...line, columnStartRatio: base }));
+    if (singleColumnHangingBibliography) {
+      // PDF text layers sometimes emit a hanging key after its same-baseline
+      // body fragment. Preserve visual reading order so `[17]` is seen before
+      // the continuation that belongs to reference 17 rather than appended to
+      // reference 16.
+      annotated.sort((a, b) => {
+        const ar = Number(a.ratio || 0); const br = Number(b.ratio || 0);
+        if (Math.abs(ar - br) <= 0.0040) return Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0);
+        return ar - br;
+      });
+    }
+    return annotated;
   }
 
   const columnStart = (columnLines) => {
@@ -2059,10 +2223,15 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
   const fullWidth = splitRows.filter((line) => line.columnIndex === null).map(annotate);
   const topFullWidth = fullWidth.filter((line) => Number(line.ratio || 0) < 0.18).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0));
   const otherFullWidth = fullWidth.filter((line) => Number(line.ratio || 0) >= 0.18).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0));
+  const visualColumnSort = (a, b) => {
+    const ar = Number(a.ratio || 0); const br = Number(b.ratio || 0);
+    if (Math.abs(ar - br) <= 0.0040) return Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0);
+    return ar - br;
+  };
   return [
     ...topFullWidth,
-    ...leftLines.map(annotate).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0)),
-    ...rightLines.map(annotate).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0)),
+    ...leftLines.map(annotate).sort(visualColumnSort),
+    ...rightLines.map(annotate).sort(visualColumnSort),
     ...otherFullWidth,
   ];
 }
@@ -2135,6 +2304,25 @@ function unnumberedBibliographyTextLooksStrong(text) {
   return score >= 2;
 }
 
+function bibliographyHeadingHasNearbyEntryEvidence(lines, headingIndex) {
+  const list = Array.isArray(lines) ? lines : [];
+  const heading = list[headingIndex] || null;
+  const headingRatio = Number(heading?.ratio || 0);
+  for (let index = headingIndex + 1; index < Math.min(list.length, headingIndex + 8); index += 1) {
+    const line = list[index];
+    const ratio = Number(line?.ratio || 0);
+    if (Number.isFinite(headingRatio) && Number.isFinite(ratio) && ratio - headingRatio > 0.18) break;
+    const value = String(line?.text || '').replace(/\s+/g, ' ').trim();
+    if (!value || /^\d{1,4}$/.test(value)) continue;
+    // A real references heading normally has an actual key or a strong
+    // unnumbered author/year entry immediately below it.  Contents pages, by
+    // contrast, are followed by page numbers or the next outline item.
+    if (/^[\[{(]\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9.\-]{0,12})\s*[\]})]/.test(value)) return true;
+    if (unnumberedBibliographyTextLooksStrong(value)) return true;
+  }
+  return false;
+}
+
 function bibliographyLineStartsAtColumn(line) {
   const x = Number(line?.xStartRatio || 0);
   const base = Number(line?.columnStartRatio);
@@ -2144,12 +2332,24 @@ function bibliographyLineStartsAtColumn(line) {
 
 function bibliographyLineLooksLikeHeaderOrFooter(line, cleaned) {
   const value = String(cleaned || '').replace(/\s+/g, ' ').trim();
-  const topHeaderLike = Number(line?.ratio || 0) < 0.10 && (
+  const ratio = Number(line?.ratio || 0);
+  const xStart = Number(line?.xStartRatio || 0);
+  const topHeaderLike = ratio < 0.10 && (
     /^\d{1,4}\s+[A-Z][A-Z0-9 .,:;'’"()\-]{4,}$/u.test(value)
     || /^[A-Z][A-Z0-9 .,:;'’"()\-]{4,}\s+\d{1,4}$/u.test(value)
   );
+  // Journals/books often split running headers into separate page-number and
+  // centered author/title lines.  Do not append that header to the previous
+  // bibliography entry. Keep the geometry narrow so left-aligned real author
+  // lines at the top of a references page remain valid content.
+  const topCenteredRunningHeader = ratio < 0.125
+    && xStart > 0.28
+    && value.length >= 4 && value.length <= 80
+    && (/^[A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я][A-ZÀ-ÖØ-ÞΑ-ΩЁА-Я0-9 .,&'’\-:]+$/u.test(value)
+      || /^(?:[A-Z]\.?\s*){1,4}[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{2,40}(?:\s*(?:&|and)\s*(?:[A-Z]\.?\s*){0,4}[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{2,40})?$/u.test(value));
   return topHeaderLike
-    || (Number(line?.ratio || 0) > 0.91 && value.length < 100)
+    || topCenteredRunningHeader
+    || (ratio > 0.91 && value.length < 100)
     || /^\d{1,4}\s+[A-Z][A-Z .,'’'-]{2,}$/u.test(value)
     || /^(?:(?:I\s+)?manuscrit\s+reçu|received|revised|department\s+of|annales\s+de|license\s+or\s+copyright\s+restrictions)\b/i.test(value);
 }
@@ -2338,6 +2538,7 @@ async function buildStructureIndex({ force = false } = {}) {
   let pendingBibliographyKey = null;
   let syntheticBibliographyMode = null;
   let activeBibliographyEntry = null;
+  const bibliographyLastPosition = new WeakMap();
   let activeBibliographyRecoveryCandidate = null;
   let pendingUnnumberedBibliographyEntry = null;
   let activeProofEntry = null;
@@ -2360,7 +2561,8 @@ async function buildStructureIndex({ force = false } = {}) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
       const tailOnlyPage = page > primaryPageCount;
       const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode);
-      for (const line of lines) {
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const line = lines[lineIndex];
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
         if (!cleaned) continue;
         if (bibliographyHeadingText(cleaned)) {
@@ -2368,7 +2570,9 @@ async function buildStructureIndex({ force = false } = {}) {
           // item near the front. Treat a heading as the real bibliography only
           // in the latter part of longer documents; repeated running headers on
           // subsequent bibliography pages keep the established numbering mode.
-          const bibliographyHeadingEligible = sourceDoc.numPages <= 20 || page >= Math.max(2, Math.floor(sourceDoc.numPages * 0.35));
+          const bibliographyHeadingEligible = page >= Math.max(2, Math.floor(sourceDoc.numPages * 0.35))
+            || bibliographyHeadingHasNearbyEntryEvidence(lines, lineIndex)
+            || (page === 1 && Number(line.ratio || 0) >= 0.78);
           if (bibliographyHeadingEligible) {
             if (!bibliographyMode) syntheticBibliographyMode = null;
             bibliographyMode = true; pendingBibliographyKey = null; pendingUnnumberedBibliographyEntry = null; activeBibliographyEntry = null; activeBibliographyRecoveryCandidate = null; activeProofEntry = null;
@@ -2451,6 +2655,7 @@ async function buildStructureIndex({ force = false } = {}) {
             const meta = bibliographyMetadata(body);
             const entry = { number, label, page: entryPage, ratio: entryRatio, title: body.slice(0, 640), citations: [], ...meta };
             nextBibliography.push(entry);
+            bibliographyLastPosition.set(entry, { page: entryPage, ratio: entryRatio });
             return entry;
           };
 
@@ -2460,6 +2665,7 @@ async function buildStructureIndex({ force = false } = {}) {
             if (!addition || /^\d{1,4}$/.test(addition)) return;
             const combined = `${entry.title || ''} ${addition}`.replace(/\s+/g, ' ').trim().slice(0, 640);
             entry.title = combined;
+            bibliographyLastPosition.set(entry, { page, ratio: Number(line.ratio || 0) });
             const meta = bibliographyMetadata(combined);
             if (!entry.doi && meta.doi) entry.doi = meta.doi;
             if (!entry.arxiv && meta.arxiv) entry.arxiv = meta.arxiv;
@@ -2471,6 +2677,14 @@ async function buildStructureIndex({ force = false } = {}) {
           let bibliographyLine = line.ocrSource
             ? cleaned.replace(/^[\[{(]\s*(\d{1,3})\s*[\]})][.)]?\s*/, '[$1] ')
             : cleaned;
+          if (bibliographyPostscriptContactLine(line, bibliographyLine, activeBibliographyEntry, nextBibliography.length)) {
+            bibliographyMode = false;
+            pendingBibliographyKey = null;
+            pendingUnnumberedBibliographyEntry = null;
+            activeBibliographyEntry = null;
+            activeBibliographyRecoveryCandidate = null;
+            continue;
+          }
           // Native text extraction in older scans can also confuse 1/l and the
           // closing bracket. Repair only the *next expected* numeric key, so a
           // malformed [l], [ll], [ 101 or [ 131 cannot invent a new sequence.
@@ -2488,6 +2702,13 @@ async function buildStructureIndex({ force = false } = {}) {
               ? bibliographyLine.replace(/^[\[{(]\s*[1lI]{2}\s*[\]})][.)]?\s+/u, '[11] ')
               : bibliographyLine.replace(/^\[\s*[1lI]{2}\s*\]\s+/u, '[11] ');
           }
+          // In some old mathematical text layers the printed digit 8 is
+          // decoded as Greek delta. Accept that single glyph only when the
+          // established numeric bibliography sequence is specifically waiting
+          // for 8; never globally reinterpret delta as a digit.
+          if (expectedBibliographyNumber === 8 && Number(line.xStartRatio || 0) < 0.22) {
+            bibliographyLine = bibliographyLine.replace(/^\[\s*δ\s*\][.)]?$/u, '[8]');
+          }
           bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
           let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
           let bracketKey = false;
@@ -2495,6 +2716,17 @@ async function buildStructureIndex({ force = false } = {}) {
             bib = bibliographyLine.match(/^\[\s*([A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?\s+(.{3,})$/);
             if (bib) bib[1] = bib[1].trim();
             bracketKey = Boolean(bib);
+          }
+          // Broken old text layers can omit the closing bracket while keeping
+          // a short author key and the author name on the same visual line,
+          // e.g. "[Gr GROSS L.". This shape is accepted only at the
+          // bibliography's left edge and only with an uppercase author lead.
+          if (!bib && Number(line.xStartRatio || 0) < 0.22) {
+            const fragmentedAuthorWithBody = bibliographyLine.match(/^\[\s*([A-Za-z][A-Za-z0-9]{0,5})\s+([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ .,'’\-]{2,})$/u);
+            if (fragmentedAuthorWithBody) {
+              bib = [fragmentedAuthorWithBody[0], fragmentedAuthorWithBody[1], fragmentedAuthorWithBody[2].trim()];
+              bracketKey = true;
+            }
           }
           if (!bib) bib = bibliographyLine.match(/^(\d{1,3})[.)]\s+([A-Z][^=]{8,})$/);
           // Once a numeric bibliography sequence is established, recover
@@ -2549,6 +2781,16 @@ async function buildStructureIndex({ force = false } = {}) {
             }
             let keyOnly = bibliographyLine.match(/^\[\s*(\d{1,3}|[A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?$/);
             if (keyOnly) keyOnly[1] = keyOnly[1].trim();
+            // A closing bracket may be extracted as its own tiny line. Treat a
+            // short incomplete left-margin author key as pending; the isolated
+            // "]" line is ignored and the following title attaches normally.
+            if (!keyOnly && Number(line.xStartRatio || 0) < 0.22) {
+              const fragmentedAuthorKey = bibliographyLine.match(/^\[\s*([A-Za-z][A-Za-z0-9\s]{0,8})\s*$/u);
+              if (fragmentedAuthorKey) {
+                const compactKey = fragmentedAuthorKey[1].replace(/\s+/g, '');
+                if (compactKey && compactKey.length <= 8) keyOnly = [fragmentedAuthorKey[0], compactKey];
+              }
+            }
             // Old bibliographies often use a horizontal rule to mean
             // "same author as above". The rule may be a vector rather than
             // text, leaving PDF.js with a short fragment such as "[11] ,"
@@ -2581,6 +2823,22 @@ async function buildStructureIndex({ force = false } = {}) {
               pendingBibliographyKey = null;
               return Boolean(activeBibliographyEntry);
             };
+            // A key-only line owns the next substantial line.  Old text layers
+            // often emit `[B1]` and `BAKRY D.` as separate fragments on the
+            // same visual baseline; do not let the author-name heuristics turn
+            // that author into an unnumbered entry and discard the pending key.
+            if (!keyOnly && pendingBibliographyKey && cleaned.length >= 3) {
+              const pending = pendingBibliographyKey;
+              pendingBibliographyKey = null;
+              activeBibliographyRecoveryCandidate = null;
+              let pendingBody = cleaned;
+              if (/^\s*[,;:]/.test(pendingBody)) {
+                const repeatedAuthor = repeatedBibliographyAuthorPrefix(nextBibliography);
+                if (repeatedAuthor) pendingBody = `${repeatedAuthor}${pendingBody}`;
+              }
+              activeBibliographyEntry = addBibliographyEntry(pending.rawKey, pendingBody, pending.bracketKey, pending.page || page, pending.ratio ?? line.ratio);
+              continue;
+            }
             if (!keyOnly && pendingUnnumberedBibliographyEntry) {
               if (pendingFullNameLead && bibliographyLineStartsAtColumn(line)) {
                 if (!finalizePendingUnnumbered()) pendingUnnumberedBibliographyEntry = null;
@@ -2617,17 +2875,17 @@ async function buildStructureIndex({ force = false } = {}) {
               pendingBibliographyKey = null;
               pendingUnnumberedBibliographyEntry = null;
               activeBibliographyEntry = addBibliographyEntry(String(nextBibliography.length + 1), bibliographyLine, false);
-            } else if (pendingBibliographyKey && cleaned.length >= 3) {
-              const pending = pendingBibliographyKey;
-              pendingBibliographyKey = null;
-              activeBibliographyRecoveryCandidate = null;
-              activeBibliographyEntry = addBibliographyEntry(pending.rawKey, cleaned, pending.bracketKey, pending.page || page, pending.ratio ?? line.ratio);
             } else if (activeBibliographyEntry && cleaned.length >= 3 && !/^(?:references?|bibliography|literature\s+cited)\b/i.test(cleaned)) {
               // Preserve wrapped old-style references. Continuation lines often
               // contain the journal, volume, year or page range that makes the
               // entry useful, but v295 discarded everything after line one.
               const footerLike = bibliographyLineLooksLikeHeaderOrFooter(line, cleaned);
-              if (!footerLike) appendBibliographyContinuation(activeBibliographyEntry, cleaned);
+              const lastPosition = bibliographyLastPosition.get(activeBibliographyEntry);
+              const detachedSamePageBlock = Boolean(lastPosition
+                && Number(lastPosition.page) === page
+                && Number(line.ratio || 0) - Number(lastPosition.ratio || 0) > 0.18);
+              if (!footerLike && !detachedSamePageBlock) appendBibliographyContinuation(activeBibliographyEntry, cleaned);
+              else if (detachedSamePageBlock) activeBibliographyEntry = null;
             }
           }
         }
