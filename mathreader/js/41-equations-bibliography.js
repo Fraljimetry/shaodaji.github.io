@@ -883,7 +883,7 @@ function suppressSparseAmbiguousOcrEquationFamilies(index) {
   for (const [label, records] of [...index.entries()]) {
     if (!parsedEquationNumber(label)) continue;
     const kept = (records || []).filter((record) => {
-      if (!record?.ocrSource) return true;
+      if (!record?.ocrSource || record?.nativeGapCorroborated) return true;
       const pageConfidence = Number(record.ocrPageConfidence);
       // Keep the v316 page-quality contract authoritative even after
       // two-column supplementation and sequence recovery.
@@ -910,7 +910,7 @@ function suppressSparseAmbiguousOcrEquationFamilies(index) {
   for (const [label, records] of [...index.entries()]) {
     if (!parsedEquationNumber(label)) continue;
     const kept = (records || []).filter((record) => {
-      if (!record?.ocrSource) return true;
+      if (!record?.ocrSource || record?.nativeGapCorroborated) return true;
       const pageConfidence = Number(record.ocrPageConfidence);
       // Mid-confidence OCR is usable, but one or two non-standalone numeric
       // labels are too weak to establish an equation-numbering system.
@@ -951,6 +951,76 @@ function reconcileOcrEquationSequenceOrder(index) {
   return index;
 }
 
+
+
+function equationNativeImageGapPlan(index, pageCount) {
+  const byPrefix = new Map();
+  for (const [label, candidates] of index.entries()) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed?.prefix || !Number.isInteger(parsed.last) || parsed.last < 1) continue;
+    const candidate = chooseCanonicalEquationCandidate(candidates);
+    if (!candidate || candidate.ocrSource) continue;
+    const list = byPrefix.get(parsed.prefix) || [];
+    list.push({ label, parsed, candidate });
+    byPrefix.set(parsed.prefix, list);
+  }
+
+  const expectedByPage = new Map();
+  const addExpected = (pageNum, label) => {
+    const page = Number(pageNum);
+    if (!Number.isInteger(page) || page < 1 || page > pageCount) return;
+    const labels = expectedByPage.get(page) || new Set();
+    labels.add(label);
+    expectedByPage.set(page, labels);
+  };
+  const expectedLabel = (parsed, last) => `(${parsed.prefix}${parsed.separator || '.'}${last})`;
+
+  for (const entries0 of byPrefix.values()) {
+    if (entries0.length < 4) continue;
+    const byLast = new Map();
+    const entries = [...entries0].sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
+    for (const entry of entries) if (!byLast.has(entry.parsed.last)) byLast.set(entry.parsed.last, entry);
+    const family = [...byLast.values()].sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
+    if (family.length < 4) continue;
+
+    const first = family[0];
+    if (first.parsed.last >= 3 && first.parsed.last <= 4) {
+      // A mature family beginning at .3/.4 is strong evidence that the first
+      // one to three printed labels may have disappeared from the hidden text
+      // layer. Consult only the first anchor page and its immediate predecessor;
+      // image OCR must still read the exact missing label before it is added.
+      for (let missing = 1; missing < first.parsed.last; missing += 1) {
+        const label = expectedLabel(first.parsed, missing);
+        addExpected(first.candidate.page, label);
+        addExpected(Number(first.candidate.page) - 1, label);
+      }
+    }
+
+    for (let i = 0; i + 1 < family.length; i += 1) {
+      const left = family[i];
+      const right = family[i + 1];
+      const gap = right.parsed.last - left.parsed.last;
+      if (gap < 2 || gap > 4) continue;
+      if (Number(left.candidate.page) !== Number(right.candidate.page)) continue;
+      // Same-page bracketing is intentionally strict: it identifies an obvious
+      // local hole without asking OCR to search a broad region of the document.
+      for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
+        addExpected(left.candidate.page, expectedLabel(left.parsed, missing));
+      }
+    }
+  }
+
+  // OCR is a posterior check, not a second full-document pass. Prefer pages
+  // with several independently implied holes and keep the automatic work
+  // bounded so a text-backed scan remains responsive.
+  const pages = [...expectedByPage.keys()]
+    .sort((a, b) => (expectedByPage.get(b)?.size || 0) - (expectedByPage.get(a)?.size || 0) || a - b)
+    .slice(0, 12)
+    .sort((a, b) => a - b);
+  const allowedPages = new Set(pages);
+  for (const page of [...expectedByPage.keys()]) if (!allowedPages.has(page)) expectedByPage.delete(page);
+  return { pages, expectedByPage };
+}
 
 function equationIndexHasSuspiciousLeadingGap(index) {
   const byPrefix = new Map();
@@ -1176,10 +1246,22 @@ function denseSupplementalEquationFamilies(records) {
 }
 
 async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index) {
-  if (!equationIndexHasSuspiciousLeadingGap(index)) return false;
-  if (!await equationDocumentLooksImageBacked(sourceDoc, index)) return false;
-  const pages = equationSupplementalOcrPagePlan(sourceDoc, index);
-  if (!pages.length || documentOcrBusy) return false;
+  if (!sourceDoc?.numPages || documentTextMode !== 'native' || documentOcrActive || documentOcrBusy) return false;
+
+  const gapPlan = equationNativeImageGapPlan(index, Math.max(0, Number(sourceDoc.numPages) || 0));
+  const legacyLeadingGap = equationIndexHasSuspiciousLeadingGap(index);
+  let legacyPages = [];
+  if (legacyLeadingGap && await equationDocumentLooksImageBacked(sourceDoc, index)) {
+    legacyPages = equationSupplementalOcrPagePlan(sourceDoc, index);
+  }
+  if (!gapPlan.pages.length && !legacyPages.length) return false;
+
+  const gapPagesWithRaster = new Set();
+  for (const pageNum of gapPlan.pages) {
+    if (await equationPageContainsRasterImage(sourceDoc, pageNum)) gapPagesWithRaster.add(pageNum);
+  }
+  const pages = [...new Set([...legacyPages, ...gapPagesWithRaster])].sort((a, b) => a - b).slice(0, 48);
+  if (!pages.length) return false;
 
   let worker = null;
   try {
@@ -1198,22 +1280,42 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
       } catch (_) {}
     }
 
-    const records = [];
+    const legacyPageSet = new Set(legacyPages);
+    const legacyRecords = [];
+    const nativeGapRecords = [];
     for (const pageNum of pages) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
       const lines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, worker);
+      const expectedOnPage = gapPlan.expectedByPage.get(pageNum) || new Set();
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
         const line = lines[lineIndex];
         for (const candidate of equationLabelCandidatesInLine(line.text)) {
           const record = equationSupplementalRecord(line, pageNum, lineIndex, lines, candidate);
-          if (record) records.push(record);
+          if (!record) continue;
+          if (legacyPageSet.has(pageNum)) legacyRecords.push(record);
+          if (expectedOnPage.has(record.label)) {
+            // Native numbering defines the hole; image OCR supplies the missing
+            // visible label. Never synthesize the number from the sequence.
+            nativeGapRecords.push({
+              ...record,
+              nativeGapCorroborated: true,
+              confidence: Math.max(20, Number(record.confidence) || 0),
+            });
+          }
         }
       }
       await nextFrame();
     }
 
     let added = false;
-    for (const record of denseSupplementalEquationFamilies(records)) {
+    if (legacyPages.length) {
+      for (const record of denseSupplementalEquationFamilies(legacyRecords)) {
+        if (index.has(record.label)) continue;
+        index.set(record.label, [record]);
+        added = true;
+      }
+    }
+    for (const record of nativeGapRecords) {
       if (index.has(record.label)) continue;
       index.set(record.label, [record]);
       added = true;
