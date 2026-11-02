@@ -22,6 +22,11 @@ function updateOutlineSource() {
 function normalizedHeadingText(value) {
   return String(value || '')
     .replace(/\s+/g, ' ')
+    // Some legacy journals extract the section delimiter after §N as a
+    // middle dot (for example, "§3· Title") rather than an ASCII period.
+    // Normalize only this explicit section-marker form; ordinary math dots
+    // and multiplication symbols remain untouched.
+    .replace(/^(\s*§\s*\d+(?:\s*\.\s*\d+)*)\s*·\s*/, '$1. ')
     .replace(/\s+([,.;:!?])/g, '$1')
     .trim();
 }
