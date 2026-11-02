@@ -572,8 +572,16 @@ async function detectOutlineFromTypography() {
         const numberedLead = headingText.match(/^(\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+)(.+)$/);
         if (numberedLead) {
           const body = numberedLead[2];
+          // A body sentence can begin with an author's initial, for example
+          // "B. Gidas, W. M. Ni and L. Nirenberg [2]. ...".  Treating the
+          // leading "B." as an alphabetic section marker made the sentence
+          // boundary after an author initial look like a heading boundary.
+          // Reject only this citation-shaped paragraph lead; legitimate
+          // alphabetic sections such as "B. Methods. ..." remain eligible.
+          const authorCitationLead = /^[A-Z][A-Za-z'’.-]{2,},\s+(?:[A-Z]\.\s*){1,3}/.test(body)
+            && /\[\s*\d{1,3}\s*\]/.test(body.slice(0, 100));
           const boundary = body.match(/^(.{2,90}?)\.\s+(?=[A-Z][a-z])/);
-          if (boundary && !numberedBodyLooksLikeProse(boundary[1])) {
+          if (boundary && !authorCitationLead && !numberedBodyLooksLikeProse(boundary[1])) {
             headingText = normalizedHeadingText(`${numberedLead[1]}${boundary[1]}`);
             headingWasParagraphLead = true;
           }
