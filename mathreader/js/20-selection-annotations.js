@@ -383,6 +383,22 @@ function applyEquationEdits(index) {
   return out;
 }
 
+function refreshEquationIndexAfterManualEdit() {
+  equationIndexBuildPromise = null;
+  if (equationAutomaticLabelIndex) {
+    equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
+    const previousKnownEquationCount = equationIndexKnownCount;
+    renderEquationIndex();
+    if (equationIndexKnownCount !== previousKnownEquationCount) persistDocumentState();
+    return Promise.resolve(equationLabelIndex);
+  }
+  // If the automatic base has not been built in this session yet, fall back to
+  // the normal one-time build. Manual edits after that build stay incremental.
+  equationLabelIndex = null;
+  equationIndexKnownCount = null;
+  return ensureEquationIndexRendered();
+}
+
 function equationEditTargetFromPending(ref) {
   if (!ref) return null;
   if (String(ref).startsWith('edit:')) return equationEdits.find((item) => item.action === 'add' && String(item.id) === String(ref).slice(5)) || null;
@@ -445,8 +461,9 @@ function applyEquationLinkCorrection(query, page, ratio) {
     insertEquationManualOrderAfter(anchorRef, id);
     pendingEquationAddKey = null;
     } else return false;
-  equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null; equationIndexKnownCount = null;
-  persistDocumentState(); refreshSelectionUI(); ensureEquationIndexRendered();
+  persistDocumentState();
+  refreshEquationIndexAfterManualEdit().catch(() => {});
+  refreshSelectionUI();
   return true;
 }
 
@@ -558,13 +575,9 @@ async function applyEquationPointCorrection(pageNum, ratio) {
     pendingEquationAddKey = null;
     }
 
-  equationLabelIndex = null;
-  equationNumberingSide = 'right';
-  equationIndexBuildPromise = null;
-  equationIndexKnownCount = null;
   persistDocumentState();
+  await refreshEquationIndexAfterManualEdit();
   refreshSelectionUI();
-  ensureEquationIndexRendered();
   return true;
 }
 

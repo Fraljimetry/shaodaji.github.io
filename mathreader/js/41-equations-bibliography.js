@@ -1033,7 +1033,7 @@ function equationNativeImageGapPlan(index, pageCount) {
   // bounded so a text-backed scan remains responsive.
   const pages = [...expectedByPage.keys()]
     .sort((a, b) => (expectedByPage.get(b)?.size || 0) - (expectedByPage.get(a)?.size || 0) || a - b)
-    .slice(0, 12)
+    .slice(0, 24)
     .sort((a, b) => a - b);
   const allowedPages = new Set(pages);
   for (const page of [...expectedByPage.keys()]) if (!allowedPages.has(page)) expectedByPage.delete(page);
@@ -1284,12 +1284,21 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   if (!pages.length) return false;
 
   let worker = null;
-  try {
+  let createWorker = null;
+  let workerInitFailed = false;
+  const ensureWorker = async () => {
+    if (worker) return worker;
+    if (workerInitFailed) return null;
     const module = await loadDocumentOcrModule();
-    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
-    const createWorker = documentOcrCreateWorker(module);
-    if (typeof createWorker !== 'function') return false;
-    worker = await createWorker('eng', 1, { logger: () => {} });
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return null;
+    createWorker = createWorker || documentOcrCreateWorker(module);
+    if (typeof createWorker !== 'function') { workerInitFailed = true; return null; }
+    try {
+      worker = await createWorker('eng', 1, { logger: () => {} });
+    } catch (error) {
+      workerInitFailed = true;
+      throw error;
+    }
     if (typeof worker.setParameters === 'function') {
       try {
         await worker.setParameters({
@@ -1299,13 +1308,44 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
         });
       } catch (_) {}
     }
+    return worker;
+  };
 
-    const legacyPageSet = new Set(legacyPages);
-    const legacyRecords = [];
-    const nativeGapRecords = [];
+  const cachedLinesForPage = async (pageNum) => {
+    const cacheKey = `${String(sourceKey || '')}|${equationNumberingSide}|${pageNum}`;
+    const cached = equationSupplementalOcrCache.get(cacheKey);
+    if (Array.isArray(cached)) return cached;
+    if (cached && typeof cached.then === 'function') return cached;
+    const activeWorker = await ensureWorker();
+    if (!activeWorker) throw new Error('Equation OCR worker unavailable');
+    const pending = equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker)
+      .then((lines) => {
+        if (pdfDoc === sourceDoc && currentFileKey === sourceKey) equationSupplementalOcrCache.set(cacheKey, lines);
+        return lines;
+      })
+      .catch((error) => {
+        equationSupplementalOcrCache.delete(cacheKey);
+        throw error;
+      });
+    equationSupplementalOcrCache.set(cacheKey, pending);
+    return pending;
+  };
+
+  const legacyPageSet = new Set(legacyPages);
+  const legacyRecords = [];
+  let added = false;
+  try {
     for (const pageNum of pages) {
-      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
-      const lines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, worker);
+      if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return added;
+      let lines;
+      try {
+        lines = await cachedLinesForPage(pageNum);
+      } catch (error) {
+        // Posterior OCR is page-local evidence. A failure on one selected page
+        // must not discard labels already confirmed on other pages.
+        console.warn(`MathReader equation image-assistance skipped page ${pageNum}.`, error);
+        continue;
+      }
       const expectedOnPage = gapPlan.expectedByPage.get(pageNum) || new Set();
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
         const line = lines[lineIndex];
@@ -1313,21 +1353,21 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
           const record = equationSupplementalRecord(line, pageNum, lineIndex, lines, candidate);
           if (!record) continue;
           if (legacyPageSet.has(pageNum)) legacyRecords.push(record);
-          if (expectedOnPage.has(record.label)) {
+          if (expectedOnPage.has(record.label) && !index.has(record.label)) {
             // Native numbering defines the hole; image OCR supplies the missing
             // visible label. Never synthesize the number from the sequence.
-            nativeGapRecords.push({
+            index.set(record.label, [{
               ...record,
               nativeGapCorroborated: true,
               confidence: Math.max(20, Number(record.confidence) || 0),
-            });
+            }]);
+            added = true;
           }
         }
       }
       await nextFrame();
     }
 
-    let added = false;
     if (legacyPages.length) {
       for (const record of denseSupplementalEquationFamilies(legacyRecords)) {
         if (index.has(record.label)) continue;
@@ -1335,17 +1375,7 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
         added = true;
       }
     }
-    for (const record of nativeGapRecords) {
-      if (index.has(record.label)) continue;
-      index.set(record.label, [record]);
-      added = true;
-    }
     return added;
-  } catch (error) {
-    // Image assistance is deliberately optional. A network/model failure must
-    // never make a native-text Equation index unavailable.
-    console.warn('MathReader equation image-assistance was unavailable.', error);
-    return false;
   } finally {
     try { await worker?.terminate?.(); } catch (_) {}
   }
@@ -1542,17 +1572,46 @@ async function buildEquationLabelIndex() {
   }
 
   supplementTwoColumnEquations(index, rawPageLines);
-  await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index);
   reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
   reconcileEquationNumberingFamilies(index);
   reconcileOcrEquationSequenceOrder(index);
   suppressSparseAmbiguousOcrEquationFamilies(index);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
-  equationLabelIndex = applyEquationEdits(canonicalizeEquationIndex(index));
-  const previousKnownEquationCount = equationIndexKnownCount;
-  renderEquationIndex();
-  if (equationIndexKnownCount !== previousKnownEquationCount) persistDocumentState();
+
+  const publishAutomaticIndex = () => {
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+    equationAutomaticLabelIndex = canonicalizeEquationIndex(index);
+    equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
+    const previousKnownEquationCount = equationIndexKnownCount;
+    renderEquationIndex();
+    if (equationIndexKnownCount !== previousKnownEquationCount) persistDocumentState();
+    return true;
+  };
+
+  // Publish the native-text result immediately. Posterior image OCR is an
+  // enhancement, not a prerequisite for a usable Equation index, and may take
+  // several seconds on scan-backed papers.
+  publishAutomaticIndex();
+
+  if (!equationImageAssistPromise) {
+    const assistIndex = index;
+    const assistPool = candidatePool;
+    equationImageAssistPromise = (async () => {
+      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex);
+      if (!added || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+      reconcileEquationNumberingFamilies(assistIndex);
+      recoverSequentialEquationGaps(assistIndex, assistPool);
+      reconcileEquationNumberingFamilies(assistIndex);
+      reconcileOcrEquationSequenceOrder(assistIndex);
+      suppressSparseAmbiguousOcrEquationFamilies(assistIndex);
+      publishAutomaticIndex();
+    })().catch((error) => {
+      console.warn('MathReader posterior equation OCR was unavailable.', error);
+    }).finally(() => {
+      if (pdfDoc === sourceDoc && currentFileKey === sourceKey) equationImageAssistPromise = null;
+    });
+  }
   return equationLabelIndex;
 }
 
@@ -1716,8 +1775,10 @@ function renderEquationIndex() {
         equationEdits = equationEdits.filter((item) => !(item.action !== 'add' && normalizedEquationLabel(item.sourceLabel) === normalizedEquationLabel(sourceLabel)));
         equationEdits.push({ action:'remove', sourceLabel });
       }
-      pendingEquationReselectKey = null; pendingEquationAddKey = null; equationLabelIndex = null; equationNumberingSide = 'right'; equationIndexBuildPromise = null; equationIndexKnownCount = null;
-      persistDocumentState(); ensureEquationIndexRendered(); refreshSelectionUI();
+      pendingEquationReselectKey = null; pendingEquationAddKey = null;
+      persistDocumentState();
+      refreshEquationIndexAfterManualEdit().catch(() => {});
+      refreshSelectionUI();
     });
     const add = document.createElement('button'); add.type='button'; add.className='outline-edit-button'; add.textContent=t('Add','添加');
     add.addEventListener('click', (event) => {
@@ -1783,6 +1844,9 @@ async function ensureEquationIndexRendered() {
   if (!pdfDoc) { renderEquationIndex(); return; }
   if (!documentTextFeaturesAvailable()) {
     equationLabelIndex = null;
+    equationImageAssistPromise = null;
+    equationAutomaticLabelIndex = null;
+    equationSupplementalOcrCache = new Map();
     equationIndex?.replaceChildren();
     if (equationIndexCount) equationIndexCount.textContent = '0';
     if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Equations.', '文档文本不可用。运行全文 OCR 后才能启用公式索引。'); }

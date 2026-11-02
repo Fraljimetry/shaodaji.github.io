@@ -880,10 +880,7 @@ async function restoreUndoEntry(id = null) {
       equationEdits = equationEdits.filter((edit) => !(edit.action !== 'add' && normalizedEquationLabel(edit.sourceLabel) === sourceKey));
       if (payload.previousEdit) equationEdits.push(jsonClone(payload.previousEdit, payload.previousEdit));
     }
-    equationLabelIndex = null;
-    equationIndexBuildPromise = null;
-    equationIndexKnownCount = null;
-    await ensureEquationIndexRendered();
+    await refreshEquationIndexAfterManualEdit();
     refreshSelectionUI();
   }
   else if (item.type === 'structure-result') {

@@ -246,6 +246,13 @@ let equationManualOrder = [];
 let embeddedOutlineEdits = [];
 let embeddedOutlineEntries = [];
 let equationIndexBuildPromise = null;
+let equationImageAssistPromise = null;
+// Automatic detector output is kept separate from user edits so Add/Remove/Reselect
+// can be reapplied instantly without rescanning the document or rerunning image OCR.
+let equationAutomaticLabelIndex = null;
+// Per-document posterior equation OCR evidence. Successful page reads are cached
+// independently so one failing page cannot discard already confirmed labels.
+let equationSupplementalOcrCache = new Map();
 // Keep a tiny persisted equation summary so the collapsed Equations
 // badge can restore immediately without serializing or eagerly rebuilding the
 // full label index. null means the count is not known yet.
@@ -341,7 +348,7 @@ const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 30;
-const EQUATION_INDEX_SUMMARY_VERSION = 10;
+const EQUATION_INDEX_SUMMARY_VERSION = 11;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -700,6 +707,9 @@ function clearDocumentMapForIncomingPdf() {
   structureEntries = [];
   bibliographyEntries = [];
   equationLabelIndex = null;
+  equationImageAssistPromise = null;
+  equationAutomaticLabelIndex = null;
+  equationSupplementalOcrCache = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
   equationEdits = [];
@@ -1139,6 +1149,9 @@ function clearTextDerivedIndexesForUnavailableDocument() {
   structureIndexBuildToken += 1;
   structureIndexBuilding = false;
   equationLabelIndex = null;
+  equationImageAssistPromise = null;
+  equationAutomaticLabelIndex = null;
+  equationSupplementalOcrCache = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
   tocOutlineTargets = null;
@@ -1168,6 +1181,9 @@ function invalidateTextDerivedIndexesForOcrActivation() {
   structureIndexBuildToken += 1;
   structureIndexBuilding = false;
   equationLabelIndex = null;
+  equationImageAssistPromise = null;
+  equationAutomaticLabelIndex = null;
+  equationSupplementalOcrCache = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
   tocOutlineTargets = null;
@@ -2104,6 +2120,9 @@ function loadDocumentState(cachedSession = null) {
   equationIndexKnownCount = null;
   structureIndexVersion = 0;
   equationLabelIndex = null;
+  equationImageAssistPromise = null;
+  equationAutomaticLabelIndex = null;
+  equationSupplementalOcrCache = new Map();
   renderEquationIndex();
   backlinkContext = null; backlinkEntries = []; renderBacklinks();
   tocOutlineTargets = null;
