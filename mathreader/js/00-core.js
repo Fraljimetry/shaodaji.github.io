@@ -900,20 +900,34 @@ function readingDataContentDetectionSnapshot(session) {
   };
 }
 
+function importedSessionHasPortableDetectionSnapshot(session) {
+  if (!session || typeof session !== 'object') return false;
+  if (Array.isArray(session.inferredOutline) && session.inferredOutline.length) return true;
+  if (Array.isArray(session.structureEntries) && session.structureEntries.length) return true;
+  if (Array.isArray(session.bibliographyEntries) && session.bibliographyEntries.length) return true;
+  return Boolean(restoreEquationIndexFromPersistence(session.equationIndexSnapshot));
+}
+
 function mergePortableContentDetectionIntoSession(rawSession, detection) {
   const session = jsonClone(rawSession, {}) || {};
-  if (!detection || Number(detection.version) !== 1) return session;
-  const detectedStructureVersion = Number(detection.structureIndexVersion || 0);
-  if (Array.isArray(detection.structure)) session.inferredOutline = jsonClone(detection.structure, []);
-  if (Array.isArray(detection.results)) session.structureEntries = jsonClone(detection.results, []);
-  if (Array.isArray(detection.bibliography)) session.bibliographyEntries = jsonClone(detection.bibliography, []);
-  if (detectedStructureVersion > 0) session.structureIndexVersion = detectedStructureVersion;
-  if (detection.equations && Number(detection.equationIndexVersion) === EQUATION_INDEX_SUMMARY_VERSION) {
-    session.equationIndexSnapshot = jsonClone(detection.equations, null);
-    const restored = restoreEquationIndexFromPersistence(session.equationIndexSnapshot);
-    if (restored) session.equationIndexSummary = { version: EQUATION_INDEX_SUMMARY_VERSION, count: restored.size };
+  const explicitDetection = Boolean(detection && Number(detection.version) === 1);
+  if (explicitDetection) {
+    const detectedStructureVersion = Number(detection.structureIndexVersion || 0);
+    if (Array.isArray(detection.structure)) session.inferredOutline = jsonClone(detection.structure, []);
+    if (Array.isArray(detection.results)) session.structureEntries = jsonClone(detection.results, []);
+    if (Array.isArray(detection.bibliography)) session.bibliographyEntries = jsonClone(detection.bibliography, []);
+    if (detectedStructureVersion > 0) session.structureIndexVersion = detectedStructureVersion;
+    if (detection.equations && Number(detection.equationIndexVersion) === EQUATION_INDEX_SUMMARY_VERSION) {
+      session.equationIndexSnapshot = jsonClone(detection.equations, null);
+      const restored = restoreEquationIndexFromPersistence(session.equationIndexSnapshot);
+      if (restored) session.equationIndexSummary = { version: EQUATION_INDEX_SUMMARY_VERSION, count: restored.size };
+    }
   }
-  session.portableContentDetection = true;
+  // v334-and-earlier exports already carried Results/Bibliography/Structure in
+  // session fields even though they did not yet have an explicit contentDetection
+  // block. Import is the portability boundary: preserve those saved detections
+  // instead of treating them like an ordinary stale local detector cache.
+  if (explicitDetection || importedSessionHasPortableDetectionSnapshot(session)) session.portableContentDetection = true;
   return session;
 }
 
@@ -2354,13 +2368,16 @@ function loadDocumentState(cachedSession = null) {
       equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
       equationIndexKnownCount = equationLabelIndex.size;
     }
-    portableContentDetectionActive = Boolean(session.portableContentDetection) && Boolean(
-      inferredOutline.length || structureEntries.length || bibliographyEntries.length || restoredEquationIndex
-    );
+    const portableDetectionRequested = Boolean(session.portableContentDetection);
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
-    if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
+    // Detector-version invalidation is correct for ordinary local caches, but an
+    // imported reading-data snapshot is user data. Preserve its saved Results and
+    // Bibliography when document text is unavailable; a future OCR/rebuild can
+    // replace them explicitly rather than silently deleting them on import.
+    if (structureIndexVersion !== STRUCTURE_INDEX_VERSION
+        && !(portableDetectionRequested && (structureEntries.length || bibliographyEntries.length))) {
       structureEntries = [];
       bibliographyEntries = [];
       structureIndexVersion = 0;
@@ -2371,7 +2388,11 @@ function loadDocumentState(cachedSession = null) {
     // Keep inferred-outline filtering strict so formula lines are not mistaken
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
-    if (Number(session.version || 0) < 20 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio))))) inferredOutline = [];
+    if (!portableDetectionRequested
+        && (Number(session.version || 0) < 20 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio)))))) inferredOutline = [];
+    portableContentDetectionActive = portableDetectionRequested && Boolean(
+      inferredOutline.length || structureEntries.length || bibliographyEntries.length || restoredEquationIndex
+    );
     searchInput.value = typeof session.searchQuery === 'string' ? session.searchQuery : '';
     renderSymbolGlossary();
     if (generalPrefs.rememberSidebarVisibility !== false && Number(session.version || 0) >= 4) {

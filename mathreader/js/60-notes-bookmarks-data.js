@@ -1048,8 +1048,14 @@ async function importReadingDataFile(file) {
   }
   safeSet(stateKey('session-v2'), JSON.stringify(importedSession));
   loadDocumentState(importedSession);
+  // The PDF may already be sitting in the scanned-document "Text unavailable"
+  // state. Import can make Contents available without OCR, so refresh that UI
+  // immediately; otherwise the old CSS class keeps the restored sections hidden.
+  updateDocumentTextAvailabilityUI();
   await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
-  renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
+  renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton();
+  updateDocumentTextAvailabilityUI();
+  persistDocumentState(); scheduleAutomaticStructureIndex();
 }
 
 
