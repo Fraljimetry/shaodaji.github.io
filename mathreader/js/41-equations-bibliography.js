@@ -497,7 +497,7 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
       };
       const tagAtLocalMargin = side === 'left' ? record.candidateAtLineStart : record.candidateAtLineEnd;
       if (record.attachedFunctionCall) continue;
-      if (record.bareSource && bareEquationInTabularRow(lines, lineIndex)) continue;
+      if (record.bareSource && (bareEquationInTabularRow(lines, lineIndex) || bareEquationHasMeasurementSuffix(line, candidate))) continue;
       if (!tagAtLocalMargin || !equationCandidateAlignedToLocalColumnSide(record, side)) continue;
       if (referenceProse.test(String(record.text || ''))) continue;
       if (record.bareSource) {
@@ -912,6 +912,20 @@ function bareEquationInHorizontalNumericCluster(lines, lineIndex) {
   }
   if (centers.length < 3) return false;
   return Math.max(...centers) - Math.min(...centers) >= 0.16;
+}
+
+function bareEquationHasMeasurementSuffix(line, candidate) {
+  if (!candidate?.bare) return false;
+  const source = String(line?.text || '').normalize('NFKC');
+  const before = source.slice(0, Math.max(0, Number(candidate?.index) || 0)).trim();
+  if (before) return false;
+  const remainder = source.slice(Math.max(0, Number(candidate?.end) || 0)).trim();
+  if (!remainder) return false;
+  // Technical/performance tables often begin with a decimal measurement such as
+  // "1.242 s / 22.8% faster" or "1.40 GiB/s".  A bare dotted token in this
+  // position is a value, not a lost-parenthesis equation label.  Keep the unit
+  // vocabulary deliberately narrow so old journal tags remain eligible.
+  return /^(?:%|(?:ns|us|µs|ms|sec|secs|second|seconds|s|KB|MB|GB|KiB|MiB|GiB|B|Hz|kHz|MHz|GHz|fps)\b)/i.test(remainder);
 }
 
 function bareEquationInTabularRow(lines, lineIndex) {
@@ -2133,6 +2147,7 @@ async function buildEquationLabelIndex() {
           sameRowHeadingContext: Boolean(candidate.bare) && bareEquationHasSameRowHeadingContext(lines, lineIndex),
           axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
           tabularNumericCell: Boolean(candidate.bare) && bareEquationInTabularRow(lines, lineIndex),
+          measurementValue: Boolean(candidate.bare) && bareEquationHasMeasurementSuffix(line, candidate),
           mathSignals: equationLineMathSignalCount(line.text),
           ocrSource: Boolean(line.ocrSource),
           ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
@@ -2184,7 +2199,7 @@ async function buildEquationLabelIndex() {
       && (Number(record.mathSignals) || 0) === 0
       && (record.sameRowHeadingContext || (record.nearbyHeadingContext && !record.nearbyDisplayMath))
     );
-    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate || referenceContextRejectedCandidate || bareSectionHeadingCandidate);
+    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.measurementValue || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate || referenceContextRejectedCandidate || bareSectionHeadingCandidate);
     if (hardRejectedCandidate) confidence = -Infinity;
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
