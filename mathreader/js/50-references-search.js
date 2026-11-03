@@ -820,6 +820,11 @@ async function renderOutline() {
   updateOutlineSource();
   if (!pdfDoc) return;
   if (!documentTextFeaturesAvailable()) {
+    if (portableContentDetectionActive && inferredOutline.length) {
+      inferredOutlineDetectionDone = true;
+      renderInferredOutline(inferredOutline);
+      return;
+    }
     outlineCount.textContent = '0';
     outlineEmpty.classList.remove('is-hidden');
     outlineEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Contents.', '文档文本不可用。运行全文 OCR 后才能启用目录。');

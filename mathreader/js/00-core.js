@@ -226,6 +226,7 @@ let documentOcrModulePromise = null;
 let documentTextMode = 'native'; // native | ocr | unavailable
 let imageDocumentDetected = false;
 let documentTextPreference = 'ask'; // native | ocr | skip | ask
+let portableContentDetectionActive = false;
 let documentOcrRunController = null;
 let documentOcrGateChoiceResolve = null;
 let documentOcrBusy = false;
@@ -770,6 +771,9 @@ function snapshotSession() {
     inferredOutline,
     structureEntries,
     bibliographyEntries,
+    // Imported detection snapshots must survive later persistence/reopen even if
+    // the OCR text cache is unavailable.
+    portableContentDetection: portableContentDetectionActive,
     equationEdits,
     equationManualOrder,
     // Keep the automatic equation detections themselves, not only their count.
@@ -1246,8 +1250,26 @@ function requestStopFullDocumentOcr() {
 
 function updateDocumentTextAvailabilityUI() {
   const unavailable = Boolean(pdfDoc && imageDocumentDetected && !documentTextFeaturesAvailable());
+  const importedDetectionFallback = unavailable && portableContentDetectionActive;
   documentTextUnavailable?.classList.toggle('is-hidden', !unavailable);
-  outlinePanel?.classList.toggle('text-unavailable', unavailable);
+  outlinePanel?.classList.toggle('text-unavailable', unavailable && !importedDetectionFallback);
+  if (unavailable && documentTextUnavailable) {
+    const heading = documentTextUnavailable.querySelector('strong');
+    const copy = documentTextUnavailable.querySelector('p');
+    if (importedDetectionFallback) {
+      if (heading) heading.textContent = t('Imported detections restored', '已恢复导入的检测结果');
+      if (copy) copy.textContent = t(
+        'Saved Structure, Results, Equations, and Bibliography remain available. Run document OCR only to restore Search and document text features.',
+        '已保留结构、结果、公式和参考文献。仅需运行全文 OCR 即可恢复搜索和文档文本功能。'
+      );
+    } else {
+      if (heading) heading.textContent = t('Text unavailable', '文本不可用');
+      if (copy) copy.textContent = t(
+        'This scanned document is open without full-document OCR. Run OCR to enable Contents and document text features.',
+        '此扫描文档当前未运行全文 OCR。运行 OCR 后才能启用目录和文档文本功能。'
+      );
+    }
+  }
   if (contentsRunDocumentOcr) contentsRunDocumentOcr.disabled = !unavailable || documentOcrBusy;
 
   if (searchForm) {
@@ -1263,6 +1285,19 @@ function updateDocumentTextAvailabilityUI() {
 }
 
 function clearTextDerivedIndexesForUnavailableDocument() {
+  // Portable reading-data imports may already contain a verified document map.
+  // Preserve that snapshot even when OCR page text is unavailable; page/ratio
+  // navigation remains valid and the user must not lose imported detections.
+  if (portableContentDetectionActive) {
+    backlinkContext = null;
+    backlinkEntries = [];
+    try { backlinksList?.replaceChildren(); } catch (_) {}
+    if (backlinksCount) backlinksCount.textContent = '0';
+    renderStructureIndex();
+    renderBibliographyIndex();
+    renderEquationIndex();
+    return;
+  }
   inferredOutline = [];
   inferredOutlineDetectionDone = false;
   inferredOutlineBuildPromise = null;
@@ -1295,6 +1330,7 @@ function clearTextDerivedIndexesForUnavailableDocument() {
 }
 
 function invalidateTextDerivedIndexesForOcrActivation() {
+  portableContentDetectionActive = false;
   inferredOutline = [];
   inferredOutlineDetectionDone = false;
   inferredOutlineBuildPromise = null;
@@ -2236,6 +2272,7 @@ function loadDocumentState(cachedSession = null) {
   outlineMode = 'none';
   structureEntries = [];
   bibliographyEntries = [];
+  portableContentDetectionActive = false;
   equationEdits = [];
   equationManualOrder = [];
   draggedEquationKey = null;
@@ -2317,6 +2354,9 @@ function loadDocumentState(cachedSession = null) {
       equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
       equationIndexKnownCount = equationLabelIndex.size;
     }
+    portableContentDetectionActive = Boolean(session.portableContentDetection) && Boolean(
+      inferredOutline.length || structureEntries.length || bibliographyEntries.length || restoredEquationIndex
+    );
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
