@@ -821,7 +821,22 @@ function inferEquationNumberingSide(records) {
   return 'right';
 }
 
-function equationCandidateConfidenceForSide(item) {
+function equationReferenceProseContext(text) {
+  const source = String(text || '').normalize('NFKC');
+  if (!source) return false;
+  // A parenthesized number can sit exactly on the inferred numbering edge when
+  // an old PDF's text layer wraps prose into a short visual line. Geometry is
+  // therefore not sufficient by itself. Reject only explicit lexical contexts
+  // that grammatically *refer to* an equation; genuine display tags normally
+  // sit beside formula text rather than after "properties", "expansion", "of",
+  // etc., or before a prose continuation such as "we have" / "this shows".
+  const tag = String.raw`[（(]\s*\d{1,4}\s*(?:(?:[.．]\s*\d{1,4})+|(?:[-－]\s*\d{1,4})+)?\s*[)）]`;
+  const before = new RegExp(String.raw`\b(?:equation|eq\.?|see|from|by|using|according\s+to|as\s+in|in\s+view\s+of|follows?\s+from|recall(?:ing)?|substitut(?:e|ing)|insert(?:ing)?|apply(?:ing)?|combin(?:e|ing)|properties?|assumptions?|hypotheses?|requirements?|expansion|formula|identity|estimate|relation|conditions?|case|version|form|of|into)\s*${tag}`, 'i');
+  const after = new RegExp(String.raw`${tag}\s*(?:[.,;:]\s*)?(?:and|or|but|then|hence|therefore|thus|where|which|that|is|are|was|were|holds?|gives?|implies?|shows?|yields?|we|this|it)\b`, 'i');
+  return before.test(source) || after.test(source);
+}
+
+function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext = false) {
   if (item?.attachedFunctionCall) return -Infinity;
   const text = String(item?.text || '').trim();
   const label = normalizedEquationLabel(item?.label || '');
@@ -848,6 +863,7 @@ function equationCandidateConfidenceForSide(item) {
     bareHanChars.length >= 4
   );
   const parsed = parsedEquationNumber(label);
+  const explicitReferenceContext = Boolean(parsed && item?.explicitParenthesized && equationReferenceProseContext(text));
   const integerTag = Boolean(parsed && !parsed.prefix);
   const alphaWords = text.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
   const codeLike = (/(?:=>|;\s*$|\b(?:if|else|while|return|var|new|class|public|private|static|int|string)\b)/i.test(text)
@@ -882,6 +898,7 @@ function equationCandidateConfidenceForSide(item) {
     && /^\s*[.:;]\s*$/.test(leadingIntegerRemainder)
   );
   if (shortNumberedProseHeading || punctuatedStandaloneIntegerList) return -Infinity;
+  if (explicitReferenceContext && !isOnlyTag && !allowExplicitReferenceContext) return -Infinity;
   if (integerTag && item?.explicitParenthesized && item?.candidateAtLineStart && !item?.candidateAtLineEnd
     && (leadingIntegerWords.length >= 4 || leadingIntegerHanChars.length >= 6)) return -Infinity;
   if (integerTag && item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge && !strongMarginGeometry && !item?.nearbyDisplayMath) return -Infinity;
@@ -1075,7 +1092,7 @@ function reconcileOcrEquationSequenceOrder(index) {
 
 
 
-function equationNativeImageGapPlan(index, pageCount) {
+function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
   const byPrefix = new Map();
   for (const [label, candidates] of index.entries()) {
     const parsed = parsedEquationNumber(label);
@@ -1165,13 +1182,74 @@ function equationNativeImageGapPlan(index, pageCount) {
     }
   }
 
-  // OCR is a posterior check, not a second full-document pass. Prefer pages
-  // with several independently implied holes and keep the automatic work
-  // bounded so a text-backed scan remains responsive.
+  // Freeze the legacy/native v326 posterior plan before adding any recovery
+  // hints derived from rejected prose references. This keeps the established
+  // 24-page OCR budget intact; reference recovery may only add a small,
+  // separately bounded supplement and can never crowd out an existing page.
   const byEvidence = (a, b) => (expectedByPage.get(b)?.size || 0) - (expectedByPage.get(a)?.size || 0) || a - b;
-  const priorityPages = [...expectedByPage.keys()].filter((page) => baselinePriorityPages.has(page)).sort(byEvidence);
-  const supplementalPages = [...expectedByPage.keys()].filter((page) => !baselinePriorityPages.has(page)).sort(byEvidence);
-  const pages = [...priorityPages, ...supplementalPages].slice(0, 24).sort((a, b) => a - b);
+  const basePriorityPages = [...expectedByPage.keys()].filter((page) => baselinePriorityPages.has(page)).sort(byEvidence);
+  const baseSupplementalPages = [...expectedByPage.keys()].filter((page) => !baselinePriorityPages.has(page)).sort(byEvidence);
+  const basePages = [...basePriorityPages, ...baseSupplementalPages].slice(0, 24);
+
+  // A text layer can preserve only an inline prose reference to a printed
+  // equation while dropping the real margin tag. Keep such references out of
+  // the Equation index, but use the earliest one as a bounded *query* for image
+  // OCR. Exact OCR of the missing label is still required before publication.
+  // Normally require an established native family or two distinct rejected
+  // references. A single reference is also enough when it is a candidate that
+  // v326 would itself have indexed; exact image OCR still has to confirm the
+  // printed tag. Never do this for bare integer numbering, where prose
+  // enumerations are much more ambiguous.
+  const referenceRecoveryPages = new Set();
+  const referencePageScores = new Map();
+  const addReferenceExpected = (pageNum, label, distance) => {
+    const page = Number(pageNum);
+    if (!Number.isInteger(page) || page < 1 || page > pageCount) return;
+    addExpected(page, label);
+    referenceRecoveryPages.add(page);
+    // Prefer pages supported by several rejected labels, then the pages nearest
+    // to the prose reference. The exact label still has to be read by OCR.
+    const score = Math.max(1, 3 - Number(distance || 0));
+    referencePageScores.set(page, (referencePageScores.get(page) || 0) + score);
+  };
+  const referenceFamilies = new Map();
+  for (const record of referenceEvidence || []) {
+    const parsed = record?.numeric || parsedEquationNumber(record?.label);
+    if (!parsed?.prefix || !Number.isInteger(parsed.last)) continue;
+    const key = `prefix:${parsed.prefix}`;
+    const byLabel = referenceFamilies.get(key) || new Map();
+    const existing = byLabel.get(record.label);
+    if (!existing || equationDocumentPosition(record) < equationDocumentPosition(existing)) byLabel.set(record.label, record);
+    referenceFamilies.set(key, byLabel);
+  }
+  for (const [familyKey, byLabel] of referenceFamilies) {
+    const nativeCount = new Set((byPrefix.get(familyKey) || []).map((entry) => entry.label)).size;
+    const strongRejectedReference = [...byLabel.values()].some((record) => Boolean(record.referenceRecoveryStrong));
+    if (nativeCount < 2 && byLabel.size < 2 && !strongRejectedReference) continue;
+    for (const [label, record] of byLabel) {
+      if (index.has(label)) continue;
+      const referencePage = Number(record.page);
+      if (!Number.isInteger(referencePage)) continue;
+      // In old journal scans the printed tag is normally on the same page as
+      // its first surviving prose reference or on one of the two preceding
+      // pages. Wider windows add cost without useful localization evidence.
+      for (let distance = 0; distance <= 2; distance += 1) {
+        addReferenceExpected(referencePage - distance, label, distance);
+      }
+    }
+  }
+
+  // Preserve every page selected by the v326/native gap plan. A document with
+  // strong rejected-reference evidence may add at most twelve tightly localized
+  // pages (three pages per reference cluster in the common case), so the
+  // posterior image pass remains bounded and previous recovery coverage is not
+  // displaced.
+  const basePageSet = new Set(basePages);
+  const referencePages = [...referenceRecoveryPages]
+    .filter((page) => !basePageSet.has(page))
+    .sort((a, b) => (referencePageScores.get(b) || 0) - (referencePageScores.get(a) || 0) || a - b)
+    .slice(0, 12);
+  const pages = [...new Set([...basePages, ...referencePages])].sort((a, b) => a - b);
   const allowedPages = new Set(pages);
   for (const page of [...expectedByPage.keys()]) if (!allowedPages.has(page)) expectedByPage.delete(page);
   return { pages, expectedByPage };
@@ -1402,10 +1480,10 @@ function denseSupplementalEquationFamilies(records) {
   return accepted;
 }
 
-async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index) {
+async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index, referenceEvidence = []) {
   if (!sourceDoc?.numPages || documentTextMode !== 'native' || documentOcrActive || documentOcrBusy) return false;
 
-  const gapPlan = equationNativeImageGapPlan(index, Math.max(0, Number(sourceDoc.numPages) || 0));
+  const gapPlan = equationNativeImageGapPlan(index, Math.max(0, Number(sourceDoc.numPages) || 0), referenceEvidence);
   const legacyLeadingGap = equationIndexHasSuspiciousLeadingGap(index);
   let legacyPages = [];
   if (legacyLeadingGap && await equationDocumentLooksImageBacked(sourceDoc, index)) {
@@ -1526,6 +1604,7 @@ async function buildEquationLabelIndex() {
   const index = new Map();
   const candidatePool = new Map();
   const rawCandidates = [];
+  const referenceOcrEvidence = [];
   const rawPageLines = new Map();
   const dottedSectionHeadingEvidence = [];
   const equationPages = Array.from({ length: sourceDoc.numPages }, (_, index) => index + 1);
@@ -1637,7 +1716,17 @@ async function buildEquationLabelIndex() {
         || (Number(record.ratio) <= 0.070 && record.nearbyHeadingContext)
       )
     );
-    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate);
+    const referenceContextRejectedCandidate = Boolean(record.explicitParenthesized && equationReferenceProseContext(record.text));
+    // Only schedule posterior image recovery when this exact prose candidate
+    // would have survived the mature v326 classifier without the new lexical
+    // reference guard. This keeps harmless citations from expanding the OCR
+    // plan while preserving recovery for the class-level false targets fixed
+    // here.
+    const preReferenceGuardConfidence = referenceContextRejectedCandidate
+      ? equationCandidateConfidenceForSide(record, true)
+      : -Infinity;
+    if (referenceContextRejectedCandidate && record.numeric?.prefix && preReferenceGuardConfidence >= 8) referenceOcrEvidence.push({ ...record, referenceRecoveryStrong: true });
+    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate || referenceContextRejectedCandidate);
     if (hardRejectedCandidate) confidence = -Infinity;
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
@@ -1700,7 +1789,8 @@ async function buildEquationLabelIndex() {
     // cannot enter the index on its own. This preserves the anti-reference
     // guard while allowing complete equation families.
     const marginGapCandidate = Boolean(
-      !record.attachedFunctionCall
+      !referenceContextRejectedCandidate
+      && !record.attachedFunctionCall
       && !record.ocrTopRunningHeader
       && record.explicitParenthesized
       && alignedForPool
@@ -1750,7 +1840,7 @@ async function buildEquationLabelIndex() {
     const assistIndex = index;
     const assistPool = candidatePool;
     equationImageAssistPromise = (async () => {
-      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex);
+      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence);
       if (!added || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
       reconcileEquationNumberingFamilies(assistIndex);
       recoverSequentialEquationGaps(assistIndex, assistPool);
