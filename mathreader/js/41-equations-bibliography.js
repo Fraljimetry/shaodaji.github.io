@@ -561,7 +561,7 @@ function supplementTwoColumnEquations(index, rawPageLines) {
     seen.add(key);
     unique.push(item);
   }
-  if (!unique.length) return false;
+  if (!unique.length) return pageProfiles;
 
   const trustedNumeric = [];
   for (const [label, candidates] of index.entries()) {
@@ -592,38 +592,46 @@ function supplementTwoColumnEquations(index, rawPageLines) {
         || (knownIntegers.has(n - 1) && knownIntegers.has(n + 1))
         || supportedLeadingGap;
     });
-    if (corroborated.length !== 1) return false;
+    if (corroborated.length !== 1) return pageProfiles;
     promoted = corroborated;
   }
   for (const item of promoted) index.set(item.label, [item]);
 
-  // Tag already-trusted candidates on the physical outer column with the same
-  // page profile. This metadata affects initial display order only; acceptance
-  // and confidence remain unchanged. For right numbering the already-trusted
-  // outer column is the right column; for left numbering it is the left column.
+  return pageProfiles;
+}
+
+function annotateEquationColumnsForOrder(index, pageProfiles) {
+  if (!(pageProfiles instanceof Map) || !pageProfiles.size) return;
+  // The supplementary tag already knows its *local* column. Do not overwrite
+  // that fact just because the left-column gutter happens to lie within the
+  // right-column start tolerance (e.g. the first (1) of a two-column paper).
+  // For trusted native labels, classify by the physical token's own bounds,
+  // rather than assigning every label on the page to the outer column.
   for (const candidates of index.values()) {
     for (const candidate of candidates || []) {
       const profile = pageProfiles.get(Number(candidate?.page));
       if (!profile) continue;
+      if (candidate.equationTwoColumn && Number.isInteger(candidate.equationColumnIndex)) continue;
       const start = Number(candidate?.candidateXStartRatio ?? candidate?.xStartRatio);
       const end = Number(candidate?.candidateXEndRatio ?? candidate?.xEndRatio);
-      const tolerance = 0.035;
+      if (![start, end, profile.leftEnd, profile.rightStart].every(Number.isFinite)) continue;
+      const gap = profile.rightStart - profile.leftEnd;
+      if (gap <= 0) continue;
+      // A small tolerance accommodates fonts whose bounding boxes barely
+      // overrun a column, but never use a broad tolerance that crosses the
+      // gutter and moves a left-column label after right-column equations.
       let columnIndex = null;
-      if (side === 'right') {
-        if (![start, end, profile.rightStart].every(Number.isFinite) || end < profile.rightStart - tolerance) continue;
-        columnIndex = 1;
-      } else {
-        if (![start, end, profile.leftEnd].every(Number.isFinite) || start > profile.leftEnd + tolerance) continue;
-        columnIndex = 0;
-      }
+      if (end <= profile.leftEnd + Math.min(0.012, gap * 0.35)) columnIndex = 0;
+      else if (start >= profile.rightStart - Math.min(0.012, gap * 0.35)) columnIndex = 1;
+      if (columnIndex === null) continue;
       candidate.equationTwoColumn = true;
       candidate.equationColumnIndex = columnIndex;
       candidate.equationColumnStartRatio = columnIndex === 0 ? profile.leftStart : profile.rightStart;
       candidate.equationColumnEndRatio = columnIndex === 0 ? profile.leftEnd : profile.rightEnd;
     }
   }
-  return true;
 }
+
 function equationCandidateAlignedToNumberingSide(item, side = equationNumberingSide) {
   const start = Number(item?.candidateXStartRatio ?? item?.xStartRatio);
   const end = Number(item?.candidateXEndRatio ?? item?.xEndRatio);
@@ -1295,6 +1303,18 @@ function suppressSparseAmbiguousOcrEquationFamilies(index) {
       // Mid-confidence OCR is usable, but one or two non-standalone numeric
       // labels are too weak to establish an equation-numbering system.
       if (!record.standaloneTag && Number.isFinite(pageConfidence) && pageConfidence < 65) return false;
+      // A full-page scan can OCR a mathematical exponent as "(2)" on an
+      // interior display line. If the entire OCR document has fewer than three
+      // distinct numeric labels, a non-standalone integer tag needs the outer
+      // equation margin or an independently established local-column family.
+      // Nearby mathematical symbols alone are not enough: they are exactly
+      // what makes a formula exponent look like a numbered display.
+      const pureInteger = Boolean(parsedEquationNumber(label) && !parsedEquationNumber(label).prefix);
+      const strongOuterEdge = equationNumberingSide === 'left'
+        ? Number(record.candidateXEndRatio) <= 0.19
+        : Number(record.candidateXStartRatio) >= 0.82;
+      if (pureInteger && !record.standaloneTag && !record.confirmedLocalIntegerFamily
+          && !record.equationTwoColumn && !strongOuterEdge) return false;
       // Even an isolated parenthesized token can look convincing on clean
       // handwriting. Without a numbering family, retain it only when the
       // existing equation-confidence model supplies strong independent support.
@@ -2316,13 +2336,16 @@ async function buildEquationLabelIndex() {
     index.set(record.label, list);
   }
 
-  supplementTwoColumnEquations(index, rawPageLines);
+  const columnProfiles = supplementTwoColumnEquations(index, rawPageLines);
   reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
   reconcileEquationNumberingFamilies(index);
   reconcileOcrEquationSequenceOrder(index);
   suppressSparseAmbiguousOcrEquationFamilies(index);
   suppressSparseAmbiguousNativeBareEquationFamilies(index);
+  // Gap recovery can promote a local-column candidate *after* the initial
+  // supplement pass. Reapply only display-column metadata, never detections.
+  annotateEquationColumnsForOrder(index, columnProfiles);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
 
   const publishAutomaticIndex = () => {
@@ -2352,6 +2375,7 @@ async function buildEquationLabelIndex() {
       reconcileOcrEquationSequenceOrder(assistIndex);
       suppressSparseAmbiguousOcrEquationFamilies(assistIndex);
       suppressSparseAmbiguousNativeBareEquationFamilies(assistIndex);
+      annotateEquationColumnsForOrder(assistIndex, columnProfiles);
       publishAutomaticIndex();
     })().catch((error) => {
       console.warn('MathReader posterior equation OCR was unavailable.', error);
@@ -3088,18 +3112,39 @@ function bibliographyReferenceBodyLooksStrong(text) {
   return score >= 3;
 }
 
+function damagedOcrBibliographyKeyDigits(raw) {
+  // Only confusable glyphs that resemble digits in short *numbered* keys.
+  // Never apply to author-keyed references or ordinary prose.
+  const digits = String(raw || '').replace(/[lI|]/g, '1').replace(/[Oo]/g, '0').replace(/[Ss]/g, '5');
+  return /^\d{1,3}$/.test(digits) ? digits : '';
+}
+
 function repairOcrExpectedBibliographyKey(text, line, expected) {
-  // In a scanned bibliography, the opening brace can survive while the
-  // closing bracket becomes a comma and OCR mistakes 1/l/I (or 0/O, 5/S).
-  // Treat that as a *candidate for the next established numeric key*, never
-  // as an independent reference number. Require a left-margin OCR line with
-  // an actual bibliographic body; ordinary native text is not reinterpreted.
+  // Scanned journal references can lose the closing bracket entirely, replace
+  // it with comma punctuation, or render [11] as {ll}, [l1, etc. Anchor the
+  // repair to the *next already-established* numeric key, the OCR-only left
+  // margin, and a strong bibliographic body so body citations do not qualify.
   if (!line?.ocrSource || expected < 2 || expected > 999 || Number(line.xStartRatio || 0) >= 0.20) return text;
-  const match = String(text || '').match(/^[\[{(]\s*([0-9lI|OoSs]{1,3})\s*[,;:.]\s+(.{12,})$/u);
+  // A damaged *opening* bracket is a separate old-scan class: "2] A. Borel".
+  // Require the surviving closing delimiter plus the same sequence/body gates.
+  const match = String(text || '').match(/^[\[{(]\s*([0-9lI|OoSs]{1,3})\s*(?:[\]})])?\s*[,;:.]?\s+(.{12,})$/u)
+    || String(text || '').match(/^([0-9lI|OoSs]{1,3})\s*[\]})]\s+(.{12,})$/u);
   if (!match) return text;
-  const digits = match[1].replace(/[lI|]/g, '1').replace(/[Oo]/g, '0').replace(/[Ss]/g, '5');
-  if (digits !== String(expected) || !bibliographyReferenceBodyLooksStrong(match[2])) return text;
+  if (damagedOcrBibliographyKeyDigits(match[1]) !== String(expected) || !bibliographyReferenceBodyLooksStrong(match[2])) return text;
   return `[${expected}] ${match[2]}`;
+}
+
+function repairOcrExpectedBibliographyKeyOnly(text, line, expected, establishedCount) {
+  // PSM-11 and some PDF OCR layers place the damaged numeric marker on its
+  // own line and the bibliography body on the next line. Preserve a pending
+  // numeric key only if a real numbered series is already established; the
+  // existing pending-key handler then attaches the following text rather than
+  // appending it to the preceding reference.
+  if (!line?.ocrSource || establishedCount < 3 || expected < 2 || expected > 999
+      || Number(line.xStartRatio || 0) >= 0.20) return text;
+  const match = String(text || '').match(/^[\[{(]\s*([0-9lI|OoSs]{1,3})\s*(?:[\]})])?\s*[,;:.]?$/u);
+  if (!match || damagedOcrBibliographyKeyDigits(match[1]) !== String(expected)) return text;
+  return `[${expected}]`;
 }
 
 function malformedNumericBibliographyCandidate(text, line, page) {
@@ -3401,6 +3446,7 @@ async function buildStructureIndex({ force = false } = {}) {
           }
           bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
           bibliographyLine = repairOcrExpectedBibliographyKey(bibliographyLine, line, expectedBibliographyNumber);
+          bibliographyLine = repairOcrExpectedBibliographyKeyOnly(bibliographyLine, line, expectedBibliographyNumber, numericBibliographyNumbers.length);
           let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
           let bracketKey = false;
           if (!bib) {

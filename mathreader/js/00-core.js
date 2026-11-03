@@ -348,8 +348,8 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 40;
-const EQUATION_INDEX_SUMMARY_VERSION = 21;
+const STRUCTURE_INDEX_VERSION = 41;
+const EQUATION_INDEX_SUMMARY_VERSION = 22;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -795,6 +795,32 @@ function snapshotSession() {
       rightCollapsed: shell.classList.contains('right-collapsed')
     }
   };
+}
+
+function storedEquationOrderMatchesOldAutomaticSnapshot(order, snapshot) {
+  // Legacy equationManualOrder was filled even when the user had never dragged
+  // a row. Detector upgrades must not preserve an obsolete *automatic* order
+  // forever, but must preserve actual user reordering and equation edits.
+  if (!Array.isArray(order) || !order.length || !Array.isArray(snapshot?.rows) || !snapshot.rows.length) return false;
+  const best = new Map();
+  for (const row of snapshot.rows) {
+    const label = normalizedEquationLabel(row?.label || '');
+    if (!label || !Number.isFinite(Number(row?.page))) continue;
+    const score = Number(row?.confidence);
+    const previous = best.get(label);
+    if (!previous || (Number.isFinite(score) && score > Number(previous.confidence || 0))) best.set(label, row);
+  }
+  const rows = [...best.entries()].map(([label, row]) => ({ ...row, label }));
+  rows.sort((a, b) => {
+    const delta = Number(a.page) - Number(b.page);
+    if (delta) return delta;
+    if (a.equationTwoColumn && b.equationTwoColumn
+        && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
+        && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
+    return (Number(a.ratio) || 0) - (Number(b.ratio) || 0) || a.label.localeCompare(b.label);
+  });
+  const oldAutomatic = rows.map((row) => `label:${normalizedEquationLabel(row.label)}`);
+  return oldAutomatic.length === order.length && oldAutomatic.every((key, index) => key === order[index]);
 }
 
 function snapshotEquationIndexForPersistence(index) {
@@ -2370,6 +2396,15 @@ function loadDocumentState(cachedSession = null) {
     equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
     equationManualOrder = Array.isArray(session.equationManualOrder) ? session.equationManualOrder.map((item) => String(item || '')).filter(Boolean).slice(0, 1000) : [];
     const equationSummary = session.equationIndexSummary;
+    // Invalidate only a v340/earlier *automatic* order when its snapshot
+    // belongs to an older detector. An edited/dragged order will differ from
+    // the snapshot-derived default and is retained. Imported portable reading
+    // data stays untouched, including its user's chosen ordering.
+    if (!session.portableContentDetection
+        && Number(equationSummary?.version || 0) !== EQUATION_INDEX_SUMMARY_VERSION
+        && storedEquationOrderMatchesOldAutomaticSnapshot(equationManualOrder, session.equationIndexSnapshot)) {
+      equationManualOrder = [];
+    }
     if (equationSummary && Number(equationSummary.version) === EQUATION_INDEX_SUMMARY_VERSION
       && Number.isInteger(Number(equationSummary.count)) && Number(equationSummary.count) >= 0) {
       equationIndexKnownCount = Math.min(1000, Number(equationSummary.count));

@@ -300,6 +300,30 @@ async function detectOutlineFromTypography() {
   // Infer one heading profile from repeated document-level evidence. This
   // prevents a fix for one old paper from weakening every other PDF.
   const allLines = pages.flat();
+  // In historical OCR, the section sign § can be recognized as a dollar sign
+  // ("$1. Statement", "$2, Lemmas"). This is outline-local, OCR-only, and
+  // activated only by at least three distinct short, centered numbered title
+  // lines on three pages; a solitary mathematical $ amount is not a heading.
+  if (documentOcrActive) {
+    const dollarSections = allLines.filter((line) => {
+      const value = String(line?.text || '').trim();
+      const match = value.match(/^\$\s*(\d{1,2})\s*[.,)]\s+([A-Z][A-Za-z].*)$/);
+      if (!match || Number(line?.confidence) < 70) return false;
+      const title = match[2].trim();
+      const words = title.match(/[A-Za-z]{3,}/g) || [];
+      const center = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
+      const width = Number(line.xEndRatio) - Number(line.xStartRatio);
+      return words.length >= 1 && words.length <= 13
+        && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)
+        && Number.isFinite(center) && Math.abs(center - 0.5) <= 0.14
+        && width <= 0.72;
+    });
+    const numbers = new Set(dollarSections.map((line) => String(line.text).match(/^\$\s*(\d+)/)?.[1]));
+    const spread = new Set(dollarSections.map((line) => line.page));
+    if (numbers.size >= 3 && spread.size >= 3) {
+      for (const line of dollarSections) line.text = line.text.replace(/^\$\s*(\d{1,2})\s*[.,)]\s+/, '§$1. ');
+    }
+  }
   const lineMetrics = (line) => {
     const value = String(line?.text || '').trim();
     const ratio = Number(line?.size) / Math.max(1, bodySize);

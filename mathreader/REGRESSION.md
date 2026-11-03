@@ -1,3 +1,63 @@
+# MathReader Regression / Behavioral Audit Record — v341
+
+Date: 2026-11-03 (America/Los_Angeles)
+
+## Purpose and code baseline
+
+This iteration is a **regression-driven detector repair**, based strictly on the v340 root-patch-applied source; the supplied v339 full ZIP remains the common ancestor. The three motivating documents have different extraction modes. User-confirmed v340 behavior: `§5. Supplement` was recovered; the modern arXiv equation `(1)` existed but was **displayed between `(2)` and `(3)`**, and image-only Schoen reference `[11]` was **still absent**. No title-, filename-, or document-ID-specific special cases were introduced.
+
+## Confirmed root causes and implemented repairs
+
+| Category | Evidence | v341 change | Boundary / qualification |
+|---|---|---|---|
+| **Two-column equation order** | In arXiv:2610.07774v1, `(1)` is at the right margin of the **left** column on PDF p. 3, while `(2)` is in the right column; a gap-recovered `(1)` inherited the wrong `equationColumnIndex`, so column-based rendering placed it after `(2)` | Reconcile equation-column metadata using the page's established local column profile after supplementary/gap recovery. Tested the *actual* `renderEquationIndex` ordering: `(1), (2), (3), (4), (5), (6)` | Requires existing two-column geometry; does not use ascending numeric labels as a replacement for physical reading order |
+| **Persisted wrong automatic order** | Existing local records retain the old generated equation order even without a user drag | Versioned equation snapshot (`EQUATION_INDEX_SUMMARY_VERSION=22`) and targeted invalidation of **old automatic** equation order when it agrees with the previous snapshot | Preserve genuinely customized order, edits, and portable import state; do not force-reset intentional user order |
+| **Scanned bibliography `[11]`** | In full 19-page Schoen OCR, key `[11]` was damaged or split; observed variants include `{ll ,`, `{11} ,`, `[ll`, `[l1,`, and an isolated marker on a line separate from its body | Repair only the **expected** OCR-confusable numeric key within a validated bibliography sequence and left-margin bibliography geometry; support isolated damaged markers when established preceding references support continuation | OCR only; substantive body evidence or continuation required; native text, misnumbered keys, centered text, and bibliography-like body prose are negative controls |
+| **Other historical numeric reference markers** | Full 10-page Gromov scan yielded `2]` in place of `[2]` | OCR-only repair for an opening bracket lost before an otherwise clear numeric key, again subject to expected sequential number and bibliography context | Constrained to left-side bibliography key position and known sequence; no arbitrary key insertion |
+| **Sparse scan false equations** | Complete 19-page Schoen OCR found a *spurious* `(2)` on PDF p. 13 from a mathematical exponent in running prose, not a displayed tagged equation | Added a narrow sparse-OCR suppression for isolated, untrusted integer candidates that are not standalone and are not at a plausible page-side number margin | A true isolated interior-margin equation number may still be omitted; this is an explicit precision-over-recall tradeoff |
+| **Historical OCR `§` confusion** | Full 10-page Gromov scan misread several `§N` section markers as `$N`, obscuring `§5. Supplement` | Require a repeated, high-confidence centered **multi-page** `$N. Title` profile before treating the isolated OCR `$` typography as a section marker | Three distinct headings and pages required; single `$5. Supplement` alone is not promoted; native-text heuristics unchanged |
+
+## Actual-corpus regression (old and modern texts)
+
+The native detector regression included **16 byte-distinct PDF inputs, 991 pages total**, across old mathematical papers, books, lecture notes, and modern arXiv controls. Subjects include historical functional analysis/Banach geometry, complex analysis, PDE/harmonic analysis, geometric analysis, functional analysis/measure theory, numerical examples, and modern applied/model papers. Representative items: `Ahlfors-Conformal-Invariants.pdf` (172 pp), `caffarelli1989.pdf` (27 pp), `yau1978(2).pdf` (73 pp), `SPS_1988__22__485_0.pdf` (18 pp), L. Simon's exterior minimal-graph paper (13 pp), `YamabeProblem.pdf` (56 pp), Gromov's Banach paper (10 pp), `0810.5645v6.pdf` (212 pp), `1209.2203v2.pdf` (88 pp), `Radon Measures and Riesz Representation Theorems.pdf` (10 pp), and the three user-target PDFs. Multiple locally available copies of the *same* paper were not treated as separate independent corpus examples.
+
+These tests used actual PDF text and position data projected into PDF.js-like page text items and the **current JavaScript detection functions**, not hand-authored expected output. Compared with v340, **all 16** have exactly unchanged native **Structure, Results, Equation, and Bibliography inventory counts**; no introduced native equation labels were added or removed and no harness errors occurred. This is a **nonregression inventory gate**, not a statement that every historical scanned equation was recognized. Image-only native-text cases correctly have no usable native text and were tested separately through OCR below.
+
+### Real complete-document OCR (not isolated snippets)
+
+| PDF (input method) | Pages | Structure | Results | Equations | Bibliography | Confirmed observations |
+|---|---:|---:|---:|---:|---:|---|
+| Schoen, *Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces* (1983, image-only, Tesseract 5.5 hOCR psm 3 at 3.1×) | 19 | 4 | **16** | **0** | **14** | All bibliography `[1]`–`[14]`, including previously absent `[11]`; removed the false `(2)` at p. 13 without changing Results; four heading entries include References |
+| Gromov, *A Geometrical Conjecture of Banach* (1967; image-rendered OCR at 2.5×) | 10 | **6** | **13** | **11** | **9** | `§1`–`§5. Supplement` plus BIBLIOGRAPHY; bibliography `[1]`–`[9]` including broken `[2]` |
+| Handwritten mathematical lecture notes `581 Note 7.pdf` (2.3× OCR, 3 pages) | 3 | 0 | 0 | 0 | 0 | Poor OCR produces empty conservative index, **not** an accuracy pass; no false positives |
+
+Scanned Schoen bibliography was additionally rerun through the full detector with **three OCR line-segmentation and character-confusion mutations**; all yielded **14 entries including `[11]`**, **16 Results**, **0 false equations**. A negative scan variant with just an isolated `$5` and no repeated section-marker profile was *not* promoted to a `§5` heading. The 24 focused JS assertions passed, including native / wrong-key / far-margin / nonbibliographic negative cases, single-key variants, sparse equation suppression controls, legacy order migration, and the real rendered equation order.
+
+OCR timing on this machine: Gromov's 10-page scan completed in roughly **11.6 s**; Schoen's 19-page scan in about **23.4 s** using 4 local worker processes and `OMP_THREAD_LIMIT=1`; the 3-page notes in **8.7 s**. These are *local CLI Tesseract hOCR throughput examples*, **not production Tesseract.js CPU, WASM, or WebGPU benchmarks**. Browser memory, latency, and WebGPU-to-CPU fallback have not been measured in this campaign.
+
+### Detector-level safeguards / regressions
+
+- Focused source-level positives and negatives: **24 assertions**, including 5 reference `[11]` damaged-marker forms; separate full-document OCR variants 3/3; source-driven `renderEquationIndex` returns `(1)` before `(2)`; old automatic order invalidated but custom order preserved.
+- The native 16-document geometry comparisons establish **no output-inventory changes** on their PDF text layer; source-level OCR reproductions identify two *additional* confirmed defects and their fixes: historical `$N` headings, truncated `[2]` bibliography keys, and the spurious scanned exponent `(2)`.
+- All JS source files and combined assembled JS syntax are checked by `node --check`; the final root patch archive is checked for CRC and applying it to the v340 tree yields the exact v341 modified files (see release verification).
+
+## Explicit caveats and follow-up risks (do not silently treat as passes)
+
+1. **No full live browser integration run:** The PDF data adapter and Node VM call the exact source detectors, but **do not replicate** production PDF.js extraction, real Tesseract.js segmentation, cache storage, DOM interaction, mobile behavior, or all browser layout conditions. The JavaScript source renderer's sorting result was instrumented, rather than visually clicked in a deployed browser. Verify the user's live `(1)` location and `[11]` after deployment.
+2. **Partial OCR coverage remains:** For the Gromov OCR-input test, only **11 numbered equations** and **13 Results** were recovered versus 15 equation labels and 14 Results in the native-text projection. This is an observed OCR recognition/completeness limitation requiring future goldens, not a v341 success claim. The 3-page handwritten notes produced almost no usable OCR—also not a success.
+3. **OCR false-positive/false-negative tradeoffs:** The sparse-scan guard may reject a genuine solitary unlabeled-width interior equation; a wholly erased bibliography marker/body cannot be reconstructed safely. OCR `$N` only recovers repeated, confidently recognized historical section layouts; one-off headings may still be missed.
+4. **No fully independent quantitative truth for every text:** Inventory equality does not prove correctness. Existing historical goldens, full-document **WebGPU/CPU WASM** OCR accuracy and performance, image-heavy degraded pre-21st-century scans, all downstream headings/results/formulas/bibliography, mixed-image/text pages, and visual click-through remain important manual/browser regression gates. The corpus is intentionally more diverse than geometric analysis but is not comprehensive across number theory, probability, algebra, logic, theoretical CS, or information theory.
+5. **Persistence semantics:** Version bump invalidates standard local outdated index summaries. Imported portable detection snapshots and explicit user-customized equation orders are intentionally preserved; users may manually rebuild imported older snapshots when needed. Live storage migration was source-audited but not executed against the user's actual browser DB.
+
+## Release record
+
+- Version `340` → **`341`** (exactly one increment).
+- `STRUCTURE_INDEX_VERSION`: `40` → **`41`**; `EQUATION_INDEX_SUMMARY_VERSION`: `21` → **`22`**.
+- Modified full-file payloads only: `mathreader/REGRESSION.md`, `mathreader/index.html`, `mathreader/mathreader.js`, `mathreader/js/00-core.js`, `mathreader/js/40-outline-structure.js`, `mathreader/js/41-equations-bibliography.js`.
+- Root-level ZIP patch only; no original PDFs, credentials, other app code, standalone loose-file deliverables, or test helper scripts in the shipped archive.
+
+---
+
 # MathReader Regression / Behavioral Audit Record — v340
 
 Date: 2026-11-03 (America/Los_Angeles)
