@@ -962,22 +962,68 @@ function downloadJsonFile(name, value) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportReadingData() {
+async function settleContentDetectionForExport() {
+  if (!pdfDoc || !currentFileKey || !documentTextFeaturesAvailable()) return Boolean(pdfDoc && currentFileKey);
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+
+  // Structure/Results/Bibliography may still be running from the idle builder.
+  // Export is a durability boundary, so never snapshot a half-built index.
+  while (structureIndexBuilding && pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  }
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+  if (structureIndexVersion !== STRUCTURE_INDEX_VERSION) {
+    await buildStructureIndex();
+    while (structureIndexBuilding && pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+  }
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+
+  // The native equation map publishes before posterior margin-image OCR.  Wait
+  // for both phases so old scan-backed papers do not export a permanently
+  // incomplete equation list merely because Export was clicked too early.
+  await ensureEquationIndexRendered();
+  const assist = equationImageAssistPromise;
+  if (assist) await assist;
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+
+  // A zero-sized Map is a valid completed result; null means the build failed.
+  return structureIndexVersion === STRUCTURE_INDEX_VERSION && equationLabelIndex instanceof Map;
+}
+
+async function exportReadingData() {
   if (!pdfDoc || !currentFileKey) return;
-  const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
-  const session = snapshotSession();
-  downloadJsonFile(`${safeName}-mathreader.json`, {
-    schema: 'mathreader.reading-data@1', exportedAt: new Date().toISOString(),
-    document: { id: currentFileKey, name: currentFileName, pages: pdfDoc.numPages },
-    // Portable detection is explicit in the export instead of being an
-    // accidental side effect of whichever session fields happen to exist.
-    contentDetection: readingDataContentDetectionSnapshot(session),
-    // For scan-backed PDFs the OCR page geometry is the document text source.
-    // Export it with the reading data so import does not require re-running OCR
-    // merely to recover Structure / Results / Equations / Bibliography.
-    documentOcr: exportedDocumentOcrSnapshot(),
-    session
-  });
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const wasDisabled = Boolean(exportReadingDataButton?.disabled);
+  if (exportReadingDataButton) exportReadingDataButton.disabled = true;
+  try {
+    const settled = await settleContentDetectionForExport();
+    if (!settled || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) {
+      if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+        showError(t('Content detection is not ready to export. Rebuild the document index and try again.', '内容检测尚未准备好导出。请重新生成文档索引后再试。'));
+      }
+      return;
+    }
+    const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
+    const session = snapshotSession();
+    downloadJsonFile(`${safeName}-mathreader.json`, {
+      schema: 'mathreader.reading-data@1', exportedAt: new Date().toISOString(),
+      document: { id: currentFileKey, name: currentFileName, pages: pdfDoc.numPages },
+      // Portable detection is explicit in the export instead of being an
+      // accidental side effect of whichever session fields happen to exist.
+      contentDetection: readingDataContentDetectionSnapshot(session),
+      // For scan-backed PDFs the OCR page geometry is the document text source.
+      // Export it with the reading data so import does not require re-running OCR
+      // merely to recover Structure / Results / Equations / Bibliography.
+      documentOcr: exportedDocumentOcrSnapshot(),
+      session
+    });
+  } finally {
+    if (exportReadingDataButton) exportReadingDataButton.disabled = wasDisabled || !pdfDoc;
+  }
 }
 
 async function importReadingDataFile(file) {

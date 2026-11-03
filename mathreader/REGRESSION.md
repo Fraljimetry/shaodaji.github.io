@@ -1,3 +1,114 @@
+# MathReader Regression / Behavioral Audit Record — v339
+
+Date: 2026-11-02 (America/Los_Angeles)
+
+## Regression rules used
+
+- Standard readable documents require strict content-detection checks; degraded/pathological files may use relaxed acceptance and must not drive code changes unless the issue is a reproducible class problem.
+- Every regression rotates in new material and selectively retests older difficult fixtures.
+- Emphasize pre-21st-century, archaic, degraded, scan-backed material; modern/arXiv documents are minority controls.
+- Spread coverage across different mathematical branches and adjacent technical fields; geometric analysis must not dominate unless the active bug requires it.
+- Always test image-only/image-heavy PDFs and selectively test handwritten mathematics. Check full-document OCR accuracy, downstream Structure/Results/Equations/Bibliography stability, and OCR performance.
+- Equation and bibliography completeness/false positives receive special scrutiny.
+- Only class-level defects justify source changes. Unusual one-off documents do not justify broad heuristics.
+- Keep the campaign bounded enough to finish safely in one run.
+- Record uncertain behavior, possible side effects, and anything needing manual browser/human verification.
+
+## v339 subtle behavioral audit
+
+Audited the document-state lifecycle and asynchronous index pipeline beyond the v338 fixes:
+
+- native PDF / scanned PDF / OCR / no-OCR states;
+- import before and after opening the matching PDF;
+- portable detections through close/reopen;
+- equation-only Search without document text;
+- exact-document hash mismatch rejection;
+- repeated/local equation candidates through export/import;
+- stale detector-version portability;
+- Structure/Results/Bibliography background indexing;
+- native equation indexing followed by posterior margin-image OCR;
+- export while indexes are building;
+- switching documents while an export is waiting;
+- stale top-level asset cache versions;
+- long-document detector/UI safety caps;
+- asynchronous document/source-key guards.
+
+### Confirmed class-level behavioral bug fixed
+
+**Export could snapshot incomplete content detection.** Structure/Results/Bibliography are built asynchronously, and the native equation index is intentionally published before posterior margin-image OCR finishes. In v338 and earlier, pressing **Export reading data** during either phase could produce valid JSON that permanently omitted detections which appeared in the UI shortly afterward.
+
+v339 makes export a durability boundary:
+
+1. wait for any in-progress Structure/Results/Bibliography build;
+2. force the current structure build if its version is stale;
+3. ensure the equation index has been built;
+4. wait for posterior image-margin equation OCR to settle;
+5. abort rather than export if the user switches to another document while waiting;
+6. only then serialize `contentDetection`, OCR data, and session state.
+
+No equation/structure/bibliography detection heuristic was changed in v339.
+
+### Behavioral validation
+
+- Isolated current-source race harness: export waits for an already-running idle Structure build and late equation-image assist; waits for a forced stale Structure rebuild; aborts on document switch; scan/no-text portable export remains immediately eligible.
+- Headless Chromium current-source lifecycle replay: portable equations survive no-text helper access and reopen; saved equation search remains usable; old portable equation snapshots restore while stale local caches remain rejected; duplicate equation labels retain multiple candidates; exact-hash wrong-PDF import is rejected; no page JavaScript errors.
+- Cache-busting check: only `?v=339` is present in current `index.html` asset references.
+- Long-document cap audit did **not** justify speculative limit changes: a 504-page mathematical book produced 375 equation labels; a 212-page algebraic-geometry monograph produced 344 equations / 203 Results / 105 bibliography entries, all below current safety ceilings.
+
+## Old-paper regression — current v339 detector
+
+The detector code is unchanged from v338; the current source was rerun against the following old/difficult files. Image-assisted totals below use actual margin-OCR evidence where rerun in this campaign.
+
+| File | Field / era | Current v339 result |
+|---|---|---|
+| `Ahlfors-Conformal-Invariants.pdf` | complex analysis / conformal invariants, 1973 | **163 Equations / 95 Results / 66 Bibliography**, including current posterior image assist. |
+| `Gromov_1967_A_Geometrical_Conjecture_of_Banach.pdf` | functional analysis / Banach-space geometry, 1967 | **16 / 14 / 9**, including image-confirmed `(10)`. |
+| `Pisier_1988_Riesz_Transforms.pdf` / `SPS_1988__22__485_0(1).pdf` | probability / harmonic analysis, 1988 | **25 / 7 / 17**, including image-confirmed missing `2.x` labels. |
+| `Caffarelli_1989.pdf` | nonlinear elliptic PDE, 1989 | Current native rerun **23 / 18 / 10**. Established strict visible-margin golden is **55 / 18 / 10**; posterior detector logic is unchanged in v339. |
+| `YamabeProblem.pdf` (Lee–Parker) | elliptic PDE / conformal geometry, 1987 | Current native rerun **62 / 51 / 46**. Established strict image-assisted golden remains **67 / 51 / 46**; the five known missing native labels are image-confirmed. |
+| `Simon_1987.pdf` | calculus of variations / nonlinear PDE, 1987 | **36 / 4 / 18**, including local integer equation family `(1),(2)`. |
+| `Yau_1978.pdf` | complex differential geometry / Monge–Ampère, 1978 | **256 / 13 / 15**, full strict visible-margin equation golden preserved. |
+| `Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(4).pdf` | image-only classical journal scan, 1983 | Fresh full-document OCR: **0 / 16 / 14**. Zero numbered equations is intentional for this paper. |
+
+### Additional long-document invariants
+
+| File | Type | Current result |
+|---|---|---|
+| `Lectures_Differential_Geometry_504p.pdf` | 504-page mathematical text / multilingual degraded text layer | **375 Equations**; used primarily for cap/stability auditing. Structure/Bibliography text extraction is too corrupted for strict ground truth and is not treated as an acceptance golden. |
+| `0810.5645v6.pdf` | 212-page algebraic-geometry monograph | **344 Equations / 203 Results / 105 Bibliography**; confirms current UI/persistence caps are not reached on a large standard mathematical document. |
+
+## OCR rotation
+
+- `Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(4).pdf`: 19 image-only pages; fresh local full-document OCR **24.08 s total / 1.27 s per page**; downstream **0 / 16 / 14**.
+- `581 Note 6.pdf`: 2 handwritten inverse-problems pages; fresh OCR **1.92 s total / 0.96 s per page**; downstream **0 / 0 / 0**, with no false content-detection pollution. Exact handwritten symbol transcription is relaxed acceptance, not claimed 100% accuracy.
+
+## Cross-field historical candidates researched but not counted as detector coverage
+
+To broaden future rotations beyond analysis/geometry, public copies were located for Turing 1936 (computability), Shannon 1948 (information theory), Hamming 1950 (coding theory), Nash 1951 (game theory), Bellman 1952 (dynamic programming), Erdős–Rényi 1959 (random graphs), Kalman 1960 (control/filtering), and Metropolis–Ulam 1949 (Monte Carlo/statistical physics). The sandbox could read their public web sources but could not obtain raw PDF bytes for the local MathReader detector because outbound byte/DNS access is restricted. **They are future candidates, not claimed tested files in v339.**
+
+## Potential exceptions / manual checks
+
+- Production browser download/file-picker behavior, deployed CDN caching policy, and production Texify/Tesseract engine behavior remain outside the deterministic local harness. The package cache keys are synchronized, but a deployment layer that caches `index.html` itself still needs normal cache policy.
+- `Caffarelli_1989.pdf` and `YamabeProblem.pdf` were rerun natively in this campaign; their strict image-assisted totals rely on previously verified visible margin evidence because the image-assist detector code has not changed. They should remain rotating strict fixtures in future campaigns.
+- Very large documents still have deliberate bounded UI/index limits. This campaign found no standard document that reaches those ceilings, so no speculative cap expansion was made.
+- If a future export is requested while a detector repeatedly fails rather than merely runs slowly, v339 refuses the export instead of silently writing an incomplete detection snapshot. That failure path should be manually observable through the existing error banner.
+- Public historical papers listed above were not locally executable this turn and must not be treated as acceptance evidence.
+
+## Cleanup / release gates
+
+- Application version: **v339**.
+- Structure index version: **39** (unchanged).
+- Equation summary index version: **20** (unchanged).
+- Detector heuristics: **unchanged** from v338.
+- All JavaScript files and the concatenated runtime pass `node --check`.
+- Current-source headless-browser lifecycle replay passes with no page errors.
+- Export-settling race harness passes idle-build, forced-build, late image-assist, document-switch-abort, and no-text portable cases.
+- Release ZIP contains only the root `mathreader/` package; regression scratch files and OCR intermediates are excluded.
+
+---
+
+## Prior record — v338 and earlier
+
 # MathReader Regression / Behavioral Audit Record — v338
 
 Date: 2026-11-02 (America/Los_Angeles)
