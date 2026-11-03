@@ -1139,12 +1139,12 @@ document.addEventListener('click', (event) => {
   });
 });
 
-const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\s*[.·]\s*\d+)*(?:['’])?|[A-Z])(?:[.:)]|\s)/i;
-const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\s*[.·]\s*\d+)*(?:['’])?|[A-Z])\b/gi;
+const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:(?:\s*[.·]\s*\d+)+|(?:\s*[-–—]\s*\d+)+)?(?:['’])?|[A-Z])(?:[.:)]|\s|$)/i;
+const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:(?:\s*[.·]\s*\d+)+|(?:\s*[-–—]\s*\d+)+)?(?:['’])?|[A-Z])\b/gi;
 const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
 const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
 const CLICKABLE_REFERENCE_RE = new RegExp(
-  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis|Section)\\s+[A-Z]?\\d+(?:\\.\\d+)*\\b|` +
+  `\\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis|Section)\\s+[A-Z]?\\d+(?:(?:\\.\\d+)+|(?:-\\d+)+)?\\b|` +
   `\\(\\s*(?:\\d+(?:(?:\\.\\d+)+|(?:-\\d+)+)?|${EQUATION_TAG_SYMBOL_PATTERN}(?:\\s*${EQUATION_TAG_SYMBOL_PATTERN}){0,7})\\s*\\)|` +
   `\\[\\s*\\d{1,3}\\s*\\]`,
   'gi',

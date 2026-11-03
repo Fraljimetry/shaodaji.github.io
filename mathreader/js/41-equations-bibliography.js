@@ -2,6 +2,7 @@
 function normalizedReferenceLabel(value) {
   return String(value || '').normalize('NFKC')
     .replace(/(\d)\s*[.·]\s*(?=\d)/g, '$1.')
+    .replace(/(\d)\s*[-–—]\s*(?=\d)/g, '$1.')
     .replace(/\s+/g, ' ')
     .replace(/\s*([()[\].,:])\s*/g, '$1')
     .trim().toLocaleLowerCase();
@@ -14,6 +15,7 @@ const STRUCTURE_STRONG_UNNUMBERED_TYPES = new Set(['theorem', 'lemma', 'proposit
 function normalizedStructureResultText(value) {
   return String(value || '').normalize('NFKC')
     .replace(/(\d)\s*[.·]\s*(?=\d)/g, '$1.')
+    .replace(/(\d)\s*[-–—]\s*(?=\d)/g, '$1-')
     .replace(/(\d)\s*·\s*/g, '$1.')
     .replace(/\s+/g, ' ')
     .trim();
@@ -27,7 +29,7 @@ function canonicalStructureResultType(value) {
 function structureResultProseReferenceTail(value) {
   const tail = String(value || '').trim();
   if (!tail) return false;
-  return /^(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
+  return /^(?:(?:above|below)\s+)?(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|should|may|might|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
 }
 
 function detectedStructureResult(lines, lineIndex, page) {
@@ -37,11 +39,13 @@ function detectedStructureResult(lines, lineIndex, page) {
 
   // Classical papers use both “Lemma 2.3” and “2.3. LEMMA”. Require the
   // declaration to start the visual line so body references cannot qualify.
-  let match = cleaned.match(/^(\d+(?:\.\d+)+)[.)]?\s+(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\b[.:]?\s*(.*)$/i);
+  let match = cleaned.match(/^(\d+(?:(?:\.\d+)+|(?:-\d+)+))[.)]?\s+(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\b[.:]?\s*(.*)$/i);
   if (match) {
     const type = canonicalStructureResultType(match[2]);
     const number = match[1];
     const tail = String(match[3] || '').trim();
+    const tailLetters = tail.replace(/[^A-Za-z]+/g, '');
+    if (tail && tailLetters && tailLetters === tailLetters.toUpperCase() && /^(?:OF|ON|FOR|AND|IN)\b/.test(tail)) return null;
     return {
       label: `${type} ${number}`,
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
@@ -50,7 +54,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:\.\d+)*(?:['’])?|[A-Z])(?:[.:)]|\s)(.*)$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:(?:\.\d+)+|(?:-\d+)+)?(?:['’])?|[A-Z])(?:[.:)]\s*|\s+|$)(.*)$/i);
   if (match) {
     const type = canonicalStructureResultType(match[1]);
     const number = match[2].replace('’', "'");
@@ -64,8 +68,10 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\(([^()]{2,80})\)\s*[.:]?$/i);
   if (match) {
+    const descriptor = String(match[2] || '').trim();
+    if (/^PART\s+(?:[IVXLCDM]+|\d+)$/i.test(descriptor)) return null;
     const title = cleaned.replace(/[.:]+$/, '').trim();
     return { label: title.slice(0, 100), title: cleaned.slice(0, 180), page, ratio: line.ratio };
   }
@@ -1026,6 +1032,11 @@ function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext 
     && /^\s*[.:;]\s*$/.test(leadingIntegerRemainder)
   );
   if (shortNumberedProseHeading || punctuatedStandaloneIntegerList) return -Infinity;
+  // A parenthesized token embedded inside formula text is not the printed margin tag.
+  // Old PDF text layers can expose exponent fragments such as \(3-2) or symbolic
+  // operators such as (*) at the physical margin; require non-standalone tags to
+  // occupy the inferred textual numbering edge before they can become targets.
+  if (item?.explicitParenthesized && !item?.standaloneTag && !onNumberingEdge) return -Infinity;
   if (explicitReferenceContext && !isOnlyTag && !allowExplicitReferenceContext) return -Infinity;
   if (integerTag && item?.explicitParenthesized && item?.candidateAtLineStart && !item?.candidateAtLineEnd
     && (leadingIntegerWords.length >= 4 || leadingIntegerHanChars.length >= 6)) return -Infinity;
@@ -1038,6 +1049,7 @@ function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext 
   if (integerTag && !item?.standaloneTag && mathSignals === 0 && alphaWords.length >= 2) return -Infinity;
   if (integerTag && !item?.standaloneTag && item?.candidateAtLineStart && mathSignals < 2 && !item?.nearbyDisplayMath && alphaWords.length >= 2) return -Infinity;
   if (isOnlyTag && nearBottom && !aligned) return -Infinity;
+  if (item?.bareSource && item?.standaloneTag && !strongMarginGeometry && !item?.nearbyDisplayMath) return -Infinity;
   // A visible parenthesized tag already placed on the inferred equation-number
   // margin is strong target evidence by itself. Older/scanned PDF text layers
   // often lose the formula operators, so requiring extracted math glyphs here
@@ -1280,7 +1292,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
       continue;
     }
 
-    if (first.parsed.last >= 3 && first.parsed.last <= 4) {
+    if ((first.parsed.last >= 3 && first.parsed.last <= 4) || (first.parsed.last === 2 && family.length >= 5)) {
       // A mature family beginning at .3/.4 is strong evidence that the first
       // one to three printed labels may have disappeared from the hidden text
       // layer. Consult only the first anchor page and its immediate predecessor;
@@ -1305,7 +1317,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
       // Same-page holes stay the primary path. Established scan-backed families
       // may lose a longer run from the hidden text layer; image OCR still has
       // to read every exact label on the equation-number margin before adding it.
-      if (pageDelta > 0 && family.length < 6) continue;
+      if (pageDelta > 0 && family.length < 4) continue;
       for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
         const label = expectedLabel(left.parsed, missing);
         for (let candidatePage = leftPage; candidatePage <= rightPage; candidatePage += 1) {
@@ -1760,13 +1772,11 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   }
 
   const comprehensivePageSet = new Set(comprehensivePages);
-  const gapPagesWithRaster = new Set();
-  for (const pageNum of gapPlan.pages) {
-    if (comprehensivePageSet.has(pageNum) || await equationPageContainsRasterImage(sourceDoc, pageNum)) gapPagesWithRaster.add(pageNum);
-  }
-  // Scan exact native-gap pages first so visibly missing labels can appear in
-  // the index promptly while the broader background margin inventory continues.
-  const priorityPages = [...gapPagesWithRaster].sort((a, b) => a - b);
+  // Exact expected-gap pages are safe to render even for vector/text-backed PDFs:
+  // the expected label is only a query and OCR must still read that exact margin
+  // label before publication. This closes old reprint/text-layer omissions without
+  // enabling broad OCR on ordinary born-digital documents.
+  const priorityPages = [...new Set(gapPlan.pages)].sort((a, b) => a - b);
   const priorityPageSet = new Set(priorityPages);
   const pages = [...priorityPages, ...comprehensivePages.filter((page) => !priorityPageSet.has(page))];
   if (!pages.length) return false;
@@ -3294,7 +3304,27 @@ async function buildStructureIndex({ force = false } = {}) {
                 && Number(dittoNumericKey[1]) === expectedBibliographyNumber
                 && Number(line.xStartRatio || 0) < 0.22) keyOnly = dittoNumericKey;
             const bareNumericKey = bibliographyLine.match(/^(\d{1,3})-?$/);
-            if (!keyOnly && bareNumericKey && Number(bareNumericKey[1]) === expectedBibliographyNumber && Number(line.xStartRatio || 0) < 0.18) keyOnly = bareNumericKey;
+            if (!keyOnly && bareNumericKey && Number(line.xStartRatio || 0) < 0.18) {
+              const rawBareNumber = Number(bareNumericKey[1]);
+              const keyOnlyFiveToSixConfusion = expectedBibliographyNumber >= 50
+                && expectedBibliographyNumber <= 59
+                && rawBareNumber === expectedBibliographyNumber + 10;
+              if (rawBareNumber === expectedBibliographyNumber || keyOnlyFiveToSixConfusion) {
+                keyOnly = [bareNumericKey[0], String(expectedBibliographyNumber)];
+              }
+            }
+            if (!keyOnly && expectedBibliographyNumber >= 10 && expectedBibliographyNumber <= 99 && Number(line.xStartRatio || 0) < 0.18) {
+              const fuzzyKeyOnly = bibliographyLine.match(/^(\S{2,4})$/u);
+              if (fuzzyKeyOnly) {
+                const expectedText = String(expectedBibliographyNumber);
+                const token = fuzzyKeyOnly[1];
+                const tokenDigits = token.replace(/\D/g, '');
+                const oneDigitCorruption = /\D/.test(token)
+                  && token[0] === expectedText[0]
+                  && tokenDigits === expectedText[0];
+                if (oneDigitCorruption) keyOnly = [fuzzyKeyOnly[0], expectedText];
+              }
+            }
             const surnameInitialAuthor = /^[A-ZÀ-ÖØ-Þ'’][\p{L}0-9"'’.\-\\{}:;]{1,48}(?:\s+(?:de|del|di|du|la|le|van|von))?,\s+(?:[A-Z0]\.?(?:\s*|$)){1,4}(?:,|\s|:).{6,}$/u.test(bibliographyLine);
             const surnameGivenAuthor = /^[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40},\s+[A-Z][\p{Ll}'’.-]{2,}(?:\s+(?:de|del|di|du|la|le|van|von))?(?:,|:).{6,}$/u.test(bibliographyLine);
             const initialFirstAuthor = /^(?:(?:[A-Z]\.\s*){1,4})[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40}(?:\s+(?:and|&)\s+(?:(?:[A-Z]\.\s*){1,4})?[A-ZÀ-ÖØ-Þ][\p{L}'’.-]{1,40})?\s*,\s+.{6,}$/u.test(bibliographyLine);
