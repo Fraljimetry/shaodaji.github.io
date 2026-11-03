@@ -512,8 +512,18 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
           || words.length >= 3 || han.length >= 4;
         if (structuredProse) continue;
       }
-      if (!record.standaloneTag && !record.nearbyDisplayMath && record.mathSignals < 2) continue;
+      // A short, one-line display can have just one extracted operator (for
+      // example "y ~ M(...). (1)") and no neighboring math line. Its explicit
+      // tag still belongs to the *local* column margin, not the physical PDF
+      // edge. Require a visible operator, few prose words, and an end tag;
+      // do not relax the general margin or inline-reference classifier.
+      const shortLocalDisplay = !record.bareSource && record.candidateAtLineEnd
+        && record.mathSignals >= 1
+        && /[=±×∼≈<>≤≥∈∉∑∫√^_~|]/u.test(String(record.text || ''))
+        && (String(record.text || '').match(/[A-Za-z]{3,}/g) || []).length <= 1;
+      if (!record.standaloneTag && !record.nearbyDisplayMath && record.mathSignals < 2 && !shortLocalDisplay) continue;
       if ((String(record.text || '').match(/[A-Za-z]{3,}/g) || []).length >= 8 && record.mathSignals < 2) continue;
+      record.shortLocalDisplay = shortLocalDisplay;
       record.confidence = Math.max(12, equationTargetScore(record.text, record.label, null, 0, null, Number(record.ratio)) + 7);
       out.push(record);
     }
@@ -551,7 +561,7 @@ function supplementTwoColumnEquations(index, rawPageLines) {
     seen.add(key);
     unique.push(item);
   }
-  if (unique.length < 2) return false;
+  if (!unique.length) return false;
 
   const trustedNumeric = [];
   for (const [label, candidates] of index.entries()) {
@@ -563,8 +573,29 @@ function supplementTwoColumnEquations(index, rawPageLines) {
     const p = item.numeric;
     return trustedNumeric.some((q) => p.prefix === q.prefix || (!p.prefix && !q.prefix));
   });
-  if (compatible.length < 2) return false;
-  for (const item of compatible) index.set(item.label, [item]);
+  // Keep the repeated-candidate requirement for general two-column
+  // supplementation. One visibly mathematical *integer* label may stand alone
+  // at a local gutter: allow it only when a trusted consecutive integer
+  // sequence already establishes exactly which number is missing. This
+  // recovers the first equation of a two-column paper without promoting an
+  // isolated prose citation or a table's parenthesized decimal.
+  let promoted = compatible;
+  if (compatible.length < 2) {
+    const knownIntegers = new Set(trustedNumeric.filter((item) => !item.prefix).map((item) => item.last));
+    const corroborated = compatible.filter((item) => {
+      const n = item.numeric?.last;
+      if (!item.shortLocalDisplay || item.numeric?.prefix || !Number.isInteger(n) || n < 1) return false;
+      const nearSuccessors = [...knownIntegers].filter((value) => value > n && value <= n + 6);
+      const supportedLeadingGap = knownIntegers.has(n + 1) && nearSuccessors.length >= 3
+        && [...knownIntegers].every((value) => value > n);
+      return (knownIntegers.has(n + 1) && knownIntegers.has(n + 2))
+        || (knownIntegers.has(n - 1) && knownIntegers.has(n + 1))
+        || supportedLeadingGap;
+    });
+    if (corroborated.length !== 1) return false;
+    promoted = corroborated;
+  }
+  for (const item of promoted) index.set(item.label, [item]);
 
   // Tag already-trusted candidates on the physical outer column with the same
   // page profile. This metadata affects initial display order only; acceptance
@@ -3057,6 +3088,20 @@ function bibliographyReferenceBodyLooksStrong(text) {
   return score >= 3;
 }
 
+function repairOcrExpectedBibliographyKey(text, line, expected) {
+  // In a scanned bibliography, the opening brace can survive while the
+  // closing bracket becomes a comma and OCR mistakes 1/l/I (or 0/O, 5/S).
+  // Treat that as a *candidate for the next established numeric key*, never
+  // as an independent reference number. Require a left-margin OCR line with
+  // an actual bibliographic body; ordinary native text is not reinterpreted.
+  if (!line?.ocrSource || expected < 2 || expected > 999 || Number(line.xStartRatio || 0) >= 0.20) return text;
+  const match = String(text || '').match(/^[\[{(]\s*([0-9lI|OoSs]{1,3})\s*[,;:.]\s+(.{12,})$/u);
+  if (!match) return text;
+  const digits = match[1].replace(/[lI|]/g, '1').replace(/[Oo]/g, '0').replace(/[Ss]/g, '5');
+  if (digits !== String(expected) || !bibliographyReferenceBodyLooksStrong(match[2])) return text;
+  return `[${expected}] ${match[2]}`;
+}
+
 function malformedNumericBibliographyCandidate(text, line, page) {
   if (Number(line?.xStartRatio || 0) >= 0.22) return null;
   const match = String(text || '').match(/^(\S{2,8})\s+(.{8,})$/u);
@@ -3355,6 +3400,7 @@ async function buildStructureIndex({ force = false } = {}) {
             bibliographyLine = bibliographyLine.replace(/^\[\s*δ\s*\][.)]?$/u, '[8]');
           }
           bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
+          bibliographyLine = repairOcrExpectedBibliographyKey(bibliographyLine, line, expectedBibliographyNumber);
           let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
           let bracketKey = false;
           if (!bib) {

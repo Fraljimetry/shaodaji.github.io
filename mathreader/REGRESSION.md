@@ -1,3 +1,54 @@
+# MathReader Regression / Behavioral Audit Record — v340
+
+Date: 2026-11-03 (America/Los_Angeles)
+
+## Scope: three user-reported omissions, three detector classes
+
+Authoritative source: uploaded MathReader v339 ZIP. These changes are
+**class-level, deliberately bounded**; there are no PDF-specific title or file-name
+conditions and no changes to native/OCR mode selection or intentional WebGPU-to-CPU
+fallback.
+
+| Attached PDF | Visible ground truth | Baseline v339 local reproduction | v340 local reproduction |
+|---|---|---|---|
+| `Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(6).pdf` (19-page image-only scan) | Reference **[11]**, on PDF page 19, between [10] and [12] | The OCR line was `{ll , Global properties ... (1964)`; [11] was folded into reference [10] in the focused page-19 bibliography test | [11] created as a distinct entry with its own title, page and position; [10] no longer swallows its text |
+| `geometrical_hypothesis_Banach(3).pdf` (1967) | **§5. Supplement**, PDF page 9 (printed 1063) | §1–§4 detected; §5 missing because its one-word title failed the explicit-marker multiword qualification | §1–§5 detected in the inferred outline |
+| `2610.07774v1.pdf` (modern two-column paper) | **(1)**, PDF page 3, right edge of left column | (2)–(6) detected, but (1) omitted | (1)–(6) detected, with (1) anchored on PDF page 3 |
+
+### Detector improvements
+
+1. **Scanned numeric bibliography keys:** When the established bibliography is expecting a particular next numeric key, allow a left-margin **OCR-only** marker with surviving opening bracket and damaged closing bracket/punctuation (e.g. `{ll ,`) if its OCR-confusable digits match that exact expected key and a substantive bibliography body remains. No promotion from sequence alone; native text and ordinary body prose are untouched. This applies beyond the example number 11.
+2. **Explicit historical section markers:** Repeated, qualified multiword `§N` headings must first establish a document-level profile. Within that profile, admit a genuinely short, centered or larger **single-word** `§N. Title` peer. An isolated marker cannot establish the profile, and the existing equation/prose exclusion rules remain.
+3. **Two-column equations:** Permit an explicit local-column-margin tag with weak *single-line* mathematical evidence (one extracted operator, no independent neighboring display line), but only through the existing two-column geometry classifier. When it is the only compatible supplemental label, require a trusted neighboring integer sequence, including a short supported leading gap. This does not relax the ordinary full-page-margin classifier, and it does not infer equation numbers that were never read.
+
+### Evidence and validation
+
+- Read all three supplied PDFs, including visual inspection of the scan's final bibliography page and the modern equation page.
+- Current-source deterministic source harness compared v339 and v340 using actual page text and geometry extracted from the uploaded native PDFs, projected into PDF.js-like text items (not claimed identical to browser PDF.js extraction).
+- Focused scan harness used the final page rasterized at **3.6×** with local **Tesseract PSM 3 hOCR**, with word bounding boxes and confidence fed into the current MathReader bibliography builder. This mirrors the app's OCR page scale/segmentation settings, but is not a claim of identical Tesseract.js results in production.
+- Negative controls passed: wrong expected bibliography key, native-text key, non-left-margin key, nonbibliographic prose, equation-like prose without math, weak formula candidate eligibility, and no single-word §N promotion without an established document profile.
+- Independent Banach native-equation inventory stayed **15 labels before / 15 after** in the approximate native-text harness, verifying that the outline change did not spill into its Equation index. The published v339 image-assisted Banach golden of **16** was **not rerun** in this focused campaign; the known missing native `(10)` requires supplemental image inspection.
+- Both changed detectors and all bundled JavaScript pass `node --check`, including concatenated-runtime syntax; ZIP CRC/integrity verified.
+
+### Unverified behavior and regression risks
+
+- A full interactive browser run with the production PDF.js/Tesseract.js CDN modules and the user's exact installed browser state was not available in this offline sandbox. The local source harness is **not** equivalent to a production-browser regression. The output should be checked in MathReader after deploying v340 and allowing indexes to rebuild.
+- The local OCR CLI recovered only a subset of the scanned bibliography from the final page, whereas older v339 regression records reported a different full-document OCR result. This is an engine/recognition discrepancy, **not** evidence that the other references are absent from the printed paper; full production OCR and all 14 references need human verification.
+- A fully erased OCR key **and** erased bibliographic body cannot be confidently recovered, and should not be manufactured. Multi-character damaged keys without a surviving opening delimiter remain an edge case.
+- One-word §N headings without any repeated explicit-marker profile can still be missed by design; broad promotion would create false headings.
+- Single inner-gutter integer tags without mathematical glyphs or corroborating numbering remain conservative omissions; relaxing this generally would risk adding prose citations and table values as equations.
+- Existing portable user-imported detection snapshots deliberately survive a detector-version bump; use a manual rebuild if such an older snapshot still lacks the corrected section or equation.
+- The established multi-PDF historical golden suite and live deployed CDN/browser cache behavior were not rerun. These remain the next broad-regression targets, not implied passing gates.
+
+## Release information
+
+- Application version **v340** (exactly one increment from v339).
+- Structure index version **40** (was 39), equation summary version **21** (was 20), so stale ordinary local content-detection caches are invalidated and recomputed, including the previously sticky inferred-outline completion flag. Portable imported reading-data snapshots remain deliberately preserved.
+- Changed files: `mathreader/index.html`, `mathreader/mathreader.js`, `mathreader/js/00-core.js`, `mathreader/js/40-outline-structure.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/REGRESSION.md`.
+- Release artifact is a **root-level patch ZIP** containing only those changed full files.
+
+---
+
 # MathReader Regression / Behavioral Audit Record — v339
 
 Date: 2026-11-02 (America/Los_Angeles)

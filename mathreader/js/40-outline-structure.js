@@ -344,6 +344,16 @@ async function detectOutlineFromTypography() {
   });
   const sectionMarkerNumbers = new Set(qualifiedSectionMarkerLines.map((line) => String(line.text || '').match(/^§\s*(\d+(?:\s*\.\s*\d+)*)/)?.[1]).filter(Boolean));
   const explicitSectionMarkerMode = sectionMarkerNumbers.size >= 2;
+  // Once repeated multi-word §N headings establish the document's heading
+  // grammar, their short single-word peers are also real sections. Older
+  // journals commonly end with "§5. Supplement", "§6. Notes", etc. Requiring
+  // two title words silently drops them, while accepting all bare §N prose
+  // without a document profile would be too permissive.
+  const explicitSingleWordSectionLines = new Set(explicitSectionMarkerMode ? allLines.filter((line) => {
+    const { value, ratio, center, width } = lineMetrics(line);
+    return /^§\s*\d+(?:\s*\.\s*\d+)*\s*[.)]\s+[A-Z][a-z]{3,30}$/.test(value)
+      && (ratio >= 1.08 || (Number.isFinite(center) && Math.abs(center - 0.5) <= 0.14 && width <= 0.45));
+  }) : []);
 
   const strongModernNumberedLines = allLines.filter((line) => {
     const { value, ratio, words } = lineMetrics(line);
@@ -547,7 +557,7 @@ async function detectOutlineFromTypography() {
         const value = String(text || '').trim();
         const explicitSection = qualifiedSectionMarkerLines.includes(line);
         const conventional = /^(?:abstract|introduction|references|bibliography|appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s|$))/i.test(value);
-        if (!explicitSection && !conventional) continue;
+        if (!explicitSection && !explicitSingleWordSectionLines.has(line) && !conventional) continue;
       }
       // On a title page, material above an Abstract heading is title/author
       // metadata rather than document structure.
@@ -641,7 +651,8 @@ async function detectOutlineFromTypography() {
           && !/[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(numberedTitleBody)
           && centered
           && (lineWidth <= 0.74 || (lineWidth <= 0.82 && titleWords.length >= 3 && !/[@~]/.test(numberedTitleBody)));
-        const explicitMarkerHeading = explicitSectionMarkerMode && qualifiedSectionMarkerLines.includes(line);
+        const explicitMarkerHeading = explicitSectionMarkerMode
+          && (qualifiedSectionMarkerLines.includes(line) || explicitSingleWordSectionLines.has(line));
         const paragraphNumbered = headingWasParagraphLead && numberedDepth !== null && (legacyParagraphMode || (legacyCenteredMode && numberedDepth >= 1));
         const legacyCenteredNumbered = legacyCenteredMode && centeredNumbered;
         const ocrProfileNumbered = (ocrCenteredNumberedMode && ocrCenteredLineSet.has(line))

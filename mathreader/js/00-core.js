@@ -348,8 +348,8 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 39;
-const EQUATION_INDEX_SUMMARY_VERSION = 20;
+const STRUCTURE_INDEX_VERSION = 40;
+const EQUATION_INDEX_SUMMARY_VERSION = 21;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
 const generalPrefs = {
   recordReadingTrail: true,
@@ -2389,6 +2389,15 @@ function loadDocumentState(cachedSession = null) {
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);
+    // Inferred Structure has a separate completion flag. Merely bumping the
+    // Results/Bibliography version would leave an old, nonempty outline marked
+    // complete and hide newly detected sections forever. Preserve portable
+    // user-imported detections, but invalidate ordinary local inferred outlines
+    // together with their source detector version.
+    if (structureIndexVersion !== STRUCTURE_INDEX_VERSION && !portableDetectionRequested) {
+      inferredOutline = [];
+      inferredOutlineDetectionDone = false;
+    }
     // Detector-version invalidation is correct for ordinary local caches, but an
     // imported reading-data snapshot is user data. Preserve its saved Results and
     // Bibliography when document text is unavailable; a future OCR/rebuild can
