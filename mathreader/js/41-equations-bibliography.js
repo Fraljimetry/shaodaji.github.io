@@ -44,8 +44,6 @@ function detectedStructureResult(lines, lineIndex, page) {
     const type = canonicalStructureResultType(match[2]);
     const number = match[1];
     const tail = String(match[3] || '').trim();
-    const tailLetters = tail.replace(/[^A-Za-z]+/g, '');
-    if (tail && tailLetters && tailLetters === tailLetters.toUpperCase() && /^(?:OF|ON|FOR|AND|IN)\b/.test(tail)) return null;
     return {
       label: `${type} ${number}`,
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
@@ -68,10 +66,20 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\(([^()]{2,80})\)\s*[.:]?$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?$/i);
   if (match) {
-    const descriptor = String(match[2] || '').trim();
-    if (/^PART\s+(?:[IVXLCDM]+|\d+)$/i.test(descriptor)) return null;
+    // Old books often wrap a section heading across two visual lines, e.g.
+    // “10-4 PROOF OF THE UNIFORMIZATION” / “THEOREM (PART I)”.  The
+    // second line looks exactly like an unnumbered result unless the nearby
+    // heading prefix is considered.  Reject only this explicit “proof of …”
+    // continuation class; genuine standalone parenthetical result headings
+    // remain eligible.
+    const previous = lines?.[lineIndex - 1];
+    const previousText = normalizedStructureResultText(previous?.text);
+    const previousDistance = previous ? Math.abs((Number(previous.ratio) || 0) - (Number(line.ratio) || 0)) : Infinity;
+    const splitProofHeading = previousDistance <= 0.075
+      && /^(?:\d+(?:(?:\.\d+)+|(?:-\d+)+)\s+)?(?:A\s+)?PROOF\s+OF\s+(?:THE\s+)?/i.test(previousText);
+    if (splitProofHeading) return null;
     const title = cleaned.replace(/[.:]+$/, '').trim();
     return { label: title.slice(0, 100), title: cleaned.slice(0, 180), page, ratio: line.ratio };
   }
@@ -1292,7 +1300,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
       continue;
     }
 
-    if ((first.parsed.last >= 3 && first.parsed.last <= 4) || (first.parsed.last === 2 && family.length >= 5)) {
+    if (first.parsed.last >= 3 && first.parsed.last <= 4) {
       // A mature family beginning at .3/.4 is strong evidence that the first
       // one to three printed labels may have disappeared from the hidden text
       // layer. Consult only the first anchor page and its immediate predecessor;
@@ -1317,7 +1325,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
       // Same-page holes stay the primary path. Established scan-backed families
       // may lose a longer run from the hidden text layer; image OCR still has
       // to read every exact label on the equation-number margin before adding it.
-      if (pageDelta > 0 && family.length < 4) continue;
+      if (pageDelta > 0 && family.length < 6) continue;
       for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
         const label = expectedLabel(left.parsed, missing);
         for (let candidatePage = leftPage; candidatePage <= rightPage; candidatePage += 1) {
@@ -2685,9 +2693,14 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
   const hangingBodies = lines.filter((line) => Number(line.xStartRatio || 0) >= 0.18 && Number(line.xStartRatio || 0) <= 0.36 && Number(line.xEndRatio || 0) >= 0.62 && String(line.text || '').trim().length >= 24).length;
   const sameLineKeyLead = (line) => /^\[\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9 ]{0,8})\s*\][.)]?\s+\S/.test(String(line.text || '').trim());
   const leftSameLineKeyLeads = lines.filter((line) => Number(line.xStartRatio || 0) < 0.36 && Number(line.xEndRatio || 0) <= 0.48 && sameLineKeyLead(line)).length;
+  const wideSameLineKeyLeads = lines.filter((line) => Number(line.xStartRatio || 0) < 0.36 && Number(line.xEndRatio || 0) >= 0.62 && sameLineKeyLead(line)).length;
   const rightSameLineKeyLeads = lines.filter((line) => Number(line.xStartRatio || 0) > 0.52 && sameLineKeyLead(line)).length;
   const singleColumnHangingBibliography = (leftHangingKeys >= 3 && rightHangingKeys === 0 && hangingBodies >= 3)
-    || (leftSameLineKeyLeads >= 3 && rightSameLineKeyLeads === 0);
+    || (leftSameLineKeyLeads >= 3 && rightSameLineKeyLeads === 0)
+    // Full-width numbered references are also single-column evidence.  Italic
+    // title/journal spans can create large internal PDF-text gaps that resemble
+    // a column gutter even though each entry visibly crosses the page centre.
+    || (wideSameLineKeyLeads >= 3 && rightSameLineKeyLeads === 0);
   const twoColumn = !singleColumnHangingBibliography && (
     strongSplitCount >= 2
     || (substantialLeftCount >= 3 && substantialRightCount >= 3)
@@ -2726,15 +2739,38 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
     ...line,
     columnStartRatio: line.columnIndex === 0 ? leftStart : (line.columnIndex === 1 ? rightStart : Number(line.xStartRatio || 0)),
   });
-  const fullWidth = splitRows.filter((line) => line.columnIndex === null).map(annotate);
-  const topFullWidth = fullWidth.filter((line) => Number(line.ratio || 0) < 0.18).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0));
-  const otherFullWidth = fullWidth.filter((line) => Number(line.ratio || 0) >= 0.18).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0));
+  // When an explicit References/Bibliography heading occurs part-way down a
+  // page, it is a hard reading-order boundary.  A single-column reference list
+  // can otherwise look two-column because keys and bodies occupy opposite
+  // halves, causing pre-heading prose to be moved after live bibliography
+  // entries and appended to them.  Preserve all pre-heading lines verbatim and
+  // apply column ordering only at/after the heading.
+  const headingBoundary = headingPresent ? headingRatio - 0.02 : -Infinity;
+  const preHeading = headingPresent
+    ? lines.filter((line) => Number(line.ratio || 0) < headingBoundary).map((line) => ({ ...line, columnStartRatio: Number(line.xStartRatio || 0) }))
+    : [];
+  const orderedSplitRows = headingPresent
+    ? splitRows.filter((line) => Number(line.ratio || 0) >= headingBoundary)
+    : splitRows;
+  const fullWidth = orderedSplitRows.filter((line) => line.columnIndex === null).map(annotate);
+  const headingFullWidth = headingPresent
+    ? fullWidth.filter((line) => bibliographyHeadingText(line.text) || Number(line.ratio || 0) <= headingRatio + 0.015)
+    : [];
+  const topFullWidth = headingPresent
+    ? []
+    : fullWidth.filter((line) => Number(line.ratio || 0) < 0.18).sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0));
+  const headingFullWidthSet = new Set(headingFullWidth);
+  const otherFullWidth = fullWidth
+    .filter((line) => !headingFullWidthSet.has(line) && (headingPresent || Number(line.ratio || 0) >= 0.18))
+    .sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0));
   const visualColumnSort = (a, b) => {
     const ar = Number(a.ratio || 0); const br = Number(b.ratio || 0);
     if (Math.abs(ar - br) <= 0.0040) return Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0);
     return ar - br;
   };
   return [
+    ...preHeading,
+    ...headingFullWidth.sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0)),
     ...topFullWidth,
     ...leftLines.map(annotate).sort(visualColumnSort),
     ...rightLines.map(annotate).sort(visualColumnSort),
