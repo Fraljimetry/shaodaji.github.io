@@ -965,10 +965,18 @@ function downloadJsonFile(name, value) {
 function exportReadingData() {
   if (!pdfDoc || !currentFileKey) return;
   const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
+  const session = snapshotSession();
   downloadJsonFile(`${safeName}-mathreader.json`, {
     schema: 'mathreader.reading-data@1', exportedAt: new Date().toISOString(),
     document: { id: currentFileKey, name: currentFileName, pages: pdfDoc.numPages },
-    session: snapshotSession()
+    // Portable detection is explicit in the export instead of being an
+    // accidental side effect of whichever session fields happen to exist.
+    contentDetection: readingDataContentDetectionSnapshot(session),
+    // For scan-backed PDFs the OCR page geometry is the document text source.
+    // Export it with the reading data so import does not require re-running OCR
+    // merely to recover Structure / Results / Equations / Bibliography.
+    documentOcr: exportedDocumentOcrSnapshot(),
+    session
   });
 }
 
@@ -977,6 +985,7 @@ async function importReadingDataFile(file) {
   let payload;
   try { payload = JSON.parse(await file.text()); } catch (_) { showError(t('The selected reading-data file is not valid JSON.', '所选阅读数据文件不是有效的 JSON。')); return; }
   if (payload?.schema !== 'mathreader.reading-data@1' || !payload.session) { showError(t('This is not a MathReader reading-data export.', '这不是 MathReader 阅读数据导出文件。')); return; }
+  const importedSession = mergePortableContentDetectionIntoSession(payload.session, payload.contentDetection);
 
   // Import is also a first-screen local-library operation. If no PDF is open,
   // retain the exact document identity and its session in IndexedDB; the History
@@ -993,6 +1002,7 @@ async function importReadingDataFile(file) {
       await requestPersistentLocalStorage();
       const existing = await dbGet('documents', importedId);
       const now = Date.now();
+      if (payload.documentOcr) await persistImportedDocumentOcr(payload.documentOcr, importedId, Number(payload.document?.pages || 0));
       await dbPut('documents', {
         ...(existing || {}),
         id: importedId,
@@ -1002,8 +1012,8 @@ async function importReadingDataFile(file) {
         createdAt: existing?.createdAt || now,
         openedAt: existing?.openedAt || now,
         updatedAt: now,
-        lastPage: Math.max(1, Number(payload.session?.page || 1)),
-        session: payload.session,
+        lastPage: Math.max(1, Number(importedSession?.page || 1)),
+        session: importedSession,
         importedReadingData: true
       });
       await refreshLocalLibrary();
@@ -1023,8 +1033,21 @@ async function importReadingDataFile(file) {
     const samePages = Number(payload.document?.pages || 0) === Number(pdfDoc.numPages || 0);
     if (!sameName || !samePages) { showError(t('This reading-data export belongs to a different PDF. Open the matching PDF before importing.', '此阅读数据属于另一份 PDF。请先打开匹配的 PDF 再导入。')); return; }
   }
-  safeSet(stateKey('session-v2'), JSON.stringify(payload.session));
-  loadDocumentState(payload.session);
+  if (payload.documentOcr) {
+    const normalizedOcr = normalizedImportedDocumentOcrSnapshot(payload.documentOcr, pdfDoc.numPages);
+    if (normalizedOcr) {
+      documentOcrPages = new Map(normalizedOcr.pages.map((record) => [Number(record.page), record]));
+      documentOcrActive = true;
+      documentTextMode = 'ocr';
+      documentTextPreference = 'ocr';
+      imageDocumentDetected = true;
+      await persistDocumentOcr();
+      textCache = new Map();
+      lineCache = new Map();
+    }
+  }
+  safeSet(stateKey('session-v2'), JSON.stringify(importedSession));
+  loadDocumentState(importedSession);
   await Promise.all([renderOutline(), renderCurrentPage(), renderReferencePage()]);
   renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton(); persistDocumentState(); scheduleAutomaticStructureIndex();
 }

@@ -745,7 +745,7 @@ function activePanelId() {
 function snapshotSession() {
   const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : continuousSavedAnchor;
   return {
-    version: 22,
+    version: 23,
     page: currentPage,
     pinnedPage,
     zoomMode,
@@ -772,6 +772,11 @@ function snapshotSession() {
     bibliographyEntries,
     equationEdits,
     equationManualOrder,
+    // Keep the automatic equation detections themselves, not only their count.
+    // This makes reading-data exports portable: a re-import can render the
+    // detected equation rows immediately instead of depending on a fresh text
+    // extraction / OCR pass. The detector version gates stale snapshots.
+    equationIndexSnapshot: snapshotEquationIndexForPersistence(equationAutomaticLabelIndex || equationLabelIndex),
     equationIndexSummary: Number.isInteger(equationIndexKnownCount) && equationIndexKnownCount >= 0
       ? { version: EQUATION_INDEX_SUMMARY_VERSION, count: equationIndexKnownCount }
       : null,
@@ -786,6 +791,126 @@ function snapshotSession() {
       rightCollapsed: shell.classList.contains('right-collapsed')
     }
   };
+}
+
+function snapshotEquationIndexForPersistence(index) {
+  if (!(index instanceof Map) || !index.size) return null;
+  const rows = [];
+  for (const [rawLabel, candidates] of index.entries()) {
+    const label = normalizedEquationLabel(rawLabel);
+    const candidate = Array.isArray(candidates) && candidates.length ? candidates[0] : null;
+    if (!candidate || !label || label === '()') continue;
+    const page = Number(candidate.page);
+    if (!Number.isFinite(page) || page < 1) continue;
+    const row = {
+      label,
+      page: Math.floor(page),
+      ratio: Math.min(1, Math.max(0, Number(candidate.ratio) || 0)),
+      text: String(candidate.text || label).slice(0, 500),
+      confidence: Number.isFinite(Number(candidate.confidence)) ? Number(candidate.confidence) : 20,
+    };
+    for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
+      if (Number.isFinite(Number(candidate[key]))) row[key] = Math.min(1, Math.max(0, Number(candidate[key])));
+    }
+    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd']) {
+      if (candidate[key] === true) row[key] = true;
+    }
+    if (Number.isInteger(Number(candidate.equationColumnIndex))) row.equationColumnIndex = Number(candidate.equationColumnIndex);
+    if (candidate.manualEditId) row.manualEditId = String(candidate.manualEditId).slice(0, 120);
+    rows.push(row);
+    if (rows.length >= 1000) break;
+  }
+  return rows.length ? { version: EQUATION_INDEX_SUMMARY_VERSION, rows } : null;
+}
+
+function restoreEquationIndexFromPersistence(snapshot) {
+  if (!snapshot || Number(snapshot.version) !== EQUATION_INDEX_SUMMARY_VERSION || !Array.isArray(snapshot.rows)) return null;
+  const index = new Map();
+  for (const raw of snapshot.rows.slice(0, 1000)) {
+    const label = normalizedEquationLabel(raw?.label || '');
+    const page = Number(raw?.page);
+    if (!label || label === '()' || !Number.isFinite(page) || page < 1) continue;
+    const candidate = {
+      page: Math.floor(page),
+      ratio: Math.min(1, Math.max(0, Number(raw?.ratio) || 0)),
+      text: String(raw?.text || label).slice(0, 500),
+      confidence: Number.isFinite(Number(raw?.confidence)) ? Number(raw.confidence) : 20,
+    };
+    for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
+      if (Number.isFinite(Number(raw?.[key]))) candidate[key] = Math.min(1, Math.max(0, Number(raw[key])));
+    }
+    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd']) {
+      if (raw?.[key] === true) candidate[key] = true;
+    }
+    if (Number.isInteger(Number(raw?.equationColumnIndex))) candidate.equationColumnIndex = Number(raw.equationColumnIndex);
+    if (raw?.manualEditId) candidate.manualEditId = String(raw.manualEditId).slice(0, 120);
+    index.set(label, [candidate]);
+  }
+  return index.size ? index : null;
+}
+
+function exportedDocumentOcrSnapshot() {
+  if (!documentOcrActive || !(documentOcrPages instanceof Map) || !pdfDoc?.numPages || documentOcrPages.size !== pdfDoc.numPages) return null;
+  return {
+    version: DOCUMENT_OCR_CACHE_VERSION,
+    pageCount: pdfDoc.numPages,
+    pages: jsonClone([...documentOcrPages.values()].sort((a, b) => Number(a.page) - Number(b.page)), []),
+  };
+}
+
+function normalizedImportedDocumentOcrSnapshot(snapshot, expectedPageCount = null) {
+  if (!snapshot || Number(snapshot.version) !== DOCUMENT_OCR_CACHE_VERSION || !Array.isArray(snapshot.pages)) return null;
+  const pageCount = Number(snapshot.pageCount);
+  if (!Number.isInteger(pageCount) || pageCount < 1 || pageCount > 10000) return null;
+  if (Number.isInteger(Number(expectedPageCount)) && Number(expectedPageCount) > 0 && pageCount !== Number(expectedPageCount)) return null;
+  const seen = new Set();
+  const pages = [];
+  for (const raw of snapshot.pages) {
+    const page = Number(raw?.page);
+    if (!Number.isInteger(page) || page < 1 || page > pageCount || seen.has(page) || !Array.isArray(raw?.lines)) return null;
+    seen.add(page);
+    pages.push(raw);
+  }
+  if (seen.size !== pageCount) return null;
+  pages.sort((a, b) => Number(a.page) - Number(b.page));
+  return { version: DOCUMENT_OCR_CACHE_VERSION, pageCount, pages: jsonClone(pages, []) };
+}
+
+async function persistImportedDocumentOcr(snapshot, fileKey, expectedPageCount = null) {
+  const normalized = normalizedImportedDocumentOcrSnapshot(snapshot, expectedPageCount);
+  const key = documentOcrCacheKey(fileKey);
+  if (!normalized || !key) return false;
+  await dbMetaSet(key, normalized);
+  return true;
+}
+
+function readingDataContentDetectionSnapshot(session) {
+  return {
+    version: 1,
+    structureIndexVersion: Number(structureIndexVersion) || 0,
+    equationIndexVersion: EQUATION_INDEX_SUMMARY_VERSION,
+    structure: jsonClone(inferredOutline, []),
+    results: jsonClone(structureEntries, []),
+    equations: jsonClone(session?.equationIndexSnapshot, null),
+    bibliography: jsonClone(bibliographyEntries, []),
+  };
+}
+
+function mergePortableContentDetectionIntoSession(rawSession, detection) {
+  const session = jsonClone(rawSession, {}) || {};
+  if (!detection || Number(detection.version) !== 1) return session;
+  const detectedStructureVersion = Number(detection.structureIndexVersion || 0);
+  if (Array.isArray(detection.structure)) session.inferredOutline = jsonClone(detection.structure, []);
+  if (Array.isArray(detection.results)) session.structureEntries = jsonClone(detection.results, []);
+  if (Array.isArray(detection.bibliography)) session.bibliographyEntries = jsonClone(detection.bibliography, []);
+  if (detectedStructureVersion > 0) session.structureIndexVersion = detectedStructureVersion;
+  if (detection.equations && Number(detection.equationIndexVersion) === EQUATION_INDEX_SUMMARY_VERSION) {
+    session.equationIndexSnapshot = jsonClone(detection.equations, null);
+    const restored = restoreEquationIndexFromPersistence(session.equationIndexSnapshot);
+    if (restored) session.equationIndexSummary = { version: EQUATION_INDEX_SUMMARY_VERSION, count: restored.size };
+  }
+  session.portableContentDetection = true;
+  return session;
 }
 
 function clearLegacyDocumentState(id) {
@@ -2185,6 +2310,12 @@ function loadDocumentState(cachedSession = null) {
       // Reuse its length as a safe legacy count so old exports also avoid the
       // post-import ellipsis; the background index rebuild still verifies it.
       equationIndexKnownCount = equationManualOrder.length;
+    }
+    const restoredEquationIndex = restoreEquationIndexFromPersistence(session.equationIndexSnapshot);
+    if (restoredEquationIndex) {
+      equationAutomaticLabelIndex = restoredEquationIndex;
+      equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
+      equationIndexKnownCount = equationLabelIndex.size;
     }
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];

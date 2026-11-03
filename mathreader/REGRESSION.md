@@ -1,6 +1,31 @@
-# MathReader Regression Record — v334
+# MathReader Regression Record — v334 regression + v335 targeted round-trip fix
 
 Date: 2026-11-02 (America/Los_Angeles)
+
+## v335 targeted export/import fix
+
+This package keeps the full v334 regression campaign below and adds one targeted portability fix discovered immediately afterward. No new broad regression corpus is claimed for v335.
+
+Confirmed bug: an image/scanned PDF could be fully OCRed, detected, and exported, but importing that reading-data JSON on a clean browser did **not** carry the full-document OCR cache or the automatic equation index. If the matching PDF was then opened without rerunning OCR, MathReader could enter the text-unavailable path and clear the imported text-derived indexes, leaving no Structure/Results/Equations/Bibliography.
+
+v335 changes the export/import contract additively while retaining `mathreader.reading-data@1` compatibility:
+
+- export now contains an explicit `contentDetection` snapshot: Structure (`inferredOutline`), Results, Equations, and Bibliography;
+- export now contains `documentOcr` when full-document OCR is active and complete, including page text/geometry needed by search and downstream detectors;
+- automatic equation detections are persisted as an equation-index snapshot instead of only a count;
+- first-screen import writes the OCR snapshot under the exact SHA-256 document id before the user selects the matching PDF, so `loadCachedDocumentOcr()` restores it before the text-availability gate;
+- import into an already-open matching PDF activates and persists the imported OCR cache before restoring the content-detection session.
+
+Targeted validation performed for v335:
+
+- synthetic equation-index round trip: 2 automatic equation rows exported and restored with page/ratio/confidence/OCR flags intact;
+- synthetic 2-page full-document OCR snapshot accepted and restored only when page count matches; mismatched page-count OCR is rejected;
+- synthetic portable content-detection snapshot restores Structure, Results, Equations, and Bibliography together;
+- all JavaScript files pass `node --check`;
+- source inspection confirms blank-screen import persists OCR before the matching PDF is opened, and open-document import activates OCR before `loadDocumentState()`.
+
+Manual-browser caveat: this sandbox cannot fully exercise the browser file-picker/download + IndexedDB round trip with production OCR engines. The serialization/restoration contract and pure round-trip helpers are tested, but one real browser export → fresh import → select matching scanned PDF should remain a release smoke test.
+
 
 ## Regression rules
 
@@ -85,7 +110,7 @@ Historical cross-field works were additionally researched for future rotation—
 
 ## Cleanup / release gates
 
-- Application version: **v334**.
+- Application version: **v335** (v334 detector regression retained; v335 is a targeted export/import portability fix).
 - Structure index version: **39** (unchanged).
 - Equation summary index version: **20**.
 - All JavaScript subsystem files and bootstrap pass `node --check`.
