@@ -8,8 +8,8 @@ function normalizedReferenceLabel(value) {
     .trim().toLocaleLowerCase();
 }
 
-const STRUCTURE_RESULT_TYPE_PATTERN = '(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
-const STRUCTURE_RESULT_TYPE_RE = '(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
+const STRUCTURE_RESULT_TYPE_PATTERN = '(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
+const STRUCTURE_RESULT_TYPE_RE = '(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
 const STRUCTURE_STRONG_UNNUMBERED_TYPES = new Set(['theorem', 'lemma', 'proposition', 'corollary', 'definition', 'claim', 'conjecture']);
 
 function normalizedStructureResultText(value) {
@@ -23,6 +23,7 @@ function normalizedStructureResultText(value) {
 
 function canonicalStructureResultType(value) {
   const text = String(value || '').toLocaleLowerCase();
+  if (text === 'main result') return 'Main Result';
   return text ? `${text[0].toLocaleUpperCase()}${text.slice(1)}` : '';
 }
 
@@ -39,7 +40,7 @@ function detectedStructureResult(lines, lineIndex, page) {
 
   // Classical papers use both “Lemma 2.3” and “2.3. LEMMA”. Require the
   // declaration to start the visual line so body references cannot qualify.
-  let match = cleaned.match(/^(\d+(?:(?:\.\d+)+|(?:-\d+)+))[.)]?\s+(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\b[.:]?\s*(.*)$/i);
+  let match = cleaned.match(/^(\d+(?:(?:\.\d+)+|(?:-\d+)+))[.)]?\s+(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\b[.:]?\s*(.*)$/i);
   if (match) {
     const type = canonicalStructureResultType(match[2]);
     const number = match[1];
@@ -52,7 +53,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:(?:\.\d+)+|(?:-\d+)+)?(?:['’])?|[A-Z])(?:[.:)]\s*|\s+|$)(.*)$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:(?:\.\d+)+|(?:-\d+)+)?(?:['’])?|[A-Z])(?:[.:)]\s*|\s+|$)(.*)$/i);
   if (match) {
     const type = canonicalStructureResultType(match[1]);
     const number = match[2].replace('’', "'");
@@ -72,7 +73,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?$/i);
   if (match) {
     // Old books often wrap a section heading across two visual lines, e.g.
     // “10-4 PROOF OF THE UNIFORMIZATION” / “THEOREM (PART I)”.  The
@@ -107,7 +108,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\.?$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\.?$/i);
   if (!match || cleaned[0] !== cleaned[0].toLocaleUpperCase()) return null;
   const type = canonicalStructureResultType(match[1]);
 
