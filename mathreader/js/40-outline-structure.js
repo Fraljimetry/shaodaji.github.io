@@ -591,6 +591,12 @@ async function detectOutlineFromTypography() {
       if (headingText.length > 125) continue;
       const words = headingText.split(/\s+/).filter(Boolean);
       if (words.length > 18) continue;
+      // In OCR text, an author initial at the start of a paragraph (for
+      // example, ‘B. Gidas, W. M. Ni ... [2]’) can look exactly like an
+      // alphabetic section marker. Reject only that citation-shaped author
+      // form; genuine ‘B. Methods’ style section headings remain eligible.
+      if (/^[A-H][.)]\s+[A-Z][A-Za-z'’.-]{2,},\s+(?:[A-Z]\.\s*){1,4}/.test(headingText)
+          && /\[\s*\d{1,3}\s*\]/.test(headingText.slice(0, 120))) continue;
       // Parenthesized numeric labels sitting in either page margin are display
       // equation tags, not document headings. This matters especially for older
       // papers whose equation numbers are consistently left-aligned.
@@ -1133,8 +1139,8 @@ document.addEventListener('click', (event) => {
   });
 });
 
-const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)/i;
-const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])\b/gi;
+const STRUCTURE_LABEL_RE = /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\s+(?:[A-Z]?\d+(?:\s*[.·]\s*\d+)*(?:['’])?|[A-Z])(?:[.:)]|\s)/i;
+const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\s*[.·]\s*\d+)*(?:['’])?|[A-Z])\b/gi;
 const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
 const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
 const CLICKABLE_REFERENCE_RE = new RegExp(

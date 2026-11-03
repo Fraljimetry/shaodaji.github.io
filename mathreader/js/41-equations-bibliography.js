@@ -1,6 +1,134 @@
 // MathReader · Equation indexing, Results/Structure indexing, and Bibliography rendering.
 function normalizedReferenceLabel(value) {
-  return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').replace(/\s*([()[\].,:])\s*/g, '$1').trim().toLocaleLowerCase();
+  return String(value || '').normalize('NFKC')
+    .replace(/(\d)\s*[.·]\s*(?=\d)/g, '$1.')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*([()[\].,:])\s*/g, '$1')
+    .trim().toLocaleLowerCase();
+}
+
+const STRUCTURE_RESULT_TYPE_PATTERN = '(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
+const STRUCTURE_RESULT_TYPE_RE = '(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
+const STRUCTURE_STRONG_UNNUMBERED_TYPES = new Set(['theorem', 'lemma', 'proposition', 'corollary', 'definition', 'claim', 'conjecture']);
+
+function normalizedStructureResultText(value) {
+  return String(value || '').normalize('NFKC')
+    .replace(/(\d)\s*[.·]\s*(?=\d)/g, '$1.')
+    .replace(/(\d)\s*·\s*/g, '$1.')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function canonicalStructureResultType(value) {
+  const text = String(value || '').toLocaleLowerCase();
+  return text ? `${text[0].toLocaleUpperCase()}${text.slice(1)}` : '';
+}
+
+function structureResultProseReferenceTail(value) {
+  const tail = String(value || '').trim();
+  if (!tail) return false;
+  return /^(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
+}
+
+function detectedStructureResult(lines, lineIndex, page) {
+  const line = lines?.[lineIndex];
+  const cleaned = normalizedStructureResultText(line?.text);
+  if (!cleaned) return null;
+
+  // Classical papers use both “Lemma 2.3” and “2.3. LEMMA”. Require the
+  // declaration to start the visual line so body references cannot qualify.
+  let match = cleaned.match(/^(\d+(?:\.\d+)+)[.)]?\s+(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\b[.:]?\s*(.*)$/i);
+  if (match) {
+    const type = canonicalStructureResultType(match[2]);
+    const number = match[1];
+    const tail = String(match[3] || '').trim();
+    return {
+      label: `${type} ${number}`,
+      title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
+      page,
+      ratio: line.ratio,
+    };
+  }
+
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:\.\d+)*(?:['’])?|[A-Z])(?:[.:)]|\s)(.*)$/i);
+  if (match) {
+    const type = canonicalStructureResultType(match[1]);
+    const number = match[2].replace('’', "'");
+    const tail = String(match[3] || '').trim();
+    if (structureResultProseReferenceTail(tail)) return null;
+    return {
+      label: `${type} ${number}`,
+      title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
+      page,
+      ratio: line.ratio,
+    };
+  }
+
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?$/i);
+  if (match) {
+    const title = cleaned.replace(/[.:]+$/, '').trim();
+    return { label: title.slice(0, 100), title: cleaned.slice(0, 180), page, ratio: line.ratio };
+  }
+
+  // A number is not mandatory for a genuine declaration. Classical papers
+  // commonly use forms such as “Definition. A complete ...” or “Lemma. Let ...”.
+  // Restrict this to strong result types so prose-style “Remark. ...” lines do
+  // not become document-wide Results noise.
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Claim|Conjecture)\.\s+(.{2,})$/i);
+  if (match && cleaned[0] === cleaned[0].toLocaleUpperCase()) {
+    const type = canonicalStructureResultType(match[1]);
+    return {
+      label: `${type} · p.${page}`,
+      displayLabel: type,
+      title: cleaned.slice(0, 180),
+      page,
+      ratio: line.ratio,
+      unnumberedResult: true,
+    };
+  }
+
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\.?$/i);
+  if (!match || cleaned[0] !== cleaned[0].toLocaleUpperCase()) return null;
+  const type = canonicalStructureResultType(match[1]);
+
+  // Some old layouts put the result type and its number on adjacent visual
+  // lines. Accept only a nearby number-leading line, never an arbitrary page
+  // number or remote prose line.
+  for (const offset of [1, -1]) {
+    const adjacent = lines?.[lineIndex + offset];
+    if (!adjacent) continue;
+    const adjacentText = normalizedStructureResultText(adjacent.text);
+    const numbered = adjacentText.match(/^(\d+(?:\.\d+)*)(?:[.)])?\s*(.*)$/);
+    if (!numbered) continue;
+    const number = numbered[1];
+    const tail = String(numbered[2] || '').trim();
+    const ratioDistance = Math.abs((Number(adjacent.ratio) || 0) - (Number(line.ratio) || 0));
+    if (ratioDistance > 0.07) continue;
+    // A bare integer adjacent to a heading is accepted only when there is
+    // statement text on that same line. This excludes isolated running page
+    // numbers while retaining Yau-style “THEOREM” / “2. Let ...”.
+    if (!number.includes('.') && !tail) continue;
+    if (tail && structureResultProseReferenceTail(tail)) continue;
+    return {
+      label: `${type} ${number}`,
+      title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
+      page,
+      ratio: Math.min(Number(line.ratio) || 0, Number(adjacent.ratio) || Number(line.ratio) || 0),
+    };
+  }
+
+  // Keep genuinely unnumbered strong mathematical result headings. Loose
+  // labels such as “Remark.” or “Example.” are too common in prose to index
+  // safely without a number.
+  if (!STRUCTURE_STRONG_UNNUMBERED_TYPES.has(String(match[1] || '').toLocaleLowerCase())) return null;
+  return {
+    label: `${type} · p.${page}`,
+    displayLabel: type,
+    title: type,
+    page,
+    ratio: line.ratio,
+    unnumberedResult: true,
+  };
 }
 
 function normalizeEquationTagCommands(value) {
@@ -941,7 +1069,8 @@ function reconcileEquationNumberingFamilies(index) {
     if (!parsed) continue;
     const candidates = index.get(label) || [];
     const ocrSourced = candidates.some((item) => Boolean(item?.ocrSource));
-    numericEntries.push({ label, parsed, ocrSourced });
+    const confirmedLocalIntegerFamily = candidates.some((item) => Boolean(item?.confirmedLocalIntegerFamily));
+    numericEntries.push({ label, parsed, ocrSourced, confirmedLocalIntegerFamily });
     if (parsed.prefix) {
       hierarchical += 1;
       if (ocrSourced) ocrHierarchical += 1;
@@ -957,7 +1086,9 @@ function reconcileEquationNumberingFamilies(index) {
   // tags than as a second numbering system. Integer-only OCR documents are not
   // affected because they have no hierarchical family at all.
   if (ocrHierarchical >= 8 && ocrHierarchical >= Math.max(8, Math.ceil(ocrIntegers * 1.5))) {
-    for (const { label, parsed, ocrSourced } of numericEntries) if (!parsed.prefix && ocrSourced) index.delete(label);
+    for (const { label, parsed, ocrSourced, confirmedLocalIntegerFamily } of numericEntries) {
+      if (!parsed.prefix && ocrSourced && !confirmedLocalIntegerFamily) index.delete(label);
+    }
     integers = [...index.keys()].filter((label) => {
       const parsed = parsedEquationNumber(label);
       return parsed && !parsed.prefix;
@@ -968,7 +1099,9 @@ function reconcileEquationNumberingFamilies(index) {
   // page numbers / damaged text-layer artifacts rather than a second equation
   // numbering system. Integer-only and genuinely mixed documents stay intact.
   if (hierarchical < 10 || numericTotal < 12 || hierarchical / numericTotal < 0.88 || integers > Math.max(12, Math.ceil(hierarchical * 0.08))) return index;
-  for (const { label, parsed } of numericEntries) if (!parsed.prefix) index.delete(label);
+  for (const { label, parsed, confirmedLocalIntegerFamily } of numericEntries) {
+    if (!parsed.prefix && !confirmedLocalIntegerFamily) index.delete(label);
+  }
   return index;
 }
 
@@ -1340,7 +1473,7 @@ function equationSupplementalOcrPagePlan(sourceDoc, index) {
 }
 
 function remapEquationMarginOcrLine(line, side, marginFraction) {
-  const fraction = Math.min(0.48, Math.max(0.28, Number(marginFraction) || 0.38));
+  const fraction = Math.min(0.48, Math.max(0.12, Number(marginFraction) || 0.38));
   const offset = side === 'right' ? 1 - fraction : 0;
   const mapX = (value) => Math.min(1, Math.max(0, offset + (Number(value) || 0) * fraction));
   return {
@@ -1357,7 +1490,7 @@ function remapEquationMarginOcrLine(line, side, marginFraction) {
   };
 }
 
-async function equationMarginOcrLines(sourceDoc, pageNum, side, worker) {
+async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { marginFraction = 0.28 } = {}) {
   const page = await sourceDoc.getPage(pageNum);
   const base = page.getViewport({ scale: 1 });
   const scale = Math.max(2.4, Math.min(3.6, 3200 / Math.max(1, base.width, base.height)));
@@ -1370,7 +1503,8 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker) {
   fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
   await page.render({ canvasContext: fullContext, viewport }).promise;
 
-  const marginFraction = 0.38;
+  // Equation labels live at the outer edge. A narrow crop is both faster and
+  // less likely to OCR inline prose references as candidate labels.
   const cropWidth = Math.max(1, Math.ceil(fullCanvas.width * marginFraction));
   const cropX = side === 'right' ? Math.max(0, fullCanvas.width - cropWidth) : 0;
   const cropCanvas = document.createElement('canvas');
@@ -1392,6 +1526,98 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker) {
   }
   const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, Math.max(1, Math.ceil(viewport.height)), pageNum);
   return (record.lines || []).map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
+}
+
+function equationExpectedNumericOcrRecord(line, page, expectedLabel) {
+  const numeric = parsedEquationNumber(expectedLabel);
+  if (!numeric || !Number.isInteger(numeric.last)) return null;
+  const core = numeric.prefix
+    ? `${numeric.prefix}${numeric.separator || '.'}${numeric.last}`
+    : String(numeric.last);
+  const normalizedText = String(line?.text || '')
+    .normalize('NFKC')
+    .replace(/[．·•]/g, '.')
+    .replace(/\s+/g, '');
+  if (!normalizedText.includes(core)) return null;
+  // The retry OCR is deliberately numeric-only. Require the whole OCR line to
+  // reduce to the expected digits, so a nearby page number or second label
+  // cannot corroborate the query accidentally. Parentheses may be lost by OCR.
+  const observedDigits = normalizedText.replace(/\D/g, '');
+  const expectedDigits = core.replace(/\D/g, '');
+  if (!expectedDigits || observedDigits !== expectedDigits) return null;
+  if (normalizedText.includes('.') !== core.includes('.')) return null;
+  const sideAligned = equationNumberingSide === 'left'
+    ? Number(line?.xEndRatio || 0) <= 0.22
+    : Number(line?.xStartRatio || 0) >= 0.78;
+  if (!sideAligned) return null;
+  return {
+    label: expectedLabel,
+    page,
+    ratio: Number(line?.ratio || 0),
+    text: String(line?.text || ''),
+    xStartRatio: Number(line?.xStartRatio || 0),
+    xEndRatio: Number(line?.xEndRatio || 0),
+    candidateXStartRatio: Number(line?.xStartRatio || 0),
+    candidateXEndRatio: Number(line?.xEndRatio || 0),
+    numeric,
+    bareSource: false,
+    sequenceOnly: false,
+    explicitParenthesized: /[()]/.test(normalizedText),
+    candidateAtLineStart: true,
+    candidateAtLineEnd: true,
+    standaloneTag: true,
+    nearbyDisplayMath: false,
+    nearbyHeadingContext: false,
+    axisNumericCluster: false,
+    mathSignals: 0,
+    ocrSource: true,
+    supplementalEquationOcr: true,
+    numericGapCorroborated: true,
+    confidence: 24,
+  };
+}
+
+function equationSupplementalNumericRetryQueries(records, pageCount) {
+  const byPrefix = new Map();
+  for (const record of records || []) {
+    const parsed = record?.numeric || parsedEquationNumber(record?.label);
+    if (!parsed?.prefix || !Number.isInteger(parsed.last)) continue;
+    const list = byPrefix.get(parsed.prefix) || [];
+    list.push({ record, parsed });
+    byPrefix.set(parsed.prefix, list);
+  }
+  const expectedByPage = new Map();
+  const addExpected = (pageNum, label) => {
+    const page = Number(pageNum);
+    if (!Number.isInteger(page) || page < 1 || page > pageCount) return;
+    const labels = expectedByPage.get(page) || new Set();
+    labels.add(label);
+    expectedByPage.set(page, labels);
+  };
+  for (const entries0 of byPrefix.values()) {
+    const byLabel = new Map();
+    for (const item of entries0) {
+      const existing = byLabel.get(item.record.label);
+      if (!existing || equationDocumentPosition(item.record) < equationDocumentPosition(existing.record)) {
+        byLabel.set(item.record.label, item);
+      }
+    }
+    const entries = [...byLabel.values()].sort((a, b) => equationDocumentPosition(a.record) - equationDocumentPosition(b.record));
+    if (entries.length < 3) continue;
+    for (let i = 0; i + 1 < entries.length; i += 1) {
+      const left = entries[i];
+      const right = entries[i + 1];
+      const gap = right.parsed.last - left.parsed.last;
+      const leftPage = Number(left.record.page);
+      const rightPage = Number(right.record.page);
+      if (gap < 2 || gap > 4 || rightPage < leftPage || rightPage - leftPage > 2) continue;
+      for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
+        const label = `(${left.parsed.prefix}${left.parsed.separator || '.'}${missing})`;
+        for (let page = leftPage; page <= rightPage; page += 1) addExpected(page, label);
+      }
+    }
+  }
+  return expectedByPage;
 }
 
 function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
@@ -1428,6 +1654,9 @@ function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
     attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
   };
   if (record.attachedFunctionCall) return null;
+  // A crop can start with an inline prose reference and make it look margin-
+  // aligned. Keep it only when OCR saw the label as a standalone tag.
+  if (!standaloneTag && equationReferenceProseContext(record.text)) return null;
   let confidence = equationCandidateConfidenceForSide(record);
   if (record.axisNumericCluster) confidence = -Infinity;
   if (!Number.isFinite(confidence) || confidence < 8) {
@@ -1440,9 +1669,14 @@ function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
 
 function denseSupplementalEquationFamilies(records) {
   const byPrefix = new Map();
+  const integerRecords = [];
   for (const record of records || []) {
     const parsed = record?.numeric || parsedEquationNumber(record?.label);
-    if (!parsed?.prefix) continue;
+    if (!parsed) continue;
+    if (!parsed.prefix) {
+      if (record.standaloneTag && equationCandidateAlignedToNumberingSide(record)) integerRecords.push(record);
+      continue;
+    }
     const list = byPrefix.get(parsed.prefix) || [];
     list.push(record);
     byPrefix.set(parsed.prefix, list);
@@ -1472,30 +1706,69 @@ function denseSupplementalEquationFamilies(records) {
     if (monotone.length < 3) continue;
     const numbers = monotone.map((item) => item.parsed.last);
     const span = Math.max(...numbers) - Math.min(...numbers) + 1;
-    // Image-derived labels are allowed to fill a small number of OCR holes, but
-    // a sparse collection of isolated numbers is not enough to define a family.
-    if (span > monotone.length + 2) continue;
+    // Full-margin OCR on old scans may itself miss a few faint tags. Require a
+    // dense monotone family, but allow a proportional number of OCR holes so a
+    // long genuine family (for example 2.1--2.60) is not discarded wholesale.
+    const allowedHoles = Math.max(3, Math.ceil(monotone.length * 0.22));
+    if (span > monotone.length + allowedHoles) continue;
     accepted.push(...monotone.map((item) => item.candidate));
   }
+
+  // Some papers temporarily use local integer tags inside a numbered section.
+  // Promote only consecutive standalone margin tags seen close together in
+  // document order. This recovers genuine pairs such as Simon's (1), (2),
+  // while sparse OCR noise from years, bibliography keys, or page furniture
+  // cannot form an accepted run.
+  const integerCanonical = [...new Map(integerRecords.map((record) => [record.label, record])).values()]
+    .map((record) => ({ record, parsed: record.numeric || parsedEquationNumber(record.label) }))
+    .filter((item) => item.parsed && Number.isInteger(item.parsed.last))
+    .sort((a, b) => equationDocumentPosition(a.record) - equationDocumentPosition(b.record));
+  let run = [];
+  const flushIntegerRun = () => {
+    if (run.length >= 2) {
+      for (const item of run) item.record.confirmedLocalIntegerFamily = true;
+      accepted.push(...run.map((item) => item.record));
+    }
+    run = [];
+  };
+  for (const item of integerCanonical) {
+    const previous = run[run.length - 1];
+    const pageGap = previous ? Number(item.record.page || 0) - Number(previous.record.page || 0) : 0;
+    if (!previous || (item.parsed.last === previous.parsed.last + 1 && pageGap >= 0 && pageGap <= 2)) run.push(item);
+    else { flushIntegerRun(); run.push(item); }
+  }
+  flushIntegerRun();
   return accepted;
 }
 
-async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index, referenceEvidence = []) {
+async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index, referenceEvidence = [], onProgress = null) {
   if (!sourceDoc?.numPages || documentTextMode !== 'native' || documentOcrActive || documentOcrBusy) return false;
 
-  const gapPlan = equationNativeImageGapPlan(index, Math.max(0, Number(sourceDoc.numPages) || 0), referenceEvidence);
-  const legacyLeadingGap = equationIndexHasSuspiciousLeadingGap(index);
-  let legacyPages = [];
-  if (legacyLeadingGap && await equationDocumentLooksImageBacked(sourceDoc, index)) {
-    legacyPages = equationSupplementalOcrPagePlan(sourceDoc, index);
-  }
-  if (!gapPlan.pages.length && !legacyPages.length) return false;
+  const pageCount = Math.max(0, Number(sourceDoc.numPages) || 0);
+  const gapPlan = equationNativeImageGapPlan(index, pageCount, referenceEvidence);
 
+  // Class-level old-scan rule: when the native PDF is actually image-backed,
+  // its hidden text layer is only a hint. On journal-paper sized documents we
+  // inventory the whole equation-number margin in the background. This is what
+  // closes systematic Yau/Simon/Pisier-style omissions where every second or
+  // several consecutive printed labels can be absent from the text layer.
+  const imageBacked = await equationDocumentLooksImageBacked(sourceDoc, index);
+  let comprehensivePages = [];
+  if (imageBacked) {
+    if (pageCount <= 120) comprehensivePages = Array.from({ length: pageCount }, (_, i) => i + 1);
+    else comprehensivePages = equationSupplementalOcrPagePlan(sourceDoc, index).slice(0, 72);
+  }
+
+  const comprehensivePageSet = new Set(comprehensivePages);
   const gapPagesWithRaster = new Set();
   for (const pageNum of gapPlan.pages) {
-    if (await equationPageContainsRasterImage(sourceDoc, pageNum)) gapPagesWithRaster.add(pageNum);
+    if (comprehensivePageSet.has(pageNum) || await equationPageContainsRasterImage(sourceDoc, pageNum)) gapPagesWithRaster.add(pageNum);
   }
-  const pages = [...new Set([...legacyPages, ...gapPagesWithRaster])].sort((a, b) => a - b).slice(0, 48);
+  // Scan exact native-gap pages first so visibly missing labels can appear in
+  // the index promptly while the broader background margin inventory continues.
+  const priorityPages = [...gapPagesWithRaster].sort((a, b) => a - b);
+  const priorityPageSet = new Set(priorityPages);
+  const pages = [...priorityPages, ...comprehensivePages.filter((page) => !priorityPageSet.has(page))];
   if (!pages.length) return false;
 
   let worker = null;
@@ -1546,8 +1819,7 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
     return pending;
   };
 
-  const legacyPageSet = new Set(legacyPages);
-  const legacyRecords = [];
+  const comprehensiveRecords = [];
   let added = false;
   try {
     for (const pageNum of pages) {
@@ -1556,38 +1828,120 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
       try {
         lines = await cachedLinesForPage(pageNum);
       } catch (error) {
-        // Posterior OCR is page-local evidence. A failure on one selected page
-        // must not discard labels already confirmed on other pages.
         console.warn(`MathReader equation image-assistance skipped page ${pageNum}.`, error);
         continue;
       }
       const expectedOnPage = gapPlan.expectedByPage.get(pageNum) || new Set();
+      let pageAdded = false;
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
         const line = lines[lineIndex];
         for (const candidate of equationLabelCandidatesInLine(line.text)) {
           const record = equationSupplementalRecord(line, pageNum, lineIndex, lines, candidate);
           if (!record) continue;
-          if (legacyPageSet.has(pageNum)) legacyRecords.push(record);
+          if (comprehensivePageSet.has(pageNum)) comprehensiveRecords.push(record);
           if (expectedOnPage.has(record.label) && !index.has(record.label)) {
-            // Native numbering defines the hole; image OCR supplies the missing
-            // visible label. Never synthesize the number from the sequence.
             index.set(record.label, [{
               ...record,
               nativeGapCorroborated: true,
               confidence: Math.max(20, Number(record.confidence) || 0),
             }]);
             added = true;
+            pageAdded = true;
           }
         }
+      }
+      if (pageAdded && typeof onProgress === 'function') {
+        try { onProgress(); } catch (_) {}
       }
       await nextFrame();
     }
 
-    if (legacyPages.length) {
-      for (const record of denseSupplementalEquationFamilies(legacyRecords)) {
+    // A faint printed tag can survive the normal margin inventory yet be lost
+    // by general-purpose OCR (old scans often lose one parenthesis or one tiny
+    // digit). Retry only unresolved, already-evidenced gaps with a narrower
+    // numeric-only crop. The expected label is a query, never an assertion: its
+    // exact digit/dot core must still be read as a standalone margin line.
+    const numericRetryExpectedByPage = new Map();
+    const addNumericRetryExpected = (pageNum, label) => {
+      if (index.has(label)) return;
+      const page = Number(pageNum);
+      if (!Number.isInteger(page) || page < 1 || page > pageCount) return;
+      const labels = numericRetryExpectedByPage.get(page) || new Set();
+      labels.add(label);
+      numericRetryExpectedByPage.set(page, labels);
+    };
+    for (const [pageNum, labels] of gapPlan.expectedByPage.entries()) {
+      for (const label of labels) addNumericRetryExpected(pageNum, label);
+    }
+    for (const [pageNum, labels] of equationSupplementalNumericRetryQueries(comprehensiveRecords, pageCount).entries()) {
+      for (const label of labels) addNumericRetryExpected(pageNum, label);
+    }
+
+    if (numericRetryExpectedByPage.size) {
+      const activeWorker = await ensureWorker();
+      if (activeWorker) {
+        try {
+          if (typeof activeWorker.setParameters === 'function') {
+            await activeWorker.setParameters({
+              preserve_interword_spaces: '1',
+              user_defined_dpi: '300',
+              tessedit_pageseg_mode: '6',
+              tessedit_char_whitelist: '0123456789.()-',
+            });
+          }
+          for (const [pageNum, expectedLabels] of [...numericRetryExpectedByPage.entries()].sort((a, b) => a[0] - b[0])) {
+            if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return added;
+            let retryLines = [];
+            try {
+              retryLines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker, { marginFraction: 0.18 });
+            } catch (error) {
+              console.warn(`MathReader equation numeric-gap OCR skipped page ${pageNum}.`, error);
+              continue;
+            }
+            let pageAdded = false;
+            for (const expectedLabel of expectedLabels) {
+              if (index.has(expectedLabel)) continue;
+              for (const line of retryLines) {
+                const record = equationExpectedNumericOcrRecord(line, pageNum, expectedLabel);
+                if (!record) continue;
+                index.set(expectedLabel, [{ ...record, nativeGapCorroborated: true }]);
+                comprehensiveRecords.push(record);
+                added = true;
+                pageAdded = true;
+                break;
+              }
+            }
+            if (pageAdded && typeof onProgress === 'function') {
+              try { onProgress(); } catch (_) {}
+            }
+            await nextFrame();
+          }
+        } finally {
+          if (typeof activeWorker.setParameters === 'function') {
+            try {
+              await activeWorker.setParameters({
+                preserve_interword_spaces: '1',
+                user_defined_dpi: '300',
+                tessedit_pageseg_mode: '11',
+                tessedit_char_whitelist: '',
+              });
+            } catch (_) {}
+          }
+        }
+      }
+    }
+
+    // The comprehensive pass is still evidence-driven: only dense, monotone
+    // OCR families are promoted, and every promoted label was actually read on
+    // the page margin. Sequence arithmetic never invents a label.
+    if (comprehensiveRecords.length) {
+      for (const record of denseSupplementalEquationFamilies(comprehensiveRecords)) {
         if (index.has(record.label)) continue;
-        index.set(record.label, [record]);
+        index.set(record.label, [{ ...record, confidence: Math.max(18, Number(record.confidence) || 0) }]);
         added = true;
+      }
+      if (added && typeof onProgress === 'function') {
+        try { onProgress(); } catch (_) {}
       }
     }
     return added;
@@ -1840,7 +2194,7 @@ async function buildEquationLabelIndex() {
     const assistIndex = index;
     const assistPool = candidatePool;
     equationImageAssistPromise = (async () => {
-      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence);
+      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence, publishAutomaticIndex);
       if (!added || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
       reconcileEquationNumberingFamilies(assistIndex);
       recoverSequentialEquationGaps(assistIndex, assistPool);
@@ -2741,21 +3095,17 @@ async function buildStructureIndex({ force = false } = {}) {
         }
 
         if (!tailOnlyPage) {
-          // Result headings must begin the extracted visual line. Do not promote
-          // ordinary prose references such as "... by Proposition 13.6(a) ..."
-          // into the Results index merely because they follow punctuation.
-          const structureMatch = cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])(?:[.:)]|\s)[^.!?]{0,150})/i);
-          const namedResultMatch = !structureMatch ? cleaned.match(/^((?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s*\([^()]{2,80}\)\s*[.:]?)/) : null;
-          if (structureMatch || namedResultMatch) {
-            const title = (structureMatch?.[1] || namedResultMatch?.[1] || '').replace(/\s+/g, ' ').trim().replace(/\s+([.:,)])/g, '$1');
-            const label = structureMatch ? (title.match(STRUCTURE_REFERENCE_RE)?.[0] || title.slice(0, 80)) : title.replace(/[.:]+$/, '').trim();
-            if ((structureMatch && STRUCTURE_LABEL_RE.test(title)) || namedResultMatch) {
-              const key = `${page}:${normalizedReferenceLabel(label)}`;
-              const lowercaseSingleLetterProse = structureMatch && /^[a-z]/.test(cleaned) && /\s+[a-z]$/.test(label);
-              if (!lowercaseSingleLetterProse && !nextEntries.some((entry) => entry.key === key)) {
-                const entry = { key, label, page, ratio: line.ratio, title: title.slice(0, 180), proofReferences: [], usedByProofs: [] };
-                nextEntries.push(entry); activeProofEntry = entry;
-              }
+          // Result headings must begin the extracted visual line. Classical
+          // papers also use spaced numbering ("Lemma 2 . 3"), number-first
+          // forms ("1.1. LEMMA"), and a standalone type line next to its
+          // number. Normalize only these declaration shapes; prose references
+          // such as "Proposition 2.1 shows ..." stay out of Results.
+          const detectedResult = detectedStructureResult(lines, lineIndex, page);
+          if (detectedResult) {
+            const key = `${page}:${normalizedReferenceLabel(detectedResult.label)}`;
+            if (!nextEntries.some((entry) => entry.key === key)) {
+              const entry = { key, ...detectedResult, proofReferences: [], usedByProofs: [] };
+              nextEntries.push(entry); activeProofEntry = entry;
             }
           }
   
@@ -3194,7 +3544,7 @@ function renderStructureIndex() {
   for (const entry of structureEntries) {
     const row = document.createElement('div'); row.className = 'structure-entry proof-graph-card'; row.dataset.page=String(entry.page);
     const button = document.createElement('button'); button.type = 'button'; button.className = 'structure-item proof-graph-root'; button.dataset.page=String(entry.page);
-    const strong = document.createElement('strong'); strong.textContent = entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
+    const strong = document.createElement('strong'); strong.textContent = entry.displayLabel || entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
     const meta = document.createElement('span'); meta.textContent = t(`Page ${entry.page}`, `第 ${entry.page} 页`);
     button.append(strong, meta); button.title = entry.title;
     button.addEventListener('click', async () => {
