@@ -1,87 +1,109 @@
-# MathReader Regression Record — v330
+# MathReader Regression Record — v332
 
 Date: 2026-11-02 (America/Los_Angeles)
 
 ## Regression rules
 
-- Every regression must include genuinely new files plus a selective subset of older regression fixtures.
-- Prefer pre-21st-century mathematical works, especially old scans, degraded text layers, historical typography, books, proceedings, and journal articles. Modern/arXiv-style files are a small control minority.
-- New files should span different branches of mathematics or adjacent technical fields rather than clustering in one subject.
+- Every regression uses genuinely new or newly rotated files plus a selective subset of older fixtures; it must not simply repeat the immediately previous corpus.
+- Prefer pre-21st-century mathematics and adjacent technical literature, especially old journal scans, historical typography, degraded text layers, books, proceedings, and lecture material. Modern/arXiv-style files remain a small control minority.
+- New/rotated files should span different branches rather than cluster in one subject.
 - Always include image-only/image-heavy PDFs and selectively include handwritten mathematical notes.
-- Standard readable files are held to strict visible-page ground truth for Structure, Results, Equations, and Bibliography: both completeness and false positives matter.
-- Extremely illegible, corrupted, broken, or pathological files may use relaxed acceptance. Such outliers must not drive detector changes unless the behavior is reproducible as a class problem or violates a clear general invariant.
-- Equation and bibliography detection receive special scrutiny on old PDFs. Image OCR must be checked for full-document accuracy, downstream detection stability, and performance.
+- Standard readable files are held to strict visible-page ground truth for Structure, Results, Equations, and Bibliography. Missing items and false positives are both release blockers.
+- Extremely illegible, corrupted, broken, or pathological files may use relaxed acceptance. Such outliers must not drive detector changes unless the behavior is reproducible as a class problem or violates a clear invariant.
+- Equation and bibliography detection receive special scrutiny on old PDFs. Full-document OCR is checked for accuracy, downstream detection stability, and performance.
 - Code changes are allowed only for reproducible class-level problems, never to special-case one document.
-- Regression work is bounded to avoid timeout. If exhaustive validation is unsafe in one run, strict representative coverage is preferred and unfinished items are recorded here rather than silently treated as passes.
+- Regression work is bounded to avoid timeout. If exhaustive validation is unsafe, strict representative coverage is preferred and unfinished items are recorded instead of silently treated as passes.
 - Any uncertain exception, possible side effect, or item requiring manual browser validation must be recorded below.
 
 ## Files covered
 
-### New / newly selected for this campaign
+### New / newly rotated relative to v331
 
 | File | Field / type | Acceptance | Result / note |
 |---|---|---|---|
-| `Caffarelli_1989.pdf` | PDE / critical semilinear elliptic equations, 1989 | Diagnostic, not full strict equation acceptance | Native detector: 23 Equations / 18 Results / 10 Bibliography. Full high-resolution margin-OCR inventory was not completed within the bounded run; see Unresolved / manual checks. |
-| `Schoen_Yau_Positive_Mass_Theorem.pdf` | Geometric analysis / general relativity, clean modern control | Strict | 6 Equations / 7 Results / 7 Bibliography. Used to validate reference-page reading order and bibliography boundary handling. |
-| `581_Note_2.pdf` | Handwritten inverse-problems / distribution notes | Relaxed OCR stress | Full-document OCR proxy completed. Downstream detector remained conservative: 0 numbered Equations / 0 Results / 0 Bibliography. Handwriting transcription accuracy is not claimed to be complete. |
-| `GA_Seminar_Note_1.pdf` | Handwritten geometry seminar notes | Relaxed OCR stress | Full-document OCR proxy completed. Downstream detector remained conservative: 0 numbered Equations / 0 Results / 0 Bibliography. Handwriting transcription accuracy is not claimed to be complete. |
+| `Ahlfors-Conformal-Invariants.pdf` | complex analysis / geometric function theory; original 1973 monograph, scan/OCR text layer | Strict | **163 Equations / 95 Results / 66 Bibliography.** Native layer gives 160 equations; exact image-margin recovery restores `(1-4)`, `(1-7)`, `(5-16)`. |
+| `YamabeProblem.pdf` | geometric analysis / PDE; Lee–Parker 1987 survey, scanned/OCR text layer | Strict | **67 Equations / 51 Results / 46 Bibliography.** Native layer gives 62 equations; exact image-margin recovery restores `(1.3)`, `(3.1)`, `(7.3)`, `(7.4)`, `(9.1)`. |
+| `利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf` | functional equations / Chinese mathematical journal, 2023 | Strict standard multilingual control | **0 numbered Equations / 0 Results / 2 Bibliography.** The visible `(1)–(4)` and later `(1)–(3)` are enumerated assumptions/conditions, not equation labels. Explicit `参考文献` contains exactly two entries. |
+| `Riemann球面上的旋转_Fraljimetry.pdf` | complex geometry / linear algebra, 2025 | Strict small modern control | **0 numbered Equations / 0 Results / 0 Bibliography.** Displayed formulas are unnumbered. |
+| `581 Note 3.pdf` | handwritten inverse-problems notes | Relaxed OCR stress | Full-document OCR proxy: 3 pages, **0 Equations / 0 Results / 0 Bibliography**. No OCR pollution into content indexes; exact handwriting transcription is not claimed. |
 
-### Selectively retested older strict fixtures
+### Selectively retested older / difficult fixtures
 
-| File | Field / type | Accepted detection |
+| File | Field / type | Accepted detection / regression result |
 |---|---|---|
-| `Yau_1978_Calabi.pdf` | complex geometry / Monge–Ampère, old journal PDF | 256 Equations / 13 Results / 15 Bibliography |
-| `Pisier_1988_Riesz_Transforms.pdf` | probability / harmonic analysis, digitized old journal PDF | 25 Equations / 7 Results / 17 Bibliography |
-| `Gromov_1967_Banach.pdf` | functional analysis / geometry, historical typesetting | 16 Equations / 14 Results / 9 Bibliography |
-| `Ahlfors_Conformal_Invariants.pdf` | complex analysis / geometric function theory, old book | 163 Equations / 95 Results / 66 Bibliography |
-| `Schoen_1983_Minimal_Surfaces_image_only.pdf` | minimal surfaces, image-only scan | 0 numbered Equations / 16 Results / 14 Bibliography |
-| `YamabeProblem.pdf` | geometric analysis, older long paper | 62 Equations / 51 Results / 46 Bibliography |
+| `yau_1978.pdf` | complex geometry / Monge–Ampère, old journal scan | **256 visible Equations / 13 Results / 15 Bibliography.** Full image-assist replay passed; native text remains 159 labels. `(6.22)` remains a genuine printed-sequence gap. |
+| `caffarelli1989.pdf` | nonlinear PDE, 1989 | Native replay remains 23 Equations / 18 Results / 10 Bibliography; established strict visible golden remains **55 Equations / 18 Results / 10 Bibliography**. No native regression from v331. |
+| `gromov_1967.pdf` | functional analysis / geometry, 1967 | Native replay remains 15 / 14 / 9; established strict image-assisted golden remains 16 / 14 / 9. |
+| `pisier_1988.pdf` | probability / harmonic analysis, 1988 | Native replay remains 22 / 7 / 17; established strict image-assisted golden remains 25 / 7 / 17. |
+| `schoen_1983_scan.pdf` | minimal surfaces, 19-page image-only scan | Full-document OCR passed at **0 numbered Equations / 16 Results / 14 Bibliography**. Displayed formulas are unnumbered; zero equation labels is intentional. |
+| `covering_spaces_for_geometric_analysis.pdf` | topology / geometric analysis control | v331 regression guard preserved: **0 Equations / 15 Results / 0 Bibliography**; subsection numbers still do not pollute Equations. |
+| `lectures_on_pde_split_pages.pdf` | long PDE notes control | v331 guard preserved: 22 Equations / 37 Results / 0 Bibliography; false `Hypothesis y` remains absent. |
 
-Notes:
-- For the image-only Schoen fixture, the displayed mathematics is unnumbered; zero numbered equation labels is intentional. Visual review also confirms the unnumbered `Definition.` is a genuine Result item, so 16 Results is the accepted count.
-- Strict old-fixture equation totals above include the established posterior image-margin OCR recovery path, not just native PDF text-layer extraction.
+## Confirmed class-level defects fixed in v332
 
-## Confirmed class-level defects fixed in v330
+### 1. Multilingual bibliography headings were not recognized
 
-### 1. Wrapped old-book section headings falsely indexed as Results
+The bibliography detector recognized English headings such as `References` and `Bibliography` but not common Chinese/Japanese forms. A standard Chinese journal article with an explicit `参考文献` section therefore returned zero bibliography entries even though its `[1]`, `[2]` entries were otherwise parseable.
 
-Old books can split a heading such as `PROOF OF THE ...` onto one line and `THEOREM (PART I)` onto the next. The second line previously looked like an unnumbered theorem and entered Results. The detector now rejects that continuation when the preceding nearby line establishes the section-heading context. This removed the two false Ahlfors Results while preserving genuine theorems.
+v332 recognizes the common heading family `参考文献 / 參考文獻 / 参考资料 / 參考資料 / 参考书目 / 參考書目` using the existing bibliography pipeline. No document-specific title or author rule was added.
 
-### 2. Single-column bibliography pages could be reordered as two columns
+Regression evidence:
 
-PDF span geometry inside one long reference line can create large horizontal gaps that resemble two-column layout. On a page where prose precedes an explicit `References` heading, this could reorder entries and attach pre-bibliography prose to a citation. v330 now:
+- `利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf`: Bibliography **0 → 2**, matching the visible two-entry reference list.
+- Existing old English bibliographies remain unchanged, including Ahlfors 66, Lee–Parker 46, Caffarelli 10, Gromov 9, Pisier 17, Yau 15, Schoen 14.
 
-- treats an explicit bibliography heading as a hard reading-order boundary on that page;
-- preserves pre-heading material separately;
-- recognizes repeated full-width hanging reference entries as a single-column bibliography even when their internal PDF spans contain wide gaps.
+### 2. Consecutive numbered assumptions/conditions could pollute Equations
 
-The clean control now preserves `[1] ... [7]` in reading order without Conclusions prose contaminating a reference.
+A prose condition list can have equation-like left-margin tags such as `(1)`, `(2)`, `(3)`, `(4)` and contain mathematical symbols. The previous classifier could accept isolated members of such a list when the PDF text layer split the prose tail from the tag line.
 
-## OCR accuracy and performance checks
+v332 rejects a parenthesized integer candidate when it belongs to a local run of at least three consecutive, similarly aligned items and the run has clear prose/list evidence (multiple prose-like tails, or prose plus repeated semicolon termination). This is a layout/class rule rather than a file-specific exception.
 
-Image/OCR coverage in this campaign included the 19-page image-only Schoen paper plus six pages of handwritten notes.
+Regression evidence:
 
-Proxy full-document OCR measurements in this regression environment:
+- `利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf`: false Equations **2 → 0**. Both numbered condition lists are excluded.
+- Ahlfors, Lee–Parker, Caffarelli, Gromov, Pisier, and Yau native equation outputs are unchanged by the new guard.
 
-- image-only Schoen paper: 19 pages, about 26.8 s total, about 1.41 s/page;
-- handwritten `581_Note_2.pdf` + `GA_Seminar_Note_1.pdf`: 6 pages, about 8.18 s total, about 1.36 s/page.
+### 3. v330 accidentally over-tightened scan-backed equation gap planning
 
-These timings use the local PyMuPDF/Tesseract regression proxy. They are useful for relative regression detection but are **not** a benchmark of MathReader's production browser/Texify OCR path. Production full-document OCR speed and transcription quality still require browser-side validation when OCR implementation/performance changes.
+Strict replay exposed a pre-existing regression: v330 had increased two posterior OCR planning thresholds. That prevented otherwise mature equation families from scheduling exact image checks for some hidden-text gaps. Lee–Parker 1987 therefore stayed at 62 native labels instead of recovering the five visibly printed missing labels.
 
-For the handwritten samples, OCR text quality was poor enough that 100% transcription accuracy is not a reasonable release gate. The important stability result is that noisy OCR did not create false equation/result/bibliography structures.
+v332 restores the mature v329 gap-planning criteria:
+
+- a dense family beginning at `.2` may request its missing first label when the family already has at least five members;
+- cross-page small gaps may be checked once an established family has at least four members rather than six.
+
+The recovery remains posterior-only: **the exact label must still be read by image-margin OCR before it is added. No number is synthesized from sequence alone.**
+
+Regression evidence:
+
+- `YamabeProblem.pdf`: **62 → 67**, restoring `(1.3)`, `(3.1)`, `(7.3)`, `(7.4)`, `(9.1)`.
+- `Ahlfors-Conformal-Invariants.pdf`: full image-assisted result remains **163**, including three OCR-restored labels.
+- `yau_1978.pdf`: full image-assisted result remains the strict **256-label** golden.
+
+## OCR accuracy and performance
+
+Full-document OCR checks in this campaign:
+
+- `schoen_1983_scan.pdf`: 19 image-only pages, about **22.07 s total / 1.16 s per page** using the local PyMuPDF/Tesseract regression proxy; downstream detection is 0 / 16 / 14.
+- `581 Note 3.pdf`: 3 handwritten pages, about **2.55 s total / 0.85 s per page**; OCR noise does not create false Structure/Results/Equations/Bibliography entries.
+- Full stored image-margin replay was also executed for `yau_1978.pdf` (256-label golden), `YamabeProblem.pdf` (67-label golden), and `Ahlfors-Conformal-Invariants.pdf` (163-label golden).
+
+These timings are local regression-proxy measurements, not browser/Texify production benchmarks. They are used to detect accuracy/performance regressions and gross slowdowns.
 
 ## Unresolved / manual checks / future reference
 
-- `Caffarelli_1989.pdf`: native Structure/Results/Bibliography behavior was checked, but a full 27-page high-resolution equation-margin OCR inventory exceeded the bounded regression run. Therefore 23 native Equations is **not** asserted as complete. This document should be revisited with the browser production OCR path or a bounded page-priority inventory before it becomes a strict equation golden fixture.
-- Handwritten notes: production OCR transcription quality was not manually graded symbol-by-symbol. They are currently OCR robustness/stability fixtures, not exact transcription goldens.
-- OCR performance numbers above are proxy measurements, not browser/Texify timings. Manual browser full-document OCR profiling remains appropriate if a future change touches the OCR engine, render scale, batching, or scheduling.
-- Historical candidate PDFs visually inspected during corpus selection (including Turing 1936, Nash 1956, and Milnor 1956) were not executed through the local regression harness in this bounded run and are **not counted as passes**. They are good candidates for future new-file campaigns.
-- Any future fix that expands recovery on unusually degraded or rare layouts must first demonstrate the same failure class on multiple documents; isolated pathological text must not broaden normal detection heuristics.
+- Production browser/Texify OCR still cannot be exercised end-to-end inside this sandbox. Detector code is exercised directly with PDF/native/OCR geometry, and image OCR is separately validated. Manual browser parity remains appropriate for major OCR changes.
+- `581 Note 3.pdf` is a robustness fixture, not a symbol-perfect handwriting transcription golden. Its acceptance target is stable OCR behavior and no downstream index pollution.
+- `caffarelli1989.pdf`, `gromov_1967.pdf`, and `pisier_1988.pdf` were selectively replayed natively this time rather than fully re-inventoried visually; their established strict image-assisted goldens remain recorded from prior campaigns.
+- The new Chinese bibliography support is intentionally limited to common explicit bibliography headings. It does not attempt language detection or infer unlabeled reference sections.
+- The enumerated-condition guard requires a local consecutive run with prose/list evidence. A rare document that intentionally numbers displayed equations as a dense left-aligned semicolon-terminated prose-like list could require manual review; this is not currently evidenced as a class problem.
+- Any future expansion for rare layouts must again demonstrate a class-level problem across multiple documents or a clear invariant; isolated pathological files must not broaden normal detection heuristics.
 
 ## Cleanup / release gates
 
-- Re-run syntax checking on all MathReader JavaScript files.
-- Confirm version consistency: application v330, Structure index v36, Equation summary index v17.
-- Confirm only intended source/version files plus this regression record changed from v329.
+- JavaScript syntax check all subsystem files plus bootstrap.
+- Confirm version consistency: application v332, Structure index v38, Equation summary index v19.
+- Confirm selected old native detector outputs are unchanged except for the intended Chinese condition-list removal.
+- Confirm strict image-assisted goldens: Ahlfors 163 / 95 / 66, Lee–Parker 67 / 51 / 46, Yau 256 / 13 / 15, Schoen OCR 0 / 16 / 14.
 - Verify release ZIP integrity and root `mathreader/` layout.
-- No debug payloads, OCR render intermediates, or regression scratch files belong in the release package.
+- No regression scratch files, OCR intermediates, rendered pages, or harnesses belong in the release package.

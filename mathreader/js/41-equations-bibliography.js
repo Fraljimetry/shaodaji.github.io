@@ -56,6 +56,12 @@ function detectedStructureResult(lines, lineIndex, page) {
   if (match) {
     const type = canonicalStructureResultType(match[1]);
     const number = match[2].replace('’', "'");
+    // The declaration regex is case-insensitive for the result type, but a
+    // single alphabetic label is case-sensitive notation.  Without this check
+    // ordinary prose such as "the hypothesis y \in ..." is promoted to a
+    // Result as "Hypothesis y".  Lowercase letter/prefixed labels are variable
+    // references, not declaration labels; genuine old-style A / A1 labels remain.
+    if (/^[A-Za-z]/.test(number) && number[0] !== number[0].toLocaleUpperCase()) return null;
     const tail = String(match[3] || '').trim();
     if (structureResultProseReferenceTail(tail)) return null;
     return {
@@ -482,6 +488,7 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
         ocrLineConfidence: Number.isFinite(line.confidence) ? Number(line.confidence) : null,
         ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
         attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
+        enumeratedConditionList: equationEnumeratedConditionListContext(lines, lineIndex, candidate),
         equationTwoColumn: true,
         equationColumnIndex: targetColumn,
         equationColumnStartRatio: line.equationColumnStartRatio,
@@ -856,6 +863,30 @@ function bareEquationHasNearbyHeadingContext(lines, lineIndex) {
   return false;
 }
 
+function bareEquationHasSameRowHeadingContext(lines, lineIndex) {
+  const line = lines?.[lineIndex];
+  if (!line) return false;
+  const ratio = Number(line.ratio);
+  const lineEnd = Number(line.xEndRatio);
+  for (let index = 0; index < (lines || []).length; index += 1) {
+    if (index === lineIndex) continue;
+    const other = lines[index];
+    const otherRatio = Number(other?.ratio);
+    if (!Number.isFinite(ratio) || !Number.isFinite(otherRatio) || Math.abs(otherRatio - ratio) > 0.0045) continue;
+    const otherStart = Number(other?.xStartRatio);
+    if (Number.isFinite(lineEnd) && Number.isFinite(otherStart) && otherStart < lineEnd - 0.01) continue;
+    const text = String(other?.text || '').trim();
+    if (!text || equationLineMathSignalCount(text) >= 2 || /[.!?。！？]$/.test(text)) continue;
+    const asciiWords = text.match(/\b[A-Za-z]{3,}\b/g) || [];
+    const titleCaseWords = text.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
+    const hanChars = text.match(/\p{Script=Han}/gu) || [];
+    if (hanChars.length >= 3) return true;
+    if (/^[A-Z]{4,}(?:\s+[A-Z]{3,})*[.:]?$/u.test(text) && asciiWords.length >= 1) return true;
+    if (/^[A-Z]/.test(text) && asciiWords.length >= 2 && titleCaseWords.length >= 1) return true;
+  }
+  return false;
+}
+
 function isStandaloneEquationTagLine(line, label) {
   const text = String(line?.text || '').trim().replace(/\s+/g, '').normalize('NFKC');
   const normalized = normalizedEquationLabel(label);
@@ -978,8 +1009,54 @@ function equationReferenceProseContext(text) {
   return before.test(source) || after.test(source);
 }
 
+function equationEnumeratedConditionListContext(lines, lineIndex, candidate) {
+  const line = lines?.[lineIndex];
+  if (!line || candidate?.bare) return false;
+  const parsed = parsedEquationNumber(candidate?.label);
+  if (!parsed || parsed.prefix) return false;
+  const before = String(line.text || '').slice(0, Math.max(0, Number(candidate?.index) || 0)).trim();
+  if (before) return false;
+  const currentNumber = Number(parsed.last);
+  const currentRatio = Number(line.ratio);
+  const currentX = Number(line.xStartRatio);
+  if (!Number.isInteger(currentNumber) || !Number.isFinite(currentRatio) || !Number.isFinite(currentX)) return false;
+
+  const nearby = [];
+  for (const sibling of lines || []) {
+    const ratio = Number(sibling?.ratio);
+    const x = Number(sibling?.xStartRatio);
+    if (!Number.isFinite(ratio) || !Number.isFinite(x)) continue;
+    if (Math.abs(ratio - currentRatio) > 0.13 || Math.abs(x - currentX) > 0.045) continue;
+    const match = String(sibling?.text || '').match(/^\s*[（(]\s*(\d{1,2})\s*[)）]\s*(.*)$/u);
+    if (!match) continue;
+    const number = Number(match[1]);
+    if (!Number.isInteger(number) || Math.abs(number - currentNumber) > 5) continue;
+    const tail = String(match[2] || '').trim();
+    const han = tail.match(/\p{Script=Han}/gu) || [];
+    const words = tail.match(/\b[A-Za-z]{3,}\b/g) || [];
+    nearby.push({
+      number,
+      proseLike: han.length >= 2 || words.length >= 3,
+      punctuated: /[;；]\s*$/.test(tail),
+    });
+  }
+  const unique = [...new Map(nearby.map((item) => [item.number, item])).values()].sort((a, b) => a.number - b.number);
+  for (let start = 0; start < unique.length; start += 1) {
+    let end = start;
+    while (end + 1 < unique.length && unique[end + 1].number === unique[end].number + 1) end += 1;
+    const run = unique.slice(start, end + 1);
+    if (run.length >= 3 && run.some((item) => item.number === currentNumber)) {
+      const proseCount = run.filter((item) => item.proseLike).length;
+      const punctuatedCount = run.filter((item) => item.punctuated).length;
+      if (proseCount >= 2 || (proseCount >= 1 && punctuatedCount >= 2)) return true;
+    }
+    start = end;
+  }
+  return false;
+}
+
 function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext = false) {
-  if (item?.attachedFunctionCall) return -Infinity;
+  if (item?.attachedFunctionCall || item?.enumeratedConditionList) return -Infinity;
   const text = String(item?.text || '').trim();
   const label = normalizedEquationLabel(item?.label || '');
   if (!text || !label || isLikelyCalendarYearEquationLabel(label)) return -Infinity;
@@ -1300,7 +1377,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
       continue;
     }
 
-    if (first.parsed.last >= 3 && first.parsed.last <= 4) {
+    if ((first.parsed.last >= 3 && first.parsed.last <= 4) || (first.parsed.last === 2 && family.length >= 5)) {
       // A mature family beginning at .3/.4 is strong evidence that the first
       // one to three printed labels may have disappeared from the hidden text
       // layer. Consult only the first anchor page and its immediate predecessor;
@@ -1325,7 +1402,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
       // Same-page holes stay the primary path. Established scan-backed families
       // may lose a longer run from the hidden text layer; image OCR still has
       // to read every exact label on the equation-number margin before adding it.
-      if (pageDelta > 0 && family.length < 6) continue;
+      if (pageDelta > 0 && family.length < 4) continue;
       for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
         const label = expectedLabel(left.parsed, missing);
         for (let candidatePage = leftPage; candidatePage <= rightPage; candidatePage += 1) {
@@ -1672,6 +1749,7 @@ function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
     ocrSource: true,
     supplementalEquationOcr: true,
     attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
+    enumeratedConditionList: equationEnumeratedConditionListContext(lines, lineIndex, candidate),
   };
   if (record.attachedFunctionCall) return null;
   // A crop can start with an inline prose reference and make it look margin-
@@ -2051,6 +2129,7 @@ async function buildEquationLabelIndex() {
           standaloneTag: isStandaloneEquationTagLine(line, candidate.label),
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           nearbyHeadingContext: Boolean(candidate.bare) && bareEquationHasNearbyHeadingContext(lines, lineIndex),
+          sameRowHeadingContext: Boolean(candidate.bare) && bareEquationHasSameRowHeadingContext(lines, lineIndex),
           axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
           tabularNumericCell: Boolean(candidate.bare) && bareEquationInTabularRow(lines, lineIndex),
           mathSignals: equationLineMathSignalCount(line.text),
@@ -2059,6 +2138,7 @@ async function buildEquationLabelIndex() {
           ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
           ocrTopRunningHeader,
           attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
+          enumeratedConditionList: equationEnumeratedConditionListContext(lines, lineIndex, candidate),
         });
       }
     }
@@ -2098,7 +2178,12 @@ async function buildEquationLabelIndex() {
       ? equationCandidateConfidenceForSide(record, true)
       : -Infinity;
     if (referenceContextRejectedCandidate && record.numeric?.prefix && preReferenceGuardConfidence >= 8) referenceOcrEvidence.push({ ...record, referenceRecoveryStrong: true });
-    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate || referenceContextRejectedCandidate);
+    const bareSectionHeadingCandidate = Boolean(
+      record.bareSource
+      && (Number(record.mathSignals) || 0) === 0
+      && (record.sameRowHeadingContext || (record.nearbyHeadingContext && !record.nearbyDisplayMath))
+    );
+    let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate || referenceContextRejectedCandidate || bareSectionHeadingCandidate);
     if (hardRejectedCandidate) confidence = -Infinity;
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
@@ -2565,7 +2650,7 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
 
 
 function bibliographyHeadingText(value) {
-  return /^(?:references(?:\s+and\s+notes)?|notes\s+and\s+references|bibliography|literature\s+cited)\s*[.:]?$/i.test(String(value || '').replace(/\s+/g, ' ').trim());
+  return /^(?:references(?:\s+and\s+notes)?|notes\s+and\s+references|bibliography|literature\s+cited|参考文献|參考文獻|参考资料|參考資料|参考书目|參考書目)\s*[.:：]?$/iu.test(String(value || '').replace(/\s+/g, ' ').trim());
 }
 
 function bibliographyEntryLooksCompleteForPostscript(entry) {
