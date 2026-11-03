@@ -791,13 +791,26 @@ function equationCandidateTokenGeometry(line, candidate) {
   };
 }
 
+function legacyBareEquationMathLead(item) {
+  if (!item?.bareSource || !item?.candidateAtLineStart || !item?.numeric?.prefix) return false;
+  if (item?.nearbyHeadingContext || item?.axisNumericCluster || item?.tabularNumericCell) return false;
+  if (Number(item?.candidateXEndRatio) > 0.24) return false;
+  const text = String(item?.text || '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+  const remainder = text.replace(/^\s*\d{1,3}\s*(?:[.．]\s*\d{1,3}){1,4}\s*[.:)]?\s*/u, '');
+  if (!remainder || /(?:\.\s*){3,}/.test(remainder)) return false;
+  const lead = remainder.slice(0, 72);
+  const mathematicalLead = /^(?:[A-Z]\s*(?:\(|\b)|spt\b|lim\b|sup\b|inf\b|det\b|tr\b|div\b|grad\b)/.test(lead);
+  const visibleMath = /[=<>≤≥∈∉⊂⊃∩∪∑∫√^~{}()[\]|+]/u.test(lead);
+  return mathematicalLead && visibleMath;
+}
+
 function inferEquationNumberingSide(records) {
   let leftScore = 0;
   let rightScore = 0;
   for (const item of records || []) {
     const start = Number(item.candidateXStartRatio);
     const end = Number(item.candidateXEndRatio);
-    const contextStrong = Boolean(item.standaloneTag || item.nearbyDisplayMath || item.mathSignals >= 2);
+    const contextStrong = Boolean(item.standaloneTag || item.nearbyDisplayMath || item.mathSignals >= 2 || legacyBareEquationMathLead(item));
     if (!contextStrong) continue;
     if (item.ocrSource && !item.standaloneTag && !item.candidateAtLineStart && !item.candidateAtLineEnd) continue;
     const weight = item.numeric && item.numeric.prefix ? 2 : 1.5;
@@ -817,6 +830,7 @@ function equationCandidateConfidenceForSide(item) {
   const isOnlyTag = compact === label || compact === label.slice(1, -1);
   const mathSignals = Number(item.mathSignals) || 0;
   const aligned = equationCandidateAlignedToNumberingSide(item);
+  const legacyBareMathLead = legacyBareEquationMathLead(item);
   const nearBottom = Number(item.ratio) >= 0.90;
   const proseHeavy = text.length > 55 && mathSignals === 0;
   const explicitMarginTag = Boolean(item?.explicitParenthesized && aligned);
@@ -883,18 +897,19 @@ function equationCandidateConfidenceForSide(item) {
   // margin is strong target evidence by itself. Older/scanned PDF text layers
   // often lose the formula operators, so requiring extracted math glyphs here
   // made the Equation index disagree with MathReader's clickable label layer.
-  if (mathSignals === 0 && !(isOnlyTag && aligned) && !explicitMarginTag) return -Infinity;
+  if (mathSignals === 0 && !(isOnlyTag && aligned) && !explicitMarginTag && !(legacyBareMathLead && aligned)) return -Infinity;
   if (proseHeavy && !(isOnlyTag && aligned) && !explicitMarginTag) return -Infinity;
   if (referenceProse && !isOnlyTag && mathSignals < 2) return -Infinity;
   if (bibliographyLike && mathSignals < 2) return -Infinity;
-  if (bareStructuredProse) return -Infinity;
-  if (bareHeadingLike && mathSignals < 2) return -Infinity;
+  if (bareStructuredProse && !legacyBareMathLead) return -Infinity;
+  if (bareHeadingLike && mathSignals < 2 && !legacyBareMathLead) return -Infinity;
   let confidence = equationTargetScore(text, label, null, 0, null, Number(item.ratio));
   if (mathSignals >= 2) confidence += 5;
   else if (mathSignals === 1) confidence += 2;
   if (aligned) confidence += 7;
   if (isOnlyTag && aligned) confidence += 5;
   if (explicitMarginTag) confidence += 6;
+  if (legacyBareMathLead && aligned) confidence += 4;
   return confidence;
 }
 
@@ -1064,23 +1079,28 @@ function equationNativeImageGapPlan(index, pageCount) {
   const byPrefix = new Map();
   for (const [label, candidates] of index.entries()) {
     const parsed = parsedEquationNumber(label);
-    if (!parsed?.prefix || !Number.isInteger(parsed.last) || parsed.last < 1) continue;
+    if (!parsed || !Number.isInteger(parsed.last) || parsed.last < 1) continue;
     const candidate = chooseCanonicalEquationCandidate(candidates);
     if (!candidate || candidate.ocrSource) continue;
-    const list = byPrefix.get(parsed.prefix) || [];
+    const familyKey = parsed.prefix ? `prefix:${parsed.prefix}` : 'integer';
+    const list = byPrefix.get(familyKey) || [];
     list.push({ label, parsed, candidate });
-    byPrefix.set(parsed.prefix, list);
+    byPrefix.set(familyKey, list);
   }
 
   const expectedByPage = new Map();
-  const addExpected = (pageNum, label) => {
+  const baselinePriorityPages = new Set();
+  const addExpected = (pageNum, label, baselinePriority = false) => {
     const page = Number(pageNum);
     if (!Number.isInteger(page) || page < 1 || page > pageCount) return;
     const labels = expectedByPage.get(page) || new Set();
     labels.add(label);
     expectedByPage.set(page, labels);
+    if (baselinePriority) baselinePriorityPages.add(page);
   };
-  const expectedLabel = (parsed, last) => `(${parsed.prefix}${parsed.separator || '.'}${last})`;
+  const expectedLabel = (parsed, last) => parsed.prefix
+    ? `(${parsed.prefix}${parsed.separator || '.'}${last})`
+    : `(${last})`;
 
   for (const entries0 of byPrefix.values()) {
     if (entries0.length < 4) continue;
@@ -1091,6 +1111,25 @@ function equationNativeImageGapPlan(index, pageCount) {
     if (family.length < 4) continue;
 
     const first = family[0];
+    const integerFamily = !first.parsed.prefix;
+    if (integerFamily) {
+      const numbers = family.map((entry) => entry.parsed.last);
+      const span = Math.max(...numbers) - Math.min(...numbers) + 1;
+      const establishedIntegerFamily = family.length >= 8 && Math.min(...numbers) <= 2 && Math.max(...numbers) >= 8 && span <= family.length + 3;
+      if (!establishedIntegerFamily) continue;
+      for (let i = 0; i + 1 < family.length; i += 1) {
+        const left = family[i];
+        const right = family[i + 1];
+        if (right.parsed.last - left.parsed.last !== 2) continue;
+        const pageDelta = Number(right.candidate.page) - Number(left.candidate.page);
+        if (pageDelta < 0 || pageDelta > 1) continue;
+        const missingLabel = expectedLabel(left.parsed, left.parsed.last + 1);
+        addExpected(right.candidate.page, missingLabel);
+        if (pageDelta === 0) addExpected(left.candidate.page, missingLabel);
+      }
+      continue;
+    }
+
     if (first.parsed.last >= 3 && first.parsed.last <= 4) {
       // A mature family beginning at .3/.4 is strong evidence that the first
       // one to three printed labels may have disappeared from the hidden text
@@ -1098,8 +1137,8 @@ function equationNativeImageGapPlan(index, pageCount) {
       // image OCR must still read the exact missing label before it is added.
       for (let missing = 1; missing < first.parsed.last; missing += 1) {
         const label = expectedLabel(first.parsed, missing);
-        addExpected(first.candidate.page, label);
-        addExpected(Number(first.candidate.page) - 1, label);
+        addExpected(first.candidate.page, label, true);
+        addExpected(Number(first.candidate.page) - 1, label, true);
       }
     }
 
@@ -1107,12 +1146,21 @@ function equationNativeImageGapPlan(index, pageCount) {
       const left = family[i];
       const right = family[i + 1];
       const gap = right.parsed.last - left.parsed.last;
-      if (gap < 2 || gap > 4) continue;
-      if (Number(left.candidate.page) !== Number(right.candidate.page)) continue;
-      // Same-page bracketing is intentionally strict: it identifies an obvious
-      // local hole without asking OCR to search a broad region of the document.
+      const leftPage = Number(left.candidate.page);
+      const rightPage = Number(right.candidate.page);
+      const pageDelta = rightPage - leftPage;
+      const ordinaryGap = gap >= 2 && gap <= 4 && pageDelta >= 0 && pageDelta <= 2;
+      const establishedLongGap = gap >= 5 && gap <= 12 && family.length >= 10 && pageDelta >= 0 && pageDelta <= 5;
+      if (!ordinaryGap && !establishedLongGap) continue;
+      // Same-page holes stay the primary path. Established scan-backed families
+      // may lose a longer run from the hidden text layer; image OCR still has
+      // to read every exact label on the equation-number margin before adding it.
+      if (pageDelta > 0 && family.length < 6) continue;
       for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
-        addExpected(left.candidate.page, expectedLabel(left.parsed, missing));
+        const label = expectedLabel(left.parsed, missing);
+        for (let candidatePage = leftPage; candidatePage <= rightPage; candidatePage += 1) {
+          addExpected(candidatePage, label, pageDelta === 0);
+        }
       }
     }
   }
@@ -1120,10 +1168,10 @@ function equationNativeImageGapPlan(index, pageCount) {
   // OCR is a posterior check, not a second full-document pass. Prefer pages
   // with several independently implied holes and keep the automatic work
   // bounded so a text-backed scan remains responsive.
-  const pages = [...expectedByPage.keys()]
-    .sort((a, b) => (expectedByPage.get(b)?.size || 0) - (expectedByPage.get(a)?.size || 0) || a - b)
-    .slice(0, 24)
-    .sort((a, b) => a - b);
+  const byEvidence = (a, b) => (expectedByPage.get(b)?.size || 0) - (expectedByPage.get(a)?.size || 0) || a - b;
+  const priorityPages = [...expectedByPage.keys()].filter((page) => baselinePriorityPages.has(page)).sort(byEvidence);
+  const supplementalPages = [...expectedByPage.keys()].filter((page) => !baselinePriorityPages.has(page)).sort(byEvidence);
+  const pages = [...priorityPages, ...supplementalPages].slice(0, 24).sort((a, b) => a - b);
   const allowedPages = new Set(pages);
   for (const page of [...expectedByPage.keys()]) if (!allowedPages.has(page)) expectedByPage.delete(page);
   return { pages, expectedByPage };
@@ -1270,7 +1318,7 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker) {
 
 function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
   const numeric = parsedEquationNumber(candidate.label);
-  if (!numeric?.prefix) return null;
+  if (!numeric || !Number.isInteger(numeric.last)) return null;
   const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
   const atStart = !String(line.text || '').slice(0, Math.max(0, Number(candidate.index) || 0)).trim();
   const atEnd = !String(line.text || '').slice(Math.max(0, Number(candidate.end) || 0)).trim();
@@ -2181,7 +2229,11 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
   const leftHangingKeys = splitRows.filter((line) => Number(line.xStartRatio || 0) < 0.36 && /^\[\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9 ]{0,8})\s*\][.)]?$/.test(String(line.text || '').trim())).length;
   const rightHangingKeys = splitRows.filter((line) => Number(line.xStartRatio || 0) > 0.52 && /^\[\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9 ]{0,8})\s*\][.)]?$/.test(String(line.text || '').trim())).length;
   const hangingBodies = lines.filter((line) => Number(line.xStartRatio || 0) >= 0.18 && Number(line.xStartRatio || 0) <= 0.36 && Number(line.xEndRatio || 0) >= 0.62 && String(line.text || '').trim().length >= 24).length;
-  const singleColumnHangingBibliography = leftHangingKeys >= 3 && rightHangingKeys === 0 && hangingBodies >= 3;
+  const sameLineKeyLead = (line) => /^\[\s*(?:\d{1,3}|[A-Za-z][A-Za-z0-9 ]{0,8})\s*\][.)]?\s+\S/.test(String(line.text || '').trim());
+  const leftSameLineKeyLeads = lines.filter((line) => Number(line.xStartRatio || 0) < 0.36 && Number(line.xEndRatio || 0) <= 0.48 && sameLineKeyLead(line)).length;
+  const rightSameLineKeyLeads = lines.filter((line) => Number(line.xStartRatio || 0) > 0.52 && sameLineKeyLead(line)).length;
+  const singleColumnHangingBibliography = (leftHangingKeys >= 3 && rightHangingKeys === 0 && hangingBodies >= 3)
+    || (leftSameLineKeyLeads >= 3 && rightSameLineKeyLeads === 0);
   const twoColumn = !singleColumnHangingBibliography && (
     strongSplitCount >= 2
     || (substantialLeftCount >= 3 && substantialRightCount >= 3)
