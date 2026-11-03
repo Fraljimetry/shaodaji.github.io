@@ -802,35 +802,42 @@ function snapshotEquationIndexForPersistence(index) {
   const rows = [];
   for (const [rawLabel, candidates] of index.entries()) {
     const label = normalizedEquationLabel(rawLabel);
-    const candidate = Array.isArray(candidates) && candidates.length ? candidates[0] : null;
-    if (!candidate || !label || label === '()') continue;
-    const page = Number(candidate.page);
-    if (!Number.isFinite(page) || page < 1) continue;
-    const row = {
-      label,
-      page: Math.floor(page),
-      ratio: Math.min(1, Math.max(0, Number(candidate.ratio) || 0)),
-      text: String(candidate.text || label).slice(0, 500),
-      confidence: Number.isFinite(Number(candidate.confidence)) ? Number(candidate.confidence) : 20,
-    };
-    for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
-      if (Number.isFinite(Number(candidate[key]))) row[key] = Math.min(1, Math.max(0, Number(candidate[key])));
+    if (!label || label === '()') continue;
+    for (const candidate of Array.isArray(candidates) ? candidates : []) {
+      if (!candidate) continue;
+      const page = Number(candidate.page);
+      if (!Number.isFinite(page) || page < 1) continue;
+      const row = {
+        label,
+        page: Math.floor(page),
+        ratio: Math.min(1, Math.max(0, Number(candidate.ratio) || 0)),
+        text: String(candidate.text || label).slice(0, 500),
+        confidence: Number.isFinite(Number(candidate.confidence)) ? Number(candidate.confidence) : 20,
+      };
+      for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
+        if (Number.isFinite(Number(candidate[key]))) row[key] = Math.min(1, Math.max(0, Number(candidate[key])));
+      }
+      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd']) {
+        if (candidate[key] === true) row[key] = true;
+      }
+      if (Number.isInteger(Number(candidate.equationColumnIndex))) row.equationColumnIndex = Number(candidate.equationColumnIndex);
+      if (candidate.manualEditId) row.manualEditId = String(candidate.manualEditId).slice(0, 120);
+      rows.push(row);
+      if (rows.length >= 5000) break;
     }
-    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd']) {
-      if (candidate[key] === true) row[key] = true;
-    }
-    if (Number.isInteger(Number(candidate.equationColumnIndex))) row.equationColumnIndex = Number(candidate.equationColumnIndex);
-    if (candidate.manualEditId) row.manualEditId = String(candidate.manualEditId).slice(0, 120);
-    rows.push(row);
-    if (rows.length >= 1000) break;
+    if (rows.length >= 5000) break;
   }
   return rows.length ? { version: EQUATION_INDEX_SUMMARY_VERSION, rows } : null;
 }
 
-function restoreEquationIndexFromPersistence(snapshot) {
-  if (!snapshot || Number(snapshot.version) !== EQUATION_INDEX_SUMMARY_VERSION || !Array.isArray(snapshot.rows)) return null;
+function restoreEquationIndexFromPersistence(snapshot, { portable = false } = {}) {
+  if (!snapshot || !Array.isArray(snapshot.rows)) return null;
+  // Ordinary local caches remain detector-version gated. Reading-data imports are
+  // portable user data: their normalized row schema stays usable even after a
+  // future detector-version bump.
+  if (!portable && Number(snapshot.version) !== EQUATION_INDEX_SUMMARY_VERSION) return null;
   const index = new Map();
-  for (const raw of snapshot.rows.slice(0, 1000)) {
+  for (const raw of snapshot.rows.slice(0, 5000)) {
     const label = normalizedEquationLabel(raw?.label || '');
     const page = Number(raw?.page);
     if (!label || label === '()' || !Number.isFinite(page) || page < 1) continue;
@@ -848,7 +855,9 @@ function restoreEquationIndexFromPersistence(snapshot) {
     }
     if (Number.isInteger(Number(raw?.equationColumnIndex))) candidate.equationColumnIndex = Number(raw.equationColumnIndex);
     if (raw?.manualEditId) candidate.manualEditId = String(raw.manualEditId).slice(0, 120);
-    index.set(label, [candidate]);
+    const candidates = index.get(label) || [];
+    candidates.push(candidate);
+    index.set(label, candidates);
   }
   return index.size ? index : null;
 }
@@ -905,7 +914,7 @@ function importedSessionHasPortableDetectionSnapshot(session) {
   if (Array.isArray(session.inferredOutline) && session.inferredOutline.length) return true;
   if (Array.isArray(session.structureEntries) && session.structureEntries.length) return true;
   if (Array.isArray(session.bibliographyEntries) && session.bibliographyEntries.length) return true;
-  return Boolean(restoreEquationIndexFromPersistence(session.equationIndexSnapshot));
+  return Boolean(restoreEquationIndexFromPersistence(session.equationIndexSnapshot, { portable: true }));
 }
 
 function mergePortableContentDetectionIntoSession(rawSession, detection) {
@@ -917,9 +926,9 @@ function mergePortableContentDetectionIntoSession(rawSession, detection) {
     if (Array.isArray(detection.results)) session.structureEntries = jsonClone(detection.results, []);
     if (Array.isArray(detection.bibliography)) session.bibliographyEntries = jsonClone(detection.bibliography, []);
     if (detectedStructureVersion > 0) session.structureIndexVersion = detectedStructureVersion;
-    if (detection.equations && Number(detection.equationIndexVersion) === EQUATION_INDEX_SUMMARY_VERSION) {
+    if (detection.equations && Array.isArray(detection.equations.rows)) {
       session.equationIndexSnapshot = jsonClone(detection.equations, null);
-      const restored = restoreEquationIndexFromPersistence(session.equationIndexSnapshot);
+      const restored = restoreEquationIndexFromPersistence(session.equationIndexSnapshot, { portable: true });
       if (restored) session.equationIndexSummary = { version: EQUATION_INDEX_SUMMARY_VERSION, count: restored.size };
     }
   }
@@ -1287,12 +1296,20 @@ function updateDocumentTextAvailabilityUI() {
   if (contentsRunDocumentOcr) contentsRunDocumentOcr.disabled = !unavailable || documentOcrBusy;
 
   if (searchForm) {
-    searchForm.classList.toggle('text-unavailable', unavailable);
-    for (const node of searchForm.querySelectorAll('input,button')) node.disabled = unavailable;
+    const equationOnly = unavailable && Boolean(searchEquations?.checked);
+    searchForm.classList.toggle('text-unavailable', unavailable && !equationOnly);
+    const submit = searchForm.querySelector('button[type="submit"]');
+    if (searchEquations) searchEquations.disabled = false;
+    if (searchInput) searchInput.disabled = unavailable && !equationOnly;
+    if (submit) submit.disabled = unavailable && !equationOnly;
+    for (const node of [searchMatchCase, searchWholeWord, searchFuzzy]) { if (node) node.disabled = unavailable; }
   }
   if (unavailable) {
-    searchResults?.replaceChildren();
-    if (searchStatus) searchStatus.textContent = t('Document text is unavailable. Run full-document OCR from Contents to enable Search.', '文档文本不可用。请在“目录”中运行全文 OCR 后再使用搜索。');
+    const equationOnly = Boolean(searchEquations?.checked);
+    if (!equationOnly) searchResults?.replaceChildren();
+    if (searchStatus && !searchInput?.value?.trim()) searchStatus.textContent = equationOnly
+      ? t('Document text is unavailable. Saved/extracted equation search remains available.', '文档文本不可用。仍可搜索已保存/已提取的公式。')
+      : t('Document text is unavailable. Run full-document OCR from Contents to enable text search.', '文档文本不可用。请在“目录”中运行全文 OCR 后再使用文本搜索。');
   } else if (searchStatus && !searchInput?.value?.trim()) {
     searchStatus.textContent = '';
   }
@@ -2362,13 +2379,13 @@ function loadDocumentState(cachedSession = null) {
       // post-import ellipsis; the background index rebuild still verifies it.
       equationIndexKnownCount = equationManualOrder.length;
     }
-    const restoredEquationIndex = restoreEquationIndexFromPersistence(session.equationIndexSnapshot);
+    const portableDetectionRequested = Boolean(session.portableContentDetection);
+    const restoredEquationIndex = restoreEquationIndexFromPersistence(session.equationIndexSnapshot, { portable: portableDetectionRequested });
     if (restoredEquationIndex) {
       equationAutomaticLabelIndex = restoredEquationIndex;
       equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
       equationIndexKnownCount = equationLabelIndex.size;
     }
-    const portableDetectionRequested = Boolean(session.portableContentDetection);
     embeddedOutlineEdits = Array.isArray(session.embeddedOutlineEdits) ? session.embeddedOutlineEdits.filter((item) => item && typeof item.sourceKey === 'string' && ['remove','reselect'].includes(item.action)).slice(0, 300) : [];
     embeddedOutlineEntries = [];
     structureIndexVersion = Number(session.structureIndexVersion || 0);

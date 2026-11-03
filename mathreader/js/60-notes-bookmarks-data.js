@@ -1029,9 +1029,17 @@ async function importReadingDataFile(file) {
   }
 
   if (payload.document?.id && payload.document.id !== currentFileKey) {
+    const exportedId = String(payload.document.id || '');
+    const exactIdentityAvailable = exportedId.startsWith('sha256:') && String(currentFileKey || '').startsWith('sha256:');
     const sameName = String(payload.document?.name || '') === String(currentFileName || '');
     const samePages = Number(payload.document?.pages || 0) === Number(pdfDoc.numPages || 0);
-    if (!sameName || !samePages) { showError(t('This reading-data export belongs to a different PDF. Open the matching PDF before importing.', '此阅读数据属于另一份 PDF。请先打开匹配的 PDF 再导入。')); return; }
+    // Modern exports carry the exact SHA-256 identity and must never be applied
+    // to a different PDF merely because filename/page count happen to match.
+    // Metadata fallback remains only for legacy exports that had no exact hash.
+    if (exactIdentityAvailable || !sameName || !samePages) {
+      showError(t('This reading-data export belongs to a different PDF. Open the exact matching PDF before importing.', '此阅读数据属于另一份 PDF。请先打开完全匹配的 PDF 再导入。'));
+      return;
+    }
   }
   if (payload.documentOcr) {
     const normalizedOcr = normalizedImportedDocumentOcrSnapshot(payload.documentOcr, pdfDoc.numPages);

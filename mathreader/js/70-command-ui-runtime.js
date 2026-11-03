@@ -302,7 +302,7 @@ commandPalette?.addEventListener('pointerdown', (event) => { if (event.target ==
 renderSymbolGlossary();
 searchForm.addEventListener('submit', (event) => { event.preventDefault(); persistDocumentState(); searchPdf(searchInput.value); });
 searchFuzzy?.addEventListener('change', () => { persistSearchPreferences(); persistDocumentState(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
-searchEquations?.addEventListener('change', () => { persistSearchPreferences(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
+searchEquations?.addEventListener('change', () => { persistSearchPreferences(); updateDocumentTextAvailabilityUI(); if (searchInput.value.trim()) searchPdf(searchInput.value); });
 glossaryAddButton?.addEventListener('click', () => addGlossaryEntry());
 glossaryMeaningInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addGlossaryEntry(); } });
 undoClear?.addEventListener('click', () => { undoHistory = []; renderUndoHistory(); persistDocumentState(); });

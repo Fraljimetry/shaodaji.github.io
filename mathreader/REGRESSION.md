@@ -1,4 +1,47 @@
-# MathReader Regression Record — v334 regression + v335 targeted round-trip fix
+# MathReader Regression / Behavioral Audit Record — v338
+
+Date: 2026-11-02 (America/Los_Angeles)
+
+## v338 comprehensive document-state lifecycle audit
+
+This is a behavioral/state audit on top of the v334 detector regression and v335–v337 import/export fixes below. Detector heuristics are unchanged in v338.
+
+### State transitions audited
+
+- scanned PDF opened without full-document OCR → import portable reading data;
+- import → expand Equations / invoke equation-reference lookup while text remains unavailable;
+- import → persist → close/reopen the same scanned PDF without OCR;
+- old equation snapshot version → portable import under a newer detector version;
+- repeated/local equation labels with multiple candidate locations → export/import round trip;
+- text-unavailable Search UI → saved/extracted equation-search mode;
+- reading-data import against an open PDF with the same filename/page count but a different SHA-256 identity;
+- deployment cache-busting for the top-level bootstrap and stylesheet.
+
+### Confirmed behavioral bugs fixed
+
+1. **Portable equations could be destroyed after a successful import.** `ensureEquationIndexRendered()` still interpreted “text unavailable” as authority to clear the equation map. Expanding Equations, equation-reference resolution, command-palette equation access, or reopening the imported scan could therefore erase restored equations. v338 preserves the imported equation map whenever portable content detection is active.
+2. **Equation-only Search was implemented but unreachable.** `searchPdf()` already supported saved/extracted equation search without document text, but the Text-unavailable UI disabled the entire Search form. v338 leaves the Equations toggle enabled and enables the query/Find controls when equation-only search is selected; text/fuzzy options remain disabled.
+3. **Wrong-PDF import was too permissive.** A mismatched exact document hash was accepted when filename and page count happened to match. v338 requires exact SHA-256 identity whenever both export and open PDF have exact identities. Filename/page-count fallback is retained only for legacy non-hash exports.
+4. **Equation export lost alternate locations.** Persistence kept only the first candidate for each normalized equation label. Repeated/local labels could therefore lose valid targets after import. v338 serializes all bounded candidates and restores them as candidate lists.
+5. **Portable equation data was coupled to detector-version invalidation.** A future equation-summary version bump could make valid user-exported equation rows disappear. v338 keeps ordinary local caches version-gated but accepts normalized equation rows from portable reading-data imports across detector versions.
+6. **Deployment cache busting was stale.** v337 still referenced `mathreader.js?v=333` from `index.html`. A browser/CDN could continue executing an old bootstrap and therefore old subsystem code even after a newer package was deployed. v338 synchronizes `index.html` JavaScript and CSS query versions with bootstrap `VERSION = 338`. This can explain fixes appearing ineffective after deployment.
+
+### Validation
+
+- Real DOM/runtime state-transition harness in headless Chromium: portable equations survive no-text helper access and reopen; equation-only Search becomes usable; old portable equation snapshots restore while equivalent stale local caches remain rejected; repeated labels preserve multiple candidates; explicit portable equation blocks merge across old detector versions; exact-hash wrong-PDF import is rejected.
+- Runtime harness reported no page JavaScript errors.
+- Bootstrap version, `index.html` JavaScript cache key, and CSS cache key are all exactly **338**.
+- Every subsystem passes `node --check`; the fully concatenated runtime also passes `node --check`.
+
+### Remaining manual/browser risks
+
+- Production file-picker/download behavior, deployed CDN cache headers, and production OCR/Texify engines are not controlled by this sandbox. v338 fixes the in-package cache keys, but a deployment layer that forcibly caches `index.html` itself still needs ordinary website cache policy.
+- Running full-document OCR after restoring a portable detection snapshot intentionally switches authority back to freshly rebuilt OCR-derived indexes. If a future OCR rebuild fails after OCR itself completes, the desired transactional fallback policy should be revisited rather than patched speculatively now.
+- Very large books can still hit existing detector/index caps (Structure 500, Bibliography 400, equation snapshot 5000 candidate rows). These are established bounded-performance limits, not newly observed regressions in this audit.
+
+---
+
+## Prior record: v334 regression + v335 targeted round-trip fix
 
 Date: 2026-11-02 (America/Los_Angeles)
 

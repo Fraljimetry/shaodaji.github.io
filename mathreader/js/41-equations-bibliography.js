@@ -2559,6 +2559,12 @@ function renderEquationIndex() {
 async function ensureEquationIndexRendered() {
   if (!pdfDoc) { renderEquationIndex(); return; }
   if (!documentTextFeaturesAvailable()) {
+    // Imported reading-data may already contain a portable equation map. Do not
+    // destroy it merely because the scanned PDF is open without OCR text.
+    if (portableContentDetectionActive && equationLabelIndex) {
+      renderEquationIndex();
+      return equationLabelIndex;
+    }
     equationLabelIndex = null;
     equationImageAssistPromise = null;
     equationAutomaticLabelIndex = null;
