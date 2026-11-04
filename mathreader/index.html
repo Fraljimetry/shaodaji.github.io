@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=345">
+  <link rel="stylesheet" href="mathreader.css?v=346">
   <script>
     (() => {
       try {
@@ -131,7 +131,7 @@
           <input class="map-filter" id="map-filter-theorems" type="search" autocomplete="off" data-map-target="structure-index" data-en-placeholder="Filter theorems…" data-zh-placeholder="筛选定理…" placeholder="Filter theorems…">
           <button class="text-button structure-build" id="build-structure-index" type="button" disabled data-en="Rebuild structure" data-zh="重新生成结构索引">Rebuild structure</button>
           <div class="structure-index" id="structure-index"></div>
-          <div class="empty-panel" id="structure-empty" data-en="The theorem, definition, and proof index is prepared automatically for this document." data-zh="此文档的定理、定义与证明索引会自动生成。">The theorem, definition, and proof index is prepared automatically for this document.</div>
+          <div class="empty-panel" id="structure-empty" data-en="Results appear here automatically." data-zh="结果索引自动显示在这里。">Results appear here automatically.</div>
         </section>
 
         <section class="workspace-section contents-section" id="contents-equations-section">
@@ -142,7 +142,7 @@
           <input class="map-filter" id="map-filter-equations" type="search" autocomplete="off" data-map-target="equation-index" data-en-placeholder="Filter equations…" data-zh-placeholder="筛选公式…" placeholder="Filter equations…">
           <div class="equation-detection-status" id="equation-detection-status" role="status" aria-live="polite" aria-atomic="true"></div>
           <div class="equation-index" id="equation-index"></div>
-          <div class="empty-panel" id="equation-index-empty" data-en="Expand this section to prepare the equation-label index." data-zh="展开此模块以生成公式编号索引。">Expand this section to prepare the equation-label index.</div>
+          <div class="empty-panel" id="equation-index-empty" data-en="Expand to index equations." data-zh="展开以索引公式。">Expand to index equations.</div>
         </section>
 
         <section class="workspace-section contents-section" id="contents-bibliography-section">
@@ -152,7 +152,7 @@
           </div>
           <input class="map-filter" id="map-filter-bibliography" type="search" autocomplete="off" data-map-target="bibliography-index" data-en-placeholder="Filter references…" data-zh-placeholder="筛选文献…" placeholder="Filter references…">
           <div class="bibliography-index" id="bibliography-index"></div>
-          <div class="empty-panel" id="bibliography-empty" data-en="Bibliography entries are detected automatically when numbered references are present." data-zh="存在编号参考文献时会自动检测条目。">Bibliography entries are detected automatically when numbered references are present.</div>
+          <div class="empty-panel" id="bibliography-empty" data-en="Numbered references appear here." data-zh="编号参考文献显示在这里。">Numbered references appear here.</div>
         </section>
 
         <section class="workspace-section contents-section" id="contents-annotations-section">
@@ -180,7 +180,7 @@
             <label><input id="search-equations" type="checkbox"> <span data-en="Equations" data-zh="公式">Equations</span></label>
           </div>
 
-          <p class="search-help" data-en="Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized." data-zh="默认不区分大小写，并规范化 Unicode 连字、软连字符与重复空白。">Case-insensitive by default. Unicode ligatures, soft hyphens, and repeated whitespace are normalized.</p>
+          <p class="search-help" data-en="Case-insensitive · text normalized." data-zh="不区分大小写 · 文本已规范化。" data-en-title="Unicode ligatures, soft hyphens and repeated whitespace are normalized." data-zh-title="已规范化 Unicode 连字、软连字符和重复空白。" title="Unicode ligatures, soft hyphens and repeated whitespace are normalized.">Case-insensitive · text normalized.</p>
         </form>
         <div class="search-status" id="search-status" aria-live="polite"></div>
         <div class="search-results" id="search-results"></div>
@@ -335,7 +335,7 @@
         </div>
 
         <div class="ocr-capability" id="ocr-capability"></div>
-        <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison." data-zh="就绪 · 默认使用图像 OCR 提取公式；PDF 矢量可用于手动对照。">Ready · Image OCR is the default formula extractor. PDF vector remains available for manual comparison.</div>
+        <div class="ocr-status" id="ocr-status" data-en="Ready · Image OCR default" data-zh="就绪 · 默认图像 OCR">Ready · Image OCR default</div>
         <div class="ocr-processing is-hidden" id="ocr-processing" role="status" aria-live="polite" aria-atomic="true">
           <span class="spinner" aria-hidden="true"></span>
           <span class="ocr-processing-copy"><strong data-en="Processing formula" data-zh="正在处理公式">Processing formula</strong><span id="ocr-processing-text" data-en="Processing…" data-zh="处理中…">Processing…</span></span>
@@ -558,6 +558,6 @@
     <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>
   </div>
 
-  <script type="module" src="mathreader.js?v=345"></script>
+  <script type="module" src="mathreader.js?v=346"></script>
 </body>
 </html>

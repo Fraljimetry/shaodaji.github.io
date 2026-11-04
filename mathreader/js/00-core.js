@@ -2584,7 +2584,7 @@ function updateNavigationState() {
 
 function updateReferenceStatus() {
   if (pinnedPage) {
-    referenceStatus.textContent = t(`Page ${pinnedPage} is pinned beside your reading view.`, `第 ${pinnedPage} 页已固定在阅读视图旁。`);
+    referenceStatus.textContent = t(`Pinned · p. ${pinnedPage}`, `已固定 · 第 ${pinnedPage} 页`);
     referencePageLabel.textContent = t(`Page ${pinnedPage}`, `第 ${pinnedPage} 页`);
     pinFromSidebar.textContent = t('Replace with current page', '改为固定当前页');
   } else {

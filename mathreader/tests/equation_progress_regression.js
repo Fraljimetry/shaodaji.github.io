@@ -1,4 +1,4 @@
-// v345 non-network progress + diagnostics contract; run from project root.
+// v346 compact one-line progress + diagnostics contract; run from project root.
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -9,10 +9,11 @@ const start = src.indexOf('// The equation pipeline is progressive:');
 const end = src.indexOf('\nfunction equationExpectedNumericOcrRecord',start);
 assert(start > 0 && end > start);
 let ticks = 100;
+let lang = 'en';
 let canvases=[];
 const status={textContent:'',title:'',dataset:{}};
 const ctx=vm.createContext({
-  console,performance:{now:()=>ticks}, t:(en)=>en,
+  console,performance:{now:()=>ticks}, t:(en,zh)=>lang==='zh'?zh:en,
   equationDetectionStatus:status,equationDetectionGeneration:0,
   equationDetectionProgress:{phase:'idle'},equationDetectionLastPaint:0,
   document:{createElement:()=>{
@@ -33,21 +34,36 @@ check(run("updateEquationDetectionProgress({phase:'native',nativeDone:4,nativeTo
 check(run("updateEquationDetectionProgress({phase:'native',nativeDone:4,nativeTotal:12}, 1, true)")===true,'live generation accepts progress');
 check(status.textContent.includes('Text 4/12'),'native progress visible');
 run("updateEquationDetectionProgress({phase:'ocr',ocrDone:3,ocrTotal:8,documentPages:100,labels:16,recovered:2},1,true)");
-check(status.textContent.includes('3/8 planned pages'),'OCR denominator is actual plan');
-check(status.textContent.includes('selected coverage only'),'partial automatic coverage explicitly labeled');
-check(status.textContent.includes('+2 recovered'),'recovered labels reported');
+check(status.textContent.includes('OCR 3/8'),'OCR denominator is actual plan');
+check(!status.textContent.includes('planned pages') && status.title.includes('image OCR 3/8 planned pages'),'detailed OCR schedule moved to tooltip');
+check(status.textContent.includes('selected') && status.title.includes('selected coverage only'),'partial automatic coverage explicitly labeled in short and full status');
+check(status.textContent.includes('+2 rec') && status.title.includes('+2 recovered'),'recovered labels reported, with expanded details on hover');
+check(status.textContent.length < 40,'representative OCR status is compact');
+check(!status.textContent.includes('16 labels') && status.title.includes('16 labels'),'total labels remain available in tooltip and adjacent count badge');
 run("updateEquationDetectionProgress({phase:'partial',failedPages:1,nativeMs:1040,renderMs:4200,recognizeMs:8300,validationMs:100,elapsedMs:15000},1,true)");
-check(status.textContent.includes('1 failed pages'),'failed pages never shown as complete success');
+check(status.textContent.includes('1 failed') && status.title.includes('1 failed pages'),'failed pages never shown as complete success');
 check(status.title.includes('PDF rendering 4.20s') && status.title.includes('OCR recognition 8.30s'),'timing breakdown independently visible');
 run('resetEquationDetectionProgress()');
 check(status.textContent==='','switch resets stale progress');
 check(run("updateEquationDetectionProgress({phase:'complete'},1,true)")===false,'late old-document completion blocked');
 run("updateEquationDetectionProgress({phase:'saved'},2,true)");
-check(status.textContent.includes('Saved index') && status.textContent.includes('not rescanned'),'restored data never claims fresh scan');
+check(status.textContent.includes('Saved') && status.textContent.includes('not rescanned'),'restored data never claims fresh scan');
 run("updateEquationDetectionProgress({phase:'unavailable'},2,true)");
-check(status.textContent.includes('OCR required'),'unavailable text has accurate status');
+check(status.textContent.includes('full OCR needed') && status.title.includes('OCR required'),'unavailable text has accurate status');
 run("updateEquationDetectionProgress({phase:'complete',ocrTotal:0,nativeDone:12,nativeTotal:12,labels:9},2,true)");
-check(!status.textContent.includes('image OCR') && status.textContent.includes('finished'),'no scheduled OCR distinguished from completed image OCR');
+check(!status.textContent.includes('OCR 0/') && status.textContent.includes('Auto done') && status.textContent.includes('Text 12/12'),'no scheduled OCR distinguished from completed image OCR');
+check(status.title.includes('Automatic check finished'),'finished means scheduled work done, not full correctness');
+lang = 'zh';
+run("updateEquationDetectionProgress({phase:'ocr',ocrDone:3,ocrTotal:8,documentPages:100,labels:16,recovered:2},2,true)");
+check(status.textContent.includes('选页') && status.textContent.includes('补 2') && status.title.includes('仅覆盖选定页面'),'Chinese status retains coverage/recovery semantics');
+lang = 'en';
+run("updateEquationDetectionProgress({phase:'failed'},2,true)");
+check(status.textContent.includes('Index failed') && status.title.includes('Equation indexing failed'),'explicit failed state retains detail');
+const css=fs.readFileSync(path.join(__dirname,'../mathreader.css'),'utf8');
+check(/\.equation-detection-status\{[^}]*white-space:nowrap[^}]*text-overflow:ellipsis/.test(css),'one-line CSS with narrow-pane ellipsis');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+check(html.includes('mathreader.js?v=346') && html.includes('mathreader.css?v=346'),'cache busters updated to v346');
+check(html.includes('Expand to index equations.') && html.includes('Numbered references appear here.'),'sidebar empty hints shortened');
 
 const doc={getPage:async()=>({getViewport:()=>({width:250,height:100}),render:()=>({promise:Promise.resolve()})})};
 (async()=>{

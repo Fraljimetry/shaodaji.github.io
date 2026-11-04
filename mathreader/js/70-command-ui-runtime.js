@@ -256,8 +256,8 @@ formulaExtractionSelect?.addEventListener('change', () => {
   safeSet('mathreader-formula-method-v1', formulaExtractionMode);
   updateOcrCapability();
   setOcrStatus(formulaExtractionMode === 'image'
-    ? t('Image OCR is now the default formula extractor.', '现在默认使用图像 OCR 提取公式。')
-    : t('PDF vector is now the default formula extractor.', '现在默认使用 PDF 矢量提取公式。'));
+    ? t('Image OCR selected', '已选图像 OCR')
+    : t('PDF vector selected', '已选 PDF 矢量'));
 });
 ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v8', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
 ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });

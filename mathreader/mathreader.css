@@ -400,7 +400,7 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .contents-section.is-collapsed{padding-bottom:10px}
 .contents-section .outline-list,.contents-section .structure-index,.contents-section .bibliography-index,.contents-section .equation-index{margin-top:5px}
 /* Lightweight per-document pipeline status; no progress bar that implies complete OCR coverage. */
-.equation-detection-status{margin:4px 2px 6px;color:var(--muted);font-size:.65rem;line-height:1.4;overflow-wrap:anywhere}
+.equation-detection-status{display:block;min-width:0;max-width:100%;margin:4px 2px 6px;color:var(--muted);font-size:.65rem;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
 .equation-detection-status:empty{display:none}
 .equation-detection-status[data-phase="running"]{color:var(--accent-deep)}
 .equation-detection-status[data-phase="warning"]{color:var(--confidence-medium)}

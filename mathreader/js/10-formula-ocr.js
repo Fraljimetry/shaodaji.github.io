@@ -953,11 +953,11 @@ function setOcrMode(active) {
     // This happens before the drag and well before WASM inference can block
     // the main thread, so the user already sees where progress/results live.
     autoOpenRightSection('ocr-section');
-    setOcrStatus(formulaExtractionMode === 'image' ? t('Drag around one formula. Image OCR is the default; press Esc to cancel.', '请框选一个公式。默认使用图像 OCR；按 Esc 取消。') : t('Drag around one formula. PDF vector extraction is selected; press Esc to cancel.', '请框选一个公式。当前选择 PDF 矢量提取；按 Esc 取消。')); 
+    setOcrStatus(formulaExtractionMode === 'image' ? t('Drag to select · Esc cancels', '拖动框选 · Esc 取消') : t('Drag to select (vector) · Esc cancels', '拖动框选（矢量）· Esc 取消')); 
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
   } else if (!mathOcrLoading) {
-    setOcrStatus(mathOcrBackend ? t(`Image OCR default · ${mathOcrBackend.label} ready · PDF vector available for manual comparison`, `默认图像 OCR · ${mathOcrBackend.label} 已就绪 · PDF 矢量可手动对照`) : t('Ready. Image OCR is the default formula extractor.', '就绪。默认使用图像 OCR 提取公式。')); 
+    setOcrStatus(mathOcrBackend ? t(`OCR ready · ${mathOcrBackend.label}`, `OCR 就绪 · ${mathOcrBackend.label}`) : t('Ready · Image OCR default', '就绪 · 默认图像 OCR')); 
   }
 }
 

@@ -1740,27 +1740,49 @@ function formatEquationDetectionTime(ms) {
 function equationDetectionSummary(state) {
   const phase = state?.phase || 'idle';
   if (phase === 'idle') return ['', ''];
-  if (phase === 'saved') return [t('Saved index · not rescanned', '已保存索引 · 尚未重新扫描'), ''];
-  if (phase === 'unavailable') return [t('Text unavailable · full-document OCR required', '文本不可用 · 需要全文 OCR'), ''];
-  if (phase === 'failed') return [t('Equation indexing failed · see console', '公式索引失败 · 请查看控制台'), ''];
+  // Keep the narrow sidebar a single line. Detailed counts, coverage, and
+  // timings remain available on hover rather than widening the contents pane.
+  if (phase === 'saved') return [t('Saved · not rescanned', '已保存 · 未重扫'), t('Saved index · not rescanned', '已保存索引 · 尚未重新扫描')];
+  if (phase === 'unavailable') return [t('No text · full OCR needed', '无文本 · 需全文 OCR'), t('Text unavailable · full-document OCR required', '文本不可用 · 需要全文 OCR')];
+  if (phase === 'failed') return [t('Index failed · see console', '索引失败 · 查看控制台'), t('Equation indexing failed · see console', '公式索引失败 · 请查看控制台')];
   const native = state.nativeTotal > 0
     ? t(`Text ${state.nativeDone || 0}/${state.nativeTotal}`, `文本 ${state.nativeDone || 0}/${state.nativeTotal}`)
     : t('Text scan', '文本扫描');
-  const labels = Number.isInteger(state.labels) ? t(`${state.labels} labels`, `${state.labels} 个编号`) : '';
+  const labels = Number.isInteger(state.labels) ? t(`${state.labels} labels`, `${state.labels} 编号`) : '';
   const scanned = Number(state.ocrTotal || 0);
   const ocr = scanned ? t(`image OCR ${state.ocrDone || 0}/${scanned} planned pages`, `图像 OCR ${state.ocrDone || 0}/${scanned} 计划页`) : '';
   const retry = Number(state.retryTotal || 0)
     ? t(`gap retries ${state.retryDone || 0}/${state.retryTotal}`, `缺口重试 ${state.retryDone || 0}/${state.retryTotal}`) : '';
   const gain = scanned ? t(`+${state.recovered || 0} recovered`, `补回 ${state.recovered || 0} 个`) : '';
-  let head = phase === 'native' ? t('Reading text', '读取文本')
+  const failed = Number(state.failedPages || 0);
+  const selected = scanned > 0 && scanned < Number(state.documentPages || 0);
+  const head = phase === 'native' ? t('Reading text', '读取文本')
     : phase === 'planning' ? t('Checking for image assistance', '检查图像辅助')
     : phase === 'ocr' ? t('Reading equation margins', '读取公式边缘')
     : phase === 'validating' ? t('Validating recovered labels', '验证补回编号')
     : phase === 'partial' ? t('Finished with OCR issues', '已结束，部分 OCR 失败')
     : t('Automatic check finished', '自动检查已结束');
   const parts = [head, native, ocr, retry, labels, gain];
-  if (Number(state.failedPages || 0)) parts.push(t(`${state.failedPages} failed pages`, `${state.failedPages} 页失败`));
-  if (scanned && scanned < Number(state.documentPages || 0)) parts.push(t('selected coverage only', '仅覆盖选定页面'));
+  if (failed) parts.push(t(`${failed} failed pages`, `${failed} 页失败`));
+  if (selected) parts.push(t('selected coverage only', '仅覆盖选定页面'));
+
+  // Prioritize the stage, incomplete/failed coverage, and recovered labels
+  // before less urgent counts, so narrow panes truncate the least critical end.
+  const shortHead = phase === 'native' ? native
+    : phase === 'planning' ? t('OCR plan', 'OCR 计划')
+    : phase === 'ocr' ? t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`)
+    : phase === 'validating' ? t('Checking', '校验中')
+    : phase === 'partial' ? t('OCR partial', 'OCR 部分失败')
+    : t('Auto done', '自动检查结束');
+  const shortParts = [shortHead];
+  if (failed) shortParts.push(t(`${failed} failed`, `${failed} 页失败`));
+  if (scanned && phase !== 'ocr') shortParts.push(t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`));
+  if (!scanned && phase !== 'native' && state.nativeTotal > 0) shortParts.push(native);
+  if (selected) shortParts.push(t('selected', '选页'));
+  if (scanned && Number(state.recovered || 0)) shortParts.push(t(`+${state.recovered} rec`, `补 ${state.recovered}`));
+  if (phase === 'ocr' && Number(state.retryTotal || 0)) shortParts.push(t(`retry ${state.retryDone || 0}/${state.retryTotal}`, `重试 ${state.retryDone || 0}/${state.retryTotal}`));
+  // The adjacent equation-count badge already shows total labels; do not duplicate it here.
+
   const detailed = [
     t('Measured local timings (approximate):', '本地测量耗时（近似）：'),
     t(`text ${formatEquationDetectionTime(state.nativeMs)}`, `文本 ${formatEquationDetectionTime(state.nativeMs)}`),
@@ -1772,7 +1794,7 @@ function equationDetectionSummary(state) {
     t(`index validation ${formatEquationDetectionTime(state.validationMs)}`, `索引校验 ${formatEquationDetectionTime(state.validationMs)}`),
     t(`elapsed ${formatEquationDetectionTime(state.elapsedMs)}`, `总历时 ${formatEquationDetectionTime(state.elapsedMs)}`),
   ];
-  return [parts.filter(Boolean).join(' · '), detailed.join(' · ')];
+  return [shortParts.join(' · '), `${parts.filter(Boolean).join(' · ')}\n${detailed.join(' · ')}`];
 }
 function updateEquationDetectionStatus(force = false) {
   if (!equationDetectionStatus) return;

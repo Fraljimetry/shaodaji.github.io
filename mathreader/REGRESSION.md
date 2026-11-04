@@ -1,4 +1,39 @@
-# MathReader Regression / Behavioral Audit Record — v345
+# MathReader Regression / Behavioral Audit Record — v346
+
+## v346: One-line equation progress and compact sidebar copy (UI-only; 2026-11-05 Beijing time)
+
+**Baseline:** Full user-provided v345 ZIP (`mathreader(6).zip`), 10 shared-scope JavaScript parts; `REGRESSION.md` was consulted before editing. **Code version 345 → 346**, exactly one step. Structure cache **44** and equation snapshot version **22** unchanged. This is a copy/layout correction, not a detector, OCR pipeline, scheduling or cache change.
+
+### UI defect class and conservative correction
+
+- **Observed / user-reported:** v345's Equations sidebar status concatenated stage, text pages, planned OCR pages, retries, labels, gains, failures and partial-coverage disclosure into a long string. The existing `overflow-wrap:anywhere` allowed several wrapped lines in a narrow academic sidebar. The class is *diagnostic prose overflowing compact status surfaces*, not a single-PDF detection issue.
+- **Correction:** show a short **single-line, nonwrapping** status with constrained width and ellipsis when needed. Preserve progress counters and truthful stage changes (`Text`, `OCR plan`, `OCR x/y`, `Checking`, `Auto done`, partial, failure, saved). Put the **original detailed work summary** plus existing measured local times in the hover `title` (two lines); leave the one-per-run local console metrics intact. Put **failure and selected-page coverage before the recovered count** so they remain prominent even when truncated. Avoid duplicating the total label count already shown in the adjacent Equations badge; keep it in the detailed tooltip. Selected-page OCR is explicitly marked `selected` (中文 `选页`), and OCR denominators still represent planned pages, not all document pages. `Auto done` continues to mean *scheduled automatic checking finished*, **not** 100% detection accuracy or full OCR coverage.
+- **Related, limited copy audit:** shorten cramped Results/Equations/Bibliography empty hints, Formula OCR default/ready/select-mode messages, Search's passive help, and the pinned-page status. Retain substantive OCR errors, safety advice, help popovers and scanned-document instructions; do not globally truncate all error/status text. Both English and Chinese are updated; Search retains the exact normalization details in its bilingual tooltip.
+- **No semantic changes:** Preserve v345's PDF/Javascript selection, candidate recognition, retry scheduling, failure accounting, native-first publishing, document generation guards, PDF rendering, full-text OCR choices, WebGPU→CPU fallback, caching, import/export and local timing measurements. Do not modify detector rules merely to make UI tests pass.
+
+### Gates and limits actually observed
+
+| Gate | Result | What it proves / does not prove |
+|---|---|---|
+| `node mathreader/tests/results_toc_regression.js` | **PASS, 23 assertions** | Previously tested TOC-to-Results boundaries retained. |
+| `node mathreader/tests/bibliography_boundary_regression.js` | **PASS, 15 assertions** | Previously tested bibliography boundaries retained. |
+| `node mathreader/tests/equation_progress_regression.js` | **PASS, 33 assertions** | v345 generation guards, native/OCR/partial/saved/unavailable/failure, timing/canvas release; v346 compact text, expanded tooltip, selective-coverage caveat, English/Chinese copy and CSS contract. |
+| 10 subsystem `node --check`, bootstrap and tests | **PASS** | JavaScript syntax. |
+| 10-part assembled ES-module `node --check` | **PASS** | Module ordering and assembled syntax. |
+| Static source comparison with v345 | **PASS for scope** | Only UI copy/presentation, test expectations, docs and version keys changed; no indexing/detection functions or OCR fallback implementation changed. |
+| Full-document native/old-scan/handwriting corpus | **UNVERIFIED in v346** | PDF fixture bytes and actual OCR/browser end-to-end execution were not available in this handoff. v345 evidence is historical, not a new v346 accuracy gate. |
+| Headless Chromium style preview | **UNVERIFIED** | Offline visual smoke process timed out; no rendered CSS/layout verification claim. |
+| Production website and mobile browser | **UNVERIFIED** | Release not deployed by this artifact; CSS ellipsis, hover detail and narrow/mobile interaction require manual observation. |
+
+### Manual acceptance and ongoing risks
+
+1. In the deployed app, test the narrow Contents sidebar in English and Chinese (desktop and mobile), each stage of native, planning, OCR, validation, complete, partial and restored index. The visible status must use **one line**, not wrap; reveal full details by hovering on desktop. Check whether touch-only users need a future compact accessible details control rather than a hover-only `title`.
+2. Test long counts (e.g., 1,000+ pages, 100+ OCR pages) with very narrow sidebars. Confirm that ellipsis never hides *critical failures or selected coverage*; narrow modes may still need a responsive compact design if field measurements show critical text hidden.
+3. Compare actual output across native-text math PDFs, OCR-heavy historical scans and handwriting with v345, including all index inventories, anchors and ordering. **Not done in v346**. Known source-content omissions are inherited unresolved: Pisier reference OCR, Gromov/Caffarelli Results/Equations OCR, Ahlfors damaged native equation labels, handwriting, and lack of exhaustive production-browser acceptance. Keep these as **FAIL** or **UNVERIFIED**, never count them as PASS because the UI is smaller.
+4. Verify the default Formula OCR ready/select text, Results/Bibliography hints, Search help and pinned-page copy in both languages. Error messages still wrap when important: do **not** force one-line CSS on all status/error surfaces.
+
+**Release paths:** `mathreader/mathreader.js`, `mathreader/index.html`, `mathreader/mathreader.css`, `mathreader/js/00-core.js`, `mathreader/js/10-formula-ocr.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/js/70-command-ui-runtime.js`, `mathreader/tests/equation_progress_regression.js`, and `mathreader/REGRESSION.md`. Root ZIP patch only. No new fixtures or hidden network dependencies.
+
 
 ## v345: Progressive equation-detection status and local performance profiling (UI-only; 2026-11-04)
 
