@@ -79,6 +79,7 @@ const mapAnnotationsCount = el('map-annotations-count');
 const equationIndex = el('equation-index');
 const equationIndexEmpty = el('equation-index-empty');
 const equationIndexCount = el('equation-index-count');
+const equationDetectionStatus = el('equation-detection-status');
 const exportReadingDataButton = el('export-reading-data');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');
@@ -258,6 +259,10 @@ let equationSupplementalOcrCache = new Map();
 // badge can restore immediately without serializing or eagerly rebuilding the
 // full label index. null means the count is not known yet.
 let equationIndexKnownCount = null;
+// Transient per-document diagnostics: never stored as content-detection evidence.
+let equationDetectionGeneration = 0;
+let equationDetectionProgress = { phase: 'idle' };
+let equationDetectionLastPaint = 0;
 let equationConfidenceFilter = 'all';
 let draggedEquationKey = null;
 let scrollByPage = {};
@@ -713,6 +718,7 @@ function clearDocumentMapForIncomingPdf() {
   equationSupplementalOcrCache = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
+  resetEquationDetectionProgress();
   equationEdits = [];
   equationManualOrder = [];
   draggedEquationKey = null;
@@ -1371,6 +1377,7 @@ function clearTextDerivedIndexesForUnavailableDocument() {
   equationSupplementalOcrCache = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
+  resetEquationDetectionProgress();
   tocOutlineTargets = null;
   backlinkContext = null;
   backlinkEntries = [];
@@ -1404,6 +1411,7 @@ function invalidateTextDerivedIndexesForOcrActivation() {
   equationSupplementalOcrCache = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
+  resetEquationDetectionProgress();
   tocOutlineTargets = null;
   backlinkContext = null;
   backlinkEntries = [];
@@ -1988,6 +1996,7 @@ function applyLanguage(lang, persist = true) {
   renderDocumentMapAnnotations();
   renderStructureIndex();
   renderEquationIndex();
+  updateEquationDetectionStatus(true);
   renderBibliographyIndex();
   renderBacklinks();
   renderReadingTrail();
@@ -2337,6 +2346,7 @@ function loadDocumentState(cachedSession = null) {
   pendingEquationAddKey = null;
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
+  resetEquationDetectionProgress();
   structureIndexVersion = 0;
   equationLabelIndex = null;
   equationImageAssistPromise = null;

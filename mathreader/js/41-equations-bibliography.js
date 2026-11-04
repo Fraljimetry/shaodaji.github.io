@@ -1716,7 +1716,99 @@ function remapEquationMarginOcrLine(line, side, marginFraction) {
   };
 }
 
-async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { marginFraction = 0.28 } = {}) {
+// The equation pipeline is progressive: native text completes first, then optional
+// selected-page image OCR. These diagnostics describe work performed, NOT 100%
+// content-detection accuracy or full-page OCR coverage.
+function equationDetectionNowMs() {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
+}
+function resetEquationDetectionProgress() {
+  equationDetectionGeneration += 1;
+  equationDetectionProgress = { phase: 'idle' };
+  equationDetectionLastPaint = 0;
+  updateEquationDetectionStatus(true);
+}
+function updateEquationDetectionProgress(update, generation = equationDetectionGeneration, force = false) {
+  if (generation !== equationDetectionGeneration) return false;
+  equationDetectionProgress = { ...equationDetectionProgress, ...update };
+  updateEquationDetectionStatus(force);
+  return true;
+}
+function formatEquationDetectionTime(ms) {
+  return `${(Math.max(0, Number(ms) || 0) / 1000).toFixed(2)}s`;
+}
+function equationDetectionSummary(state) {
+  const phase = state?.phase || 'idle';
+  if (phase === 'idle') return ['', ''];
+  if (phase === 'saved') return [t('Saved index · not rescanned', '已保存索引 · 尚未重新扫描'), ''];
+  if (phase === 'unavailable') return [t('Text unavailable · full-document OCR required', '文本不可用 · 需要全文 OCR'), ''];
+  if (phase === 'failed') return [t('Equation indexing failed · see console', '公式索引失败 · 请查看控制台'), ''];
+  const native = state.nativeTotal > 0
+    ? t(`Text ${state.nativeDone || 0}/${state.nativeTotal}`, `文本 ${state.nativeDone || 0}/${state.nativeTotal}`)
+    : t('Text scan', '文本扫描');
+  const labels = Number.isInteger(state.labels) ? t(`${state.labels} labels`, `${state.labels} 个编号`) : '';
+  const scanned = Number(state.ocrTotal || 0);
+  const ocr = scanned ? t(`image OCR ${state.ocrDone || 0}/${scanned} planned pages`, `图像 OCR ${state.ocrDone || 0}/${scanned} 计划页`) : '';
+  const retry = Number(state.retryTotal || 0)
+    ? t(`gap retries ${state.retryDone || 0}/${state.retryTotal}`, `缺口重试 ${state.retryDone || 0}/${state.retryTotal}`) : '';
+  const gain = scanned ? t(`+${state.recovered || 0} recovered`, `补回 ${state.recovered || 0} 个`) : '';
+  let head = phase === 'native' ? t('Reading text', '读取文本')
+    : phase === 'planning' ? t('Checking for image assistance', '检查图像辅助')
+    : phase === 'ocr' ? t('Reading equation margins', '读取公式边缘')
+    : phase === 'validating' ? t('Validating recovered labels', '验证补回编号')
+    : phase === 'partial' ? t('Finished with OCR issues', '已结束，部分 OCR 失败')
+    : t('Automatic check finished', '自动检查已结束');
+  const parts = [head, native, ocr, retry, labels, gain];
+  if (Number(state.failedPages || 0)) parts.push(t(`${state.failedPages} failed pages`, `${state.failedPages} 页失败`));
+  if (scanned && scanned < Number(state.documentPages || 0)) parts.push(t('selected coverage only', '仅覆盖选定页面'));
+  const detailed = [
+    t('Measured local timings (approximate):', '本地测量耗时（近似）：'),
+    t(`text ${formatEquationDetectionTime(state.nativeMs)}`, `文本 ${formatEquationDetectionTime(state.nativeMs)}`),
+    t(`PDF rendering ${formatEquationDetectionTime(state.renderMs)}`, `PDF 渲染 ${formatEquationDetectionTime(state.renderMs)}`),
+    t(`OCR recognition ${formatEquationDetectionTime(state.recognizeMs)}`, `OCR 识别 ${formatEquationDetectionTime(state.recognizeMs)}`),
+    t(`OCR worker setup ${formatEquationDetectionTime(state.ocrSetupMs)}`, `OCR 初始化 ${formatEquationDetectionTime(state.ocrSetupMs)}`),
+    t(`gap retries ${formatEquationDetectionTime(state.retryMs)}`, `缺口重试 ${formatEquationDetectionTime(state.retryMs)}`),
+    t(`UI updates ${formatEquationDetectionTime(state.uiMs)}`, `界面更新 ${formatEquationDetectionTime(state.uiMs)}`),
+    t(`index validation ${formatEquationDetectionTime(state.validationMs)}`, `索引校验 ${formatEquationDetectionTime(state.validationMs)}`),
+    t(`elapsed ${formatEquationDetectionTime(state.elapsedMs)}`, `总历时 ${formatEquationDetectionTime(state.elapsedMs)}`),
+  ];
+  return [parts.filter(Boolean).join(' · '), detailed.join(' · ')];
+}
+function updateEquationDetectionStatus(force = false) {
+  if (!equationDetectionStatus) return;
+  const state = equationDetectionProgress;
+  const now = equationDetectionNowMs();
+  if (!force && now - equationDetectionLastPaint < 400) return;
+  equationDetectionLastPaint = now;
+  const [message, tooltip] = equationDetectionSummary(state);
+  if (equationDetectionStatus.textContent !== message) equationDetectionStatus.textContent = message;
+  equationDetectionStatus.title = tooltip;
+  equationDetectionStatus.dataset.phase = ['native','planning','ocr','validating'].includes(state.phase)
+    ? 'running' : ['failed','partial'].includes(state.phase) ? 'warning' : 'done';
+}
+function logEquationDetectionTiming(state, sourceKey) {
+  // No telemetry or remote calls. One compact console record per finished run.
+  console.info('MathReader equation indexing (local timing)', {
+    document: String(sourceKey || '').slice(0, 100),
+    nativePages: state.nativeDone || 0,
+    plannedImagePages: state.ocrTotal || 0,
+    processedImagePages: state.ocrDone || 0,
+    retries: state.retryDone || 0,
+    failedPages: state.failedPages || 0,
+    recoveredLabels: state.recovered || 0,
+    elapsedMs: Math.round(state.elapsedMs || 0),
+    nativeMs: Math.round(state.nativeMs || 0),
+    pdfRenderMs: Math.round(state.renderMs || 0),
+    ocrRecognitionMs: Math.round(state.recognizeMs || 0),
+    ocrSetupMs: Math.round(state.ocrSetupMs || 0),
+    numericRetryMs: Math.round(state.retryMs || 0),
+    uiUpdateMs: Math.round(state.uiMs || 0),
+    validationMs: Math.round(state.validationMs || 0),
+  });
+}
+
+async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { marginFraction = 0.28, onTiming = null } = {}) {
+  const started = equationDetectionNowMs();
   const page = await sourceDoc.getPage(pageNum);
   const base = page.getViewport({ scale: 1 });
   const scale = Math.max(2.4, Math.min(3.6, 3200 / Math.max(1, base.width, base.height)));
@@ -1741,10 +1833,14 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
   cropContext.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
   cropContext.drawImage(fullCanvas, cropX, 0, cropWidth, fullCanvas.height, 0, 0, cropWidth, fullCanvas.height);
 
+  const rendered = equationDetectionNowMs();
   let result;
   try {
     result = await worker.recognize(cropCanvas, {}, { hocr: true });
   } finally {
+    if (typeof onTiming === 'function') {
+      try { onTiming({ renderMs: rendered - started, recognizeMs: equationDetectionNowMs() - rendered }); } catch (_) {}
+    }
     fullCanvas.width = 1;
     fullCanvas.height = 1;
     cropCanvas.width = 1;
@@ -1995,7 +2091,9 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   const priorityPageSet = new Set(priorityPages);
   const pages = [...priorityPages, ...comprehensivePages.filter((page) => !priorityPageSet.has(page))];
   if (!pages.length) return false;
-
+  if (typeof onProgress === 'function') onProgress({ phase: 'ocr', ocrTotal: pages.length, ocrDone: 0, documentPages: pageCount });
+  let donePages = 0;
+  let failedPages = 0;
   let worker = null;
   let createWorker = null;
   let workerInitFailed = false;
@@ -2006,12 +2104,14 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return null;
     createWorker = createWorker || documentOcrCreateWorker(module);
     if (typeof createWorker !== 'function') { workerInitFailed = true; return null; }
+    const setupStarted = equationDetectionNowMs();
     try {
       worker = await createWorker('eng', 1, { logger: () => {} });
     } catch (error) {
       workerInitFailed = true;
       throw error;
     }
+    if (typeof onProgress === 'function') onProgress({ setupMs: equationDetectionNowMs() - setupStarted });
     if (typeof worker.setParameters === 'function') {
       try {
         await worker.setParameters({
@@ -2031,7 +2131,9 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
     if (cached && typeof cached.then === 'function') return cached;
     const activeWorker = await ensureWorker();
     if (!activeWorker) throw new Error('Equation OCR worker unavailable');
-    const pending = equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker)
+    const pending = equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker, { onTiming: (measurement) => {
+      if (typeof onProgress === 'function') onProgress({ timing: measurement });
+    } })
       .then((lines) => {
         if (pdfDoc === sourceDoc && currentFileKey === sourceKey) equationSupplementalOcrCache.set(cacheKey, lines);
         return lines;
@@ -2054,6 +2156,9 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
         lines = await cachedLinesForPage(pageNum);
       } catch (error) {
         console.warn(`MathReader equation image-assistance skipped page ${pageNum}.`, error);
+        failedPages += 1;
+        donePages += 1;
+        if (typeof onProgress === 'function') onProgress({ phase: 'ocr', ocrDone: donePages, failedPages });
         continue;
       }
       const expectedOnPage = gapPlan.expectedByPage.get(pageNum) || new Set();
@@ -2075,9 +2180,8 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
           }
         }
       }
-      if (pageAdded && typeof onProgress === 'function') {
-        try { onProgress(); } catch (_) {}
-      }
+      donePages += 1;
+      if (typeof onProgress === 'function') onProgress({ phase: 'ocr', ocrDone: donePages, failedPages, changed: pageAdded });
       await nextFrame();
     }
 
@@ -2102,6 +2206,7 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
       for (const label of labels) addNumericRetryExpected(pageNum, label);
     }
 
+    if (typeof onProgress === 'function') onProgress({ retryTotal: numericRetryExpectedByPage.size, retryDone: 0 });
     if (numericRetryExpectedByPage.size) {
       const activeWorker = await ensureWorker();
       if (activeWorker) {
@@ -2114,13 +2219,22 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
               tessedit_char_whitelist: '0123456789.()-',
             });
           }
+          let retryDone = 0;
+          const retryStarted = equationDetectionNowMs();
           for (const [pageNum, expectedLabels] of [...numericRetryExpectedByPage.entries()].sort((a, b) => a[0] - b[0])) {
             if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return added;
             let retryLines = [];
             try {
-              retryLines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker, { marginFraction: 0.18 });
+              retryLines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker, {
+                marginFraction: 0.18, onTiming: (measurement) => {
+                  if (typeof onProgress === 'function') onProgress({ timing: measurement });
+                },
+              });
             } catch (error) {
               console.warn(`MathReader equation numeric-gap OCR skipped page ${pageNum}.`, error);
+              failedPages += 1;
+              retryDone += 1;
+              if (typeof onProgress === 'function') onProgress({ retryDone, failedPages });
               continue;
             }
             let pageAdded = false;
@@ -2136,11 +2250,11 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
                 break;
               }
             }
-            if (pageAdded && typeof onProgress === 'function') {
-              try { onProgress(); } catch (_) {}
-            }
+            retryDone += 1;
+            if (typeof onProgress === 'function') onProgress({ retryDone, failedPages, changed: pageAdded });
             await nextFrame();
           }
+          if (typeof onProgress === 'function') onProgress({ retryMs: equationDetectionNowMs() - retryStarted });
         } finally {
           if (typeof activeWorker.setParameters === 'function') {
             try {
@@ -2165,9 +2279,7 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
         index.set(record.label, [{ ...record, confidence: Math.max(18, Number(record.confidence) || 0) }]);
         added = true;
       }
-      if (added && typeof onProgress === 'function') {
-        try { onProgress(); } catch (_) {}
-      }
+      if (added && typeof onProgress === 'function') onProgress({ changed: true });
     }
     return added;
   } finally {
@@ -2180,6 +2292,15 @@ async function buildEquationLabelIndex() {
   if (equationLabelIndex) return equationLabelIndex;
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
+  const generation = equationDetectionGeneration;
+  const started = equationDetectionNowMs();
+  updateEquationDetectionProgress({
+    phase: 'native', nativeDone: 0, nativeTotal: sourceDoc.numPages,
+    documentPages: sourceDoc.numPages, ocrTotal: 0, ocrDone: 0,
+    retryTotal: 0, retryDone: 0, labels: 0, recovered: 0,
+    failedPages: 0, renderMs: 0, recognizeMs: 0, validationMs: 0, ocrSetupMs: 0, retryMs: 0, uiMs: 0,
+    nativeMs: 0, elapsedMs: 0,
+  }, generation, true);
   const index = new Map();
   const candidatePool = new Map();
   const rawCandidates = [];
@@ -2193,6 +2314,7 @@ async function buildEquationLabelIndex() {
     3
   )) {
     rawPageLines.set(page, lines);
+    updateEquationDetectionProgress({ nativeDone: page }, generation);
     const pageOcrConfidence = equationOcrPageConfidence(page);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
@@ -2399,6 +2521,8 @@ async function buildEquationLabelIndex() {
     index.set(record.label, list);
   }
 
+  const nativeExtractionEnd = equationDetectionNowMs();
+  updateEquationDetectionProgress({ phase: 'validating', nativeDone: sourceDoc.numPages, nativeMs: nativeExtractionEnd - started }, generation, true);
   const columnProfiles = supplementTwoColumnEquations(index, rawPageLines);
   reconcileEquationNumberingFamilies(index);
   recoverSequentialEquationGaps(index, candidatePool);
@@ -2409,14 +2533,20 @@ async function buildEquationLabelIndex() {
   // Gap recovery can promote a local-column candidate *after* the initial
   // supplement pass. Reapply only display-column metadata, never detections.
   annotateEquationColumnsForOrder(index, columnProfiles);
-  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
+  if (generation !== equationDetectionGeneration || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return new Map();
+  const nativeEnd = equationDetectionNowMs();
+  updateEquationDetectionProgress({ nativeMs: nativeExtractionEnd - started, validationMs: nativeEnd - nativeExtractionEnd, phase: 'planning' }, generation, true);
+  let nativeCount = 0;
 
   const publishAutomaticIndex = () => {
     if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
     equationAutomaticLabelIndex = canonicalizeEquationIndex(index);
     equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
+    updateEquationDetectionProgress({ labels: equationAutomaticLabelIndex.size, recovered: Math.max(0, equationAutomaticLabelIndex.size - nativeCount) }, generation);
     const previousKnownEquationCount = equationIndexKnownCount;
+    const uiStarted = equationDetectionNowMs();
     renderEquationIndex();
+    updateEquationDetectionProgress({ uiMs: (equationDetectionProgress.uiMs || 0) + equationDetectionNowMs() - uiStarted }, generation);
     if (equationIndexKnownCount !== previousKnownEquationCount) persistDocumentState();
     return true;
   };
@@ -2425,25 +2555,51 @@ async function buildEquationLabelIndex() {
   // enhancement, not a prerequisite for a usable Equation index, and may take
   // several seconds on scan-backed papers.
   publishAutomaticIndex();
+  nativeCount = equationAutomaticLabelIndex?.size || 0;
+  updateEquationDetectionProgress({ labels: nativeCount, recovered: 0 }, generation, true);
 
   if (!equationImageAssistPromise) {
     const assistIndex = index;
     const assistPool = candidatePool;
+    const onAssistProgress = (event = {}) => {
+      if (generation !== equationDetectionGeneration || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+      const { timing, changed, setupMs, ...values } = event;
+      if (setupMs != null) values.ocrSetupMs = (equationDetectionProgress.ocrSetupMs || 0) + setupMs;
+      if (timing) {
+        values.renderMs = (equationDetectionProgress.renderMs || 0) + (timing.renderMs || 0);
+        values.recognizeMs = (equationDetectionProgress.recognizeMs || 0) + (timing.recognizeMs || 0);
+      }
+      updateEquationDetectionProgress(values, generation, Boolean(changed));
+      if (changed) publishAutomaticIndex();
+    };
     equationImageAssistPromise = (async () => {
-      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence, publishAutomaticIndex);
-      if (!added || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
-      reconcileEquationNumberingFamilies(assistIndex);
-      recoverSequentialEquationGaps(assistIndex, assistPool);
-      reconcileEquationNumberingFamilies(assistIndex);
-      reconcileOcrEquationSequenceOrder(assistIndex);
-      suppressSparseAmbiguousOcrEquationFamilies(assistIndex);
-      suppressSparseAmbiguousNativeBareEquationFamilies(assistIndex);
-      annotateEquationColumnsForOrder(assistIndex, columnProfiles);
-      publishAutomaticIndex();
+      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence, onAssistProgress);
+      if (generation !== equationDetectionGeneration || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+      if (added) {
+        updateEquationDetectionProgress({ phase: 'validating' }, generation, true);
+        const validatedAt = equationDetectionNowMs();
+        reconcileEquationNumberingFamilies(assistIndex);
+        recoverSequentialEquationGaps(assistIndex, assistPool);
+        reconcileEquationNumberingFamilies(assistIndex);
+        reconcileOcrEquationSequenceOrder(assistIndex);
+        suppressSparseAmbiguousOcrEquationFamilies(assistIndex);
+        suppressSparseAmbiguousNativeBareEquationFamilies(assistIndex);
+        annotateEquationColumnsForOrder(assistIndex, columnProfiles);
+        updateEquationDetectionProgress({ validationMs: (equationDetectionProgress.validationMs || 0) + equationDetectionNowMs() - validatedAt }, generation);
+        publishAutomaticIndex();
+      }
+      const current = equationDetectionProgress;
+      const finish = { phase: (current.failedPages || 0) ? 'partial' : 'complete', elapsedMs: equationDetectionNowMs() - started };
+      updateEquationDetectionProgress(finish, generation, true);
+      logEquationDetectionTiming(equationDetectionProgress, sourceKey);
     })().catch((error) => {
       console.warn('MathReader posterior equation OCR was unavailable.', error);
+      if (generation === equationDetectionGeneration && pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+        updateEquationDetectionProgress({ phase: 'partial', elapsedMs: equationDetectionNowMs() - started, error: String(error?.message || error) }, generation, true);
+        logEquationDetectionTiming(equationDetectionProgress, sourceKey);
+      }
     }).finally(() => {
-      if (pdfDoc === sourceDoc && currentFileKey === sourceKey) equationImageAssistPromise = null;
+      if (generation === equationDetectionGeneration && pdfDoc === sourceDoc && currentFileKey === sourceKey) equationImageAssistPromise = null;
     });
   }
   return equationLabelIndex;
@@ -2519,6 +2675,7 @@ function saveEquationDragOrder(rows, visibleRows, draggedKey, targetKey, before)
 
 function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
+  if (equationDetectionProgress.phase === 'idle' && equationLabelIndex) updateEquationDetectionProgress({ phase: 'saved' }, equationDetectionGeneration, true);
   equationIndex.replaceChildren();
   if (!equationLabelIndex) {
     equationIndexCount.textContent = Number.isInteger(equationIndexKnownCount) ? String(equationIndexKnownCount) : '…';
@@ -2687,6 +2844,8 @@ async function ensureEquationIndexRendered() {
     equationImageAssistPromise = null;
     equationAutomaticLabelIndex = null;
     equationSupplementalOcrCache = new Map();
+    resetEquationDetectionProgress();
+    updateEquationDetectionProgress({ phase: 'unavailable' }, equationDetectionGeneration, true);
     equationIndex?.replaceChildren();
     if (equationIndexCount) equationIndexCount.textContent = '0';
     if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Equations.', '文档文本不可用。运行全文 OCR 后才能启用公式索引。'); }
@@ -2698,7 +2857,11 @@ async function ensureEquationIndexRendered() {
     if (!equationIndexBuildPromise) equationIndexBuildPromise = buildEquationLabelIndex().finally(() => { equationIndexBuildPromise = null; });
     await equationIndexBuildPromise;
     return equationLabelIndex;
-  } catch (error) { console.warn('Equation-label index build failed', error); if (equationIndexEmpty) equationIndexEmpty.textContent = t('The equation-label index could not be built.', '无法生成公式编号索引。'); }
+  } catch (error) {
+    console.warn('Equation-label index build failed', error);
+    updateEquationDetectionProgress({ phase: 'failed' }, equationDetectionGeneration, true);
+    if (equationIndexEmpty) equationIndexEmpty.textContent = t('The equation-label index could not be built.', '无法生成公式编号索引。');
+  }
 }
 
 async function findEquationLabelLocation(query, originPage = null, originRatio = null) {

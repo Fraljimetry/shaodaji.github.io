@@ -1,4 +1,44 @@
-# MathReader Regression / Behavioral Audit Record — v344
+# MathReader Regression / Behavioral Audit Record — v345
+
+## v345: Progressive equation-detection status and local performance profiling (UI-only; 2026-11-04)
+
+**Authoritative input:** v339 full source, then root ZIP overlays v340, v341, v342, v343 (including durable policy), v344 and v344 handwriting policy. Reconstructed from the files and retained the exact 10-part ES-module architecture. **Code version v344 → v345**, exactly one increment; detector/cache versions intentionally unchanged because equation recognition, acceptance, and persistence data formats have not changed. The next code version is **v346**.
+
+**User-approved changes:** (1) explicitly distinguish native-text indexing, planned image OCR and completion; (2) show current pages inspected and recovered labels, including failed pages and bounded/selected-page coverage; (3) measure local time spent extracting native text, PDF margin rendering, OCR-worker setup, OCR recognition, numeric gap retries, index validation and UI publication. Keep the display one unobtrusive line in Equations; detailed numbers are available on hover and in **one local console.info record per finished run**. No telemetry, external service, new OCR engine, new detector fallback or expanded OCR scheduling. Preserve progressive publication and user edits/order.
+
+**Critical semantic guard:** `Finished` means the scheduled automatic work for this open document has ended. It does **NOT** mean full OCR coverage or 100% content-detection accuracy. When only selected pages were image-inspected, the UI explicitly says `selected coverage only`; its OCR fraction is **planned pages**, not the total PDF page count. Reopening a persisted result displays `Saved index · not rescanned`, never a false fresh-completion claim. Failed pages/end-stage exceptions show partial/failed status, not silent success. Progress is per-document-generation guarded against stale asynchronous callbacks when the PDF changes. The bilingual status is refreshed on language switches and display updates are throttled (~400 ms) to reduce live-region noise. No index output, detector version or cache semantics should change as a result of instrumentation.
+
+### Gates actually executed
+
+| Check | Result | Meaning/limit |
+|---|---|---|
+| `node mathreader/tests/results_toc_regression.js` | **23/23 PASS** | Existing class-level TOC-to-Results negative/positive controls preserved. |
+| `node mathreader/tests/bibliography_boundary_regression.js` | **15/15 PASS** | Existing boundary-reference positive/adversarial controls preserved. |
+| `node mathreader/tests/equation_progress_regression.js` | **24/24 PASS** | New progress states, per-document generation, partial/failed/unavailable/saved handling, selected coverage, failure-safe canvas release, mock OCR timing, stage event wiring. |
+| Native projection nonregression vs v344 | **8 byte-distinct PDFs / 340 pages; exact same equation labels, pages, ratios, confidence, and column-order metadata** | Native geometry projected with PyMuPDF, same Node-VM source detector in both versions, image assistance stubbed. Not independent accuracy truth or a production PDF.js run. |
+| JavaScript syntax, assembled runtime, boot version and archive CRC | **PASS** | All 10 JavaScript subsystem syntax checks, compiled assembly syntax, HTML asset version=345 and ZIP CRC verified in release audit. |
+| Headless Chromium page-load smoke | **UNVERIFIED** | Local browser returned `net::ERR_BLOCKED_BY_ADMINISTRATOR` for local HTTP server before app loaded; neither deployed browser nor production PDF.js/Tesseract.js/Texify was exercised. |
+
+**Eight PDF types in projected nonregression:** Gromov/Banach 1967, Schoen-related modern arXiv paper 2026, Ahlfors *Conformal Invariants* (long classical book), Caffarelli 1989, Pisier 1988, Yau 1978, a 2023 algebra paper, and a Radon/Riesz mathematical exposition. The projector covered 340 actual PDF pages, but only the equation-native detector was compared item-by-item. Output counts in that harness were 15, 5, 161, 23, 22, 159, 0, 0; these are **projector-derived counts**, not verified ground truth or production equation totals. Existing known missed equations and OCR inaccuracies remain OPEN (see v344 ledger below).
+
+**Performance interpretation:** new counters and per-stage local millisecond measurements are installed and exercised with a mock OCR worker. **No production performance improvement has been claimed or measured.** Time spent in PDF.js/Tesseract in the user's browser remains a manual test. `nativeMs` includes native extraction/candidate collection, `validationMs` covers sequencing/deduplication, OCR rendering and recognition are measured around actual margin work, `ocrSetupMs` measures worker creation, `retryMs` is a subset of OCR work (do not sum it with render/recognition to compute wall time), and `uiMs` measures equation-list rendering. Pauses, cache waits and general scheduling overhead can account for elapsed time beyond the shown categories; cached OCR pages are not re-timed. Timings are diagnostic only, not correctness evidence.
+
+### Mandatory manual browser checks for this UI-only release
+
+1. Open a modern PDF with complete native equation labels. Expand Equations and confirm `Reading text …` transitions to `Automatic check finished`, with no invented image-scan percentage.
+2. Open an older, image-backed, *native text-layer* PDF and confirm the index first shows native labels, then `image OCR x/y planned pages` progresses even when zero labels are recovered, and ultimately finishes. For >120-page scanned books, verify `selected coverage only` when fewer than all pages were planned.
+3. Force one OCR-page failure (or offline OCR-worker load) and confirm partial status plus page count; restart/replace the PDF while OCR is active and confirm no stale status or old rows appear.
+4. Reopen a saved/indexed document without rebuilding; verify `Saved index · not rescanned` and preserved manual ordering, equation edits, cache summary, and portable reading-data restore.
+5. Hover the status to inspect local stage timings; check console record, UI responsiveness, no leaked OCR workers, and no unexpected network calls. Compare native index and OCR index contents, correct ordering, anchor navigation and full-document export/import with v344 where browser access permits.
+
+**Open risks / non-gates:** browser event wiring and stylesheet appearance in the deployed app are unverified (browser environment blocked), and increased status updates should be profiled on very long PDFs before claiming no slowdown. This release **does not resolve** the Ahlfors native `(1-4)`/`(1-7)` omissions, Pisier/Caffarelli/Gromov OCR incompleteness, or handwritten OCR recall. Continue treating every human-legible known omission as FAIL/deferred, never as a certified accuracy PASS.
+
+### Standing policy reminder
+
+All policies, decisions, known failures, exceptions, and regression evidence must live in packaged Markdown, not merely chats. Every future code change uses a root `mathreader/` patch from the latest authoritative package, advances exactly one application version, runs positive and adversarial class-level tests plus broad real-PDF nonregression, and explicitly distinguishes operational stability from exhaustive content accuracy. Human-legible printed content requires independent complete accuracy validation before any 100% claim; handwritten notes are best-effort with measured recall, negative controls and recorded limitations. Keep previous sections below intact as historical records.
+
+---
+
 
 Date: **2026-11-04 (Beijing, UTC+08)**
 
