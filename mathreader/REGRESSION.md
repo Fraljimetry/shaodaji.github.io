@@ -1,3 +1,100 @@
+# MathReader Regression / Behavioral Audit Record — v342
+
+Date: **2026-11-04 (Beijing, UTC+08)**
+
+## Scope and outcome: stability and reliability of v341
+
+This campaign starts from the user's authoritative v339 ZIP with the **v340 and v341 root patches applied in order**, then tests current v341 behavior and builds a **conservative v342 patch** for two reproducible OCR classes. No filename-, author-, or document-specific detection exception was added. Tests use real input PDF bytes; the PDF source text is projected with PyMuPDF into PDF.js-like objects for a direct Node VM run of the **current detector functions**. That adapter is not identical to PDF.js and does not replace live browser tests. Scanned pages use locally rendered images, Tesseract 5 CLI word boxes and full-document downstream MathReader source functions. This is a partial local integration test, **not** a production WASM/Tesseract.js/Texify benchmark.
+
+### Summary gates
+
+| Gate | Result | Interpretation |
+|---|---|---|
+| Native-text detector regression | **23 byte-distinct PDFs / 1092 pages / 23 completed** | Every document completed without an uncaught exception; **zero output changes** in full label/item inventories for Outline, Results, Equations, Bibliography compared with v341, including same page/ratio in the projection adapter |
+| Actual arXiv equation UI order | **(1), (2), (3), (4), (5), (6)** | Instrumented real `renderEquationIndex` pre-DOM row sorting; `(1)` and `(2)` correctly on left/right column respectively |
+| Full scanned-PDF OCR rotation | **5 documents / 77 pages** | Schoen 19 + Gromov 10 + Caffarelli 27 + Pisier 18 + handwritten 3; details and incomplete inventories below |
+| Targeted OCR segmentation controls | **16 / 16** | 7 positive variants + 9 negative/layout/context/profile controls (details below) |
+| Source state portability assertions | **14** | Equation snapshot round-trip/column metadata, old ordinary cache rejection, portable import preservation, automatic/manual order distinction, exact OCR snapshot page validation |
+| Ordered prefetch + native text cache assertions | **7** | Completion order preserved, max in-flight 3, LRU cap 24, eviction, retry after failed page load |
+| Deployment/runtime check | JS syntax, bootstrap/asset versions, package integrity | `node --check` for all parts and concatenated runtime, ZIP CRC and exact changed-file check |
+| Production browser end-to-end | **NOT TESTED** | Local Chromium navigation was refused with `ERR_BLOCKED_BY_ADMINISTRATOR`. No claims for live PDF.js, Tesseract.js, WebGPU, keyboard and touch UI |
+
+## Two confirmed, narrowly repaired defects
+
+1. **Classical OCR bibliography, lost opening bracket and fused digits.** On the 19-page Schoen scan at 3.0×, the printed `[11]` becomes the OCR line `tl) , Global properties of minimal surfaces ... Ann. of Math. ... (1964)`. v341's strong-key parser had no opening bracket and no digit it could reliably interpret: **13** references, missing `[11]`. v342 records this OCR-only token as **candidate evidence**, never as an immediate index item. It must have an unambiguous short confusable-digit token ending `)`, a ditto-author comma/colon, a strong independent bibliographic body, a left-margin position, and later be *uniquely bracketed* by existing exact numeric keys, e.g. `[10]` and `[12]`. The original marker remains unaltered outside Bibliography parsing. Full scan result: **14/14**, without modifying Results or Equations. This covers a general class of old ditto-author bibliography scans, not a hard-coded reference number.
+2. **Historical OCR `§N` read as uppercase `SN`.** The 10-page Gromov scan read its heading as `S1. Statement of results`, while four subsequent `§` headings were read as `$2`–`$5` and successfully inferred by v341. v342 recovers `S1` as an explicit section **only** when an established multi-page `§N` profile exists, the next section number is directly observed, the candidate is centered, has a short non-mathematical multiword title, and passes OCR confidence. Outline improves **5 → 6** (all `§1`–`§5` plus Bibliography). Results, Equations, and Bibliography remain unchanged.
+
+`STRUCTURE_INDEX_VERSION` advances **41 → 42** to invalidate normal local cached Structure/Bibliography and inferred outlines. `EQUATION_INDEX_SUMMARY_VERSION` stays **22** because equation detection and equation snapshots are unchanged. Portable user-imported detection data remains preserved and can be rebuilt explicitly. Application and bootstrap query versions advance **341 → 342**.
+
+## Native corpus, counts from the same-source adapter
+
+These numbers are **diagnostic inventories, not fully verified accuracy goldens**. Native scanned Schoen has zero text because it is image-only and is tested through OCR below. Differences from historical strict goldens can originate from the PyMuPDF-to-PDF.js adapter and require independent inspection, rather than implying a detector regression.
+
+| PDF | Pages | Outline | Results | Equations | Bibliography |
+|---|---:|---:|---:|---:|---:|
+| `1209.2203v2.pdf` | 88 | 46 | 63 | 293 | 183 |
+| `Radon Measures and Riesz Representation Theorems.pdf` | 10 | 6 | 16 | 0 | 2 |
+| `YamabeProblem.pdf` | 56 | 12 | 51 | 61 | 46 |
+| `Ahlfors-Conformal-Invariants.pdf` | 172 | 65 | 91 | 160 | 66 |
+| `0810.5645v6.pdf` | 212 | 78 | 202 | 344 | 105 |
+| `yau1978(2).pdf` | 73 | 13 | 13 | 158 | 15 |
+| `Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf` | 13 | 4 | 4 | 4 | 18 |
+| `mathreader_formula_ocr_stress_test.pdf` | 13 | 12 | 0 | 8 | 0 |
+| `581 Note 7.pdf` | 3 | 0 | 0 | 0 | 0 |
+| `lectures_on_pde_split_pages.pdf` | 236 | 20 | 37 | 22 | 0 |
+| `caffarelli1989.pdf` | 27 | 9 | 18 | 23 | 10 |
+| `SPS_1988__22__485_0.pdf` | 18 | 3 | 7 | 23 | 17 |
+| `The_Classic_Solution_to_the_Yamabe_Problem (1).pdf` | 26 | 25 | 13 | 270 | 7 |
+| `利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf` | 3 | 2 | 0 | 1 | 2 |
+| `Where_do_Complex_Numbers_come_from_.pdf` | 3 | 3 | 0 | 0 | 0 |
+| `Code_final.pdf` | 40 | 0 | 0 | 0 | 0 |
+| `2309.00806v2.pdf` | 15 | 9 | 26 | 0 | 18 |
+| `Fraljiculator_ArrayPool_Architecture_Updated.pdf` | 16 | 55 | 0 | 0 | 0 |
+| `Lean_Diagonal_Similarity_Beginner_Guide.pdf` | 18 | 29 | 0 | 0 | 0 |
+| `124ws2.pdf` | 6 | 0 | 0 | 0 | 0 |
+| `2610.07774v1.pdf` | 15 | 5 | 0 | 6 | 18 |
+| `Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(6).pdf` | 19 | 0 | 0 | 0 | 0 |
+| `geometrical_hypothesis_Banach(3).pdf` | 10 | 6 | 14 | 15 | 9 |
+
+The 23 byte-distinct files cover historical functional analysis, harmonic analysis/probability, complex analysis, nonlinear PDE, geometric analysis, measure theory, a modern algebraic/matrix-paper control, formal proof/Lean, numbered data/worksheet, a technical performance report, code, handwritten mathematics, and modern arXiv. Geometric analysis and PDE remain overrepresented among accessible historical sources; future rotations should add older number theory, logic, statistics, coding theory and formal methods independently rather than multiplying near-duplicate geometry PDFs.
+
+### OCR full-document inventory (local Tesseract CLI proxy)
+
+| Scan | Pages | Structure | Results | Equations | Bibliography | Assessment |
+|---|---:|---:|---:|---:|---:|---|
+| Schoen 1983, image-only, 3.0× | 19 | 4 | **16** | **0** | **14** | All printed references `[1]`–`[14]`; scanned bibliography `[11]` newly recovered, no false exponent equation |
+| Gromov 1967, rasterized, 2.5× | 10 | **6** | **13** | **9** | **9** | All five `§` headings and all references; native control detects 14 Results and 15 equation labels, so some OCR completeness is **missing** |
+| Caffarelli 1989, rasterized, 2.5× | 27 | 9 | **16** | **50** | **10** | Historical strict image-assisted expectation 18 Results / 55 equations / 10 references: at least 2 Results and 5 numbered equations are still not recovered by this OCR proxy |
+| Pisier 1988, rasterized, 2.5× | 18 | 3 | **6** | **22** | **4** | **Open accuracy issue:** native text yields 7 Results, 23 equations and 17 bibliography entries. Most author-key OCR markers are heavily damaged or separated from authors; four indexed bibliography entries is *not* a pass |
+| Handwritten inverse-problems notes, 2.3× | 3 | 0 | 0 | 0 | 0 | OCR extracts only about 775 characters of weak content; relaxed no-index-pollution check, **not** a successful transcription |
+
+**OCR performance (same host, full page renders and Tesseract 5 CLI, four worker processes, OMP_THREAD_LIMIT=1):** Schoen 19 pp ~18.35 s, ~0.97 s/page; Gromov 10 pp ~12.84 s, ~1.28 s/page; handwritten 3 pp ~2.33 s, ~0.78 s/page. Caffarelli and Pisier completed full-image OCR and detector checks, but comparable whole-document wall times were not retained reliably because a later Simon job hit the execution limit. They are *not* counted in the throughput comparison. These figures must not be presented as Texify, browser Tesseract.js, WASM or WebGPU throughput.
+
+### Focused adversarial checks
+
+- The OCR damaged-key candidate recovers `tl)`, `ll)`, `l1)`, `1l)`, and `I1)` in the full Schoen bibliography, **only** when numeric neighbors `[10]` / `[12]` and strong bibliographic body are present.
+- Rejected: key outside bibliography's left margin; weak/ordinary prose after marker; no closing `)`; arbitrary letters instead of confusable key glyphs; no right numeric neighbor.
+- The Gromov `S1` OCR heading is recovered with an existing multi-page section profile. Rejected: low-confidence OCR, off-center marker, missing neighboring section profile, and mathematical-symbol title.
+- None of the 23 native-input inventories changes because both new parsing paths are OCR-scoped. The other three completed OCR documents keep exactly the same outputs as v341. One severe known limitation (Pisier author-key bibliography completeness) remains deliberately **unfixed**: a broad new OCR rewriter could fabricate keys without visual confirmation and violates the conservative-detector principle.
+
+## Explicit exceptions / manual review and possible regressions
+
+1. **Live browser integration, PDF.js and OCR production engines have not been verified.** A real browser run on the user's deployment is needed for page opening, heading click/navigation, sidebars, equation drag ordering, persistence, export/import, WebGPU → CPU fallback, CPU/WASM accuracy, memory and responsiveness. The local Chromium browser existed, but actual URL navigation was administratively blocked.
+2. **Historical OCR coverage remains incomplete.** Gromov's 9 OCR equations versus 15 native, Caffarelli's 50 versus 55 strict image-confirmed labels, and Pisier's **4 of 17 bibliography entries** are unresolved precision/recall problems. These must not be reported as accepted golden passes. Some older paper equation strings are also difficult for PDF text extraction and require human visual checks.
+3. **Severely degraded OCR and nonstandard author-key citations.** Pisier's printed keys such as `[B1]` / `[B2]` appear as `(B1 J` / `(B2` in the OCR stream, sometimes on lines separate from the author and title. This is a confirmed general weakness of the OCR → bibliography detector, but a reliable repair needs a separately verified corpus and false-positive controls; it was not attempted in v342.
+4. **Potential over-indexing from non-PDF.js projection:** `The_Classic_Solution_to_the_Yamabe_Problem (1).pdf` yields 270 equation candidates on 26 pages; the output requires manual inspection before being treated as correct. `Where_do_Complex_Numbers_come_from_.pdf` returned zero Results in the PyMuPDF adapter although an older PDF.js-oriented record counted four unnumbered Definitions. This discrepancy is **not diagnosed as a source regression** and must be reproduced with actual PDF.js before a code change.
+5. **Limit/cap behavior:** This pass completed a 212-page technical book and a 236-page PDE book, but did not stress documents beyond the 800-page Results primary window plus tail, UI 500-row clipping, giant page images, damaged PDF attachments, memory exhaustion, or rapid document switching during active OCR. No general cap change is justified by this test.
+6. **False-positive tradeoffs:** The new ditto-author OCR path is intentionally restricted to short two-/three-glyph digit-like markers plus strong body and a unique one-number sequence gap; it will miss cases where the original marker and body are entirely erased, or where non-confusable glyphs are substituted. The `S1` recovery requires prior section-number context and will omit isolated single headings rather than invent sections.
+7. **Data policy:** Imported portable indexes are preserved rather than silently overwritten on detector version changes. A manual Rebuild is required to replace already-imported OCR-derived bibliography/outline data. Ordinary locally inferred Structure should rebuild automatically after the v342 cache bump.
+
+## Release and validation record
+
+- Inputs: original `mathreader(5).zip` v339 + exact v340 and v341 root patches. No change to excluded unrelated workspace code, credentials, local data or Git state.
+- Intended changed files (root ZIP): `mathreader/js/41-equations-bibliography.js`, `mathreader/js/40-outline-structure.js`, `mathreader/js/00-core.js`, `mathreader/mathreader.js`, `mathreader/index.html`, and this `mathreader/REGRESSION.md`.
+- Syntax: all JS source files and assembled runtime checked with `node --check`; root patch ZIP member integrity and replacement equivalence checked. The numerical test counts and fixtures are local evidence; **not** asserted to be full Tesseract.js / in-browser MathReader regression.
+
+---
+
 # MathReader Regression / Behavioral Audit Record — v341
 
 Date: 2026-11-03 (America/Los_Angeles)

@@ -323,6 +323,30 @@ async function detectOutlineFromTypography() {
     if (numbers.size >= 3 && spread.size >= 3) {
       for (const line of dollarSections) line.text = line.text.replace(/^\$\s*(\d{1,2})\s*[.,)]\s+/, '§$1. ');
     }
+    // The same printed section sign may OCR as an uppercase S ("S1.").
+    // Resolve it only against an established multi-page §N profile and an
+    // immediately neighboring *observed* section number, never as a generic
+    // S-number heading (common in supplements and unrelated documents).
+    const established = allLines.filter((line) => /^§\s*\d{1,2}\s*[.,)]\s+[A-Z]/.test(String(line.text || '').trim()));
+    const existingNumbers = new Set(established.map((line) => Number(String(line.text).match(/^§\s*(\d+)/)?.[1])).filter(Number.isInteger));
+    const existingPages = new Set(established.map((line) => line.page));
+    if (existingNumbers.size >= 3 && existingPages.size >= 3) {
+      for (const line of allLines) {
+        const match = String(line?.text || '').trim().match(/^S\s*(\d{1,2})\s*[.,)]\s+([A-Z][A-Za-z].*)$/);
+        if (!match || Number(line.confidence) < 70) continue;
+        const number = Number(match[1]);
+        if (existingNumbers.has(number) || !existingNumbers.has(number + 1)) continue;
+        const title = match[2].trim();
+        const words = title.match(/[A-Za-z]{3,}/g) || [];
+        const center = (Number(line.xStartRatio) + Number(line.xEndRatio)) / 2;
+        const width = Number(line.xEndRatio) - Number(line.xStartRatio);
+        if (words.length < 2 || words.length > 12
+            || /[=≤≥≠≈∫∑∏√∂∇∞^_]/u.test(title)
+            || !Number.isFinite(center) || Math.abs(center - 0.5) > 0.14
+            || width > 0.70) continue;
+        line.text = `§${number}. ${title}`;
+      }
+    }
   }
   const lineMetrics = (line) => {
     const value = String(line?.text || '').trim();

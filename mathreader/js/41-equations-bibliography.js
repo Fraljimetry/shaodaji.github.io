@@ -3149,6 +3149,27 @@ function repairOcrExpectedBibliographyKeyOnly(text, line, expected, establishedC
 
 function malformedNumericBibliographyCandidate(text, line, page) {
   if (Number(line?.xStartRatio || 0) >= 0.22) return null;
+  // A scan may fuse the opening bracket and the first two narrow digits into
+  // a short shape such as "tl) , Title ..." for the printed "[11] , Title ...".
+  // Never accept this as a key directly: retain it only as *possible* evidence
+  // for one missing number bounded by two exact adjacent bibliography keys.
+  // The comma after the closing mark is characteristic of old ditto-author
+  // bibliography lines, and the body must independently look bibliographic.
+  const closedDitto = line?.ocrSource && Number(line.xStartRatio || 0) < 0.18
+    ? String(text || '').match(/^([1lI|t]{2,3})\)\s*[,;:]\s+(.{20,})$/u)
+    : null;
+  if (closedDitto) {
+    const digitText = closedDitto[1].replace(/[lI|t]/g, '1');
+    const body = closedDitto[2].trim();
+    if (/^\d{2,3}$/.test(digitText) && bibliographyReferenceBodyLooksStrong(body)) {
+      return {
+        token: closedDitto[1] + ')', digitText, bracketedSingleGlyph: false,
+        body, page, ratio: Number(line.ratio || 0),
+        xStartRatio: Number(line.xStartRatio || 0),
+        used: false, continuations: [], closedOcrDitto: true
+      };
+    }
+  }
   const match = String(text || '').match(/^(\S{2,8})\s+(.{8,})$/u);
   if (!match) return null;
   const token = match[1];
