@@ -1,3 +1,86 @@
+# MathReader Regression / Behavioral Audit Record — v343
+
+Date: **2026-11-04 (Beijing, UTC+08)**
+
+## Standing maintenance policy — required for every future MathReader change
+
+These are **permanent instructions**, not just a one-time v343 test checklist. Retain this section in future revisions of `REGRESSION.md` and update the evidence below instead of replacing the historical record.
+
+1. **Treat every reported miss, false positive, wrong order, or crash as evidence of a possible *defect class*.** Reproduce it against the exact user-supplied PDF and the current authoritative ZIP, investigate the parser, layout/OCR, sequencing, caching, and persistence pipeline, and identify a principled general cause. Never add filename-, author-, title-, or page-number-specific detection exceptions just to pass a fixture. A single case does not by itself justify a broad heuristic: require independent structural evidence and negative controls.
+2. **Conservative semantics and controlled scope.** Correct the smallest general class that is demonstrably broken. Maintain all existing intentional behaviors, including local-first execution, existing OCR WebGPU → CPU fallback, human-adjusted ordering, imported portable data, and established indexing behavior. Avoid new hidden fallbacks. Do not promote a contents listing, index, equation reference, running header, or citation into a main-text Result/Equation/Reference merely because its text resembles a valid label.
+3. **Regression is mandatory with every class fix.** Start with a red reproduction, add permanent positive and adversarial negative tests, and run both old goldens and a deliberately varied *byte-distinct* real-PDF corpus across native text and image-only/image-heavy/OCR. Cover **Structure, Results, Equations, Bibliography** together and watch for interactions: false early entries can suppress genuine later entries through deduplication, sequencing or caches. Track false negatives as well as false positives, equation order and page/ratio anchors, export/import/state survival, and runtime/timeout/resource behavior. Test degraded pre-21st-century scans; rotate across number theory, algebra, logic, probability/statistics, analysis/PDE, computer science, information theory, numerical/applied math and physics rather than letting geometry dominate. Record which papers are repeats vs new.
+4. **Evidence must be auditable, not optimistic.** Record exact source baseline/version, changed files, gate commands, PDF/page counts, measured changes, OCR engine and settings, timings and major constraints. Keep distinct (a) source-level synthetic unit tests, (b) native PDF → PDF.js-like projected integration, (c) OCR proxy, and (d) actual browser/PDF.js/Tesseract.js/Texify/WebGPU checks. Never claim an unrun gate as passed; keep unresolved defects, suspicious edge cases, possible new false positives and required manual checks explicit, so future regression campaigns revisit them.
+5. **Delivery and cache discipline.** Increment exactly one version for each code change, deliver a **root `mathreader/` ZIP patch** containing only changed files, run JS syntax + assembled-runtime + ZIP integrity gates, bump relevant detector cache version(s) when indexed output semantics change, and never silently overwrite intentionally imported user snapshots. Preserve historical regression notes and maintain reusable executable tests when feasible.
+
+## v343: TOC entries falsely become mathematical Results (class-level fix)
+
+**Confirmed original report:** In Lars V. Ahlfors, *Conformal Invariants*, the TOC on PDF page **4** contains `4-1. Definition of extremal length ... 50`; the continuation on PDF page **6** contains `9-1. Definition and examples ... 125`. v342 treated these navigation headings as `Definition 4-1` / `Definition 9-1` at the *TOC pages*. The real labelled declarations occur on **PDF page 62** (`Definition 4-1`) and **PDF page 136** (`Definition 9-1`). This was not merely extra display noise: `normalizeSequentialStructureEntries()` deduplicated and enforced per-type monotonic numbers using the premature `Definition 9-1`, suppressing the genuine `Definition 1-1`, `2-1`, `4-2`, and `4-3`, as well as replacing genuine `4-1` and `9-1` anchors with the TOC anchors. The result index was incomplete and navigated to incorrect pages.
+
+**General cause:** The Results builder directly applied `detectedStructureResult()` to each extracted visual line, whereas the Outline detector had separate TOC awareness. Number-first section-title rows containing a mathematical result keyword (e.g. `4-1. Definition...`) were treated as declarations. Later sequence filtering made the false positives causal rather than harmless.
+
+**Conservative source change:**
+
+- `tocResultLineIndices()` recognizes navigation *rows*, not whole pages: it requires aligned folios and either a Contents heading with multiple matching rows, or substantial repeated hierarchical subsection rows in the early-page window for a continuation with a missing/degraded heading. A substantive-title guard protects against early numerical tables. A single candidate or a Contents heading alone never excludes a Result.
+- The Results builder skips qualified TOC lines **before** declaration parsing, proof attachment, deduplication and numeric sequence validation, allowing later genuine entries to survive. Normal body declarations on a page with a short TOC remain eligible.
+- `structureResultLooksLikeNumberedSectionTitle()` independently rejects uppercase subsection titles of the narrow `4-1 DEFINITION OF ...` / `9-1 DEFINITION AND ...` class, which occur in the actual chapter text ahead of an explicit `Definition 4-1 ...` declaration. This is based on heading grammar, not book identity or a hard-coded label.
+- `STRUCTURE_INDEX_VERSION` **42 → 43** so ordinary cached Results/Bibliography indexes refresh; equation summary version remains 22. App and asset versions **342 → 343**. Portable imported detector data are not silently rewritten; manually rebuild their indexes when upgrading.
+
+### v343 test evidence and exact observed change
+
+| Gate | Outcome | Meaning |
+|---|---|---|
+| Full Results/Bibliography source-function integration | **23 byte-distinct PDFs / 1,092 pages / no exceptions** | Same baseline native corpus used in v342; runs the real `buildStructureIndex()` on PyMuPDF → PDF.js-like line objects in Node VM, separately for v342 and v343 |
+| Exact downstream nonregression comparison | **22 PDFs unchanged item-for-item**; only Ahlfors differs | No new Results/Bibliography changes outside the confirmed class; all 23 Bibliography inventories unchanged |
+| Ahlfors actual Result changes | **91 → 95** indexed Results | Two false locations removed and six genuine locations restored: `Definition 1-1` p24, `2-1` p36, `4-1` p62, `4-2` p68, `4-3` p69, `9-1` p136. Net **+4**, because two false TOC entries previously displaced six valid items |
+| Class-level executable assertions | **23 / 23 passed** | `node mathreader/tests/results_toc_regression.js`; contents with folios, damaged continuation headings, title-vs-declaration, same-page body, no-header controls, numeric-data tables, isolated rows, OCR/no-span variants, and sequence/dedup behavior |
+| Real OCR rotation focused on TOC and body | **10 image-rendered pages / 10 completed** | Ahlfors PDF pages 4,5,6,24,36,61,62,68,69,136 through 2.1× rendered images → Tesseract 5.5 CLI (`--psm 3`, `OMP_THREAD_LIMIT=1`), then MathReader source Result parsing. Zero false TOC Results in these OCR outputs; genuine `Definition 1-1`, `2-1`, `4-1`, `4-2`, `4-3`, `9-1` still appear. Some OCR TOC titles are split across lines: this only confirms *no index pollution*, not perfect OCR recognition |
+| Approximate parser throughput | v342 **1.58 s** vs v343 **1.52 s** | One local 23-document Node VM integration pass each, same host; peak resident memory ~203 MB vs ~204 MB. One-shot diagnostic, **not** a statistically meaningful performance claim or browser benchmark |
+| Unchanged systems | 40-outline-structure.js, Equation detection, OCR engine, export/import logic not edited | Syntax/build gates below; no claim of full fresh browser or production OCR pipeline regression |
+
+**Important interpretation:** The user reported two *extra* Results, but the correct post-fix count increases from 91 to 95 in this test adapter because genuine body definitions that were previously suppressed become available. Counts alone are not quality measures: the **correct locations and identities** matter. Actual PDF page numbers above are 1-based PDF pages, not printed-book page numbers.
+
+### v343 unresolved exceptions, manual checks and possible regressions
+
+1. **Real browser/PDF.js and production OCR engines not executed in this patch environment.** The native corpus uses a PyMuPDF geometric projection into MathReader functions; the OCR rotation uses Tesseract CLI, not browser Tesseract.js/Texify, nor WebGPU/CPU fallback. A browser acceptance run should open Ahlfors, rebuild Results, check `Definition 1-1`, `2-1`, `4-1`–`4-3`, `9-1`, `9-2`, `10-1`, and verify jumps to body statements rather than contents or chapter headings. Check persistence after reload and imported portable snapshots separately.
+2. **Conservative TOC recall:** A table of contents with destroyed/missing page folios, extracted one-word-only lines, no Contents header *and* too few hierarchical rows will not be auto-classified. An isolated true Definition directly under a contents list is protected from blanket-page rejection. A future corpus may expose other TOC syntaxes (dot leaders, two columns, roman numeral pages, author-index listings, unnumbered result lists) which should be addressed only with validated class-level evidence and negative cases.
+3. **Possible TOC false positives:** Repeated early technical tables can have aligned numeric last columns. v343 requires a page header or strong hierarchical-title profile, but a table with multiple title-like subsection rows could still resemble a TOC. Treat this as an explicit open risk; avoid broadening TOC filtering to an entire page.
+4. **Existing v342 unresolved OCR completeness issues remain:** Pisier author-key references (4/17 OCR-vs-native), Gromov OCR equations, Caffarelli OCR Results/Equations, and handwritten transcription quality are not fixed by v343. The earlier regression details below remain authoritative. Do not report these as passes or reclassify them as resolved.
+5. **Coverage rotation:** 23-native-PDF set is the same corpus as v342 (not 23 newly sourced papers). The Ahlfors 10-page OCR rotation is newly performed. Future campaigns should include fresh mathematical disciplines/eras, full-document old scans, OCR performance measurements, import/export and browser stress alongside these permanent cases.
+
+### v343 reproducible local validation
+
+From a workspace containing the complete v342 baseline with v343 root ZIP patch overlaid:
+
+```bash
+node mathreader/tests/results_toc_regression.js
+node --check mathreader/mathreader.js
+node --check mathreader/js/00-core.js
+node --check mathreader/js/41-equations-bibliography.js
+# Also syntax-check every other mathreader/js/*.js and the assembled module;
+# validate the root ZIP's CRC, exact changed-file list and version synchronization.
+```
+
+The full 23-PDF and real OCR integration corpora are documented as external source fixtures and **are not embedded** in the distributable ZIP. The self-contained 23-assertion Node test is included in the patch; repeating the full real-PDF tests requires the original source PDFs. There is no claim that this test file alone establishes end-to-end production correctness.
+
+### v343 release files and gates
+
+**Root ZIP patch:** `mathreader_v343_patch.zip` (root directory is `mathreader/`), containing exactly six files:
+
+```text
+mathreader/REGRESSION.md
+mathreader/index.html
+mathreader/js/00-core.js
+mathreader/js/41-equations-bibliography.js
+mathreader/mathreader.js
+mathreader/tests/results_toc_regression.js
+```
+
+**Checks:** Node syntax for all JavaScript source files, the concatenated runtime, and the new test; version synchronization `343` in bootstrap/assets and Structure cache `43`; exact diff versus fully reconstituted v342 baseline; ZIP entry paths, CRC/integrity and six-file containment. These are packaging/source gates, not live browser acceptance.
+
+---
+
+## Archived v342 regression (historical record preserved verbatim)
+
 # MathReader Regression / Behavioral Audit Record — v342
 
 Date: **2026-11-04 (Beijing, UTC+08)**

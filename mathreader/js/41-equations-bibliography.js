@@ -33,10 +33,73 @@ function structureResultProseReferenceTail(value) {
   return /^(?:(?:above|below)\s+)?(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|should|may|might|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
 }
 
+// Number-first capitalized chapter/section headings can contain the word
+// "DEFINITION" without announcing a mathematical Definition. Their title
+// phrases are not Result statements, even when repeated as TOC entries.
+// Require an all-uppercase, subsection-number-first noun phrase; preserve
+// ordinary label-first "Definition 4-1 ..." declarations in the body.
+function structureResultLooksLikeNumberedSectionTitle(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^\d{1,2}(?:[-–.]\d{1,2}){1,3}[.)]?\s+(?:DEFINITION|THEOREM|LEMMA|PROPOSITION|COROLLARY|REMARK|EXAMPLE)\s+(?:OF|AND|FOR|ON|IN|WITH)\s+(.{3,100})$/);
+  return Boolean(match && /^[A-Z][A-Z\s'’&-]+$/.test(match[1].trim()));
+}
+
+// General TOC navigation classifier for Results (not a file- or label-specific
+// exclusion).  Rows must resemble section/chapter titles with aligned page
+// folios; a repeated sequence establishes the context.  The set is per-row,
+// never the entire page, because short papers may contain real statements
+// immediately beneath their contents listing.
+function tocResultLineIndices(lines, page = 1, pageCount = 1) {
+  const rows = Array.isArray(lines) ? lines : [];
+  if (!rows.length) return new Set();
+  const header = rows.some((line) => {
+    if (Number(line?.ratio ?? 1) > 0.20) return false;
+    return /^(?:(?:[ivxlcdm]+|\d+)\s+)?(?:table\s+of\s+)?contents\s*(?:(?:[ivxlcdm]+|\d+))?$/i.test(String(line?.text || '').trim());
+  });
+  const tocNumberedLead = /^(?:\d{1,2}(?:[.·\-–—_]\d{1,2}){0,4}[.)]?|[A-H][.)])\s+\S/i;
+  const rowFolio = (line) => {
+    const text = String(line?.text || '').replace(/\s+/g, ' ').trim();
+    if (!tocNumberedLead.test(text) || text.length > 140) return false;
+    if (!/\s(?:\d{1,4}|[ivxlcdm]{1,7})$/i.test(text)) return false;
+    const parts = Array.isArray(line?.parts) ? line.parts : [];
+    const folioPart = parts.length ? parts[parts.length - 1] : null;
+    const end = Number(line?.xEndRatio);
+    const folioX = Number(folioPart?.xStartRatio);
+    const precedingEnd = Number(parts.length >= 2 ? parts[parts.length - 2]?.xEndRatio : NaN);
+    // Native PDF text carries separate right-aligned page-number spans.
+    if (folioPart && Number.isFinite(folioX) && Number.isFinite(precedingEnd)) {
+      const tail = text.slice(Number(folioPart.start || 0), Number(folioPart.end || text.length)).trim();
+      return /^(?:\d{1,4}|[ivxlcdm]{1,7})$/i.test(tail)
+        && folioX >= 0.72 && folioX - precedingEnd >= 0.025
+        && Number(line?.xStartRatio ?? 1) <= 0.35;
+    }
+    // An OCR record may lack span geometry. Use only when the page itself
+    // has a verified multi-row TOC profile (verified below).
+    return !parts.length && Number.isFinite(end) && end >= 0.70
+      && Number(line?.xStartRatio ?? 1) <= 0.35;
+  };
+  const candidates = rows.map((line, index) => rowFolio(line) ? index : -1).filter((index) => index >= 0);
+  const earlyPage = page <= Math.max(8, Math.ceil(Number(pageCount || 1) * 0.15));
+  const hierarchicalRows = candidates.filter((index) => /^\d{1,2}(?:[.·\-–—_]\d{1,2})+[.)]?\s+\S/.test(String(rows[index].text || ''))).length;
+  const titleRows = candidates.filter((index) => {
+    const title = String(rows[index].text || '')
+      .replace(/^(?:\d{1,2}(?:[.·\-–—_]\d{1,2}){0,4}[.)]?|[A-H][.)])\s+/, '')
+      .replace(/\s+(?:\d{1,4}|[ivxlcdm]{1,7})$/i, '');
+    return (title.match(/[A-Za-zÀ-ÖØ-öø-ÿ]{3,}/g) || []).length >= 2;
+  }).length;
+  // Continuation-page headers can be degraded or missing in OCR. Without an
+  // explicit Contents header, require *repeated subsection* numbers and
+  // substantive title text, not merely rows of numerical measurements.
+  const established = (header && candidates.length >= 2 && titleRows >= 1)
+    || (earlyPage && candidates.length >= 5 && hierarchicalRows >= 3 && titleRows >= 3
+      && candidates.length >= rows.length * 0.13);
+  return established ? new Set(candidates) : new Set();
+}
+
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
   const cleaned = normalizedStructureResultText(line?.text);
-  if (!cleaned) return null;
+  if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned)) return null;
 
   // Classical papers use both “Lemma 2.3” and “2.3. LEMMA”. Require the
   // declaration to start the visual line so body references cannot qualify.
@@ -3321,6 +3384,7 @@ async function buildStructureIndex({ force = false } = {}) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
       const tailOnlyPage = page > primaryPageCount;
       const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode);
+      const tocResultRows = tailOnlyPage ? new Set() : tocResultLineIndices(lines, page, sourceDoc.numPages);
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
         const line = lines[lineIndex];
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
@@ -3364,7 +3428,7 @@ async function buildStructureIndex({ force = false } = {}) {
           // forms ("1.1. LEMMA"), and a standalone type line next to its
           // number. Normalize only these declaration shapes; prose references
           // such as "Proposition 2.1 shows ..." stay out of Results.
-          const detectedResult = detectedStructureResult(lines, lineIndex, page);
+          const detectedResult = tocResultRows.has(lineIndex) ? null : detectedStructureResult(lines, lineIndex, page);
           if (detectedResult) {
             const key = `${page}:${normalizedReferenceLabel(detectedResult.label)}`;
             if (!nextEntries.some((entry) => entry.key === key)) {
