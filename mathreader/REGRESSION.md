@@ -858,3 +858,88 @@ Historical cross-field works were additionally researched for future rotation—
 - The only intended detector behavior change is rejection of bare dotted decimal measurements as equation labels.
 - Full campaign comparison shows no detector-output changes outside `Fraljiculator_ArrayPool_Architecture_Updated.pdf`, where the single false equation is removed.
 - Release ZIP contains only the root `mathreader/` package; no OCR intermediates, harnesses, screenshots, or regression scratch files.
+
+## v347 additional 50-file regression — historical, handwritten, and cross-disciplinary controls (2026-11-05 Beijing UTC+08)
+
+**Scope and baseline.** This is an additional documentation-only regression executed against the user-provided full **v347** ZIP, with the previously delivered v347 cross-field `REGRESSION.md` addendum preserved. These **50 SHA-256-distinct PDFs / 1,672 PDF pages** are additional to the **immediately previous six-file cross-field run**. Some documents were deliberately rotated from older project regression campaigns and several are related editions/compilations: byte distinction does **not** mean 50 historically independent works. Five are additional handwritten lecture-note documents (four applied inverse-problem and one geometric-analysis seminar); old published scans include Yau (1978), Caffarelli–Gidas–Spruck (1989), and historical math controls. The sample extends to AI/ML, source code, software performance, economics, language/character tables, literature, calculus teaching and applied PDE. **It does not satisfy the still-open request for 50 independently sourced old handwritten works outside pure mathematics.** Those original archival physics/engineering laboratory notebook PDFs remain unavailable to the local detector environment.
+
+**Actual test method.** Original PDF bytes were materialized and SHA-256 hashed. PyMuPDF independently traversed **all 1,672 PDF pages** and extracted native words/spans, line geometry, and bookmark metadata. A page with fewer than 30 native-text characters was separately rendered and passed through local Tesseract OCR; OCR-derived visual lines were marked `ocrSource: true` and inserted into a full-document page-line cache. The **unmodified v347 `mathreader/js/41-equations-bibliography.js`** was evaluated in Node VM, and its actual `buildStructureIndex()` (Results + Bibliography) and `buildEquationLabelIndex()` were run against each full-document cache. Browser-only UI, async scheduling, persistence and equation posterior image assistance were stubbed; the last mechanism was **intentionally disabled**. This is a source-level detector run against **proxy geometry**, not MathReader PDF.js or production Texify/WebGPU/CPU runtime. The PDF outline/bookmark metadata was inventoried, but the separate `40-outline-structure.js` browser Structure inference was **not** exercised end-to-end. Therefore a completed detector job **does not constitute fully verified PDF detection accuracy**.
+
+**Results.** All **50/50** source-level detector jobs completed without VM exceptions; **884 Results, 1940 distinct equation labels, 478 bibliography entries** across the entire corpus. These are output counts, not precision, recall, or golden assertions. **Three PDFs have confirmed local-proxy errors (FAIL); the other 47 are UNVERIFIED**, not PASS, because whole-document independently annotated ground truth was not supplied. The archived machine-readable audit `mathreader/regression/crossfield_50_20261105.json` holds exact PDF hashes, page counts, original page/item locations, OCR attempts and detector labels.
+
+**OCR proxy and actual execution failures.** **102** pages (<30 native-text characters) required image OCR. Three initial local Tesseract diagnostic passes showed heavy timeouts under unconstrained OpenMP: PSM3 115 DPI **18 ok / 84 failures**, PSM6 115 DPI **11 ok / 73 failures** among the first-pass failures, and low-fidelity PSM11 78 DPI English-only **10 ok / 63 failures** among the remaining failures. Investigation isolated test-environment thread oversubscription. A new consistent **160 DPI / PSM 3 / per-process `OMP_THREAD_LIMIT=1`** full OCR pass was executed on **all 102** eligible pages, producing **102 OCR successes / 0 failures** (15-second per-page timeout). Where this last controlled pass succeeded, its text and geometry **replaced**, not combined with, earlier weaker proxies before the detector rerun. Across all attempts, **102/102** pages yielded some proxy OCR record and **0** remained without local OCR. A successful OCR execution does **not** establish accurate text or mathematical symbol recognition. The 3 initial passes are test-harness-only diagnostic configurations, not hidden application fallbacks. No production browser Texify/WebGPU/CPU OCR or fallback was executed; the source code remains unchanged.
+
+### Document-by-document observed indexes
+
+Legend: **R/E/B = Results / Equation labels / Bibliography**; OCR is returned pages / attempted pages in the staged **proxy** (not OCR character accuracy). `FAIL` = confirmed error; `U` = **UNVERIFIED**, never a fully verified PASS. An empty index can be a correct negative control *or* a recognition omission.
+
+| # | Original PDF (SHA-256 recorded in JSON) | Field / era | Pages | Proxy OCR | R/E/B | Status |
+|---:|---|---|---:|---:|---:|---|
+| 1 | `0810.5645v6.pdf` | Mathematical research / analysis control | 212 | 0/0 | 203/344/105 | U |
+| 2 | `1209.2203v2.pdf` | Mathematical research / analysis control | 88 | 0/0 | 63/293/183 | U |
+| 3 | `124ws2.pdf` | Applied calculus / teaching control | 6 | 0/0 | 0/0/0 | U |
+| 4 | `2309.00806v2.pdf` | Mathematical research / analysis control | 15 | 0/0 | 26/0/18 | U |
+| 5 | `2610.07774v1.pdf` | Machine learning / AI safety | 15 | 0/0 | 0/5/17 | FAIL |
+| 6 | `581 Note 2.pdf` | Handwritten inverse problems / applied imaging | 2 | 2/2 | 0/0/0 | U |
+| 7 | `581 Note 4.pdf` | Handwritten inverse problems / applied imaging | 2 | 2/2 | 0/0/0 | U |
+| 8 | `581 Note 5.pdf` | Handwritten inverse problems / applied imaging | 4 | 4/4 | 0/0/0 | U |
+| 9 | `581 Note 6.pdf` | Handwritten inverse problems / applied imaging | 2 | 2/2 | 0/0/0 | U |
+| 10 | `A_Geometric_Approach_to_Integration.pdf` | Mathematics teaching control | 6 | 0/0 | 0/0/0 | U |
+| 11 | `A_Streamlined_Proof_of_the_Yamabe_Problem.pdf` | Mathematical research / analysis control | 18 | 0/0 | 10/66/0 | U |
+| 12 | `Code_final.pdf` | Software / performance engineering | 40 | 0/0 | 0/0/0 | U |
+| 13 | `Computation_VS_Dark.pdf` | Software / performance engineering | 25 | 0/0 | 0/0/0 | U |
+| 14 | `Fraljiculator_Performance_Optimization_Closeout_Report.pdf` | Software / performance engineering | 6 | 0/0 | 0/0/0 | U |
+| 15 | `GA Seminar Note 1.pdf` | Handwritten math seminar control | 4 | 4/4 | 0/0/0 | U |
+| 16 | `Green_Function_Expansion_One_Page.pdf` | Mathematical research / analysis control | 1 | 0/0 | 1/14/0 | U |
+| 17 | `Inverse_Problems_Lecture_1.pdf` | Applied PDE / inverse problems | 6 | 0/0 | 3/54/0 | U |
+| 18 | `Inverse_Problems_Lectures_1_7.pdf` | Applied PDE / inverse problems | 38 | 0/0 | 14/65/0 | U |
+| 19 | `Inversion_to_ADM_Mass.pdf` | Mathematical research / analysis control | 5 | 0/0 | 0/64/0 | U |
+| 20 | `Lean_Diagonal_Similarity_Beginner_Guide.pdf` | Formal methods / Lean teaching | 18 | 0/0 | 0/0/0 | U |
+| 21 | `Math124_Week2_Distance_Speed_Solutions.pdf` | Applied calculus / teaching control | 4 | 0/0 | 0/0/0 | U |
+| 22 | `Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf` | Mathematical research / analysis control | 18 | 0/0 | 19/93/14 | U |
+| 23 | `Radon Measures and Riesz Representation Theorems.pdf` | Mathematical research / analysis control | 10 | 0/0 | 15/0/2 | U |
+| 24 | `Riemann球面上的旋转_Fraljimetry.pdf` | Mathematical research / analysis control | 2 | 0/0 | 0/0/0 | U |
+| 25 | `Schoen_Yau_Positive_Mass_Step_Tables.pdf` | Mathematical research / analysis control | 9 | 0/0 | 0/0/0 | U |
+| 26 | `Seattle_UDistrict_vs_Xian_Beilin_房价与租金详细对比_2026-09.pdf` | Economic / character-table negative control | 8 | 0/0 | 0/0/0 | U |
+| 27 | `Seattle_UDistrict_vs_Xian_Beilin_超市典型商品价格详细对比_2026-09.pdf` | Economic / character-table negative control | 8 | 0/0 | 0/0/0 | U |
+| 28 | `The_Classic_Solution_to_the_Yamabe_Problem (1).pdf` | Mathematical research / analysis control | 26 | 0/0 | 13/270/7 | U |
+| 29 | `Where_do_Complex_Numbers_come_from_.pdf` | Mathematics teaching control | 3 | 0/0 | 4/0/0 | U |
+| 30 | `YamabeProblem.pdf` | Historical mathematical research control | 56 | 0/0 | 51/62/46 | U |
+| 31 | `Yamabe_Review_Math_Corrected.pdf` | Mathematical research / analysis control | 26 | 0/0 | 13/270/7 | U |
+| 32 | `Yamabe_missing_inputs_detailed_proofs.pdf` | Mathematical research / analysis control | 15 | 0/0 | 7/38/0 | U |
+| 33 | `brendle2007.pdf` | Mathematical research / analysis control | 29 | 0/0 | 30/6/20 | U |
+| 34 | `caffarelli1989.pdf` | Historical mathematical research control | 27 | 0/0 | 18/23/10 | FAIL |
+| 35 | `chongxi_CommonWords.pdf` | Economic / character-table negative control | 49 | 0/0 | 0/0/0 | U |
+| 36 | `colleague_inverted_bubble.pdf` | Mathematical research / analysis control | 3 | 0/0 | 0/24/0 | U |
+| 37 | `covering_spaces_for_geometric_analysis.pdf` | Mathematical research / analysis control | 18 | 0/0 | 15/0/0 | U |
+| 38 | `double_spiral_surface_revision_spec.pdf` | Technical manuscript / formatting | 13 | 0/0 | 0/1/0 | FAIL |
+| 39 | `geometric_measure_theory_split_pages.pdf` | Mathematical research / analysis control | 274 | 7/7 | 70/67/27 | U |
+| 40 | `lean_quintessential_examples_collection.pdf` | Formal methods / Lean teaching | 76 | 0/0 | 259/0/5 | U |
+| 41 | `lectures_on_pde_split_pages.pdf` | Applied PDE / inverse problems | 236 | 12/12 | 37/22/0 | U |
+| 42 | `micro_geometry_covers_4x3_safe.pdf` | Illustrated scanned slide/cover collection | 70 | 68/68 | 0/0/0 | U |
+| 43 | `rose_tile_solution.pdf` | Mathematics teaching control | 2 | 0/0 | 0/0/0 | U |
+| 44 | `rose_tile_thinking.pdf` | Mathematics teaching control | 1 | 0/0 | 0/0/0 | U |
+| 45 | `yau1978.pdf` | Historical mathematical research control | 73 | 1/1 | 13/159/15 | U |
+| 46 | `利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf` | Mathematical research / analysis control | 3 | 0/0 | 0/0/2 | U |
+| 47 | `无穷的历史.pdf` | History of mathematical ideas | 19 | 0/0 | 0/0/0 | U |
+| 48 | `汲绍达诗词文稿集_完整整理版.pdf` | Literature / prose negative control | 37 | 0/0 | 0/0/0 | U |
+| 49 | `汲绍达诗词文稿集_完整整理版_修订.pdf` | Literature / prose negative control | 36 | 0/0 | 0/0/0 | U |
+| 50 | `祝福_魯迅_分段修正版.pdf` | Literature / prose negative control | 8 | 0/0 | 0/0/0 | U |
+
+### Confirmed issues / independent visual checks
+
+1. **MR-OPEN-003 confirmed reproduction — Caffarelli–Gidas–Spruck, 1989, PDF p.3, Theorem 1.3 (FAIL, Results recall + spurious incomplete result).** Visible print on p.3 contains the genuine `THEOREM 1.3. Let u ...` statement. The proxy index has `Theorem 1.2` and an incomplete `Theorem · p.3`, but **omits Theorem 1.3**. Root-cause hypothesis: legacy PDF text extraction separates `THEOREM`, `1.3.`, and the statement into adjacent same-y rows, with interleaved trailing clause text, defeating the conservative split-heading recovery. Impact: missing navigation target and a duplicate-like nonnumbered pseudo-result. This is a known historical paper family issue, not a reason to patch only this paper. Proposed next test: vary single-line, two-line, three-fragment heading layouts and same-y interleaved column/text contexts; compare with genuine consecutive theorem declarations and prose references; rerun broad negative controls before changing any code.
+2. **MR-OPEN-NEW-CROSSFIELD-AXIS — `2610.07774v1.pdf`, PDF p.6, plotted `0.04` (FAIL, Equation precision).** The local detector incorrectly indexed a **chart-axis tick value `0.04`** as equation `(0.04)`; the original PDF page image and text layer show repeated numeric graph scales `0.00, 0.02, 0.04, ...`, not an equation-number label. Root-cause hypothesis: a bare dotted numeric token in a plot axis escaped measurement-unit guards that only cover tokens with explicit units. Affected class: chart scales and data plots in engineering/science PDFs. Severity: moderate false navigation. Defer until geometry-backed axis/plot context controls can exclude ticks without sacrificing genuine old-paper unparenthesized dotted labels. Test multiple axis orientations/column layouts and valid bare equation labels in historical controls. Do **not** add a document-specific exception.
+3. **MR-OPEN-NEW-CROSSFIELD-SECTION — `double_spiral_surface_revision_spec.pdf`, PDF p.12, `7.3 图表` (FAIL, Equation precision).** The native text layer splits the Chinese section heading into a bare `7.3` line and the caption `图表`. The detector indexed `(7.3)` despite it being a subsection number. Root-cause hypothesis: same-row heading evidence is fragmented into separate lines, while a bare dotted candidate sits in a plausible equation margin. Affected class: Asian/multilingual and text-layer-fragmented headings; existing mature section guards catch normal same-line headings but not all separated text. Severity: moderate. Defer any fix until positive/negative checks prove the candidate can be excluded without deleting genuine separate-line equation tags in old scans.
+
+**Further suspicious/unverified cases, not promoted to confirmed defects:** `yau1978.pdf` PDF p.38 has a nonnumbered `Lemma · p.38` row and neighboring `Lemma 1` on p.39; requires independent visible-numbering and link-target comparison. The five handwritten documents have weak OCR-derived text and cannot be counted as successfully recognized solely because their equation index is empty. Mixed-language illustrated Chinese pages may yield very few characters under the final English-only sparse diagnostic; these pages are categorically **UNVERIFIED** for real OCR and downstream recall. MathReader’s specialized equation-margin posterior image assist, gap recovery on restored OCR results, full browser Outline inference, runtime OCR fallback, export/import, and production deployed UI were **not** revalidated by this proxy campaign. Historical non-math archive URLs in the preceding addendum remain **not tested** locally; do not count them toward this 50-file corpus.
+
+### Release gates and deferral decision
+
+- **No source code was changed; version stays `v347`** (no `v348` code patch). `mathreader/REGRESSION.md` and the machine-readable audit JSON are the only root-patch files. The root ZIP has no original PDFs or OCR images; source hashes and page mapping enable reproduction once the same authorized PDFs are available.
+- All 96/96 existing bundled test assertions pass: 15 bibliography, 25 embedded-outline title, 33 equation progress, 23 Results/TOC. Bootstrap and each modular JavaScript file pass `node --check`; the fully concatenated ten-part runtime passes `node --check`; the ZIP integrity check passes.
+- The three confirmed local index defects remain **FAIL**. No filename-specific, rule-broadening, speculative heuristic or unauthorized recovery machinery was introduced. Remaining cross-field accuracy and OCR/barcode/handwriting, missing page ground truth and production browser behavior remain **UNVERIFIED**; there are **zero fully verified documents in this campaign** under the project’s 100% whole-document standard.
+- Future regression must obtain independent original historical handwritten physics/engineering/geology notebooks (not previously tested links), compare page-by-page visible labels and structure against the actual browser detector, and prioritize class-level axis-tick, split-section heading, and split theorem heading tests. The original source and future full regression should not be changed solely to improve a specific one-off corpus member.
+
+---
+
