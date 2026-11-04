@@ -1779,7 +1779,7 @@ function equationDetectionSummary(state) {
   if (scanned && phase !== 'ocr') shortParts.push(t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`));
   if (!scanned && phase !== 'native' && state.nativeTotal > 0) shortParts.push(native);
   if (selected) shortParts.push(t('selected', '选页'));
-  if (scanned && Number(state.recovered || 0)) shortParts.push(t(`+${state.recovered} rec`, `补 ${state.recovered}`));
+  if (scanned && Number(state.recovered || 0)) shortParts.push(t(`+${state.recovered} recovered`, `补 ${state.recovered}`));
   if (phase === 'ocr' && Number(state.retryTotal || 0)) shortParts.push(t(`retry ${state.retryDone || 0}/${state.retryTotal}`, `重试 ${state.retryDone || 0}/${state.retryTotal}`));
   // The adjacent equation-count badge already shows total labels; do not duplicate it here.
 

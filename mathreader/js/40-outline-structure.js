@@ -7,6 +7,16 @@ function flattenOutline(items, depth = 0, output = []) {
   return output;
 }
 
+// PDF bookmark metadata can contain malformed trailing encoding bytes (e.g.,
+// an overlong NUL sequence) that PDF.js exposes as a control/replacement glyph.
+// Clean ONLY invalid trailing code points. Never remove a meaningful square,
+// math symbol, or an uncertain replacement character within the title.
+function cleanEmbeddedOutlineTitle(value) {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001F\u007F-\u009F\uFFFD\uD800-\uDFFF]+$/u, '')
+    .trim();
+}
+
 function updateOutlineSource() {
   if (!outlineSource) return;
   outlineSource.classList.toggle('is-hidden', outlineMode === 'none');

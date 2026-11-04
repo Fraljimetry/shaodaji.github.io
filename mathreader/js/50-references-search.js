@@ -353,7 +353,7 @@ async function getTocOutlineTargets() {
     const outline = await pdfDoc.getOutline();
     const flat = flattenOutline(outline);
     for (const { item } of flat) {
-      const title = String(item?.title || '').replace(/\s+/g, ' ').trim();
+      const title = cleanEmbeddedOutlineTitle(item?.title).replace(/\s+/g, ' ');
       if (!title) continue;
       const location = await resolveOutlineDestination(item.dest);
       if (location) addTarget(title, location.page, location.ratio);
@@ -837,10 +837,13 @@ async function renderOutline() {
       const resolved = await Promise.all(flat.map(async ({ item, depth }, index) => {
         const location = await resolveOutlineDestination(item.dest).catch(() => null);
         if (!location) return null;
+        const cleanTitle = cleanEmbeddedOutlineTitle(item.title);
         return {
+          // Keep the raw bookmark identity so existing user edits remain bound
+          // to the same PDF destination after upgrading.
           sourceKey: `${index}:${depth}:${String(item.title || '').trim()}`,
-          title: item.title || t('Untitled', '未命名'),
-          matchText: item.title || '',
+          title: cleanTitle || t('Untitled', '未命名'),
+          matchText: cleanTitle,
           page: Number(location.page) || 1,
           ratio: Number(location.ratio) || 0,
           depth: Number(depth) || 0,

@@ -1,4 +1,4 @@
-// v346 compact one-line progress + diagnostics contract; run from project root.
+// v347 compact one-line progress + diagnostics contract; run from project root.
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -37,7 +37,7 @@ run("updateEquationDetectionProgress({phase:'ocr',ocrDone:3,ocrTotal:8,documentP
 check(status.textContent.includes('OCR 3/8'),'OCR denominator is actual plan');
 check(!status.textContent.includes('planned pages') && status.title.includes('image OCR 3/8 planned pages'),'detailed OCR schedule moved to tooltip');
 check(status.textContent.includes('selected') && status.title.includes('selected coverage only'),'partial automatic coverage explicitly labeled in short and full status');
-check(status.textContent.includes('+2 rec') && status.title.includes('+2 recovered'),'recovered labels reported, with expanded details on hover');
+check(status.textContent.includes('+2 recovered') && status.title.includes('+2 recovered'),'recovered labels reported, with expanded details on hover');
 check(status.textContent.length < 40,'representative OCR status is compact');
 check(!status.textContent.includes('16 labels') && status.title.includes('16 labels'),'total labels remain available in tooltip and adjacent count badge');
 run("updateEquationDetectionProgress({phase:'partial',failedPages:1,nativeMs:1040,renderMs:4200,recognizeMs:8300,validationMs:100,elapsedMs:15000},1,true)");
@@ -62,7 +62,7 @@ check(status.textContent.includes('Index failed') && status.title.includes('Equa
 const css=fs.readFileSync(path.join(__dirname,'../mathreader.css'),'utf8');
 check(/\.equation-detection-status\{[^}]*white-space:nowrap[^}]*text-overflow:ellipsis/.test(css),'one-line CSS with narrow-pane ellipsis');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-check(html.includes('mathreader.js?v=346') && html.includes('mathreader.css?v=346'),'cache busters updated to v346');
+check(html.includes('mathreader.js?v=347') && html.includes('mathreader.css?v=347'),'cache busters updated to v347');
 check(html.includes('Expand to index equations.') && html.includes('Numbered references appear here.'),'sidebar empty hints shortened');
 
 const doc={getPage:async()=>({getViewport:()=>({width:250,height:100}),render:()=>({promise:Promise.resolve()})})};

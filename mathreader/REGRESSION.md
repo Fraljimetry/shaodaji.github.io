@@ -1,4 +1,38 @@
-# MathReader Regression / Behavioral Audit Record — v346
+# MathReader Regression / Behavioral Audit Record — v347
+
+## v347: Corrupt embedded-PDF bookmark terminators (2026-11-05 Beijing time)
+
+**Authoritative baseline:** user-supplied complete v345 ZIP with the delivered v346 root patch applied and byte-compared; source version **346 → 347**. The full packaged policy and development history below remain authoritative. Structure detection cache **44** and equation summary version **22** do not change because this is bookmark-metadata presentation/TOC-target cleanup only, not an indexing or OCR change.
+
+### Reproduced defect class
+
+- **FAIL (v346, user screenshot):** `Ahlfors-Conformal-Invariants.pdf`, visible Structure panel / embedded PDF outline, e.g. `Contents`, `Foreword`, `Preface`, chapter 1 and sections 1.1–1.9; each has a rendered trailing unknown-glyph rectangle. The three first bookmarks (`Cover`, `Title Page`, `Copyright Page`) appear normal. The same defect affects later chapter/section titles.
+- **Independent source evidence:** examined the actual user-library PDF (172 PDF pages) with PyMuPDF bookmark extraction: **78** embedded bookmark entries; **75** (all but the first three) end in two malformed bytes `C0 80` represented in the extraction as surrogate-escaped `U+DCC0 U+DC80`. This matches the screenshot's systematic class-level failure, not a special-case section/title. The exact Unicode character(s) exposed by the deployed PDF.js runtime were **not measured**; replacement glyphs, NUL/control characters, and surrogate escapes are known representations of invalid bookmark tails. Treat exact browser decoder behavior as **UNVERIFIED**, not a proven PDF.js code-point trace.
+- **Cause:** metadata from the PDF's embedded outline is passed into Structure labels and TOC link labels without excluding invalid end-of-title characters. No evidence suggests the mathematical text itself contains a required final symbol.
+- **Conservative correction:** `cleanEmbeddedOutlineTitle()` strips **only trailing** invalid control/replacement/isolated-surrogate code points and trims surrounding whitespace. Apply it to embedded outline `title` / `matchText` and TOC reference-target labels, not to the PDF text layer, OCR, Results/Equations/Bibliography indexing, or user-authored mathematics. Keep genuine `□`, `☐`, `■`, Greek letters and other math glyphs. Leave *interior* unknown symbols visible rather than inventing text. Retain the **raw original `sourceKey`** to preserve existing user edit mappings, and preserve original destination/page/depth and item ordering. No global symbol-stripping heuristics and no filename-specific conditions.
+- **Small UI wording follow-through:** in the one-line Equations progress label, show `+N recovered` rather than `+N rec` (Chinese wording unchanged). Detailed tooltip and progress computation unchanged.
+
+### v347 validation evidence
+
+| Gate | Actual result | Scope / limitation |
+|---|---|---|
+| `node mathreader/tests/embedded_outline_title_regression.js` | **PASS, 25 assertions** | Malformed control/replacement/surrogate suffixes, legitimate math-square negative controls, internal damaged-glyph preservation, real `renderOutline()` and `getTocOutlineTargets()` entry points, destination/depth/source-key fidelity. |
+| `node mathreader/tests/results_toc_regression.js` | **PASS, 23 assertions** | Existing TOC/Results boundaries unchanged. |
+| `node mathreader/tests/bibliography_boundary_regression.js` | **PASS, 15 assertions** | Existing Bibliography boundaries unchanged. |
+| `node mathreader/tests/equation_progress_regression.js` | **PASS, 33 assertions** | v346 progress/selection/failure semantics and v347 full-word `recovered` plus cache keys. |
+| Actual Ahlfors PDF bookmark-tail sweep, PyMuPDF source + extracted JavaScript sanitizer | **PASS, 78/78 entries checked** | **75** invalid tails removed; **3** healthy entries unchanged; no surviving invalid suffix. This is actual PDF bookmark metadata, not a browser PDF.js render. |
+| All 10 module parts, bootstrap, test `node --check` and assembled runtime `node --check` | **PASS** | Syntax and module concatenation; not equivalent to loaded browser PDF.js execution. |
+| Whole-document OCR and detector inventory, browser/mobile rendering | **UNVERIFIED** | No in-browser OCR, live deployment or visual acceptance was run for v347. No claims of 100% Structure/Results/Equations/Bibliography ground-truth accuracy. |
+
+### Risks / follow-up
+
+1. If an embedded bookmark truly has a meaningful mathematical symbol encoded as a trailing replacement character, the original symbol cannot be reconstructed reliably; the metadata-local sanitizer removes only its invalid terminal encoding marker and leaves any interior corruption visible. Preserve this as a limited **unverified edge case**, not a fully solved encoding repair. A literal valid square glyph is intentionally **never** deleted.
+2. The exact production PDF.js decoding of `C0 80`, Firefox/Chrome rendering, localized sidebar behavior, and live Ahlfors navigation should be verified in the deployed browser; no browser test was completed in this patch. If a rectangle remains, inspect the real `pdfDoc.getOutline()` title code points rather than broadening Unicode removal blindly.
+3. Previously documented FAIL/UNVERIFIED cases remain open: Pisier reference OCR, Gromov/Caffarelli OCR omissions, Ahlfors damaged native equation numbering, weak handwriting, and end-to-end production acceptance. This metadata fix does not resolve those issues.
+
+**Changed in the root patch:** `mathreader/js/40-outline-structure.js`, `mathreader/js/50-references-search.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/tests/embedded_outline_title_regression.js` (new), `mathreader/tests/equation_progress_regression.js`, `mathreader/mathreader.js`, `mathreader/index.html`, `mathreader/REGRESSION.md`. Unchanged: all other modules, existing detection algorithms, OCR/WebGPU→CPU fallback, CSS, PDF-page navigation semantics, and cache format versions.
+
+---
 
 ## v346: One-line equation progress and compact sidebar copy (UI-only; 2026-11-05 Beijing time)
 
