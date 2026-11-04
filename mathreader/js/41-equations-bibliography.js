@@ -3229,6 +3229,7 @@ function malformedNumericBibliographyCandidate(text, line, page) {
         token: closedDitto[1] + ')', digitText, bracketedSingleGlyph: false,
         body, page, ratio: Number(line.ratio || 0),
         xStartRatio: Number(line.xStartRatio || 0),
+        ocrSource: Boolean(line.ocrSource),
         used: false, continuations: [], closedOcrDitto: true
       };
     }
@@ -3257,6 +3258,7 @@ function malformedNumericBibliographyCandidate(text, line, page) {
     page,
     ratio: Number(line?.ratio || 0),
     xStartRatio: Number(line?.xStartRatio || 0),
+    ocrSource: Boolean(line?.ocrSource),
     used: false,
     continuations: []
   };
@@ -3275,6 +3277,44 @@ function recoverSingleGapBibliographyCandidates(entries, candidates) {
 
   let recoveredCount = 0;
   const existingKeys = new Set(entries.map((entry) => normalizedBibliographyKey(entry.number)));
+
+  // Old scans can render the first numbered bibliography marker [1] as
+  // {i}, (l), [I], etc.  This is not safe to guess at the start of a section:
+  // require a mature exact [2], [3], [4] sequence, a *single* OCR-only
+  // bracketed-digit-confusable candidate immediately before [2], the same
+  // bibliography page/left margin, and independently bibliographic text.
+  // Author-key [B] and unpaired snippets must remain untouched.
+  if (numericEntries.length >= 3
+      && numericEntries[0].value === 2
+      && numericEntries[1].value === 3
+      && numericEntries[2].value === 4
+      && !existingKeys.has('1')) {
+    const first = numericEntries[0].entry;
+    const compatible = candidates.filter((candidate) => {
+      if (candidate.used || !candidate.ocrSource || !candidate.bracketedSingleGlyph
+          || candidate.digitText || Number(candidate.xStartRatio) >= 0.18
+          || Number(candidate.page) !== Number(first.page)) return false;
+      if (!/^[\[{(]\s*[iIl|]\s*[\]})][.)]?$/u.test(String(candidate.token || ''))) return false;
+      const distance = Number(first.ratio) - Number(candidate.ratio);
+      if (!(distance > 0 && distance <= 0.22)) return false;
+      const fullBody = [candidate.body, ...(candidate.continuations || [])].join(' ').replace(/\s+/g, ' ').trim();
+      return bibliographyReferenceBodyLooksStrong(fullBody);
+    });
+    if (compatible.length === 1) {
+      const candidate = compatible[0];
+      const fullBody = [candidate.body, ...(candidate.continuations || [])].join(' ').replace(/\s+/g, ' ').trim();
+      const recovered = {
+        number: 1, label: '[1]', page: candidate.page, ratio: candidate.ratio,
+        title: fullBody.slice(0, 640), citations: [], ...bibliographyMetadata(fullBody)
+      };
+      const insertAt = entries.indexOf(first);
+      entries.splice(insertAt >= 0 ? insertAt : 0, 0, recovered);
+      existingKeys.add('1');
+      candidate.used = true;
+      recoveredCount += 1;
+    }
+  }
+
   for (let index = 0; index + 1 < numericEntries.length; index += 1) {
     const left = numericEntries[index];
     const right = numericEntries[index + 1];

@@ -1,6 +1,115 @@
-# MathReader Regression / Behavioral Audit Record — v343
+# MathReader Regression / Behavioral Audit Record — v344
 
 Date: **2026-11-04 (Beijing, UTC+08)**
+
+## Mandatory accuracy acceptance, deferral and disclosure policy (effective immediately; doc-only v343 addendum)
+
+**This section supersedes any weaker interpretation of “passed regression” in older entries of this document. It is a permanent release rule.** The v343 source and detector versions have not changed in this documentation-only update.
+
+### Acceptance standard and evidence
+
+1. **Target: 100% detection accuracy on every human-legible PDF declared fully verified.** Check all actual body items in **Structure, Results, Equations, and Bibliography**, including OCR-origin items, their types, labels, locations/pages, reading/order, and absence of false items (e.g. TOC entries, headers, equation citations, and duplicates). A source must be independently audited against its *visible pages* and a complete ground-truth inventory or equivalent exhaustive review. A successful script, zero exceptions, unchanged inventory counts, spot checks or a match to an earlier detector's output **never prove** 100% content accuracy. Zero detected items is not proof that the document contains zero detectable items.
+2. **Any confirmed error on human-legible source is a FAIL, even when correction is difficult.** Missing, extra, misclassified, wrongly located, misordered, duplicated, or OCR-damaged detectable content is an accuracy failure. An OCR system's inability to transcribe human-legible text is **not** grounds for an exception. Do not claim 100%, full coverage, “all correct,” or an accuracy pass for an item/document with an open defect.
+3. **Deferral is explicitly allowed, not silent acceptance.** When a class-level fix is too risky, poorly understood, expensive, or lacks sufficient negative controls, keep the issue open; do not add a broad fragile heuristic to satisfy one document. Log it in the Markdown defect ledger **inside every release ZIP** (this file, `mathreader/REGRESSION.md`), with a stable issue ID, source PDF and exact pages/items, evidence and reproduction, observed versus expected outcome, general class/root-cause hypothesis, severity/impact, reason for deferral, next corrective approach, and verification needed. If unknown, state *unknown* rather than inventing details. Do not erase or silently close a deferred issue.
+4. **Four mutually explicit reporting states.** **PASS — fully verified:** exhaustive visual ground truth and all index/navigation checks match, no unresolved human-legible errors. **FAIL — known defect/deferred:** one or more confirmed errors; documentation and/or nonregression tests may still pass, but *accuracy* does not. **UNVERIFIED:** independent full-document ground truth or production end-to-end execution is incomplete, even if individual controls pass. **EXCEPTION — human-illegible source:** only a genuinely damaged or visually unreadable region, demonstrated with page/region evidence and the excluded scope; it does not cover merely difficult typefaces, scans, mathematics or handwriting that a human can read. Mixed cases must report accurate per-item/per-region status; do not label an entire file PASS because some assertions passed.
+5. **Every future class-level change gets a strict before/after audit.** Reproduce a red case, fix the general detector class (never hard-code a filename/page), add positive *and* negative controls, compare exhaustive ground-truth inventories on affected full documents, and rerun diverse historical/native/image-only/OCR corpora for all four indexes and performance/stability. Any new or existing human-legible discrepancy is either fixed and verified or remains a documented FAIL; an unchanged baseline alone is not a sufficient acceptance gate. Manual browser, PDF.js, native OCR engines, and import/export correctness must be checked before claiming corresponding end-to-end status.
+6. **Never confuse operational stability with semantic completeness.** “23 PDFs/1,092 pages ran without error” can be a PASS for the **no-crash gate** but is **UNVERIFIED for exhaustive detection accuracy** unless each readable item was separately ground-truthed. Historical numerical summaries and golden comparisons below are retained as evidence of the limited gates actually run, **not certifications** that the examined corpus had 100% recall and precision.
+7. **Packaged Markdown—not conversation or memory—is authoritative for project policy.** Before any future MathReader edit/regression, read the current complete authoritative ZIP and all in-package policy/decision Markdown. Every new or revised rule, quality bar, accepted/deferred defect, performance gate, architectural decision, and changed workflow must be persisted inside the next delivered root ZIP (primarily this `REGRESSION.md`, with additional project MD when appropriate). Never rely on a future chat carrying earlier instructions; do not silently drop, weaken, supersede, or hide a policy. Policy-only changes retain the same application version; code changes increment by exactly one.
+
+### Active known failures and unverified coverage inherited by v343
+
+| ID | Source / observed problem | State | Evidence, deferral rationale, and next acceptance action |
+|---|---|---|---|
+| MR-OPEN-001 | Pisier (1988), scanned author-key bibliography: OCR index returned **4 references** versus **17 in native-text inventory** | **FAIL — deferred** | Human-readable bibliographic entries are not all recovered through scanned OCR; author keys are badly segmented. Broadly accepting corrupted keys risks invented references. Verify each visually readable bibliography item, characterize key grammar across independent older works, develop sequence/layout safeguards and rerun complete positive/negative regression. Exact per-entry pages/IDs need further auditing. |
+| MR-OPEN-002 | Gromov (1967), scanned equation index incomplete compared with the native/image-assisted inventory | **FAIL — deferred** | Native detector historically indexed **15** equations; image-assisted reference inventory had **16** (including visible `(10)`); the OCR route was reported incomplete. Need exhaustive visual reconciliation, a general old-margin label-recovery strategy with no spurious labels, and full scan recheck. Do not call OCR accuracy fully verified. |
+| MR-OPEN-003 | Caffarelli (1989), historical scan: OCR misses some **Equations** and **Results** relative to native/visible content | **FAIL — deferred** | Previous OCR test reported **50 equations, 16 Results, 10 references**, but this did not establish completeness. Identify each readable omission and its page, determine OCR segmentation versus detector cause, fix at the class level with adversarial tests, then verify all pages/items. Exact missing-item inventory is currently **not established**. |
+| MR-OPEN-004 | Handwritten inverse-problems notes (`581 Note 7.pdf`), weak OCR/transcription | **FAIL if readable content is mistranscribed; completeness UNVERIFIED** | Earlier `0 / 0 / 0` downstream indexes and poor transcription are not proof of accurate OCR; legible handwriting is not an exception. Produce human-checked page-level transcription and identify actual detectable headings/results/equation numbers/references before judging downstream recall; fix any confirmed misses or log explicitly. |
+| MR-VERIFY-005 | v343 Ahlfors 171-page book and 22 unchanged native corpus items | **UNVERIFIED for 100% content accuracy** | Targeted TOC regressions and source-level comparisons passed, but exhaustive manual/independent truth verification of every item in every file was **not performed**. Audit all pages and all four index families before claiming fully verified PASS. The repaired TOC false positives are not reopened by this status. |
+| MR-VERIFY-006 | Browser PDF.js, production Tesseract.js/Texify, WebGPU→CPU behavior, index persistence/import after v343 | **UNVERIFIED end-to-end** | Previous tests used projected native lines and CLI OCR rather than the deployed browser pipeline. Check actual browser workflows on full old-PDF scans, error handling, caching and order after reload, including manually customized indexes. |
+
+**Disposition rule:** A deferred defect remains **OPEN / FAIL** until a verified class-level correction, or explicit evidence that the *particular source region* is human-illegible. Continue to include the open-defect ledger in every subsequent package and record new failures as they are discovered. The historical record below is not retroactively reinterpreted as an accuracy certification.
+
+---
+
+## v344 current stability, reliability and accuracy regression — 2026-11-04 (Beijing UTC+08)
+
+### Scope and status — never equate a detector run with complete content correctness
+
+**Starting point:** the user's v339 source ZIP plus successive v340, v341, v342, v343 overlays **and the v343 accuracy/deferral policy-only overlay**. The source was reconstructed and checked before testing; this is **v343 → v344**, exactly one code-version increment. The current regression adds eight distinct PDFs to the previous 23-PDF native corpus; the regression PDFs themselves are *not* part of the release patch.
+
+| Gate | Tested / observed | Acceptance state and limits |
+|---|---|---|
+| Native PDF line geometry → actual Results + Bibliography builder | **31 byte-distinct PDFs, 1,552 pages, 31/31 without exceptions**; 23 previously tested inventories identical to prior v343 source run | **PASS for source-level no-crash/nonregression only; UNVERIFIED semantic accuracy** (PyMuPDF → PDF.js-like adapter) |
+| Native PDF geometry → actual Equation index | **31/31 without exceptions; 1,520 indexed distinct labels** | **PASS for source-level no-crash; UNVERIFIED exhaustive precision/recall and production image assist** |
+| Native PDF span/font geometry → actual inferred Structure | **31/31 without exceptions; 526 outline entries** | **PASS for source-level no-crash; UNVERIFIED complete heading accuracy** |
+| v344 vs v343 source indexes | **31/31 Results and Bibliography item inventories exactly unchanged** (including pages/ratios); **31/31 native equation inventories unchanged** | **PASS for intended source-level nonregression**, not independent accuracy |
+| Historical/full-scanned local OCR rotation | **89 rendered/OCRed pages**, five complete documents (19 + 10 + 18 + 27 + 3 = 77) and 12 selected Ahlfors pages; **0 OCR process failures** | **FAIL for documented readable-content omissions below; production OCR/PDF.js UNVERIFIED** |
+| Existing TOC Results class test | **23/23 passed** | Source-level gate only |
+| New boundary-reference class test | **15/15 passed** (red reproduction failed on v343, then green on v344) | Source-level gate only |
+| Performance (one local run each, not statistical benchmarks) | Native Results+Bibliography v344 **2.12 s**, peak RSS ~257 MB; native Outline **6.34 s**, peak RSS ~441 MB; concurrent 89-page OCR **27.53 s wall**, Tesseract word-recognition work ~102 s sum | No regression timeout; **not** a browser/production Texify speed claim |
+| Deployed browser/PDF.js, WebGPU→CPU, formula Texify, user edits/import/export | **Not executed** in this environment | **UNVERIFIED**, release acceptance cannot claim production end-to-end PASS |
+
+The eight files newly rotated relative to the prior native 23-PDF set were `A_Geometric_Approach_to_Integration.pdf` (applied multivariable mathematics), `Computation_VS_Dark.pdf` (computation), `Marques2005.pdf` and `brendle_marques2009.pdf` (geometric analysis controls), `Riemann球面上的旋转_Fraljimetry.pdf` (complex analysis), `geometric_measure_theory_split_pages.pdf` (measure theory), `lean_quintessential_examples_collection_overleaf_pdflatex.pdf` (formal proof), and `无穷的历史.pdf` (history/exposition). Older full-scan OCR controls cover Schoen 1983, Gromov 1967, Pisier 1988, Caffarelli 1989 and handwritten notes. **This is not yet a sufficient fresh historical/non-geometric corpus for complete accuracy certification:** future campaigns should add historical logic, number theory, probability, information theory, numerical analysis and mathematical physics originals when their PDF bytes are available. New public historical files located online but not downloaded into this sandbox are **not** counted.
+
+### Confirmed general defect fixed in v344 — first numbered bibliography marker damaged as `{i}`
+
+- **Red reproduction:** Gromov (1967), PDF page **9**, starts its visibly numbered bibliography with `[1]`, but a fresh, legible **2.1× Tesseract 5.5** OCR pass read `{i} J. F. Adams, Vector fields on spheres, Ann. of Math. ...`. The v343 bibliography source indexed **[2]–[9] only (8/9)**. This was an unhandled boundary case of the general OCR-key damage class, not a title-specific exception.
+- **Root cause:** `malformedNumericBibliographyCandidate()` retained the damaged bracketed one-glyph token for sequence recovery, but `recoverSingleGapBibliographyCandidates()` only recovered *interior* keys between two surviving numbers and never the **leading** key.
+- **General repair:** an OCR-only candidate containing a single numeric-confusable vertical stroke (`i/l/I/|`) in brackets can become `[1]` **only** with a confirmed immediate `[2]`, `[3]`, `[4]` series, **exactly one** candidate before `[2]` on that same page within a narrow vertical/left-margin band, an independently strong reference body, and no existing `[1]`. No filename/page number appears in the detector; author keys and native text are protected. The source preserves explicit `ocrSource` provenance on recovery candidates.
+- **Regression:** Tesseract-derived full Gromov bibliography **8 → 9**; exactly `[1]` was added with the observed page anchor. On all **31 native PDFs**, every Results and Bibliography entry was **identical** before/after. On the six OCR datasets, all other Results/Bibliography inventories were unchanged. Fifteen positive/negative tests prevent promotion of native text, author-key `[B]`, ambiguous competing candidates, isolated markers, weak bibliographic bodies, mispositioned/distant lines or under-established sequences.
+- **Cache/release:** Structure/Bibliography cache **43 → 44**; equation snapshot version remains **22**; bootstrap/assets **343 → 344**. Portable imported user snapshots and user-edited order remain governed by existing preservation rules. The new test `mathreader/tests/bibliography_boundary_regression.js` is included in the root patch.
+
+### Full-document OCR proxy evidence and strict disposition
+
+All 89 pages were rendered at **2.1×** and passed through local `tesseract 5.5.0 --psm 3`, with OCR word-box geometry sent to the existing MathReader source functions; four worker processes were used. The 12 Ahlfors pages are **samples, not a complete scan**, and should not be compared against the full-book index totals. The Tesseract CLI adapter is not the production Tesseract.js/Texify/WebGPU pipeline.
+
+| File | Full OCR Results / Bibliography | Native comparison / accuracy finding |
+|---|---|---|
+| Schoen 1983, 19 pages, image-only | **16 Results / 14 references**, includes `[11]` | Targeted known index controls recovered. **Full exhaustive visual correctness UNVERIFIED**, native layer is empty by design |
+| Gromov 1967, 10 pages | **13 Results / 9 references** | Bibliography **9/9** after fix; OCR misses visibly present `Lemma 2′` relative to **14** native Results. **FAIL for OCR Results completeness** |
+| Caffarelli 1989, 27 pages | **16 Results / 10 references** | Native has **18 Results / 10 references**; OCR misses `Lemma 2.2` and `Corollary 6.2`. **FAIL**, pending visual/segmentation confirmation of exact locations |
+| Pisier 1988, 18 pages | **6 Results / 3 references** | Native has **7 Results / 17 references**; `Lemma 2.4` and 14 author-key references are absent from this OCR pass. **FAIL** |
+| Handwritten inverse-problems notes, 3 pages | **0 / 0** | Handwriting is human-legible in places, transcription is poor; no 100%-accuracy claim, **UNVERIFIED/possible FAIL** |
+| Ahlfors, 12 selected pages | **8 Results / 0 references** | Selected pages include TOC and several body definitions, not the book bibliography; cannot infer complete-book accuracy. **UNVERIFIED** |
+
+**Equation OCR caution:** Running the available source-level equation detector on these 2.1× OCR-line projections produced **zero accepted equation labels** in six datasets despite numerous recognizable OCR tag candidates. This reveals a severe *proxy-path coverage discrepancy* but is **not enough to claim that the deployed browser fails identically**: the adapter does not exercise image-margin retry, Texify, or actual PDF.js/production text/OCR geometry, and its confidence/scale/segmentation differ from prior 3.0× runs. Treat this as **FAIL for the tested OCR-proxy equation gate and UNVERIFIED in production**, not a valid accuracy pass or proof of a specific production bug. Vary DPI/PSM, preserve real bounding-box sizes, compare browser OCR, and only make a general detector change after adequate negative controls.
+
+**Ahlfors equation audit (native path):** The visible printed `(1-4)` on PDF page **13** and `(1-7)` on page **15** are decoded as `0-4)` and `0-7)` in its native text layer and are absent from the **160-item native index**. Separate 2.1× OCR reads both correctly, and the current native image-assist planner independently targets page **13** for `(1-4)` and pages **14–16** for `(1-7)`. Actual posterior OCR acceptance and browser index navigation were **not** executed. **OPEN: native text has readable omissions; final production recovery UNVERIFIED**. Do not automatically synthesize missing labels from numbers alone.
+
+### Active v344 open-failure / verification ledger (carry into every subsequent release)
+
+| ID | State | Evidence / impact / deferral and required follow-up |
+|---|---|---|
+| MR-OPEN-001 | **FAIL — deferred** | Pisier 1988 pp. 17–18: current 2.1× scanned bibliography **3/17** vs native; author keys mutilated. General grammar for author-keyed old scans needs independent visual truth and negative controls before changing code; prior 3.0× proxy gave 4/17. |
+| MR-OPEN-002 | **FAIL proxy / production UNVERIFIED — deferred** | Gromov 1967 OCR equation detection incomplete (2.1× proxy **0 accepted** vs 15 native/16 historical image-assisted reference); OCR scale/geometry/side inference and image retry must be isolated. Human-legible equations cannot be exempted. |
+| MR-OPEN-003 | **FAIL — deferred** | Caffarelli 1989: `Lemma 2.2`, `Corollary 6.2` absent in Results OCR; equation OCR proxy also deficient. Need page-by-page visual anchors, segmentation comparisons and class-level safeguards; no broad speculative heuristic. |
+| MR-OPEN-004 | **UNVERIFIED / possible FAIL — deferred** | Handwritten `581 Note 7.pdf`: OCR poor despite human-legible symbols; obtain independent line/page ground truth and test native Texify before asserting accuracy. |
+| MR-OPEN-007 | **Native-path FAIL / production UNVERIFIED — deferred** | Ahlfors pp. 13,15: `0-4)`/`0-7)` native corruption vs printed `(1-4)`/`(1-7)`. Image OCR could recover them but production integration untested; never auto-invent numbering. |
+| MR-OPEN-008 | **FAIL proxy / production UNVERIFIED — deferred** | Gromov OCR Results `Lemma 2′` absent. A simplified OCR Structure adapter also failed to recover all historic `§` headings; that adapter lacks original line-height and production style data, so Structure needs a correct-geometry run and visual reconciliation before attribution. |
+| MR-VERIFY-005 | **UNVERIFIED** | All 31 native documents (1,552 pages) lack exhaustive independent visual item-by-item ground truth for Structure, Results, Equations, Bibliography. Unchanged counts are *not* certifications. |
+| MR-VERIFY-006 | **UNVERIFIED** | Deployed browser PDF.js/Tesseract.js/Texify/ WebGPU→CPU, reading-data export/import, user-adjusted order, full cache recovery and navigation anchors were not executed in this run. |
+| MR-VERIFY-009 | **UNVERIFIED / quality risk** | Historical OCR performance varies with render scale and source geometry; a one-run wall time and one PSM cannot support broad performance/accuracy guarantees. Reproduce in the production engine, retain measured samples and add automatic truth checks before closing. |
+
+**Deferral is not an acceptance exception.** A human-readable omission or false detection remains a documented FAIL until fixed and independently verified; only a visually demonstrated human-illegible region may receive the narrow EXCEPTION state. If a release contains known failures, describe exactly which test gates pass, never claim full content accuracy. **Files, not chat summaries, govern future maintenance**: every future policy and defect update must appear in the packaged Markdown file(s).
+
+### Reproducible gates and root ZIP contents
+
+Run from a workspace with the latest full baseline and this root patch overlaid:
+
+```bash
+node mathreader/tests/results_toc_regression.js
+node mathreader/tests/bibliography_boundary_regression.js
+node --check mathreader/mathreader.js
+# Also syntax-check mathreader/js/*.js, concatenate the 10 declared parts in order
+# and run node --check on that assembled runtime.
+# Validate the ZIP CRC, changed paths, app version=344, index cache=44,
+# and index.html ?v=344 cache keys. The PDF/OCR regression inputs
+# are external fixtures and are NOT bundled into the root code patch.
+```
+
+Exactly six changed/added files: `mathreader/REGRESSION.md`, `mathreader/index.html`, `mathreader/js/00-core.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/mathreader.js`, `mathreader/tests/bibliography_boundary_regression.js`. All unchanged MathReader modules and existing tests stay at their v343 content. The next code change must be **v345**; policy-only documentation can be distributed without changing v344.
+
+---
 
 ## Standing maintenance policy — required for every future MathReader change
 
