@@ -1,0 +1,2412 @@
+{
+  "campaign": "MathReader v347 Round 5 — Controlled scan/OCR stress, not new archival-original corpus",
+  "date_beijing": "2026-11-05",
+  "code_version": "v347",
+  "provenance": {
+    "source_originals_count": 10,
+    "new_authentic_originals_count": 0,
+    "synthetic_fixture_count": 50,
+    "byte_distinct_from_prior_three_50_file_audits": true,
+    "transformation_mode": "PDF pages rasterized 160dpi grayscale and embedded as full-page JPEG into new 1-page PDF files; deterministic 5 variants/source",
+    "variants": {
+      "control_160dpi": "160dpi grayscale rasterization, embedded JPEG quality 86",
+      "skew_1p5deg": "page rotated 1.5 degrees; bicubic; center crop, white canvas",
+      "low_contrast": "contrast 0.48, brightness 1.12",
+      "jpeg_noise": "per-pixel zero-mean Gaussian sigma 8, fixed seed 20261105+source_index, JPEG quality 24",
+      "lowres_blur": "reduce to 60% dimensions bilinear, upscale bilinear, Gaussian blur radius 0.7"
+    },
+    "source_page_positions_are_original_PDF_one_based": true,
+    "source_pdfs_bundled": false,
+    "generated_fixture_pdfs_bundled": false,
+    "reason": "Network sandbox cannot retrieve newly identified NASA/USGS/Smithsonian archival PDF bytes; accessible Library is heavily overlapped with earlier 150-file audit hashes. Do not count fixtures as 50 new original publications."
+  },
+  "execution": {
+    "ocr": "Tesseract CLI 5, 160 DPI, English, PSM 3, OMP_THREAD_LIMIT=1, 3 concurrent workers; each OCR job run on its actual generated image-only PDF",
+    "parser": "Production v347 41-equations-bibliography.js detectedStructureResult, tocResultLineIndices, equationLabelCandidatesInLine, equationCandidateConfidenceForSide and bibliographyHeadingText invoked via isolated Node VM over Tesseract-derived word-line geometry; not the full document-wide indexing/recovery pipeline",
+    "unexercised": "PDF.js, Texify, browser WebGPU-to-CPU fallback, image-assisted equation margin recovery, document-wide Structure and bibliography indexing, page navigation, independent full ground truth"
+  },
+  "summary": {
+    "fixtures": 50,
+    "unique_sha256": 50,
+    "source_pages": 10,
+    "independent_archival_pdfs_newly_tested": 0,
+    "pages": 50,
+    "ocr_attempts": 50,
+    "ocr_success": 50,
+    "ocr_exec_errors": 0,
+    "ocr_no_text": 0,
+    "ocr_cpu_seconds_aggregate": 92.2,
+    "results_parser_entries": 13,
+    "equation_raw_candidates": 58,
+    "equation_preliminary_confident_candidates": 1,
+    "bibliography_heading_candidates": 0,
+    "parser_exceptions": 0,
+    "classifications": {
+      "UNVERIFIED": 46,
+      "FAIL": 4
+    },
+    "positive_result_retention": {
+      "Theorem 1.1": 4,
+      "Lemma 1.18": 5
+    },
+    "known_false_positive_reproduction": 4
+  },
+  "confirmed_existing_class": "Back-of-book subject-index standalone Definition promoted as unnumbered mathematical Result on 4/5 stress variants; original visible subject-index page (PDF page 436) confirms lexical context.",
+  "new_suspected_risk": {
+    "source": "SPS_1988__22__485_0.pdf",
+    "original_page": 3,
+    "fixture": "P04_old_1988_proceedings__jpeg_noise.pdf",
+    "candidate": "(42)",
+    "ocr_evidence": "s-2 (42)",
+    "hypothesis": "OCR of a mathematical fraction/exponent under noisy compression may resemble an equation tag",
+    "status": "UNVERIFIED — preliminary confidence only, no final equation index or browser verification. Not a confirmed defect."
+  },
+  "prior_defect_status": "No previous unresolved issues closed; known Definition subject-index issue reproduced. Handwriting 0 Results/equations is not proof of accurate recognition.",
+  "files": [
+    {
+      "file": "H01_handwritten_inverse_8__control_160dpi.pdf",
+      "source": "581 Note 8.pdf",
+      "source_sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "control_160dpi",
+      "sha256": "e2ef2683203aa399c5337b9f5f74e41f4b41b91324904a5c458e219cfdd57039",
+      "bytes": 281484,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.843,
+        "ocr_chars": 371,
+        "ocr_lines": 20,
+        "ocr_mean_word_confidence": 31.68,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Pre Eid inl ibis 3. [ul dee",
+        "— fue Diy ett “VET CTE",
+        "i Def sho “(hath byrne eee",
+        "me"
+      ]
+    },
+    {
+      "file": "H01_handwritten_inverse_8__skew_1p5deg.pdf",
+      "source": "581 Note 8.pdf",
+      "source_sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "skew_1p5deg",
+      "sha256": "666fb4589843d62f92c1aa55a6afb3a68c9cc6c0a621cc510ccb5134555bbc5f",
+      "bytes": 288162,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 2.158,
+        "ocr_chars": 354,
+        "ocr_lines": 17,
+        "ocr_mean_word_confidence": 30.09,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "@ = ae 7 a",
+        "ike Find eae 3 uhizes- oh ces. “eae, ee",
+        "oe “Sfiein- k at yr wee are a",
+        "at Defe “Paani? ~prrdnd — ~ 7"
+      ]
+    },
+    {
+      "file": "H01_handwritten_inverse_8__low_contrast.pdf",
+      "source": "581 Note 8.pdf",
+      "source_sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "low_contrast",
+      "sha256": "d811b34e035f0444dea30f282f94c0a28bc56fbecbdbfa5fd3e70267a913e938",
+      "bytes": 167220,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.978,
+        "ocr_chars": 323,
+        "ocr_lines": 13,
+        "ocr_mean_word_confidence": 33.2,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "_ ) lf, a | : - eee",
+        "7 ot (",
+        "= Py fs ap tea a a ce",
+        "— [ne LY TEC (ry Vet L RY]"
+      ]
+    },
+    {
+      "file": "H01_handwritten_inverse_8__jpeg_noise.pdf",
+      "source": "581 Note 8.pdf",
+      "source_sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "jpeg_noise",
+      "sha256": "d0967484874cb1df4735d9245be42778d68cf26f08c9fcc9d30c8dbff99aab0b",
+      "bytes": 107394,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.737,
+        "ocr_chars": 357,
+        "ocr_lines": 15,
+        "ocr_mean_word_confidence": 25.44,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "PDE. Fied on gagh 5 idiom 54. i [oul a, thes",
+        "lH QQ a pot te",
+        ": Ste HED vin Ren yy ters",
+        "Z =f uED Py ett eae Un of"
+      ]
+    },
+    {
+      "file": "H01_handwritten_inverse_8__lowres_blur.pdf",
+      "source": "581 Note 8.pdf",
+      "source_sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "lowres_blur",
+      "sha256": "2e46a2429ff7fe02594594ac906722d4d41eb89237d85d88be1be2b9756d0f41",
+      "bytes": 214731,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.816,
+        "ocr_chars": 377,
+        "ocr_lines": 23,
+        "ocr_mean_word_confidence": 27.89,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "-~",
+        "- -",
+        "PIE Fie wgh in [Of 3s",
+        "—Ht {iy ER ope"
+      ]
+    },
+    {
+      "file": "H02_handwritten_inverse_7__control_160dpi.pdf",
+      "source": "581 Note 7.pdf",
+      "source_sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "control_160dpi",
+      "sha256": "39f468a0492c1fba36eace8dd65abdea8baa6c143a0f42eae3d990be1c4e0daf",
+      "bytes": 282517,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.019,
+        "ocr_chars": 224,
+        "ocr_lines": 13,
+        "ocr_mean_word_confidence": 32.07,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        ": ve ci)",
+        "ees. ie ie er + nal pegnlar",
+        "Trdned weed Hine a roam",
+        "7 a ae Oe"
+      ]
+    },
+    {
+      "file": "H02_handwritten_inverse_7__skew_1p5deg.pdf",
+      "source": "581 Note 7.pdf",
+      "source_sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "skew_1p5deg",
+      "sha256": "f9e57af46267114352ec2e1d9fe3a65db5409cbcbcdf5f4300b78a51e2c8aac5",
+      "bytes": 289567,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.628,
+        "ocr_chars": 196,
+        "ocr_lines": 15,
+        "ocr_mean_word_confidence": 29.24,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        ")",
+        "“ DRaerereed | error SE Seas DONNIE /,./).) 7 een) SP",
+        "pam a Dib Mamas ep Con esl] —",
+        "f"
+      ]
+    },
+    {
+      "file": "H02_handwritten_inverse_7__low_contrast.pdf",
+      "source": "581 Note 7.pdf",
+      "source_sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "low_contrast",
+      "sha256": "997995ad1ecf2a811baa163e0750652cb25011c3cbac80a4ebba94c7b87c670e",
+      "bytes": 171991,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.766,
+        "ocr_chars": 34,
+        "ocr_lines": 8,
+        "ocr_mean_word_confidence": 42.3,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "ee mL Ao",
+        "te | ee ere",
+        "|",
+        ">"
+      ]
+    },
+    {
+      "file": "H02_handwritten_inverse_7__jpeg_noise.pdf",
+      "source": "581 Note 7.pdf",
+      "source_sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "jpeg_noise",
+      "sha256": "874e41e4bf3071f8b148308c763268fe44c197d577e716a933cdeb76b625350b",
+      "bytes": 109602,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.263,
+        "ocr_chars": 276,
+        "ocr_lines": 12,
+        "ocr_mean_word_confidence": 35.93,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "re . ve CTR)",
+        "Ay A= yeh us —If,P_reul yaar eet ie begler",
+        "| ant rained ore eid af me — rae",
+        "! eee +9 ay Hl ve ie"
+      ]
+    },
+    {
+      "file": "H02_handwritten_inverse_7__lowres_blur.pdf",
+      "source": "581 Note 7.pdf",
+      "source_sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "source_pdf_page": 2,
+      "category": "handwritten applied inverse-problems",
+      "variant": "lowres_blur",
+      "sha256": "df40cf23129104bcdbf542408d54bdbacfa3b6fc2da70ac0510dd1a55b619fdb",
+      "bytes": 215173,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.377,
+        "ocr_chars": 295,
+        "ocr_lines": 13,
+        "ocr_mean_word_confidence": 30.43,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "S ve CTR)",
+        "oa Ay Than UBProslec_tense. ff Mayle |",
+        "t Taal Mikal coll ntact ei a An",
+        "be Ae 4s clbd he Decca o Nowmes rl Tan ed J a"
+      ]
+    },
+    {
+      "file": "H03_handwritten_seminar__control_160dpi.pdf",
+      "source": "GA Seminar Note 1.pdf",
+      "source_sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "source_pdf_page": 1,
+      "category": "handwritten mathematics / seminar control",
+      "variant": "control_160dpi",
+      "sha256": "ec878159c4aa030f4ca7bb90e6837e1594373455af486c27fb9a6d732e944aad",
+      "bytes": 275778,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 2.045,
+        "ocr_chars": 538,
+        "ocr_lines": 19,
+        "ocr_mean_word_confidence": 27.74,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "{eR me p fe Ht",
+        "Foor Selec De fer a ree AT",
+        "Gir Ver iaLion Formule }- —_ =e Py",
+        "PT De hak"
+      ]
+    },
+    {
+      "file": "H03_handwritten_seminar__skew_1p5deg.pdf",
+      "source": "GA Seminar Note 1.pdf",
+      "source_sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "source_pdf_page": 1,
+      "category": "handwritten mathematics / seminar control",
+      "variant": "skew_1p5deg",
+      "sha256": "4dcc5adedcf208a9cf2c5aea873902994bfd55a267276f7d987299a1ab3f62ad",
+      "bytes": 282035,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 2.495,
+        "ocr_chars": 367,
+        "ocr_lines": 17,
+        "ocr_mean_word_confidence": 30.55,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "a a tee fo fo",
+        "ale Pa feat w",
+        "i (ened TT mut a",
+        "ie Veiation bor ej ey —"
+      ]
+    },
+    {
+      "file": "H03_handwritten_seminar__low_contrast.pdf",
+      "source": "GA Seminar Note 1.pdf",
+      "source_sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "source_pdf_page": 1,
+      "category": "handwritten mathematics / seminar control",
+      "variant": "low_contrast",
+      "sha256": "8b6ee341ac22835ce86f33b3338838926732416bdd56370462ab9089a43c1136",
+      "bytes": 160413,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 2.052,
+        "ocr_chars": 433,
+        "ocr_lines": 21,
+        "ocr_mean_word_confidence": 28.55,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "(ole Le(M) pe parasuter, frre ag difernto",
+        "Cay",
+        "as",
+        "LF {"
+      ]
+    },
+    {
+      "file": "H03_handwritten_seminar__jpeg_noise.pdf",
+      "source": "GA Seminar Note 1.pdf",
+      "source_sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "source_pdf_page": 1,
+      "category": "handwritten mathematics / seminar control",
+      "variant": "jpeg_noise",
+      "sha256": "7362229655457228ace08362c5c80efcd7564a0e96175af9c797048385dd786e",
+      "bytes": 106571,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.505,
+        "ocr_chars": 414,
+        "ocr_lines": 13,
+        "ocr_mean_word_confidence": 28.34,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Gur Venation Fam ae om ~",
+        "a) 4 oid ie dive fore vied Hee ene",
+        "DyF a a ortinac Kise i fn foe ee",
+        "@ aa ie cote tik rp"
+      ]
+    },
+    {
+      "file": "H03_handwritten_seminar__lowres_blur.pdf",
+      "source": "GA Seminar Note 1.pdf",
+      "source_sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "source_pdf_page": 1,
+      "category": "handwritten mathematics / seminar control",
+      "variant": "lowres_blur",
+      "sha256": "020db4d172a4293a205375590cc230dbbe771b88f8feaab47f92fc112e145b84",
+      "bytes": 208363,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.903,
+        "ocr_chars": 234,
+        "ocr_lines": 9,
+        "ocr_mean_word_confidence": 26.44,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1872
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "| ERE AM). tre pocanuker ford. difernato",
+        "ee a, Arctfet =f A jo ae exp",
+        "ee Vewiation Premule}— acme pe -—-",
+        "Mit salad, [. Jt. a — Tot nh ot"
+      ]
+    },
+    {
+      "file": "P04_old_1988_proceedings__control_160dpi.pdf",
+      "source": "SPS_1988__22__485_0.pdf",
+      "source_sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "source_pdf_page": 3,
+      "category": "older printed probability research",
+      "variant": "control_160dpi",
+      "sha256": "017f4c8891f54dc1e0e22cf7cfc8f15ce767f54e4687818890fe6a003343487a",
+      "bytes": 172321,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.66,
+        "ocr_chars": 1357,
+        "ocr_lines": 44,
+        "ocr_mean_word_confidence": 81.38,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1096,
+          1594
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Theorem 1.1",
+            "line": "THEOREM 1.1. If 1< p< , there are constants Ces such that",
+            "ratio": 0.6041405269761606
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(1.1)",
+            "line": "(1.1) (Ry f£)\" (&) = Gal” £(&) (k= 1,2,...,n) -",
+            "ratio": 0.1794228356336261
+          },
+          {
+            "label": "(1.2)",
+            "line": "(1.2) < Vit, Vig > 9 = f< grad f,grad g > dx",
+            "ratio": 0.49968632371392724
+          },
+          {
+            "label": "(1.3)",
+            "line": "(1.3) Aris tes WE Weysl?) I se UF I -",
+            "ratio": 0.6540150564617315
+          },
+          {
+            "label": "(1.3)",
+            "line": "earlier probabilistic proof of (1.3) due to R. Gundy an N. Varopoulos",
+            "ratio": 0.7863864491844417
+          },
+          {
+            "label": "(1.3)",
+            "line": "Alternate proofs of (1.3) have been given in [DR] and [Ba] (with",
+            "ratio": 0.8237139272271017
+          },
+          {
+            "label": "(1.3)",
+            "line": "below a proof of (1.3), to be compared with that of § 2. We use a simple",
+            "ratio": 0.8798619824341279
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "486",
+        "§ 1. THE CLASSICAL CASE.",
+        "The classical Riesz transforms are defined as follows for a",
+        "smooth function f (say) in g(R\") ."
+      ]
+    },
+    {
+      "file": "P04_old_1988_proceedings__skew_1p5deg.pdf",
+      "source": "SPS_1988__22__485_0.pdf",
+      "source_sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "source_pdf_page": 3,
+      "category": "older printed probability research",
+      "variant": "skew_1p5deg",
+      "sha256": "1f6a0338b04a17968cc2f71238885082cd548e8354a0c6ecf15b586c91c2911d",
+      "bytes": 171439,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.704,
+        "ocr_chars": 1379,
+        "ocr_lines": 43,
+        "ocr_mean_word_confidence": 78.78,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1096,
+          1594
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Theorem 1.1",
+            "line": "THEOREM 1.1. If 1< p<® » there are constants CySp such that",
+            "ratio": 0.6013174404015057
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(1.1)",
+            "line": "(1.1) (Ry f)> (8) = a 5 172 £(&) (k = 1,2,..2m) -",
+            "ratio": 0.16969887076537013
+          },
+          {
+            "label": "(8)",
+            "line": "(1.1) (Ry f)> (8) = a 5 172 £(&) (k = 1,2,..2m) -",
+            "ratio": 0.16969887076537013
+          },
+          {
+            "label": "(1.2)",
+            "line": "(1.2) < Vit, Vig > 2 = {< grad f,grad g > 4x",
+            "ratio": 0.5
+          },
+          {
+            "label": "(1.3)",
+            "line": "(1.3) Aris thes WE el?) Ths WF Ib",
+            "ratio": 0.6555834378920954
+          },
+          {
+            "label": "(1.3)",
+            "line": "earlier probabilistic proof of (1 .3) due to R. Gundy an N. Varopoulos",
+            "ratio": 0.7857590966122961
+          },
+          {
+            "label": "(1.3)",
+            "line": "Alternate proofs of (1 .3) have been given in [DR] and [Ba] (with",
+            "ratio": 0.8221455457967378
+          },
+          {
+            "label": "(1.3)",
+            "line": "below aproof of (1 .3), to be compared with that of § 2. We use a simple",
+            "ratio": 0.8789209535759097
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "486",
+        "§ 1. THE CLASSICAL CASE.",
+        "The classical Riesz transforms are defined as follows for a",
+        "smooth function f (say) in F(R) ."
+      ]
+    },
+    {
+      "file": "P04_old_1988_proceedings__low_contrast.pdf",
+      "source": "SPS_1988__22__485_0.pdf",
+      "source_sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "source_pdf_page": 3,
+      "category": "older printed probability research",
+      "variant": "low_contrast",
+      "sha256": "9f5e574909988af3acc9a4928f8f14c37bf275a44aaf18bdf5df721702c51ec4",
+      "bytes": 129294,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.243,
+        "ocr_chars": 1989,
+        "ocr_lines": 41,
+        "ocr_mean_word_confidence": 81.27,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1096,
+          1594
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(1.2)",
+            "line": "(1.2) < Vit, Vig> .= {< grad f,grad g > dx",
+            "ratio": 0.4993726474278545
+          },
+          {
+            "label": "(1.8)",
+            "line": "(1.8) a iit lis iC: lal?) tL <e% Ut Ih -",
+            "ratio": 0.6543287327478042
+          },
+          {
+            "label": "(1.3)",
+            "line": "earlier probabilistic proof of (1.3) due to R. Gundy an N. Varopoulos",
+            "ratio": 0.7863864491844417
+          },
+          {
+            "label": "(1.3)",
+            "line": "Alternate proofs of (1.3) have been given in [DR] and [Ba] (with",
+            "ratio": 0.8237139272271017
+          },
+          {
+            "label": "(1.3)",
+            "line": "below aproof of (1.3), to be compared with that of § 2. We use a simple",
+            "ratio": 0.8801756587202008
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "486",
+        "§ 1. THE CLASSICAL CASE.",
+        "The classical Riesz transforms are defined as follows for a",
+        "smooth function f£ (say) in y(R™)"
+      ]
+    },
+    {
+      "file": "P04_old_1988_proceedings__jpeg_noise.pdf",
+      "source": "SPS_1988__22__485_0.pdf",
+      "source_sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "source_pdf_page": 3,
+      "category": "older printed probability research",
+      "variant": "jpeg_noise",
+      "sha256": "8a19f89e609fb3398f3225326a93dfc49ed1a242ce99ddeeb1158912d6989f11",
+      "bytes": 76254,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.723,
+        "ocr_chars": 1368,
+        "ocr_lines": 43,
+        "ocr_mean_word_confidence": 80.49,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1096,
+          1594
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Theorem 1.1",
+            "line": "THEOREM 1.1. If 1<p<* , there ave constants C,,C) such that",
+            "ratio": 0.6041405269761606
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(1.1)",
+            "line": "(1.1) (RL £)\" Ce) mp\\t72 £(&) (Ko = Vy 2pcee gl)!",
+            "ratio": 0.16969887076537013
+          },
+          {
+            "label": "(42)",
+            "line": "s-2 (42)",
+            "ratio": 0.2487452948557089
+          },
+          {
+            "label": "(1.2)",
+            "line": "(1.2) < Vit, Vig> = f< grad f,grad g > dx",
+            "ratio": 0.49968632371392724
+          },
+          {
+            "label": "(1.8)",
+            "line": "(1.8) Als ths WG lal) ip se, Wt lh",
+            "ratio": 0.650564617314931
+          },
+          {
+            "label": "(1.3)",
+            "line": "earlier probabilistic proof of (1.3) due to R. Gundy an N. Varopoulos",
+            "ratio": 0.7863864491844417
+          },
+          {
+            "label": "(1.3)",
+            "line": "Alternate proofs of (1.3) have been given in [DR] and [Ba] (with",
+            "ratio": 0.8237139272271017
+          },
+          {
+            "label": "(1.3)",
+            "line": "below aproof of (1.3), to be compared with that of § 2. We use a simple",
+            "ratio": 0.8798619824341279
+          }
+        ],
+        "equation_preliminary_confident_candidates": [
+          {
+            "label": "(42)",
+            "line": "s-2 (42)",
+            "ratio": 0.2487452948557089,
+            "confidence": 15.5
+          }
+        ],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "486",
+        "§ 1. THE CLASSICAL CASE.",
+        "The classical Riesz transforms are defined as follows for a",
+        "smooth function f (say) in y(R\") ."
+      ]
+    },
+    {
+      "file": "P04_old_1988_proceedings__lowres_blur.pdf",
+      "source": "SPS_1988__22__485_0.pdf",
+      "source_sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "source_pdf_page": 3,
+      "category": "older printed probability research",
+      "variant": "lowres_blur",
+      "sha256": "d7c7e57ac381adc5f82db62a92d7e7b9898d97e7d598d2aef2523cf4a098bb0b",
+      "bytes": 112301,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.532,
+        "ocr_chars": 1317,
+        "ocr_lines": 40,
+        "ocr_mean_word_confidence": 79.82,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1096,
+          1594
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Theorem 1.1",
+            "line": "THEOREM 1.1. If 1< p< , there are constants opp such that",
+            "ratio": 0.6044542032622334
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(1.2)",
+            "line": "(1.2) < vit, Vig> 2 - {é grad f,grad g > ax",
+            "ratio": 0.49968632371392724
+          },
+          {
+            "label": "(1.3)",
+            "line": "(1.3) Ais ths Eye?) i se, We I «",
+            "ratio": 0.6543287327478042
+          },
+          {
+            "label": "(1.3)",
+            "line": "earlier probabilistic proof of (1.3) due to R. Gundy an N. Varopoulos",
+            "ratio": 0.7863864491844417
+          },
+          {
+            "label": "(1.3)",
+            "line": "Alternate proofs of (1.3) have been given in [0R) and {Ba} (with",
+            "ratio": 0.8237139272271017
+          },
+          {
+            "label": "(1.3)",
+            "line": "below a proof of (1.3), to be compared with that of § 2. We use a simple",
+            "ratio": 0.8801756587202008
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "§ 1. THE CLASSICAL CASE.",
+        "The cli ical Riesz transforms are defined as follows for a",
+        "smooth function f£ (say) in gy (R\") .",
+        "ay (R, £9\" (e) = as. oe Fe) (k= 1,2,.00m)"
+      ]
+    },
+    {
+      "file": "P05_old_simon_1970s__control_160dpi.pdf",
+      "source": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "source_sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "source_pdf_page": 7,
+      "category": "historical mathematics / equation margin",
+      "variant": "control_160dpi",
+      "sha256": "8c1f8741e7f3244c2d115a483aec3281c8dc24bbe6e9341e3b459e2786658fec",
+      "bytes": 206984,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.336,
+        "ocr_chars": 1826,
+        "ocr_lines": 36,
+        "ocr_mean_word_confidence": 86.51,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1040,
+          1512
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Lemma 1.18",
+            "line": "1.18. Lemma. — If Du is bounded (see Lemma 1.1) then it has a limit",
+            "ratio": 0.4146825396825397
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(1)",
+            "line": "(1) | Du(x) — Du(y)| < ce vx. ve BR ~ BRo.",
+            "ratio": 0.7817460317460317
+          },
+          {
+            "label": "(2)",
+            "line": "(2) Di(@xDi) = 0,",
+            "ratio": 0.8571428571428571
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "236 L. SIMON",
+        "where p = #\"L sptT, and then (since T is minimizing) that an identity",
+        "like 1.8 holds for T with Ro = 0 and E = 0, thus giving",
+        "{ (v.xPdu(x) = 0."
+      ]
+    },
+    {
+      "file": "P05_old_simon_1970s__skew_1p5deg.pdf",
+      "source": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "source_sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "source_pdf_page": 7,
+      "category": "historical mathematics / equation margin",
+      "variant": "skew_1p5deg",
+      "sha256": "2e7edda409d8328aefc562db656f4a804aa1645b3e28ca5cbaa7a3d084c2f079",
+      "bytes": 203621,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.232,
+        "ocr_chars": 1825,
+        "ocr_lines": 36,
+        "ocr_mean_word_confidence": 84.37,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1040,
+          1512
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Lemma 1.18",
+            "line": "1.18. Lemma. — If Du is bounded (see Lemma 1.1) then it has a limit",
+            "ratio": 0.4130291005291005
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(2)",
+            "line": "(2) D,(auDi 9) = 9,",
+            "ratio": 0.857473544973545
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "236 L. SIMON",
+        "where p = #\"L sptT, and then (since T is minimizing) that an identity",
+        "like 1.8 holds for T with Ro = 0 and E= 0. thus giving",
+        "[ (v.x)du(x) = 0."
+      ]
+    },
+    {
+      "file": "P05_old_simon_1970s__low_contrast.pdf",
+      "source": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "source_sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "source_pdf_page": 7,
+      "category": "historical mathematics / equation margin",
+      "variant": "low_contrast",
+      "sha256": "b94870416949370b75a0fbe5697499fc7a007efcbb0cf6795f480bb32dbfb664",
+      "bytes": 154584,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.318,
+        "ocr_chars": 1829,
+        "ocr_lines": 37,
+        "ocr_mean_word_confidence": 85.74,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1040,
+          1512
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Lemma 1.18",
+            "line": "1.18. Lemma. — If Du is bounded (see Lemma 1.1) then it has a limit",
+            "ratio": 0.4146825396825397
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(1)",
+            "line": "(1) | Du(x) — Duy) | < ce vx. ve Bk ~ Bee.",
+            "ratio": 0.7817460317460317
+          },
+          {
+            "label": "(2)",
+            "line": "(2) Di(aixDi) = 0,",
+            "ratio": 0.8571428571428571
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "236 L. SIMON",
+        "where p = #\"L spt T, and then (since T is minimizing) that an identity",
+        "like 1.8 holds for T with Ryo = 0 and E = 0, thus giving",
+        "[ (v.x)?du(x) = 0."
+      ]
+    },
+    {
+      "file": "P05_old_simon_1970s__jpeg_noise.pdf",
+      "source": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "source_sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "source_pdf_page": 7,
+      "category": "historical mathematics / equation margin",
+      "variant": "jpeg_noise",
+      "sha256": "26623554ed98f6ab560c2b14028196e440189802cd8dc7dd0094e727e7a32211",
+      "bytes": 87938,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.3,
+        "ocr_chars": 1832,
+        "ocr_lines": 36,
+        "ocr_mean_word_confidence": 85.68,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1040,
+          1512
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Lemma 1.18",
+            "line": "1.18. Lemma. — If Du is bounded (see Lemma 1.1) then it has a limit",
+            "ratio": 0.4146825396825397
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(2)",
+            "line": "(2) Di(axDi) = 0,",
+            "ratio": 0.8571428571428571
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "236 L, SIMON",
+        "where p = .#\"L sptT, and then (since T is minimizing) that an identity",
+        "like 1.8 holds for T with Ryo = 0 and E = 0, thus giving",
+        "{ (v.xPdux) = 0."
+      ]
+    },
+    {
+      "file": "P05_old_simon_1970s__lowres_blur.pdf",
+      "source": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "source_sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "source_pdf_page": 7,
+      "category": "historical mathematics / equation margin",
+      "variant": "lowres_blur",
+      "sha256": "71472d76656cc70cb3f0c84e2cc74fc97030d8974cdab4d7f518d7f42fd98414",
+      "bytes": 132198,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.353,
+        "ocr_chars": 1821,
+        "ocr_lines": 36,
+        "ocr_mean_word_confidence": 84.35,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1040,
+          1512
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Lemma 1.18",
+            "line": "1.18. Lemma. — If Du is bounded (see Lemma 1.1) then it has a limit",
+            "ratio": 0.41435185185185186
+          }
+        ],
+        "equation_raw_candidates": [
+          {
+            "label": "(2)",
+            "line": "(2) DiaaD,¢) = 0,",
+            "ratio": 0.8568121693121693
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "236 L. SIMON",
+        "where 4 = 3\" spt T, and then (since T is minimizing) that an identity",
+        "like 1.8 holds for T with Ro = 0 and E = 0, thus giving",
+        "[ (v.xPdplx) = 0."
+      ]
+    },
+    {
+      "file": "N06_language_phrase_index__control_160dpi.pdf",
+      "source": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "source_sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "source_pdf_page": 211,
+      "category": "lexical phrase index / false-positive negative control",
+      "variant": "control_160dpi",
+      "sha256": "983a1c47aada9eafa850bca35772d6f975f2c3ed060e856218db4dd94dba3a93",
+      "bytes": 438647,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 4.122,
+        "ocr_chars": 5619,
+        "ocr_lines": 221,
+        "ocr_mean_word_confidence": 90.47,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1117,
+          1612
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Phrase-Finder Index",
+        "reflect reflected in sth",
+        "rent rent sth from so",
+        "relay relay sth to so"
+      ]
+    },
+    {
+      "file": "N06_language_phrase_index__skew_1p5deg.pdf",
+      "source": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "source_sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "source_pdf_page": 211,
+      "category": "lexical phrase index / false-positive negative control",
+      "variant": "skew_1p5deg",
+      "sha256": "2a3be04477edeb238b2da836e2a49e5259f75bfed967fe5ab346064ba8c232c5",
+      "bytes": 423368,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 4.228,
+        "ocr_chars": 5615,
+        "ocr_lines": 221,
+        "ocr_mean_word_confidence": 88.77,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1117,
+          1612
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Phrase-Finder Index",
+        "rent rent sth from so",
+        "relay relay sth to so",
+        "reflect reflected in sth"
+      ]
+    },
+    {
+      "file": "N06_language_phrase_index__low_contrast.pdf",
+      "source": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "source_sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "source_pdf_page": 211,
+      "category": "lexical phrase index / false-positive negative control",
+      "variant": "low_contrast",
+      "sha256": "7fb5da8a69fd3fe31d2f5e9fc70ace8f50bc645a98c05f89e831d5d8533cdc59",
+      "bytes": 326430,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 4.709,
+        "ocr_chars": 5652,
+        "ocr_lines": 221,
+        "ocr_mean_word_confidence": 88.73,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1117,
+          1612
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Phrase-Finder Index",
+        "reflect reflected in sth",
+        "rent rent sth from so",
+        "relay relay sth to so"
+      ]
+    },
+    {
+      "file": "N06_language_phrase_index__jpeg_noise.pdf",
+      "source": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "source_sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "source_pdf_page": 211,
+      "category": "lexical phrase index / false-positive negative control",
+      "variant": "jpeg_noise",
+      "sha256": "7272cdf5529eef7b83e50df4092e37a1ddfbf8126f332216c32b67005c0e1e3d",
+      "bytes": 174992,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 5.319,
+        "ocr_chars": 5726,
+        "ocr_lines": 221,
+        "ocr_mean_word_confidence": 88.9,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1117,
+          1612
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Phrase-Finder Index",
+        "reflect reflected in sth",
+        "rent rent sth from so",
+        "relay relay sth to so"
+      ]
+    },
+    {
+      "file": "N06_language_phrase_index__lowres_blur.pdf",
+      "source": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "source_sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "source_pdf_page": 211,
+      "category": "lexical phrase index / false-positive negative control",
+      "variant": "lowres_blur",
+      "sha256": "8ea2b1db101a2514a9ba7c9a5ba0e64c1be941596da2f6fa0ada06c47973bdaf",
+      "bytes": 246044,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.483,
+        "ocr_chars": 894,
+        "ocr_lines": 63,
+        "ocr_mean_word_confidence": 69.32,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1117,
+          1612
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Phrase-Finder Index",
+        "reflect reflected in sh",
+        "refrain refrain from",
+        "refresh refresh so with sh"
+      ]
+    },
+    {
+      "file": "N07_textbook_subject_index__control_160dpi.pdf",
+      "source": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+      "source_sha256": "703c20360dcc92dc51a50581e85c86a0116e2722758c05af5f2e636e7d5ea785",
+      "source_pdf_page": 436,
+      "category": "back-of-book subject index / negative control",
+      "variant": "control_160dpi",
+      "sha256": "0361254c120b8e87772c184872799ebf1945886e199a71230c72627dca3e6504",
+      "bytes": 134399,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "FAIL — Reproduced known local-proxy Results false positive",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.44,
+        "ocr_chars": 1574,
+        "ocr_lines": 92,
+        "ocr_mean_word_confidence": 93.16,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          652,
+          1043
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Definition · p.1",
+            "line": "Definition",
+            "ratio": 0.12799616490891658
+          }
+        ],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "SUBJECT INDEX",
+        "447",
+        "Effects, as a method of paragraph de-",
+        "Dead metaphor, 274, 308 n"
+      ]
+    },
+    {
+      "file": "N07_textbook_subject_index__skew_1p5deg.pdf",
+      "source": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+      "source_sha256": "703c20360dcc92dc51a50581e85c86a0116e2722758c05af5f2e636e7d5ea785",
+      "source_pdf_page": 436,
+      "category": "back-of-book subject index / negative control",
+      "variant": "skew_1p5deg",
+      "sha256": "c68b05ca4dac66c5e3476373136ba27116a5af855e66932ec811814712b5da83",
+      "bytes": 130736,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "FAIL — Reproduced known local-proxy Results false positive",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.512,
+        "ocr_chars": 1588,
+        "ocr_lines": 94,
+        "ocr_mean_word_confidence": 93.2,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          652,
+          1043
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Definition · p.1",
+            "line": "Definition",
+            "ratio": 0.13470757430488975
+          }
+        ],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "447",
+        "SUBJECT INDEX",
+        "Effects, as a method of paragraph de-",
+        "Dead metaphor, 274, 308 n"
+      ]
+    },
+    {
+      "file": "N07_textbook_subject_index__low_contrast.pdf",
+      "source": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+      "source_sha256": "703c20360dcc92dc51a50581e85c86a0116e2722758c05af5f2e636e7d5ea785",
+      "source_pdf_page": 436,
+      "category": "back-of-book subject index / negative control",
+      "variant": "low_contrast",
+      "sha256": "0a36f57984bf65bd77ebc2bd2282335b2294be22f0610efe58af4a1d2a088434",
+      "bytes": 100459,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "FAIL — Reproduced known local-proxy Results false positive",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.495,
+        "ocr_chars": 1489,
+        "ocr_lines": 89,
+        "ocr_mean_word_confidence": 91.97,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          652,
+          1043
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Definition · p.1",
+            "line": "Definition",
+            "ratio": 0.12799616490891658
+          }
+        ],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "SUBJECT INDEX",
+        "447",
+        "Effects, as a method of paragraph de-",
+        "Dead metaphor. 274, 308 1"
+      ]
+    },
+    {
+      "file": "N07_textbook_subject_index__jpeg_noise.pdf",
+      "source": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+      "source_sha256": "703c20360dcc92dc51a50581e85c86a0116e2722758c05af5f2e636e7d5ea785",
+      "source_pdf_page": 436,
+      "category": "back-of-book subject index / negative control",
+      "variant": "jpeg_noise",
+      "sha256": "0cc9f3e99dc5369dd02c0d84dd3c6a8a5206da7f519b018e5a6906e6c0731942",
+      "bytes": 55799,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "FAIL — Reproduced known local-proxy Results false positive",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.433,
+        "ocr_chars": 1481,
+        "ocr_lines": 92,
+        "ocr_mean_word_confidence": 91.38,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          652,
+          1043
+        ]
+      },
+      "detector_proxy": {
+        "results": [
+          {
+            "label": "Definition · p.1",
+            "line": "Definition",
+            "ratio": 0.12799616490891658
+          }
+        ],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "SUBJECT INDEX",
+        "447",
+        "Effects, as a method of paragraph de-",
+        "Dead metaphor, 274, 308 n"
+      ]
+    },
+    {
+      "file": "N07_textbook_subject_index__lowres_blur.pdf",
+      "source": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+      "source_sha256": "703c20360dcc92dc51a50581e85c86a0116e2722758c05af5f2e636e7d5ea785",
+      "source_pdf_page": 436,
+      "category": "back-of-book subject index / negative control",
+      "variant": "lowres_blur",
+      "sha256": "f7267cb4609e80392b3dddfaea61f0861b5f30916e8fc72bcb83ccf1cf40a8c1",
+      "bytes": 74988,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.872,
+        "ocr_chars": 891,
+        "ocr_lines": 54,
+        "ocr_mean_word_confidence": 88.63,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          652,
+          1043
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "SUBJECT INDEX",
+        "447",
+        "Effects, as a method of paragraph de-",
+        "behets ee"
+      ]
+    },
+    {
+      "file": "E08_plot_axis__control_160dpi.pdf",
+      "source": "2610.07774v1.pdf",
+      "source_sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "source_pdf_page": 6,
+      "category": "modern AI paper graph axis / negative control",
+      "variant": "control_160dpi",
+      "sha256": "a4f45d9b1ede3dadf65d1259600605468a93777d7ce12b34ba63f9234ff165cf",
+      "bytes": 542264,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 3.351,
+        "ocr_chars": 4304,
+        "ocr_lines": 93,
+        "ocr_mean_word_confidence": 94.0,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(41.50)",
+            "line": "41.50 on Qwen3 and from 43.00 to 37.00 on Kimi.",
+            "ratio": 0.46953500801710313
+          },
+          {
+            "label": "(4.2)",
+            "line": "4.2 Safety Information Is Distributed,",
+            "ratio": 0.5558524853019775
+          },
+          {
+            "label": "(4.1)",
+            "line": "4.1 Safety-Relevant Routing Signals Are",
+            "ratio": 0.6119722073757349
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Image prompt Text prompt Combined prompt",
+        "steering is less effective than router readout, we",
+        "compare the routing features selected for steering",
+        "if from base"
+      ]
+    },
+    {
+      "file": "E08_plot_axis__skew_1p5deg.pdf",
+      "source": "2610.07774v1.pdf",
+      "source_sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "source_pdf_page": 6,
+      "category": "modern AI paper graph axis / negative control",
+      "variant": "skew_1p5deg",
+      "sha256": "0ba95bb2bd897575ecee37bbfea37ca46a0ac3050bd1c7720382a95e4f534fc9",
+      "bytes": 528279,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 3.146,
+        "ocr_chars": 4318,
+        "ocr_lines": 93,
+        "ocr_mean_word_confidence": 92.71,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(41.50)",
+            "line": "41.50 on Qwen3 and from 43.00 to 37.00 on Kimi.",
+            "ratio": 0.4727418492784607
+          },
+          {
+            "label": "(4.2)",
+            "line": "4.2 Safety Information Is Distributed,",
+            "ratio": 0.5523784072688402
+          },
+          {
+            "label": "(4.1)",
+            "line": "4.1 Safety-Relevant Routing Signals Are",
+            "ratio": 0.6154462854088723
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "steering is less effective than router readout, we",
+        "Image prompt Text prompt Combined prompt",
+        "compare the routing features selected for steering",
+        "with those emphasized by the router-logit detec-"
+      ]
+    },
+    {
+      "file": "E08_plot_axis__low_contrast.pdf",
+      "source": "2610.07774v1.pdf",
+      "source_sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "source_pdf_page": 6,
+      "category": "modern AI paper graph axis / negative control",
+      "variant": "low_contrast",
+      "sha256": "3b44a7b15b0d789513f523eb40b9f8ef833ada24942e2c399631653037b74085",
+      "bytes": 402019,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 3.559,
+        "ocr_chars": 4244,
+        "ocr_lines": 94,
+        "ocr_mean_word_confidence": 94.06,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(41.50)",
+            "line": "41.50 on Qwen3 and from 43.00 to 37.00 on Kimi.",
+            "ratio": 0.46980224478888294
+          },
+          {
+            "label": "(4.2)",
+            "line": "4.2 Safety Information Is Distributed,",
+            "ratio": 0.5558524853019775
+          },
+          {
+            "label": "(4.1)",
+            "line": "4.1 Safety-Relevant Routing Signals Are",
+            "ratio": 0.6119722073757349
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Image prompt",
+        "Text prompt",
+        "Combined prompt",
+        "steering is less effective than router readout, we"
+      ]
+    },
+    {
+      "file": "E08_plot_axis__jpeg_noise.pdf",
+      "source": "2610.07774v1.pdf",
+      "source_sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "source_pdf_page": 6,
+      "category": "modern AI paper graph axis / negative control",
+      "variant": "jpeg_noise",
+      "sha256": "4e18fcf39065f00d7d417d2690694c2268133f539c03e7d6f656765b396976bf",
+      "bytes": 217965,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 3.143,
+        "ocr_chars": 4264,
+        "ocr_lines": 93,
+        "ocr_mean_word_confidence": 94.03,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(41.50)",
+            "line": "41.50 on Qwen3 and from 43.00 to 37.00 on Kimi.",
+            "ratio": 0.46953500801710313
+          },
+          {
+            "label": "(4.2)",
+            "line": "4.2 Safety Information Is Distributed,",
+            "ratio": 0.5558524853019775
+          },
+          {
+            "label": "(4.1)",
+            "line": "4.1 Safety-Relevant Routing Signals Are",
+            "ratio": 0.6119722073757349
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Text prompt Combined promot",
+        "Image prompt",
+        "steering is less effective than router readout, we",
+        "compare the routing features selected for steering"
+      ]
+    },
+    {
+      "file": "E08_plot_axis__lowres_blur.pdf",
+      "source": "2610.07774v1.pdf",
+      "source_sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "source_pdf_page": 6,
+      "category": "modern AI paper graph axis / negative control",
+      "variant": "lowres_blur",
+      "sha256": "a65c58b60fe7278180d859f357869b2080068bef7ceb8dda46a497efc066e744",
+      "bytes": 319441,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 2.813,
+        "ocr_chars": 4256,
+        "ocr_lines": 100,
+        "ocr_mean_word_confidence": 91.75,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(41.50)",
+            "line": "41.50 on Qwen3 and from 43.00 to 37.00 on Kimi.",
+            "ratio": 0.46980224478888294
+          },
+          {
+            "label": "(4.2)",
+            "line": "4.2 Safety Information Is Distributed,",
+            "ratio": 0.5555852485301978
+          },
+          {
+            "label": "(4.1)",
+            "line": "4.1 Safety-Relevant Routing Signals Are",
+            "ratio": 0.6122394441475147
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "steering is less effective than router readout, we",
+        "has",
+        "compare the routing features selected for steering",
+        ".,"
+      ]
+    },
+    {
+      "file": "E09_eng_section__control_160dpi.pdf",
+      "source": "double_spiral_surface_revision_spec.pdf",
+      "source_sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "source_pdf_page": 12,
+      "category": "engineering section numbering / negative control",
+      "variant": "control_160dpi",
+      "sha256": "4686875bb9c3836542ee338ed452667cbbd7a56e104a99a466aee55940cc7bc1",
+      "bytes": 223642,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.354,
+        "ocr_chars": 901,
+        "ocr_lines": 27,
+        "ocr_mean_word_confidence": 36.57,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(7.3)",
+            "line": "7.3 Pelee",
+            "ratio": 0.15873864243719935
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "8 JAR Ee R",
+        "+ “Frenet 3b” ANE “Frenet #p4e2zb” Bk “Frenet—Serret 3b”, 4 3¢4i—.",
+        "© FEM Gaussian curvature, mean curvature, Klein four-group RIBAS.",
+        "7.3 Pelee"
+      ]
+    },
+    {
+      "file": "E09_eng_section__skew_1p5deg.pdf",
+      "source": "double_spiral_surface_revision_spec.pdf",
+      "source_sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "source_pdf_page": 12,
+      "category": "engineering section numbering / negative control",
+      "variant": "skew_1p5deg",
+      "sha256": "fa00309a8364220403cf83d758c9e5e91b0636554bc6fc94f2b4492942480d4f",
+      "bytes": 215470,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.277,
+        "ocr_chars": 858,
+        "ocr_lines": 30,
+        "ocr_mean_word_confidence": 36.47,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(7.3)",
+            "line": "7.3 Pld",
+            "ratio": 0.1648850881881347
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "8 aA Me",
+        "« “Frenet Ast” BINS “Frenet KRaB ASK” BK “Fyenet-Serret 230\", 42 XBi—.-",
+        "2 HIGH Gaussian curvature, mean curvature, Klein four-group ARE K/ SR -",
+        "7.3 Pld"
+      ]
+    },
+    {
+      "file": "E09_eng_section__low_contrast.pdf",
+      "source": "double_spiral_surface_revision_spec.pdf",
+      "source_sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "source_pdf_page": 12,
+      "category": "engineering section numbering / negative control",
+      "variant": "low_contrast",
+      "sha256": "ee2d1589c92b73ee0b6ec3a320aa0348a0cbaf8f41db4530cde08c4f4e87ece4",
+      "bytes": 164546,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.449,
+        "ocr_chars": 976,
+        "ocr_lines": 37,
+        "ocr_mean_word_confidence": 35.54,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(7.3)",
+            "line": "7.3 Velde",
+            "ratio": 0.15873864243719935
+          },
+          {
+            "label": "(7.4)",
+            "line": "7.4 ESSE",
+            "ratio": 0.46392303580972744
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "Pie 12",
+        "8 44 ar",
+        "“Frenet",
+        "ASK” BME “Frenet $p32Zak”\" Be “Frenet-Serret Axl\", 42 ¢8i—."
+      ]
+    },
+    {
+      "file": "E09_eng_section__jpeg_noise.pdf",
+      "source": "double_spiral_surface_revision_spec.pdf",
+      "source_sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "source_pdf_page": 12,
+      "category": "engineering section numbering / negative control",
+      "variant": "jpeg_noise",
+      "sha256": "4437519ace81cda91ac7d8478d90117ec12ace6bc40441b118216979acce9095",
+      "bytes": 97665,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.312,
+        "ocr_chars": 845,
+        "ocr_lines": 32,
+        "ocr_mean_word_confidence": 37.34,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(7.3)",
+            "line": "7.3",
+            "ratio": 0.15820416889363975
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "8 FAT Pe 12",
+        "“Frenet Ask” BEA “Frenet #p482sb”\" He “Frenet-Serret 2st\", 423¢4§—.",
+        "BE MCHHBEH Gaussian curvature, mean curvature, Klein four-group SRB NSA",
+        "7.3"
+      ]
+    },
+    {
+      "file": "E09_eng_section__lowres_blur.pdf",
+      "source": "double_spiral_surface_revision_spec.pdf",
+      "source_sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "source_pdf_page": 12,
+      "category": "engineering section numbering / negative control",
+      "variant": "lowres_blur",
+      "sha256": "4055b5340c75e1f1a4fa38b37f9157f17039649a1cc235206481f0029cff87db",
+      "bytes": 129588,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 1.255,
+        "ocr_chars": 911,
+        "ocr_lines": 30,
+        "ocr_mean_word_confidence": 39.42,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [
+          {
+            "label": "(7.3)",
+            "line": "7.3 PAR",
+            "ratio": 0.15873864243719935
+          }
+        ],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "12",
+        "8 RANT PE",
+        "+ “Frenet 2X\" MiXNGH “Frenet HRAK” MK “Frenet-Serret AK\", FRG.",
+        "© MH Gaussian curvature, mean curvature, Klein four-group FRIEK)SR—."
+      ]
+    },
+    {
+      "file": "N10_insurance_scan__control_160dpi.pdf",
+      "source": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "source_sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "source_pdf_page": 1,
+      "category": "non-mathematics image-only negative control",
+      "variant": "control_160dpi",
+      "sha256": "1b589fee30582dd0113667d4d808e43e7d1dce5e6df38959b6a34b119a59efdd",
+      "bytes": 166341,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.822,
+        "ocr_chars": 653,
+        "ocr_lines": 29,
+        "ocr_mean_word_confidence": 60.59,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "7/24/26, 9:21 AM Safe Travels Elite PPO - iiiiF avr RI",
+        "Ba taht",
+        "fRIRBE: Safe Travels Elite PPO sly,",
+        "‘BiB: Surego Administrative Services Fuse T RA\\V | Cc K"
+      ]
+    },
+    {
+      "file": "N10_insurance_scan__skew_1p5deg.pdf",
+      "source": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "source_sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "source_pdf_page": 1,
+      "category": "non-mathematics image-only negative control",
+      "variant": "skew_1p5deg",
+      "sha256": "3da14c5e722ba00e2fc2f01d38323cf0078de3e498f95d62b88b7e0f169cb9f7",
+      "bytes": 164762,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.838,
+        "ocr_chars": 644,
+        "ocr_lines": 33,
+        "ocr_mean_word_confidence": 57.1,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "HT RIS",
+        "7/24/26, 9:21 AM Safe Travels Elite PPO -",
+        "Batak",
+        "(RIGBER: Safe Travels Elite PPO"
+      ]
+    },
+    {
+      "file": "N10_insurance_scan__low_contrast.pdf",
+      "source": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "source_sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "source_pdf_page": 1,
+      "category": "non-mathematics image-only negative control",
+      "variant": "low_contrast",
+      "sha256": "fb16d553ff2c3913f4a4e5cb4aeeb92cb50435e5627c61044330727647572807",
+      "bytes": 119712,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.759,
+        "ocr_chars": 608,
+        "ocr_lines": 26,
+        "ocr_mean_word_confidence": 63.34,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "7/24/26, 9:21 AM Safe Travels Elite PPO - HiifRIT RI",
+        "Cat",
+        "{RIB EM: Safe Travels Elite PPO sly,",
+        "‘IBA: Surego Administrative Services tus T RA\\\\ I Cc K"
+      ]
+    },
+    {
+      "file": "N10_insurance_scan__jpeg_noise.pdf",
+      "source": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "source_sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "source_pdf_page": 1,
+      "category": "non-mathematics image-only negative control",
+      "variant": "jpeg_noise",
+      "sha256": "9793b2f8e9ac086b0e29a0628e1a2844ac9b038b460060304a929dad61f03d92",
+      "bytes": 77503,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.807,
+        "ocr_chars": 656,
+        "ocr_lines": 31,
+        "ocr_mean_word_confidence": 57.12,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "7/24/26, 9:21 AM Safe Travels Elite PPO - Hitter fait",
+        "BRS",
+        "(RIEBER: Safe Travels Elite PPO sly,",
+        "BiB: Surego Administrative Services Gis T RA\\Y’ | Cc K"
+      ]
+    },
+    {
+      "file": "N10_insurance_scan__lowres_blur.pdf",
+      "source": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "source_sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "source_pdf_page": 1,
+      "category": "non-mathematics image-only negative control",
+      "variant": "lowres_blur",
+      "sha256": "2995a06f6b9264ebf331a97f06d5ff9bbb9049ad9d6115a75bd69d3a36065fd0",
+      "bytes": 110246,
+      "pages": 1,
+      "native_text_chars": 0,
+      "status": "UNVERIFIED — full ground truth and browser detector unavailable",
+      "classification": "UNVERIFIED — no full detector/browser/independent whole-page ground truth",
+      "ocr_proxy": {
+        "ocr_status": "ok",
+        "ocr_seconds": 0.714,
+        "ocr_chars": 576,
+        "ocr_lines": 32,
+        "ocr_mean_word_confidence": 60.75,
+        "ocr_no_text": false,
+        "png_dimensions": [
+          1323,
+          1871
+        ]
+      },
+      "detector_proxy": {
+        "results": [],
+        "equation_raw_candidates": [],
+        "equation_preliminary_confident_candidates": [],
+        "bibliography_headings": [],
+        "parser_errors": []
+      },
+      "ocr_excerpt_first_lines": [
+        "7/24/26, 9:21 AM Safe Travels Elite PPO - SBT RI",
+        "BRR",
+        "p-—nneeieon =“. TRAWICK",
+        "International"
+      ]
+    }
+  ]
+}
