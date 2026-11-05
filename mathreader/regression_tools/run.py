@@ -153,6 +153,26 @@ def extract_pdf(task):
                 elapsed_ms=round((time.perf_counter() - started)*1000))
 
 
+def cached_extraction(task, fitz_version):
+    """Read valid persisted extraction metadata without starting a PDF worker."""
+    _path, sha, data_dir = task
+    cache = Path(data_dir) / 'extract' / sha[:2] / f'{sha}-e{EXTRACT_SCHEMA}-s{SELECTOR_SCHEMA}.jsonl.gz'
+    meta_path = cache.with_suffix('.meta.json')
+    if not cache.exists() or not meta_path.exists():
+        return None
+    started = time.perf_counter()
+    try:
+        meta = json.loads(meta_path.read_text(encoding='utf8'))
+        if (meta['sha256'] == sha and meta['schema'] == EXTRACT_SCHEMA
+                and meta['selector_schema'] == SELECTOR_SCHEMA
+                and meta['fitz_version'] == fitz_version):
+            return dict(meta=meta, geometry=str(cache), extraction_cache_hit=True,
+                        elapsed_ms=round((time.perf_counter()-started)*1000))
+    except (ValueError, KeyError, TypeError, OSError):
+        pass
+    return None
+
+
 def file_inputs(args):
     if bool(args.manifest) == bool(args.corpus_dir):
         raise ValueError('Specify exactly one of --manifest or --corpus-dir')
@@ -246,24 +266,41 @@ def run_detector(docs, extracted, cache_dir, project_root, node_exe):
     runner = project_root/'regression_tools'/'detector_proxy.js'
     fingerprint = hashlib.sha256((digest_file(src)+digest_file(runner)).encode()).hexdigest()[:18]
     instructions = []
-    cached_before = 0
+    answer = {}
     for doc in docs:
         sha = doc['sha256']
         entry = extracted[sha]
         cache = cache_dir/'detectors'/sha[:2]/f'{sha}-{fingerprint}-e{EXTRACT_SCHEMA}.json'
-        cached_before += int(cache.exists())
+        # A warm run must not start a Node VM or re-read page geometry just to
+        # discover that all detector summaries are already valid. Never accept
+        # a corrupt, incomplete, wrong-SHA, or wrong-schema cache as a hit.
+        if cache.exists():
+            try:
+                old = json.loads(cache.read_text(encoding='utf8'))
+                if (old['schema'] == 1 and old['sha256'] == sha
+                        and old['completed'] is True):
+                    answer[sha] = old
+                    continue
+            except (ValueError, KeyError, TypeError, OSError):
+                pass
         instructions.append({'sha256':sha,'geometry':entry['geometry'],'cache':str(cache)})
-    input_path = cache_dir/'detector_instructions.json'
-    atomic_json(input_path, {'instructions':instructions})
-    proc = subprocess.run([node_exe,str(runner),'--source',str(src),'--input',str(input_path)],
-                          capture_output=True,text=True,timeout=900)
-    if proc.returncode:
-        raise RuntimeError(f'Detector proxy failed (fail-closed): {proc.stderr[:1600]}')
-    answer = {}
-    for spec in instructions:
-        answer[spec['sha256']] = json.loads(Path(spec['cache']).read_text(encoding='utf8'))
-    return answer, proc.stdout.strip(), cached_before
-
+    cache_hits = len(answer)
+    if instructions:
+        # Only the misses enter the source-level parser VM. This keeps the
+        # detector-source fingerprint and fail-closed subprocess semantics.
+        input_path = cache_dir/'detector_instructions.json'
+        atomic_json(input_path, {'instructions':instructions})
+        proc = subprocess.run([node_exe,str(runner),'--source',str(src),'--input',str(input_path)],
+                              capture_output=True,text=True,timeout=900)
+        if proc.returncode:
+            raise RuntimeError(f'Detector proxy failed (fail-closed): {proc.stderr[:1600]}')
+        for spec in instructions:
+            result = json.loads(Path(spec['cache']).read_text(encoding='utf8'))
+            if (result.get('schema') != 1 or result.get('sha256') != spec['sha256']
+                    or result.get('completed') is not True):
+                raise RuntimeError(f'Detector proxy produced an invalid cache: {spec["sha256"]}')
+            answer[spec['sha256']] = result
+    return answer, f'executed={len(instructions)} cached={cache_hits}', cache_hits
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
@@ -297,9 +334,20 @@ def main(argv=None):
     print(f'Corpus: {len(docs)} original PDFs, unique SHA-256 verified', flush=True)
     extracted = {}
     tasks=[(d['path'],d['sha256'],str(cache)) for d in docs]
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        for res in pool.map(extract_pdf,tasks):
-            extracted[res['meta']['sha256']]=res
+    # Verify the same version/schema/identity gate used by extract_pdf before
+    # launching any worker. A fully warm corpus needs no worker processes.
+    import fitz
+    pending = []
+    for task in tasks:
+        hit = cached_extraction(task, fitz.VersionBind)
+        if hit is None:
+            pending.append(task)
+        else:
+            extracted[hit['meta']['sha256']] = hit
+    if pending:
+        with ProcessPoolExecutor(max_workers=args.workers) as pool:
+            for res in pool.map(extract_pdf,pending):
+                extracted[res['meta']['sha256']]=res
     cache_extract=sum(v['extraction_cache_hit'] for v in extracted.values())
     print(f'Text/geometry: {len(docs)} processed, {cache_extract} cache hits',flush=True)
     detector={}
@@ -400,7 +448,7 @@ def main(argv=None):
                 'full_document_accuracy':'UNVERIFIED'}
         records.append(record)
     summary={'schema':1,'method':'offline cached source-level PDF regression, NOT browser final indexes',
-             'version':'v353 test infrastructure (site runtime otherwise unchanged)',
+             'version':'v354 test infrastructure (site detection and OCR semantics unchanged)',
              'pdf_count':len(records),'total_pages':sum(r['pages'] for r in records),
              'low_native_pages':sum(r['low_native_page_count'] for r in records),
              'extraction_cache_hits':cache_extract,'detector_cache_hits':detector_hits,

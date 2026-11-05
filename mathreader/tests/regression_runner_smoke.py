@@ -45,6 +45,12 @@ def test():
         assert second['summary']['extraction_cache_hits']==2;checks+=1
         assert second['summary']['detector_cache_hits']==2;checks+=1
         assert [x['detector_proxy'] for x in first['documents']]==[x['detector_proxy'] for x in second['documents']];checks+=1
+        # A validated 100%-cached pass never launches Node at all; the cache
+        # itself is the content-addressed source-level proxy output.
+        reused=invoke(corpus,cache,d/'out_cached_no_node','--node','/missing-node-executable','--max-files','2')
+        assert reused['summary']['detector_cache_hits']==2;checks+=1
+        # A cache miss must still fail closed when the requested Node executable
+        # is unavailable; the runner cannot silently skip fresh detector work.
         # Content mutation invalidates exactly one document, not unrelated data.
         write_pdf(corpus/'b.pdf','A new source document with a different digest')
         third=invoke(corpus,cache,d/'out3','--max-files','2')
@@ -61,6 +67,8 @@ def test():
         assert fourth['summary']['extraction_cache_hits']==2 and fourth['summary']['detector_cache_hits']==2;checks+=1
         with (project/'js/41-equations-bibliography.js').open('a',encoding='utf8') as f:
             f.write('\n// smoke cache-fingerprint change\n')
+        missing=invoke(corpus,cache,d/'out_miss_no_node','--node','/missing-node-executable','--project-root',str(project),'--max-files','2',success=False)
+        assert 'No such file' in missing or 'not found' in missing or 'missing-node-executable' in missing;checks+=1
         fifth=invoke(corpus,cache,d/'out5','--project-root',str(project),'--max-files','2')
         assert fifth['summary']['extraction_cache_hits']==2 and fifth['summary']['detector_cache_hits']==0;checks+=1
         # Explicit OCR budget limits must report unprocessed work, not PASS.

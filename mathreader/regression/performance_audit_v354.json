@@ -1,0 +1,391 @@
+{
+  "version": "v354",
+  "scope": "offline source-level performance/cleanup; no full browser or actual Texify verification",
+  "baseline": "v353",
+  "corpus_size": 50,
+  "total_pages": 1125,
+  "cold_elapsed_ms": 16158,
+  "warm_elapsed_ms": 206,
+  "cold_cache_hits": {
+    "extraction": 0,
+    "detector": 0,
+    "ocr": 0
+  },
+  "warm_cache_hits": {
+    "extraction": 50,
+    "detector": 50,
+    "ocr": 50
+  },
+  "baseline_v353_cold_ms": 16345,
+  "baseline_v353_warm_ms": 389,
+  "v353_interleaved_warm_ms": [
+    534,
+    355,
+    340
+  ],
+  "v354_interleaved_warm_ms": [
+    181,
+    229,
+    254
+  ],
+  "source_level_diffs_vs_v353": 0,
+  "synthetic_scroll_rect_reads_30000_pages": {
+    "v353": 30000,
+    "v354": 10
+  },
+  "parity_assertions": 1204,
+  "mathematical_ground_truth": "UNVERIFIED",
+  "actual_browser_texify": "UNVERIFIED",
+  "documents": [
+    {
+      "sha256": "64a4ab741bae301ab16bf683d80d6811bd7fe9464bfd112c7fbae005c6c589e2",
+      "filename": "581 Note 1.pdf",
+      "pages": 1,
+      "source_detector_sha256": "5997c3bb574f8722bce55143b07b5de28d13fdcbc9f255f0c5384f88132e99ac",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "dce01da39ac90062dc65eb638212ad1b46a663f1c90ee34f5b6af7d890d554f2",
+      "filename": "581 Note 2.pdf",
+      "pages": 2,
+      "source_detector_sha256": "62cb528013b4181e91777dc656b2eff446e42333c55c529d0bca21f289ba6c14",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "8c11eecc4577e9c271d1163e7f98669936d17cb3775fd00da9e2c49937dac299",
+      "filename": "581 Note 3.pdf",
+      "pages": 3,
+      "source_detector_sha256": "fe4f5ebe70a9621c296286b6ed33a099900838210e9307513d3ba290e5641969",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "fa64cbd4eb31be5d9cb64506986b0df0f6db658cb84d83b02216c4e73533b0fc",
+      "filename": "581 Note 4.pdf",
+      "pages": 2,
+      "source_detector_sha256": "296da5aa5a54e52b0953a8f5b41eae9d16a32b4d04d3239cb13ebc2e6612c790",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "ffaa8198e6005d82afdc30df1404b4a20c58b71a5573a5f712177bfacac5ab7e",
+      "filename": "581 Note 5.pdf",
+      "pages": 4,
+      "source_detector_sha256": "4dc379080ca20fe047d4381fe5dc22ecd93138acd02d684c5facc7f8bfc1da76",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "7c25285efdab09cf325a5aeec4a8410eb751720f5be99d3896ca0ac6e752b634",
+      "filename": "581 Note 6.pdf",
+      "pages": 2,
+      "source_detector_sha256": "c9b2d2500060f71ab23ead2d4545da6e97bded109a19bfd686baf38203313ac2",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "filename": "581 Note 7.pdf",
+      "pages": 3,
+      "source_detector_sha256": "561eb44957ebb6a078dd1ff7544e14c7b69e2ad4dae06d0641c90c02eaedc067",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "filename": "Ahlfors-Conformal-Invariants.pdf",
+      "pages": 172,
+      "source_detector_sha256": "a2fd972ce07fa5bead1572b08671fc5e822d697b57e111e8122408bad6deffde",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "filename": "geometrical_hypothesis_Banach.pdf",
+      "pages": 10,
+      "source_detector_sha256": "f5f20132f3b412fcf342d9fff9bee6fd3296baca2840402d5a4f456cb98fb0cc",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "filename": "SPS_1988__22__485_0.pdf",
+      "pages": 18,
+      "source_detector_sha256": "b4913cfe6a9630c9c7658a1063f1f0114b001f2e1bc67a0fd404b429ea01b990",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "filename": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "pages": 13,
+      "source_detector_sha256": "89cda735f47c0e26e32b08c503236f791131d1b3d1c8c080644b7356811ef8f3",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "filename": "caffarelli1989.pdf",
+      "pages": 27,
+      "source_detector_sha256": "180467efae94445060aa68a0097c92cd16365257585b30eb43d53976a909ff66",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "filename": "yau1978.pdf",
+      "pages": 73,
+      "source_detector_sha256": "c395cc72c8f9f22039fbd966b7c94a0fa0d014441ac725278f00e2947274c324",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "f9163309235ffe21546135b4a39a2657ed89691147432dcf00f2827e5a0525c1",
+      "filename": "Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces.pdf",
+      "pages": 19,
+      "source_detector_sha256": "4e9ef907dcf5fa23d97b922836dba545ef8b012db0d4c875e7df5f13d7f51ed0",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "2b3f517b0f9a67b499a9cb3c757f5c4016a551fca9a8b22fbd02e6eb7b365501",
+      "filename": "2309.00806v2.pdf",
+      "pages": 15,
+      "source_detector_sha256": "dbda0c2fa1de8af5c22326599b1d6d2ac6c5b8677a948a434afda6f5f4c09e94",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "filename": "0810.5645v6.pdf",
+      "pages": 212,
+      "source_detector_sha256": "d71951e97f3334c6cd70a093cf28b512d936386cd60e059d158913e70b392ed9",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "filename": "1209.2203v2.pdf",
+      "pages": 88,
+      "source_detector_sha256": "f3776b4cf4dfa29f6e0d7bbafea91d4bcbd0ccb510c106236d45f1cfece886b1",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "11a7a3c6feb9ec6531b6bd99e30644d13ad9759d952a83c69d08ea3ad60f0b67",
+      "filename": "YamabeProblem.pdf",
+      "pages": 56,
+      "source_detector_sha256": "1303de94ebf9d6185693d0f091a972b62bf82efcc7fee4d9f77770e6c02506cd",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "743bb57222fea38259af4775782ba0229e18d8f929d8d32bf2b0e389ffb0d0a0",
+      "filename": "Radon Measures and Riesz Representation Theorems.pdf",
+      "pages": 10,
+      "source_detector_sha256": "f9e284fcb180af816e76067bc323e5297c0b676c90c3ba6cfc6e36795f630907",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "2363c2bb5bb28382fe883cc4d27ba33e3e4bf0d6970b103efb9212d89bb5fdda",
+      "filename": "A_Geometric_Approach_to_Integration.pdf",
+      "pages": 6,
+      "source_detector_sha256": "385da5521e9ece494e3accf158dfae3c920240c815f9b039f45dbd8bc3a65d3f",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "c97034a8564c94a61a4556c3f3f60ce2fe6bc2701a839303d83d377edf7f4d41",
+      "filename": "Where_do_Complex_Numbers_come_from_.pdf",
+      "pages": 3,
+      "source_detector_sha256": "86ebd6dc801941fb5fb5a7bce0021c2a5d024f711a8b8735ccc88a36d42af8bd",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "4c64c76edaf0868ccf232e33fdcf1a696dce0490e374526754db80ba4fd305f1",
+      "filename": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "pages": 26,
+      "source_detector_sha256": "6734bea8ab1ade09a4cdbc705b6757aa3659929ac92395cb0fa90ca422d72078",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "304bfe1e884b75fde55a064b6cdf1be3bec33342d9cdcc1f4eb305eff1e2bd0b",
+      "filename": "The_Classic_Solution_to_the_Yamabe_Problem_commented.pdf",
+      "pages": 26,
+      "source_detector_sha256": "0926f16a02c73f7079c2ddb5e3919a1f21b87af0779527621da8358c83eb79f3",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "206fc4719f3dbb04f56c9a6acf4ee26dc10b86d052d8f9f90e09522be951829d",
+      "filename": "brendle2007.pdf",
+      "pages": 29,
+      "source_detector_sha256": "cc40664601aeef018c00fa3d96334fe7bad4209a8ca8ee609f6c846ca7fdc1bc",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "92f5f086a7fefd4f467d6f0589573de06268a92c32dc47a481bb503857536c8b",
+      "filename": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "pages": 18,
+      "source_detector_sha256": "fdab36917b134dbee9b31e68f3161c86f705b6ca283f9c16db3730d698f77f9f",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "020a93cb9463ae1e0fafa6d4fbf177a8c272a587e589eb55afa545f47e48262d",
+      "filename": "A_Streamlined_Proof_of_the_Yamabe_Problem.pdf",
+      "pages": 18,
+      "source_detector_sha256": "74c9ca2108a139b5fb328b3219ef89f9d4ee974438c564d43f84b04d748ca7dc",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "216360ed33b909fec9d013819a1c26c6c06f23f8025d2a663dc2d2c342922baf",
+      "filename": "14922fe9-aa1a-4a9c-8698-ee3ff46b703d.pdf",
+      "pages": 2,
+      "source_detector_sha256": "56312f290f5bb0edb76ad7ba3845d416e0fd09e8af1b94a370ff8bbff9975dcb",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "filename": "double_spiral_surface_revision_spec.pdf",
+      "pages": 13,
+      "source_detector_sha256": "25a03fe2ef263a91c79c20d77946ef8a585da8ffd8c773aa878efc37cf579e3e",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "filename": "2610.07774v1.pdf",
+      "pages": 15,
+      "source_detector_sha256": "f9f4ef56c17a85ab422d07e3e54a08dbf24a63f0e5f0bd49288eca200d99af4b",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "3ee5a3d89da674bb63066419644f9b78a40b3266db4f769b7b844ade1b44335c",
+      "filename": "124ws2.pdf",
+      "pages": 6,
+      "source_detector_sha256": "bce92d434ebefad27419574e354d04277f6282922ad7291627832975ceb17e7a",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "66c25b9433838b8868ebf72117ad2d8163d20e4174834b0db23adcd9b8c57870",
+      "filename": "Math124_Week2_Distance_Speed_Solutions.pdf",
+      "pages": 4,
+      "source_detector_sha256": "004257647f1024163579843214efb75fc4ca5c8d2906817da012abd35b183d6f",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "c3c884cd95e4c10e9a2aeac6fa9cea71e92eb09e2563ab72cd1651239231f2d0",
+      "filename": "Seattle_UDistrict_vs_Xian_Beilin_房价与租金详细对比_2026-09.pdf",
+      "pages": 8,
+      "source_detector_sha256": "f21eae90f029f556af7ffaccc6fa8705acee48d223457c8bca11031dfaa973c8",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "76d201b41c1b79772eaa25867f079a6894b0604c67fddfc19ec69d2db026016b",
+      "filename": "Seattle_UDistrict_vs_Xian_Beilin_超市典型商品价格详细对比_2026-09.pdf",
+      "pages": 8,
+      "source_detector_sha256": "26ca856c51ef530205882cee55145930832215fc7a8ffb640303d08879f49b9a",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "46e789a22049bbc12ebf2cf80c569819b520abacad4bad207f185c47dcdd081e",
+      "filename": "Computation_VS_Dark.pdf",
+      "pages": 25,
+      "source_detector_sha256": "2bcd38f567af8ad78715dcd3af0d9990dcc858455ff6f04d56dfe3da2edb4b7c",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "4b51daf5cf2a3a19674189b0572ca67b158c6f2be870cf23d1f69f40bdb2f0b2",
+      "filename": "Fraljiculator_ArrayPool_Architecture_Updated.pdf",
+      "pages": 16,
+      "source_detector_sha256": "1c44c9427b1834b6ee646e5e2f84c0086e26235aae7cf7c710bf78ec786d1f55",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "d4d27608861aa951945d1bda0d686bf51dcecb2f0ad2565065273604bc0a67c0",
+      "filename": "Fraljiculator_Performance_Optimization_Closeout_Report.pdf",
+      "pages": 6,
+      "source_detector_sha256": "555e6b72aa60f75bf5a09aab4389f54fd0e163ece4e13fb9f85053924f94e06e",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "9b8375d5845fe229752ffa6e93a48a60346761f1805c7c6fa6abe8515e3cb606",
+      "filename": "Lean_Diagonal_Similarity_Beginner_Guide.pdf",
+      "pages": 18,
+      "source_detector_sha256": "64f2efcd5afc3c2655c9ec3e1fa9d0a682c258e48b83c48622859f30d57dfcf3",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "7752a424286ed8d0d4847286934db925fe4e57965d7eb551662ae83f91e62f29",
+      "filename": "Code_final.pdf",
+      "pages": 40,
+      "source_detector_sha256": "2e166039106f1dd300057ebbfbb89bb5b49e6486bce91ffb33d6672e34e997a9",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "0f03aec6125238df242d8c44489375691bf9eb9e90d232aea9bdb0e285d8d332",
+      "filename": "祝福_魯迅_分段修正版.pdf",
+      "pages": 8,
+      "source_detector_sha256": "3ac5d24fb68ff350fed167e8c897dfa4fe925494982d605db0c59e1a318cbfb1",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "4450a704a34e8c8fd769a1cfebc71e947f7e13c44d51f54394810160923de2c2",
+      "filename": "汲绍达诗词文稿集_完整整理版_修订.pdf",
+      "pages": 36,
+      "source_detector_sha256": "e03c75e35ca5fef7f7dc924d97a1a55e4e0fe78c014e4c45f2d9d707a496ae0b",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "0e7636d9340165a4096cabab6fc500f41474172d0deef880a55fd5c2a0df6bf6",
+      "filename": "仍待辨明的原稿内容清单.pdf",
+      "pages": 3,
+      "source_detector_sha256": "7efb92f1758ad6a5a1aa2ef3b2f67002ff3793a25d2fd4758a5d3a1bb9242cb5",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "1c9261b69d2857ad2a9eb7253d0ec0948ab90b5b29929263d27c6a8d9ac64eb0",
+      "filename": "补充解释.pdf",
+      "pages": 2,
+      "source_detector_sha256": "53461c3ed81045e95e42a4e7720cb2ec6602298b0aa0069fab7d695fb85cc5de",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "filename": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "pages": 1,
+      "source_detector_sha256": "dbb3f477fa562fbad07c1fc934e8235af89b6de8e85fc3f5a9e83742e72b97a1",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "a19eeb61a1564dc50e9f9dedaf939342a67405936b61967c40ab925a13cdff11",
+      "filename": "补充解释后_仍待确认内容.pdf",
+      "pages": 2,
+      "source_detector_sha256": "808c2ce13eabbb87dcd2deb9dba970ec6fc3ff2aaa9f4eafa367f695231b983b",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "af3f0355cdb0ca4c33706feeb29e4a6ceb6f47d92ceb2712a71787fe5b6d7d18",
+      "filename": "汲绍达诗词文稿集_完整整理版.pdf",
+      "pages": 37,
+      "source_detector_sha256": "79825741c145496542384fcd87433c7e7aeb7ba168a1b9d98fed2d5cb3cebae2",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "864dc3d4e2f275137d6d1849eeb7571579277151c251e6dc9feefe098bc04669",
+      "filename": "利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf",
+      "pages": 3,
+      "source_detector_sha256": "f4ff87c77de64be5bad1ca4bc06ba5f6e794d5aa71764dd93730e7116db225a3",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "51d68e23431152dfb6fcca0b06cbfda4ae99482100efd5cd457a24168f37cb55",
+      "filename": "Riemann球面上的旋转_Fraljimetry.pdf",
+      "pages": 2,
+      "source_detector_sha256": "3662d707b3ea4a313e0ee186a2ea6ba7abf2f3f370352b781d2335146cae7266",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "402bfcde810a1ba64d5d9230861a6704f27a2e4216070fd3dd51cee8356718b7",
+      "filename": "Schoen_Yau_Positive_Mass_Step_Tables.pdf",
+      "pages": 9,
+      "source_detector_sha256": "e2ae114ecf92a9a24d35f8a6270b50390b6e190c49af9340066758c15aa31cb4",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "filename": "GA Seminar Note 1.pdf",
+      "pages": 4,
+      "source_detector_sha256": "b1a7761345e011e92f94a3c61ceb4ce6b8583c71da1b43b85303ba3958124e87",
+      "status": "UNVERIFIED"
+    },
+    {
+      "sha256": "82ec030edb90a67a478f3c9dcdbb487858d7938f399dcbddf901e6a8f04c0492",
+      "filename": "Green_Function_Expansion_Compact.pdf",
+      "pages": 1,
+      "source_detector_sha256": "cb208ec69a2782eebe73908a550fe40dac15f46ec12bcbf2298e00dbba07c3db",
+      "status": "UNVERIFIED"
+    }
+  ]
+}

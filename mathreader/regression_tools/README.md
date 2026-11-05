@@ -1,4 +1,4 @@
-# Reusable offline PDF regression runner (v353)
+# Reusable offline PDF regression runner (v354)
 
 The application is **not** coupled to this tool: no OCR preloading, network
 requests, PDF.js changes, runtime model calls, recovery mechanisms, or detection
@@ -35,6 +35,13 @@ contain `path`, optional expected `sha256`, optional `discipline`, and optional
 `source_era`. The manifest can use relative paths resolved against its parent.
 A hash mismatch or duplicate original PDF **stops the run**; renamed copies
 do not inflate corpus size.
+
+On v354, a fully cached extraction pass does not spawn PDF worker processes,
+and a fully cached detector pass does not start Node. Each PDF is still freshly
+SHA-256-hashed and caches are checked against the original extraction version,
+schema and source fingerprint. Mixed hit/miss runs process only the missing PDFs;
+cache-miss subprocess failures remain visible and stop the run. This is an
+execution optimization, **not** a change to detector results or acceptance.
 
 Rerun the exact command with the **same** cache directory and a different
 `--out-dir`. Extraction, detector outputs and successful OCR transcripts are

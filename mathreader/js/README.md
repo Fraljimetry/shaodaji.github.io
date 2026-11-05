@@ -49,3 +49,18 @@ cache and paired formula compilation sidecar. It does not run in the website.
 Do not describe native-text parser probes or Tesseract transcripts as final
 browser indexes, Texify output, or verified mathematical recognition. See
 `../regression_tools/README.md` and v353 entry in `../REGRESSION.md`.
+
+
+## v354 safe performance maintenance
+
+The ordered ten-part lexical module layout is unchanged. In
+`30-rendering-navigation.js`, large continuous-document scroll-position lookup
+now narrows its candidate window using frame offsets, then applies the same
+existing rectangle-based visibility/distance comparison; small/irregular
+layouts use the original full scan. The horizontal-overflow width maximum
+avoids spreading all page widths into one JavaScript call. Keep mixed-page-size
+anchor semantics and first-visible-page rendering intact; do not replace exact
+page metrics with guesses. `mathreader.css` removes an accidental duplicate
+OCR-modal rule inside the mobile media block. No detection or OCR behavior was
+changed. Validate with `node mathreader/tests/performance_safe_regression.js`
+as well as the complete regression suite.

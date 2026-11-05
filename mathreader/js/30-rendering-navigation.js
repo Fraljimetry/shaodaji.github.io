@@ -47,7 +47,12 @@ function applySinglePageHorizontalOverflow(surface, wrap, pageWidth) {
 function applyContinuousHorizontalOverflow(pageMetrics) {
   if (!continuousStack || !primaryCanvasWrap) return;
   const available = Math.max(1, primaryCanvasWrap.clientWidth);
-  const maxPageWidth = Math.max(0, ...(pageMetrics || []).map((item) => Number(item?.width) || 0));
+  // Do not spread the entire document into a function call: a very long PDF
+  // can exceed JavaScript's argument limit, even though only a maximum is needed.
+  let maxPageWidth = 0;
+  for (const item of pageMetrics || []) {
+    maxPageWidth = Math.max(maxPageWidth, Number(item?.width) || 0);
+  }
   const overflow = maxPageWidth > available;
   if (!overflow) {
     continuousStack.style.removeProperty('width');
@@ -309,7 +314,61 @@ function updateCurrentPageFromContinuousScroll() {
   const anchor = wrapRect.top + Math.min(140, wrapRect.height * .24);
   let bestPage = currentPage;
   let bestDistance = Infinity;
-  for (const [pageNum, record] of continuousPageNodes) {
+
+  // Continuous frames are ordered and share an offset parent. For long PDFs,
+  // locate the first potentially visible frame using stable placeholder
+  // offsets. We still use the original exact viewport-rectangle comparison
+  // for every candidate, preserving tie-breaking and page selection.
+  // For short/irregular layouts the original full scan is safer and cheap.
+  let firstPage = 1;
+  let lastPage = pdfDoc.numPages;
+  if (lastPage >= 64 && continuousPageNodes.size === lastPage) {
+    const firstFrame = continuousPageNodes.get(1)?.frame;
+    const lastFrame = continuousPageNodes.get(lastPage)?.frame;
+    const probe = continuousPageNodes.get(currentPage)?.frame || firstFrame;
+    if (firstFrame && lastFrame && probe &&
+        Number.isFinite(firstFrame.offsetTop) && Number.isFinite(lastFrame.offsetTop) &&
+        Number.isFinite(probe.offsetTop) &&
+        firstFrame.offsetTop <= lastFrame.offsetTop &&
+        firstFrame.offsetHeight > 0 && lastFrame.offsetHeight > 0) {
+      const probeRect = probe.getBoundingClientRect();
+      // A transformed/zoomed ancestor can make visual and layout coordinates
+      // diverge; preserve the original full scan in that case.
+      const unscaled = Math.abs((probeRect.bottom - probeRect.top) - probe.offsetHeight) <= 2;
+      const origin = probeRect.top - probe.offsetTop;
+      const topLimit = wrapRect.top - origin - 2;
+      const bottomLimit = wrapRect.bottom - origin + 2;
+      let low = 1;
+      let high = lastPage + 1;
+      let valid = unscaled && Number.isFinite(origin);
+      while (valid && low < high) {
+        const middle = Math.floor((low + high) / 2);
+        const frame = continuousPageNodes.get(middle)?.frame;
+        if (!frame || !Number.isFinite(frame.offsetTop) || !(frame.offsetHeight > 0)) {
+          valid = false;
+          break;
+        }
+        if (frame.offsetTop + frame.offsetHeight < topLimit) low = middle + 1;
+        else high = middle;
+      }
+      if (valid) {
+        firstPage = Math.max(1, low - 2); // offset rounding / boundary safety
+        // Allow two extra frames after the viewport for fractional geometry.
+        let end = Math.max(firstPage, low);
+        while (end <= lastPage) {
+          const frame = continuousPageNodes.get(end)?.frame;
+          if (!frame || !Number.isFinite(frame.offsetTop)) { valid = false; break; }
+          if (frame.offsetTop > bottomLimit) break;
+          end++;
+        }
+        if (valid) lastPage = Math.min(lastPage, end + 2);
+        else firstPage = 1;
+      }
+    }
+  }
+  for (let pageNum = firstPage; pageNum <= lastPage; pageNum += 1) {
+    const record = continuousPageNodes.get(pageNum);
+    if (!record?.frame) continue;
     const rect = record.frame.getBoundingClientRect();
     if (rect.bottom < wrapRect.top || rect.top > wrapRect.bottom) continue;
     const distance = Math.abs(rect.top - anchor);
