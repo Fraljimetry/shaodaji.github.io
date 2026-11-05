@@ -96,6 +96,17 @@ function tocResultLineIndices(lines, page = 1, pageCount = 1) {
   return established ? new Set(candidates) : new Set();
 }
 
+// A visible back-of-book index header is page-level navigation, not a
+// mathematical Result declaration. Require an explicit upper-page index title
+// and a dense page of index rows; do not infer this from a lone headword such
+// as "Definition" (which can be a genuine unnumbered mathematical Result).
+function structureResultsIndexNavigationPage(lines) {
+  const rows = Array.isArray(lines) ? lines : [];
+  if (rows.length < 12) return false;
+  return rows.some((line) => Number(line?.ratio ?? 1) <= 0.11
+    && /^(?:(?:subject|name|author|phrase[-\s]?finder|general)\s+)?index\s*[.:]?$/i.test(String(line?.text || '').trim()));
+}
+
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
   const cleaned = normalizedStructureResultText(line?.text);
@@ -174,6 +185,38 @@ function detectedStructureResult(lines, lineIndex, page) {
   match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\.?$/i);
   if (!match || cleaned[0] !== cleaned[0].toLocaleUpperCase()) return null;
   const type = canonicalStructureResultType(match[1]);
+
+  // Fragmented native layers can put "THEOREM" and "1.3. Let ..." into
+  // separate, slightly out-of-order fragments on the *same baseline*. Require
+  // the number AND statement text, tight y alignment and immediate horizontal
+  // continuity. This does not promote lone folios, references, or distant
+  // second-column text, and leaves the existing vertical split rule intact.
+  const typeEnd = Number(line?.xEndRatio);
+  const typeStart = Number(line?.xStartRatio);
+  const typeRatio = Number(line?.ratio);
+  if (Number.isFinite(typeEnd) && Number.isFinite(typeStart) && Number.isFinite(typeRatio)) {
+    const sameRowNumber = (lines || []).filter((adjacent, index) => {
+      if (index === lineIndex) return false;
+      const start = Number(adjacent?.xStartRatio);
+      const ratio = Number(adjacent?.ratio);
+      if (!Number.isFinite(start) || !Number.isFinite(ratio)
+        || Math.abs(ratio - typeRatio) > 0.006
+        || start < typeStart + 0.035
+        || start < typeEnd - 0.05
+        || start > typeEnd + 0.12) return false;
+      const numbered = normalizedStructureResultText(adjacent?.text).match(/^(\d+(?:\.\d+)*)(?:[.)])?\s+(.{5,})$/);
+      return Boolean(numbered && !structureResultProseReferenceTail(numbered[2]));
+    }).sort((a, b) => Math.abs(Number(a.xStartRatio) - typeEnd) - Math.abs(Number(b.xStartRatio) - typeEnd))[0];
+    if (sameRowNumber) {
+      const numbered = normalizedStructureResultText(sameRowNumber.text).match(/^(\d+(?:\.\d+)*)(?:[.)])?\s+(.{5,})$/);
+      return {
+        label: `${type} ${numbered[1]}`,
+        title: `${type} ${numbered[1]}. ${numbered[2]}`.slice(0, 180),
+        page,
+        ratio: Math.min(typeRatio, Number(sameRowNumber.ratio)),
+      };
+    }
+  }
 
   // Some old layouts put the result type and its number on adjacent visual
   // lines. Accept only a nearby number-leading line, never an arbitrary page
@@ -984,6 +1027,12 @@ function bareEquationHasSameRowHeadingContext(lines, lineIndex) {
     const titleCaseWords = text.match(/\b[A-Z][A-Za-z]{2,}\b/g) || [];
     const hanChars = text.match(/\p{Script=Han}/gu) || [];
     if (hanChars.length >= 3) return true;
+    // Fragmented CJK subsection headings may contain only two characters
+    // (e.g. a compact topic name). Require close physical continuation on
+    // the same baseline, never a separate display-math line.
+    if (hanChars.length >= 2 && text.length <= 24
+      && Number.isFinite(lineEnd) && Number.isFinite(otherStart)
+      && otherStart - lineEnd <= 0.09) return true;
     if (/^[A-Z]{4,}(?:\s+[A-Z]{3,})*[.:]?$/u.test(text) && asciiWords.length >= 1) return true;
     if (/^[A-Z]/.test(text) && asciiWords.length >= 2 && titleCaseWords.length >= 1) return true;
   }
@@ -1014,6 +1063,49 @@ function bareEquationInHorizontalNumericCluster(lines, lineIndex) {
   }
   if (centers.length < 3) return false;
   return Math.max(...centers) - Math.min(...centers) >= 0.16;
+}
+
+// Plot axes frequently expose decimal ticks as separate text lines, one per
+// horizontal scan row. A same-row tabular guard cannot see this vertical run.
+// Reject only a tightly spaced, monotonically ordered group of >=4 small
+// decimals at the same horizontal coordinate; isolated old-paper bare dotted
+// equation labels remain eligible for the existing margin/math checks.
+function bareEquationInVerticalNumericTicks(lines, lineIndex) {
+  const current = lines?.[lineIndex];
+  const valueText = String(current?.text || '').trim();
+  if (!/^0\.\d{1,3}$/.test(valueText)) return false;
+  const center = (Number(current?.xStartRatio) + Number(current?.xEndRatio)) / 2;
+  const ratio = Number(current?.ratio);
+  if (!Number.isFinite(center) || !Number.isFinite(ratio)) return false;
+  const ticks = (lines || []).filter((other) => {
+    const text = String(other?.text || '').trim();
+    const start = Number(other?.xStartRatio); const end = Number(other?.xEndRatio);
+    const y = Number(other?.ratio);
+    return /^0\.\d{1,3}$/.test(text)
+      && Number.isFinite(start) && Number.isFinite(end) && Number.isFinite(y)
+      && Math.abs((start + end) / 2 - center) <= 0.012
+      && Math.abs(y - ratio) <= 0.09;
+  }).map((line) => ({ ratio: Number(line.ratio), value: Number(line.text) }))
+    .sort((a, b) => a.ratio - b.ratio);
+  for (let start = 0; start < ticks.length; start += 1) {
+    const run = [ticks[start]];
+    for (let next = start + 1; next < ticks.length; next += 1) {
+      const delta = ticks[next].ratio - ticks[next - 1].ratio;
+      if (delta < 0.0025 || delta > 0.025) break;
+      run.push(ticks[next]);
+      if (run.length >= 4
+        && run.some((item) => Math.abs(item.ratio - ratio) < 0.00001)
+        && (run.every((item, index) => index === 0 || item.value < run[index - 1].value)
+          || run.every((item, index) => index === 0 || item.value > run[index - 1].value))) {
+        // Equally spaced scale ticks, not arbitrary changing measurements in a
+        // technical table. Require comparable numeric steps as well as y steps.
+        const numericSteps = run.slice(1).map((item, i) => Math.abs(item.value - run[i].value));
+        const smallestStep = Math.min(...numericSteps);
+        if (smallestStep > 0.00001 && Math.max(...numericSteps) / smallestStep <= 1.25) return true;
+      }
+    }
+  }
+  return false;
 }
 
 function bareEquationHasMeasurementSuffix(line, candidate) {
@@ -2403,7 +2495,8 @@ async function buildEquationLabelIndex() {
           nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
           nearbyHeadingContext: Boolean(candidate.bare) && bareEquationHasNearbyHeadingContext(lines, lineIndex),
           sameRowHeadingContext: Boolean(candidate.bare) && bareEquationHasSameRowHeadingContext(lines, lineIndex),
-          axisNumericCluster: Boolean(candidate.bare) && bareEquationInHorizontalNumericCluster(lines, lineIndex),
+          axisNumericCluster: Boolean(candidate.bare) && (bareEquationInHorizontalNumericCluster(lines, lineIndex)
+            || bareEquationInVerticalNumericTicks(lines, lineIndex)),
           tabularNumericCell: Boolean(candidate.bare) && bareEquationInTabularRow(lines, lineIndex),
           measurementValue: Boolean(candidate.bare) && bareEquationHasMeasurementSuffix(line, candidate),
           mathSignals: equationLineMathSignalCount(line.text),
@@ -3610,6 +3703,7 @@ async function buildStructureIndex({ force = false } = {}) {
       const tailOnlyPage = page > primaryPageCount;
       const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode);
       const tocResultRows = tailOnlyPage ? new Set() : tocResultLineIndices(lines, page, sourceDoc.numPages);
+      const indexNavigationPage = !tailOnlyPage && structureResultsIndexNavigationPage(lines);
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
         const line = lines[lineIndex];
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
@@ -3653,7 +3747,8 @@ async function buildStructureIndex({ force = false } = {}) {
           // forms ("1.1. LEMMA"), and a standalone type line next to its
           // number. Normalize only these declaration shapes; prose references
           // such as "Proposition 2.1 shows ..." stay out of Results.
-          const detectedResult = tocResultRows.has(lineIndex) ? null : detectedStructureResult(lines, lineIndex, page);
+          const detectedResult = indexNavigationPage || tocResultRows.has(lineIndex)
+            ? null : detectedStructureResult(lines, lineIndex, page);
           if (detectedResult) {
             const key = `${page}:${normalizedReferenceLabel(detectedResult.label)}`;
             if (!nextEntries.some((entry) => entry.key === key)) {
