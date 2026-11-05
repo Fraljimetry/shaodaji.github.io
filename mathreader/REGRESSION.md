@@ -1,4 +1,32 @@
-# MathReader Regression / Behavioral Audit Record — v348
+# MathReader Regression / Behavioral Audit Record — v349
+
+## v349 — Blocking Formula OCR model initialization with guaranteed UI release (2026-11-05, Beijing UTC+08)
+
+**Authoritative source:** full uploaded v347 ZIP with the supplied v348 root source patch applied. **Code version v349**; MathReader remains one assembled JavaScript module, with the exact original ten-file manifest order. This is an OCR-startup usability and failure-recovery change, **not** an OCR/detection-model or indexing algorithm change. Structure index version **45** and Equation summary version **23** are unchanged because their serialized detector semantics did not change.
+
+### Behavior and scope
+
+1. **Initialization-only blocking dialog:** Each initial Texify runtime/model load, including automatic idle preload after a PDF opens, displays a compact, full-viewport bilingual floating dialog: “Initializing formula OCR” / “正在初始化公式 OCR”. An underlying `inert` lock preserves and restores every previous element's existing inert state; a capture-phase keyboard guard blocks MathReader shortcuts and file drops, and focus enters the dialog. Browser reload remains possible as an escape hatch. This lock is **not** used for ordinary formula inference; the existing nonmodal formula processing indicator remains unchanged. There is no fake percentage, spinner, animation or model-download progress counter.
+2. **Successful engine load:** The existing Texify backend plan, including intentional **WebGPU q4f16 → CPU** fallback, is not altered. On successful initialization, the overlay is removed, inert states and prior focus are restored, and ordinary reader interaction resumes. Simultaneous calls share one initialization promise rather than creating competing blocking overlays.
+3. **Failure/timeout release:** Model import and pipeline creation share a **120-second overall asynchronous initialization deadline**. Failed requests, import errors, backend errors, and watchdog expiry all take the same `finally` release path. The failed OCR engine stays unavailable, but PDF navigation, reading, annotations, search and unrelated controls are not disabled afterward. A small error notice confirms reading remains possible and points to **Settings → Formula OCR → Troubleshooting → Reset OCR** for retry. Changing the OCR engine mode is another explicit retry path. A failed preload is latched to avoid immediate automatic re-preloads reblocking the user; a successful manual retry clears that latch. If a timed-out pipeline resolves later, it is discarded/disposed, not installed after the error.
+4. **Deadline limitation:** The 120-second watchdog applies to asynchronous work while the browser event loop remains responsive; it **cannot forcibly terminate a synchronous browser-main-thread freeze** or guarantee reclamation of a stalled third-party load request. The overlay is not equivalent to an AbortController cancellation of model downloads. Do not promise automatic unlock during a browser process hang. User may reload the page.
+
+### Fresh verification
+
+- **Existing tests:** bibliography 15, embedded-outline title 25, equation progress 33 (HTML cache key updated to 349), precision context 33, Results/TOC 23 = **129/129** legacy assertions passed.
+- **New startup regression:** `tests/formula_ocr_initialization_regression.js` has **36** Node/VM assertions on actual v349 initialization and modal functions, including overlay visibility, inert state restoration, focus, capture keyboard/drop blocking, concurrent calls, failed model, manual retry, WebGPU fallback, deadline, stale late-arriving pipeline disposal, failed preload latch and bilingual/static DOM contract. **Combined: 165/165 assertions passed.** Failure cases deliberately log mocked backend errors to the Node console.
+- **Isolated Chromium DOM/CSS smoke:** with the actual v349 modal markup, CSS and modal-function source, Chromium rendered the floating card and verified the dialog is focused, header becomes inert, and release restores focus and access. This was **not** a production MathReader/browser Texify test; the network-hosted end-to-end application could not be loaded by the browser smoke environment.
+- **Syntax/assembly/packaging:** run `node --check` on bootstrap and each JavaScript file, concatenate the ten source modules and run syntax validation of the resulting assembled ES module; run all six bundled tests and verify ZIP CRC/member paths. No direct OCR downloads, CPU/WASM/WebGPU inference, PDF.js document acceptance, mobile-device test, 120-second wall-clock watchdog experiment, or deployed-site test was performed.
+
+### Outstanding risks and follow-up
+
+- **UNVERIFIED:** real Texify model download times on slow connections, actual production browser initialization and fallback under GPU failure, full application with a PDF, mobile focus handling, very long model-download/CPU hangs, multiple document switches during an active initialization, accessibility screen-reader behavior and full usability of all functions after real network failures. A simple DOM smoke is not an end-to-end validation.
+- **No detection accuracy claim:** The historical scanned/handwritten issues, missing mathematical results/equations, pending PDF corpus work and v348 precision fixes retain their previous PASS/FAIL/UNVERIFIED dispositions. No recovery expansion to Structure/Results/Bibliography was introduced.
+- **Changed files:** `mathreader/index.html`, `mathreader/mathreader.css`, `mathreader/mathreader.js`, `mathreader/js/00-core.js`, `mathreader/js/10-formula-ocr.js`, `mathreader/js/70-command-ui-runtime.js`, `mathreader/tests/equation_progress_regression.js`, `mathreader/tests/formula_ocr_initialization_regression.js` (new) and this `mathreader/REGRESSION.md`. **Root-level ZIP patch** only. Browser usability acceptance should be performed before treating the release as production verified.
+
+---
+
+
 
 ## v348 — Conservative precision fixes for Results and Equation labels (2026-11-05, Beijing UTC+08)
 

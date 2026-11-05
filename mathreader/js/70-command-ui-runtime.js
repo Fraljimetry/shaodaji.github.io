@@ -259,8 +259,8 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR selected', '已选图像 OCR')
     : t('PDF vector selected', '已选 PDF 矢量'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v8', mathOcrEngineMode); setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
-ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
+ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); safeSet('mathreader-ocr-engine-v8', mathOcrEngineMode); setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('Image OCR engine preference changed. Preloading the selected engine…', '图像 OCR 引擎偏好已更改。正在预加载所选引擎……'), true); scheduleMathOcrPreload(); });
+ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine reset. Preloading a fresh engine…', '公式 OCR 引擎已重置。正在预加载新的引擎……'), true); scheduleMathOcrPreload(); });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 contentsRunDocumentOcr?.addEventListener('click', () => { enableDocumentOcrFromReader().catch((error) => { console.warn('Document OCR could not be started from Contents.', error); }); });
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));

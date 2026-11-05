@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=348">
+  <link rel="stylesheet" href="mathreader.css?v=349">
   <script>
     (() => {
       try {
@@ -558,6 +558,17 @@
     <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>
   </div>
 
-  <script type="module" src="mathreader.js?v=348"></script>
+  <div class="formula-ocr-init-overlay is-hidden" id="formula-ocr-init-overlay"
+       role="dialog" aria-modal="true" aria-labelledby="formula-ocr-init-title"
+       aria-describedby="formula-ocr-init-description" tabindex="-1">
+    <div class="formula-ocr-init-card">
+      <strong id="formula-ocr-init-title" data-en="Initializing formula OCR" data-zh="正在初始化公式 OCR">Initializing formula OCR</strong>
+      <p id="formula-ocr-init-description"
+         data-en="MathReader is temporarily paused while the local model loads. Reading will resume even if OCR fails."
+         data-zh="本地模型加载期间暂时暂停操作。即使 OCR 加载失败，也会恢复正常阅读。">MathReader is temporarily paused while the local model loads. Reading will resume even if OCR fails.</p>
+    </div>
+  </div>
+
+  <script type="module" src="mathreader.js?v=349"></script>
 </body>
 </html>

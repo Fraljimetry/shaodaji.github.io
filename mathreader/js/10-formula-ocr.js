@@ -936,8 +936,10 @@ function setOcrMode(active) {
     updateOcrInteractionAvailability();
     setOcrStatus(mathOcrLoading
       ? t('OCR engine is initializing. Formula selection will activate when it is ready.', '公式 OCR 引擎正在初始化。引擎就绪后才会启用公式框选。')
-      : t('OCR engine is not ready. Preloading it now…', '公式 OCR 引擎尚未就绪。正在预加载……'), true);
-    if (!mathOcrLoading) scheduleMathOcrPreload();
+      : mathOcrInitializationFailed
+        ? t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试')
+        : t('OCR engine is not ready. Preloading it now…', '公式 OCR 引擎尚未就绪。正在预加载……'), true);
+    if (!mathOcrLoading && !mathOcrInitializationFailed) scheduleMathOcrPreload();
     return;
   }
   ocrMode = Boolean(active && pdfDoc);
@@ -1023,23 +1025,114 @@ function detailedOcrError(error, backend = null) {
 }
 
 
+// Only the initial model/runtime download and pipeline construction block the
+// reader. Formula *inference* still uses the existing sidebar busy indicator.
+const FORMULA_OCR_INIT_TIMEOUT_MS = 120000;
+
+function setFormulaOcrInitializationModal(active) {
+  if (!formulaOcrInitOverlay || formulaOcrInitModalVisible === Boolean(active)) return;
+  formulaOcrInitModalVisible = Boolean(active);
+  if (active) {
+    formulaOcrInitPreviousFocus = document.activeElement;
+    formulaOcrInitInertElements = [...document.body.children]
+      .filter((element) => element !== formulaOcrInitOverlay)
+      .map((element) => ({ element, inert: element.inert }));
+    for (const record of formulaOcrInitInertElements) record.element.inert = true;
+    formulaOcrInitOverlay.classList.remove('is-hidden');
+    formulaOcrInitOverlay.focus({ preventScroll: true });
+  } else {
+    formulaOcrInitOverlay.classList.add('is-hidden');
+    for (const record of formulaOcrInitInertElements) record.element.inert = record.inert;
+    formulaOcrInitInertElements = [];
+    const focus = formulaOcrInitPreviousFocus;
+    formulaOcrInitPreviousFocus = null;
+    if (focus?.isConnected && !focus.inert) focus.focus?.({ preventScroll: true });
+  }
+}
+
+// The overlay captures clicks by its fixed backdrop; inert disables underlying
+// focus/controls and this capture guard prevents document-level keyboard actions.
+document.addEventListener('keydown', (event) => {
+  if (!formulaOcrInitModalVisible) return;
+  // Keep browser reload as a last-resort recovery action.
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}, true);
+// File drops are also application actions; do not let the global drop handler
+// bypass the modal while the model is loading.
+for (const type of ['dragenter', 'dragover', 'drop']) {
+  document.addEventListener(type, (event) => {
+    if (!formulaOcrInitModalVisible) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+}
+
+function formulaOcrTimeoutError() {
+  const error = new Error('Formula OCR initialization exceeded its 120-second safety limit.');
+  error.code = 'FORMULA_OCR_INIT_TIMEOUT';
+  return error;
+}
+
+// A hanging import/model request must not leave the entire reader inaccessible.
+// A late-created pipeline is discarded, never silently installed after timeout.
+function awaitFormulaOcrInitialization(value, deadline, disposeLate = false) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      settled = true;
+      reject(formulaOcrTimeoutError());
+    }, Math.max(0, deadline - ocrNow()));
+    Promise.resolve(value).then((result) => {
+      if (settled) {
+        if (disposeLate) Promise.resolve().then(() => result?.dispose?.()).catch((error) => console.warn('Late formula OCR pipeline disposal failed', error));
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    }, (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
+async function importFormulaOcrRuntime() {
+  return import(TRANSFORMERS_URL);
+}
+
 async function ensureMathOcrPipeline() {
   if (mathOcrPipeline) return mathOcrPipeline;
+  if (mathOcrInitPromise) return mathOcrInitPromise;
+  const work = initializeMathOcrPipeline();
+  mathOcrInitPromise = work;
+  try { return await work; }
+  finally { if (mathOcrInitPromise === work) mathOcrInitPromise = null; }
+}
+
+async function initializeMathOcrPipeline() {
+  if (mathOcrPipeline) return mathOcrPipeline;
   const engineLoadStart = ocrNow();
+  const deadline = engineLoadStart + FORMULA_OCR_INIT_TIMEOUT_MS;
   let runtimeImportMs = 0;
   mathOcrLoading = true;
+  setFormulaOcrInitializationModal(true);
   setOcrMode(false);
   updateOcrInteractionAvailability();
   setOcrStatus(t(`Loading the local formula-image fallback (Texify · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地公式图像备用引擎（Texify · ${TRANSFORMERS_RUNTIME}）……`), true);
   try {
     if (!mathOcrModulePromise) {
       const importStart = ocrNow();
-      mathOcrModulePromise = import(TRANSFORMERS_URL);
-      const imported = await mathOcrModulePromise;
+      mathOcrModulePromise = importFormulaOcrRuntime();
+      const imported = await awaitFormulaOcrInitialization(mathOcrModulePromise, deadline);
       runtimeImportMs = ocrNow() - importStart;
       var pipeline = imported.pipeline;
     } else {
-      const imported = await mathOcrModulePromise;
+      const imported = await awaitFormulaOcrInitialization(mathOcrModulePromise, deadline);
       var pipeline = imported.pipeline;
     }
     const plan = currentOcrPlan();
@@ -1058,9 +1151,10 @@ async function ensureMathOcrPipeline() {
           options.dtype = backend.dtype;
         }
         const pipelineStart = ocrNow();
-        const pipe = await pipeline('image-to-text', MATH_OCR_MODEL, options);
+        const pipe = await awaitFormulaOcrInitialization(pipeline('image-to-text', MATH_OCR_MODEL, options), deadline, true);
         const pipelineMs = ocrNow() - pipelineStart;
         mathOcrPipeline = pipe;
+        mathOcrInitializationFailed = false;
         mathOcrBackend = backend;
         mathOcrReadyAt = ocrNow();
         mathOcrInferenceRuns = 0;
@@ -1078,6 +1172,7 @@ async function ensureMathOcrPipeline() {
       } catch (error) {
         console.warn('MathReader OCR backend failed', backend, error);
         lastError = error;
+        if (error?.code === 'FORMULA_OCR_INIT_TIMEOUT') throw error;
         if (index + 1 < plan.length) {
           setOcrStatus(t(`${backend.label} failed. Trying ${plan[index + 1].label}…`, `${backend.label} 失败。正在尝试 ${plan[index + 1].label}……`), true);
         }
@@ -1088,11 +1183,16 @@ async function ensureMathOcrPipeline() {
     mathOcrPipeline = null;
     mathOcrBackend = null;
     mathOcrModulePromise = null;
+    mathOcrInitializationFailed = true;
     updateOcrCapability(t('load failed', '加载失败'));
+    setOcrStatus(t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试'));
+    // A model-loading error is not a document-reading error.
+    showNotice(t('Formula OCR could not load. PDF reading is available; use Reset OCR to retry.', '公式 OCR 加载失败。PDF 阅读仍可使用，可通过“重置 OCR”重试。'));
     throw error;
   } finally {
     mathOcrLoading = false;
     updateOcrInteractionAvailability();
+    setFormulaOcrInitializationModal(false);
   }
 }
 
@@ -1105,12 +1205,12 @@ function scheduleMathOcrPreload() {
     // OCR is nonessential to opening a PDF, so warm it only after a document is
     // already visible; explicit Formula OCR use still loads it immediately.
     if (!pdfDoc || restoringSession || documentOcrInteractionLocked()) return;
-    if (mathOcrPipeline || mathOcrLoading) return;
+    if (mathOcrPipeline || mathOcrLoading || mathOcrInitializationFailed) return;
     try {
       await ensureMathOcrPipeline();
     } catch (error) {
       console.warn('MathReader OCR background preload failed', error);
-      setOcrStatus(t('OCR will retry when you extract a formula.', '公式 OCR 将在你提取公式时重试。'));
+      setOcrStatus(t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试'));
     }
   };
   if ('requestIdleCallback' in window) {
