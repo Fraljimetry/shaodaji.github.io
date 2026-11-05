@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=361">
+  <link rel="stylesheet" href="mathreader.css?v=362">
   <script>
     (() => {
       try {
@@ -87,7 +87,7 @@
     <div class="document-title" id="document-title" data-en="No PDF open" data-zh="尚未打开 PDF">No PDF open</div>
 
     <div class="header-actions">
-      <button class="icon-button" type="button" id="open-button" data-en="Open" data-zh="打开" data-en-title="Open PDF · O" data-zh-title="打开 PDF · O" aria-label="Open PDF · O">Open</button>
+      <a class="icon-button header-help" id="help-button" href="tutorial.html" target="_blank" rel="noopener" aria-label="MathReader help and tutorial (opens in a new tab)" data-en-title="Help & tutorial · opens new tab" data-zh-title="使用指南 · 在新标签页打开" title="Help & tutorial · opens new tab">?</a>
       <button class="icon-button language-button" type="button" id="theme-button" aria-label="Switch to dark mode" title="Switch to dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
       <button class="icon-button language-button" type="button" id="language-button" aria-label="切换到简体中文" title="切换到简体中文"><span aria-hidden="true">🌐</span><span id="language-label">中文</span></button>
       <a class="icon-button home-link" href="../tools.html" data-en="Tools" data-zh="工具">Tools</a>
@@ -203,6 +203,7 @@
         </div>
         <p class="history-explainer" data-en="Stored locally on this device." data-zh="保存在本设备。">Stored locally on this device.</p>
         <div class="library-tools">
+          <button class="text-button" id="library-open-pdf" type="button" data-en="Open PDF" data-zh="打开 PDF">Open PDF</button>
           <button class="text-button" id="export-reading-data" type="button" disabled data-en="Export reading data" data-zh="导出阅读数据">Export reading data</button>
           <button class="text-button" id="import-reading-data" type="button" data-en="Import" data-zh="导入">Import</button>
           <input id="import-reading-input" type="file" accept="application/json,.json" hidden>
@@ -574,6 +575,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=361"></script>
+  <script type="module" src="mathreader.js?v=362"></script>
 </body>
 </html>

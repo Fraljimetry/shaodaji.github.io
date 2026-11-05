@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real Chromium UI/layout/stability regression for MathReader's real ten-part shell.
 
-This runs the actual v361 JS and CSS without PDF.js or Texify. It cannot
+This runs the actual v362 JS and CSS without PDF.js or Texify. It cannot
 certify original-PDF rendering, recognition or final mathematical indexes.
 """
 from __future__ import annotations
@@ -32,7 +32,8 @@ def inspect(page):
                    top:rect(e).top,bottom:rect(e).bottom}));
       return {width:innerWidth, docScrollWidth:document.documentElement.scrollWidth, mainWidth:main.width,mainLeft:main.left,
         toolbarWidth:toolbar.width,toolbarRight:toolbar.right,
-        openVisible:visible('open-button'),
+        helpVisible:visible('help-button'),
+        libraryOpenExists:!!document.getElementById('library-open-pdf'),
         mobileLeft:visible('mobile-left-toggle'),mobileRight:visible('mobile-right-toggle'),
         leftClose:visible('mobile-left-close'),rightClose:visible('mobile-right-close'),
         leftExpanded:document.getElementById('mobile-left-toggle').getAttribute('aria-expanded'),
@@ -66,7 +67,8 @@ def run():
             check(abs(initial['mainWidth'] - (width if mobile else width-12))<14,
                   f'{width}: reader fills available workspace',initial)
             check(initial['docScrollWidth']==width, f'{width}: no horizontal page overflow', initial['docScrollWidth'])
-            check(initial['openVisible'],f'{width}: Open PDF accessible')
+            check(initial['helpVisible'],f'{width}: tutorial Help accessible')
+            check(initial['libraryOpenExists'],f'{width}: local-library file opener available')
             check(initial['mobileLeft']==mobile and initial['mobileRight']==mobile,
                   f'{width}: side toggles use correct breakpoint')
             check(initial['toolbarRight']<=width+1,f'{width}: toolbar within viewport')
@@ -106,8 +108,14 @@ def run():
             check(page.locator('html').get_attribute('data-theme')=='dark',f'{width}: theme switch')
             page.locator('#language-button').click()
             check(page.locator('html').get_attribute('data-lang')=='zh',f'{width}: language switch')
-            page.locator('#open-button').click()
-            check(page.locator('#file-input').count()==1,f'{width}: file chooser remains wired')
+            page.locator('#welcome-open').click()
+            check(page.locator('#file-input').count()==1,f'{width}: welcome file chooser remains wired')
+            page.keyboard.press('Escape')
+            page.keyboard.press('h')
+            check(page.locator('#library-open-pdf').count()==1,f'{width}: History alternative PDF opener exists')
+            page.locator('#library-open-pdf').click()
+            check(page.locator('#file-input').count()==1,f'{width}: History PDF opener remains wired')
+            check(page.locator('#help-button').get_attribute('href')=='tutorial.html',f'{width}: help links to dedicated page')
             check(not inspect(page)['formulaModal'],f'{width}: no eager Formula OCR modal')
             check(not page_errors,f'{width}: no uncaught UI JavaScript errors',page_errors)
             context.close()
@@ -146,10 +154,11 @@ def run():
         landscape=browser.new_context(viewport={'width':640,'height':320},is_mobile=True,has_touch=True,reduced_motion='reduce')
         page=landscape.new_page();inline_shell_browser(page,ROOT,None)
         check(abs(inspect(page)['mainWidth']-640)<2,'touch landscape reader fills width')
-        check(inspect(page)['openVisible'],'touch landscape can open another PDF')
+        check(inspect(page)['helpVisible'],'touch landscape shows tutorial help')
+        check(inspect(page)['libraryOpenExists'],'touch landscape has History Open PDF')
         landscape.close();browser.close()
 
-    report={'schema':1,'source':'real v361 application shell in isolated Chromium; PDF.js/Texify unavailable',
+    report={'schema':1,'source':'real v362 application shell in isolated Chromium; PDF.js/Texify unavailable',
             'assertions':len(checks),'passed':sum(c['passed'] for c in checks),
             'failed':errors,'load_timings_s':timings,'checks':checks,
             'limitations':['No actual PDF.js document rendering or Texify inference',

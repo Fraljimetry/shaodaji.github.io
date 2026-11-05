@@ -16,7 +16,7 @@ const shell = el('reader-shell');
 const leftSidebarResizer = el('left-sidebar-resizer');
 const rightSidebarResizer = el('right-sidebar-resizer');
 const fileInput = el('file-input');
-const openButton = el('open-button');
+const libraryOpenPdf = el('library-open-pdf');
 const welcomeOpen = el('welcome-open');
 const welcome = el('welcome');
 const pdfWorkspace = el('pdf-workspace');
@@ -1165,7 +1165,6 @@ function hideDocumentOcrGate() {
   if (documentOcrSecondary) documentOcrSecondary.onclick = null;
   documentOcrGate?.classList.add('is-hidden');
   if (!documentOcrBusy) {
-    if (openButton) openButton.disabled = false;
     if (welcomeOpen) welcomeOpen.disabled = false;
     if (fileInput) fileInput.disabled = false;
   }
@@ -1267,7 +1266,6 @@ function documentOcrInteractionLocked() {
 function configureDocumentOcrGate(mode, detail = '') {
   if (!documentOcrGate) return;
   documentOcrGate.classList.remove('is-hidden');
-  if (openButton) openButton.disabled = true;
   if (welcomeOpen) welcomeOpen.disabled = true;
   if (fileInput) fileInput.disabled = true;
   documentOcrProgressWrap?.classList.toggle('is-hidden', mode !== 'progress');
@@ -1780,7 +1778,6 @@ async function runFullDocumentOcr() {
   const controller = { cancelled: false, worker: null };
   documentOcrRunController = controller;
   documentOcrBusy = true;
-  if (openButton) openButton.disabled = true;
   if (welcomeOpen) welcomeOpen.disabled = true;
   if (fileInput) fileInput.disabled = true;
   updateDocumentTextAvailabilityUI();
@@ -1906,7 +1903,6 @@ async function runFullDocumentOcr() {
     try { await worker?.terminate?.(); } catch (_) {}
     if (documentOcrRunController === controller) documentOcrRunController = null;
     documentOcrBusy = false;
-    if (openButton) openButton.disabled = false;
     if (welcomeOpen) welcomeOpen.disabled = false;
     if (fileInput) fileInput.disabled = false;
     updateDocumentTextAvailabilityUI();

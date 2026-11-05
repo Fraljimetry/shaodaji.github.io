@@ -1496,3 +1496,35 @@ Actual two-PDF PDF.js and Texify/whole-document mathematical ground truth
 remain **BLOCKED/UNVERIFIED** pending pinned assets and independent reference
 data. See `regression/p1_context_menu_v361_20261106.json` for recorded gate
 results.
+
+
+## v362 — Separate help tutorial replaces top Open (2026-11-06 Beijing UTC+08)
+
+**Requested interaction:** the top-right header Open PDF button is removed and
+replaced by a visually prominent `?` linking to `mathreader/tutorial.html` in
+a separate tab (`noopener`). Help does not open a PDF or change current reading
+location. The dedicated, scrollable English/Chinese tutorial includes a
+chapter navigator, controls, shortcut reference, Formula OCR/document OCR,
+P0 limitations, P1 two-right-click bibliography linking, reader persistence,
+mobile interactions and troubleshooting. The tutorial uses standalone CSS and
+inherits language/theme preferences; no reader PDF or OCR modules run on it.
+
+**Touch regression avoidance:** desktop `O`, Ctrl(Cmd)+O, Ctrl(Cmd)+K → Open,
+drag-and-drop and the welcome Open PDF remain intact. A new **History → Local
+library → Open PDF** action offers a second-PDF chooser on touch-only devices.
+The existing document OCR interaction guard applies. The right-click P1
+context menu remains unchanged, including Link/Relink/Open/Unlink and return
+navigation. No changes were made to recognition, detector schemas or OCR.
+
+**Validation:** complete JS syntax/assembled-module tests, existing
+regressions, P0 browser-shell, 176 responsive Chromium assertions across nine
+viewport widths, and new standalone tutorial/reader Chromium assertions in
+`tests/help_tutorial_regression.py` over 320–1440px. Browser sandbox prohibits
+real HTTP/file/data navigation; the new-tab href and `noopener` contract are
+verified statically, and the actual HTML/CSS and JS are independently rendered
+in Chromium, but real new-tab URL navigation remains UNVERIFIED in this
+sandbox. P0 whole-document recognition and real P1 PDF.js/Texify end-to-end
+remain UNVERIFIED from previous rounds. A no-PDF regression can never certify
+PDF/index accuracy. Patch ZIP must contain only changed files; all link targets
+must resolve inside the overlaid website tree. See
+`regression/help_tutorial_v362_20261106.json` for this release audit.

@@ -48,7 +48,7 @@ def all_source_gates(root: Path):
     for test in ('regression_runner_smoke.py','p0_acceptance_regression.py',
                  'p0_gate_isolation_regression.py','p1_browser_smoke.py',
                  'p1_real_gate_regression.py','p0_p1_gap_closure_regression.py',
-                 'ui_responsive_regression.py'):
+                 'ui_responsive_regression.py','help_tutorial_regression.py'):
         report.append(run_process([sys.executable,str(root/'tests'/test)],root,150))
     return report
 

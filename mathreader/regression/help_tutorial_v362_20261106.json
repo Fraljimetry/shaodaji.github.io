@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "version": "362",
+  "baseline": "361",
+  "scope": "header Help tutorial and alternative PDF open entry only",
+  "summary": {
+    "source_gate_checks": 50,
+    "source_gate_status": "PASS",
+    "p0_browser_shell_status": "PASS",
+    "p0_browser_shell_outcomes": 7,
+    "responsive_assertions": 176,
+    "responsive_passed": 176,
+    "help_tutorial_assertions": 100,
+    "help_tutorial_passed": 100,
+    "cached_regression_runner_smoke_assertions": 19,
+    "cached_regression_runner_smoke_status": "PASS",
+    "performance_scroll_css_assertions": 1204,
+    "performance_status": "PASS"
+  },
+  "viewport_widths_px": [
+    320,
+    375,
+    390,
+    520,
+    768,
+    860,
+    861,
+    1024,
+    1440
+  ],
+  "browser_guide_viewports_px": [
+    320,
+    375,
+    768,
+    1024,
+    1440
+  ],
+  "verified": [
+    "Top Open button absent; large ? help anchor remains visible on phones and desktop",
+    "Help href tutorial.html target _blank rel noopener",
+    "Keyboard O and History Local library Open PDF still dispatch the original file input",
+    "Standalone tutorial HTML and CSS render in Chromium at mobile and desktop widths",
+    "Tutorial language/theme toggles work without overflow in tested sizes",
+    "Existing P1 isolated browser smoke and state regression passed",
+    "P0 isolated Chromium OCR modal failure releases controls",
+    "Original eight math detector and formula/selection/rendering modules byte-for-byte unchanged",
+    "JS syntax/assembled ten-module runtime pass"
+  ],
+  "unverified": [
+    "Actual new-tab URL navigation: browser test runtime blocks file, loopback, and test-origin URL navigation; href/target verified statically and guide rendered independently",
+    "Real PDF.js, Texify inference and full document mathematical accuracy: not exercised",
+    "Real two-PDF P1 persistent IndexedDB navigation: not exercised"
+  ],
+  "no_semantics_changed": [
+    "Structure, Results, Equations, Bibliography detection",
+    "Formula OCR inference",
+    "P1 exact-link and return behavior",
+    "IndexedDB schema and document cache"
+  ],
+  "paths": {
+    "guide": "mathreader/tutorial.html",
+    "guide_css": "mathreader/tutorial.css",
+    "test": "mathreader/tests/help_tutorial_regression.py"
+  }
+}

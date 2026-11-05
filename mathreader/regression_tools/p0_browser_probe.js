@@ -146,6 +146,6 @@ window.__mathreaderP0 = Object.freeze({
     importFormulaOcrRuntime = original;
     return { outcome, during: observedWhileLoading, after,
              noPermanentInteractionLock: !document.querySelector('.formula-ocr-init-overlay:not(.is-hidden)')
-               && !document.getElementById('open-button').inert };
+               && !document.getElementById('file-input').disabled };
   }
 });

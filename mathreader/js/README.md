@@ -143,3 +143,21 @@ This is a presentation-only P1 change: exact IDs, IndexedDB schema, return
 position logic, PDF.js, Texify, and mathematical detectors are unchanged.
 The P1 isolated Chromium test covers mouse, keyboard, and touch semantics; the
 real two-PDF runner was updated but still requires pinned PDF.js assets.
+
+
+## v362 header Help and standalone tutorial
+
+The top-header Open button was replaced by a prominent `?` anchor to the static,
+separate `tutorial.html` page (new tab; original reader remains open). The
+standalone English/Chinese guide has its own responsive `tutorial.css` and
+shares persisted language/theme preferences without importing reader modules.
+Keyboard `O` / Ctrl(Cmd)+O, drag-and-drop, welcome Open PDF and command palette
+Open PDF remain unchanged. For touch-only users after opening a document,
+**History → Local library → Open PDF** provides the non-header file chooser.
+Do not put duplicate Open buttons back in the header or hide `?` at the mobile
+breakpoint. A source-only test under a browser sandbox cannot validate real
+new-tab URL navigation; the hyperlink target/attributes are checked alongside
+isolated Chromium rendering. Run `tests/help_tutorial_regression.py` and
+`tests/ui_responsive_regression.py` in addition to the P0 gate.
+No changes were made to P0 truth semantics, P1 link storage, detection, PDF.js
+or Texify processing.

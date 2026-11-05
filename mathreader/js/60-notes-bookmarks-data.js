@@ -756,7 +756,7 @@ function activatePanel(panelId, persist = true) {
 
 document.querySelectorAll('.sidebar-tab').forEach((tab) => tab.addEventListener('click', () => activatePanel(tab.dataset.panel)));
 
-openButton.addEventListener('click', () => { if (!documentOcrInteractionLocked()) fileInput.click(); });
+libraryOpenPdf?.addEventListener('click', () => { if (!documentOcrInteractionLocked()) fileInput.click(); });
 welcomeOpen.addEventListener('click', () => { if (!documentOcrInteractionLocked()) fileInput.click(); });
 fileInput.addEventListener('change', () => { const recoveryId = pendingRecoveryRecordId; pendingRecoveryRecordId = null; openPdfFile(fileInput.files?.[0], recoveryId); });
 prevPage.addEventListener('click', () => goToPage(currentPage - 1));
