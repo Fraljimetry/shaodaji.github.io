@@ -943,3 +943,41 @@ Legend: **R/E/B = Results / Equation labels / Bibliography**; OCR is returned pa
 
 ---
 
+
+
+## v347 supplementary cross-field 50-PDF regression (round 4, 2026-11-05 Beijing UTC+8)
+
+**Status: no source modification; v347 remains authoritative.** This is a documentation-only audit after the previous 50+50 and six-file campaigns; the previous text and open issues above are preserved. The source under `mathreader/js/` was not changed. Machine audit: `mathreader/regression/crossfield_50c_20261105.json` (all 50 source SHA-256 hashes, line-index entries and page positions, page-level OCR attempts/timings and failure classifications).
+
+### Selection and what the new files actually cover
+
+- **50 SHA-256-distinct accessible PDFs excluded from the previous 106 officially counted PDF hashes**, **8,823 pages**. Contents include early printed mathematical research, a 441-page twentieth-century technical-writing/reference textbook, old scan-style books, two native-text English dictionaries, image-only Chinese reference dictionaries, cumulative inverse-problem lecture sets, original handwritten mathematics notebooks, and Chinese technical manuscripts.
+- **Important shortage not resolved:** these 50 are *not* 50 independent historical physics/engineering/geology sources. Several are related releases/revisions of the same Chinese mathematics manuscript and cumulative lecture PDFs. The language dictionaries add worthwhile negative controls but cannot substitute for independent laboratory and field notebooks. The historical cross-field gap explicitly stays **UNVERIFIED**.
+- NASA's original X-15 sensor report PDF (`https://ntrs.nasa.gov/api/citations/19660001314/downloads/19660001314.pdf`) and USGS's 1903 geology report (`https://pubs.usgs.gov/pp/0013/report.pdf`) were located as candidate *public originals*, but their bytes could not be downloaded to this detector sandbox. They were **not counted, tested, or assigned PASS**. No synthetic substitute was created.
+
+### Exact local execution and constraints
+
+- Every selected document was opened and page metadata extracted with PyMuPDF. **All 8,823 pages** were analyzed for native page-text availability and handed to the *actual* unmodified v347 `buildStructureIndex` / `buildEquationLabelIndex` detector functions inside a Node VM. The test provides PyMuPDF text-line geometry and mocked browser state. For performance, first 29 PDFs used span-based line geometry, the remaining 21 grouped text words into lines. Native geometry is only a proxy for PDF.js and is **not** an end-to-end production result.
+- The 50 input documents had **1,596 pages below the 30-character native-text threshold**. Tesseract 5 OCR was actually executed on **311 of those pages** (160 DPI, PSM 3, `OMP_THREAD_LIMIT=1`, English or Simplified Chinese + English). OCR calls: **311 succeeded at process level, 0 execution failures, 18 empty transcripts**; **1,285 candidate pages were NOT OCR-tested**. The partial coverage is deliberate for very long scanned dictionaries and not represented as complete. All scanned/historical/handwritten items remain **UNVERIFIED** until independently reviewed.
+- Key complete proxy-OCR subsets: handwritten lecture manuscript `早期视频全稿(4).pdf` **52/52**, a separate 25-page handwritten edition `早期视频全稿.pdf` **25/25**, the nineteen-page old scan `Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(6).pdf` **19/19**, and the 77-page mixed original-manuscript/printed document **51/51 image-only candidates**. Completing an OCR *call* does not prove correct mathematical transcription.
+- `暑期数学研究成果展示_汲绍达_完整保留校订版.pdf` triggered reproducible MuPDF warnings `unknown keyword: qQq` while decoding some pages; no detector invocation failed. The source encoding anomaly is a **suspected PDF-specific compatibility risk**, not proof of a browser error and not a reason to patch detection without further evidence.
+- Cross-document output of the local v347 source functions: **229 Results**, **12831 equation labels**, **62 bibliography entries**, **0 Node VM failures**. These are *counts*, not precision/recall. The high equation count comes largely from several closely related, equation-dense Chinese mathematics manuscript editions. Production equation image assistance and gap recovery based on image margins were not exercised; Structure's PDF embedded-outline metadata was collected but Structure browser/UI/inferred outline accuracy was not checked.
+
+### Newly confirmed general defect class — back-of-book indexes
+
+**MR-OPEN-NEW-CROSSFIELD-BACK-OF-BOOK-INDEX — FAIL (local source-level proxy).** `77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf` (Thomas S. Kane's *The Oxford Essential Guide to Writing*), **PDF p.436 / printed folio 447**, has a two-column **SUBJECT INDEX**. The word **Definition** appears as a subject-index headword followed by subentries/page references; it is **not** a mathematical definition. The actual v347 Results parser nevertheless generated `Definition · p.436`. The original page image was visually inspected; local geometry evidence and line position are reproducible. **Severity:** moderate Results false positive in nonmathematical reference books. **Likely class:** unnumbered-result heading detection versus back-of-book subject indexes, related to the previously open `Remark I` phrase-finder false positive. **Deferral:** test actual unnumbered mathematical Definition/Remark controls, two-column indexes and mixed-content final pages; adopt only a minimal general guard that does not lose genuine Results. No filename-specific exception; no source-code change.
+
+### Additional observations, manual checks and status
+
+- Two native-text dictionary negative controls returned **zero** Results/Equation/Bibliography entries in the local source-level detector: `Merriam_Webster_Pocket_Dictionary.pdf` (813 pages) and `Pocket_Oxford_English_Dictionary.pdf` (2,880 pages). These are useful precision checks but **not** independent all-page human verification, hence **UNVERIFIED**.
+- The old 19-page scanned paper again yielded 16 Results and 14 bibliography entries, zero equation labels in this proxy; without full page-level ground truth and production image-assisted recovery the zero equation count cannot be taken as completeness.
+- Original handwritten material produced empty mathematical label indexes in some 25- and 52-page manuscripts despite OCR recognition output. This is **not a PASS for mathematical recognition**; treat it as a low-fidelity proxy limitation requiring original-page transcription and production Texify comparison.
+- One local-proxy **FAIL document** (confirmed false positive), 49 **UNVERIFIED** documents; **0 PASS—Fully verified**, **0 EXCEPTION**. No unresolved errors from earlier campaigns are closed or reclassified. Do not infer success from 96 unit assertions or valid JavaScript syntax.
+
+### Unverified acceptance and next steps
+
+**Still needed:** authentic source PDF bytes for pre-1980 physics/aerospace technical notes, electrical or mechanical lab notebooks, geological field logs, historical scanned experiment records; independently transcribed item-level ground truth, particularly for handwritten formulas; complete OCR on the 1,285 unprocessed image-heavy pages or a declared narrower audit scope; live MathReader PDF.js/Texify/CPU fallback and image-assisted equation gap recovery; and end-to-end browser Structure/Results/Equations/Bibliography comparison. No complete detection accuracy claim is warranted.
+
+**Release gate:** JS syntax, assembled runtime syntax, existing 96 source-regression assertions, SHA-256 uniqueness/exclusion, machine-audit consistency and root ZIP integrity verified. Only `mathreader/REGRESSION.md` and `mathreader/regression/crossfield_50c_20261105.json` are updated. No JS/version modification; remains **v347**.
+
+---
