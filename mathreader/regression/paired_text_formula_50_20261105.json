@@ -1,0 +1,4384 @@
+{
+  "schema": "mathreader.paired_text_formula_regression.v1",
+  "campaign": "v352 same-PDF paired text and formula regression — 50 real PDFs",
+  "date_beijing": "2026-11-05",
+  "app_source_version": "352",
+  "version_bump": false,
+  "provenance": "all input PDFs were accessible original bytes in local corpus, 50 unique SHA-256; many appeared in preceding campaigns; not 50 newly sourced papers",
+  "audited_code": "mathreader/js/41-equations-bibliography.js and mathreader/js/10-formula-ocr.js from v352; imported functions tested as-is; no application-code changes",
+  "method": {
+    "native": "all 1,125 PDF pages traversed by PyMuPDF; native text character count and page-level mathematical-glyph presence only",
+    "text_index": "actual v352 detectedStructureResult, structureResultsIndexNavigationPage, equationLabelCandidatesInLine, bibliographyHeadingText invoked in Node VM on 1st, midpoint, last, and any pre-verified formula reference pages; only preliminary raw candidates, not full Equation index",
+    "formula": "for every source PDF, choose an original page/formula-region (sometimes fallback page for negative controls), render it, and run English Tesseract CLI OCR proxy; preserve page/crop geometry and transcript. Tesseract does NOT generate Texify LaTeX",
+    "latex_compilation": "18 manually checked original-PDF LaTeX formulas in seven matched source files from formula_syntax_v352.json; fresh 228-case MathJax v352 compilation gate, not image-model inference",
+    "ground_truth": "no exhaustive whole-document independent item inventory; do not classify fully verified PASS"
+  },
+  "limits": [
+    "Only source-level preview of 3–4 pages per PDF for Result/Equation/Bibliography parser. Not full final indexes, Structure inference, recovery, navigation or browser PDF.js.",
+    "OCR proxy samples one region/page per document (50 calls); 51 pages of source corpus have <30 native chars, but full-page OCR of every such page was NOT performed.",
+    "No local Texify model and no production browser Formula OCR. Source-verified LaTeX compilation is NOT recognition accuracy.",
+    "Formula clip can be a page fallback or OCR-transcribed mathematical prose. Its absence of TeX cannot be interpreted as missing MathReader formula.",
+    "Existing known unresolved cases for Gromov, Pisier, Ahlfors, Simon, Caffarelli and handwriting retain earlier FAIL/UNVERIFIED states; the new campaign does not supersede or close them.",
+    "Old technical handwritten physics/engineering/geology remain missing as independently sourced documents."
+  ],
+  "totals": {
+    "files": 50,
+    "pages": 1125,
+    "sha256_unique": 50,
+    "categories": {
+      "handwritten-applied": 8,
+      "historical-pure": 7,
+      "modern-mathematics": 13,
+      "applied-technical": 12,
+      "nonmath-negative": 7,
+      "math-bilingual": 3
+    },
+    "pages_under_30_native_chars": 51,
+    "pages_with_math_glyphs_total": 889,
+    "sampled_parser_pages": 144,
+    "sampled_parser_lines": 6187,
+    "results_parser_entries": 36,
+    "raw_equation_candidate_lines": 345,
+    "bibliography_heading_candidates": 5,
+    "parser_exceptions": 0,
+    "formula_crop_ocr_calls": 50,
+    "formula_crop_ocr_execution_failures": 0,
+    "formula_crop_ocr_empty_transcripts": 0,
+    "formula_crop_ocr_ms": 19689,
+    "source_verified_latex_source_PDFs": 7,
+    "source_verified_latex_cases": 18,
+    "classification": {
+      "PASS": 0,
+      "FAIL_newly_confirmed": 0,
+      "UNVERIFIED": 50,
+      "EXCEPTION": 0
+    }
+  },
+  "files": [
+    {
+      "id": 1,
+      "filename": "581 Note 1.pdf",
+      "sha256": "64a4ab741bae301ab16bf683d80d6811bd7fe9464bfd112c7fbae005c6c589e2",
+      "category": "handwritten-applied",
+      "pages": 1,
+      "bytes": 452937,
+      "text_audit": {
+        "native_characters": 10,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1
+        ],
+        "sampled_lines": 1,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 693,
+          "text": ")\n— —}— —7-—;-——J ll Cyeda per ft\n—— | pede § Tie dinni —Lohiggs\n—.—! —Clniren trully nit is pobre ple\n——— “ = haa 1X ~\nNg SSE)\noe Hs ge . £ »F o\npeel Ff Epp\n| Arh TST i ore = =F lit ie\n| ovin tne peli case f a, as RS le /\nSee (Rainn frye | dy ola) feet\nmandy ee\n8 camscanner",
+          "characters": 275,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 2,
+      "filename": "581 Note 2.pdf",
+      "sha256": "dce01da39ac90062dc65eb638212ad1b46a663f1c90ee34f5b6af7d890d554f2",
+      "category": "handwritten-applied",
+      "pages": 2,
+      "bytes": 880570,
+      "text_audit": {
+        "native_characters": 20,
+        "pages_under_30_native_characters": 2,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 2,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 516,
+          "text": "ital ceded Delt affine f We\nee teal ti egaie Prone hote tote —$§\neens Ween eS ee a\not tg\na Pag_f Paras =f oritade ee\nge a ee C0\n\n— is d= e\noT ss MT a OC\n(Ro eee\npeg a FG —\na\n\n8 camscanner",
+          "characters": 187,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 3,
+      "filename": "581 Note 3.pdf",
+      "sha256": "8c11eecc4577e9c271d1163e7f98669936d17cb3775fd00da9e2c49937dac299",
+      "category": "handwritten-applied",
+      "pages": 3,
+      "bytes": 1459517,
+      "text_audit": {
+        "native_characters": 30,
+        "pages_under_30_native_characters": 3,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2,
+          3
+        ],
+        "sampled_lines": 3,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 664,
+          "text": "ee\nTi hg 9\nf=} — ao =. SHO\neK (7 DEER = $0 4) = 2Y/o/. Veet\n\n| PbEs\n\n| Di stnbution = Crnerabized fonctions the lognt cline s ins of\nCowen dihintivs —(orek oowmgna)\n(a) yen yore f Ose VEC\n\n| 2X\nSame CC (x) a Taide =/. VL A 72)\na te bein Diy Uy got\n\nys Weed & shou fp > ple) Chaysed voile yi %\n\n—___| ",
+          "characters": 539,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 4,
+      "filename": "581 Note 4.pdf",
+      "sha256": "fa64cbd4eb31be5d9cb64506986b0df0f6db658cb84d83b02216c4e73533b0fc",
+      "category": "handwritten-applied",
+      "pages": 2,
+      "bytes": 811665,
+      "text_audit": {
+        "native_characters": 20,
+        "pages_under_30_native_characters": 2,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 2,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 304,
+          "text": "aon is | Je of -e. T>\n\na tig tepefeDe}\n\na Ny, 7 fm\n\nae —~t3s guste yi ijer see e-\n\n2 Gre 00D (Rohe tre\n8 camscanner",
+          "characters": 115,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 5,
+      "filename": "581 Note 5.pdf",
+      "sha256": "ffaa8198e6005d82afdc30df1404b4a20c58b71a5573a5f712177bfacac5ab7e",
+      "category": "handwritten-applied",
+      "pages": 4,
+      "bytes": 1876375,
+      "text_audit": {
+        "native_characters": 40,
+        "pages_under_30_native_characters": 4,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          3,
+          4
+        ],
+        "sampled_lines": 3,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 447,
+          "text": "© , 2 fron nr ”\nDh oder woh\" >(IR”) 2 it [R’) US Gndimors\n| 2° (yaw )= & 0. MIT De\n<a lay) > =O favd.. :\n[ Or La we dR), GeO (re) {pet a\nWie UH fem win DR), seep: istibsdion\nee ee re ee eT ee — WU _____ ds\nA [het rea ) Lin a\n8 camscanner",
+          "characters": 237,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 6,
+      "filename": "581 Note 6.pdf",
+      "sha256": "7c25285efdab09cf325a5aeec4a8410eb751720f5be99d3896ca0ac6e752b634",
+      "category": "handwritten-applied",
+      "pages": 2,
+      "bytes": 832912,
+      "text_audit": {
+        "native_characters": 20,
+        "pages_under_30_native_characters": 2,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 2,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 548,
+          "text": "Laghtr linens inal onebague 4, Fel bort- tren ‘\n\n| e Sinpshar jteyrel\n\na2 wae Re} — ee\n\nig 9\n\n‘ ce OP 7\n\n: | RD RS) DR) acee pangimien\n\n— OF Pps eR RE pew 7, RY 9?\n\nbee eee Ly) me uz_y os KY Ne i\n\n7 iran _ Pr: By Refi Kon, hove cach Tey ar catty oc\n\n: v\n\n| See Tha fuente olterrmne the paoportien of ",
+          "characters": 318,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 7,
+      "filename": "581 Note 7.pdf",
+      "sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+      "category": "handwritten-applied",
+      "pages": 3,
+      "bytes": 1325233,
+      "text_audit": {
+        "native_characters": 30,
+        "pages_under_30_native_characters": 3,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2,
+          3
+        ],
+        "sampled_lines": 3,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 628,
+          "text": "Go re C7H)\nOX SL Re 2s plar9): x022 VER awa WL 7 9—\n$A Ta =f -2%-—\nee =\n| bad = Ont DY Take Fem jee tonaporm jp 0\nee Va ee a ee a\nhen fe tte pope\npiesa enn 11 0 ae en\nrane ae eee\nepee fore\nTQ5 > KF\n\n\\~ Q ify? _\nfe Fert petent—\n8 camscanner",
+          "characters": 239,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 8,
+      "filename": "Ahlfors-Conformal-Invariants.pdf",
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "category": "historical-pure",
+      "pages": 172,
+      "bytes": 8514446,
+      "text_audit": {
+        "native_characters": 284007,
+        "pages_under_30_native_characters": 5,
+        "pages_with_math_glyphs": 144,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          14,
+          87,
+          172
+        ],
+        "sampled_lines": 92,
+        "results_parser_count": 2,
+        "results_parser_sample": [
+          {
+            "page": 14,
+            "ratio": 0.442114,
+            "text": "Theorem 1-1",
+            "label": "Theorem 1-1"
+          },
+          {
+            "page": 14,
+            "ratio": 0.766781,
+            "text": "Theorem 1-2",
+            "label": "Theorem 1-2"
+          }
+        ],
+        "raw_equation_candidate_line_count": 9,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 14,
+            "ratio": 0.116506,
+            "text": "choice (1-5) is",
+            "candidates": [
+              "(1-5)"
+            ]
+          },
+          {
+            "page": 14,
+            "ratio": 0.150902,
+            "text": "(1-6)",
+            "candidates": [
+              "(1-6)"
+            ]
+          },
+          {
+            "page": 14,
+            "ratio": 0.310718,
+            "text": "If(z) I < 1 for Izl < 1, and if f(O) = 0, then If(z) I ~ Izl and 11'(0)1 ~ 1.",
+            "candidates": [
+              "(0)"
+            ]
+          },
+          {
+            "page": 14,
+            "ratio": 0.685261,
+            "text": "of the form (1-1).",
+            "candidates": [
+              "(1-1)"
+            ]
+          },
+          {
+            "page": 87,
+            "ratio": 0.115695,
+            "text": "(4-19)",
+            "candidates": [
+              "(4-19)"
+            ]
+          },
+          {
+            "page": 87,
+            "ratio": 0.210822,
+            "text": "(4-20)",
+            "candidates": [
+              "(4-20)"
+            ]
+          },
+          {
+            "page": 87,
+            "ratio": 0.25817,
+            "text": "In particular, (4-19) and (4-20) give the double inequality",
+            "candidates": [
+              "(4-19)",
+              "(4-20)"
+            ]
+          },
+          {
+            "page": 87,
+            "ratio": 0.288728,
+            "text": "(4-21)",
+            "candidates": [
+              "(4-21)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 14,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          404.16,
+          628.32
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "Equality If(z) I = Izlwithz ~ Oorlf'(O)1 = 1 can occur only forf(z) = eiaz,",
+        "sample_glyph_count": 3,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 625,
+          "text": "APPLICATIONS OF SCHWARZ'S LEMMA 3\nH = {z =x + iy;y > 0}. The element of length that corresponds to the\nchoice (1-5) is\nas = 24, (6)\ny\nand the straight lines are circles and lines orthogonal to the real axis.\n1-2 THE SCHWARZ-PICK THEOREM\nThe classic Schwarz lemma asserts the following: If f is analyt",
+          "characters": 1429,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "ahlfors-1973-p14-line-element",
+          "ahlfors-1973-p14-schwarz-pick",
+          "ahlfors-1973-p14-derivative"
+        ],
+        "hand_verified_latex_reference_count": 3,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 9,
+      "filename": "geometrical_hypothesis_Banach.pdf",
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "category": "historical-pure",
+      "pages": 10,
+      "bytes": 459927,
+      "text_audit": {
+        "native_characters": 21344,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 10,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          6,
+          10
+        ],
+        "sampled_lines": 106,
+        "results_parser_count": 3,
+        "results_parser_sample": [
+          {
+            "page": 1,
+            "ratio": 0.599736,
+            "text": "Theorem 1. Let B\" be a real or complex Banach space and suppose that all its k-dimensional",
+            "label": "Theorem 1"
+          },
+          {
+            "page": 1,
+            "ratio": 0.787504,
+            "text": "Theorem 2. Let L\" be a real or complex linear space of finite dimension η and suppose that in",
+            "label": "Theorem 2"
+          },
+          {
+            "page": 6,
+            "ratio": 0.433723,
+            "text": "Proposition 1. The structure group of the canonical fibering over the real or complex Grossman",
+            "label": "Proposition 1"
+          }
+        ],
+        "raw_equation_candidate_line_count": 6,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 6,
+            "ratio": 0.163518,
+            "text": "(12)",
+            "candidates": [
+              "(12)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.266281,
+            "text": "group Η. Because the diagram (12) is commutative and because of the functorial nature of the homo-",
+            "candidates": [
+              "(12)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.32655,
+            "text": "(13)",
+            "candidates": [
+              "(13)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.39334,
+            "text": "since the diagram (13) is commutative, the homomorphism χ : π ι (Α) -» 77; (S \"",
+            "candidates": [
+              "(13)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.191155,
+            "text": "3-7-4; English transl., Amer. Math. Soc. Transl. (2) 10 (66), (1962), 119-192. MR 17, 762; MR 27",
+            "candidates": [
+              "(2)",
+              "(66)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.27509,
+            "text": "J--P· Serre, Groupes d'homotopie et classes de groupes abeliens, Ann. of Math. (2) 58 (1953),",
+            "candidates": [
+              "(2)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 9,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          260.91,
+          505.05,
+          302.83
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "group G containing all products by λ (λ is real or complex and \\ λ| = 1) where G acts",
+        "sample_glyph_count": 4,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 263,
+          "text": "Lemma 2: If the structure group of the (orthogonal or unitary) k-bundle X is reducible to a sub-\ngroup G containing all products by M(Ais real or complex and | \\| = 1) where G acts nontransitively\non the unit vectors of each fiber of the fibering of X, then we can introduce a norm in all the fibers",
+          "characters": 299,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 10,
+      "filename": "SPS_1988__22__485_0.pdf",
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "category": "historical-pure",
+      "pages": 18,
+      "bytes": 1086096,
+      "text_audit": {
+        "native_characters": 23546,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 16,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          3,
+          10,
+          18
+        ],
+        "sampled_lines": 193,
+        "results_parser_count": 2,
+        "results_parser_sample": [
+          {
+            "page": 3,
+            "ratio": 0.598877,
+            "text": "THEOREM 1.1.",
+            "label": "Theorem 1.1"
+          },
+          {
+            "page": 10,
+            "ratio": 0.441965,
+            "text": "COROLLARY 2. 5.",
+            "label": "Corollary 2.5"
+          }
+        ],
+        "raw_equation_candidate_line_count": 15,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 3,
+            "ratio": 0.162934,
+            "text": "(1.1)",
+            "candidates": [
+              "(1.1)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.497278,
+            "text": "(1.2)",
+            "candidates": [
+              "(1.2)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.650917,
+            "text": "(1.3)",
+            "candidates": [
+              "(1.3)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.779071,
+            "text": "earlier probabilistic proof of (1.3) due to R. Gundy an N. Varopoulos",
+            "candidates": [
+              "(1.3)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.817461,
+            "text": "Alternate proofs of ( 1 . 3 ) have been given in [DR]",
+            "candidates": [
+              "(1.3)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.872255,
+            "text": "below a proof of (1.3), to be compared with that of § 2. We use a simple",
+            "candidates": [
+              "(1.3)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.12936,
+            "text": "We obtain (2.10)as announced. In particular, we have (2.9).",
+            "candidates": [
+              "(2.10)",
+              "(2.9)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.151707,
+            "text": "t ( 8 ) -~ ~",
+            "candidates": [
+              "(8)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          493.0,
+          717.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "(Rk f) (03BE) =",
+        "sample_glyph_count": 1,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 665,
+          "text": "486\n§ 1. THE CLASSICAL CASE.\nThe classical Riesz transforms are defined as follows for a\nsmooth function £ (say) in y(R\") .\nis\n11 “ =k? =\n(aay (Ry £)\" Ce) G ayi7z #t8) (k= 1,2,..00) -\nte)\n1 k,\nEquivalently we have \"symbolically\"\na (4\ns-si (42)\nES a\nwhere we have denoted by x,,.-+/%, the coordinates ",
+          "characters": 1418,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "riesz-1988-p3-symbol",
+          "riesz-1988-p3-symbolic",
+          "riesz-1988-p3-laplacian"
+        ],
+        "hand_verified_latex_reference_count": 3,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 11,
+      "filename": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "category": "historical-pure",
+      "pages": 13,
+      "bytes": 867329,
+      "text_audit": {
+        "native_characters": 18305,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 12,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          7,
+          13
+        ],
+        "sampled_lines": 62,
+        "results_parser_count": 1,
+        "results_parser_sample": [
+          {
+            "page": 7,
+            "ratio": 0.407214,
+            "text": "1.18. LEMMA. - If Du is bounded (see Lemma l.l) then it has a limit",
+            "label": "Lemma 1.18"
+          }
+        ],
+        "raw_equation_candidate_line_count": 1,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 13,
+            "ratio": 0.205341,
+            "text": "[SJ] J. SIMONS, Minimal varieties in Riemannian manifolds, Ann. of Math., t. 88, (2),",
+            "candidates": [
+              "(2)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          89.17,
+          118.69,
+          370.69,
+          171.45
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "= a . x + b, a = lim Du(x), and Bp = ~ x E",
+        "sample_glyph_count": 3,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 136,
+          "text": "pio Be)\n\npte\n\nwhere Ix) = a.x + b,a-— lim Du(x) and By = {xe R': |x| <|\nOf course in case Q = ¢, the fact that Du is bounded implies.",
+          "characters": 133,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 12,
+      "filename": "caffarelli1989.pdf",
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "category": "historical-pure",
+      "pages": 27,
+      "bytes": 882706,
+      "text_audit": {
+        "native_characters": 33534,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 26,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          3,
+          14,
+          27
+        ],
+        "sampled_lines": 120,
+        "results_parser_count": 2,
+        "results_parser_sample": [
+          {
+            "page": 3,
+            "ratio": 0.409448,
+            "text": "THEOREM",
+            "label": "Theorem 1.2"
+          },
+          {
+            "page": 3,
+            "ratio": 0.599733,
+            "text": "THEOREM",
+            "label": "Theorem 1.3"
+          }
+        ],
+        "raw_equation_candidate_line_count": 15,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.494606,
+            "text": "in a punctured ball, B,(O) \\ (0) c R“, n 2 3, with an isolated singularity at the",
+            "candidates": [
+              "(0)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.513715,
+            "text": "origin. The model equation (1.1) arises in many physical contexts but its greatest",
+            "candidates": [
+              "(1.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.560882,
+            "text": "El, = u4/(n-2)6i,. Equation (1.1) then says that the metric",
+            "candidates": [
+              "(1.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.613993,
+            "text": "the distribution solutions of (1.1) and characterizing the singular set of u. A",
+            "candidates": [
+              "(1.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.630164,
+            "text": "solution u of (1.1) with an isolated singularity is the simplest example of a",
+            "candidates": [
+              "(1.1)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.109557,
+            "text": "It follows from (1.6) that the behavior of + is determined by the roots of",
+            "candidates": [
+              "(1.6)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.324044,
+            "text": "solutions +D(t) of (1.5). The other extreme case, D = -(2/ n>((n - 2>/n>n",
+            "candidates": [
+              "(1.5)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.356106,
+            "text": "Using Theorem (1.1) as a tool, we get the following characterization of the",
+            "candidates": [
+              "(1.1)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 1,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          468.0,
+          720.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "corresponds to the solution + = k or u = k/r(\"-2)/2.",
+        "sample_glyph_count": 2,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 603,
+          "text": "BEHAVIOR OF SEMILINEAR ELLIPTIC EQUATIONS 273\n\nIt follows from (1.6) that the behavior of y is determined by the roots of\n\nn-2\\? n= 2 npn\n(7 ) y- yr + D = 0.\n\nBy the maximum principle, y cannot vanish for any finite 1 unless y = 0, and\nthis forces D to lie in the interval 0 > D > —(2/n)((n — 2)/n)\".",
+          "characters": 1412,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "caffarelli-1989-p3-root",
+          "caffarelli-1989-p3-family"
+        ],
+        "hand_verified_latex_reference_count": 2,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 13,
+      "filename": "yau1978.pdf",
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "category": "historical-pure",
+      "pages": 73,
+      "bytes": 2275987,
+      "text_audit": {
+        "native_characters": 75320,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 55,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          3,
+          37,
+          73
+        ],
+        "sampled_lines": 163,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 19,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 3,
+            "ratio": 0.180352,
+            "text": "(0.7)",
+            "candidates": [
+              "(0.7)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.219983,
+            "text": "It is also necessary to assume that the right-hand side of (0.6) cannot tend",
+            "candidates": [
+              "(0.6)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.352031,
+            "text": "(0.9) )A log (JtlJ2k1 + * * * + 1 tq)2kq))(m-1)'m",
+            "candidates": [
+              "(0.9)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.392437,
+            "text": "We shall show that, under the conditions (0.7)-(0.9),",
+            "candidates": [
+              "(0.7)",
+              "(0.9)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.392066,
+            "text": "equation (0.6) has a",
+            "candidates": [
+              "(0.6)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.54222,
+            "text": "Equation (0.6) is considerably more complicated than equation (0.4) and",
+            "candidates": [
+              "(0.6)",
+              "(0.4)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.574905,
+            "text": "side of (0.6) specializes to the form exp{q+F(x)}, then equation (0.6) is",
+            "candidates": [
+              "(0.6)",
+              "(0.6)"
+            ]
+          },
+          {
+            "page": 3,
+            "ratio": 0.592366,
+            "text": "much easier than (0.4) and can be used to deduce the existence and",
+            "candidates": [
+              "(0.4)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 1,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          486.0,
+          720.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "J/)}=Vol ( M ) .",
+        "sample_glyph_count": 1,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 920,
+          "text": "‘ON THE RICCI CURVATURE OF A COMPACT KAHLER MANIFOLD 341\n\nWe assume that we can find a smooth function y defined on M such that\n(0.7) { (si)? ++ +++ |5,PP)()t P+ + + |?) * exp {F(x, #)}= Vol (M) .\n\nIne\nIt is also necessary to assume that the right-hand side of (0.6) cannot tend\nto infinity too fast.",
+          "characters": 2232,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "yau-1978-p3-integrability",
+          "yau-1978-p3-kahler"
+        ],
+        "hand_verified_latex_reference_count": 2,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 14,
+      "filename": "Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces.pdf",
+      "sha256": "f9163309235ffe21546135b4a39a2657ed89691147432dcf00f2827e5a0525c1",
+      "category": "historical-pure",
+      "pages": 19,
+      "bytes": 203175,
+      "text_audit": {
+        "native_characters": 0,
+        "pages_under_30_native_characters": 19,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          10,
+          19
+        ],
+        "sampled_lines": 0,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 10,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          453.0,
+          684.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 873,
+          "text": "800 RICHARD M. SCHOEN\n\nsame as saying Dt > D,» , Bi > D,- which implies D* > D. Since p € D* 1 D\nwe can thus apply Lemma 1 to conclude D* = D. Thus if M, is the union of\nthe components of M containing D U D, then we must have M* = M, again\ncontradicting the assumption on B. We have thus shown that e",
+          "characters": 2355,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 15,
+      "filename": "2309.00806v2.pdf",
+      "sha256": "2b3f517b0f9a67b499a9cb3c757f5c4016a551fca9a8b22fbd02e6eb7b365501",
+      "category": "modern-mathematics",
+      "pages": 15,
+      "bytes": 228820,
+      "text_audit": {
+        "native_characters": 41209,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 14,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          6,
+          8,
+          15
+        ],
+        "sampled_lines": 253,
+        "results_parser_count": 5,
+        "results_parser_sample": [
+          {
+            "page": 6,
+            "ratio": 0.091758,
+            "text": "Theorem 3.1. [The Generalized Laplace Theorem] Let A be an n × n matrix with entries",
+            "label": "Theorem 3.1"
+          },
+          {
+            "page": 6,
+            "ratio": 0.25206,
+            "text": "Lemma 3.2. Let S and T be two subsets of [n] of size k. Let σ be the permutation of [n]",
+            "label": "Lemma 3.2"
+          },
+          {
+            "page": 8,
+            "ratio": 0.240193,
+            "text": "Lemma 4.2, Gij ̸= 0. Therefore, ai and bj are both nonzero.",
+            "label": "Lemma 4"
+          },
+          {
+            "page": 8,
+            "ratio": 0.264544,
+            "text": "Lemma 4.4. Let A be an n × n irreducible matrix with entries in a ﬁeld F with n ≥4.",
+            "label": "Lemma 4.4"
+          },
+          {
+            "page": 8,
+            "ratio": 0.788029,
+            "text": "Lemma 4.5. Let A be an n × n irreducible matrix with entries in a ﬁeld F with n ≥4.",
+            "label": "Lemma 4.5"
+          }
+        ],
+        "raw_equation_candidate_line_count": 3,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 15,
+            "ratio": 0.139353,
+            "text": "Algebra, 316(2):634–648, 2007.",
+            "candidates": [
+              "(2)"
+            ]
+          },
+          {
+            "page": 15,
+            "ratio": 0.24496,
+            "text": "Algebra Number Theory, 5(1):75–109, 2011.",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 15,
+            "ratio": 0.275263,
+            "text": "jan graphs of all degrees. Ann. of Math. (2), 182(1):307–325, 2015.",
+            "candidates": [
+              "(2)",
+              "(1)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 6,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          612.0,
+          792.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "c1 ∧c2 ∧· · · ∧cn = det(A)e1 ∧· · · ∧en",
+        "sample_glyph_count": 6,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 888,
+          "text": "6 ABEER AL AHMADIEH\nTheorem 3.1. [The Generalized Laplace Theorem] Let A be ann x n matria with entries\nin a field F. Let S C {n] such that |S| = k with 1<k <n—1. The determinant of A is\ngiven by:\ndet(A) = $0 (-1)*7*™ 8 AsrAser\nTefn\nT\\=k\nwhere OT = Dyept.\nTo prove the theorem we use the following le",
+          "characters": 2022,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "laplace-2023-p6-determinant",
+          "laplace-2023-p6-permutation",
+          "laplace-2023-p6-sign"
+        ],
+        "hand_verified_latex_reference_count": 3,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 16,
+      "filename": "0810.5645v6.pdf",
+      "sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "category": "modern-mathematics",
+      "pages": 212,
+      "bytes": 2470583,
+      "text_audit": {
+        "native_characters": 517234,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 204,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          107,
+          212
+        ],
+        "sampled_lines": 202,
+        "results_parser_count": 5,
+        "results_parser_sample": [
+          {
+            "page": 107,
+            "ratio": 0.235717,
+            "text": "Theorem 5.11. Theorems 7.6 and 7.11 are analogues of these in the quiver case.",
+            "label": "Theorem 5.11"
+          },
+          {
+            "page": 107,
+            "ratio": 0.272838,
+            "text": "Theorem 7.14. ˜ΨQ,I : SFind",
+            "label": "Theorem 7.14"
+          },
+          {
+            "page": 107,
+            "ratio": 0.343452,
+            "text": "Deﬁnition 7.15. Let (µ, R, ⩽) be a slope stability condition on mod-CQ/I as in",
+            "label": "Definition 7.15"
+          },
+          {
+            "page": 107,
+            "ratio": 0.35938,
+            "text": "Example 7.4. It is permissible, as in [55, Ex. 4.14]. So as in §3.2 we have elements",
+            "label": "Example 7.4"
+          },
+          {
+            "page": 107,
+            "ratio": 0.79103,
+            "text": "Conjecture 7.16. Call (µ, R, ⩽) generic if for all d, e ∈C(mod-CQ/I) with",
+            "label": "Conjecture 7.16"
+          }
+        ],
+        "raw_equation_candidate_line_count": 13,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.76814,
+            "text": "1.1",
+            "candidates": [
+              "(1.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.78314,
+            "text": "1.2",
+            "candidates": [
+              "(1.2)"
+            ]
+          },
+          {
+            "page": 107,
+            "ratio": 0.157535,
+            "text": "as for (5.4). This makes ˜L(Q) into an inﬁnite-dimensional Lie algebra over Q.",
+            "candidates": [
+              "(5.4)"
+            ]
+          },
+          {
+            "page": 107,
+            "ratio": 0.22044,
+            "text": "The proof of Theorem 5.14 in §11 has two ingredients: equation (3.14) and",
+            "candidates": [
+              "(3.14)"
+            ]
+          },
+          {
+            "page": 107,
+            "ratio": 0.391172,
+            "text": "As in (5.7), deﬁne quiver generalized Donaldson–Thomas",
+            "candidates": [
+              "(5.7)"
+            ]
+          },
+          {
+            "page": 107,
+            "ratio": 0.468899,
+            "text": "As in (6.15), deﬁne quiver BPS invariants",
+            "candidates": [
+              "(6.15)"
+            ]
+          },
+          {
+            "page": 107,
+            "ratio": 0.505868,
+            "text": "(7.21)",
+            "candidates": [
+              "(7.21)"
+            ]
+          },
+          {
+            "page": 107,
+            "ratio": 0.547865,
+            "text": "where M¨o : N →Q is the M¨obius function. As for (6.14), the inverse of (7.21)",
+            "candidates": [
+              "(6.14)",
+              "(7.21)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 86,
+        "crop_region_pdf_coordinates": [
+          51.32,
+          325.08,
+          559.96,
+          373.88
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "Set cβ = β ∪δ and cγ = γ ∪δ and cβ+γ = cβ + cγ, so that cβ, cγ, cβ+γ ∈N.",
+        "sample_glyph_count": 20,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 263,
+          "text": "NON OR OE IIIS IEE SINISE ERVIN BY ENE ET\nSuppose 3,77 are linearly independent over Z. Let 6 = ¢(Ox, (1)) in H2(X;Z).\nSet ¢g = 8U6 and c, = yU6 and egy, = cg +¢,, 80 that ¢3,¢,,c94 € N.\nWrite classes a € K™\"(coh(Xo)) as (a0, 2, 04, 06) as in §6.4. We will consider\n_eamietahie cheavee Fan ¥, in elac",
+          "characters": 337,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 17,
+      "filename": "1209.2203v2.pdf",
+      "sha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "category": "modern-mathematics",
+      "pages": 88,
+      "bytes": 640909,
+      "text_audit": {
+        "native_characters": 174426,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 78,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          45,
+          88
+        ],
+        "sampled_lines": 86,
+        "results_parser_count": 1,
+        "results_parser_sample": [
+          {
+            "page": 45,
+            "ratio": 0.142793,
+            "text": "Theorem 19 ([BBGZ]) Let θ be a big (1, 1) form on a compact complex manifold X. If",
+            "label": "Theorem 19"
+          }
+        ],
+        "raw_equation_candidate_line_count": 10,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 45,
+            "ratio": 0.111018,
+            "text": "11.3",
+            "candidates": [
+              "(11.3)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.241709,
+            "text": "(11.17)",
+            "candidates": [
+              "(11.17)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.274285,
+            "text": "where J0 = Jψ0 is deﬁned in (11.6).",
+            "candidates": [
+              "(11.6)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.406406,
+            "text": "(11.18)",
+            "candidates": [
+              "(11.18)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.503528,
+            "text": "(11.19)",
+            "candidates": [
+              "(11.19)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.526558,
+            "text": "Now we can establish the bound (11.17): Assume ϕ ∈E1 and that MA(ϕ) = T n = µ,",
+            "candidates": [
+              "(11.17)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.546861,
+            "text": "2∂¯∂ϕ. Then (11.18) and (11.19) imply",
+            "candidates": [
+              "(11.18)",
+              "(11.19)"
+            ]
+          },
+          {
+            "page": 45,
+            "ratio": 0.652164,
+            "text": "supψ∈E1 Fµ(ψ) = Fµ(ϕ). This proves (11.17).",
+            "candidates": [
+              "(11.17)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 21,
+        "crop_region_pdf_coordinates": [
+          17.37,
+          329.64,
+          500.04,
+          427.34
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "∆′(∇mϕ) = (g′)p¯q∇p∇¯q∇mϕ = (g′)p¯q∇m(∇p∇¯qϕ) = ∂m log (ω′)n",
+        "sample_glyph_count": 14,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 122,
+          "text": "However, making use of the Monge-Ampére equation, we obtain\nA(Vme) = G)TV Vn? = (Val VpVa2) = Onlog AP” = d,.10g F,\nwhile",
+          "characters": 121,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 18,
+      "filename": "YamabeProblem.pdf",
+      "sha256": "11a7a3c6feb9ec6531b6bd99e30644d13ad9759d952a83c69d08ea3ad60f0b67",
+      "category": "modern-mathematics",
+      "pages": 56,
+      "bytes": 5096364,
+      "text_audit": {
+        "native_characters": 130619,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 51,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          29,
+          56
+        ],
+        "sampled_lines": 100,
+        "results_parser_count": 1,
+        "results_parser_sample": [
+          {
+            "page": 29,
+            "ratio": 0.389013,
+            "text": "THEOREM 6.5. The metric g is asymptotically flat of order 1 if n = 3, order 2 if",
+            "label": "Theorem 6.5"
+          }
+        ],
+        "raw_equation_candidate_line_count": 7,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 29,
+            "ratio": 0.231118,
+            "text": "(6.3)",
+            "candidates": [
+              "(6.3)"
+            ]
+          },
+          {
+            "page": 29,
+            "ratio": 0.444627,
+            "text": "(6-4)",
+            "candidates": [
+              "(6-4)"
+            ]
+          },
+          {
+            "page": 29,
+            "ratio": 0.641995,
+            "text": "conformai normal coordinates, the Laplacian A (given by (2.1)) is equal to the",
+            "candidates": [
+              "(2.1)"
+            ]
+          },
+          {
+            "page": 29,
+            "ratio": 0.697258,
+            "text": "(6.5)",
+            "candidates": [
+              "(6.5)"
+            ]
+          },
+          {
+            "page": 29,
+            "ratio": 0.718311,
+            "text": "From (2.1), A^ = A<ty 4- Aty, where",
+            "candidates": [
+              "(2.1)"
+            ]
+          },
+          {
+            "page": 29,
+            "ratio": 0.738,
+            "text": "(6.6)",
+            "candidates": [
+              "(6.6)"
+            ]
+          },
+          {
+            "page": 29,
+            "ratio": 0.780416,
+            "text": "continuous, we see that (6.5) is equivalent to",
+            "candidates": [
+              "(6.5)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 1,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 26,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          178.97,
+          410.29,
+          241.63
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "Finally, S(P) = P,7(P) = 0 by (5.5a), 0 = (2Rjktk + P ^ 7 ) ( P ) =",
+        "sample_glyph_count": 4,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 180,
+          "text": "ENP TF ijk TF pike! pjkem JX\nContracting on i, j implies AS = —S_,, = 4W/? at P.\nFinally, S(P) = R,,(P) = 0 by (5.54), 0 = (2Ryy , + Ry, AP) = 25,(P)\nby (5.5b) and the Bianchi identity, so S = O(r?), 0\nIt is worth noting that, just as Riemannian normal coordinates are unique",
+          "characters": 275,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 19,
+      "filename": "Radon Measures and Riesz Representation Theorems.pdf",
+      "sha256": "743bb57222fea38259af4775782ba0229e18d8f929d8d32bf2b0e389ffb0d0a0",
+      "category": "modern-mathematics",
+      "pages": 10,
+      "bytes": 236170,
+      "text_audit": {
+        "native_characters": 15780,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 10,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          6,
+          10
+        ],
+        "sampled_lines": 170,
+        "results_parser_count": 4,
+        "results_parser_sample": [
+          {
+            "page": 1,
+            "ratio": 0.47442,
+            "text": "Definition 1.1 (Hausdorffness.)",
+            "label": "Definition 1.1"
+          },
+          {
+            "page": 1,
+            "ratio": 0.741801,
+            "text": "Definition 1.2 (Local Compactness.)",
+            "label": "Definition 1.2"
+          },
+          {
+            "page": 1,
+            "ratio": 0.830306,
+            "text": "Lemma 1.1 (Localization of Precompact Neighborhoods.)",
+            "label": "Lemma 1.1"
+          },
+          {
+            "page": 10,
+            "ratio": 0.09982,
+            "text": "Lemma 1.1, we further require Kj ⊂int Kj+1, then X = S",
+            "label": "Lemma 1"
+          }
+        ],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 1,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 5,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          121.1,
+          550.47,
+          172.26
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "• Observe that λ is monotonic in the sense that f ≥g =⇒λ (f) ≥λ (g).",
+        "sample_glyph_count": 7,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 179,
+          "text": "lS A en  S,\n¢ Observe that \\ is monotonic in the sense that f > g => A(f) > (9).\nelt f~K ~a then f < 7»— ll fi < \\la)",
+          "characters": 117,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 20,
+      "filename": "A_Geometric_Approach_to_Integration.pdf",
+      "sha256": "2363c2bb5bb28382fe883cc4d27ba33e3e4bf0d6970b103efb9212d89bb5fdda",
+      "category": "modern-mathematics",
+      "pages": 6,
+      "bytes": 134291,
+      "text_audit": {
+        "native_characters": 16181,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 5,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          4,
+          6
+        ],
+        "sampled_lines": 148,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 5,
+        "crop_region_pdf_coordinates": [
+          315.25,
+          416.72,
+          485.95,
+          507.57
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "= (∂jfi)1≤i≤n,1≤j≤m,",
+        "sample_glyph_count": 6,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 118,
+          "text": "Omi\n\n£ | = (Ojfi)isicnaciem:\nOmfn,\n{e;} of T,U is sent in Ty(.)R8, wr",
+          "characters": 69,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 21,
+      "filename": "Where_do_Complex_Numbers_come_from_.pdf",
+      "sha256": "c97034a8564c94a61a4556c3f3f60ce2fe6bc2701a839303d83d377edf7f4d41",
+      "category": "modern-mathematics",
+      "pages": 3,
+      "bytes": 158125,
+      "text_audit": {
+        "native_characters": 7498,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 3,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2,
+          3
+        ],
+        "sampled_lines": 137,
+        "results_parser_count": 4,
+        "results_parser_sample": [
+          {
+            "page": 2,
+            "ratio": 0.119845,
+            "text": "Definition (Equivalence Relation).",
+            "label": "Definition (Equivalence Relation)"
+          },
+          {
+            "page": 2,
+            "ratio": 0.400994,
+            "text": "Definition (Generic Complex Numbers).",
+            "label": "Definition (Generic Complex Numbers)"
+          },
+          {
+            "page": 2,
+            "ratio": 0.592062,
+            "text": "Definition (Operations on C).",
+            "label": "Definition (Operations on C)"
+          },
+          {
+            "page": 3,
+            "ratio": 0.088624,
+            "text": "Definition (Complex Numbers).",
+            "label": "Definition (Complex Numbers)"
+          }
+        ],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          396.13,
+          595.28,
+          464.59
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "ing, it is safe to write, for instance, 1 ∼x2 +2 ∼x3 +x+1, so [1] = [x2 +2] = [x3 +x+1].",
+        "sample_glyph_count": 4,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 227,
+          "text": "Remark. You should check that this is a well-defined equivalence relation. After check-\ning, it is safe to write, for instance, 1 ~ 2? +2 ~ a3+a+41, so [1] = [x? +2] = [x3 +24]].\n\nGiven any f(r) € R[x], we can apply the long division algorithm, divide f(x) by p(x),\nand vield a residue r(7) whose dee",
+          "characters": 354,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 22,
+      "filename": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "sha256": "4c64c76edaf0868ccf232e33fdcf1a696dce0490e374526754db80ba4fd305f1",
+      "category": "modern-mathematics",
+      "pages": 26,
+      "bytes": 365410,
+      "text_audit": {
+        "native_characters": 39050,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 25,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          14,
+          26
+        ],
+        "sampled_lines": 126,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 22,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.695715,
+            "text": "2.1",
+            "candidates": [
+              "(2.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.712873,
+            "text": "2.2",
+            "candidates": [
+              "(2.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.761096,
+            "text": "3.1",
+            "candidates": [
+              "(3.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.778255,
+            "text": "3.2",
+            "candidates": [
+              "(3.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.826476,
+            "text": "4.1",
+            "candidates": [
+              "(4.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.843635,
+            "text": "4.2",
+            "candidates": [
+              "(4.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.860794,
+            "text": "4.3",
+            "candidates": [
+              "(4.3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.877953,
+            "text": "4.4",
+            "candidates": [
+              "(4.4)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 9,
+        "crop_region_pdf_coordinates": [
+          90.03,
+          135.03,
+          421.94,
+          207.56
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "kg)y (∂i|y, ∂j|y) = gδky (δk∂i|δky, δk∂j|δky) = δ2",
+        "sample_glyph_count": 12,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 139,
+          "text": "ric. Since — _ :\n(®i9)y ily: ily) = Guy (5 Oibouy: 5eOjlsey) = 56 Gouv (Oiloey\nmetric 9, = 6,°®jg > 6 in CR",
+          "characters": 107,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 23,
+      "filename": "The_Classic_Solution_to_the_Yamabe_Problem_commented.pdf",
+      "sha256": "304bfe1e884b75fde55a064b6cdf1be3bec33342d9cdcc1f4eb305eff1e2bd0b",
+      "category": "modern-mathematics",
+      "pages": 26,
+      "bytes": 440422,
+      "text_audit": {
+        "native_characters": 39050,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 25,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          14,
+          26
+        ],
+        "sampled_lines": 126,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 22,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.695715,
+            "text": "2.1",
+            "candidates": [
+              "(2.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.712873,
+            "text": "2.2",
+            "candidates": [
+              "(2.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.761096,
+            "text": "3.1",
+            "candidates": [
+              "(3.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.778255,
+            "text": "3.2",
+            "candidates": [
+              "(3.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.826476,
+            "text": "4.1",
+            "candidates": [
+              "(4.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.843635,
+            "text": "4.2",
+            "candidates": [
+              "(4.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.860794,
+            "text": "4.3",
+            "candidates": [
+              "(4.3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.877953,
+            "text": "4.4",
+            "candidates": [
+              "(4.4)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 9,
+        "crop_region_pdf_coordinates": [
+          90.03,
+          135.03,
+          421.94,
+          207.56
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "kg)y (∂i|y, ∂j|y) = gδky (δk∂i|δky, δk∂j|δky) = δ2",
+        "sample_glyph_count": 12,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 135,
+          "text": "ric. Since — _ :\n(®i9)y ily: ily) = Guy (5 Oibouy: 5eOjlsey) = 56 Gouv (Oiloey\nmetric 9, = 6,°®jg > 6 in CR",
+          "characters": 107,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 24,
+      "filename": "brendle2007.pdf",
+      "sha256": "206fc4719f3dbb04f56c9a6acf4ee26dc10b86d052d8f9f90e09522be951829d",
+      "category": "modern-mathematics",
+      "pages": 29,
+      "bytes": 330904,
+      "text_audit": {
+        "native_characters": 44546,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 28,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          5,
+          15,
+          29
+        ],
+        "sampled_lines": 393,
+        "results_parser_count": 2,
+        "results_parser_sample": [
+          {
+            "page": 5,
+            "ratio": 0.144846,
+            "text": "Proposition 4. Consider a Riemannian metric on Rn of the form g(x) = exp(h(x)),",
+            "label": "Proposition 4"
+          },
+          {
+            "page": 15,
+            "ratio": 0.687227,
+            "text": "Proposition 12. We have",
+            "label": "Proposition 12"
+          }
+        ],
+        "raw_equation_candidate_line_count": 7,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.379705,
+            "text": "(1)",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.419771,
+            "text": "curvature of g. Clearly, every solution of (1) is a critical point of the functional",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.452433,
+            "text": "(2)",
+            "candidates": [
+              "(2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.487054,
+            "text": "It is well known that the PDE (1) has at least one positive solution for any choice of",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.547433,
+            "text": "Solutions to (1) are not usually unique. As an example, consider the product",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.560626,
+            "text": "metric on S1(L) × Sn−1(1). If L is suﬃciently small, then the Yamabe PDE has",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 15,
+            "ratio": 0.658418,
+            "text": "by (4) and Corollary 10. Putting these facts together, the assertion follows.",
+            "candidates": [
+              "(4)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 5,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          612.0,
+          792.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "|∂2h(x)| ≤α0 for all x ∈Rn and h(x) = 0 for |x| ≥1. Given any pair (ξ, ε) ∈Rn ×",
+        "sample_glyph_count": 8,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 747,
+          "text": "BLOW-UP PHENOMENA FOR THE YAMABE EQUATION 955\nProposition 4. Consider a Riemannian metric on R” of the form g(:x) = exp(h(z)),\nwhere h(a) is a trace-free symmetric two-tensor on R\" satisfying |h(z)|-+ |Oh(2)| +\n|®A(~x)| < a0 for all x ER” and h(x) =0 for |x| > 1. Given any pair (£,e) € R\" x\n(0,00) a",
+          "characters": 1563,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "brendle-2007-p5-weak",
+          "brendle-2007-p5-ricci"
+        ],
+        "hand_verified_latex_reference_count": 2,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 25,
+      "filename": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "sha256": "92f5f086a7fefd4f467d6f0589573de06268a92c32dc47a481bb503857536c8b",
+      "category": "modern-mathematics",
+      "pages": 18,
+      "bytes": 388879,
+      "text_audit": {
+        "native_characters": 28809,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 16,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          10,
+          18
+        ],
+        "sampled_lines": 110,
+        "results_parser_count": 2,
+        "results_parser_sample": [
+          {
+            "page": 10,
+            "ratio": 0.365531,
+            "text": "Remark 3.7 (Why the error order matters). A pointwise statement only of the form kg =",
+            "label": "Remark 3.7"
+          },
+          {
+            "page": 10,
+            "ratio": 0.69304,
+            "text": "Theorem 3.8 (Three-dimensional asymptotically Schwarzschild PMT). Let (N3, g) be complete,",
+            "label": "Theorem 3.8"
+          }
+        ],
+        "raw_equation_candidate_line_count": 27,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.676193,
+            "text": "3.1",
+            "candidates": [
+              "(3.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.700876,
+            "text": "3.2",
+            "candidates": [
+              "(3.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.72556,
+            "text": "3.2.1",
+            "candidates": [
+              "(3.2.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.750243,
+            "text": "3.2.2",
+            "candidates": [
+              "(3.2.2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.774926,
+            "text": "3.2.3",
+            "candidates": [
+              "(3.2.3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.799609,
+            "text": "3.3",
+            "candidates": [
+              "(3.3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.824293,
+            "text": "3.3.1",
+            "candidates": [
+              "(3.3.1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.848977,
+            "text": "3.3.2",
+            "candidates": [
+              "(3.3.2)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 11,
+        "crop_region_pdf_coordinates": [
+          96.09,
+          117.83,
+          546.83,
+          171.17
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "=⇒Sσ solving Plateau =⇒S complete, stable, area minimizing",
+        "sample_glyph_count": 5,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 155,
+          "text": "m <0 => conformal preparation with R > 0, R > 0 at infinity, m <0 (66)\n=> 5S; solving Plateau => S complete, stable, area minimizing (67)\n=> Area(SN Bp) < Cp? (68)",
+          "characters": 163,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 26,
+      "filename": "A_Streamlined_Proof_of_the_Yamabe_Problem.pdf",
+      "sha256": "020a93cb9463ae1e0fafa6d4fbf177a8c272a587e589eb55afa545f47e48262d",
+      "category": "modern-mathematics",
+      "pages": 18,
+      "bytes": 282922,
+      "text_audit": {
+        "native_characters": 25719,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 17,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          10,
+          18
+        ],
+        "sampled_lines": 115,
+        "results_parser_count": 1,
+        "results_parser_sample": [
+          {
+            "page": 10,
+            "ratio": 0.260892,
+            "text": "Lemma 4.1 (Conformal normal coordinates). Fix P ∈M and an integer N ≥2. After replacing g",
+            "label": "Lemma 4.1"
+          }
+        ],
+        "raw_equation_candidate_line_count": 10,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 10,
+            "ratio": 0.13224,
+            "text": "We now record the geometric facts used to prove (29). These are the points where the proof uses",
+            "candidates": [
+              "(29)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.22646,
+            "text": "4.1",
+            "candidates": [
+              "(4.1)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.305332,
+            "text": "(30)",
+            "candidates": [
+              "(30)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.364661,
+            "text": "(31)",
+            "candidates": [
+              "(31)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.417109,
+            "text": "(32)",
+            "candidates": [
+              "(32)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.504954,
+            "text": "(33)",
+            "candidates": [
+              "(33)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.549215,
+            "text": "through the volume density, and (30) makes that error as high order as needed.",
+            "candidates": [
+              "(30)"
+            ]
+          },
+          {
+            "page": 10,
+            "ratio": 0.640825,
+            "text": "so from (32),",
+            "candidates": [
+              "(32)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 7,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          297.65,
+          612.0,
+          356.24
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "Choose xk ∈M with usk(xk) = mk. After taking a subsequence, xk →x0 ∈M and λsk →λ for",
+        "sample_glyph_count": 7,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 139,
+          "text": "Choose x, € M with us, (xg) = mg. After taking a subsequence, xy + 20 € M and ds, + ) for\nsome finite \\. Define the blow-up scale",
+          "characters": 129,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 27,
+      "filename": "14922fe9-aa1a-4a9c-8698-ee3ff46b703d.pdf",
+      "sha256": "216360ed33b909fec9d013819a1c26c6c06f23f8025d2a663dc2d2c342922baf",
+      "category": "applied-technical",
+      "pages": 2,
+      "bytes": 187629,
+      "text_audit": {
+        "native_characters": 713,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 68,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 3,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.124794,
+            "text": "在8 月20 日的Winding_Number(1)文档中的公式20",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.150736,
+            "text": "(20)",
+            "candidates": [
+              "(20)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.256497,
+            "text": "(6)",
+            "candidates": [
+              "(6)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          54.13,
+          88.34,
+          404.81,
+          132.23
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "在8 月20 日的Winding_Number(1)文档中的公式20",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 137,
+          "text": "~~. Ret\n7£ 8 H 20 Hit) Winding Number (1) cP A Ax\\ 20",
+          "characters": 53,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 28,
+      "filename": "double_spiral_surface_revision_spec.pdf",
+      "sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "category": "applied-technical",
+      "pages": 13,
+      "bytes": 455526,
+      "text_audit": {
+        "native_characters": 9489,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 13,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          7,
+          13
+        ],
+        "sampled_lines": 86,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 6,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.349828,
+            "text": "1. 把现稿第5 节的周期证明改写为“刚体运动等变性”定理。现稿式(28)–式(35) 逐元素展开",
+            "candidates": [
+              "(28)",
+              "(35)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.674884,
+            "text": "5. 现稿式(37) 把ϕ 与ψ 的平移写在同一个等式中，数学上较弱且容易误解。应分别陈述ϕ 方",
+            "candidates": [
+              "(37)"
+            ]
+          },
+          {
+            "page": 7,
+            "ratio": 0.494472,
+            "text": "2.2",
+            "candidates": [
+              "(2.2)"
+            ]
+          },
+          {
+            "page": 7,
+            "ratio": 0.741059,
+            "text": "2.3",
+            "candidates": [
+              "(2.3)"
+            ]
+          },
+          {
+            "page": 13,
+            "ratio": 0.234053,
+            "text": "13. 是否把式(28)–式(35) 压缩为旋转矩阵分解证明？",
+            "candidates": [
+              "(28)",
+              "(35)"
+            ]
+          },
+          {
+            "page": 13,
+            "ratio": 0.460323,
+            "text": "Qω ∈SO(3).",
+            "candidates": [
+              "(3)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 8,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          736.08,
+          516.45,
+          786.43
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "4. 刚体运动等变性：给出A(ϕ + T) = QA(ϕ)、B(ϕ + T) = QB(ϕ) + d；",
+        "sample_glyph_count": 6,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 214,
+          "text": "Ce SP LE SN PR PUA ANI TE OEY\n4. MUP ay PETE: Ari Ad + T) = QA(S). BO +T) = QB(o) +d:",
+          "characters": 85,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 29,
+      "filename": "2610.07774v1.pdf",
+      "sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "category": "applied-technical",
+      "pages": 15,
+      "bytes": 5569539,
+      "text_audit": {
+        "native_characters": 56719,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 9,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          4,
+          8,
+          15
+        ],
+        "sampled_lines": 429,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 36,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 4,
+            "ratio": 0.125615,
+            "text": "(3)",
+            "candidates": [
+              "(3)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.176149,
+            "text": "2.3",
+            "candidates": [
+              "(2.3)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.184463,
+            "text": "(4)",
+            "candidates": [
+              "(4)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.393201,
+            "text": "(5)",
+            "candidates": [
+              "(5)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.554434,
+            "text": "(6)",
+            "candidates": [
+              "(6)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.72454,
+            "text": "3.2",
+            "candidates": [
+              "(3.2)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.781804,
+            "text": "3.1",
+            "candidates": [
+              "(3.1)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.300891,
+            "text": "0.00",
+            "candidates": [
+              "(0.00)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 4,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.28,
+          841.89
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "pϕ(unsafe | I, q) = σ",
+        "sample_glyph_count": 3,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 1358,
+          "text": "T, which is contextualized by the full multimodal\nN prompt, and concatenate routing states across lay-\n* ers:\n0° = arg D> —log My (yi | Tigi). @G)\n2.3. Safety Interventions Fall Short w(I,q) = vee (Irirrars--stLa)) € 7 4)\nWe evaluate the safety interventions under the ex- This representation capture",
+          "characters": 3984,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [
+          "multimodal-2026-p4-sum",
+          "multimodal-2026-p4-vec",
+          "multimodal-2026-p4-classifier"
+        ],
+        "hand_verified_latex_reference_count": 3,
+        "latex_compilation_status": "MathJax 228-case preexisting v352 regression rerun; includes same-source manual references",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 30,
+      "filename": "124ws2.pdf",
+      "sha256": "3ee5a3d89da674bb63066419644f9b78a40b3266db4f769b7b844ade1b44335c",
+      "category": "applied-technical",
+      "pages": 6,
+      "bytes": 330552,
+      "text_audit": {
+        "native_characters": 3180,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 1,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          4,
+          6
+        ],
+        "sampled_lines": 35,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          41.29,
+          364.43,
+          379.05,
+          414.67
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "(b) Which bike is moving faster at at t = 1?",
+        "sample_glyph_count": 1,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 119,
+          "text": "(b) Which bike is moving faster at at t = 1?",
+          "characters": 44,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 31,
+      "filename": "Math124_Week2_Distance_Speed_Solutions.pdf",
+      "sha256": "66c25b9433838b8868ebf72117ad2d8163d20e4174834b0db23adcd9b8c57870",
+      "category": "applied-technical",
+      "pages": 4,
+      "bytes": 361008,
+      "text_audit": {
+        "native_characters": 5699,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 3,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          3,
+          4
+        ],
+        "sampled_lines": 98,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          80.19,
+          612.0,
+          123.03
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "average speed = (6.6 - 4.2)/(0.50 - 0.25) = 2.4/0.25 = about 9.6 mph. A value around",
+        "sample_glyph_count": 3,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 248,
+          "text": "a a a — a a a\naverage speed = (6.6 - 4.2)/(0.50 - 0.25) = 2.4/0.25 = about 9.6 mph. A value around\n9.5-10 mph is a reasonable graph reading.",
+          "characters": 140,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 32,
+      "filename": "Seattle_UDistrict_vs_Xian_Beilin_房价与租金详细对比_2026-09.pdf",
+      "sha256": "c3c884cd95e4c10e9a2aeac6fa9cea71e92eb09e2563ab72cd1651239231f2d0",
+      "category": "applied-technical",
+      "pages": 8,
+      "bytes": 641562,
+      "text_audit": {
+        "native_characters": 4983,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 7,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          5,
+          8
+        ],
+        "sampled_lines": 134,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 8,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 5,
+            "ratio": 0.704634,
+            "text": "4.1 为什么租金倍数比买价倍数更高？",
+            "candidates": [
+              "(4.1)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.138624,
+            "text": "2026-08",
+            "candidates": [
+              "(2026-08)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.221957,
+            "text": "2026-09",
+            "candidates": [
+              "(2026-09)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.255606,
+            "text": "2026-09",
+            "candidates": [
+              "(2026-09)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.281174,
+            "text": "2026-09",
+            "candidates": [
+              "(2026-09)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.348409,
+            "text": "2026-06",
+            "candidates": [
+              "(2026-06)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.597689,
+            "text": "7.1 汇率与计算规则",
+            "candidates": [
+              "(7.1)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.703827,
+            "text": "7.2 重要限制",
+            "candidates": [
+              "(7.2)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          88.88,
+          592.4,
+          149.7
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "按 1 ft² = 0.092903 m²、1 USD = ¥6.70475 折算，U District 的成交中位单价约为 ¥35,724/m²。",
+        "sample_glyph_count": 2,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 266,
+          "text": "Bee Eee eee eee ee eee\n5.2%o\n* #21 ft? =0.092903 m?, 1 USD =¥6.70475 iF, U District URIS ILA HI ¥35,724/m?.\n° BEE 2026 9 AF RRAU IA ¥11,463/m?, ILL -7.0%, LE +4.1%; ARESMBHIN",
+          "characters": 174,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 33,
+      "filename": "Seattle_UDistrict_vs_Xian_Beilin_超市典型商品价格详细对比_2026-09.pdf",
+      "sha256": "76d201b41c1b79772eaa25867f079a6894b0604c67fddfc19ec69d2db026016b",
+      "category": "applied-technical",
+      "pages": 8,
+      "bytes": 683675,
+      "text_audit": {
+        "native_characters": 6958,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 4,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          5,
+          8
+        ],
+        "sampled_lines": 167,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 6,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 5,
+            "ratio": 0.548933,
+            "text": "0.25",
+            "candidates": [
+              "(0.25)"
+            ]
+          },
+          {
+            "page": 5,
+            "ratio": 0.599771,
+            "text": "0.5",
+            "candidates": [
+              "(0.5)"
+            ]
+          },
+          {
+            "page": 5,
+            "ratio": 0.803123,
+            "text": "1.5 L",
+            "candidates": [
+              "(1.5)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.057277,
+            "text": "[S4] WeeknightWin — Grocery Prices in Seattle（2026-09-29）：打开来源。Seattle 100 项杂货的低价/渠道价格样本，用于",
+            "candidates": [
+              "(2026-09-29)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.210112,
+            "text": "1.00",
+            "candidates": [
+              "(1.00)"
+            ]
+          },
+          {
+            "page": 8,
+            "ratio": 0.235531,
+            "text": "4.33",
+            "candidates": [
+              "(4.33)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          232.0,
+          239.08,
+          363.46,
+          299.9
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "1 USD = ¥6.70475",
+        "sample_glyph_count": 1,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 108,
+          "text": "sree we\n1 USD = ¥6.70475",
+          "characters": 24,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 34,
+      "filename": "Computation_VS_Dark.pdf",
+      "sha256": "46e789a22049bbc12ebf2cf80c569819b520abacad4bad207f185c47dcdd081e",
+      "category": "applied-technical",
+      "pages": 25,
+      "bytes": 325843,
+      "text_audit": {
+        "native_characters": 76460,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 25,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          13,
+          25
+        ],
+        "sampled_lines": 321,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          503.39,
+          737.35,
+          534.47
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "_F = 'f', F_ = 'F', _F_ = '!', G = 'γ', G_ = 'G', _H = 'h', H_ = 'H', I = 'i', I_ = 'I', J_ = 'J', K_ = 'K', _L = 'l',",
+        "sample_glyph_count": 13,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 279,
+          "text": "108 = protected const char A= '‘a', A = ‘A’, B = 'B', C='c', C ='C', D ='D', D ='S', E='e', E ='E',\n109 Pe f, Fm‘, Fmt, Gay, G = '6, Hm th Hom HY P= i T= ttt, Jo J, K = KY, bat,\n110 Mo='M', MAX = ‘>', MIN = ‘<', MODE1'= \"1', MODE2='2', P=‘n', P= 'P', Q='q', R='r', R='R',",
+          "characters": 271,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 35,
+      "filename": "Fraljiculator_ArrayPool_Architecture_Updated.pdf",
+      "sha256": "4b51daf5cf2a3a19674189b0572ca67b158c6f2be870cf23d1f69f40bdb2f0b2",
+      "category": "applied-technical",
+      "pages": 16,
+      "bytes": 139410,
+      "text_audit": {
+        "native_characters": 26728,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 9,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          9,
+          16
+        ],
+        "sampled_lines": 107,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 8,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.705228,
+            "text": "1.40 GiB/s",
+            "candidates": [
+              "(1.40)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.705228,
+            "text": "13.79 MiB/s",
+            "candidates": [
+              "(13.79)"
+            ]
+          },
+          {
+            "page": 9,
+            "ratio": 0.155037,
+            "text": "8.1 Sequential Compose / Compose1",
+            "candidates": [
+              "(8.1)"
+            ]
+          },
+          {
+            "page": 9,
+            "ratio": 0.319936,
+            "text": "8.2 Coupled ProcessCompose2",
+            "candidates": [
+              "(8.2)"
+            ]
+          },
+          {
+            "page": 9,
+            "ratio": 0.525366,
+            "text": "8.3 Cocoon",
+            "candidates": [
+              "(8.3)"
+            ]
+          },
+          {
+            "page": 16,
+            "ratio": 0.155037,
+            "text": "15.1 Important audit corrections",
+            "candidates": [
+              "(15.1)"
+            ]
+          },
+          {
+            "page": 16,
+            "ratio": 0.4063,
+            "text": "15.2 Checklist",
+            "candidates": [
+              "(15.2)"
+            ]
+          },
+          {
+            "page": 16,
+            "ratio": 0.646199,
+            "text": "15.3 Final mental model",
+            "candidates": [
+              "(15.3)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 16,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          249.03,
+          458.0,
+          279.43
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "i f  ( ! ( m . m o d e . L e n g t h  = =  1  & &  ( m . m o d e [ 0 ]  = =  M O D E _ 1  | |  m . m o d e [ 0 ]  = =  M O D E _ 2 ) ) )",
+        "sample_glyph_count": 6,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 128,
+          "text": "if (1(m.mode.Length == 1 && (m.mode[0] == MODE_1 || m.mode[®] == MODE_2)))\n{ m.m1.Return(); m.m2.Return(); ThrowException(); }",
+          "characters": 126,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 36,
+      "filename": "Fraljiculator_Performance_Optimization_Closeout_Report.pdf",
+      "sha256": "d4d27608861aa951945d1bda0d686bf51dcecb2f0ad2565065273604bc0a67c0",
+      "category": "applied-technical",
+      "pages": 6,
+      "bytes": 356607,
+      "text_audit": {
+        "native_characters": 9082,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 2,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          4,
+          6
+        ],
+        "sampled_lines": 142,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 52,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 4,
+            "ratio": 0.469318,
+            "text": "0.149",
+            "candidates": [
+              "(0.149)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.48447,
+            "text": "0.369",
+            "candidates": [
+              "(0.369)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.499621,
+            "text": "2.636",
+            "candidates": [
+              "(2.636)"
+            ]
+          },
+          {
+            "page": 4,
+            "ratio": 0.514773,
+            "text": "0.730",
+            "candidates": [
+              "(0.730)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.10726,
+            "text": "0.108 s",
+            "candidates": [
+              "(0.108)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.10726,
+            "text": "0.106",
+            "candidates": [
+              "(0.106)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.10726,
+            "text": "0.144",
+            "candidates": [
+              "(0.144)"
+            ]
+          },
+          {
+            "page": 6,
+            "ratio": 0.122412,
+            "text": "0.114 s",
+            "candidates": [
+              "(0.114)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          425.84,
+          612.0,
+          472.72
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "Gamma. The measured medians are 0.141 s (n=10), 0.221 s (n=50), and 0.379 s (n=100). A simple linear fit is t ≈",
+        "sample_glyph_count": 4,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 157,
+          "text": "2.447\nGamma. The measured medians are 0.141 s (n=10), 0.221 s (n=50), and 0.379 s (n=100). A simple linear fit is t=\n0.1048 + 0.00267n seconds (R? = 0.985). This is consistent with the current implementation, whose inner Gamma",
+          "characters": 226,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 37,
+      "filename": "Lean_Diagonal_Similarity_Beginner_Guide.pdf",
+      "sha256": "9b8375d5845fe229752ffa6e93a48a60346761f1805c7c6fa6abe8515e3cb606",
+      "category": "applied-technical",
+      "pages": 18,
+      "bytes": 311345,
+      "text_audit": {
+        "native_characters": 37655,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 18,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          10,
+          18
+        ],
+        "sampled_lines": 155,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 4,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          424.11,
+          612.0,
+          472.96
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "Beginner note: Read the declaration in three pieces: name = `diagOfUnits`; input = `(d : n → Rˣ)`;",
+        "sample_glyph_count": 3,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 183,
+          "text": "output will be D.\nBeginner note: Read the declaration in three pieces: name = ‘diagOfUnits*; input = ‘(d : n > R*)*;\noutput type = ‘Matrix nn R*. The *:=* says the body comes next.",
+          "characters": 180,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 38,
+      "filename": "Code_final.pdf",
+      "sha256": "7752a424286ed8d0d4847286934db925fe4e57965d7eb551662ae83f91e62f29",
+      "category": "applied-technical",
+      "pages": 40,
+      "bytes": 530245,
+      "text_audit": {
+        "native_characters": 167525,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 40,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          21,
+          40
+        ],
+        "sampled_lines": 240,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 23,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          112.89,
+          612.0,
+          146.78
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "_F = 'f', F_ = 'F', _F_ = '!', G = 'γ', G_ = 'G', _H = 'h', H_ = 'H', I = 'i', I_ = 'I', J_ = 'J', K_ = 'K', _L = 'l',",
+        "sample_glyph_count": 13,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 230,
+          "text": "protected const char A= 'a', A= 'A', B.='B', C= 'c', C= 'C', D='D', D='$',E='e', E='E',\nFE, FS UR, Foe, Gey, G6, Heh HSH PER, LT, 0, KEK, LE,\nMSW, MAX = 1S\", MIN = '<!, MODE_2'= '1', MODE_2 = '2', P= on’, PL='P', Q= a!) R= ir, R= IR,",
+          "characters": 233,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 39,
+      "filename": "祝福_魯迅_分段修正版.pdf",
+      "sha256": "0f03aec6125238df242d8c44489375691bf9eb9e90d232aea9bdb0e285d8d332",
+      "category": "nonmath-negative",
+      "pages": 8,
+      "bytes": 546479,
+      "text_audit": {
+        "native_characters": 9172,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          5,
+          8
+        ],
+        "sampled_lines": 105,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 5,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.3,
+          841.89
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 1456,
+          "text": "HER PRAM KAY, UREN TAP. RAR AMF MRT,\nETAT, RAMAEOR A, BATS. Hh, A, SRT AP oo)\n\nTABLE ARR oo\n\n(ARERR. —MABLMEM MM, REMBF—i, RALGR,\nBBR, PELE, HE, MLE, HAE T. TRAM, HAR AM\nAE, KRAMRAH BAAS SARMRE, HURRAMR. KA, MNLAST\nDRARIE, RAO LA, RRFRAGOLA, MARRMGARRAMM LA, HE\nGET HLA. FTAA RH, WIR -BRAK, RB, LIAR,",
+          "characters": 1462,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 40,
+      "filename": "汲绍达诗词文稿集_完整整理版_修订.pdf",
+      "sha256": "4450a704a34e8c8fd769a1cfebc71e947f7e13c44d51f54394810160923de2c2",
+      "category": "nonmath-negative",
+      "pages": 36,
+      "bytes": 5364756,
+      "text_audit": {
+        "native_characters": 11769,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          19,
+          36
+        ],
+        "sampled_lines": 46,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 19,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          612.0,
+          792.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 630,
+          "text": "DEAS ASCH\nHEASISE:, ELSIE.\nWIFE, HE RSWEL\n201948 (Hi) , BAER L\n‘Het AED\nCUE SULA “ER” SRE” “SRA” “ELSE” “Sak” SAAS BOTTA DE, HA RR\nABTEISEUBEE ETT. RSE RALLIES, SR “HES CHEE” WSR, -ZRSLE TD ap WCRI EL\nWRT SINS.\nEE\nTORS BAE, AAEM,\nSRELBCRAIT AEE, BT AMDT FS LE,\nERBARBA PL, AMF Ro\nFATE TM, SHOR tb,\n20",
+          "characters": 554,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 41,
+      "filename": "仍待辨明的原稿内容清单.pdf",
+      "sha256": "0e7636d9340165a4096cabab6fc500f41474172d0deef880a55fd5c2a0df6bf6",
+      "category": "nonmath-negative",
+      "pages": 3,
+      "bytes": 34067,
+      "text_audit": {
+        "native_characters": 1973,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 1,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2,
+          3
+        ],
+        "sampled_lines": 76,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 2,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.382315,
+            "text": "6.10 之后的 P 与 Q 对应、P-prime、P1、P2 轨迹构型",
+            "candidates": [
+              "(6.10)"
+            ]
+          },
+          {
+            "page": 2,
+            "ratio": 0.193062,
+            "text": "4. 6.10 之后的 P 与 Q 对应、P-prime、P1、P2 轨迹构型",
+            "candidates": [
+              "(4.6.10)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          104.19,
+          580.31,
+          150.6
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "双线性斜率条件 lambda_1 k_1 k_2 + lambda_2(k_1+k_2) + lambda_3 = 0 所对应的定点判据；",
+        "sample_glyph_count": 1,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 213,
+          "text": "ES NIE NEES EN\nFARE RARE lambda_1 k_1k_2+ lambda_2(k_1+k_2) + lambda_3= 0 PRITRIAVE RHE ;\nMORNE 2S cb SAoMAllsa DM eon e see eb atth mol ea",
+          "characters": 139,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 42,
+      "filename": "补充解释.pdf",
+      "sha256": "1c9261b69d2857ad2a9eb7253d0ec0948ab90b5b29929263d27c6a8d9ac64eb0",
+      "category": "nonmath-negative",
+      "pages": 2,
+      "bytes": 91994,
+      "text_audit": {
+        "native_characters": 1632,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 2,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 75,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          0.76,
+          132.1,
+          595.28,
+          201.45
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "PB, PA 是三角形ABF ′ 的外角平分线. 而且F ′A + AF = F ′B + BF = 2a, 所以",
+        "sample_glyph_count": 2,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 227,
+          "text": "PIS ILD IIS ND IONS IID I IID EEA D NIA DS III EIR IIIS IID IIA ISSA IIIS\nBOPP TAY P wee AB. URW EAE MERE A,B SZERM FGA\nPB,PA f= fait ABF\" WySb fe. EL F’A + AF = FB + BF = 2a, fiRbA\nFFF VIII",
+          "characters": 190,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 43,
+      "filename": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+      "sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+      "category": "nonmath-negative",
+      "pages": 1,
+      "bytes": 273380,
+      "text_audit": {
+        "native_characters": 0,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1
+        ],
+        "sampled_lines": 0,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.28,
+          841.89
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 448,
+          "text": "7/24/26, 9:21 AM Safe Travels Elite PPO - fic:iiGR47 RI\nBa tRR\nRIL: Safe Travels Elite PPO Sly,\nBEB: Surego Administrative Services aus TRAWICK\n(RBS: Zurich Insurance Europe AG Belgian branch\nRRA 1 6ZHE Jl\nSRS: 901282196\nHHERIHB: 1973-02-06 (53 3)\nRR Ea\nSire Re Et\nRRA Bai\nBRAT\nCRRRAR ARE: FABRE: RAR",
+          "characters": 666,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 44,
+      "filename": "补充解释后_仍待确认内容.pdf",
+      "sha256": "a19eeb61a1564dc50e9f9dedaf939342a67405936b61967c40ab925a13cdff11",
+      "category": "nonmath-negative",
+      "pages": 2,
+      "bytes": 31222,
+      "text_audit": {
+        "native_characters": 1096,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 1,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 53,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 2,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.239366,
+            "text": "37-38",
+            "candidates": [
+              "(37-38)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.456735,
+            "text": "40-43",
+            "candidates": [
+              "(40-43)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          608.19,
+          512.29,
+          654.6
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "2. 第42-43页“θ 固定时 Q 在一双曲线上”的参数含义。 前文写 P=(ra cosθ, rb",
+        "sample_glyph_count": 3,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 158,
+          "text": "SRE NENA EAM NE SO\n2. 842-437\" 0 BENQ E-MHAL MERA, HIME P=(racosd , rb\nsind), AlbBeKRMIERABEAD OS . eer; UA Q",
+          "characters": 109,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 45,
+      "filename": "汲绍达诗词文稿集_完整整理版.pdf",
+      "sha256": "af3f0355cdb0ca4c33706feeb29e4a6ceb6f47d92ceb2712a71787fe5b6d7d18",
+      "category": "nonmath-negative",
+      "pages": 37,
+      "bytes": 5396182,
+      "text_audit": {
+        "native_characters": 12051,
+        "pages_under_30_native_characters": 1,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          19,
+          37
+        ],
+        "sampled_lines": 40,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 19,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          612.0,
+          792.0
+        ],
+        "crop_kind": "page-fallback-no-extracted-formula",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 655,
+          "text": "DEAS ASCH\n‘Het AED\nBiiaGiilia “Ss” 5 “ae” We, BEI IE: BEA, MAN AREAL,\nWRK, RD. GS CPA) MM, (A) IAAP, CR AAU\nWH.\nBRP AEF wa\nHSPEIZAR (BEDS ARE\nSHEESIGH: BSR\nWe Fea HS He\n2019 Ea, WALTER L\nPETE SE\n2019 FRR RU, (ABE ALE HEE. M CRS) Bl ORE) SRB\nWW: PRATT ILUIVABE 23. LUG. Be, 28, TEP EES OE\n‘Het AED\nCUE",
+          "characters": 521,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 46,
+      "filename": "利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf",
+      "sha256": "864dc3d4e2f275137d6d1849eeb7571579277151c251e6dc9feefe098bc04669",
+      "category": "math-bilingual",
+      "pages": 3,
+      "bytes": 930768,
+      "text_audit": {
+        "native_characters": 5449,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 3,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2,
+          3
+        ],
+        "sampled_lines": 732,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 20,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.517201,
+            "text": "(2)f 在R上连续;",
+            "candidates": [
+              "(2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.536104,
+            "text": "(3)f(x) ≤1,∀x∈R.",
+            "candidates": [
+              "(3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.631077,
+            "text": "2f(x)f(0).从而若f(0)=0,则f=0.这是平凡解,",
+            "candidates": [
+              "(0)",
+              "(0)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.650095,
+            "text": "所以我们要附加f(0)≠0的条件.又令x=y=0,得",
+            "candidates": [
+              "(0)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.669344,
+            "text": "2f(0)=2f",
+            "candidates": [
+              "(0)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.669344,
+            "text": "2(0),故f(0)=1.",
+            "candidates": [
+              "(0)",
+              "(0)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.817796,
+            "text": "(1)f 不是常值函数;",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.840618,
+            "text": "在d􀆳Alembert方程中令x=0,由于f(0)=1,故",
+            "candidates": [
+              "(0)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 1,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 2,
+        "crop_region_pdf_coordinates": [
+          20.38,
+          192.42,
+          325.13,
+          295.4
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "inf(S∩(0,+∞))=min(S∩(0,+∞))=c.",
+        "sample_glyph_count": 6,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 214,
+          "text": "SHER PBR. S100, Hoo) AEF A RE nC\nJi. Pate\ninf(SM (0, +99)) =min(SN (0, +99)) =e. [04\nPE LE SPAR PRA AE DI HR EA BK\nEB ML ERE 9 BB fo. BR A RAR AR IR IE eI 2\nAEA RERY AR UE.",
+          "characters": 172,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 47,
+      "filename": "Riemann球面上的旋转_Fraljimetry.pdf",
+      "sha256": "51d68e23431152dfb6fcca0b06cbfda4ae99482100efd5cd457a24168f37cb55",
+      "category": "math-bilingual",
+      "pages": 2,
+      "bytes": 171666,
+      "text_audit": {
+        "native_characters": 3575,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 2,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          2
+        ],
+        "sampled_lines": 176,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 1,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 2,
+            "ratio": 0.889216,
+            "text": "Rot(S2) ∼= PSU(2).",
+            "candidates": [
+              "(2)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          711.46,
+          556.32,
+          774.88
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "The Lagrange identity states that for z, w ∈C2, |z · w|2 + |z × w|2 = ∥z∥2 ∥w∥2 , namely,",
+        "sample_glyph_count": 7,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 176,
+          "text": "a\n(z, W)p2 = pid sw+w-2).\n2 22\n‘The Lagrange identity states that for z,w € C?, |z-w|? + |z x w|> = |l2l|° |jwll?, namely,\n2 2) Haan (2 2\n|extr + 22%3|” + |z1we — zewi|? = (Jzr|? + |22|?)(lwi|? + fwel?).",
+          "characters": 203,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 48,
+      "filename": "Schoen_Yau_Positive_Mass_Step_Tables.pdf",
+      "sha256": "402bfcde810a1ba64d5d9230861a6704f27a2e4216070fd3dd51cee8356718b7",
+      "category": "math-bilingual",
+      "pages": 9,
+      "bytes": 355774,
+      "text_audit": {
+        "native_characters": 12003,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 9,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          5,
+          9
+        ],
+        "sampled_lines": 131,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 1,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 5,
+            "ratio": 0.098455,
+            "text": "2.8",
+            "candidates": [
+              "(2.8)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 6,
+        "crop_region_pdf_coordinates": [
+          139.47,
+          421.17,
+          703.78,
+          465.01
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "For large σ, choose φ = 1 on S(σ), decrease logarithmically across S(σ2) \\ S(σ), and set φ = 0",
+        "sample_glyph_count": 8,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 164,
+          "text": "Js <* ef ES\nhmie cutoffs. For large @, choose y = 1 on S(a), decrease logarithmically across $(0”) \\ S(@), and set ¢ = 0 Produces cutoff\noutside S(o”). Then order 1/logo.\nSo 7",
+          "characters": 175,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 49,
+      "filename": "GA Seminar Note 1.pdf",
+      "sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "category": "handwritten-applied",
+      "pages": 4,
+      "bytes": 1880245,
+      "text_audit": {
+        "native_characters": 40,
+        "pages_under_30_native_characters": 4,
+        "pages_with_math_glyphs": 0,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1,
+          3,
+          4
+        ],
+        "sampled_lines": 3,
+        "results_parser_count": 0,
+        "results_parser_sample": [],
+        "raw_equation_candidate_line_count": 0,
+        "raw_equation_candidate_sample": [],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 3,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          0.0,
+          595.0,
+          842.0
+        ],
+        "crop_kind": "handwritten-page",
+        "native_formula_line_excerpt": "",
+        "sample_glyph_count": 0,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 577,
+          "text": "i) Sas SAT ERECOT Soe REC\nsata retiied —taefatn rang be Single\nsisal Fig O) Com we find rnin swf 8 ( Pte. mini) 2\nhet le they deok dhe (Shonwea’ cle ssifivediin Hon, Ranatin)\nfhe) he te ty Sigel?\nCal wpe need mnie f dobetin Sasesiet_lleL te\nayorann'. Capea tate\nSta ee Ce\n2 [poked Wats tink Tigelan —",
+          "characters": 473,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    },
+    {
+      "id": 50,
+      "filename": "Green_Function_Expansion_Compact.pdf",
+      "sha256": "82ec030edb90a67a478f3c9dcdbb487858d7938f399dcbddf901e6a8f04c0492",
+      "category": "modern-mathematics",
+      "pages": 1,
+      "bytes": 142483,
+      "text_audit": {
+        "native_characters": 2200,
+        "pages_under_30_native_characters": 0,
+        "pages_with_math_glyphs": 1,
+        "document_page_read_errors": [],
+        "sampled_pages": [
+          1
+        ],
+        "sampled_lines": 50,
+        "results_parser_count": 1,
+        "results_parser_sample": [
+          {
+            "page": 1,
+            "ratio": 0.06174,
+            "text": "Lemma 1 (Green function expansion). Assume Y (M, [g]) > 0, and let GP be the positive Green function of Lg =",
+            "label": "Lemma 1"
+          }
+        ],
+        "raw_equation_candidate_line_count": 14,
+        "raw_equation_candidate_sample": [
+          {
+            "page": 1,
+            "ratio": 0.106961,
+            "text": "∇α = O(1).",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.107124,
+            "text": "(1)",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.188888,
+            "text": "(2)",
+            "candidates": [
+              "(2)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.229965,
+            "text": "Write GP = r2−n(1 + ψ), so ψ = o(1). From LgGP = 0, after multiplying by rn,",
+            "candidates": [
+              "(1)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.259368,
+            "text": "(3)",
+            "candidates": [
+              "(3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.300522,
+            "text": "homogeneous degree by at least 2. Because R = O(r2), the first forcing in (3) begins in degree 4.",
+            "candidates": [
+              "(3)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.34868,
+            "text": "(4)",
+            "candidates": [
+              "(4)"
+            ]
+          },
+          {
+            "page": 1,
+            "ratio": 0.419124,
+            "text": "(5)",
+            "candidates": [
+              "(5)"
+            ]
+          }
+        ],
+        "bibliography_heading_candidate_count": 0,
+        "parser_errors": [],
+        "status": "UNVERIFIED: only sampled pages passed through source-level label parsers; browser index pipeline not run"
+      },
+      "formula_audit": {
+        "selected_pdf_page": 1,
+        "crop_region_pdf_coordinates": [
+          0.0,
+          378.09,
+          612.0,
+          428.83
+        ],
+        "crop_kind": "native-formula-region",
+        "native_formula_line_excerpt": "Solve locally Lgz = f, so z ∈C2,µ, and set h = v −z. Then Lgh = 0 on the punctured ball. Since ψ = o(1), ψ = o(1),",
+        "sample_glyph_count": 6,
+        "ocr_proxy": {
+          "status": "ok",
+          "exit_code": 0,
+          "ms": 167,
+          "text": "Lyv=f, ff =Ol(r)+O(rflogr|)eC**” (O< p<). (6)\nSolve locally Ly2 = f, so z € C™\", and set h =v — z. Then Lh = 0 on the punctured ball. Since = o(1), B= o(1),\nand = = O(1), one has h = o(r2-\"). The removable isolated-singularity theorem therefore extends h smoothly across P,",
+          "characters": 273,
+          "engine": "local Tesseract CLI, English, PSM 6, 122 DPI equivalent"
+        },
+        "hand_verified_latex_reference_ids": [],
+        "hand_verified_latex_reference_count": 0,
+        "latex_compilation_status": "UNVERIFIED: no source-verified LaTeX transcription / model output from this PDF",
+        "recognition_status": "UNVERIFIED: Tesseract plain text is not formula Texify image-to-LaTeX output"
+      },
+      "overall_document": "UNVERIFIED",
+      "independent_ground_truth_complete": false
+    }
+  ]
+}

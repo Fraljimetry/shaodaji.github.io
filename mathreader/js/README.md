@@ -39,3 +39,5 @@ recognition available for editing, do not invent missing mathematical content,
 and never represent syntax compilation as mathematical transcription accuracy.
 For the authoritative old/new example corpus and its provenance, see
 `../regression/formula_syntax_v352.json` and the v352 section of `../REGRESSION.md`.
+
+Permanent paired regression requirement (2026-11-05): any document/text-index regression must also audit formulas from those **same** PDFs, with original-page/crop provenance, real image-to-LaTeX output when available, MathJax compilation and independent visual accuracy checks. See `../REGRESSION.md` and `../regression/paired_text_formula_50_20261105.json`. A syntax-only proxy is not recognition accuracy; incomplete stages remain UNVERIFIED.
