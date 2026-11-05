@@ -41,3 +41,11 @@ For the authoritative old/new example corpus and its provenance, see
 `../regression/formula_syntax_v352.json` and the v352 section of `../REGRESSION.md`.
 
 Permanent paired regression requirement (2026-11-05): any document/text-index regression must also audit formulas from those **same** PDFs, with original-page/crop provenance, real image-to-LaTeX output when available, MathJax compilation and independent visual accuracy checks. See `../REGRESSION.md` and `../regression/paired_text_formula_50_20261105.json`. A syntax-only proxy is not recognition accuracy; incomplete stages remain UNVERIFIED.
+
+
+v353 offline regression infrastructure: `../regression_tools/run.py` provides a
+content-addressed PDF text/page-geometry cache, stage-specific detector/OCR
+cache and paired formula compilation sidecar. It does not run in the website.
+Do not describe native-text parser probes or Tesseract transcripts as final
+browser indexes, Texify output, or verified mathematical recognition. See
+`../regression_tools/README.md` and v353 entry in `../REGRESSION.md`.
