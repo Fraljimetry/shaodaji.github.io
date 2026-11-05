@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "version": "v361",
+  "baseline": "v360",
+  "type": "P1 UI-only change",
+  "change": "Bibliography local-PDF actions moved to on-demand right-click context menu. Shift+F10 / ContextMenu keyboard access and touch long press.",
+  "tests": {
+    "source_and_syntax": {
+      "passed": 49,
+      "total": 49,
+      "status": "PASS"
+    },
+    "chromium_p1_isolated": {
+      "passed": 36,
+      "total": 36,
+      "status": "PASS",
+      "backend": "SIMULATED_PDF_BACKEND"
+    },
+    "chromium_p0_shell": {
+      "status": "PASS",
+      "backend": "NO_PDF"
+    },
+    "responsive_ui": {
+      "status": "PASS"
+    },
+    "real_pdfjs_p1": {
+      "status": "BLOCKED",
+      "reason": "Pinned PDF.js assets unavailable in local environment"
+    },
+    "actual_texify": {
+      "status": "UNVERIFIED"
+    },
+    "independently_verified_whole_document_accuracy": {
+      "status": "UNVERIFIED"
+    }
+  },
+  "unchanged": [
+    "PDF detector algorithms",
+    "Texify model/inference",
+    "IndexDB link schemas",
+    "confirmed local PDF identity",
+    "document state and return logic",
+    "ten-part module layout"
+  ]
+}

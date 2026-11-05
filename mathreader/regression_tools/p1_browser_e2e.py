@@ -118,8 +118,9 @@ def run(source_root: Path, source_pdf: Path, target_pdf: Path, pdfjs_build: Path
                         page.evaluate('(n)=>window.__mathreaderP1E2E.goto(n,0.40)',last_page)
                         before=state()
                         check('source navigation anchor available',before['anchor'] is not None)
-                        first_link=page.locator('#bibliography-index .bibliography-item').filter(has=page.locator('.bibliography-local-button')).first
-                        first_link.locator('.bibliography-local-button').filter(has_text='Link PDF').click(force=True)
+                        first_link=page.locator('#bibliography-index .bibliography-item').first
+                        first_link.locator('.bibliography-jump').click(button='right',force=True)
+                        page.locator('.bibliography-context-action').filter(has_text='Link PDF').click()
                         picker=first_link.locator('.bibliography-link-picker')
                         check('actual local PDF picker appeared',picker.count()==1)
                         picker.locator('select').select_option(target['fileKey'])
@@ -127,7 +128,8 @@ def run(source_root: Path, source_pdf: Path, target_pdf: Path, pdfjs_build: Path
                         page.wait_for_function('(id)=>window.__mathreaderP1E2E.snapshot().confirmedTargets.includes(id)',arg=target['fileKey'])
                         check('exact link saved in IndexedDB',target['fileKey'] in page.evaluate('window.__mathreaderP1E2E.persistedLinkIds()'))
                         first_link=page.locator('#bibliography-index .bibliography-item').first
-                        first_link.locator('.bibliography-local-button').filter(has_text='Open PDF').click(force=True)
+                        first_link.locator('.bibliography-jump').click(button='right',force=True)
+                        page.locator('.bibliography-context-action').filter(has_text='Open PDF').click()
                         page.wait_for_function('(id)=>window.__mathreaderP1E2E.snapshot().fileKey===id',arg=target['fileKey'])
                         switched=state()
                         check('P1 opens real target PDF',switched['documentLoaded'] and switched['fileKey']==target['fileKey'] and switched['pages']==target['pages'])
@@ -147,7 +149,9 @@ def run(source_root: Path, source_pdf: Path, target_pdf: Path, pdfjs_build: Path
                             upload(source_pdf)
                         page.evaluate('window.__mathreaderP0.finishIndexes()')
                         check('confirmed link survives browser reload',target['fileKey'] in page.evaluate('window.__mathreaderP1E2E.persistedLinkIds()'))
-                        check('link remains visible after reopening',page.locator('#bibliography-index .bibliography-local-button').filter(has_text='Open PDF').count()>=1)
+                        first_link=page.locator('#bibliography-index .bibliography-item').first
+                        first_link.locator('.bibliography-jump').click(button='right',force=True)
+                        check('link persists in right-click menu after reopening',page.locator('.bibliography-context-action').filter(has_text='Open PDF').count()==1)
                         check('OCR still not eagerly initialized by P1',not state()['formulaLoading'])
                         report['dependency_routes']=routes
                         report['status']='PASS'

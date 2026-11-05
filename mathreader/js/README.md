@@ -126,3 +126,20 @@ Run `python mathreader/tests/ui_responsive_regression.py` for offline actual-UI
 Chromium viewport, touch, modal and repeated-interaction checks, and the full
 `regression_tools/p0_gate.py` as before. Browser-shell tests are *not* genuine
 PDF.js document switching or Texify acceptance. See `../REGRESSION.md`.
+
+
+## v361 P1 bibliography context menu
+
+Local PDF controls no longer occupy each Bibliography row. Right-click a
+numbered bibliography entry to show a body-level **Link PDF / Relink PDF /
+Open PDF / Unlink** context menu (available actions depend on confirmed link
+state). On keyboard use **Shift+F10** or the **Context Menu** key while the
+entry is focused; touch users can long-press the entry. A standard left click
+still expands/collapses citations and a double-click still navigates to the
+reference location. DOI/arXiv anchors retain native right-click behavior.
+The temporary PDF picker remains embedded only while making a link.
+
+This is a presentation-only P1 change: exact IDs, IndexedDB schema, return
+position logic, PDF.js, Texify, and mathematical detectors are unchanged.
+The P1 isolated Chromium test covers mouse, keyboard, and touch semantics; the
+real two-PDF runner was updated but still requires pinned PDF.js assets.

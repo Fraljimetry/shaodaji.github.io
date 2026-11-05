@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real Chromium UI/layout/stability regression for MathReader's real ten-part shell.
 
-This runs the actual v360 JS and CSS without PDF.js or Texify. It cannot
+This runs the actual v361 JS and CSS without PDF.js or Texify. It cannot
 certify original-PDF rendering, recognition or final mathematical indexes.
 """
 from __future__ import annotations
@@ -149,7 +149,7 @@ def run():
         check(inspect(page)['openVisible'],'touch landscape can open another PDF')
         landscape.close();browser.close()
 
-    report={'schema':1,'source':'real v360 application shell in isolated Chromium; PDF.js/Texify unavailable',
+    report={'schema':1,'source':'real v361 application shell in isolated Chromium; PDF.js/Texify unavailable',
             'assertions':len(checks),'passed':sum(c['passed'] for c in checks),
             'failed':errors,'load_timings_s':timings,'checks':checks,
             'limitations':['No actual PDF.js document rendering or Texify inference',

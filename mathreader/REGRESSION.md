@@ -1465,3 +1465,34 @@ Five deterministic 160-DPI grayscale, image-only PDF variants per source: **cont
 **The original unmet high-priority gap remains:** 50 independently sourced, runnable pre-1980 engineering/physics/geology scans, especially field and lab notebooks *written by hand*, plus full-document OCR and all four MathReader downstream index comparisons, not just page-level stress fixtures. Official candidate sources include NASA NTRS (`https://ntrs.nasa.gov/api/citations/20040006368/downloads/20040006368.pdf`, 1961 aerodynamics) and the Smithsonian's digitized geological notebook (`https://www.si.edu/object/field-notes-indiana-and-kentucky-1910%3Afbr_item_MODSI6820`); these are **external leads, not tested files**. No PDF bytes from those external records were used in this campaign.
 
 **Release gates.** Documentation-only root ZIP patch. Source remains **v347**; no detection, OCR, UI, recovery, fallback, or JavaScript behavior changed. Run JS syntax, assembled-module syntax, the 96 bundled regression assertions, unique fixture-hash validation, JSON audit consistency, and patch ZIP integrity before delivering. Production-browser and whole-document independent ground truth remain **UNVERIFIED**.
+
+
+---
+
+## v361 — P1 bibliography actions moved to right-click (2026-11-06 Beijing UTC+08)
+
+**Requested UI contract:** normal bibliography rows stay compact. Link PDF,
+Relink PDF, Open PDF and Unlink appear only in the bibliography item's context
+menu (as appropriate to its confirmed-link state); DOI/arXiv outbound links
+remain as before. The old inline link buttons are removed, not merely hidden
+by CSS. One temporary in-row PDF picker remains while the user explicitly
+chooses and confirms a target. The menu is appended at document-body level so
+it is not clipped by bibliography's overflow scroll region, and its position
+is clamped to the viewport. Close on Escape, outside press, scroll, resize,
+or bibliography re-render. Keyboard: Shift+F10 / Menu key; touch: stationary
+550ms long-press (cancel on move or release).
+
+**Conservative scope:** no detector, Formula OCR, PDF rendering, local-library
+identity, IndexedDB schema, confirmed-link persistence, navigation/return
+stack, or caching changes. Ordinary click-to-show-citations and double-click
+to-reference remain. A right click does not expand citations. Native browser
+context menus for DOI/arXiv anchors are not intercepted.
+
+**Validation:** JS source syntax, assembled ten-module runtime, existing
+source and browser tests, updated isolated P1 Chromium context-menu test,
+responsive UI, and root ZIP overlay/integrity. The isolated P1 UI probe uses
+a simulated PDF backend and must not be described as real PDF.js acceptance.
+Actual two-PDF PDF.js and Texify/whole-document mathematical ground truth
+remain **BLOCKED/UNVERIFIED** pending pinned assets and independent reference
+data. See `regression/p1_context_menu_v361_20261106.json` for recorded gate
+results.

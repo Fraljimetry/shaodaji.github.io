@@ -4403,57 +4403,148 @@ async function returnToCrossDocumentSource() {
   }
 }
 
-function renderBibliographyLocalLink(entry, row, actions) {
-  const key = bibliographyLinkKey(entry);
-  if (!key) return;
-  const linkedId = confirmedBibliographyLinks.get(key);
-  const linked = bibliographyLinkTarget(entry);
+// v361: keep bibliography rows compact. All local-PDF actions live in a
+// transient right-click menu instead of permanently occupying the index.
+// A single body-level menu avoids clipping by the scrollable bibliography pane.
+let bibliographyContextMenuState = null;
+function closeBibliographyContextMenu(restoreFocus = false) {
+  const state = bibliographyContextMenuState;
+  if (!state) return;
+  bibliographyContextMenuState = null;
+  state.listeners.abort();
+  state.menu.remove();
+  if (restoreFocus && state.trigger?.isConnected) state.trigger.focus();
+}
+
+function showBibliographyLinkPicker(entry, row) {
+  const old = row.querySelector('.bibliography-link-picker');
+  if (old) { old.remove(); return; }
   const available = localLibrary.filter((r) => r.localAvailable && r.id !== currentFileKey);
-  const action = (name, title, handler) => {
+  if (!available.length) {
+    showNotice(t('Open and cache another PDF before linking it.', '请先打开并缓存另一份 PDF。'));
+    return;
+  }
+  const picker = document.createElement('div'); picker.className = 'bibliography-link-picker';
+  const select = document.createElement('select');
+  select.setAttribute('aria-label', t('Choose linked local PDF', '选择关联的本地 PDF'));
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = t('Select a local PDF…', '选择本地 PDF…');
+  select.append(placeholder);
+  for (const candidate of available) {
+    const option = document.createElement('option'); option.value = candidate.id; option.textContent = candidate.name || candidate.id;
+    select.append(option);
+  }
+  const confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'bibliography-local-button';
+  confirm.textContent = t('Link', '关联'); confirm.disabled = true;
+  select.addEventListener('change', () => { confirm.disabled = !select.value; });
+  confirm.addEventListener('click', async () => {
+    confirm.disabled = true;
+    if (!(await updateConfirmedBibliographyLink(entry, select.value))) confirm.disabled = !select.value;
+  });
+  const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'bibliography-local-button'; cancel.textContent = t('Cancel', '取消');
+  cancel.addEventListener('click', () => picker.remove());
+  picker.append(select, confirm, cancel); row.append(picker); select.focus();
+}
+
+function openBibliographyContextMenu(entry, row, clientX, clientY, trigger) {
+  closeBibliographyContextMenu();
+  if (!bibliographyLinkKey(entry) || !pdfDoc || !currentFileKey) return;
+  const linkedId = confirmedBibliographyLinks.get(bibliographyLinkKey(entry));
+  const linked = bibliographyLinkTarget(entry);
+  const menu = document.createElement('div');
+  menu.className = 'bibliography-context-menu'; menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', t(`Local PDF · ${entry.label}`, `本地 PDF · ${entry.label}`));
+  const add = (label, title, handler) => {
     const button = document.createElement('button');
-    button.type = 'button'; button.className = 'bibliography-local-button';
-    button.textContent = name; button.title = title;
-    button.addEventListener('click', handler);
-    actions.append(button);
-    return button;
+    button.type = 'button'; button.setAttribute('role', 'menuitem');
+    button.className = 'bibliography-context-action';
+    button.textContent = label; button.title = title;
+    button.addEventListener('click', () => { closeBibliographyContextMenu(); handler(); });
+    menu.append(button);
   };
   if (linked) {
-    action(t('Open PDF', '打开 PDF'), linked.name || linked.id, () => void openConfirmedBibliographyTarget(entry));
-    action(t('Unlink', '解除关联'), t('Remove this confirmed link', '解除当前已确认关联'), () => void updateConfirmedBibliographyLink(entry));
-  } else {
-    const button = action(linkedId ? t('Relink PDF', '重新关联') : t('Link PDF', '关联 PDF'),
-      t('Choose a PDF already stored in your local library', '选择本地文库中的 PDF'), () => {
-        const old = row.querySelector('.bibliography-link-picker');
-        if (old) { old.remove(); return; }
-        if (!available.length) {
-          showNotice(t('Open and cache another PDF before linking it.', '请先打开并缓存另一份 PDF。'));
-          return;
-        }
-        const picker = document.createElement('div'); picker.className = 'bibliography-link-picker';
-        const select = document.createElement('select');
-        select.setAttribute('aria-label', t('Choose linked local PDF', '选择关联的本地 PDF'));
-        const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = t('Select a local PDF…', '选择本地 PDF…');
-        select.append(placeholder);
-        for (const candidate of available) {
-          const option = document.createElement('option'); option.value = candidate.id; option.textContent = candidate.name || candidate.id;
-          select.append(option);
-        }
-        const confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'bibliography-local-button';
-        confirm.textContent = t('Link', '关联'); confirm.disabled = true;
-        select.addEventListener('change', () => { confirm.disabled = !select.value; });
-        confirm.addEventListener('click', async () => {
-          confirm.disabled = true;
-          if (!(await updateConfirmedBibliographyLink(entry, select.value))) confirm.disabled = !select.value;
-        });
-        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'bibliography-local-button'; cancel.textContent = t('Cancel', '取消');
-        cancel.addEventListener('click', () => picker.remove());
-        picker.append(select, confirm, cancel); row.append(picker); select.focus();
-      });
-    button.disabled = false;
+    add(t('Open PDF', '打开 PDF'), linked.name || linked.id, () => void openConfirmedBibliographyTarget(entry));
   }
+  add(linkedId ? t('Relink PDF', '重新关联') : t('Link PDF', '关联 PDF'),
+      t('Choose an exact PDF from your local library', '从本地文库中选择准确的 PDF'),
+      () => showBibliographyLinkPicker(entry, row));
+  if (linkedId) {
+    add(t('Unlink', '解除关联'), t('Remove this confirmed link', '解除当前已确认关联'),
+      () => void updateConfirmedBibliographyLink(entry));
+  }
+  document.body.append(menu);
+  const bounds = menu.getBoundingClientRect();
+  const x = Number.isFinite(clientX) ? clientX : 0;
+  const y = Number.isFinite(clientY) ? clientY : 0;
+  menu.style.left = `${Math.max(6, Math.min(x, window.innerWidth - bounds.width - 6))}px`;
+  menu.style.top = `${Math.max(6, Math.min(y, window.innerHeight - bounds.height - 6))}px`;
+  const listeners = new AbortController();
+  bibliographyContextMenuState = {menu, listeners, trigger};
+  document.addEventListener('pointerdown', (event) => {
+    if (!menu.contains(event.target)) closeBibliographyContextMenu();
+  }, {capture:true, signal:listeners.signal});
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') { event.preventDefault(); closeBibliographyContextMenu(true); }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const items = [...menu.querySelectorAll('[role="menuitem"]')];
+      const index = items.indexOf(document.activeElement);
+      items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+    }
+  }, {signal:listeners.signal});
+  document.addEventListener('scroll', () => closeBibliographyContextMenu(), {capture:true, signal:listeners.signal});
+  window.addEventListener('resize', () => closeBibliographyContextMenu(), {signal:listeners.signal});
+  menu.querySelector('button')?.focus();
+}
+
+function renderBibliographyLocalLink(entry, row, main) {
+  if (!bibliographyLinkKey(entry)) return;
+  const sourceId = currentFileKey;
+  // Right-clicking the reference does not expand citations or navigate.
+  row.addEventListener('contextmenu', (event) => {
+    if (event.target.closest?.('a,select,.bibliography-link-picker')) return;
+    event.preventDefault();
+    openBibliographyContextMenu(entry, row, event.clientX, event.clientY, main);
+  });
+  main.setAttribute('aria-haspopup', 'menu');
+  main.setAttribute('aria-keyshortcuts', 'Shift+F10');
+  main.addEventListener('keydown', (event) => {
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      event.preventDefault();
+      const bounds = main.getBoundingClientRect();
+      openBibliographyContextMenu(entry, row, bounds.left + 12, bounds.top + Math.min(bounds.height, 20), main);
+    }
+  });
+  // Touch browsers do not reliably synthesize contextmenu. A stationary long
+  // press provides the same actions without adding a permanent button.
+  let pressTimer = null, suppressNextClick = false, startX = 0, startY = 0;
+  const cancelPress = () => { if (pressTimer !== null) clearTimeout(pressTimer); pressTimer = null; };
+  main.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'touch' || event.button !== 0) return;
+    cancelPress(); startX = event.clientX; startY = event.clientY;
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      if (!row.isConnected || currentFileKey !== sourceId) return;
+      suppressNextClick = true;
+      openBibliographyContextMenu(entry, row, startX, startY, main);
+    }, 550);
+  });
+  main.addEventListener('pointermove', (event) => {
+    if (pressTimer !== null && (Math.abs(event.clientX - startX) > 10 || Math.abs(event.clientY - startY) > 10)) cancelPress();
+  });
+  for (const type of ['pointerup', 'pointercancel', 'pointerleave']) main.addEventListener(type, () => {
+    cancelPress();
+    // An OS may emit no click after long-press; do not swallow the next tap.
+    if (suppressNextClick) setTimeout(() => { suppressNextClick = false; }, 0);
+  });
+  main.addEventListener('click', (event) => {
+    if (!suppressNextClick) return;
+    suppressNextClick = false;
+    event.preventDefault(); event.stopImmediatePropagation();
+  }, {capture:true});
 }
 
 function renderBibliographyIndex() {
+  closeBibliographyContextMenu();
   if (!bibliographyIndex || !bibliographyEmpty || !bibliographyCount) return;
   bibliographyIndex.replaceChildren(); bibliographyCount.textContent = String(bibliographyEntries.length);
   bibliographyEmpty.classList.toggle('is-hidden', bibliographyEntries.length > 0);
@@ -4515,7 +4606,7 @@ function renderBibliographyIndex() {
       actions.append(external);
     }
     row.append(main);
-    renderBibliographyLocalLink(entry, row, actions);
+    renderBibliographyLocalLink(entry, row, main);
     if (actions.childElementCount) row.append(actions);
     renderBibliographyCitations();
     bibliographyIndex.append(row);
