@@ -20,7 +20,6 @@ const openButton = el('open-button');
 const welcomeOpen = el('welcome-open');
 const welcome = el('welcome');
 const pdfWorkspace = el('pdf-workspace');
-const primaryPane = el('primary-pane');
 const referencePane = el('reference-pane');
 const canvas = el('pdf-canvas');
 const referenceCanvas = el('reference-canvas');
@@ -380,12 +379,6 @@ const clamp = (value, min, max, fallback) => {
 
 function jsonClone(value, fallback = null) {
   try { return JSON.parse(JSON.stringify(value)); } catch (_) { return fallback; }
-}
-
-function workspaceSectionState() {
-  const result = {};
-  document.querySelectorAll('.workspace-section[id]').forEach((section) => { result[section.id] = section.classList.contains('is-collapsed'); });
-  return result;
 }
 
 function normalizeUndoHistory(items) {
@@ -2277,10 +2270,6 @@ function applyDocumentMapFilter(input) {
   if (!target) return;
   const query = input.value.trim();
   for (const child of target.children) child.classList.toggle('map-filter-hidden', !documentMapItemMatches(child, query));
-}
-
-function applyAllDocumentMapFilters() {
-  document.querySelectorAll('.map-filter[data-map-target]').forEach(applyDocumentMapFilter);
 }
 
 function setDocumentMapSelectedNode(node) {

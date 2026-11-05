@@ -357,12 +357,6 @@ function cleanOcrFormattingRows(rows) {
   return cleaned;
 }
 
-function cleanOcrFormattingArtifacts(value) {
-  const rows = cleanOcrFormattingRows(splitOcrLatexRows(value));
-  if (!rows.length) return String(value || '').trim();
-  return rows.length === 1 ? rows[0] : rows.join(latexLineSeparator());
-}
-
 function normalizeOcrAlignmentLine(value) {
   return String(value || '').replace(/(^|[^\\])&/g, '$1').replace(/\s+/g, ' ').trim();
 }
@@ -399,24 +393,6 @@ function formatOcrRowsSemanticAlign(rows) {
     const continuation = ocrSignedContinuationBody(row);
     if (continuation) return `&\\qquad ${continuation}`;
     return row;
-  });
-  return `\\begin{aligned}\n${formatted.join(latexLineSeparator())}\n\\end{aligned}`;
-}
-
-function formatOcrRowsAligned(rows, mode = 'relation') {
-  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
-  if (!cleaned.length) return '';
-  return `\\begin{aligned}\n${cleaned.map((row) => alignLineByPattern(row, mode)).join(latexLineSeparator())}\n\\end{aligned}`;
-}
-
-function formatOcrRowsContinuation(rows) {
-  const cleaned = cleanOcrFormattingRows(rows).map((row) => normalizeOcrAlignmentLine(row)).filter(Boolean);
-  if (!cleaned.length) return '';
-  const formatted = cleaned.map((row, index) => {
-    const aligned = alignLineByPattern(row, 'relation');
-    if (index === 0) return aligned !== row ? aligned : row;
-    if (aligned !== row) return aligned;
-    return `&\\quad ${row}`;
   });
   return `\\begin{aligned}\n${formatted.join(latexLineSeparator())}\n\\end{aligned}`;
 }
@@ -813,7 +789,20 @@ async function renderOcrRenderedPreview() {
     }
   }
   if (token === ocrRenderedPreviewToken) {
-    ocrRenderedPreview.classList.remove('has-error');
+    // MathJax often inserts a rendered error node instead of rejecting the
+    // typesetPromise. Never silently treat such source as compilable LaTeX.
+    const hasSyntaxError = Boolean(ocrRenderedPreview.querySelector?.('mjx-merror, merror, .mjx-merror'));
+    ocrRenderedPreview.classList.toggle('has-error', hasSyntaxError);
+    if (hasSyntaxError) {
+      // Compilation, not just OCR confidence, determines whether a saved
+      // extraction may be marked clean. Keep the source editable for review.
+      if (currentOcrResult?.quality === 'clean') {
+        currentOcrResult.quality = 'review';
+        persistDocumentState();
+      }
+      setOcrStatus(t('LaTeX syntax needs review · edit the source', 'LaTeX 语法需要检查 · 请编辑源码'));
+      return;
+    }
     resetRenderedMathScroll(ocrRenderedPreview);
   }
 }
@@ -1322,6 +1311,64 @@ function repairOcrLatex(value) {
 }
 
 
+
+// A literal alignment tab is only legal in the body of an alignment table,
+// *outside* all of that table's braced math arguments. Texify sometimes puts
+// a tab inside a subscript such as \int_{|z|\,&=\,r}. Removing tabs globally
+// would break legitimate aligned/matrix/cases rows. Walk the actual TeX scopes
+// instead; this does not try to infer or change mathematical symbols.
+function repairOcrMisplacedAlignmentTabs(value) {
+  const source = String(value || '');
+  const alignmentEnvs = new Set(['aligned', 'alignedat', 'align', 'align*', 'split', 'array', 'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix', 'cases']);
+  const textCommands = /\\(?:text|textbf|textrm|textsf|texttt|operatorname|mathrm|mathbf|mathsf|mathtt|mbox)\s*$/;
+  const groups = [];
+  const envs = [];
+  let out = '';
+  let changed = false;
+  for (let i = 0; i < source.length;) {
+    if (source[i] === '\\') {
+      const environment = source.slice(i).match(/^\\(begin|end)\{([A-Za-z*]+)\}/);
+      if (environment) {
+        out += environment[0];
+        if (environment[1] === 'begin') envs.push({ name: environment[2], depth: groups.length });
+        else if (envs.length && envs[envs.length - 1].name === environment[2]) envs.pop();
+        i += environment[0].length;
+        continue;
+      }
+      // Includes escaped \& (intentional), \\ row breaks, \{ and \}.
+      if (i + 1 < source.length && !/[A-Za-z]/.test(source[i + 1])) {
+        out += source.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      const command = source.slice(i).match(/^\\[A-Za-z]+\*?/);
+      if (command) {
+        out += command[0];
+        i += command[0].length;
+        continue;
+      }
+    }
+    const ch = source[i];
+    if (ch === '{') {
+      const inText = Boolean(groups.at(-1)) || textCommands.test(out);
+      groups.push(inText);
+    } else if (ch === '}' && groups.length) groups.pop();
+    if (ch === '&') {
+      const active = envs.at(-1);
+      const valid = active && alignmentEnvs.has(active.name) && groups.length === active.depth;
+      if (valid) out += ch;
+      else if (groups.at(-1)) out += '\\&'; // Preserve an actual ampersand in text.
+      // Else this is a stray math alignment tab. Drop only that tab.
+      changed = changed || !valid;
+      i += 1;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return changed ? out : source;
+}
+
 function stabilizeOcrLatexSyntax(value) {
   let text = String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim();
   if (!text) return '';
@@ -1365,6 +1412,12 @@ function stabilizeOcrLatexSyntax(value) {
     return '';
   });
   while (stack.length) text += `\\end{${stack.pop()}}`;
+
+  // Repair OCR-inserted tabs in scripts, preserving legitimate alignment rows.
+  text = repairOcrMisplacedAlignmentTabs(text);
+  // These mechanical fixes do not fill missing mathematical content.
+  text = repairLatexInnerTags(text, []);
+  text = repairLatexSpecialCharacters(text, []);
 
   // repairOcrLatex balances ordinary braces. Re-run a lightweight balance in
   // case environment cleanup exposed a truncated group.

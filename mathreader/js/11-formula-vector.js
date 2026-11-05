@@ -820,68 +820,6 @@ function formulaRowBands(canvas) {
   return merged.map((band) => ({ top: Math.max(0, band.top - 5), bottom: Math.min(height - 1, band.bottom + 5) }));
 }
 
-function cropCanvasRows(canvas, band) {
-  const out = document.createElement('canvas');
-  const height = Math.max(1, band.bottom - band.top + 1);
-  out.width = canvas.width;
-  out.height = height;
-  const ctx = out.getContext('2d', { alpha: false });
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, out.width, out.height);
-  ctx.drawImage(canvas, 0, band.top, canvas.width, height, 0, 0, out.width, out.height);
-  return out;
-}
-
-function looksMultilineLatex(value) {
-  return /\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}|\\\\/.test(String(value || ''));
-}
-function latexVisualRowCount(value) {
-  const text = String(value || '');
-  const rowBreaks = (text.match(/\\\\/g) || []).length;
-  if (/\\begin\{(?:aligned|array|cases|matrix|pmatrix|bmatrix)\}/.test(text)) return Math.max(1, rowBreaks + 1);
-  return rowBreaks ? rowBreaks + 1 : 1;
-}
-
-function latexHasAlignmentRelation(value) {
-  return /(?:&\s*)?(?:=|\\leq?\b|\\geq?\b|\\approx\b|\\sim\b|\\equiv\b|\\to\b|\\Rightarrow\b)/.test(String(value || ''));
-}
-
-function latexHasLargeMathOperator(value) {
-  return /\\(?:int|iint|iiint|oint|sum|prod|lim|sup|inf|bigcup|bigcap)\b/.test(String(value || ''));
-}
-
-function alignedRowsAssessment(lines) {
-  const clean = (Array.isArray(lines) ? lines : []).map((line) => String(line || '').trim()).filter(Boolean);
-  const reasons = [];
-  if (clean.length < 2) reasons.push('too-few-rows');
-  const relationCount = clean.filter(latexHasAlignmentRelation).length;
-  if (clean.length >= 2 && relationCount < Math.max(2, clean.length - 1)) reasons.push('weak-shared-alignment');
-  for (let i = 0; i < clean.length; i += 1) {
-    const compact = clean[i].replace(/\s+/g, '');
-    // A very short, relation-free fragment between equation rows is usually a
-    // decoder artifact (for example `J\\mathbb{R}^{n}` detached from an
-    // integral). Reject the rowwise candidate rather than silently deleting
-    // mathematics or presenting a fabricated aligned block.
-    if (clean.length >= 3 && compact.length <= 22 && !latexHasAlignmentRelation(clean[i]) && !latexHasLargeMathOperator(clean[i])) {
-      reasons.push(`orphan-row-${i + 1}`);
-    }
-  }
-  return { ok: reasons.length === 0, reasons, relationCount };
-}
-
-function alignedCandidateScore(item, expectedRows = 0) {
-  if (!item?.latex) return 10000;
-  const assessmentPenalty = (item.assessment?.reasons?.length || 0) * 50;
-  const structural = Number(item.penalty || 0);
-  const rows = latexVisualRowCount(item.latex);
-  let score = structural + assessmentPenalty;
-  if (expectedRows >= 2) score += Math.abs(rows - expectedRows) * 10;
-  if (/\\begin\{aligned\}/.test(item.latex)) score -= 4;
-  const relationCount = (String(item.latex).match(/&\s*(?:=|\\leq?|\\geq?|\\approx|\\sim|\\equiv|\\to|\\Rightarrow)/g) || []).length;
-  if (expectedRows >= 2) score -= Math.min(expectedRows, relationCount) * 2;
-  return score;
-}
-
 function preprocessFormulaCanvas(sourceCanvas, mode = 'normal') {
   if (!sourceCanvas || mode === 'normal') return sourceCanvas;
   const out = document.createElement('canvas');
@@ -927,18 +865,6 @@ function latexMathSignature(value) {
   };
 }
 
-function latexSignatureDistance(a, b) {
-  const left = latexMathSignature(a);
-  const right = latexMathSignature(b);
-  return Math.abs(left.superscripts - right.superscripts)
-    + Math.abs(left.subscripts - right.subscripts)
-    + Math.abs(left.fractions - right.fractions) * 2
-    + Math.abs(left.radicals - right.radicals) * 2
-    + Math.abs(left.integrals - right.integrals) * 3
-    + Math.abs(left.sums - right.sums) * 3
-    + Math.abs(left.relations - right.relations) * 2;
-}
-
 function analyzeFormulaSelection(crop, vectorCandidate = null) {
   const bands = formulaRowBands(crop);
   const aspect = crop?.width && crop?.height ? crop.width / Math.max(1, crop.height) : 1;
@@ -958,43 +884,6 @@ function analyzeFormulaSelection(crop, vectorCandidate = null) {
     operatorLoad
   };
 }
-
-function imageOcrCandidateScore(candidate, context = {}) {
-  if (!candidate?.latex) return 10000;
-  let score = alignedCandidateScore(candidate, context.expectedRows || 0);
-  const signature = latexMathSignature(candidate.latex);
-  if (context.tensorLike) {
-    if (signature.superscripts + signature.subscripts < Math.max(2, context.scriptLoad || 0)) score += 12;
-  }
-  if (context.fractionLike) {
-    if (signature.fractions < 1) score += 14;
-    else score -= 2;
-  }
-  if (context.vectorLatex) score += Math.min(24, latexSignatureDistance(candidate.latex, context.vectorLatex) * 1.4);
-  if (candidate.preprocess === 'contrast') score -= 0.6;
-  if (candidate.variant === 'aligned-rows') score -= 1.2;
-  if (candidate.variant === 'wide-tiles') score -= 1.5;
-  return score;
-}
-
-function vectorCandidateScore(vectorCandidate, context = {}) {
-  if (!vectorCandidate?.latex) return 10000;
-  const latex = stabilizeOcrLatexSyntax(repairOcrLatex(vectorCandidate.latex));
-  const pseudo = {
-    latex,
-    penalty: latexStructuralPenalty(latex),
-    assessment: assessImageOcrResult(latex, latex)
-  };
-  let score = alignedCandidateScore(pseudo, context.expectedRows || 0);
-  if ((vectorCandidate.tokenCount || 0) > 120) score += Math.min(10, ((vectorCandidate.tokenCount || 0) - 120) * 0.08);
-  if (context.imageLatex) score += Math.min(18, latexSignatureDistance(latex, context.imageLatex));
-  if (context.tensorLike) {
-    const signature = latexMathSignature(latex);
-    if (signature.superscripts + signature.subscripts >= Math.max(3, context.scriptLoad || 0)) score -= 4;
-  }
-  return score;
-}
-
 
 function tokenizeLatexForVectorFusion(value) {
   return String(value || '').match(/\\[A-Za-z]+|[A-Za-z]+|\d+|\\.|[{}_^]|[^\s]/g) || [];
@@ -1036,56 +925,6 @@ function markLatexScriptLeaves(tokens) {
     }
   }
   return marked;
-}
-
-function alignLatexForVectorFusion(ocrTokens, vectorTokens) {
-  const n = ocrTokens.length;
-  const m = vectorTokens.length;
-  if (!n || !m || n > 900 || m > 900) return null;
-
-  const dp = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
-  const move = Array.from({ length: n + 1 }, () => new Uint8Array(m + 1));
-  for (let i = 1; i <= n; i += 1) { dp[i][0] = i * 1.15; move[i][0] = 2; }
-  for (let j = 1; j <= m; j += 1) { dp[0][j] = j * 1.15; move[0][j] = 3; }
-
-  for (let i = 1; i <= n; i += 1) {
-    for (let j = 1; j <= m; j += 1) {
-      const a = ocrTokens[i - 1];
-      const b = vectorTokens[j - 1];
-      const ka = vectorFusionLeafKind(a);
-      const kb = vectorFusionLeafKind(b);
-      let subst = 0;
-      if (a === b) subst = 0;
-      else if (ka && kb && ka === kb) subst = 0.35;
-      else if (ka && kb) subst = 0.75;
-      else subst = 2.4;
-
-      const diag = dp[i - 1][j - 1] + subst;
-      const del = dp[i - 1][j] + 1.15;
-      const ins = dp[i][j - 1] + 1.15;
-      if (diag <= del && diag <= ins) { dp[i][j] = diag; move[i][j] = 1; }
-      else if (del <= ins) { dp[i][j] = del; move[i][j] = 2; }
-      else { dp[i][j] = ins; move[i][j] = 3; }
-    }
-  }
-
-  const pairs = [];
-  let i = n, j = m;
-  while (i > 0 || j > 0) {
-    const mv = move[i][j];
-    if (i > 0 && j > 0 && mv === 1) {
-      pairs.push({ oi: i - 1, vi: j - 1 });
-      i -= 1; j -= 1;
-    } else if (i > 0 && (mv === 2 || j === 0)) {
-      pairs.push({ oi: i - 1, vi: -1 });
-      i -= 1;
-    } else {
-      pairs.push({ oi: -1, vi: j - 1 });
-      j -= 1;
-    }
-  }
-  pairs.reverse();
-  return { pairs, cost: dp[n][m] };
 }
 
 function latexFusionTopology(tokens, scriptLeaves) {

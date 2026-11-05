@@ -1,0 +1,191 @@
+{
+  "schema": "mathreader.formula_syntax.audit.v1",
+  "version": "v352",
+  "source_baseline": "v351 full source + targeted v352 patch",
+  "reference_cases": 136,
+  "reference_categories": {
+    "algebra": 16,
+    "analysis": 20,
+    "elementary": 18,
+    "geometry_pde": 16,
+    "historical-1973": 3,
+    "historical-1978": 2,
+    "historical-1988": 3,
+    "historical-1989": 2,
+    "modern-2007": 2,
+    "modern-2023": 3,
+    "modern-2026": 3,
+    "multirow_layouts": 15,
+    "number_logic": 10,
+    "physics_engineering": 12,
+    "probability_stats": 10,
+    "user-reported": 1
+  },
+  "visually_grounded_source_cases": 18,
+  "mathematical_ocr_user_reported_case_count": 1,
+  "mathjax_full_compilations": 228,
+  "mathjax_full_compile_failures": 0,
+  "pdf_latex_compilations": 46,
+  "pdf_latex_compile_failures": 0,
+  "systematic_synthetic_alignment_corruptions": 72,
+  "additional_malformed_and_valid_alignment_controls": 18,
+  "preview_lifecycle_assertions": 12,
+  "compiler_provenance": "mathjax-full installed in test environment and pdflatex TeX Live; compilation uses postprocessed outputs",
+  "recognition_accuracy": "UNVERIFIED — source images were not run through the real Texify model; curated and corruption stress tests validate output syntax only",
+  "semantic_accuracy": "UNVERIFIED — syntax-valid mathematical transcription can still be wrong (user example trailing -2 vs possible exponent)",
+  "production_browser": "UNVERIFIED",
+  "source_documents": [
+    {
+      "source": "2309.00806v2.pdf",
+      "sha256": "2b3f517b0f9a67b499a9cb3c757f5c4016a551fca9a8b22fbd02e6eb7b365501",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        6
+      ],
+      "reference_case_ids": [
+        "laplace-2023-p6-determinant",
+        "laplace-2023-p6-permutation",
+        "laplace-2023-p6-sign"
+      ]
+    },
+    {
+      "source": "2610.07774v1.pdf",
+      "sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        4
+      ],
+      "reference_case_ids": [
+        "multimodal-2026-p4-sum",
+        "multimodal-2026-p4-vec",
+        "multimodal-2026-p4-classifier"
+      ]
+    },
+    {
+      "source": "Ahlfors-Conformal-Invariants.pdf",
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        14
+      ],
+      "reference_case_ids": [
+        "ahlfors-1973-p14-line-element",
+        "ahlfors-1973-p14-schwarz-pick",
+        "ahlfors-1973-p14-derivative"
+      ]
+    },
+    {
+      "source": "SPS_1988__22__485_0.pdf",
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        3
+      ],
+      "reference_case_ids": [
+        "riesz-1988-p3-symbol",
+        "riesz-1988-p3-symbolic",
+        "riesz-1988-p3-laplacian"
+      ]
+    },
+    {
+      "source": "brendle2007.pdf",
+      "sha256": "206fc4719f3dbb04f56c9a6acf4ee26dc10b86d052d8f9f90e09522be951829d",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        5
+      ],
+      "reference_case_ids": [
+        "brendle-2007-p5-weak",
+        "brendle-2007-p5-ricci"
+      ]
+    },
+    {
+      "source": "caffarelli1989.pdf",
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        3
+      ],
+      "reference_case_ids": [
+        "caffarelli-1989-p3-root",
+        "caffarelli-1989-p3-family"
+      ]
+    },
+    {
+      "source": "yau1978.pdf",
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "file_exists": true,
+      "inspected_pdf_pages": [
+        3
+      ],
+      "reference_case_ids": [
+        "yau-1978-p3-integrability",
+        "yau-1978-p3-kahler"
+      ]
+    }
+  ],
+  "test_files": [
+    "tests/formula_latex_syntax_regression.js",
+    "tests/formula_preview_compilation_regression.js"
+  ],
+  "notes": [
+    "MathJax parser can signal syntax errors using rendered merror nodes rather than throwing.",
+    "MathJax compile success is not an assertion of mathematical equivalence to original PDF.",
+    "Fallback on unexplained syntax errors is review in the existing editor, never invention of omitted mathematics."
+  ],
+  "pdf_latex_selected_case_ids": [
+    "elementary-01",
+    "elementary-04",
+    "elementary-07",
+    "elementary-10",
+    "elementary-13",
+    "elementary-16",
+    "algebra-01",
+    "algebra-04",
+    "algebra-07",
+    "algebra-10",
+    "algebra-13",
+    "algebra-16",
+    "analysis-03",
+    "analysis-06",
+    "analysis-09",
+    "analysis-12",
+    "analysis-15",
+    "analysis-18",
+    "geometry_pde-01",
+    "geometry_pde-04",
+    "geometry_pde-07",
+    "geometry_pde-10",
+    "geometry_pde-13",
+    "geometry_pde-16",
+    "probability_stats-03",
+    "probability_stats-06",
+    "probability_stats-09",
+    "number_logic-02",
+    "number_logic-05",
+    "number_logic-08",
+    "physics_engineering-01",
+    "physics_engineering-04",
+    "physics_engineering-07",
+    "physics_engineering-10",
+    "multirow_layouts-01",
+    "multirow_layouts-04",
+    "multirow_layouts-07",
+    "multirow_layouts-10",
+    "multirow_layouts-13",
+    "caffarelli-1989-p3-root",
+    "brendle-2007-p5-ricci",
+    "multimodal-2026-p4-classifier",
+    "ahlfors-1973-p14-derivative",
+    "riesz-1988-p3-symbol",
+    "laplace-2023-p6-determinant",
+    "user-corruption-example"
+  ],
+  "full_local_node_assertions": 1109,
+  "reproduction": {
+    "node_source_tests": "for each mathreader/tests/*.js: node <testpath>",
+    "mathjax_gate": "node mathreader/tests/formula_latex_syntax_regression.js (mathjax-full installed locally; explicit UNVERIFIED without it)",
+    "pdf_latex_gate": "pdflatex -interaction=nonstopmode -halt-on-error -file-line-error formula_validation.tex; generated from postprocessed selected cases using amsmath/amssymb/mathtools",
+    "syntax_gate": "node --check mathreader/mathreader.js and each mathreader/js/*.js; assemble manifest-listed modules into one ES module, then node --check"
+  }
+}

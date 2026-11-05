@@ -8,8 +8,6 @@ function normalizedReferenceLabel(value) {
     .trim().toLocaleLowerCase();
 }
 
-const STRUCTURE_RESULT_TYPE_PATTERN = '(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
-const STRUCTURE_RESULT_TYPE_RE = '(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
 const STRUCTURE_STRONG_UNNUMBERED_TYPES = new Set(['theorem', 'lemma', 'proposition', 'corollary', 'definition', 'claim', 'conjecture']);
 
 function normalizedStructureResultText(value) {
@@ -966,10 +964,6 @@ function equationCandidateConfidence(line, label) {
   return confidence;
 }
 
-function isReliableEquationTargetLine(line, label) {
-  return equationCandidateConfidence(line, label) >= 8;
-}
-
 function equationLineMathSignalCount(text) {
   return (String(text || '').match(/[=≤≥≠≈≡∈∉⊂⊆⊇→↔∫∑∏√∂∇∞^_+−×·/\-]/g) || []).length;
 }
@@ -1704,28 +1698,6 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
   const allowedPages = new Set(pages);
   for (const page of [...expectedByPage.keys()]) if (!allowedPages.has(page)) expectedByPage.delete(page);
   return { pages, expectedByPage };
-}
-
-function equationIndexHasSuspiciousLeadingGap(index) {
-  const byPrefix = new Map();
-  for (const label of index.keys()) {
-    const parsed = parsedEquationNumber(label);
-    if (!parsed?.prefix || !Number.isInteger(parsed.last) || parsed.last < 1) continue;
-    const values = byPrefix.get(parsed.prefix) || [];
-    values.push(parsed.last);
-    byPrefix.set(parsed.prefix, values);
-  }
-  for (const values of byPrefix.values()) {
-    const unique = [...new Set(values)].sort((a, b) => a - b);
-    if (unique.length < 2) continue;
-    const first = unique[0];
-    // A family that first appears very late but contains only a few consecutive
-    // labels is a strong sign of an incomplete hidden OCR layer. Do not infer
-    // any missing labels here; this predicate only decides whether a scan-image
-    // margin should be consulted as a second source of evidence.
-    if (first >= 5 && first > unique.length + 3) return true;
-  }
-  return false;
 }
 
 async function equationPageContainsRasterImage(sourceDoc, pageNum) {
@@ -4158,18 +4130,6 @@ function scheduleAutomaticStructureIndex() {
 
 function structureResultRelationLabel(item) {
   return normalizedReferenceLabel(item?.label || '');
-}
-
-function pruneStructureResultRelations(entry) {
-  const label = structureResultRelationLabel(entry);
-  if (!label) return;
-  for (const item of structureEntries) {
-    if (!item || item === entry) continue;
-    for (const field of ['proofUses', 'usedByProofs', 'corollaries', 'derivedFrom']) {
-      if (!Array.isArray(item[field])) continue;
-      item[field] = item[field].filter((related) => structureResultRelationLabel(related) !== label);
-    }
-  }
 }
 
 function restoreStructureResultRelations(entry) {

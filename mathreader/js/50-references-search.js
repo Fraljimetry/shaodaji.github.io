@@ -904,24 +904,6 @@ function normalizeSearchValue(value, matchCase = false) {
   return matchCase ? text : text.toLocaleLowerCase();
 }
 
-function searchTextMatch(text, query) {
-  const matchCase = Boolean(searchMatchCase?.checked);
-  const wholeWord = Boolean(searchWholeWord?.checked);
-  const haystack = normalizeSearchValue(text, matchCase);
-  const needle = normalizeSearchValue(query, matchCase);
-  if (!needle) return { matched: false, index: -1 };
-  let index = haystack.indexOf(needle);
-  if (index < 0) return { matched: false, index: -1 };
-  if (wholeWord && /^[\p{L}\p{N}_]+$/u.test(needle)) {
-    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`(^|[^\\p{L}\\p{N}_])(${escaped})(?=$|[^\\p{L}\\p{N}_])`, matchCase ? 'u' : 'iu');
-    const m = normalizeSearchValue(text, true).match(re);
-    if (!m) return { matched: false, index: -1 };
-  }
-  const direct = matchCase ? text.indexOf(query) : text.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
-  return { matched: true, index: direct >= 0 ? direct : Math.max(0, text.toLocaleLowerCase().indexOf(query.split(/\s+/)[0].toLocaleLowerCase())) };
-}
-
 function highlightedSnippet(text, query, index = -1) {
   const safeIndex = index >= 0 ? index : 0;
   const start = Math.max(0, safeIndex - 65);
@@ -1045,48 +1027,6 @@ function normalizeSymbolGlossary(items) {
     });
   }
   return out;
-}
-
-async function locateFirstOccurrence(symbol) {
-  if (!pdfDoc || !symbol) return null;
-  const needle = normalizeSearchValue(symbol, false);
-  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
-    try {
-      const text = await pageText(page);
-      const hay = normalizeSearchValue(text, false);
-      const index = hay.indexOf(needle);
-      if (index >= 0) return { page, ratio: Math.min(1, Math.max(0, index / Math.max(1, hay.length))) };
-    } catch (_) {}
-  }
-  return null;
-}
-
-
-function currentReadingAnchorForContext() {
-  if (!pdfDoc) return { page: 1, ratio: 0 };
-  if (readingFlow === 'continuous') return captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 };
-  const height = Math.max(1, primaryPageSurface?.offsetHeight || 1);
-  const ratio = Math.max(0, Math.min(1, (primaryCanvasWrap?.scrollTop || 0) / height));
-  return { page: currentPage, ratio };
-}
-
-function proofEntryAtAnchor(anchor = currentReadingAnchorForContext()) {
-  const page = Number(anchor?.page) || currentPage;
-  const ratio = Number(anchor?.ratio) || 0;
-  const entries = structureEntries || [];
-  const candidates = entries.filter((entry, index) => {
-    if (!entry.proofPage) return false;
-    const next = entries.slice(index + 1).find((item) => Number(item.page) >= Number(entry.proofPage));
-    const explicitEndPage = Number(entry.proofEndPage) || 0;
-    const inferredEndPage = next ? Number(next.page) : Number(entry.proofPage);
-    const endPage = explicitEndPage || inferredEndPage;
-    if (page < Number(entry.proofPage) || page > endPage) return false;
-    if (page === Number(entry.proofPage) && Number.isFinite(Number(entry.proofRatio)) && ratio + 0.03 < Number(entry.proofRatio)) return false;
-    if (explicitEndPage && page === explicitEndPage && Number.isFinite(Number(entry.proofEndRatio)) && ratio - 0.03 > Number(entry.proofEndRatio)) return false;
-    if (!explicitEndPage && next && page === Number(next.page) && Number.isFinite(Number(next.ratio)) && ratio >= Number(next.ratio) - 0.02) return false;
-    return true;
-  });
-  return candidates.sort((a,b) => (Number(b.proofPage)||0) - (Number(a.proofPage)||0))[0] || null;
 }
 
 function renderSymbolGlossary() {

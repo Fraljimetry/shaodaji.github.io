@@ -1,4 +1,77 @@
-# MathReader Regression / Behavioral Audit Record — v350
+# MathReader Regression / Behavioral Audit Record — v352
+
+## v352 — Formula OCR LaTeX alignment-scope stabilization and broad syntax compilation (2026-11-05 Beijing UTC+8)
+
+**Authoritative baseline:** complete v351 source and packaged policies. **Code version v352.** This is a focused formula-OCR *postprocessing/preview safety* correction, not a new OCR model, a change to mathematical document detection, or an attempt to guess mathematical content. The Structure and Equation index cache schemas remain 45/23. Formula OCR lazy loading and WebGPU→CPU fallback remain unchanged.
+
+### Confirmed reproduction and root cause
+
+- The user reported multiline Texify output with a stray alignment tab inside a brace-delimited integration subscript: `\int_{|z|\,&=\,r}` within `\begin{aligned}...\end{aligned}`. An alignment tab is valid at the table-row level (e.g. next row `&=...`) but **invalid inside an ordinary braced mathematical subscript**, so actual MathJax parsing produces a math error. Blind global removal would corrupt legitimate `aligned`, `array`, `cases`, `matrix`, `pmatrix`, `alignedat`, etc.
+- The production stabilization chain (`normalizeOcrLatex` → `repairOcrLatex` → `stabilizeOcrLatexSyntax`) previously repaired braces/environments but did not distinguish nested illegal `&` from legitimate table tabs; manual-only `improveOcrLatex` operations for inner `\tag`, raw `%`/`#` were likewise not automatically applied.
+- Real MathJax may **resolve its promise even when it renders a `<mjx-merror>` node**. Previous preview code therefore could visually contain a TeX error without setting its error indicator.
+
+### Conservative general-purpose changes
+
+1. New `repairOcrMisplacedAlignmentTabs` walks OCR TeX source while tracking brace depth, active alignment environments, escaped characters, and text-like command arguments. It preserves `&` only at the proper alignment-environment body depth, preserving nested matrix/cases cells even inside fractions. Stray math-position `&` is dropped (no mathematical symbol invented), while literal ampersands inside `\text{...}`, `\mathrm{...}` and `\operatorname{...}` are escaped as `\&`. Existing `\&` is untouched. Positive controls cover ordinary matrix/cases/array/alignedat and nested tables.
+2. The automatic stabilization path now applies the already-established, non-inferential conversion of invalid `\tag{...}` *inside* inner math-table environments to a visible inline `\qquad(...)`, and escapes raw `%` and `#` before the MathJax preview. No OCR retry or model invocation is added.
+3. After typesetting the Formula OCR preview, inspect MathJax's rendered error nodes (`mjx-merror`/`merror`). If present, mark the preview erroneous, downgrade an automatically `clean` saved result to `review`, and show “LaTeX syntax needs review · edit the source”; never label an error-node preview clean. Preserve editable original and avoid fabricating omitted math.
+4. Version/cache-busting 351→352 in the bootstrap and HTML, with matching inherited maintenance assertions. No structure/equation index version increase, sidebar changes, model-preload changes, or recovery expansion.
+
+### New regression corpus and independent compilation gates
+
+- `regression/formula_syntax_v352.json`: **136** hand-curated reference inputs, including **18 manually transcribed, visually checked mathematical expressions from seven actual archived/modern PDFs** (Ahlfors 1973, Yau 1978, Riesz-transform paper 1988, Caffarelli 1989, Brendle 2007, generalized Laplace expansion 2023, and a 2026 technical paper) plus the user-provided OCR error example. The remaining cases deliberately cover common simple/complicated mathematical notation across algebra, complex analysis, PDE/geometry, probability, number theory, engineering, matrices/arrays and multiline layouts. Exact PDF SHA-256 values and inspected pages are in the audit JSON.
+- `tests/formula_latex_syntax_regression.js`: 125+ reference formulas, the exact full user string, **72 systematic misplaced-tab mutations**, 11 valid-alignment/text preservation controls, and seven additional malformed-syntax controls. **879 passing source/structure assertions and 228/228 passing real MathJax-full parser compilations** in the local test environment. MathJax is optional for a plain Node run; when absent, the test explicitly reports syntax compilation as **UNVERIFIED**, rather than claiming it passed.
+- `tests/formula_preview_compilation_regression.js`: **12/12** lifecycle assertions on the actual preview function, covering success, MathJax error-node behavior, error clearance, and empty-preview reset.
+- Independent **pdfLaTeX with amsmath/amssymb/mathtools**: **46/46 postprocessed representative formula pages compiled** into one validation PDF without TeX errors. A pre-repair control with the raw bad `&` failed as expected; only the postprocessed result is counted as passing. The user example's ambiguous trailing `-2` was retained and was **not** silently interpreted as an exponent.
+- All inherited **218/218** assertions remain passing. Full source-level total: **1,109/1,109** (`218 + 879 + 12`). Bootstrap, ten modules, tests, and assembled ten-module runtime pass JavaScript parsing checks. Validate ZIP overlay and integrity before delivery.
+
+### Mandatory limitations and deferred risks
+
+- These checks prove **LaTeX syntax compilability only for the specific 228 MathJax outputs and 46 pdfLaTeX samples**; they do **not** prove that an arbitrary future Texify output will be compilable, and do not prove symbol-level correctness. For example, the user's formula ends in `-2`, which is syntactically valid yet may reflect a missed exponent; this **cannot safely be repaired by guessing**.
+- **UNVERIFIED:** real Texify image-model inference on original rendered PDF formula crops, browser end-to-end extraction, production MathJax load/failure behavior, image-only/handwritten scientific document recognition, full-page and whole-document mathematical transcription accuracy. The corpus consists of hand-checked references and deliberate synthetic corruption scenarios, **not** 228 independent image-OCR successes. Full ground-truth acceptance requires cropping the original formulas, running MathReader's real OCR in a browser, and comparing source symbols.
+- Unsupported macros, missing OCR glyphs, ambiguous bracketing, and malformed TeX not belonging to a safely understood syntax class remain review-required. The preview flags a real MathJax error instead of inventing a repair. This is a deliberate precision-first boundary; do not claim an impossible “all future formulas compile” guarantee.
+- Do not turn this into a general-purpose LaTeX formatter, strip legitimate matrix/cases alignment tabs, change inference-token budgets, introduce filename-specific exceptions, or automatically start the model before the first image-formula extraction.
+
+### Deliverable files and reproduction
+
+Changed: `index.html`, `mathreader.js`, `js/10-formula-ocr.js`, inherited cache-key assertions in `tests/equation_progress_regression.js`, `tests/formula_ocr_lazy_regression.js`, `tests/maintenance_integrity_regression.js`, new `tests/formula_latex_syntax_regression.js`, new `tests/formula_preview_compilation_regression.js`, new `regression/formula_syntax_v352.json`, new `regression/formula_syntax_v352_audit.json`, `js/README.md`, and `REGRESSION.md`. All paths are beneath root `mathreader/` and delivered as one ZIP overlay. Run every `node mathreader/tests/*.js` independently, `node --check` on every module/bootstrap, assemble in `PARTS` order, then `node --check` on the assembled file. Optional MathJax-full is required to reproduce the **real MathJax** 228-compilation gate. The TeX check requires `pdflatex` plus amsmath/amssymb/mathtools.
+
+---
+
+# MathReader Regression / Behavioral Audit Record — v351
+
+## v351 — Conservative project-wide source cleanup (2026-11-05, Beijing UTC+08)
+
+**Authoritative baseline:** complete locally assembled v350 source, verified byte-for-byte against the supplied v350 patch for its changed members. **Code version v351**. This is strictly a maintainability revision: **no intentional detector, OCR, interface, recovery, search, annotation, document-state, caching-schema, or formula-extraction behavior change**. Preserve the single ES module assembled in the original ten-part order, the first-extraction-only formula model loading, the initialization overlay fail-release behavior, and the intentional WebGPU → CPU OCR fallback. Structure index version **45** and Equation summary version **23** remain unchanged.
+
+### Scope and method
+
+- Audited **all ten JavaScript subsystems** as a single lexical module using JavaScript AST identifier-reference counts, not per-file searches. In a module, top-level declarations are private to the assembled source and cannot be called by inline HTML unless explicitly exposed; no removed declaration was referenced by another part, its UI event bindings, bundled tests, or HTML. No dynamic `eval`-based dispatch was identified for these names.
+- Removed **25 unreachable private function declarations**: 19 initially reference-free declarations plus 6 transitive helpers that became unused after the first pass. Categories: orphaned workspace/document-map helper and search/navigation predicates; superseded OCR formatting helpers; retired vector/OCR fusion scoring and layout heuristics; unconnected old equation-edit functions; unused equation/Results reconciliation helpers. This does **not** disable any reachable UI command or detector path. No exported or externally called function was removed.
+- Removed **4 unreferenced top-level constants** (one unused DOM lookup and three dormant Results/Structure pattern strings/regexes). None performed a network request, modified state, attached a listener, or supplied a live indexer.
+- **Every one of the 582 retained function declarations is byte-for-byte identical** in v350 and v351 (verified by AST extraction). No active function body, live event handler, OCR backend, geometry heuristic, cache format, PDF text extractor, browser preference, or UI stylesheet was rewritten. This was a removal-only code cleanup, not a performance-optimization rewrite or API redesign.
+- Advanced bootstrap and HTML JavaScript/CSS cache keys **350 → 351** only. Updated the two cache-version assertions, added a 24-assertion manifest/lazy-OCR maintenance regression and a short cross-module maintenance note in `js/README.md`. No cache-schema or detector-index version increment was appropriate.
+
+### Validation gates actually run
+
+- Node syntax: `node --check` on bootstrap, **all ten JavaScript subsystems**, and **all eight regression test files** — PASS.
+- Assembled runtime: concatenated the ten parts **in the manifest order** into one ES module and ran `node --check` — PASS.
+- Seven inherited regression files: bibliography 15, embedded-outline titles 25, equation-progress 33, formula initialization/timeout/error/fallback 37, first-extraction lazy OCR 28, precision context 33, Results/TOC 23 = **194/194** — PASS. New maintenance/manifest/cache/lazy-OCR wiring assertions: **24/24** — PASS. **Total 218/218 local assertions**.
+- AST-based cross-version audit: **607 v350 function declarations, 25 removed, 582 retained**, with all retained source bodies byte-identical — PASS. After removal, the complete ten-module AST has **no unreferenced named function declaration or top-level variable binding** using this static lexical criterion. That criterion is a maintenance check, not a general-purpose proof of program correctness.
+- Isolated Chromium DOM/CSS smoke: actual initialization overlay markup, styling and modal function; verifies visibility, focus, background `inert`, release, and focus restoration — PASS. This is not full MathReader/browser/Texify initialization or PDF-usage acceptance.
+- Root ZIP overlay integrity and exact member comparison must be verified before delivery. No archived PDF corpus was rerun with an end-to-end production PDF.js/Texify pipeline during this source-only cleanup; all prior full-document ground-truth gaps remain open.
+
+### Open risks and acceptance boundaries
+
+- Although lexical unreferenced-function removal leaves all retained function bodies untouched, static reference analysis cannot replace full production-browser acceptance, cross-browser clipboard/device behavior, or real long-running WebGPU/CPU Texify loads. **UNVERIFIED:** deployed browser, OCR initialization/failure under real network conditions, actual production OCR, full-dataset mathematical ground truth, and handwritten historical scientific notebooks outside pure mathematics.
+- Earlier source-level regressions and documented FAIL/UNVERIFIED cases (historical OCR, false positives awaiting browser acceptance, handwritten notes, etc.) retain their original classifications; no detection improvement is claimed by this cleanup.
+- Further changes should remain targeted. Do not combine speculative restructuring of large detector functions (`detectOutlineFromTypography`, `buildStructureIndex`, `buildEquationLabelIndex`, etc.) with a maintenance-only release. Only refactor live algorithms when equivalence is independently demonstrated and positive/negative whole-document controls exist.
+
+### Changed files and delivery
+
+Root overlay only: `mathreader/index.html`, `mathreader/mathreader.js`, `mathreader/js/00-core.js`, `mathreader/js/10-formula-ocr.js`, `mathreader/js/11-formula-vector.js`, `mathreader/js/20-selection-annotations.js`, `mathreader/js/40-outline-structure.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/js/50-references-search.js`, `mathreader/js/README.md`, `mathreader/tests/equation_progress_regression.js`, `mathreader/tests/formula_ocr_lazy_regression.js`, new `mathreader/tests/maintenance_integrity_regression.js`, and `mathreader/REGRESSION.md`.
+
+---
 
 ## v350 — Lazy Formula OCR initialization on first extraction (2026-11-05, Beijing UTC+08)
 

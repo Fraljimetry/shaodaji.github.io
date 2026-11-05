@@ -16,3 +16,26 @@ Subsystems:
 - `50-references-search.js` — references, TOC, backlinks, glossary, search
 - `60-notes-bookmarks-data.js` — comments, notes, bookmarks, document I/O, recovery
 - `70-command-ui-runtime.js` — command palette, event wiring, sidebars, shortcuts, startup
+
+Maintenance baseline (v351): only the ten manifest-listed subsystem files form
+MathReader's runtime. Top-level private declarations may be referenced across
+subsystems despite appearing unused within one file. Before pruning one, check
+references across the complete assembled source, including UI event bindings;
+leave any detection or OCR behavior uncertain rather than deleting it. The v351
+maintenance pass removed only declarations with no lexical references across all
+ten source files; it did not rearrange the assembly, OCR pipeline, or indexers.
+Run every `tests/*.js` file independently, and syntax-check both the bootstrap
+and the assembled runtime after any structural maintenance. In particular,
+`tests/maintenance_integrity_regression.js` protects manifest/cache and lazy-OCR
+wiring but is not production-browser acceptance.
+
+
+v352 Formula OCR rule: the rendered OCR LaTeX is sanitized for *syntactic* safety
+using actual TeX environment/brace scope. Preserve legitimate aligned/matrix/
+cases/array alignment separators; remove only illegal stray math-level `&` and
+escape intended text ampersands. MathJax's rendered error nodes must be
+recognized as failures even when its async API resolves. Keep the original
+recognition available for editing, do not invent missing mathematical content,
+and never represent syntax compilation as mathematical transcription accuracy.
+For the authoritative old/new example corpus and its provenance, see
+`../regression/formula_syntax_v352.json` and the v352 section of `../REGRESSION.md`.

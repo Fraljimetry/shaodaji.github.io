@@ -1,0 +1,862 @@
+{
+  "schema": "mathreader.formula_syntax.corpus.v1",
+  "baseline": "v351",
+  "release": "v352",
+  "source_note": "Hand-curated formulas and source-checked examples; NOT OCR recognition scores. Model inference and production-browser OCR remain UNVERIFIED.",
+  "cases": [
+    {
+      "id": "elementary-01",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "a+b=c"
+    },
+    {
+      "id": "elementary-02",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "x^2-2x+1=(x-1)^2"
+    },
+    {
+      "id": "elementary-03",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{a+b}{c+d}"
+    },
+    {
+      "id": "elementary-04",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sqrt{x^2+y^2}"
+    },
+    {
+      "id": "elementary-05",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sin^2\\theta+\\cos^2\\theta=1"
+    },
+    {
+      "id": "elementary-06",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\lim_{x\\to0}\\frac{\\sin x}{x}=1"
+    },
+    {
+      "id": "elementary-07",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sum_{k=1}^n k=\\frac{n(n+1)}{2}"
+    },
+    {
+      "id": "elementary-08",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\prod_{k=1}^n(1+x_k)"
+    },
+    {
+      "id": "elementary-09",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_0^1 x^n\\,dx=\\frac{1}{n+1}"
+    },
+    {
+      "id": "elementary-10",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "e^{i\\pi}+1=0"
+    },
+    {
+      "id": "elementary-11",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\binom nk=\\frac{n!}{k!(n-k)!}"
+    },
+    {
+      "id": "elementary-12",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\log(xy)=\\log x+\\log y"
+    },
+    {
+      "id": "elementary-13",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{d^2y}{dx^2}+\\lambda y=0"
+    },
+    {
+      "id": "elementary-14",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left(\\frac{x+y}{1+xy}\\right)^2"
+    },
+    {
+      "id": "elementary-15",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{\\partial u}{\\partial t}=\\Delta u"
+    },
+    {
+      "id": "elementary-16",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sum_{n=0}^{\\infty}2^{-n}=2"
+    },
+    {
+      "id": "elementary-17",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left|\\sum_{j=1}^n a_j\\right|\\le\\sum_{j=1}^n|a_j|"
+    },
+    {
+      "id": "elementary-18",
+      "category": "elementary",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "x\\mapsto\\frac{x}{1+x^2}"
+    },
+    {
+      "id": "algebra-01",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "A^{-1}A=I_n"
+    },
+    {
+      "id": "algebra-02",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\det\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}=ad-bc"
+    },
+    {
+      "id": "algebra-03",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{bmatrix}1&0&0\\\\0&1&0\\\\0&0&1\\end{bmatrix}"
+    },
+    {
+      "id": "algebra-04",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{tr}(AB)=\\operatorname{tr}(BA)"
+    },
+    {
+      "id": "algebra-05",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\ker T=\\{v\\in V:Tv=0\\}"
+    },
+    {
+      "id": "algebra-06",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left\\langle v,w\\right\\rangle=\\sum_{i=1}^{n}v_i\\overline{w_i}"
+    },
+    {
+      "id": "algebra-07",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\mathbb{C}[x]/(x^n-1)"
+    },
+    {
+      "id": "algebra-08",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\bigoplus_{j=1}^{k}H_j"
+    },
+    {
+      "id": "algebra-09",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{rank}(AB)\\le\\min\\{\\operatorname{rank}A,\\operatorname{rank}B\\}"
+    },
+    {
+      "id": "algebra-10",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{pmatrix}\\lambda&1\\\\0&\\lambda\\end{pmatrix}"
+    },
+    {
+      "id": "algebra-11",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\prod_{i<j}(x_i-x_j)"
+    },
+    {
+      "id": "algebra-12",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\det\\left(A-\\lambda I\\right)=0"
+    },
+    {
+      "id": "algebra-13",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Hom}_R(M,N)"
+    },
+    {
+      "id": "algebra-14",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{array}{ccc}a&b&c\\\\d&e&f\\end{array}"
+    },
+    {
+      "id": "algebra-15",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left\\{x\\in G:x^2=e\\right\\}"
+    },
+    {
+      "id": "algebra-16",
+      "category": "algebra",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sum_{\\sigma\\in S_n}\\operatorname{sgn}(\\sigma)\\prod_{i=1}^n a_{i,\\sigma(i)}"
+    },
+    {
+      "id": "analysis-01",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_{-\\infty}^{\\infty}e^{-x^2}\\,dx=\\sqrt\\pi"
+    },
+    {
+      "id": "analysis-02",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{2\\pi i}\\oint_{\\partial\\Omega}\\frac{f(\\zeta)}{\\zeta-z}\\,d\\zeta"
+    },
+    {
+      "id": "analysis-03",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "f(z)=\\sum_{n=0}^{\\infty}a_n(z-z_0)^n"
+    },
+    {
+      "id": "analysis-04",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Res}_{z=z_0}f(z)"
+    },
+    {
+      "id": "analysis-05",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{2\\pi}\\int_{-\\pi}^{\\pi}f(x)e^{-inx}\\,dx"
+    },
+    {
+      "id": "analysis-06",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\|u\\|_{H^1(\\Omega)}^2=\\int_{\\Omega}(|u|^2+|\\nabla u|^2)\\,dx"
+    },
+    {
+      "id": "analysis-07",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\nabla\\cdot(\\rho\\nabla u)=0"
+    },
+    {
+      "id": "analysis-08",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\limsup_{n\\to\\infty}\\|T_n\\|\\le C"
+    },
+    {
+      "id": "analysis-09",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left(\\int_0^1|f|^p\\right)^{1/p}"
+    },
+    {
+      "id": "analysis-10",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sup_{x\\in K}|\\partial^\\alpha u(x)|"
+    },
+    {
+      "id": "analysis-11",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{\\partial^2u}{\\partial x_i\\partial x_j}"
+    },
+    {
+      "id": "analysis-12",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_M\\langle\\nabla f,\\nabla g\\rangle\\,dV"
+    },
+    {
+      "id": "analysis-13",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{d}{dt}\\int_{M}u\\,dV=\\int_M \\partial_tu\\,dV"
+    },
+    {
+      "id": "analysis-14",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\|u\\|_{L^{\\infty}}\\le C\\|u\\|_{W^{k,p}}"
+    },
+    {
+      "id": "analysis-15",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{2}\\Delta |u|^2=|\\nabla u|^2+u\\Delta u"
+    },
+    {
+      "id": "analysis-16",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_{\\Gamma}f(z)\\,dz=2\\pi i\\sum_j \\operatorname{Res}(f,z_j)"
+    },
+    {
+      "id": "analysis-17",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{\\sin(\\pi z)}{\\pi z}=\\prod_{n=1}^\\infty\\left(1-\\frac{z^2}{n^2}\\right)"
+    },
+    {
+      "id": "analysis-18",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\lim_{r\\to1^-}\\int_0^{2\\pi}P_r(\\theta)f(\\theta)\\,d\\theta"
+    },
+    {
+      "id": "analysis-19",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{\\Gamma(s)}\\int_0^\\infty t^{s-1}e^{-t}\\,dt=1"
+    },
+    {
+      "id": "analysis-20",
+      "category": "analysis",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\oint_{|z|=r}\\frac{dz}{z-a}=2\\pi i"
+    },
+    {
+      "id": "geometry_pde-01",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Ric}_{ij}=R^k{}_{ikj}"
+    },
+    {
+      "id": "geometry_pde-02",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Scal}_g=g^{ij}\\operatorname{Ric}_{ij}"
+    },
+    {
+      "id": "geometry_pde-03",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Hess}_g f=\\nabla^2 f"
+    },
+    {
+      "id": "geometry_pde-04",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\Delta_g u=g^{ij}(\\partial_i\\partial_j u-\\Gamma^k_{ij}\\partial_k u)"
+    },
+    {
+      "id": "geometry_pde-05",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\partial_tg_{ij}=-2\\operatorname{Ric}_{ij}"
+    },
+    {
+      "id": "geometry_pde-06",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_M |\\nabla u|^2\\,d\\mu_g"
+    },
+    {
+      "id": "geometry_pde-07",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\nabla_iR_{jk}-\\nabla_jR_{ik}=0"
+    },
+    {
+      "id": "geometry_pde-08",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{d}{dt}\\operatorname{Area}(\\Sigma_t)=-\\int_{\\Sigma_t}H^2\\,d\\mu"
+    },
+    {
+      "id": "geometry_pde-09",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\mathcal{L}_gu=-\\frac{4(n-1)}{n-2}\\Delta_gu+R_gu"
+    },
+    {
+      "id": "geometry_pde-10",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{dist}_g(p,q)=\\inf_{\\gamma}\\int_0^1|\\dot\\gamma|_g\\,dt"
+    },
+    {
+      "id": "geometry_pde-11",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{\\partial^2u}{\\partial t^2}-c^2\\Delta u=0"
+    },
+    {
+      "id": "geometry_pde-12",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\mathcal{R}(X,Y)Z=\\nabla_X\\nabla_YZ-\\nabla_Y\\nabla_XZ-\\nabla_{[X,Y]}Z"
+    },
+    {
+      "id": "geometry_pde-13",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_{S^{n-1}}\\theta_i\\theta_j\\,d\\theta=\\frac{|S^{n-1}|}{n}\\delta_{ij}"
+    },
+    {
+      "id": "geometry_pde-14",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Vol}_g(B_r(p))=\\omega_n r^n(1+O(r^2))"
+    },
+    {
+      "id": "geometry_pde-15",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left(\\frac{\\lambda\\sqrt{n(n-2)}}{\\lambda^2+r^2}\\right)^{(n-2)/2}"
+    },
+    {
+      "id": "geometry_pde-16",
+      "category": "geometry_pde",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{\\partial u}{\\partial t}+u\\cdot\\nabla u+\\nabla p=\\nu\\Delta u"
+    },
+    {
+      "id": "probability_stats-01",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\mathbb{P}(A\\mid B)=\\frac{\\mathbb{P}(A\\cap B)}{\\mathbb{P}(B)}"
+    },
+    {
+      "id": "probability_stats-02",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\mathbb{E}(X)=\\int_{\\mathbb R}x\\,dF(x)"
+    },
+    {
+      "id": "probability_stats-03",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Var}(X)=\\mathbb{E}(X^2)-\\mathbb{E}(X)^2"
+    },
+    {
+      "id": "probability_stats-04",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{\\sqrt{2\\pi\\sigma^2}}\\exp\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right)"
+    },
+    {
+      "id": "probability_stats-05",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sqrt{n}(\\bar X_n-\\mu)\\xrightarrow{d}N(0,\\sigma^2)"
+    },
+    {
+      "id": "probability_stats-06",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\log L(\\theta)=\\sum_{i=1}^n\\log p_\\theta(X_i)"
+    },
+    {
+      "id": "probability_stats-07",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\mathbb{P}(|X-\\mathbb{E}X|\\ge t)\\le\\frac{\\operatorname{Var}(X)}{t^2}"
+    },
+    {
+      "id": "probability_stats-08",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{n}\\sum_{k=1}^nX_k\\longrightarrow\\mathbb{E}X"
+    },
+    {
+      "id": "probability_stats-09",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Cov}(X,Y)=\\mathbb{E}(XY)-\\mathbb{E}X\\mathbb{E}Y"
+    },
+    {
+      "id": "probability_stats-10",
+      "category": "probability_stats",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sum_{k=0}^{\\infty}\\binom{n}{k}p^k(1-p)^{n-k}"
+    },
+    {
+      "id": "number_logic-01",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\zeta(s)=\\sum_{n=1}^{\\infty}n^{-s}"
+    },
+    {
+      "id": "number_logic-02",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sum_{d\\mid n}\\mu(d)=\\begin{cases}1&n=1\\\\0&n>1\\end{cases}"
+    },
+    {
+      "id": "number_logic-03",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\phi(n)=n\\prod_{p\\mid n}\\left(1-\\frac1p\\right)"
+    },
+    {
+      "id": "number_logic-04",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "a^p\\equiv a\\pmod p"
+    },
+    {
+      "id": "number_logic-05",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\gcd(a,b)=\\gcd(b,a\\bmod b)"
+    },
+    {
+      "id": "number_logic-06",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left|\\left\\{p\\le x:p\\text{ prime}\\right\\}\\right|"
+    },
+    {
+      "id": "number_logic-07",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\forall x\\in X\\;\\exists y\\in Y\\; P(x,y)"
+    },
+    {
+      "id": "number_logic-08",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\neg(P\\land Q)\\equiv\\neg P\\lor\\neg Q"
+    },
+    {
+      "id": "number_logic-09",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sum_{n=1}^{\\infty}\\frac{\\chi(n)}{n^s}"
+    },
+    {
+      "id": "number_logic-10",
+      "category": "number_logic",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\dim H^k(M,\\mathbb R)=b_k(M)"
+    },
+    {
+      "id": "physics_engineering-01",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "F=ma"
+    },
+    {
+      "id": "physics_engineering-02",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "E=mc^2"
+    },
+    {
+      "id": "physics_engineering-03",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\nabla\\times E=-\\frac{\\partial B}{\\partial t}"
+    },
+    {
+      "id": "physics_engineering-04",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\nabla\\times B=\\mu_0J+\\mu_0\\varepsilon_0\\frac{\\partial E}{\\partial t}"
+    },
+    {
+      "id": "physics_engineering-05",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\rho\\frac{D\\mathbf v}{Dt}=-\\nabla p+\\mu\\Delta\\mathbf v"
+    },
+    {
+      "id": "physics_engineering-06",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\sigma_{ij}=C_{ijkl}\\varepsilon_{kl}"
+    },
+    {
+      "id": "physics_engineering-07",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{dQ}{dt}=kA\\frac{T_1-T_2}{L}"
+    },
+    {
+      "id": "physics_engineering-08",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "i\\hbar\\frac{\\partial\\psi}{\\partial t}=\\hat H\\psi"
+    },
+    {
+      "id": "physics_engineering-09",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\int_{\\Omega}(\\nabla u\\cdot\\nabla v-fv)\\,dx=0"
+    },
+    {
+      "id": "physics_engineering-10",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\nabla\\cdot\\mathbf E=\\frac{\\rho}{\\varepsilon_0}"
+    },
+    {
+      "id": "physics_engineering-11",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\operatorname{Re}=\\frac{\\rho U L}{\\mu}"
+    },
+    {
+      "id": "physics_engineering-12",
+      "category": "physics_engineering",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{1}{2}mv^2+V(x)=E"
+    },
+    {
+      "id": "multirow_layouts-01",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{aligned} a&=b+c\\\\ &=d+e\\end{aligned}"
+    },
+    {
+      "id": "multirow_layouts-02",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{aligned}\\frac{d}{dx}x^n&=nx^{n-1}\\\\\\frac{d}{dx}\\sin x&=\\cos x\\end{aligned}"
+    },
+    {
+      "id": "multirow_layouts-03",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{cases}x^2&x\\ge0\\\\-x&x<0\\end{cases}"
+    },
+    {
+      "id": "multirow_layouts-04",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}"
+    },
+    {
+      "id": "multirow_layouts-05",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{bmatrix}1&2&3\\\\4&5&6\\end{bmatrix}"
+    },
+    {
+      "id": "multirow_layouts-06",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{array}{ccc}1&2&3\\\\4&5&6\\end{array}"
+    },
+    {
+      "id": "multirow_layouts-07",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\frac{\\begin{vmatrix}a&b\\\\c&d\\end{vmatrix}}{ad-bc}"
+    },
+    {
+      "id": "multirow_layouts-08",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{gathered}x^2+y^2=1\\\\x+y=0\\end{gathered}"
+    },
+    {
+      "id": "multirow_layouts-09",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{alignedat}{2} a&=b &\\qquad c&=d\\\\ e&=f & g&=h\\end{alignedat}"
+    },
+    {
+      "id": "multirow_layouts-10",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left.\\begin{aligned}x&=t^2\\\\y&=t^3\\end{aligned}\\right\\}"
+    },
+    {
+      "id": "multirow_layouts-11",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{aligned} \\int_0^1x^2dx&=\\frac13\\\\ &=\\int_0^1(1-x)^2dx\\end{aligned}"
+    },
+    {
+      "id": "multirow_layouts-12",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{array}{c|cc}&A&B\\\\\\hline A&1&0\\\\B&0&1\\end{array}"
+    },
+    {
+      "id": "multirow_layouts-13",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\begin{aligned}f(x)&=\\sum_{j=1}^na_jx^j\\\\f\\prime(x)&=\\sum_{j=1}^nja_jx^{j-1}\\end{aligned}"
+    },
+    {
+      "id": "multirow_layouts-14",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\left\\{\\begin{aligned}x+y&=1\\\\x-y&=0\\end{aligned}\\right."
+    },
+    {
+      "id": "multirow_layouts-15",
+      "category": "multirow_layouts",
+      "provenance": "representative mathematical notation; hand-curated (not image-model output)",
+      "latex": "\\underbrace{a_1+\\cdots+a_n}_{n\\text{ terms}}"
+    },
+    {
+      "id": "caffarelli-1989-p3-root",
+      "category": "historical-1989",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "caffarelli1989.pdf",
+      "pdf_page": 3,
+      "latex": "\\left(\\frac{n-2}{2}\\right)^2\\psi^2-\\frac{n-2}{n}\\psi^{2n/(n-2)}+D=0"
+    },
+    {
+      "id": "caffarelli-1989-p3-family",
+      "category": "historical-1989",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "caffarelli1989.pdf",
+      "pdf_page": 3,
+      "latex": "u=\\left(\\frac{\\lambda\\sqrt{n(n-2)}}{\\lambda^2+r^2}\\right)^{(n-2)/2},\\quad\\lambda>0"
+    },
+    {
+      "id": "brendle-2007-p5-weak",
+      "category": "modern-2007",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "brendle2007.pdf",
+      "pdf_page": 5,
+      "latex": "\\int_{\\mathbb R^n}\\left(\\langle dw,d\\psi\\rangle_g+\\frac{n-2}{4(n-1)}R_gw\\psi-n(n+2)u_{(\\xi,\\varepsilon)}^{4/(n-2)}w\\psi\\right)=\\int_{\\mathbb R^n}f\\psi"
+    },
+    {
+      "id": "brendle-2007-p5-ricci",
+      "category": "modern-2007",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "brendle2007.pdf",
+      "pdf_page": 5,
+      "latex": "\\int_{\\mathbb R^n}\\left(|dw|_g^2+\\frac{n-2}{4(n-1)}R_gw^2\\right)=\\int_{\\mathbb R^n}fw"
+    },
+    {
+      "id": "multimodal-2026-p4-sum",
+      "category": "modern-2026",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "2610.07774v1.pdf",
+      "pdf_page": 4,
+      "latex": "\\theta^*=\\operatorname*{arg\\,min}_{\\theta\\prime}\\sum_{i=1}^N-\\log M_{\\theta\\prime}(y_i\\mid I_i,q_i)"
+    },
+    {
+      "id": "multimodal-2026-p4-vec",
+      "category": "modern-2026",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "2610.07774v1.pdf",
+      "pdf_page": 4,
+      "latex": "x(I,q)=\\operatorname{vec}([r_{1,T},r_{2,T},\\ldots,r_{L,T}])\\in\\mathbb R^{LE}"
+    },
+    {
+      "id": "multimodal-2026-p4-classifier",
+      "category": "modern-2026",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "2610.07774v1.pdf",
+      "pdf_page": 4,
+      "latex": "p_{\\phi}(\\mathrm{unsafe}\\mid I,q)=\\sigma\\left(w^{\\top}\\operatorname{Std}(x(I,q))+b\\right)"
+    },
+    {
+      "id": "ahlfors-1973-p14-line-element",
+      "category": "historical-1973",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "Ahlfors-Conformal-Invariants.pdf",
+      "pdf_page": 14,
+      "latex": "ds=\\frac{|dz|}{y}"
+    },
+    {
+      "id": "ahlfors-1973-p14-schwarz-pick",
+      "category": "historical-1973",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "Ahlfors-Conformal-Invariants.pdf",
+      "pdf_page": 14,
+      "latex": "\\frac{|f(z_1)-f(z_2)|}{|1-\\overline{f(z_1)}f(z_2)|}\\le\\frac{|z_1-z_2|}{|1-\\bar z_1z_2|}"
+    },
+    {
+      "id": "ahlfors-1973-p14-derivative",
+      "category": "historical-1973",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "Ahlfors-Conformal-Invariants.pdf",
+      "pdf_page": 14,
+      "latex": "\\frac{|f\\prime(z)|}{1-|f(z)|^2}\\le\\frac{1}{1-|z|^2}"
+    },
+    {
+      "id": "yau-1978-p3-integrability",
+      "category": "historical-1978",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "yau1978.pdf",
+      "pdf_page": 3,
+      "latex": "\\int_M(|t_1|^{2k_1}+\\cdots+|t_q|^{2k_q})^{-m}<\\infty"
+    },
+    {
+      "id": "yau-1978-p3-kahler",
+      "category": "historical-1978",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "yau1978.pdf",
+      "pdf_page": 3,
+      "latex": "\\sum_{i,j}(g_{i\\bar\\jmath}+\\partial^2\\varphi/\\partial z^i\\partial\\bar z^j)\\,dz^i\\otimes d\\bar z^j"
+    },
+    {
+      "id": "riesz-1988-p3-symbol",
+      "category": "historical-1988",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "SPS_1988__22__485_0.pdf",
+      "pdf_page": 3,
+      "latex": "\\widehat{(R_kf)}(\\xi)=\\frac{i\\xi_k}{(\\sum_{j=1}^n\\xi_j^2)^{1/2}}\\hat f(\\xi)"
+    },
+    {
+      "id": "riesz-1988-p3-symbolic",
+      "category": "historical-1988",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "SPS_1988__22__485_0.pdf",
+      "pdf_page": 3,
+      "latex": "R_kf=\\frac{\\partial}{\\partial x_k}\\left(\\frac{1}{\\sqrt\\Delta}f\\right)"
+    },
+    {
+      "id": "riesz-1988-p3-laplacian",
+      "category": "historical-1988",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "SPS_1988__22__485_0.pdf",
+      "pdf_page": 3,
+      "latex": "\\Delta=-\\sum_{k=1}^n\\frac{\\partial^2}{\\partial x_k^2}"
+    },
+    {
+      "id": "laplace-2023-p6-determinant",
+      "category": "modern-2023",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "2309.00806v2.pdf",
+      "pdf_page": 6,
+      "latex": "\\det(A)=\\sum_{T\\subseteq[n],\\,|T|=k}(-1)^{\\sum T+\\sum S}A_{S,T}A_{S^c,T^c}"
+    },
+    {
+      "id": "laplace-2023-p6-permutation",
+      "category": "modern-2023",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "2309.00806v2.pdf",
+      "pdf_page": 6,
+      "latex": "\\sigma=\\begin{pmatrix}S&S^c\\\\T&T^c\\end{pmatrix}"
+    },
+    {
+      "id": "laplace-2023-p6-sign",
+      "category": "modern-2023",
+      "provenance": "manually transcribed from visually inspected original PDF",
+      "source": "2309.00806v2.pdf",
+      "pdf_page": 6,
+      "latex": "\\operatorname{sgn}(\\sigma)=(-1)^{\\sum S+\\sum T}"
+    },
+    {
+      "id": "user-corruption-example",
+      "category": "user-reported",
+      "provenance": "user-provided OCR sample",
+      "source": "user-provided formula",
+      "pdf_page": 0,
+      "latex": "\\begin{aligned}\\int_{|z|\\,&=\\,r}\\frac{e^{-i\\theta}+\\bar z}{e^{-i\\theta}-\\bar z}\\frac{e^{i\\theta\\prime}}{(e^{i\\theta\\prime}-z)^2}\\,dz &= \\int_{|z|=r}\\frac{(z+r^2e^{i\\theta})e^{i\\theta\\prime}}{(z-r^2e^{i\\theta})(e^{i\\theta\\prime}-z)^2}\\,dz \\\\ &=2\\pi i\\frac{2r^2e^{i(\\theta+\\theta\\prime)}}{(e^{i\\theta\\prime}-r^2e^{i\\theta})^2}\\end{aligned}"
+    }
+  ]
+}

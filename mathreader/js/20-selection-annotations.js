@@ -345,11 +345,6 @@ function equationLabelFromSelectionText(value) {
   return null;
 }
 
-function equationEditForSourceLabel(label) {
-  const key = normalizedEquationLabel(label);
-  return equationEdits.find((item) => normalizedEquationLabel(item.sourceLabel) === key) || null;
-}
-
 function equationSourceLabelForDisplayed(label) {
   const key = normalizedEquationLabel(label);
   const reselect = equationEdits.find((item) => item.action === 'reselect' && normalizedEquationLabel(item.label || item.sourceLabel) === key);
@@ -614,31 +609,6 @@ continuousStack?.addEventListener('click', async (event) => {
   event.stopPropagation();
   await applyEquationPointCorrection(point.page, point.ratio);
 });
-
-function replaceEquationFromCurrentSelection() {
-  if (!pendingEquationReselectKey || !currentSelection?.text) return false;
-  const selectedLabel = equationLabelFromSelectionText(currentSelection.text);
-  if (!selectedLabel) {
-    showError(t('Select only a short equation label such as (12.45), (7), (*), or (†).', '只能选择简短的公式编号，例如 (12.45)、(7)、(*) 或 (†)。'));
-    return true;
-  }
-  const sourceLabel = equationSourceLabelForDisplayed(pendingEquationReselectKey);
-  equationEdits = equationEdits.filter((item) => normalizedEquationLabel(item.sourceLabel) !== normalizedEquationLabel(sourceLabel));
-  const rect = Array.isArray(currentSelection.rects) ? currentSelection.rects[0] : null;
-  equationEdits.push({
-    action: 'reselect', sourceLabel, label: selectedLabel,
-    page: Number(currentSelection.page), ratio: Number(currentSelection.ratio) || 0,
-    text: currentSelection.text,
-    xStartRatio: Number(rect?.x) || 0,
-    xEndRatio: (Number(rect?.x) || 0) + (Number(rect?.w) || 0),
-  });
-  pendingEquationReselectKey = null;
-  if (equationLabelIndex) equationLabelIndex = applyEquationEdits(equationLabelIndex);
-  persistDocumentState();
-  renderEquationIndex();
-  refreshSelectionUI();
-  return true;
-}
 
 function addOrReplaceSelectionStructureItem() {
   if (!pdfDoc || !currentSelection?.text) return;
