@@ -1,4 +1,4 @@
-// MathReader v349: application-wide formula OCR initialization modal.
+// MathReader v350: application-wide modal invoked only by image formula extraction.
 // Run: node mathreader/tests/formula_ocr_initialization_regression.js
 'use strict';
 const assert = require('node:assert/strict');
@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const dir = path.join(__dirname, '..');
 const src = fs.readFileSync(path.join(dir, 'js/10-formula-ocr.js'), 'utf8');
 const start = src.indexOf('// Only the initial model/runtime download');
-const end = src.indexOf('\nfunction scheduleMathOcrPreload()', start);
+const end = src.indexOf('\nfunction schedulePdfCorePreload()', start);
 assert.ok(start > 0 && end > start);
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(dir, 'mathreader.css'), 'utf8');
@@ -18,11 +18,12 @@ check(html.includes('id="formula-ocr-init-overlay"') && html.includes('aria-moda
 check(html.includes('data-zh="正在初始化公式 OCR"') && html.includes('even if OCR fails'), 'bilingual initialization and graceful failure text');
 check(css.includes('.formula-ocr-init-overlay{position:fixed;inset:0;z-index:2000'), 'full-viewport modal above other UI');
 check(!css.match(/\.formula-ocr-init-card[^}]*animation:/), 'startup card has no deceptive progress animation');
-check(src.includes("if (!pdfDoc || restoringSession || documentOcrInteractionLocked()) return;"), 'preload still deferred until readable PDF');
+check(!src.includes('scheduleMathOcrPreload'), 'no automatic formula-model preload scheduler remains');
 check(!src.slice(start,end).includes('progress_callback: ()=>'), 'original backend callback is not replaced');
-check(src.includes('if (mathOcrPipeline || mathOcrLoading || mathOcrInitializationFailed) return;'), 'failed preload is not automatically retried forever');
+check(src.includes('mathOcrInitializationFailed = true;'), 'failed initialization remains latched until explicit user reset');
 const runtime=fs.readFileSync(path.join(dir,'js/70-command-ui-runtime.js'),'utf8');
 check(runtime.includes('setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline();'), 'explicit user reset and engine selection clear failure latch');
+check(!runtime.includes('scheduleMathOcrPreload()'), 'settings and reset do not launch a preload');
 
 function deferred() {
   let resolve, reject;
@@ -93,7 +94,7 @@ async function tests() {
   await assert.rejects(f.call(),/offline/);checks++;
   check(f.overlay.classList.hidden && !f.main.inert && f.prev.focused, 'failed load always unlocks and returns focus');
   check(f.evalJs('mathOcrPipeline')===null && f.evalJs('mathOcrInitPromise')===null, 'failed engine leaves no ready state');
-  check(f.evalJs('mathOcrInitializationFailed')===true, 'failure latched to prevent automatic repeated blocking');
+  check(f.evalJs('mathOcrInitializationFailed')===true, 'failure remains latched until deliberate reset');
   check(f.notices.some(x=>x.includes('PDF reading is available')), 'failure message confirms normal reader available');
   check(f.statuses.some(x=>x.includes('Reset OCR to retry')), 'retry guidance is visible');
   let retried=0;
@@ -124,7 +125,7 @@ async function tests() {
   stall.evalJs('importFormulaOcrRuntime = () => importPending');
   await assert.rejects(stall.call(),/safety limit/);checks++;
   check(stall.overlay.classList.hidden && !stall.header.inert, 'stalled model/runtime import also unlocks');
-  check(stall.evalJs('mathOcrInitializationFailed')===true, 'timed-out import prevents automatic re-preloads');
+  check(stall.evalJs('mathOcrInitializationFailed')===true, 'timed-out import records unavailability until manual reset');
   importPending.resolve({pipeline:async()=>({})});
   console.log(`OK: ${checks} formula OCR initialization/modal assertions`);
 }

@@ -910,17 +910,17 @@ function applyOcrModeToSurfaces() {
   continuousStack?.querySelectorAll('.continuous-page-surface').forEach((surface) => surface.classList.toggle('ocr-mode', ocrMode && readingFlow === 'continuous'));
 }
 
-function mathOcrEngineReady() {
-  return Boolean(mathOcrPipeline && mathOcrBackend && !mathOcrLoading);
-}
-
+// Formula selection is available before Texify is loaded. The model may be
+// initialized only when the user actually submits an image formula crop.
 function updateOcrInteractionAvailability() {
-  const ready = mathOcrEngineReady();
+  // PDF-vector extraction can still work if the image model failed to load.
+  const available = Boolean(pdfDoc && !mathOcrLoading &&
+    (!mathOcrInitializationFailed || formulaExtractionMode === 'vector'));
   if (mathOcrButton) {
-    mathOcrButton.disabled = !pdfDoc || !ready;
+    mathOcrButton.disabled = !available;
     mathOcrButton.setAttribute('aria-disabled', mathOcrButton.disabled ? 'true' : 'false');
   }
-  if (!ready && ocrMode) {
+  if (!available && ocrMode) {
     ocrMode = false;
     mathOcrButton?.classList.remove('is-active');
     mathOcrButton?.setAttribute('aria-pressed', 'false');
@@ -931,15 +931,11 @@ function updateOcrInteractionAvailability() {
 }
 
 function setOcrMode(active) {
-  if (active && !mathOcrEngineReady()) {
+  if (active && (!pdfDoc || mathOcrLoading ||
+      (mathOcrInitializationFailed && formulaExtractionMode !== 'vector'))) {
     ocrMode = false;
     updateOcrInteractionAvailability();
-    setOcrStatus(mathOcrLoading
-      ? t('OCR engine is initializing. Formula selection will activate when it is ready.', '公式 OCR 引擎正在初始化。引擎就绪后才会启用公式框选。')
-      : mathOcrInitializationFailed
-        ? t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试')
-        : t('OCR engine is not ready. Preloading it now…', '公式 OCR 引擎尚未就绪。正在预加载……'), true);
-    if (!mathOcrLoading && !mathOcrInitializationFailed) scheduleMathOcrPreload();
+    if (mathOcrInitializationFailed) setOcrStatus(t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试'));
     return;
   }
   ocrMode = Boolean(active && pdfDoc);
@@ -959,7 +955,11 @@ function setOcrMode(active) {
     if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-right-open');
     else shell.classList.remove('right-collapsed');
   } else if (!mathOcrLoading) {
-    setOcrStatus(mathOcrBackend ? t(`OCR ready · ${mathOcrBackend.label}`, `OCR 就绪 · ${mathOcrBackend.label}`) : t('Ready · Image OCR default', '就绪 · 默认图像 OCR')); 
+    setOcrStatus(mathOcrInitializationFailed
+      ? t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试')
+      : mathOcrBackend
+        ? t(`OCR ready · ${mathOcrBackend.label}`, `OCR 就绪 · ${mathOcrBackend.label}`)
+        : t('OCR loads on first extraction', '首次公式提取时加载 OCR'));  
   }
 }
 
@@ -1196,29 +1196,6 @@ async function initializeMathOcrPipeline() {
   }
 }
 
-
-function scheduleMathOcrPreload() {
-  const preload = async () => {
-    // Never initialize the large Transformers/Texify stack on the welcome
-    // screen.  Its module/model initialization can occupy the browser main
-    // thread long enough to delay the first native file-picker click.  Formula
-    // OCR is nonessential to opening a PDF, so warm it only after a document is
-    // already visible; explicit Formula OCR use still loads it immediately.
-    if (!pdfDoc || restoringSession || documentOcrInteractionLocked()) return;
-    if (mathOcrPipeline || mathOcrLoading || mathOcrInitializationFailed) return;
-    try {
-      await ensureMathOcrPipeline();
-    } catch (error) {
-      console.warn('MathReader OCR background preload failed', error);
-      setOcrStatus(t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试'));
-    }
-  };
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(() => preload(), { timeout: 1800 });
-  } else {
-    setTimeout(preload, 600);
-  }
-}
 
 function schedulePdfCorePreload() {
   const preload = () => {

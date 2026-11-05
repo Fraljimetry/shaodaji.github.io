@@ -1,4 +1,28 @@
-# MathReader Regression / Behavioral Audit Record — v349
+# MathReader Regression / Behavioral Audit Record — v350
+
+## v350 — Lazy Formula OCR initialization on first extraction (2026-11-05, Beijing UTC+08)
+
+**Authoritative baseline:** full user-supplied v347 ZIP, overlaid with the v348 and v349 root patches (in that order). **Code version v350**. This update corrects the activation timing of the v349 blocking initialization dialog; it is a UX/runtime lifecycle change, **not a recognition, mathematical detection, or OCR backend change**. Structure cache version **45** and equation summary version **23** remain unchanged. The ten-part single-module assembly architecture and intentional WebGPU → CPU fallback are preserved.
+
+### Behavior contract
+
+1. **No automatic Formula OCR model load during ordinary reading.** Opening or restoring a PDF, idle callbacks, entering/leaving Formula OCR selection mode (`F`, toolbar, or command palette), switching image OCR engines, and `Reset OCR` now **do not import/create the Texify model** or display the blocking dialog. PDF.js's separate light core preload remains in place and is not a Texify preload. The formula selection tool is enabled with an open PDF **before** the image model is ready. Rectangle selection can begin immediately.
+2. **First actual image-formula extraction initiates loading.** After a user completes a sufficiently large rectangle selection, the image recognition call obtains `ensureMathOcrPipeline()`; only then is the v349 full-app initialization dialog shown, once, for initial import/model creation. Reuse of an already ready model does not re-lock the reader. Simply toggling formula selection or cancelling a too-small rectangle never initializes it. A successful PDF-vector extraction is model-free, including when the image model is not installed.
+3. **Failure never strands the reader.** Preserve the v349 `finally` dismissal, focus and pre-existing `inert` state restoration, shared-promise behavior, timeout and late-pipeline disposal. The image-engine failure flag disables further image-formula selections until an explicit `Reset OCR`/engine change, preventing automatic repeated blocking. **Native PDF reading, document navigation, annotations, search and usable PDF-vector formula extraction remain available.** After an image-model failure, attempting PDF-vector mode where no vector formula is available reports that the user must reset OCR for image fallback; it does not silently reload the failed model. `Reset OCR` clears failure and unloads the engine but waits for the **next actual extraction** to initialize it.
+4. **No hidden background reinitialization.** Removed the prior `scheduleMathOcrPreload()` scheduler and all calls from document-opening, recognition-failure cleanup and settings/reset handlers. Startup/busy indicators use concise text instead of misleading “preloading” messages. Changing default extraction mode updates toolbar availability immediately.
+5. **No scope expansion.** The PDF text/document OCR, equation-indexing OCR, gap recovery, PDF vector extraction, and model/backend selection semantics are not deliberately changed. The initialization overlay continues to block the app **only during first image-model initialization** (or an explicit model load following reset), not during ordinary formula inference.
+
+### Local regression and verification
+
+- Run `node mathreader/tests/*.js` individually (shell glob expansion) and report per-test counts. The baseline 129 assertions remain green. The existing modal lifecycle tests now exercise lazy-source constraints as well as success/error/timeout/retry/fallback, with **37 assertions**; the new `tests/formula_ocr_lazy_regression.js` exercises source-level no-eager-import paths, actual selection-mode functions, extraction entry, PDF-vector bypass, manual reset, failure latch and busy states, with **28 assertions**. **194/194 assertions passed**.
+- `node --check` on the bootstrap, ten subsystem JS modules, and every bundled test passes. Concatenate all ten runtime parts in manifest order and `node --check` the assembled `.mjs` artifact. Root ZIP integrity/overlay consistency also passes.
+- **UNVERIFIED:** production browser with real Texify model download, CPU/WASM/WebGPU execution, first-drag pixel-to-LaTeX correctness, model switching while a real browser is stalled, mobile interactions, browser caching after deployment. Node/VM path tests verify when loading is initiated but are not a substitute for full production browser/OCR acceptance; no mathematical ground-truth document has been newly fully verified. The 120-second async timeout cannot unblock a synchronously frozen browser event loop.
+
+### Changed files / delivery
+
+`mathreader/index.html`, `mathreader/mathreader.js`, `mathreader/js/10-formula-ocr.js`, `mathreader/js/11-formula-vector.js`, `mathreader/js/60-notes-bookmarks-data.js`, `mathreader/js/70-command-ui-runtime.js`, `mathreader/tests/equation_progress_regression.js`, `mathreader/tests/formula_ocr_initialization_regression.js`, **new** `mathreader/tests/formula_ocr_lazy_regression.js`, and `mathreader/REGRESSION.md`. Deliver only a **root ZIP overlay patch**. Do not claim deployed-browser acceptance from this local check.
+
+---
 
 ## v349 — Blocking Formula OCR model initialization with guaranteed UI release (2026-11-05, Beijing UTC+08)
 

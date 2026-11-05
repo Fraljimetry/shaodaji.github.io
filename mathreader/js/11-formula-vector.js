@@ -1361,6 +1361,12 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     );
     return;
   }
+  // Do not implicitly retry an OCR model that already failed when the user
+  // requested PDF vector. They may reset OCR explicitly to enable fallback.
+  if (formulaExtractionMode === 'vector' && mathOcrInitializationFailed) {
+    setOcrStatus(t('PDF vector unavailable · Reset OCR for image fallback', 'PDF 矢量不可用 · 重置 OCR 后可使用图像识别'));
+    return;
+  }
 
   mathOcrLoading = true;
   let recognitionFailed = false;
@@ -1440,7 +1446,6 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     if (recognitionFailed) {
       await disposeMathOcrPipeline();
       updateOcrInteractionAvailability();
-      scheduleMathOcrPreload();
     } else {
       updateOcrInteractionAvailability();
     }
@@ -1535,7 +1540,6 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
     if (recognitionFailed) {
       await disposeMathOcrPipeline();
       updateOcrInteractionAvailability();
-      scheduleMathOcrPreload();
     } else {
       updateOcrInteractionAvailability();
     }

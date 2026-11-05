@@ -575,11 +575,8 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     if (cacheBlob) await cacheOpenedPdf(meta, cacheBlob);
     else if (cachedRecord) await touchCachedPdf(cachedRecord);
     persistDocumentState();
-    // Formula OCR warming belongs after the reader is usable, not before
-    // the first Open action.  Idle scheduling keeps it off the critical render
-    // path and Formula OCR can still initialize on demand if the user presses F
-    // before this callback runs.
-    scheduleMathOcrPreload();
+    // Texify remains unloaded while the PDF is simply being read. A completed
+    // image-formula selection triggers the first model initialization instead.
   } catch (error) {
     console.error(error);
     pdfDoc = null;
