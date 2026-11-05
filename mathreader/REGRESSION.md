@@ -1,3 +1,155 @@
+# MathReader Regression / Behavioral Audit Record — v360
+
+## v360 — Cross-viewport UI, performance and stability regression (2026-11-06, Beijing UTC+08)
+
+**Source:** v359 reconstructed from the original v347 complete ZIP and every sequential code root patch v348→v359; all 61 files match the v359 working tree byte-for-byte before this edit. **Release:** v360; next source-code modification v361. Only UI responsive behavior, related test coverage and cache-busting version were modified. No mathematical detection, PDF processing, formula recognition, lazy OCR, WebGPU→CPU fallback, P1 confirmed-link schema, or index cache schema was changed.
+
+### Confirmed real Chromium responsive defects and fixes
+
+1. **Collapsed desktop grid rule defeated mobile layout.** At widths ≤860px, `.reader-shell.left-collapsed.right-collapsed` had higher specificity than the existing mobile `.reader-shell` override. The reading stage occupied only ~330–356px instead of the phone/tablet width, leaving an apparently empty page strip. The mobile rule now explicitly overrides each collapsed combination and uses a single full-width track.
+2. **Mobile sidebars were keyboard-only.** L/R could open Contents/Workspace, but there was no visible touch control. Add compact mobile-only toolbar toggles and reachable in-panel Close controls. `aria-expanded` follows all class changes (buttons, Escape, keyboard shortcuts, other UI actions). Desktop panels and keyboard shortcuts remain unchanged.
+3. **Open PDF could disappear on touch devices.** The header Open control was hidden below 860px even after a document replaced the welcome view. Keep it visible on mobile. The welcome Open button remains unchanged.
+4. **P1 Return crowded narrow toolbars.** On phones ≤520px, page/return controls and zoom now occupy two rows, retaining visibility instead of clipping; all toolbar functions remain available. Mobile off-canvas sidebars are positioned relative to the shell to prevent document-root horizontal overflow.
+
+### Fresh validation
+
+- **Chromium actual-UI shell:** **139/139 assertions PASS** across 9 viewport widths (320, 375, 390, 520, 768, 860, 861, 1024 and 1440px), 2 touch-device contexts (375×667, landscape 640×320), both side-panel toggles and Close buttons, Escape, theme, language, Open PDF presence, P1 Return toolbar layout, 30 repeated open/close/theme cycles, stable DOM node count, zero uncaught JS exceptions, zero mobile root horizontal overflow. This runs real MathReader assembled JS/CSS with no PDF engine; it is not production PDF.js acceptance. Median local shell setup ~0.25s in the observed browser environment and **not** evidence of end-to-end PDF rendering speed.
+- **Source and isolated browser shell:** 49/49 source/test commands PASS; isolated Chromium P0 shell PASS. Existing scrolling, OCR initialization/failure, LaTeX, P1 concurrency, and P0 evidence tests remain passing. Complete syntax and ten-module assembly gates PASS.
+- **80 real original PDF files (1,096 pages):** two independently uncached v359/v360 source-proxy runs, 80 selected Tesseract OCR-proxy crops each. 80/80 identical PDF geometry, formula-region selections, Results/Equation/Bibliography source-level candidate outputs, and OCR-proxy transcripts. No native extraction or proxy failures. Ten previously source-verified formulas from Ahlfors, Yau, Caffarelli and an older Riesz-transform paper compiled in MathJax; this is **not actual Texify inference or mathematical accuracy certification**.
+- **Strict real engines:** P0 original-PDF browser preflight remains **UNVERIFIED**, and real two-PDF P1 browser preflight remains **BLOCKED**, because original pinned PDF.js v4.10.38 files and Texify assets are not present in this environment. All 80 PDF whole-document accuracy statuses remain **UNVERIFIED**; the previous known open issues remain open. No production-browser acceptance is claimed.
+
+**Evidence:** `regression/ui_stability_v360_20261106.json`; new `tests/ui_responsive_regression.py`, invoked by `regression_tools/p0_gate.py`. All original PDF hashes, comparison fields, scopes and limitations are retained. No test PDFs, local OCR caches or screenshots are included in the patch.
+
+---
+
+## v359 — P0/P1 real-engine readiness and acceptance-report integrity (2026-11-06, Beijing UTC+08)
+
+**Baseline:** full v358 reconstructed from authoritative ZIP patches; **release:** v359; next code change v360. Work remains limited to approved P0 recognition reliability and P1 confirmed local-PDF navigation. No new production mathematical detection, OCR inference, cache, rendering or bibliography-link behavior was introduced. Ten production JS subsystem files and CSS are byte-identical to v358; only version/cache-buster metadata, regression tools, tests and policies changed.
+
+### Reproduced acceptance defects and conservative corrections
+
+1. **P0 formula OCR could fail while the browser summary said COMPLETE.** The v358 browser report excluded the formula stage from its per-PDF completion condition, even for explicitly requested formula crops; navigation and persistence failures were also not part of that report. The new browser-capture classifier checks all requested stages and reports **FAIL** for actual browser errors, failed navigation/persistence or actual Texify compilation errors. A missing real OCR result is **UNVERIFIED**, not COMPLETE or PASS. `COMPLETE` is *execution completeness only*, and never independent mathematical verification.
+2. **Unavailable Texify unnecessarily blocked PDF.js index acceptance.** With requested formula cases and no `--allow-texify-network`, v358 blocked the entire PDF-browser job even if genuine pinned PDF.js was installed. v359 separates PDF.js prerequisites from Texify limitations. With the genuine PDF.js engine supplied, document indexes/navigation can run without Texify; selected formula rectangles can produce browser-rendered, SHA-256-checked **crop-only** PNG evidence for human review, explicitly `original_pdf_browser_crop`, **not formula OCR**. Texify never initializes from crop-only mode.
+3. **P0 missing equation locations were silently changed to ratio zero.** The test-only real-index probe used `Number(candidate.ratio) || 0`; absent/NaN ratios therefore looked like legitimate top-of-page coordinates. It now preserves valid numerical ratios (including genuine 0) and reports invalid/missing ratios as `null`, allowing the strict comparator to flag them.
+4. **P0 non-finite performance measurements could evade the gate.** In the truth comparator, `NaN > threshold` is false and could bypass an explicitly requested performance limit. Missing, non-finite, negative or boolean measurements, and invalid/nonpositive performance thresholds, now remain UNVERIFIED. Valid limits and actual overruns are unchanged.
+5. **P1 first assertion failure could be mislabeled BLOCKED.** v358's real-browser two-PDF script classified general exceptions as BLOCKED whenever no previous assertion had passed. A failed first assertion is now always **FAIL**, while a browser that never starts is BLOCKED and a source paper with no suitable reference is UNVERIFIED. All of these classifications are test infrastructure, not new P1 navigation logic.
+
+6. **Image-only PDF index precondition.** A real PDF.js document without native text requires explicit document OCR before whole-document index verification. The test-only browser probe reports `P0_REQUIRES_DOCUMENT_OCR`; P0 records an **UNVERIFIED** OCR/index stage rather than falsely treating a valid image-only source as a crashing mathematical detector. Other runtime index failures remain FAIL.
+
+### Executed verification
+
+- Source and isolated Chromium-shell gate: **48/48 checks PASS**, including all inherited JavaScript/assembled-module tests, Python tests, new 15-case gap-closure tests and 5 Node test-only probe checks. P0 independent truth comparator: **54/54 test methods PASS** (including new non-finite metric controls). JavaScript syntax and assembled ten-part runtime PASS.
+- Strict real-engine preflight used **two different existing PDFs** and a separate original-PDF formula crop case: **P0 INCOMPLETE/UNVERIFIED**, **P1 BLOCKED**, strict exit code **2** (correct fail-closed behavior). Exact genuine `pdfjs-dist@4.10.38` browser and worker assets were unavailable in this environment; Texify recognition was not executed. Neither a synthetic PDF engine nor an unrelated OCR backend was substituted for real browser acceptance.
+- Additional cached-corpus nonregression: **30 SHA-256-distinct original PDFs, 1,521 pages**, 22 low-native-text pages; **30/30** native extraction and actual source-parser-proxy jobs completed, **30/30** selected Tesseract plain-text OCR-proxy calls, **0** execution failures/timeouts/empty transcripts. Cold ~10.78 s; fully cached ~0.21 s. This is not whole-document OCR nor actual Texify, and all 30 original PDFs remain **UNVERIFIED** for whole-document correctness. The 30 PDF hashes, page counts and stage statuses are recorded in `regression/p0_p1_v359_20261106.json`.
+- Full source-module comparison against v358: **10/10 production JavaScript subsystems and CSS unchanged**. New regression logic and version/cache keys were checked independently. The user-facing P1 navigation implementation was not modified.
+
+### Still open — not reported as fixed
+
+- **P0:** real pinned PDF.js entire-document indexes, actual Texify model initialization/inference and WebGPU→CPU fallback, true page-to-LaTeX transcription, independent full-document golden truth, and deployed-browser performance/acceptance remain **UNVERIFIED/BLOCKED**, exactly as before. Crop-only mode is a future reviewer aid, not evidence that OCR works.
+- **P1:** actual two-PDF browser interaction and IndexedDB durability/reopen/return at the original page and within-page ratio remain **BLOCKED** until genuine pinned PDF.js assets are provided. Isolated DOM/VM checks and a correct blocked preflight are not equivalent to this test.
+- Prior known detector defects listed below retain their previous classification. No unverified manuscript or Formula OCR result was promoted to PASS.
+
+**Execution on a machine with the pinned engine available:** supply `--pdfjs-build` pointing to the actual `pdfjs-dist@4.10.38/build` directory containing `pdf.min.mjs` and `pdf.worker.min.mjs`; use `regression_tools/p0_gate.py` with original manifest and `--p1-source-pdf`/`--p1-target-pdf`, plus `--require-p0-full --require-p1-real` for strict status. Optional `--formula-cases` without `--allow-texify-network` captures only the real browser PDF crop (UNVERIFIED formula); opt in to the real Texify model separately and provide independently verified formula ground truth. Never treat external dependency absence as a PASS. No hidden dependency fallback is permitted.
+
+---
+
+## Historical record — v358
+
+## v358 — Comprehensive P0/P1 reliability regression and fail-closed corrections (2026-11-06, Beijing UTC+08)
+
+**Source baseline:** v357 reconstructed from the original v347 ZIP and each successive root patch; **current release:** v358. Next source change: v359. Only P0 reliability and P1 confirmed local cross-paper navigation are authorized. P2–P4 remain deferred. All earlier entries are retained below.
+
+### Independently reproduced framework bugs corrected
+
+1. **P0 false PASS when location evidence is absent.** A synthetic, internally consistent index/ground-truth pair with all `ratio` fields removed was incorrectly classified **PASS** in v357. Whole-document reviewer inventories must now include a valid finite within-page ratio and an integer source page for every indexed entry; missing review geometry => **UNVERIFIED**, never a certification. Malformed actual-browser source locations are separately recorded as FAIL even when the golden inventory is incomplete. This changes only the acceptance comparator, not document detectors.
+2. **P0 malformed-evidence crashes.** Null/nonobject engine, index, stage, navigation and error records, invalid category lists and scalar defect records could produce uncaught exceptions. A reproducible 180-input schema stress pass previously identified nine crashes; the corrected validator completed the identical pass with **zero uncaught exceptions**. Invalid or incomplete reviewer evidence remains UNVERIFIED. The expanded comparator suite has **52 passing tests**, including new structured negative controls.
+3. **P1 committed-write completion mismatch.** An IndexedDB confirmed link write could commit under the exact source PDF identity after the active paper switched, but the promise reported `false` as though cancelled. This is not a foreign-document write; it is a source-scoped durability/return-state inconsistency. After the write commits, it now reports success while deliberately leaving the newly active paper's in-memory link map and UI untouched. Reopening the source reloads the committed link. **74 P1 VM assertions** cover the added delayed-commit case and existing rapid-click, nested-return, failure-retry and session-save races.
+4. **P1 blocked status obscured in the top-level gate.** The P0 gate now surfaces the real P1 runner's `BLOCKED`/`UNVERIFIED`/`FAIL` detail instead of only a generic `INCOMPLETE` process-exit classification; it never turns absence of genuine PDF.js into PASS. One new test confirms this behavior.
+5. **Offline audit version provenance.** The corpus runner now reports the tested bootstrap version (v358), not its historical v354 infrastructure origin. Synthetic test projects without a bootstrap are explicitly `UNKNOWN` and do not crash.
+
+### Fresh 110-document original PDF and formula regression
+
+- **110 SHA-256-distinct original PDFs, 1,467 pages**, with 218 pages below the native-text threshold. Includes handwritten inverse-problem and seminar notes, historical research, applied technical documents, modern papers, Chinese-language and nonmathematical negative controls. Strata are filename-based; these are not 110 independent archival scientific manuscripts.
+- Native text/geometry and source-level Results / raw Equation / Bibliography probes completed on every document, with **0 extraction errors and 0 parser exceptions**. One explicitly selected **Tesseract plaintext proxy OCR crop per PDF: 110/110 completed**, 0 execution failures, 0 empty transcripts. This is not full-page or production Texify OCR.
+- **15 page-linked, previously human-transcribed formula references from six of these PDFs** compiled in actual MathJax (15/15). Compilation does not establish a new Texify recognition result or independent verification of all the formulas in the 110 documents.
+- Differential comparison v357→v358 across 110 PDFs found **0 changed output fields** among page counts, text geometry, source-level mathematical candidates, selected OCR-proxy transcripts and formula-region selections. Cold run ~23.23 s; fully cached post-change repeat ~0.64 s (not a production PDF performance benchmark).
+- **Status:** 0 PASS–Fully verified; 0 newly proven PDF detection FAIL; 110 UNVERIFIED; 0 EXCEPTION. This classification does not clear historical known detection errors documented below.
+
+### Browser P0/P1 acceptance and remaining blockers
+
+- Existing P0 source gate: **45/45 checks passed**, including the inherited JavaScript/Python suites and isolated Chromium shell. A separately executed genuine-browser preflight on 12 original PDFs explicitly marked 12/12 UNVERIFIED because the exact `pdfjs-dist@4.10.38` browser/worker assets are absent. The independent comparator returned INCOMPLETE, not PASS.
+- Genuine P1 two-original-PDF Chromium preflight on Caffarelli and handwritten inverse-problems originals returned **BLOCKED, 0 real-navigation assertions**. Isolated DOM/VM tests cannot substitute for live PDF.js/IndexedDB/PDF navigation. An attempted combined strict run exceeded its bounded wall time; it is **not** counted as success. Separate bounded preflights establish the exact dependency blocker.
+- **UNVERIFIED:** deployed browser navigation and return anchor, persistence across real PDF.js reload, PDF.js OCR geometry and final indexes, actual Texify image-to-LaTeX inference, WebGPU→CPU fallback, and full original-page mathematical ground truth for modern/historical printed and handwritten material. No image-OCR or mathematical detector source was changed to compensate for a test blocker.
+- Machine-readable per-document hashes and detector/paired-formula counts: `regression/p0_p1_v358_20261106.json`. Original PDFs, OCR caches, model files, and personal reading data are deliberately excluded from the deployable ZIP.
+
+**Required release checks:** `node --check` for bootstrap, 10 source modules and tests; assembled 10-module syntax; all existing JavaScript test scripts; Python runner, P0 comparator, P0/P1 browser smoke/gate tests; 110 original PDF identity and differential audit; 15 source-linked MathJax compilations; strict fail-closed browser preflights; ZIP overlay and integrity. **No live PDF.js or Texify success is claimed.**
+
+---
+
+# MathReader Regression / Behavioral Audit Record — v357
+
+## v357 — P0/P1 gap closure, provenance hardening, and real two-PDF acceptance path (2026-11-06 Beijing UTC+08)
+
+**Version:** v356 → **v357**. This is a small source+test repair, not completion of real Texify/PDF.js acceptance. Next source modification must be v358. Only P0 and P1 remain approved; P2–P4 stay deferred. All historical records below remain intact.
+
+### Confirmed defects fixed
+
+1. **P1 asynchronous local-link write race.** While IndexedDB verified the target PDF, a user could change documents. The outdated callback could then write a link snapshot under a source no longer active. New code acquires a write lock before its first await, rejects simultaneous link mutations, checks exact source identity again before the persistent write, and releases the lock in `finally`. Persistent link schemas and exact PDF identities remain unchanged. This prevents an unrelated PDF's link record from being contaminated by a delayed edit.
+2. **P1 stale transient Return path.** Navigating to an unrelated PDF outside the P1 jump path left old A→B→A return history in memory; manually opening B later could resurrect an obsolete **Return** action. The temporary return stack is now dropped when a non-P1 manual document switch makes the current target identity inconsistent. Nested P1 A→B→C→B→A navigation is preserved, because those switches hold the P1 busy lock.
+3. **P0 golden index comparator could falsely accept malformed positions or ordering.** Integer truncation of fractional pages, nonfinite `NaN` ratios, out-of-document page numbers and shuffled equal-count inventories could evade its multiset comparison. The gate now rejects invalid coordinates, checks the page range and source order, and compares each matching item's reviewed ratio. These are acceptance-test integrity changes, not changes in MathReader's detection output.
+4. **P0 formula-evidence provenance weakness.** A claimed OCR crop SHA-256 in a JSON capture could be treated as sufficient without ensuring the actual browser-rendered PNG existed and matched its bytes. Acceptance now requires a safe relative PNG filename, the SHA-256 of real saved PNG bytes, correct PNG header, and nonempty actual Texify backend provenance before it can compare the OCR LaTeX to independent approved original-page transcription. Missing/mismatched crop/backend => **UNVERIFIED**, not PASS. Actual compilation or wrong mathematical content remains FAIL where real evidence exists.
+
+### Real-browser P1 acceptance now runnable, but not yet passed here
+
+`regression_tools/p1_browser_e2e.py` is a new **test-only**, isolated Chromium two-original-PDF scenario. It loads the original source and target PDFs through pinned **genuine** `pdfjs-dist@4.10.38` in the actual MathReader runtime; checks exact SHA-based local identities and IndexedDB cache; builds the source Bibliography; selects and confirms the actual UI `Link PDF` picker; opens the real target PDF; checks the temporary `Return` control and source page/ratio restoration; reloads the browser and verifies the stored link. It checks that P1 never eagerly initializes Formula OCR. A source PDF with a numbered bibliography entry is necessary. The test-only observer is appended only to a disposable copy, never to production `js/` modules.
+
+P0's single-command gate accepts `--p1-source-pdf`, `--p1-target-pdf`, `--pdfjs-build` and `--require-p1-real`; runs a fresh real-P1 scenario with isolation, refuses to reuse old results, and records PASS/FAIL/BLOCKED distinctly. Missing or mismatched pinned assets **cannot** be substituted with a PDF mock. **This environment lacks the actual pinned browser PDF.js build and cannot fetch it from the network; therefore genuine two-PDF P1 acceptance remains BLOCKED and unverified.** Real formula Texify image inference and independent whole-document mathematical ground truth likewise remain **UNVERIFIED**. No production-browser deployment was tested.
+
+### Executed gates and corpus evidence
+
+- **P1 Node VM:** 69 targeted assertions, including stale IndexedDB lookups, concurrent mutations, nested/failed returns and manual-open stale-stack invalidation, PASS.
+- **P1 isolated Chromium:** 18 DOM/UI assertions, PASS. Its PDF backend is simulated and must not count as genuine PDF.js navigation.
+- **P0 comparator:** 39 unit tests, including verified PNG-byte requirements, NaN / fractional / out-of-range page rejection, ordering, missing Texify backend, stale evidence and malformed-source handling, PASS. These test fixtures are *synthetic comparator controls* and are not independent mathematical ground truth.
+- **P1 real harness preflight:** rejects missing pinned browser assets and exact-duplicate original PDFs; no false success. Real PDF.js and actual inference could not be executed in this environment.
+- **70 unique original PDFs / 555 pages** compared v356→v357 using the existing source-level detector with 70 paired Tesseract plaintext OCR proxy crops. All 70 pagesets had identical extraction geometry, selected formula-region provenance, Results/raw-equation/Bibliography candidate output and OCR proxy transcripts across both versions, with no parser/OCR execution failures. This is **source-level nonregression**, not whole-document mathematical verification or actual Texify recognition; all 70 are UNVERIFIED by the full P0 standard.
+- The bounded regression was selected after a separate 140-PDF extraction timed out on dense reference-book geometry. That timed-out attempt was not counted as a pass; do not silently replace full geometry with a lower-fidelity probe.
+- The remaining source/assembled/runtime and Python regression gates, isolated UI tests, root ZIP integrity and version overlay are required release gates. See `regression/p0_p1_v357_20261106.json` for exact recorded observations.
+
+**Outstanding:** pinned PDF.js assets, genuine real-browser P1 two-PDF navigation, real Texify/CPU fallback inference, independently verified all-page formula/text golden corpus, historical handwritten technical documents and whole-document accuracy. Never claim P0 or P1 end-to-end completion solely from the newly runnable harness or passing isolated tests. Preserve every earlier known-defect entry below.
+
+---
+
+
+## v356 — Conservative P1 cross-document links; P0/P1 regression and repairs (2026-11-05 Beijing UTC+08)
+
+**Approved roadmap only:** P0 end-to-end mathematical recognition reliability, P1 conservative cross-document mathematical navigation. P2 comprehensive expression search, P3 correction sharing and P4 paper version comparison remain **deferred**. All history below is retained unchanged. **Source version v355 → v356; the next code change is v357.**
+
+### P1 user workflow and constraints
+
+- From an existing numbered **Bibliography** entry in Paper A, select **Link PDF** and explicitly choose a different PDF already cached in MathReader's local library. No metadata-title, DOI, arXiv or theorem-text guessing; this is a human-confirmed exact PDF ID association, not an automatic document match.
+- Afterwards select **Open PDF**. MathReader saves the source document's current session before opening the exact linked local PDF, where the existing Results/Equations indexes can be used to reach a known mathematical statement. A temporary compact **↩ Paper** button returns to the recorded source page and within-page ratio. Nested A→B→C→B→A return is supported during one running session. **No automatic theorem number matching** has been implemented: guessing a cross-document theorem destination is prohibited without reliable evidence/user confirmation.
+- Confirmed source→target mappings are stored only under IndexedDB `meta/crossdoc-links:v1:<exact source PDF ID>` (schema v1, at most 400 links/source), separate from ordinary annotations, reading positions and reading-data export. A missing/evicted PDF cannot silently resolve to another candidate; users can Relink or Unlink. Forgot/removed source PDFs delete their source-side link metadata. Return history is temporary in-memory; each document's normal independently saved reading position is preserved when switching or reopening, but cross-paper Return button state does **not** survive browser restart.
+- Reuse the existing ten-part module, sidebar Bibliography, cached file database and navigation; no new panel, remote dependency, hidden OCR initialization or mathematical detector/recovery modification. No original PDF modification. The toolbar return button only shows while an active source return path exists. Important: the source must be cached to guarantee return; otherwise the jump is denied with a clear message.
+
+### P0 and P1 defects investigated and fixed
+
+1. **Document persistence race:** debounced session writes or recovery-snapshot timers could complete after switching PDFs. Each save is scoped to the original exact document identity and generation; switching flushes and awaits the previous source's session; reopening the same source refreshes its persisted snapshot. The source's page/ratio are captured before navigation.
+2. **Double-click racing navigation:** a busy lock now starts **before** the first awaited storage read. A second jump/return cannot switch documents concurrently.
+3. **Failed return navigation:** return-history is consumed only **after** exact original page/ratio navigation succeeds. If that navigation fails, the source can be retried and the target is restored when possible; suppression flags and busy state are always released.
+4. **Forgetting cached files:** outbound bibliography mapping metadata is deleted for a forgotten source PDF; inbound mappings cannot be used against unavailable target bytes. Never auto-relink from similar titles.
+5. **P0 stale evidence:** a manifest run erases previous browser captures and comparison outputs before capturing new evidence; old PASS data cannot certify a fresh run. A fresh, partial *actual browser* error is compared and reported FAIL rather than hidden as INCOMPLETE. The overall acceptance can never become PASS when the actual browser process has not passed.
+
+### Validation executed, limitations and classifications
+
+- **61 P1 VM behavior assertions** PASS, including exact-ID linking, persistence errors, missing/evicted targets, nested return, simultaneous clicks, failure/retry, timed session saves and recovery snapshots.
+- **16 real Chromium Bibliography UI assertions** PASS (link chooser, confirmed selection, Open, Return, location ratio, no eager Formula OCR, evicted target). **PDF engine deliberately simulated** for this UI test; not actual PDF.js or deployed browser proof.
+- **Three P0 test-isolation tests** PASS; **31 P0 independent-ground-truth comparator logic tests** PASS. `p0_gate.py` also runs inherited source regressions and the standalone Chromium shell check; v356 combined gate PASS with **43 source checks** (including Python/Chromium smoke), browser shell PASS, **P0 actual PDF/browser/formula end-to-end INCOMPLETE**.
+- **50 SHA-256-distinct original PDFs / 2,437 pages** underwent *v355 vs v356 source-level* comparison: text, page geometry, candidate Results, raw equation lines, Bibliography and available formula region metadata were **identical for every source**; **zero detector exceptions and zero field differences**. This differential explicitly ran **without OCR** and did not independently verify mathematical accuracy. The source files were selected from the prior 50-file corpus; do not count as 50 first-time documents. Details and hashes: `regression/p1_v356_20261105.json`.
+- Full original-document accuracy statuses: **0 PASS—Fully verified / 0 newly established end-to-end FAIL / 50 UNVERIFIED / 0 EXCEPTION**. Pre-existing reported mathematical detection/OCR failures remain open. Actual PDF.js loaded document switching, real IndexedDB in a live browser with PDFs, deployed-site navigation, original-page Texify recognition, and whole-document independently reviewed ground truth are **UNVERIFIED** due to unavailable pinned engines/models. Never call the isolated Chromium PDF backend an actual end-to-end acceptance.
+- Future gates: provide locally pinned exact PDF.js, original source PDFs and reviewed golden data; execute the strict `regression_tools/p0_gate.py --manifest ... --pdfjs-build ... --require-p0-full` before claiming fully verified P0/P1 in production. Preserve source file hash identities, parallel text/formula checks, no silent OCR fallback, and the historical defect ledger.
+
+---
+
 # MathReader Regression / Behavioral Audit Record — v355
 
 ## v355 — P0 automated acceptance framework (2026-11-05 Beijing UTC+08)

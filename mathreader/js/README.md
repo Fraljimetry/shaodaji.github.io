@@ -76,3 +76,53 @@ introduced. Browser PDF.js and actual Texify acceptance require their real
 pinned assets and whole-document independent ground truth. See
 `../regression_tools/P0_ACCEPTANCE.md` and the v355 section of
 `../REGRESSION.md` for exact PASS/FAIL/UNVERIFIED definitions.
+
+
+## v356 P1: user-confirmed references to locally cached PDFs
+
+The existing Bibliography rows now offer **Link PDF** for manually choosing an
+*exact* different local-library PDF. Subsequent **Open PDF** uses that confirmed
+association, flushes the current exact document session, and exposes a temporary
+**↩ Paper** button to restore the originating page/ratio. Linked-document
+Results/Equations use the existing sidebar; no automated cross-paper theorem
+number matching, preview, network fetch, or new panel is introduced.
+
+Mappings live in IndexedDB `meta/crossdoc-links:v1:<sourceId>` and never travel
+with private reading-state export. Forgetting a PDF deletes the outgoing mapping;
+unavailable inbound target bytes never trigger a guessed match. The return stack
+is intentionally in-memory, though each PDF retains its independent normal
+reading position. Link changes are reversible. During any PDF switch, previous
+session and recovery saves are scoped to their captured document identity.
+
+Use `node mathreader/tests/cross_document_regression.js` for concurrency,
+missing-cache, exact-return, and persistence regression; the standard P0 gate
+also runs `tests/p1_browser_smoke.py` in Chromium with a **simulated** PDF
+backend. Its browser results are *not* actual PDF.js/Texify acceptance. The
+v356 historical audit and remaining limitations are in `../REGRESSION.md`.
+
+
+## v357 P0/P1 maintenance note
+
+The v356 cross-document record schema (`meta/crossdoc-links:v1:<sourceId>`) and ten-part runtime are unchanged. The link-write guard now rejects delayed writes after a document switch, and the temporary Return journey is cleared on unrelated manual PDF opens; nested P1 navigation remains permitted. P0 comparison now checks real saved PNG crop evidence and finite, ordered page locations. Run `regression_tools/p1_browser_e2e.py` against genuine pinned PDF.js for end-to-end acceptance; the isolated Chromium P1 smoke is **not** equivalent.
+
+## v358 P0/P1 audit note
+
+v358 keeps all mathematical detectors, formula OCR runtime, lazy initialization, model fallback and index-cache schemas unchanged. A single P1 confirmed-link completion path now treats an IndexedDB write that completed after document switching as **committed to the original exact source PDF**, without touching the currently active paper's link map. P0 strict golden/capture validation and report version/status fidelity are improved in `regression_tools/`. See `../REGRESSION.md` for 110-PDF paired regression and live-engine blockers.
+
+
+## v359 P0/P1 acceptance-tool cleanup
+
+Only `mathreader.js` and the HTML version/cache-busting keys changed in the production runtime. All ten `js/*.js` subsystem bodies and the CSS are byte-identical to v358. Test-only `regression_tools/p0_browser_probe.js` now retains invalid/missing equation ratios and supports genuine PDF.js browser crop evidence without activating Texify. Regression tools do not alter production OCR loading, PDF navigation, index/recovery policies or P1 confirmed-link behavior. Real-engine acceptance remains incomplete until the original pinned PDF.js and Texify assets are available.
+
+
+## v360 UI stability note
+
+The mobile reader must use a single full-width grid track regardless of desktop
+sidebar collapse classes, with `position:relative` for the reader shell so its
+mobile absolute sidebars are properly anchored and clipped. Keep mobile toolbar
+Open PDF, Contents/Workspace toggles and in-panel Close controls reachable,
+including P1 Return at ≤520px. All desktop sidebar behavior is unchanged.
+Run `python mathreader/tests/ui_responsive_regression.py` for offline actual-UI
+Chromium viewport, touch, modal and repeated-interaction checks, and the full
+`regression_tools/p0_gate.py` as before. Browser-shell tests are *not* genuine
+PDF.js document switching or Texify acceptance. See `../REGRESSION.md`.

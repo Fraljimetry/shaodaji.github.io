@@ -11,6 +11,7 @@ from collections import Counter
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import unicodedata
@@ -27,6 +28,11 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b''):
             h.update(block)
     return h.hexdigest()
+
+
+def is_png(path: Path) -> bool:
+    with path.open('rb') as stream:
+        return stream.read(8) == b'\x89PNG\r\n\x1a\n'
 
 
 def norm(value: object) -> str:
@@ -48,29 +54,53 @@ def fingerprint(entry: dict, category: str):
     return (norm(entry.get('label')), norm(entry.get('title')), int(entry['page']))
 
 
-def compare_items(expected: list, actual: list, category: str) -> list[str]:
+def compare_items(expected: list, actual: list, category: str, pages: int | None = None) -> list[str]:
+    """Compare independently reviewed indexes, including geometry and order.
+
+    Invalid page numbers and NaN/Infinity coordinates must never masquerade
+    as valid matching entries (NaN comparisons are always false).
+    """
     if not isinstance(expected, list) or not isinstance(actual, list):
         return [f'{category}: expected and captured values must be arrays']
     issues = []
+    for role, items in (('ground truth', expected), ('browser', actual)):
+        for i, item in enumerate(items):
+            if not isinstance(item, dict):
+                issues.append(f'{category}: {role} item {i} is not an object')
+                continue
+            page = item.get('page')
+            if type(page) is not int or page < 1 or (pages is not None and page > pages):
+                issues.append(f'{category}: {role} item {i} has invalid source page {page}')
+            if 'ratio' in item and item['ratio'] is not None:
+                value = item['ratio']
+                if (type(value) not in (int, float) or not math.isfinite(value)
+                    or value < 0 or value > 1):
+                    issues.append(f'{category}: {role} item {i} has invalid location ratio {value}')
+    if issues:
+        return issues
     try:
-        wanted = Counter(fingerprint(e, category) for e in expected)
-        observed = Counter(fingerprint(e, category) for e in actual)
+        expected_keys = [fingerprint(e, category) for e in expected]
+        actual_keys = [fingerprint(e, category) for e in actual]
+        wanted = Counter(expected_keys)
+        observed = Counter(actual_keys)
     except (KeyError, TypeError, ValueError, OverflowError) as error:
         return [f'{category}: malformed index entry ({error})']
     for key, count in sorted((wanted - observed).items(), key=lambda v: str(v[0])):
         issues.append(f'{category}: missing {count} × {key}')
     for key, count in sorted((observed - wanted).items(), key=lambda v: str(v[0])):
         issues.append(f'{category}: extra {count} × {key}')
-    # Within a matched label/page family, verify distinct per-page locations,
-    # including duplicates, rather than assuming that matching counts suffice.
     if wanted == observed:
-        for key in sorted(wanted, key=str):
-            target = sorted(float(e['ratio']) for e in expected if fingerprint(e, category) == key and e.get('ratio') is not None)
-            if not target:
+        if expected_keys != actual_keys:
+            issues.append(f'{category}: reading/index ordering differs from reviewed original')
+        # Compare locations with the corresponding item *in order*; do not
+        # allow permutations of same-label entries to conceal wrong anchors.
+        for i, (exp, got) in enumerate(zip(expected, actual)):
+            if expected_keys[i] != actual_keys[i] or exp.get('ratio') is None:
                 continue
-            found = sorted(float(e['ratio']) for e in actual if fingerprint(e, category) == key and e.get('ratio') is not None)
-            if len(found) != len(target) or any(abs(a-b) > .025 for a,b in zip(target, found)):
-                issues.append(f'{category}: location mismatch {key}: expected {target}, observed {found}')
+            value = got.get('ratio')
+            if value is None or abs(float(exp['ratio']) - float(value)) > .025:
+                issues.append(f'{category}: location mismatch at index {i}: '
+                              f'expected {exp["ratio"]}, observed {value}')
     return issues
 
 
@@ -90,11 +120,30 @@ def is_complete_review(truth: dict, pages: int) -> tuple[bool, list[str]]:
             gaps.append(f'reviewed pages incomplete ({len(checked_pages)}/{pages})')
     except (TypeError, ValueError):
         gaps.append('invalid reviewed_pages')
-    if set(truth.get('complete_categories', [])) != set(ALL_COVERAGE):
+    categories = truth.get('complete_categories')
+    if (not isinstance(categories, list) or not all(isinstance(c, str) for c in categories)
+        or set(categories) != set(ALL_COVERAGE)):
         gaps.append('Structure/Results/Equations/Bibliography/formula inventory not all reviewed')
     for category in CATEGORIES:
         if not isinstance(truth.get('indexes', {}).get(category), list):
             gaps.append(f'{category} expected entries missing (use [] for verified absence)')
+    # Whole-document acceptance requires actual within-page anchors for every
+    # indexed mathematical item. A correct page number with no location ratio
+    # cannot be independently checked for navigation accuracy.
+    for category in CATEGORIES:
+        items = truth.get('indexes', {}).get(category)
+        if not isinstance(items, list):
+            continue
+        for idx, item in enumerate(items):
+            if not isinstance(item, dict):
+                gaps.append(f'{category} ground truth item {idx} is not an object')
+                continue
+            page = item.get('page')
+            ratio = item.get('ratio')
+            if (type(page) is not int or page < 1 or page > pages
+                or type(ratio) not in (int, float) or not math.isfinite(ratio)
+                or ratio < 0 or ratio > 1):
+                gaps.append(f'{category} ground truth item {idx} lacks a valid page and within-page ratio')
     if not isinstance(truth.get('formulas'), list):
         gaps.append('reviewed formula inventory absent')
     else:
@@ -125,6 +174,8 @@ def check_capture_record(path: Path, expected_sha: str, pages: int):
         data = json.loads(path.read_text(encoding='utf8'))
     except (ValueError, OSError) as error:
         return None, [f'browser capture not readable: {error}']
+    if not isinstance(data, dict):
+        return None, ['browser capture must be a JSON object']
     gaps = []
     if data.get('schema') != SCHEMA:
         gaps.append('browser capture schema mismatch')
@@ -134,12 +185,19 @@ def check_capture_record(path: Path, expected_sha: str, pages: int):
         gaps.append('browser capture page count mismatch')
     if data.get('capture_source') != 'mathreader_actual_browser_pdfjs':
         gaps.append('not an actual browser/PDF.js capture')
-    if data.get('engine', {}).get('pdfjs') != '4.10.38':
+    engine = data.get('engine')
+    if not isinstance(engine, dict) or engine.get('pdfjs') != '4.10.38':
         gaps.append('expected pinned PDF.js 4.10.38 engine not confirmed')
-    if data.get('errors'):
+    errors = data.get('errors')
+    if not isinstance(errors, list):
+        gaps.append('browser error record malformed')
+    elif errors:
         gaps.append('browser capture has processing errors')
-    if any(data.get('stages', {}).get(k) != 'COMPLETE' for k in CATEGORIES):
+    stages = data.get('stages')
+    if not isinstance(stages, dict) or any(stages.get(k) != 'COMPLETE' for k in CATEGORIES):
         gaps.append('browser mathematical index stages incomplete')
+    if not isinstance(data.get('indexes'), dict):
+        gaps.append('browser mathematical index data malformed')
     return data, gaps
 
 
@@ -187,11 +245,33 @@ def evaluate_document(entry: dict, capture_dir: Path):
     capture_file = capture_dir / f'{actual_sha}.json'
     cap, cap_gaps = check_capture_record(capture_file, actual_sha, pages)
     output['unverified'].extend(cap_gaps)
-    if cap and cap.get('capture_source') == 'mathreader_actual_browser_pdfjs' and cap.get('errors'):
+    if (cap and cap.get('capture_source') == 'mathreader_actual_browser_pdfjs'
+        and isinstance(cap.get('errors'), list) and cap['errors']):
         output['issues'].extend(f'actual browser error: {norm(error)}' for error in cap['errors'])
+    # Invalid locations in a genuine browser capture are real reported
+    # failures even if the independent reviewer inventory is incomplete.
+    # Otherwise a malformed golden item could hide an impossible browser page.
+    if (cap and cap.get('capture_source') == 'mathreader_actual_browser_pdfjs'
+        and isinstance(cap.get('indexes'), dict)):
+        for category in CATEGORIES:
+            rows = cap['indexes'].get(category)
+            if not isinstance(rows, list):
+                continue
+            for index, row in enumerate(rows):
+                if not isinstance(row, dict):
+                    output['issues'].append(f'{category}: actual browser index {index} is malformed')
+                    continue
+                page = row.get('page')
+                ratio = row.get('ratio')
+                if type(page) is not int or page < 1 or page > pages:
+                    output['issues'].append(f'{category}: actual browser index {index} has invalid page')
+                elif ratio is not None and (type(ratio) not in (int, float)
+                    or not math.isfinite(ratio) or ratio < 0 or ratio > 1):
+                    output['issues'].append(f'{category}: actual browser index {index} has invalid ratio')
     if cap and not cap_gaps and complete:
+        captured_indexes = cap.get('indexes') if isinstance(cap.get('indexes'), dict) else {}
         for kind in CATEGORIES:
-            errors = compare_items(truth['indexes'][kind], cap.get('indexes', {}).get(kind), kind)
+            errors = compare_items(truth['indexes'][kind], captured_indexes.get(kind), kind, pages)
             output['checks'][kind] = 'FAIL' if errors else 'PASS'
             output['issues'].extend(errors)
         # Each curated OCR crop must have actual Texify provenance, a completed
@@ -201,9 +281,12 @@ def evaluate_document(entry: dict, capture_dir: Path):
         if not isinstance(actual_formulas, list):
             output['unverified'].append('browser formula cases malformed')
             actual_formulas = []
-        by_id = {f.get('id'): f for f in actual_formulas if isinstance(f, dict)}
-        if len(by_id) != len(actual_formulas):
-            output['issues'].append('duplicate or malformed actual-browser formula cases')
+        by_id = {}
+        for f in actual_formulas:
+            if not isinstance(f, dict) or not isinstance(f.get('id'), str) or not f['id'] or f['id'] in by_id:
+                output['issues'].append('duplicate or malformed actual-browser formula cases')
+                continue
+            by_id[f['id']] = f
         expected_formula_ids = {f.get('id') for f in truth['formulas']}
         for extra in by_id.keys() - expected_formula_ids:
             output['issues'].append(f'unexpected browser formula crop {extra}')
@@ -217,6 +300,26 @@ def evaluate_document(entry: dict, capture_dir: Path):
                 or case.get('page') != formula.get('page')):
                 output['unverified'].append(f'formula {formula.get("id")}: source/engine provenance not confirmed')
                 continue
+            # A claimed crop hash in JSON is insufficient evidence. Check the
+            # actual browser-rendered PNG saved by p0_browser.py, and never
+            # follow absolute paths or directory traversal from a capture.
+            crop_filename = case.get('crop_evidence_filename')
+            crop_dir = capture_dir / 'browser_formula_crops'
+            if (not isinstance(crop_filename, str) or not crop_filename
+                or Path(crop_filename).name != crop_filename
+                or '/' in crop_filename or '\\' in crop_filename
+                or not crop_filename.endswith('.png')):
+                output['unverified'].append(f'formula {formula.get("id")}: original browser crop PNG evidence absent/unsafe')
+                continue
+            crop_path = crop_dir / crop_filename
+            if (not crop_path.is_file() or crop_path.is_symlink()
+                or sha256(crop_path) != case.get('crop_sha256')
+                or not is_png(crop_path)):
+                output['unverified'].append(f'formula {formula.get("id")}: original browser crop PNG bytes missing or mismatched')
+                continue
+            if not norm(case.get('backend')):
+                output['unverified'].append(f'formula {formula.get("id")}: actual formula OCR backend missing')
+                continue
             if case.get('compiled') is not True:
                 output['issues'].append(f'formula {formula.get("id")}: MathJax compilation failed')
             elif latex_norm(case.get('latex')) != latex_norm(formula.get('latex')):
@@ -226,30 +329,42 @@ def evaluate_document(entry: dict, capture_dir: Path):
         # every source page and explicitly supplied an empty inventory.
         if truth['formulas'] and cap.get('stages', {}).get('formulas') != 'COMPLETE':
             output['unverified'].append('formula OCR/coverage stage not complete')
-        if cap.get('navigation', {}).get('status') == 'FAIL':
+        navigation = cap.get('navigation') if isinstance(cap.get('navigation'), dict) else {}
+        if navigation.get('status') == 'FAIL':
             output['issues'].append('actual browser page navigation failed')
-        elif cap.get('navigation', {}).get('status') != 'PASS':
+        elif navigation.get('status') != 'PASS':
             output['unverified'].append('page navigation not verified in browser')
         # Performance thresholds are optional and MUST be explicitly set for
         # the tested hardware/profile; no universal time budget is invented.
-        metrics = cap.get('metrics', {})
-        thresholds = entry.get('performance_thresholds', {})
+        metrics = cap.get('metrics') if isinstance(cap.get('metrics'), dict) else {}
+        thresholds = entry.get('performance_thresholds') if isinstance(entry.get('performance_thresholds'), dict) else {}
         for metric, bound in [('open_ms','max_open_ms'),('index_ms','max_index_ms'),('js_heap_bytes','max_js_heap_bytes')]:
             if bound not in thresholds:
                 continue
             measured = metrics.get(metric)
-            if not isinstance(measured, (int,float)):
-                output['unverified'].append(f'performance metric {metric} not measured')
-            elif measured > thresholds[bound]:
-                output['issues'].append(f'performance regression: {metric}={measured} exceeds {thresholds[bound]}')
-        if cap.get('persistence', {}).get('status') == 'FAIL':
+            ceiling = thresholds[bound]
+            # JSON NaN/Infinity and bools are not valid measurements or budgets.
+            # In particular NaN > budget is false, which used to conceal a
+            # missing performance measurement behind a passing comparison.
+            if (type(ceiling) not in (int, float) or not math.isfinite(ceiling)
+                or ceiling <= 0):
+                output['unverified'].append(f'performance budget {bound} invalid')
+            elif (type(measured) not in (int, float) or not math.isfinite(measured)
+                  or measured < 0):
+                output['unverified'].append(f'performance metric {metric} not validly measured')
+            elif measured > ceiling:
+                output['issues'].append(f'performance regression: {metric}={measured} exceeds {ceiling}')
+        persistence = cap.get('persistence') if isinstance(cap.get('persistence'), dict) else {}
+        if persistence.get('status') == 'FAIL':
             output['issues'].append('actual browser reopen/position restoration failed')
-        elif cap.get('persistence', {}).get('status') != 'PASS':
+        elif persistence.get('status') != 'PASS':
             output['unverified'].append('reopening and position restoration not verified in browser')
     # Known documented failures cannot disappear merely because a new capture
     # or reference inventory is absent.
     known = truth.get('known_open_defects', [])
-    if known:
+    if not isinstance(known, list):
+        output['unverified'].append('known_open_defects record malformed')
+    elif known:
         output['issues'].extend(f'open defect: {norm(x)}' for x in known)
     if output['issues']:
         output['classification'] = 'FAIL'
@@ -260,7 +375,7 @@ def evaluate_document(entry: dict, capture_dir: Path):
 
 def run(manifest: Path, captures: Path) -> dict:
     data = json.loads(manifest.read_text(encoding='utf8'))
-    if data.get('schema') != SCHEMA or not isinstance(data.get('documents'), list):
+    if not isinstance(data, dict) or data.get('schema') != SCHEMA or not isinstance(data.get('documents'), list):
         raise ValueError('P0 manifest must have schema 1 and a documents array')
     if not data['documents']:
         raise ValueError('P0 manifest has no documents')
@@ -280,7 +395,7 @@ def run(manifest: Path, captures: Path) -> dict:
     counts = dict(Counter(row['classification'] for row in results))
     return dict(schema=1, generated_at=datetime.now(timezone.utc).isoformat(),
                 source_manifest=str(manifest), total=len(results), counts=counts, documents=results,
-                acceptance='PASS' if counts.get('PASS', 0) == len(results) else 'INCOMPLETE',
+                acceptance=('FAIL' if counts.get('FAIL', 0) else ('PASS' if counts.get('PASS', 0) == len(results) else 'INCOMPLETE')),
                 note='Only actual browser/PDF.js + complete human-reviewed truth may be fully verified.')
 
 

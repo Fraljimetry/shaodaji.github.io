@@ -4222,6 +4222,237 @@ document.addEventListener('click', (event) => {
   document.querySelectorAll('#structure-index .structure-entry.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
 });
 
+
+// v356 — Confirmed cross-paper links. Never infer a PDF or theorem from a title.
+function bibliographyLinkKey(entry) {
+  const label = String(entry?.label || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const title = String(entry?.title || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const page = Number(entry?.page);
+  if (!label || !Number.isInteger(page) || page < 1) return '';
+  // Page disambiguates same-label references. Missing OCR titles can still be
+  // linked manually, without guessing which paper the reference names.
+  return `${label.slice(0,90)}|p${page}|${title.slice(0,300)}`;
+}
+
+function normalizeConfirmedBibliographyLinks(raw) {
+  if (raw?.version !== 1 || !Array.isArray(raw.links)) return new Map();
+  const output = new Map();
+  for (const item of raw.links.slice(0,400)) {
+    if (!item || typeof item.key !== 'string' || typeof item.targetId !== 'string') continue;
+    if (!item.key || item.key.length > 425 || !item.targetId || item.targetId.length > 256) continue;
+    output.set(item.key, item.targetId);
+  }
+  return output;
+}
+
+function bibliographyLinkStorageKey(sourceId) {
+  return `crossdoc-links:v1:${sourceId}`;
+}
+
+async function loadConfirmedBibliographyLinks(sourceId) {
+  confirmedBibliographyLinks = new Map();
+  if (!sourceId) return;
+  try {
+    const raw = await dbMetaGet(bibliographyLinkStorageKey(sourceId));
+    if (currentFileKey === sourceId) confirmedBibliographyLinks = normalizeConfirmedBibliographyLinks(raw);
+  } catch (error) {
+    console.warn('MathReader could not load confirmed bibliography links.', error);
+  }
+}
+
+function bibliographyLinkTarget(entry) {
+  const id = confirmedBibliographyLinks.get(bibliographyLinkKey(entry));
+  if (!id || id === currentFileKey) return null;
+  return localLibrary.find((item) => item.id === id && item.localAvailable) || null;
+}
+
+async function updateConfirmedBibliographyLink(entry, targetId = null) {
+  const key = bibliographyLinkKey(entry);
+  const source = currentFileKey;
+  if (!key || !source || !pdfDoc || confirmedBibliographyWriteInFlight || crossDocumentBusy) return false;
+  // Claim the write lock before any async cache validation. In particular,
+  // two clicks must not persist snapshots built from the same old link map.
+  confirmedBibliographyWriteInFlight = true;
+  try {
+    const next = new Map(confirmedBibliographyLinks);
+    if (targetId) {
+      const record = localLibrary.find((item) => item.id === targetId && item.localAvailable && item.id !== source);
+      if (!record || !(await dbGet('files', targetId))?.blob) {
+        showError(t('The selected PDF is no longer cached locally.', '选中的 PDF 已不在本地缓存中。'));
+        return false;
+      }
+      // The reader can switch PDFs while IndexedDB resolves. Do not write a
+      // confirmed association in a document that is no longer active.
+      if (currentFileKey !== source) return false;
+      next.set(key, targetId);
+    } else next.delete(key);
+    if (currentFileKey !== source) return false;
+    if (next.size > 400) { showError(t('Too many confirmed links for this document.', '当前文档已达到关联数量上限。')); return false; }
+    try {
+      await dbMetaSet(bibliographyLinkStorageKey(source), { version: 1, links: [...next].map(([k, id]) => ({ key: k, targetId: id })) });
+      // Once IndexedDB commits a source-scoped link, it cannot truthfully be
+      // reported as cancelled. If the user switched PDFs during the awaited
+      // write, leave the active document's link map/UI untouched. Reopening
+      // the original source reads its now-committed link record normally.
+      if (currentFileKey !== source) return true;
+      confirmedBibliographyLinks = next;
+      renderBibliographyIndex();
+      return true;
+    } catch (error) {
+      console.warn(error);
+      showError(t('Could not save the local PDF link.', '无法保存本地 PDF 关联。'));
+      return false;
+    }
+  } finally {
+    confirmedBibliographyWriteInFlight = false;
+  }
+}
+
+function updateCrossDocumentReturnButton() {
+  if (!crossDocumentReturnButton) return;
+  let item = crossDocumentReturnStack.at(-1);
+  // An unrelated manual PDF open ends the transient return journey. Keeping
+  // its old stack would resurrect a misleading Return button if that target
+  // were opened again later. Switches performed by P1 itself hold the lock.
+  if (!crossDocumentBusy && item && item.targetId !== currentFileKey) {
+    crossDocumentReturnStack = [];
+    item = null;
+  }
+  const valid = Boolean(pdfDoc && item && item.targetId === currentFileKey);
+  crossDocumentReturnButton.classList.toggle('is-hidden', !valid);
+  crossDocumentReturnButton.disabled = !valid || crossDocumentBusy;
+  if (valid) {
+    crossDocumentReturnButton.title = t(`Return to ${item.sourceName}`, `返回 ${item.sourceName}`);
+    crossDocumentReturnButton.setAttribute('aria-label', crossDocumentReturnButton.title);
+  }
+}
+
+async function openConfirmedBibliographyTarget(entry) {
+  if (crossDocumentBusy || !pdfDoc || !currentFileKey) return false;
+  const target = bibliographyLinkTarget(entry);
+  if (!target) {
+    showError(t('Linked PDF is not available in the local library. Relink it.', '关联的 PDF 不在本地文库中，请重新关联。'));
+    return false;
+  }
+  const sourceId = currentFileKey;
+  const sourceName = currentFileName || t('Source paper', '原文');
+  const captured = snapshotDisplayAnchor();
+  const anchor = captured || { page: currentPage, ratio: Math.max(0, Math.min(1, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
+  // Claim the lock *before* the first await. Two rapid clicks must never
+  // both get through asynchronous IndexedDB availability checks.
+  crossDocumentBusy = true;
+  updateCrossDocumentReturnButton();
+  try {
+    // A return path is only guaranteed when the source is cached locally.
+    if (!cacheEnabledForCurrent || !(await dbGet('files', sourceId))?.blob) {
+      showError(t('Cache this source PDF before opening a linked paper.', '请先将原文存入本地缓存，再打开关联论文。'));
+      return false;
+    }
+    await flushCurrentDocumentSession();
+    const opened = await openCachedDocument(target.id);
+    if (!opened || currentFileKey !== target.id) {
+      // If the linked PDF fails, try to restore the previously open source.
+      if (currentFileKey !== sourceId) await openCachedDocument(sourceId);
+      return false;
+    }
+    crossDocumentReturnStack.push({ sourceId, sourceName, targetId: target.id,
+      page: Math.max(1, Number(anchor.page) || 1), ratio: Math.max(0, Math.min(1, Number(anchor.ratio) || 0)) });
+    if (crossDocumentReturnStack.length > 16) crossDocumentReturnStack.shift();
+    showNotice(t('Linked PDF opened. Use Return to paper to go back.', '已打开关联 PDF，可点击“返回原文”。'));
+    return true;
+  } catch (error) {
+    console.warn('Cross-document navigation failed', error);
+    if (currentFileKey !== sourceId) await openCachedDocument(sourceId);
+    showError(t('Could not open linked PDF.', '无法打开关联的 PDF。'));
+    return false;
+  } finally {
+    crossDocumentBusy = false;
+    updateCrossDocumentReturnButton();
+  }
+}
+
+async function returnToCrossDocumentSource() {
+  if (crossDocumentBusy || !pdfDoc) return false;
+  const item = crossDocumentReturnStack.at(-1);
+  if (!item || item.targetId !== currentFileKey) return false;
+  crossDocumentBusy = true;
+  try {
+    await flushCurrentDocumentSession();
+    const opened = await openCachedDocument(item.sourceId);
+    if (!opened || currentFileKey !== item.sourceId) {
+      if (currentFileKey !== item.targetId) await openCachedDocument(item.targetId);
+      return false;
+    }
+    const previousHistorySuppression = suppressReadingHistory;
+    suppressReadingHistory = true;
+    try { await goToLocation(item.page, item.ratio, { contextLead: false }); }
+    finally { suppressReadingHistory = previousHistorySuppression; }
+    // Only consume this return path after both the source PDF and its exact
+    // anchor have been restored. A failed page navigation must stay retryable.
+    crossDocumentReturnStack.pop();
+    showNavigationLandingCue(item.page, item.ratio);
+    return true;
+  } catch (error) {
+    console.warn('Return to source paper failed', error);
+    if (currentFileKey !== item.targetId) await openCachedDocument(item.targetId);
+    showError(t('Could not restore the source paper.', '无法返回原文。'));
+    return false;
+  } finally {
+    crossDocumentBusy = false;
+    updateCrossDocumentReturnButton();
+  }
+}
+
+function renderBibliographyLocalLink(entry, row, actions) {
+  const key = bibliographyLinkKey(entry);
+  if (!key) return;
+  const linkedId = confirmedBibliographyLinks.get(key);
+  const linked = bibliographyLinkTarget(entry);
+  const available = localLibrary.filter((r) => r.localAvailable && r.id !== currentFileKey);
+  const action = (name, title, handler) => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'bibliography-local-button';
+    button.textContent = name; button.title = title;
+    button.addEventListener('click', handler);
+    actions.append(button);
+    return button;
+  };
+  if (linked) {
+    action(t('Open PDF', '打开 PDF'), linked.name || linked.id, () => void openConfirmedBibliographyTarget(entry));
+    action(t('Unlink', '解除关联'), t('Remove this confirmed link', '解除当前已确认关联'), () => void updateConfirmedBibliographyLink(entry));
+  } else {
+    const button = action(linkedId ? t('Relink PDF', '重新关联') : t('Link PDF', '关联 PDF'),
+      t('Choose a PDF already stored in your local library', '选择本地文库中的 PDF'), () => {
+        const old = row.querySelector('.bibliography-link-picker');
+        if (old) { old.remove(); return; }
+        if (!available.length) {
+          showNotice(t('Open and cache another PDF before linking it.', '请先打开并缓存另一份 PDF。'));
+          return;
+        }
+        const picker = document.createElement('div'); picker.className = 'bibliography-link-picker';
+        const select = document.createElement('select');
+        select.setAttribute('aria-label', t('Choose linked local PDF', '选择关联的本地 PDF'));
+        const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = t('Select a local PDF…', '选择本地 PDF…');
+        select.append(placeholder);
+        for (const candidate of available) {
+          const option = document.createElement('option'); option.value = candidate.id; option.textContent = candidate.name || candidate.id;
+          select.append(option);
+        }
+        const confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'bibliography-local-button';
+        confirm.textContent = t('Link', '关联'); confirm.disabled = true;
+        select.addEventListener('change', () => { confirm.disabled = !select.value; });
+        confirm.addEventListener('click', async () => {
+          confirm.disabled = true;
+          if (!(await updateConfirmedBibliographyLink(entry, select.value))) confirm.disabled = !select.value;
+        });
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'bibliography-local-button'; cancel.textContent = t('Cancel', '取消');
+        cancel.addEventListener('click', () => picker.remove());
+        picker.append(select, confirm, cancel); row.append(picker); select.focus();
+      });
+    button.disabled = false;
+  }
+}
+
 function renderBibliographyIndex() {
   if (!bibliographyIndex || !bibliographyEmpty || !bibliographyCount) return;
   bibliographyIndex.replaceChildren(); bibliographyCount.textContent = String(bibliographyEntries.length);
@@ -4284,6 +4515,7 @@ function renderBibliographyIndex() {
       actions.append(external);
     }
     row.append(main);
+    renderBibliographyLocalLink(entry, row, actions);
     if (actions.childElementCount) row.append(actions);
     renderBibliographyCitations();
     bibliographyIndex.append(row);

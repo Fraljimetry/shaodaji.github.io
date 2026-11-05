@@ -1,0 +1,440 @@
+{
+  "schema": 1,
+  "code_version": "v359",
+  "campaign": "P0/P1 acceptance gap repair and paired source-level controls",
+  "source_gates": {
+    "status": "PASS",
+    "checks": 48,
+    "failed": 0
+  },
+  "browser_shell": "PASS",
+  "p0_full_document_acceptance": "INCOMPLETE",
+  "p1_real_document_navigation": "BLOCKED",
+  "strict_gate_expected_exit_code": 2,
+  "dependencies": {
+    "pdfjs": "MISSING: pinned genuine 4.10.38 browser and worker",
+    "texify": "NOT_EXECUTED",
+    "chromium_shell": "PASS"
+  },
+  "new_targeted_p0_p1_tests": 15,
+  "new_probe_unit_checks": 5,
+  "performance_comparator_tests": {
+    "test_methods": 54,
+    "status": "PASS"
+  },
+  "pdf_corpus": {
+    "total_unique_original_pdfs": 30,
+    "pages": 1521,
+    "low_native_pages": 22,
+    "native_extraction_failures": 0,
+    "parser_execution_failures": 0,
+    "ocr_proxy_attempted": 30,
+    "ocr_proxy_execution_failures": 0,
+    "ocr_proxy_timeouts": 0,
+    "ocr_proxy_empty_transcripts": 0,
+    "warm_cache_hits": {
+      "extraction": 30,
+      "detector": 30,
+      "ocr": 30
+    },
+    "all_whole_document_status": "UNVERIFIED",
+    "scope": "source-level PDF geometry and detector functions plus selected Tesseract text proxy; NOT complete PDF.js indexes or Texify image-to-LaTeX"
+  },
+  "originals": [
+    {
+      "filename": "581 Note 8.pdf",
+      "sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "pages": 3,
+      "low_native_page_count": 3,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "pages": 13,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Complete_Proofs_Conformal_Normal_Coordinates_and_Green_Function.pdf",
+      "sha256": "15968fc77edc8f2544f8a795cc1c8ae3825c1bbe2d32a33014a631c306cf5e4d",
+      "pages": 17,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Conformal_Normal_Coordinates_Rewritten_Proof.pdf",
+      "sha256": "b13d28baa13d1dc3b4014b6ee906b3abae58e71ea6e969105636907eecff54f9",
+      "pages": 8,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Detailed_Proof_Green_Function_Lemma_4_1.pdf",
+      "sha256": "04c5ae43c8070e77eaa0f46dca35f309514d120558e2ba2d0fc50d5bea6d45ea",
+      "pages": 10,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Green_Function_Expansion_Compact.pdf",
+      "sha256": "82ec030edb90a67a478f3c9dcdbb487858d7938f399dcbddf901e6a8f04c0492",
+      "pages": 1,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Green_Function_Expansion_Insert_Proof.pdf",
+      "sha256": "89641998ca3fc417a18fabb4ea4e3bbd20cf3d7a962be038368c033c585407e6",
+      "pages": 6,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Green_Function_Expansion_Ultra_Compact.pdf",
+      "sha256": "6417f0b725807b6785f4da42feb8b2412880fb8ddb10526a9e09360bb9bf1d21",
+      "pages": 1,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Inverse_Problems_Lectures_1_8.pdf",
+      "sha256": "d3c8b086654f0cc55fc1ddae6a6d31989c52d87f45b1df6123348f558f1ffd79",
+      "pages": 43,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Inversion_to_PMT_Bridge.pdf",
+      "sha256": "92809f20903ddb1b705a6cc144261db2f934272c970ce3f552a194b7ac7692f2",
+      "pages": 3,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Lemma_4_1_Mild_Proof_Guide.pdf",
+      "sha256": "f59740397aa39f5e0cc8d82dfd072723c6bcfb5b2390ea32772cbf105b9e21fc",
+      "pages": 5,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Marques2005.pdf",
+      "sha256": "7eb34246c5cfa5d1fcea7b091224b27c9e459bf34fe2660bdf85e409be57dca1",
+      "pages": 32,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Marques2005_Reading_Guide.pdf",
+      "sha256": "974f70543903670ab7dfa89386b1c8e4d45c633b07554062d72c100d75bf6b26",
+      "pages": 11,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "pages": 297,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Merriam_Webster_Pocket_Dictionary.pdf",
+      "sha256": "4c09d48fff443e628c567c32a026a4cf2a46f0ca828fe58ef5e1a8a053e86f7d",
+      "pages": 813,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Schoen_and_Yau_s_Proof_of_the_Positive_Mass_Theorem.pdf",
+      "sha256": "477320f9f67a967299116bd603df782cb06d56e7f52865a393dcf2516bc3f359",
+      "pages": 14,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "The_Classic_Solution_to_the_Yamabe_Problem_commented.pdf",
+      "sha256": "304bfe1e884b75fde55a064b6cdf1be3bec33342d9cdcc1f4eb305eff1e2bd0b",
+      "pages": 26,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces.pdf",
+      "sha256": "f9163309235ffe21546135b4a39a2657ed89691147432dcf00f2827e5a0525c1",
+      "pages": 19,
+      "low_native_page_count": 19,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "Yamabe_Conformal_Normal_Coordinates_Green_Function_Helper.pdf",
+      "sha256": "06e9c5587bbd524efd3a782db20948d7e73a433b273f6f162421f1316e625cec",
+      "pages": 6,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "blowup_limit_proposition.pdf",
+      "sha256": "46254d4737429590feb0ac2ac34225cd94a17e9f93fd62a279b87dbb18bc2b16",
+      "pages": 2,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "brendle_bm_yamabe_noncompactness_reading_guide.pdf",
+      "sha256": "1adf603acd9a198e347b953d9a9fb68a2a45ba206892ef1acd22c5491a086764",
+      "pages": 21,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "brendle_marques2009.pdf",
+      "sha256": "4dc024d33137fc022df9b1a35a5489d57734a9fe2ed7694c8ef990a5d4375c14",
+      "pages": 26,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "caffarelli1989_retyped.pdf",
+      "sha256": "e0b91a73a4c4977a7d0e3234ce7555484994ca8861984ac768f177010d842cd1",
+      "pages": 21,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "chapter6_locally_conformally_flat_summary.pdf",
+      "sha256": "e2dce7d7d14bf30e541730070277737dd4b007c62dac82800efaf3909ebdd1f6",
+      "pages": 14,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "colleague_inverted_bubble_detailed.pdf",
+      "sha256": "22b4fb8472c77e41681f1bf3160f14e1db2640efe377e475621c84b1a1c6744e",
+      "pages": 4,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "geometrical_hypothesis_Banach.pdf",
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "pages": 10,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "inversion_adm_mass.pdf",
+      "sha256": "abe619f94495d8b39737367541351367fc7d1f967ec433aaa1b71343b354b6ec",
+      "pages": 5,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "inversion_pmt_onepage.pdf",
+      "sha256": "cf8b4af90a89177bebb88319ba30c1e115262ddce035ad621f922f62c34c4925",
+      "pages": 1,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "lean_quintessential_examples_collection_overleaf_pdflatex.pdf",
+      "sha256": "273708ad97675be9e0508bf56f50d44e07cac8ebf91e5d7dab7287975496aec0",
+      "pages": 76,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    },
+    {
+      "filename": "mathreader_formula_ocr_stress_test.pdf",
+      "sha256": "44603cabbad64f4fc93199ce91a098230ff44a215c72cc0c0b20c56ab41c93de",
+      "pages": 13,
+      "low_native_page_count": 0,
+      "extraction_errors": [],
+      "parser_status": null,
+      "ocr_proxy_status": [
+        "ok"
+      ],
+      "formula_ground_truth": "UNVERIFIED",
+      "full_document_accuracy": "UNVERIFIED"
+    }
+  ],
+  "known_limits": [
+    "Real browser PDF.js and Texify were unavailable; no direct PDF.js or model success is claimed",
+    "No independent whole-document goldens certified for this batch",
+    "Previous verified FAILs and all historic UNVERIFIED items remain open"
+  ]
+}

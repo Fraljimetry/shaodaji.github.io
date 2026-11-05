@@ -27,6 +27,12 @@ class P0ComparisonTests(unittest.TestCase):
         self.pdf=self.root/'synthetic_comparator_control.pdf'
         doc.save(self.pdf);doc.close()
         self.sha=p0.sha256(self.pdf)
+        self.crop_dir=self.root/'browser_formula_crops'
+        self.crop_dir.mkdir()
+        self.crop_path=self.crop_dir/'original-formula.png'
+        from PIL import Image
+        Image.new('RGB',(4,4),'white').save(self.crop_path,format='PNG')
+        self.crop_sha=p0.sha256(self.crop_path)
         self.entry={
             'id':'synthetic','path':str(self.pdf),'sha256':self.sha,'pages':2,
             'ground_truth':{
@@ -41,7 +47,7 @@ class P0ComparisonTests(unittest.TestCase):
                     'equations':[{'label':'(1.1)','page':1,'ratio':.35}],
                     'bibliography':[{'label':'[1]','title':'An example','page':2,'ratio':.83}],
                 },
-                'formulas':[{'id':'formula-1','page':1,'latex':'a=b','crop_sha256':'a'*64}]
+                'formulas':[{'id':'formula-1','page':1,'latex':'a=b','crop_sha256':self.crop_sha}]
             }
         }
         self.capture={
@@ -50,7 +56,8 @@ class P0ComparisonTests(unittest.TestCase):
             'errors':[], 'navigation':{'status':'PASS'},'persistence':{'status':'PASS'},
             'indexes':copy.deepcopy(self.entry['ground_truth']['indexes']),
             'formula_cases':[{'id':'formula-1','page':1,'latex':'a=b','compiled':True,
-                               'origin':'actual_texify_browser','crop_sha256':'a'*64}]
+                               'origin':'actual_texify_browser','crop_sha256':self.crop_sha,
+                               'crop_evidence_filename':'original-formula.png','backend':'synthetic-model-label'}]
         }
         self.store()
 
@@ -67,6 +74,95 @@ class P0ComparisonTests(unittest.TestCase):
         item=copy.deepcopy(self.entry);item.pop('ground_truth')
         value=self.check(item)
         self.assertEqual(value['classification'],'UNVERIFIED')
+
+    def test_missing_ground_truth_location_ratios_never_pass(self):
+        item=copy.deepcopy(self.entry)
+        for rows in item['ground_truth']['indexes'].values():
+            for row in rows: row.pop('ratio',None)
+        for rows in self.capture['indexes'].values():
+            for row in rows: row.pop('ratio',None)
+        self.store()
+        self.assertEqual(self.check(item)['classification'],'UNVERIFIED')
+
+    def test_invalid_ground_truth_location_ratio_never_pass(self):
+        item=copy.deepcopy(self.entry)
+        item['ground_truth']['indexes']['results'][0]['ratio']=float('nan')
+        self.assertEqual(self.check(item)['classification'],'UNVERIFIED')
+
+    def test_capture_root_nonobject_is_unverified_not_crash(self):
+        (self.root/f'{self.sha}.json').write_text('[]')
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_malformed_evidence_stress_never_raises(self):
+        original_entry=copy.deepcopy(self.entry)
+        original_capture=copy.deepcopy(self.capture)
+        values=[None,False,True,0,19,'bad',[],[1],{},float('nan')]
+        fields=[('capture','engine'),('capture','stages'),('capture','indexes'),
+                ('capture','errors'),('capture','navigation'),('capture','persistence'),
+                ('capture','formula_cases'),('entry','complete_categories'),
+                ('entry','known_open_defects'),('entry','reviewed_pages')]
+        for which,key in fields:
+            for value in values:
+                self.entry=copy.deepcopy(original_entry)
+                self.capture=copy.deepcopy(original_capture)
+                if which=='entry':self.entry['ground_truth'][key]=value
+                else:self.capture[key]=value
+                self.store()
+                with self.subTest(section=which,key=key,value=repr(value)):
+                    self.assertIn(self.check()['classification'],('PASS','FAIL','UNVERIFIED','EXCEPTION'))
+
+    def test_null_engine_is_unverified_not_crash(self):
+        self.capture['engine']=None;self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_null_stages_are_unverified_not_crash(self):
+        self.capture['stages']=None;self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_null_indexes_are_unverified_not_crash(self):
+        self.capture['indexes']=None;self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_null_navigation_is_unverified_not_crash(self):
+        self.capture['navigation']=None;self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_malformed_formula_identifier_does_not_crash(self):
+        self.capture['formula_cases'].append({'id':[],'page':1});self.store()
+        self.assertEqual(self.check()['classification'],'FAIL')
+
+    def test_nonfinite_performance_measurement_never_passes(self):
+        self.entry['performance_thresholds']={'max_open_ms':100}
+        for measurement in [float('nan'), float('inf'), -1, True, '10']:
+            with self.subTest(measurement=repr(measurement)):
+                self.capture['metrics']={'open_ms':measurement}
+                self.store()
+                self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_invalid_performance_threshold_never_passes(self):
+        self.capture['metrics']={'open_ms':10}
+        self.store()
+        for threshold in [float('nan'), float('inf'), -10, True, '10']:
+            with self.subTest(threshold=repr(threshold)):
+                self.entry['performance_thresholds']={'max_open_ms':threshold}
+                self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_null_performance_metrics_with_threshold_is_unverified(self):
+        self.entry['performance_thresholds']={'max_open_ms':100}
+        self.capture['metrics']=None;self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_null_complete_categories_is_unverified_not_crash(self):
+        self.entry['ground_truth']['complete_categories']=None
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_scalar_known_open_defects_is_unverified_not_crash(self):
+        self.entry['ground_truth']['known_open_defects']=7
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_malformed_error_list_is_unverified(self):
+        self.capture['errors']=None;self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
 
     def test_missing_reviewed_page_never_passes(self):
         item=copy.deepcopy(self.entry);item['ground_truth']['reviewed_pages']=[1]
@@ -142,6 +238,49 @@ class P0ComparisonTests(unittest.TestCase):
         self.store()
         self.assertEqual(self.check()['classification'],'UNVERIFIED')
 
+
+    def test_malformed_nan_ratio_cannot_pass(self):
+        self.capture['indexes']['results'][0]['ratio']=float('nan')
+        self.store()
+        self.assertEqual(self.check()['classification'],'FAIL')
+
+    def test_out_of_range_index_page_cannot_pass_even_if_truth_matches(self):
+        self.entry['ground_truth']['indexes']['equations'][0]['page']=40
+        self.capture['indexes']['equations'][0]['page']=40
+        self.store()
+        self.assertEqual(self.check()['classification'],'FAIL')
+
+    def test_fractional_page_number_cannot_be_truncated_to_valid(self):
+        self.capture['indexes']['equations'][0]['page']=1.5
+        self.store()
+        self.assertEqual(self.check()['classification'],'FAIL')
+
+    def test_index_order_mismatch_is_failure(self):
+        original=self.entry['ground_truth']['indexes']['structure'][0]
+        other={'title':'Second section','page':2,'ratio':.9}
+        self.entry['ground_truth']['indexes']['structure']=[original,other]
+        self.capture['indexes']['structure']=[other,original]
+        self.store()
+        self.assertEqual(self.check()['classification'],'FAIL')
+
+    def test_missing_formula_backend_is_unverified(self):
+        self.capture['formula_cases'][0].pop('backend')
+        self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_missing_formula_source_png_is_unverified(self):
+        self.crop_path.unlink()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_tampered_formula_source_png_is_unverified(self):
+        self.crop_path.write_bytes(b'wrong crop')
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
+    def test_formula_crop_path_escape_is_unverified(self):
+        self.capture['formula_cases'][0]['crop_evidence_filename']='../source.png'
+        self.store()
+        self.assertEqual(self.check()['classification'],'UNVERIFIED')
+
     def test_missing_actual_formula_ocr_is_unverified(self):
         self.capture['formula_cases']=[];self.store()
         self.assertEqual(self.check()['classification'],'UNVERIFIED')
@@ -187,6 +326,15 @@ class P0ComparisonTests(unittest.TestCase):
     def test_known_open_defect_remains_fail(self):
         self.entry['ground_truth']['known_open_defects']=['false equation at page 1']
         self.assertEqual(self.check()['classification'],'FAIL')
+
+    def test_confirmed_browser_error_sets_aggregate_fail_not_incomplete(self):
+        self.capture['errors']=['PDF.js reported a real error']
+        self.store()
+        manifest=self.root/'manifest-confirmed-fail.json'
+        manifest.write_text(json.dumps({'schema':1,'documents':[self.entry]}),encoding='utf8')
+        audit=p0.run(manifest,self.root)
+        self.assertEqual(audit['documents'][0]['classification'],'FAIL')
+        self.assertEqual(audit['acceptance'],'FAIL')
 
     def test_manifest_duplicate_bytes_rejected(self):
         data={'schema':1,'documents':[self.entry,self.entry]}

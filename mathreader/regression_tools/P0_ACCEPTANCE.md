@@ -1,4 +1,4 @@
-# MathReader P0 — automated browser + independently verified mathematical acceptance (v355)
+# MathReader P0 — automated browser + independently verified mathematical acceptance (v355–v359)
 
 This is a **regression tool**, not a reader feature. It does **not** add controls to MathReader, preload Formula OCR, alter PDF extraction, or relax recognition thresholds. `p0_gate.py` is the preferred one-command entry point.
 
@@ -97,3 +97,52 @@ The browser renders the original page and crops this rectangle itself, verifies 
 ## Maintaining P0
 
 Do not turn off expensive checks to make a report green. Keep a small human-verified golden corpus and a large unverified stress corpus, preserve the hashes and all open errors, rerun both text and formulas after every relevant source change, and distinguish isolated UI fault injection from real Texify/production execution. Future PDF regression additions must continue to include paired formula evidence from those same PDFs. Mathematical detections cannot be self-certified from earlier MathReader output.
+
+
+## v356 P0/P1 bug-audit safeguards
+
+`p0_gate.py` now includes the conservative cross-document JavaScript VM test,
+P1 isolated Chromium UI smoke, and P0 stale-capture/fresh-error tests. A new
+`--manifest` run clears any prior `browser-documents` and `ground-truth`
+outputs in its output directory before testing; only records captured during
+that invocation may contribute to accuracy. A fresh actual browser PDF.js error
+must remain FAIL even if another PDF capture is incomplete. If the browser run
+is not PASS, a comparator PASS cannot promote the release to overall PASS.
+
+`tests/p1_browser_smoke.py` uses the *real v356 MathReader DOM and JS*, but
+explicitly simulates the PDF backend. It validates link confirmation and return
+UI only, not actual PDF.js rendering, Texify inference, or final math indexes.
+Cross-document navigation requires manual confirmation of exact cached PDF
+identity; direct theorem matching across papers is intentionally not provided.
+Remaining live-browser/PDF.js, genuine IndexedDB persistence, and complete
+ground-truth gaps are recorded in `../REGRESSION.md` and `../regression/p1_v356_20261105.json`.
+
+## v357 — Real P1 and stricter golden evidence
+
+The optional genuine two-PDF browser scenario is now included in P0's one-command gate. Supply **two original, different PDF files**, with at least one *numbered bibliography entry* in the source PDF:
+
+```bash
+python mathreader/regression_tools/p0_gate.py \
+  --source-root mathreader --out-dir /path/to/audit \
+  --p1-source-pdf /path/to/source-with-bibliography.pdf \
+  --p1-target-pdf /path/to/different-local-paper.pdf \
+  --pdfjs-build /path/to/pdfjs-dist-4.10.38/build --require-p1-real
+```
+
+The separate `p1_browser_e2e.py` runner may also be used directly. A genuine PASS requires loaded PDF.js 4.10.38, two exact cached original PDFs, source-bibliography UI link confirmation, real target opening and page-position return, persisted link after reload, and no eager OCR. A missing PDF.js package yields an explicit **BLOCKED**, never a fake PASS. This scenario **does not test actual Texify** or independently verify whole-document mathematical accuracy.
+
+The P0 formula comparator now checks the browser-captured **PNG file bytes**, not only a claimed crop hash in JSON; the file must be present under `browser-documents/browser_formula_crops/`, have a safe basename, valid PNG signature and matching SHA, with a real backend field. Ground-truth/actual index pages and ratios must be valid and ordered. Test-only synthetic comparator fixtures are not source-ground-truth evidence.
+
+## v358 integrity requirements
+
+A complete golden index now requires a finite within-page `ratio` and exact integer `page` for every Structure/Results/Equations/Bibliography entry. Otherwise the document remains UNVERIFIED even if all labels match. Malformed browser capture and review JSON must be rejected without crashing. The real P1 gate exposes `detail_status=BLOCKED` when pinned PDF.js assets are missing; a generic process-level INCOMPLETE never certifies P1. v358 adds stress tests for these cases. Review `regression/p0_p1_v358_20261106.json` for the actual 110-PDF/15-LaTeX campaign and blocked engine preflights.
+
+## v359 — Separate PDF.js acceptance from optional Texify crop inference
+
+- A requested formula case **does not block** real PDF.js indexing when the model is unavailable. The real `pdfjs-dist@4.10.38` build is still mandatory for every full browser-PDF run. Missing it means BLOCKED/UNVERIFIED.
+- Without `--allow-texify-network`, each requested formula rectangle is rendered/cropped in the actual PDF.js browser, returned as `origin: original_pdf_browser_crop` with PNG evidence and SHA-256, and explicitly classified UNVERIFIED for formula transcription; no Texify inference or initialization occurs. With no pinned PDF.js, no such source crop can be claimed or produced.
+- With explicit real inference, a Texify output that fails MathJax compilation is a true browser failure. A missing/failing navigation or persisted reopen is also a failure or incomplete stage, not a completed capture.
+- Test-only equation-anchor probes preserve non-finite or absent within-page ratios as invalid rather than silently turning them into zero. Performance measurements must be finite nonnegative numbers, with finite positive user-specified ceilings.
+- The v359 source gate does not assert full P0 or P1 acceptance. Supply pinned local PDF.js assets, real source-linked formula crops, and independent complete golden ground truth, then use `--require-p0-full --require-p1-real` to demand strict acceptance. If prerequisites are absent, exit status 2 is expected and must not be interpreted as a passing E2E test.
+
+- On an image-only PDF without a completed real document-OCR stage, the browser probe reports `P0_REQUIRES_DOCUMENT_OCR` and the index coverage remains **UNVERIFIED**. The file is not mislabeled as a detector failure simply because an OCR stage was not run; genuine runtime failures still FAIL.

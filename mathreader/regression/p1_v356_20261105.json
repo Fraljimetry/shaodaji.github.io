@@ -1,0 +1,595 @@
+{
+  "schema": 1,
+  "release": "v356",
+  "date_beijing": "2026-11-05",
+  "scope": "P1 behavior + P0 fail-closed audit; 50 PDF source-level differential",
+  "source_comparison": {
+    "older": "v355",
+    "newer": "v356",
+    "documents": 50,
+    "pages": 2437,
+    "byte_unique": true,
+    "fields_compared": [
+      "pages",
+      "native_text_chars",
+      "native_lines",
+      "low_native_page_count",
+      "native_extraction_errors",
+      "formula_region",
+      "detector_proxy",
+      "browser_final_indexes",
+      "actual_texify_formula_ocr",
+      "formula_compilation",
+      "full_document_accuracy"
+    ],
+    "different_fields": [],
+    "method": "Native PyMuPDF text geometry + unchanged MathReader source-level detector; original PDF bytes SHA-256 verified",
+    "limitations": [
+      "NOT final browser PDF.js detection or index truth",
+      "OCR disabled for this differential",
+      "No independent whole-PDF ground truth",
+      "Actual Texify and PDF.js dependencies blocked in this runtime"
+    ]
+  },
+  "checks": {
+    "p1_vm_behavior_assertions": 61,
+    "p1_chromium_ui_assertions": 16,
+    "p0_gate_isolation_tests": 3,
+    "p0_comparator_unit_tests": 31,
+    "p0_legacy_shell": "PASS",
+    "full_p0_mathematical_acceptance": "INCOMPLETE"
+  },
+  "regression_investigations": [
+    {
+      "area": "P1",
+      "issue": "Concurrent cross-PDF clicks could race IndexedDB lookup",
+      "correction": "Lock before first async operation",
+      "status": "PASS in VM"
+    },
+    {
+      "area": "P1",
+      "issue": "Failed page-anchor restoration could consume return history",
+      "correction": "Pop return path only after goToLocation success; restore previous suppression flag",
+      "status": "PASS in VM"
+    },
+    {
+      "area": "P1",
+      "issue": "Delayed session/recovery writes could land in next document",
+      "correction": "Capture exact source identity and generation, flush prior document before switching",
+      "status": "PASS in VM"
+    },
+    {
+      "area": "P1",
+      "issue": "Forgetting source PDF could leave confirmed local bibliography metadata",
+      "correction": "Delete its metadata key; inbound links fail unavailable until explicitly re-linked",
+      "status": "source + VM checks"
+    },
+    {
+      "area": "P0",
+      "issue": "Stale captured browser results could incorrectly satisfy a new acceptance run",
+      "correction": "Remove previous capture/truth directories before every manifest run; accept only fresh hash-addressed records",
+      "status": "Python regression PASS"
+    },
+    {
+      "area": "P0",
+      "issue": "Fresh partial browser errors previously lost when browser process incomplete",
+      "correction": "Compare fresh partial records; aggregate confirmed FAIL; never promote incomplete run to PASS",
+      "status": "Python regression PASS"
+    }
+  ],
+  "documents": [
+    {
+      "name": "rose_tile_thinking.pdf",
+      "sha256": "1657af262b6c24590a609e35f14becb86dc9bb1025b9e0438e8e47123bc96e83",
+      "pages": 1,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 5,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "rose_tile_solution.pdf",
+      "sha256": "e89de75a02f8728be02af41fec1347a9b8bb37f91b4df9ed3157a9c9a8be522e",
+      "pages": 2,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 4,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "A_Geometric_Approach_to_Integration.pdf",
+      "sha256": "2363c2bb5bb28382fe883cc4d27ba33e3e4bf0d6970b103efb9212d89bb5fdda",
+      "pages": 6,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Fraljiculator_ArrayPool_Architecture_Updated.pdf",
+      "sha256": "4b51daf5cf2a3a19674189b0572ca67b158c6f2be870cf23d1f69f40bdb2f0b2",
+      "pages": 16,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 59,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Green_Function_Expansion_One_Page.pdf",
+      "sha256": "f3ae81145fa79a98c4c4edb3d25551994041cdc05e92988539a2343ebfcca9e1",
+      "pages": 1,
+      "result_candidate_count": 1,
+      "raw_equation_label_lines": 20,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Where_do_Complex_Numbers_come_from_.pdf",
+      "sha256": "c97034a8564c94a61a4556c3f3f60ce2fe6bc2701a839303d83d377edf7f4d41",
+      "pages": 3,
+      "result_candidate_count": 4,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Riemann球面上的旋转_Fraljimetry.pdf",
+      "sha256": "51d68e23431152dfb6fcca0b06cbfda4ae99482100efd5cd457a24168f37cb55",
+      "pages": 2,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 1,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "colleague_inverted_bubble.pdf",
+      "sha256": "79641ac6972844bc44c6653070b436a80ee3bb2ad6c601172dab6250ecad218f",
+      "pages": 3,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 26,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Inversion_to_ADM_Mass.pdf",
+      "sha256": "f0ed3553ff09a6a87f26b0924a44529581aeebc2f92bd7a082bce2535e34f589",
+      "pages": 5,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 80,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "2309.00806v2.pdf",
+      "sha256": "2b3f517b0f9a67b499a9cb3c757f5c4016a551fca9a8b22fbd02e6eb7b365501",
+      "pages": 15,
+      "result_candidate_count": 28,
+      "raw_equation_label_lines": 10,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Radon Measures and Riesz Representation Theorems.pdf",
+      "sha256": "743bb57222fea38259af4775782ba0229e18d8f929d8d32bf2b0e389ffb0d0a0",
+      "pages": 10,
+      "result_candidate_count": 17,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "A_Streamlined_Proof_of_the_Yamabe_Problem.pdf",
+      "sha256": "020a93cb9463ae1e0fafa6d4fbf177a8c272a587e589eb55afa545f47e48262d",
+      "pages": 18,
+      "result_candidate_count": 10,
+      "raw_equation_label_lines": 124,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Inverse_Problems_Lecture_1.pdf",
+      "sha256": "6c94aef8cc41cd5dcecc63c635f07cdb5bb049f60083e7874918c46b3f4b1008",
+      "pages": 6,
+      "result_candidate_count": 3,
+      "raw_equation_label_lines": 54,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "covering_spaces_for_geometric_analysis.pdf",
+      "sha256": "2edd93daf82732ce16de9ce40a429fec5f685baad5f2ba66c4d9ef5998cb60bc",
+      "pages": 18,
+      "result_candidate_count": 15,
+      "raw_equation_label_lines": 33,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Lean_Diagonal_Similarity_Beginner_Guide.pdf",
+      "sha256": "9b8375d5845fe229752ffa6e93a48a60346761f1805c7c6fa6abe8515e3cb606",
+      "pages": 18,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Computation_VS_Dark.pdf",
+      "sha256": "46e789a22049bbc12ebf2cf80c569819b520abacad4bad207f185c47dcdd081e",
+      "pages": 25,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 8,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "124ws2.pdf",
+      "sha256": "3ee5a3d89da674bb63066419644f9b78a40b3266db4f769b7b844ade1b44335c",
+      "pages": 6,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "brendle2007.pdf",
+      "sha256": "206fc4719f3dbb04f56c9a6acf4ee26dc10b86d052d8f9f90e09522be951829d",
+      "pages": 29,
+      "result_candidate_count": 34,
+      "raw_equation_label_lines": 57,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Yamabe_missing_inputs_detailed_proofs.pdf",
+      "sha256": "1044240619a6c240344c4769ab9b8b28739762b7b15cf807e7bc0177a4742baf",
+      "pages": 15,
+      "result_candidate_count": 7,
+      "raw_equation_label_lines": 116,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Schoen_Yau_Positive_Mass_Step_Tables.pdf",
+      "sha256": "402bfcde810a1ba64d5d9230861a6704f27a2e4216070fd3dd51cee8356718b7",
+      "pages": 9,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 28,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Fraljiculator_Performance_Optimization_Closeout_Report.pdf",
+      "sha256": "d4d27608861aa951945d1bda0d686bf51dcecb2f0ad2565065273604bc0a67c0",
+      "pages": 6,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 77,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Math124_Week2_Distance_Speed_Solutions.pdf",
+      "sha256": "66c25b9433838b8868ebf72117ad2d8163d20e4174834b0db23adcd9b8c57870",
+      "pages": 4,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 1,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "sha256": "4c64c76edaf0868ccf232e33fdcf1a696dce0490e374526754db80ba4fd305f1",
+      "pages": 26,
+      "result_candidate_count": 13,
+      "raw_equation_label_lines": 369,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "sha256": "92f5f086a7fefd4f467d6f0589573de06268a92c32dc47a481bb503857536c8b",
+      "pages": 18,
+      "result_candidate_count": 19,
+      "raw_equation_label_lines": 159,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Yamabe_Review_Math_Corrected.pdf",
+      "sha256": "b502979467c03369dfbd37627cec8bce1a6b4c5b84dd2faa2178ba1c5b31b1c7",
+      "pages": 26,
+      "result_candidate_count": 13,
+      "raw_equation_label_lines": 369,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "double_spiral_surface_revision_spec.pdf",
+      "sha256": "192c2b1cdb334959dd749ae7cce456c2bd88878a0984e361c444720192dc3592",
+      "pages": 13,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 45,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Code_final.pdf",
+      "sha256": "7752a424286ed8d0d4847286934db925fe4e57965d7eb551662ae83f91e62f29",
+      "pages": 40,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 29,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "lean_quintessential_examples_collection.pdf",
+      "sha256": "3c07f02b2f630fcec0b85848c5b475e97ebcb52b8a9d3357e5522db8d3541a3f",
+      "pages": 76,
+      "result_candidate_count": 259,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "祝福_魯迅_分段修正版.pdf",
+      "sha256": "0f03aec6125238df242d8c44489375691bf9eb9e90d232aea9bdb0e285d8d332",
+      "pages": 8,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "1209.2203v2.pdf",
+      "sha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "pages": 88,
+      "result_candidate_count": 65,
+      "raw_equation_label_lines": 492,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Seattle_UDistrict_vs_Xian_Beilin_房价与租金详细对比_2026-09.pdf",
+      "sha256": "c3c884cd95e4c10e9a2aeac6fa9cea71e92eb09e2563ab72cd1651239231f2d0",
+      "pages": 8,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 22,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Seattle_UDistrict_vs_Xian_Beilin_超市典型商品价格详细对比_2026-09.pdf",
+      "sha256": "76d201b41c1b79772eaa25867f079a6894b0604c67fddfc19ec69d2db026016b",
+      "pages": 8,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 13,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "micro_geometry_covers_4x3_safe.pdf",
+      "sha256": "977e3454f1aadf69348a8a0eda64295f521c9a4affc58f524bee9815e8bd4628",
+      "pages": 70,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "581 Note 4.pdf",
+      "sha256": "fa64cbd4eb31be5d9cb64506986b0df0f6db658cb84d83b02216c4e73533b0fc",
+      "pages": 2,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "581 Note 6.pdf",
+      "sha256": "7c25285efdab09cf325a5aeec4a8410eb751720f5be99d3896ca0ac6e752b634",
+      "pages": 2,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "581 Note 2.pdf",
+      "sha256": "dce01da39ac90062dc65eb638212ad1b46a663f1c90ee34f5b6af7d890d554f2",
+      "pages": 2,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "caffarelli1989.pdf",
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "pages": 27,
+      "result_candidate_count": 18,
+      "raw_equation_label_lines": 111,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf",
+      "sha256": "864dc3d4e2f275137d6d1849eeb7571579277151c251e6dc9feefe098bc04669",
+      "pages": 3,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 20,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "无穷的历史.pdf",
+      "sha256": "6b2c1dca9af46183fe15e19cad5252458a56c3b673a3dbf36c304dc2861b6392",
+      "pages": 19,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "lectures_on_pde_split_pages.pdf",
+      "sha256": "873f2ac7aaeee89363b1eca9ca9201a6c652d81aa7506cfab007f558c5c4c42c",
+      "pages": 236,
+      "result_candidate_count": 106,
+      "raw_equation_label_lines": 600,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "geometric_measure_theory_split_pages.pdf",
+      "sha256": "7111b094337a1028fdeffe5690ad4554c8b770b6492d37eb1045b4d8c078824a",
+      "pages": 274,
+      "result_candidate_count": 214,
+      "raw_equation_label_lines": 1598,
+      "bibliography_heading_count": 3,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Inverse_Problems_Lectures_1_7.pdf",
+      "sha256": "e948f767fe76724ff9b6be9f759f2af9b4443807d21e8650a2d58f74ef3a64ca",
+      "pages": 38,
+      "result_candidate_count": 30,
+      "raw_equation_label_lines": 270,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "Merriam_Webster_Pocket_Dictionary.pdf",
+      "sha256": "4c09d48fff443e628c567c32a026a4cf2a46f0ca828fe58ef5e1a8a053e86f7d",
+      "pages": 813,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 3,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "581 Note 5.pdf",
+      "sha256": "ffaa8198e6005d82afdc30df1404b4a20c58b71a5573a5f712177bfacac5ab7e",
+      "pages": 4,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "GA Seminar Note 1.pdf",
+      "sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "pages": 4,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "yau1978.pdf",
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "pages": 73,
+      "result_candidate_count": 13,
+      "raw_equation_label_lines": 387,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "0810.5645v6.pdf",
+      "sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "pages": 212,
+      "result_candidate_count": 237,
+      "raw_equation_label_lines": 1344,
+      "bibliography_heading_count": 1,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "YamabeProblem.pdf",
+      "sha256": "11a7a3c6feb9ec6531b6bd99e30644d13ad9759d952a83c69d08ea3ad60f0b67",
+      "pages": 56,
+      "result_candidate_count": 63,
+      "raw_equation_label_lines": 171,
+      "bibliography_heading_count": 2,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "汲绍达诗词文稿集_完整整理版_修订.pdf",
+      "sha256": "4450a704a34e8c8fd769a1cfebc71e947f7e13c44d51f54394810160923de2c2",
+      "pages": 36,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    },
+    {
+      "name": "汲绍达诗词文稿集_完整整理版.pdf",
+      "sha256": "af3f0355cdb0ca4c33706feeb29e4a6ceb6f47d92ceb2712a71787fe5b6d7d18",
+      "pages": 37,
+      "result_candidate_count": 0,
+      "raw_equation_label_lines": 0,
+      "bibliography_heading_count": 0,
+      "parser_exceptions": 0,
+      "accuracy": "UNVERIFIED"
+    }
+  ],
+  "classification": {
+    "PASS_fully_verified": 0,
+    "FAIL_new_end_to_end": 0,
+    "UNVERIFIED": 50,
+    "EXCEPTION": 0
+  },
+  "explicit_unverified": [
+    "Actual cross-paper target page rendered by production PDF.js",
+    "Real browser IndexedDB round-trip under live loaded PDFs",
+    "Actual Texify inference, handwriting and scanned PDFs",
+    "Whole-document golden mathematical content accuracy",
+    "Source and target session restoration across full browser restart"
+  ]
+}

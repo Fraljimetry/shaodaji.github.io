@@ -1,0 +1,545 @@
+{
+  "schema": "mathreader.ui_stability_regression.v1",
+  "version": "v360",
+  "prior_version": "v359",
+  "date_beijing": "2026-11-06",
+  "campaign": "responsive UI, performance, stability and paired real-PDF nonregression",
+  "source_reconstruction": "v347 original ZIP + sequential root overlays v348..v359 matched entire v359 source byte-for-byte (61 files)",
+  "changed_runtime_areas": [
+    "index.html markup/cache keys",
+    "mathreader.css mobile breakpoints",
+    "mathreader.js version",
+    "js/70-command-ui-runtime.js mobile button bindings"
+  ],
+  "confirmed_v359_ui_defects": [
+    "At viewport widths <=860 px, a higher-specificity desktop collapse grid overrode the mobile grid, squeezing the reader stage.",
+    "Open PDF header button was hidden for touch-only users even after closing the welcome screen.",
+    "Contents and Workspace mobile side panels had no visible touch controls to open or close.",
+    "The P1 return control could push narrow-phone toolbar controls out of view.",
+    "Mobile off-canvas sidebars could extend the root document scroll width."
+  ],
+  "implemented_changes": [
+    "Explicit one-column mobile grid overrides all desktop collapsed combinations and anchors side panels within the reader.",
+    "Mobile-only Contents and Workspace toggles, inside-panel close buttons, and synchronized expanded state.",
+    "Keep the header Open PDF button visible on mobile.",
+    "Two-row toolbar for <=520 px so P1 Return, page controls and zoom remain visible.",
+    "No changed mathematical detector, formula model, document OCR, cache schema or reference mapping."
+  ],
+  "chromium_ui": {
+    "scope": "actual production ten-part JavaScript and stylesheet, isolated Chromium DOM; no PDF.js/Texify model",
+    "status": "PASS",
+    "assertions": 139,
+    "passed": 139,
+    "screen_widths": [
+      320,
+      375,
+      390,
+      520,
+      768,
+      860,
+      861,
+      1024,
+      1440
+    ],
+    "touch_emulated": [
+      "375x667",
+      "640x320"
+    ],
+    "stress_cycles": 30,
+    "dom_node_growth": 0,
+    "uncaught_ui_exceptions": 0,
+    "cold_shell_load_wall_clock_median_s": 0.229,
+    "cold_shell_load_wall_clock_samples_s": [
+      {
+        "width": 320,
+        "shell_s": 0.4507
+      },
+      {
+        "width": 375,
+        "shell_s": 0.2495
+      },
+      {
+        "width": 390,
+        "shell_s": 0.2546
+      },
+      {
+        "width": 520,
+        "shell_s": 0.2332
+      },
+      {
+        "width": 768,
+        "shell_s": 0.2009
+      },
+      {
+        "width": 860,
+        "shell_s": 0.2288
+      },
+      {
+        "width": 861,
+        "shell_s": 0.2116
+      },
+      {
+        "width": 1024,
+        "shell_s": 0.2146
+      },
+      {
+        "width": 1440,
+        "shell_s": 0.2031
+      }
+    ],
+    "performance_caution": "This is a local Chromium shell setup time, not production PDF render, OCR latency, CPU, or memory benchmark."
+  },
+  "real_pdf_nonregression": {
+    "pdf_count": 80,
+    "page_count": 1096,
+    "same_pdf_sha256_v359_v360": true,
+    "independent_cold_extraction_and_detector_runs": true,
+    "fields_identical_count": {
+      "pages": 80,
+      "native_text_chars": 80,
+      "native_lines": 80,
+      "low_native_page_count": 80,
+      "native_extraction_errors": 80,
+      "formula_region": 80,
+      "detector_proxy": 80,
+      "full_document_accuracy": 80,
+      "ocr_proxy_contents": 80
+    },
+    "tesseract_ocr_proxy_selected_pages": 80,
+    "tesseract_execution_errors": 0,
+    "tesseract_timeouts": 0,
+    "tesseract_empty": 0,
+    "v359_elapsed_ms": 15579,
+    "v360_elapsed_ms": 16651,
+    "formula_latex_source_linked_cases": 10,
+    "formula_latex_mathjax_compile_ok": 10,
+    "formula_source_note": "From human-transcribed source-linked golden references in the previous v352 corpus; not fresh Texify image recognition.",
+    "accuracy_classifications": {
+      "PASS_fully_verified": 0,
+      "FAIL_confirmed_new_detection": 0,
+      "UNVERIFIED": 80,
+      "EXCEPTION": 0
+    },
+    "files": [
+      {
+        "filename": "14922fe9-aa1a-4a9c-8698-ee3ff46b703d.pdf",
+        "sha256": "216360ed33b909fec9d013819a1c26c6c06f23f8025d2a663dc2d2c342922baf",
+        "pages": 2
+      },
+      {
+        "filename": "581 Note 1.pdf",
+        "sha256": "64a4ab741bae301ab16bf683d80d6811bd7fe9464bfd112c7fbae005c6c589e2",
+        "pages": 1
+      },
+      {
+        "filename": "581 Note 3.pdf",
+        "sha256": "8c11eecc4577e9c271d1163e7f98669936d17cb3775fd00da9e2c49937dac299",
+        "pages": 3
+      },
+      {
+        "filename": "581 Note 7.pdf",
+        "sha256": "5b12c2c951e1784154505935d20715278b7f458218a75775507488950e48e676",
+        "pages": 3
+      },
+      {
+        "filename": "Fraljiculator_ArrayPool_Architecture_Updated.pdf",
+        "sha256": "4b51daf5cf2a3a19674189b0572ca67b158c6f2be870cf23d1f69f40bdb2f0b2",
+        "pages": 16
+      },
+      {
+        "filename": "SPS_1988__22__485_0.pdf",
+        "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+        "pages": 18
+      },
+      {
+        "filename": "124ws2.pdf",
+        "sha256": "3ee5a3d89da674bb63066419644f9b78a40b3266db4f769b7b844ade1b44335c",
+        "pages": 6
+      },
+      {
+        "filename": "581 Note 2.pdf",
+        "sha256": "dce01da39ac90062dc65eb638212ad1b46a663f1c90ee34f5b6af7d890d554f2",
+        "pages": 2
+      },
+      {
+        "filename": "581 Note 4.pdf",
+        "sha256": "fa64cbd4eb31be5d9cb64506986b0df0f6db658cb84d83b02216c4e73533b0fc",
+        "pages": 2
+      },
+      {
+        "filename": "581 Note 5.pdf",
+        "sha256": "ffaa8198e6005d82afdc30df1404b4a20c58b71a5573a5f712177bfacac5ab7e",
+        "pages": 4
+      },
+      {
+        "filename": "581 Note 6.pdf",
+        "sha256": "7c25285efdab09cf325a5aeec4a8410eb751720f5be99d3896ca0ac6e752b634",
+        "pages": 2
+      },
+      {
+        "filename": "Fraljiculator_Performance_Optimization_Closeout_Report.pdf",
+        "sha256": "d4d27608861aa951945d1bda0d686bf51dcecb2f0ad2565065273604bc0a67c0",
+        "pages": 6
+      },
+      {
+        "filename": "GA Seminar Note 1.pdf",
+        "sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+        "pages": 4
+      },
+      {
+        "filename": "Green_Function_Expansion_One_Page.pdf",
+        "sha256": "f3ae81145fa79a98c4c4edb3d25551994041cdc05e92988539a2343ebfcca9e1",
+        "pages": 1
+      },
+      {
+        "filename": "Inverse_Problems_Lecture_1.pdf",
+        "sha256": "6c94aef8cc41cd5dcecc63c635f07cdb5bb049f60083e7874918c46b3f4b1008",
+        "pages": 6
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_7.pdf",
+        "sha256": "e948f767fe76724ff9b6be9f759f2af9b4443807d21e8650a2d58f74ef3a64ca",
+        "pages": 38
+      },
+      {
+        "filename": "Inversion_to_ADM_Mass.pdf",
+        "sha256": "f0ed3553ff09a6a87f26b0924a44529581aeebc2f92bd7a082bce2535e34f589",
+        "pages": 5
+      },
+      {
+        "filename": "Math124_Week2_Distance_Speed_Solutions.pdf",
+        "sha256": "66c25b9433838b8868ebf72117ad2d8163d20e4174834b0db23adcd9b8c57870",
+        "pages": 4
+      },
+      {
+        "filename": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+        "sha256": "92f5f086a7fefd4f467d6f0589573de06268a92c32dc47a481bb503857536c8b",
+        "pages": 18
+      },
+      {
+        "filename": "Riemann球面上的旋转_Fraljimetry.pdf",
+        "sha256": "51d68e23431152dfb6fcca0b06cbfda4ae99482100efd5cd457a24168f37cb55",
+        "pages": 2
+      },
+      {
+        "filename": "Schoen_Yau_Positive_Mass_Step_Tables.pdf",
+        "sha256": "402bfcde810a1ba64d5d9230861a6704f27a2e4216070fd3dd51cee8356718b7",
+        "pages": 9
+      },
+      {
+        "filename": "Seattle_UDistrict_vs_Xian_Beilin_房价与租金详细对比_2026-09.pdf",
+        "sha256": "c3c884cd95e4c10e9a2aeac6fa9cea71e92eb09e2563ab72cd1651239231f2d0",
+        "pages": 8
+      },
+      {
+        "filename": "Seattle_UDistrict_vs_Xian_Beilin_超市典型商品价格详细对比_2026-09.pdf",
+        "sha256": "76d201b41c1b79772eaa25867f079a6894b0604c67fddfc19ec69d2db026016b",
+        "pages": 8
+      },
+      {
+        "filename": "Where_do_Complex_Numbers_come_from_.pdf",
+        "sha256": "c97034a8564c94a61a4556c3f3f60ce2fe6bc2701a839303d83d377edf7f4d41",
+        "pages": 3
+      },
+      {
+        "filename": "caffarelli1989.pdf",
+        "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+        "pages": 27
+      },
+      {
+        "filename": "colleague_inverted_bubble.pdf",
+        "sha256": "79641ac6972844bc44c6653070b436a80ee3bb2ad6c601172dab6250ecad218f",
+        "pages": 3
+      },
+      {
+        "filename": "rose_tile_solution.pdf",
+        "sha256": "e89de75a02f8728be02af41fec1347a9b8bb37f91b4df9ed3157a9c9a8be522e",
+        "pages": 2
+      },
+      {
+        "filename": "rose_tile_thinking.pdf",
+        "sha256": "1657af262b6c24590a609e35f14becb86dc9bb1025b9e0438e8e47123bc96e83",
+        "pages": 1
+      },
+      {
+        "filename": "yau1978.pdf",
+        "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+        "pages": 73
+      },
+      {
+        "filename": "利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf",
+        "sha256": "864dc3d4e2f275137d6d1849eeb7571579277151c251e6dc9feefe098bc04669",
+        "pages": 3
+      },
+      {
+        "filename": "581 Note 8.pdf",
+        "sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+        "pages": 3
+      },
+      {
+        "filename": "Ahlfors-Conformal-Invariants.pdf",
+        "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+        "pages": 172
+      },
+      {
+        "filename": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+        "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+        "pages": 13
+      },
+      {
+        "filename": "Detailed_Proof_Green_Function_Lemma_4_1.pdf",
+        "sha256": "04c5ae43c8070e77eaa0f46dca35f309514d120558e2ba2d0fc50d5bea6d45ea",
+        "pages": 10
+      },
+      {
+        "filename": "Dictionary of English Idioms.pdf",
+        "sha256": "90ba7654fa99c2630d6e061a7c744fd8848b0c764c1f1d336515b3a03738df7e",
+        "pages": 52
+      },
+      {
+        "filename": "Green_Function_Expansion_Compact.pdf",
+        "sha256": "82ec030edb90a67a478f3c9dcdbb487858d7938f399dcbddf901e6a8f04c0492",
+        "pages": 1
+      },
+      {
+        "filename": "Green_Function_Expansion_Insert_Proof.pdf",
+        "sha256": "89641998ca3fc417a18fabb4ea4e3bbd20cf3d7a962be038368c033c585407e6",
+        "pages": 6
+      },
+      {
+        "filename": "Green_Function_Expansion_Ultra_Compact.pdf",
+        "sha256": "6417f0b725807b6785f4da42feb8b2412880fb8ddb10526a9e09360bb9bf1d21",
+        "pages": 1
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_8.pdf",
+        "sha256": "d3c8b086654f0cc55fc1ddae6a6d31989c52d87f45b1df6123348f558f1ffd79",
+        "pages": 43
+      },
+      {
+        "filename": "Inversion_to_PMT_Bridge.pdf",
+        "sha256": "92809f20903ddb1b705a6cc144261db2f934272c970ce3f552a194b7ac7692f2",
+        "pages": 3
+      },
+      {
+        "filename": "Lemma_4_1_Mild_Proof_Guide.pdf",
+        "sha256": "f59740397aa39f5e0cc8d82dfd072723c6bcfb5b2390ea32772cbf105b9e21fc",
+        "pages": 5
+      },
+      {
+        "filename": "Schoen_and_Yau_s_Proof_of_the_Positive_Mass_Theorem.pdf",
+        "sha256": "477320f9f67a967299116bd603df782cb06d56e7f52865a393dcf2516bc3f359",
+        "pages": 14
+      },
+      {
+        "filename": "Yamabe_Conformal_Normal_Coordinates_Green_Function_Helper.pdf",
+        "sha256": "06e9c5587bbd524efd3a782db20948d7e73a433b273f6f162421f1316e625cec",
+        "pages": 6
+      },
+      {
+        "filename": "blowup_limit_proposition.pdf",
+        "sha256": "46254d4737429590feb0ac2ac34225cd94a17e9f93fd62a279b87dbb18bc2b16",
+        "pages": 2
+      },
+      {
+        "filename": "caffarelli1989_retyped.pdf",
+        "sha256": "e0b91a73a4c4977a7d0e3234ce7555484994ca8861984ac768f177010d842cd1",
+        "pages": 21
+      },
+      {
+        "filename": "colleague_inverted_bubble_detailed.pdf",
+        "sha256": "22b4fb8472c77e41681f1bf3160f14e1db2640efe377e475621c84b1a1c6744e",
+        "pages": 4
+      },
+      {
+        "filename": "inversion_adm_mass.pdf",
+        "sha256": "abe619f94495d8b39737367541351367fc7d1f967ec433aaa1b71343b354b6ec",
+        "pages": 5
+      },
+      {
+        "filename": "inversion_pmt_onepage.pdf",
+        "sha256": "cf8b4af90a89177bebb88319ba30c1e115262ddce035ad621f922f62c34c4925",
+        "pages": 1
+      },
+      {
+        "filename": "oxy_projection_reply.pdf",
+        "sha256": "de325c159d52889346319c464aa5a03c242f1b76eadb043e95a05e206803a2d2",
+        "pages": 5
+      },
+      {
+        "filename": "plateau_compactness_auxiliary.pdf",
+        "sha256": "e7ef10ee0b3cecc6cfb48760c29d97374c331c9a90755b7a5f8f408b37bed113",
+        "pages": 5
+      },
+      {
+        "filename": "yamabe_missing_lemmas.pdf",
+        "sha256": "4892b51498afc42d18749aa859c32a88e42aeca7a8cda60da11d5cf1db8a117d",
+        "pages": 20
+      },
+      {
+        "filename": "仍待辨明的原稿内容清单_含研究报告页码.pdf",
+        "sha256": "03c8d92b20ecf84ceb0c18b28d4555b504faf0dbb50d47ee26e36a3128e39159",
+        "pages": 3
+      },
+      {
+        "filename": "墙砖格子简明解答.pdf",
+        "sha256": "bc4a3a266cec83bdf1dfbb129607ac240746c2d51cb78128f3e34cfac4d541c9",
+        "pages": 4
+      },
+      {
+        "filename": "补充解释.pdf",
+        "sha256": "1c9261b69d2857ad2a9eb7253d0ec0948ab90b5b29929263d27c6a8d9ac64eb0",
+        "pages": 2
+      },
+      {
+        "filename": "补充解释后_仍待确认内容.pdf",
+        "sha256": "a19eeb61a1564dc50e9f9dedaf939342a67405936b61967c40ab925a13cdff11",
+        "pages": 2
+      },
+      {
+        "filename": "6affad7d-1f88-43d3-891f-0ae290b59d27.pdf",
+        "sha256": "289c6b067f63962d612970e64c39a1ced46433ad8ed5bbb6f858c900769410a4",
+        "pages": 6
+      },
+      {
+        "filename": "Detailed_Proofs_of_the_Three_Analytic__Geometric_Inputs_for_the_Streamlined_Yamabe_Argument.pdf",
+        "sha256": "1fdf24a374d40a904dc3a80259e8cae9d9484b2e8aaa224a40a35c9fa6385751",
+        "pages": 15
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_2.pdf",
+        "sha256": "097e847d1968f8932a5a1dc2e6eb625e5ec5cfe54889f59f48dbdc8f6d262c77",
+        "pages": 12
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_3.pdf",
+        "sha256": "077cda319f11775129b42f7feb183426236dd1f01515b397ec843644ef53e05b",
+        "pages": 17
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_4.pdf",
+        "sha256": "cf5bd8c887fa9aaa9166b3c1fe624031d8ac36c5a2a2bdc08bc92711a79a3614",
+        "pages": 22
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_4_matched.pdf",
+        "sha256": "93e6f53d0bb8b33d8a311220544132b232634664ab5458162e286eb84be1ad0c",
+        "pages": 22
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_5.pdf",
+        "sha256": "31acf83d1103dd7da5f609982924f62c45bcd36df511b5588d0f2518b6db52c5",
+        "pages": 28
+      },
+      {
+        "filename": "Inverse_Problems_Lectures_1_6.pdf",
+        "sha256": "66ba246933adc447f5da5a9d4ff16a52f04937a5a7ef29aea1b6cf30f7954dd9",
+        "pages": 32
+      },
+      {
+        "filename": "Safe Travels Elite PPO - 旅游医疗保险.pdf",
+        "sha256": "122394391d1a2471af7d95794c6129436ddf346e9e840cff5c6dce1c006690c9",
+        "pages": 1
+      },
+      {
+        "filename": "Schoen_and_Yau_s_Proof_of_the_Positive_Mass_Theorem(2).pdf",
+        "sha256": "7495fc18a057928c5feae8490ffb3c13d02d316caec0f816f01025ce09e1b38d",
+        "pages": 14
+      },
+      {
+        "filename": "Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(6).pdf",
+        "sha256": "5bfd5494b77a04debe8ba17b62d02cdce5a64f895b5dfb4ef72be55d230fc88c",
+        "pages": 19
+      },
+      {
+        "filename": "Yamabe问题_封面.pdf",
+        "sha256": "99a99c759c970a741482d7ee1c6f99ac50ab0daa1a734ba496891d1a8596f87d",
+        "pages": 18
+      },
+      {
+        "filename": "a63432ad-8e20-4da1-bbdf-d4faec343496.pdf",
+        "sha256": "9b4f37d118284419b94b643db5b66709ba51476ff21c8e61947ad2d61bfda004",
+        "pages": 4
+      },
+      {
+        "filename": "lemma_3_2_inductive_proof.pdf",
+        "sha256": "91dde6efe5dc14cdaa9014f4cc5963e8c5fa2bf1537dd4f49568540cf6d87b58",
+        "pages": 2
+      },
+      {
+        "filename": "lemma_4_3_concise.pdf",
+        "sha256": "e023461ae3bf48bd9d41937872e0ddd27b577faf5cd68de5a0714f71c8f06bb3",
+        "pages": 1
+      },
+      {
+        "filename": "lemma_4_3_formalized_proof.pdf",
+        "sha256": "7572ec65666d81c6921443b753a438c0118361f23d7bd6be450da79e3767a181",
+        "pages": 2
+      },
+      {
+        "filename": "lemma_4_3_shaoda.pdf",
+        "sha256": "cc86382af8475d3ee40e778ef8c3dfe556511c7726117989cb4aed968b170d4b",
+        "pages": 1
+      },
+      {
+        "filename": "lemma_4_3_shaoda_proof.pdf",
+        "sha256": "9de7ae94feb203251d9680b6221954e5bf15e2c313580213fd6052fa08369cc1",
+        "pages": 1
+      },
+      {
+        "filename": "plateau_compactness_auxiliary(1).pdf",
+        "sha256": "acd30dcae313e5fbb525f1aecaea0454eb671e4425be8f694ab5dd65718edf3b",
+        "pages": 5
+      },
+      {
+        "filename": "仍待辨明的原稿内容清单.pdf",
+        "sha256": "0e7636d9340165a4096cabab6fc500f41474172d0deef880a55fd5c2a0df6bf6",
+        "pages": 3
+      },
+      {
+        "filename": "早期视频全稿.pdf",
+        "sha256": "a57a9f73914be6c481eada5f8b11e97a2dbff11986a9e74551f53b45cd0fab46",
+        "pages": 25
+      },
+      {
+        "filename": "暑期数学研究成果展示_汲绍达_函数篇_完整推演精校版.pdf",
+        "sha256": "b6e97ab55d62c50d72d145d87eeaa87d5d106432005b4a37b7271ecf46b77303",
+        "pages": 41
+      },
+      {
+        "filename": "暑期数学研究成果展示_汲绍达_函数篇_早期视频全稿完善版.pdf",
+        "sha256": "c47c9e42a21a71259362b9ebe46ef2c3a4c9eee98d3432b287be1834574e6892",
+        "pages": 43
+      },
+      {
+        "filename": "暑期数学研究成果展示_汲绍达_解析几何篇_完整推演精校版.pdf",
+        "sha256": "7489b923b39ea3512a9c0308fdf4172e6c85266221ebb0693186beceee1bd9cc",
+        "pages": 39
+      },
+      {
+        "filename": "暑期数学研究成果展示_汲绍达_解析几何篇_早期视频全稿完善版.pdf",
+        "sha256": "98ba60b652406558a24c98371412b54c2b0bf720995610d2719d3c1c11936c1e",
+        "pages": 40
+      }
+    ]
+  },
+  "gate": {
+    "inherited_source_commands_pass": 49,
+    "chromium_shell": "PASS",
+    "new_responsive_suite_assertions": 139
+  },
+  "real_engine_preflight": {
+    "pdfjs_version_needed": "4.10.38",
+    "real_p0_browser_document": "UNVERIFIED",
+    "real_p1_two_pdf": "BLOCKED",
+    "texify": "UNVERIFIED",
+    "reason": "Pinned PDF.js+worker and Texify model bytes unavailable. No substitute engine reported as verified."
+  },
+  "remaining_risks": [
+    "Actual PDF.js rendering, continuous-scroll anchor restore and real two-PDF P1 return must be tested locally in production browser.",
+    "Texify image-to-LaTeX and its GPU-to-CPU fallback not executed in this offline UI campaign.",
+    "Independent whole-document index/formula ground truth remains incomplete.",
+    "Very small landscape viewports and slow devices need production-site usability/performance observation.",
+    "All prior historical detector defects remain open unless separately marked resolved."
+  ]
+}

@@ -5,7 +5,7 @@ window.__mathreaderP0 = Object.freeze({
   snapshot() {
     const fromIndex = equationLabelIndex instanceof Map
       ? Array.from(equationLabelIndex.entries()).flatMap(([label, candidates]) =>
-          (candidates || []).map((candidate) => ({ label: String(label), page: Number(candidate.page), ratio: Number(candidate.ratio) || 0 })))
+          (candidates || []).map((candidate) => ({ label: String(label), page: Number(candidate.page), ratio: Number.isFinite(candidate?.ratio) ? candidate.ratio : null })))
       : [];
     const take = (items, attributes) => (items || []).map((item) => {
       const result = {};
@@ -42,7 +42,7 @@ window.__mathreaderP0 = Object.freeze({
   },
   async finishIndexes() {
     if (!pdfDoc) throw new Error('No PDF is loaded');
-    if (!documentTextFeaturesAvailable()) throw new Error('PDF text unavailable; explicit document OCR needed');
+    if (!documentTextFeaturesAvailable()) throw new Error('P0_REQUIRES_DOCUMENT_OCR: PDF text unavailable; explicit document OCR needed');
     await renderOutline();
     const start = Date.now();
     while (structureIndexBuilding && Date.now() - start < 120000) await new Promise(r => setTimeout(r, 50));
@@ -64,7 +64,7 @@ window.__mathreaderP0 = Object.freeze({
     setOcrMode(false);
     return state;
   },
-  async imageFormulaCase({ id, page, rectPdfPt, scale = 2 }) {
+  async imageFormulaCase({ id, page, rectPdfPt, scale = 2, cropOnly = false }) {
     if (!pdfDoc || !Number.isInteger(page) || page < 1 || page > pdfDoc.numPages) throw new Error('Invalid PDF formula page');
     if (!Array.isArray(rectPdfPt) || rectPdfPt.length !== 4 || rectPdfPt.some((v) => !Number.isFinite(v))) throw new Error('Formula rectangle must be four finite PDF points');
     if (!(scale >= 1 && scale <= 4)) throw new Error('Formula crop resolution outside 1–4 scale range');
@@ -95,6 +95,14 @@ window.__mathreaderP0 = Object.freeze({
     for (let i=0;i<encoded.length;i++) bytes[i] = encoded.charCodeAt(i);
     const digest = await crypto.subtle.digest('SHA-256',bytes);
     const cropSha256 = Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+    // Browser-side source crop capture does not require Texify. This lets
+    // reviewers prepare independently verified ground truth even when the
+    // model cannot be loaded. It must never count as OCR acceptance.
+    if (cropOnly) return { id, page, crop_sha256:cropSha256,
+      rect_pdf_pt:rectPdfPt, pdf_render_scale:scale,
+      crop_png_data_url:cropPngDataUrl,
+      origin:'original_pdf_browser_crop', compiled:false,
+      error:'Actual formula OCR was not run' };
     const before = currentOcrResult?.created || 0;
     await recognizeImageFallbackCrop(crop, page, 'formula', cropPngDataUrl);
     const after = currentOcrResult;

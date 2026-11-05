@@ -447,8 +447,12 @@ def main(argv=None):
                 'source_accurate_formula_transcription':'UNVERIFIED: independent ground truth needed',
                 'full_document_accuracy':'UNVERIFIED'}
         records.append(record)
+    bootstrap=Path(args.project_root).resolve()/'mathreader.js'
+    version_match=re.search(r"const VERSION = '(\d+)'",bootstrap.read_text(encoding='utf8')) if bootstrap.is_file() else None
+    detected_version=('v'+version_match.group(1)) if version_match else 'UNKNOWN (fixture or missing bootstrap)'
     summary={'schema':1,'method':'offline cached source-level PDF regression, NOT browser final indexes',
-             'version':'v354 test infrastructure (site detection and OCR semantics unchanged)',
+             'version':detected_version,
+             'infrastructure_origin':'v354; source-level PDF and OCR proxy, not browser detection',
              'pdf_count':len(records),'total_pages':sum(r['pages'] for r in records),
              'low_native_pages':sum(r['low_native_page_count'] for r in records),
              'extraction_cache_hits':cache_extract,'detector_cache_hits':detector_hits,

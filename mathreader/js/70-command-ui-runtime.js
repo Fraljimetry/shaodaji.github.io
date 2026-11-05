@@ -271,6 +271,7 @@ referencePrev.addEventListener('click', () => { if (pinnedPage && pinnedPage > 1
 referenceNext.addEventListener('click', () => { if (pinnedPage && pdfDoc && pinnedPage < pdfDoc.numPages) setPinnedPage(pinnedPage + 1); });
 addBookmark.addEventListener('click', addCurrentBookmark);
 readingBackButton?.addEventListener('click', goBackReadingLocation);
+crossDocumentReturnButton?.addEventListener('click', () => void returnToCrossDocumentSource());
 readingTrailClear?.addEventListener('click', () => { if (readingBackStack.length) pushUndo('reading-trail', t('Reading trail', '阅读轨迹'), readingBackStack); readingBackStack = []; readingTrailExpanded = false; updateReadingBackButton(); renderReadingTrail(); persistDocumentState(); });
 readingTrailToggle?.addEventListener('click', () => { readingTrailExpanded = !readingTrailExpanded; renderReadingTrail(); });
 buildStructureIndexButton?.remove();
@@ -420,6 +421,19 @@ function scrollRightPanelToSection(section, behavior = 'smooth') {
 
 languageButton.addEventListener('click', () => applyLanguage(root.dataset.lang === 'zh' ? 'en' : 'zh'));
 themeButton.addEventListener('click', () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+const mobileLeftToggle = document.getElementById('mobile-left-toggle');
+const mobileRightToggle = document.getElementById('mobile-right-toggle');
+function synchronizeMobileToggleState() {
+  mobileLeftToggle?.setAttribute('aria-expanded', String(shell.classList.contains('mobile-left-open')));
+  mobileRightToggle?.setAttribute('aria-expanded', String(shell.classList.contains('mobile-right-open')));
+}
+mobileLeftToggle?.addEventListener('click', () => toggleLeftSidePanel());
+mobileRightToggle?.addEventListener('click', () => toggleRightSidePanel());
+document.getElementById('mobile-left-close')?.addEventListener('click', () => toggleLeftSidePanel());
+document.getElementById('mobile-right-close')?.addEventListener('click', () => toggleRightSidePanel());
+new MutationObserver(synchronizeMobileToggleState).observe(shell, {attributes:true,attributeFilter:['class']});
+synchronizeMobileToggleState();
 
 function toggleLeftSidePanel() {
   runDisplayTransition(() => {

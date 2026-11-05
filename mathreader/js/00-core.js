@@ -83,6 +83,7 @@ const exportReadingDataButton = el('export-reading-data');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');
 const readingBackButton = el('reading-back');
+const crossDocumentReturnButton = el('crossdoc-return');
 const readingTrailList = el('reading-trail-list');
 const readingTrailEmpty = el('reading-trail-empty');
 const readingTrailCount = el('reading-trail-count');
@@ -270,6 +271,14 @@ let referenceScrollByPage = {};
 let localLibrary = [];
 let dbPromise = null;
 let sessionSaveTimer = null;
+let sessionSaveInFlight = null;
+let sessionWriteGeneration = 0;
+// P1 links are user-confirmed and keyed by the source PDF's exact local identity.
+// Stored separately from reading-data exports, annotations and automatic indexes.
+let confirmedBibliographyLinks = new Map();
+let confirmedBibliographyWriteInFlight = false;
+let crossDocumentReturnStack = [];
+let crossDocumentBusy = false;
 let cacheEnabledForCurrent = false;
 let restoringSession = false;
 let ocrMode = false;
@@ -431,7 +440,10 @@ function recoveryFingerprint(data) {
 function scheduleRecoverySnapshot() {
   if (!currentFileKey || restoringSession || recoveryRestoreActive) return;
   clearTimeout(recoverySnapshotTimer);
+  const documentId = currentFileKey;
   recoverySnapshotTimer = setTimeout(() => {
+    // A deferred recovery snapshot must never land in a different document.
+    if (documentId !== currentFileKey || restoringSession) return;
     const key = recoveryStorageKey();
     if (!key) return;
     const data = durableRecoveryData();
@@ -981,19 +993,49 @@ function clearLegacyDocumentState(id) {
 function scheduleDbSessionSave() {
   if (!cacheEnabledForCurrent || !currentFileKey) return;
   clearTimeout(sessionSaveTimer);
-  sessionSaveTimer = setTimeout(async () => {
-    try {
-      const record = await dbGet('documents', currentFileKey);
-      if (!record) return;
-      record.session = snapshotSession();
-      record.lastPage = currentPage;
-      record.updatedAt = Date.now();
-      await dbPut('documents', record);
-      await refreshLocalLibrary();
-    } catch (error) {
-      console.warn('MathReader could not update its local session cache.', error);
-    }
+  const generation = ++sessionWriteGeneration;
+  const id = currentFileKey;
+  const snapshot = snapshotSession();
+  const page = currentPage;
+  sessionSaveTimer = setTimeout(() => {
+    sessionSaveTimer = null;
+    if (id !== currentFileKey || generation !== sessionWriteGeneration) return;
+    const write = (async () => {
+      try {
+        const record = await dbGet('documents', id);
+        if (!record || id !== currentFileKey || generation !== sessionWriteGeneration) return;
+        record.session = snapshot;
+        record.lastPage = page;
+        record.updatedAt = Date.now();
+        await dbPut('documents', record);
+        if (id === currentFileKey) await refreshLocalLibrary();
+      } catch (error) {
+        console.warn('MathReader could not update its local session cache.', error);
+      }
+    })();
+    sessionSaveInFlight = write;
+    void write.finally(() => { if (sessionSaveInFlight === write) sessionSaveInFlight = null; });
   }, 300);
+}
+
+async function flushCurrentDocumentSession() {
+  if (!pdfDoc || !currentFileKey) return;
+  // Save localStorage and capture the *current* page anchor before switching PDFs.
+  persistDocumentState();
+  clearTimeout(sessionSaveTimer);
+  sessionSaveTimer = null;
+  ++sessionWriteGeneration;
+  if (sessionSaveInFlight) await sessionSaveInFlight;
+  if (!cacheEnabledForCurrent) return;
+  const id = currentFileKey;
+  const snapshot = snapshotSession();
+  const page = currentPage;
+  const record = await dbGet('documents', id);
+  if (!record) return;
+  record.session = snapshot;
+  record.lastPage = page;
+  record.updatedAt = Date.now();
+  await dbPut('documents', record);
 }
 
 function formatHistoryTime(timestamp) {
@@ -1052,6 +1094,12 @@ function renderLocalLibrary() {
     remove.addEventListener('click', async () => {
       try {
         await Promise.all([dbDelete('documents', record.id), dbDelete('files', record.id)]);
+        // Forgetting a source PDF must also forget its private, user-confirmed
+        // bibliography mappings. Inbound links in other papers are simply
+        // unavailable until explicitly relinked; never guess a replacement.
+        try { await dbDelete('meta', bibliographyLinkStorageKey(record.id)); }
+        catch (error) { console.warn('Could not forget local PDF link metadata.', error); }
+        if (currentFileKey === record.id) confirmedBibliographyLinks = new Map();
         clearLegacyDocumentState(record.id);
         const last = await dbMetaGet('lastDocumentId');
         if (last === record.id) await dbMetaSet('lastDocumentId', null);

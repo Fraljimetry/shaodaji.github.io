@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=355">
+  <link rel="stylesheet" href="mathreader.css?v=360">
   <script>
     (() => {
       try {
@@ -98,6 +98,7 @@
 
   <main class="reader-shell left-collapsed right-collapsed" id="reader-shell">
     <aside class="sidebar sidebar-left" id="left-sidebar" aria-label="Document navigation">
+      <button class="mobile-panel-close" type="button" id="mobile-left-close" aria-label="Close Contents" data-en="Close ×" data-zh="关闭 ×">Close ×</button>
       <div class="sidebar-tabs" role="tablist" aria-label="Document tools">
         <button class="sidebar-tab is-active" type="button" data-panel="outline-panel" data-en="Contents" data-zh="目录" data-en-title="Contents · C" data-zh-title="目录 · C">Contents</button>
         <button class="sidebar-tab" type="button" data-panel="search-panel" data-en="Search" data-zh="搜索" data-en-title="Search · F" data-zh-title="搜索 · F">Search</button>
@@ -215,7 +216,9 @@
     <section class="reader-main" id="reader-stage">
       <div class="reader-toolbar" id="reader-toolbar">
         <div class="toolbar-group toolbar-left">
+          <button class="tool-button mobile-panel-toggle" type="button" id="mobile-left-toggle" aria-label="Toggle Contents" aria-controls="left-sidebar" aria-expanded="false" data-en-title="Contents" data-zh-title="目录" title="Contents"><span aria-hidden="true">☰</span></button>
           <button class="tool-button" type="button" id="reading-back" disabled data-en-title="Back in reading trail" data-zh-title="返回阅读轨迹上一位置" aria-label="Back in reading trail" title="Back in reading trail">↶</button>
+          <button class="tool-button crossdoc-return is-hidden" type="button" id="crossdoc-return" data-en="↩ Paper" data-zh="↩ 原文" aria-label="Return to source paper" title="Return to source paper">↩ Paper</button>
           <button class="tool-button" type="button" id="prev-page" disabled aria-label="Previous page" title="Previous page">←</button>
           <div class="page-control">
             <input id="page-number" type="number" min="1" value="1" disabled aria-label="Page number">
@@ -229,6 +232,7 @@
           <button class="tool-button" type="button" id="zoom-out" disabled aria-label="Zoom out" title="Zoom out">−</button>
           <button class="zoom-label" type="button" id="zoom-label" disabled title="Switch Fit width / Fit page">Fit width</button>
           <button class="tool-button" type="button" id="zoom-in" disabled aria-label="Zoom in" title="Zoom in">+</button>
+          <button class="tool-button mobile-panel-toggle" type="button" id="mobile-right-toggle" aria-label="Toggle workspace" aria-controls="right-sidebar" aria-expanded="false" data-en-title="Workspace" data-zh-title="工作区" title="Workspace"><span aria-hidden="true">☷</span></button>
         </div>
       </div>
 
@@ -316,6 +320,7 @@
 
     <div class="sidebar-resizer sidebar-resizer-right" id="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize reading workspace"></div>
     <aside class="sidebar sidebar-right" id="right-sidebar" aria-label="Reading workspace">
+      <button class="mobile-panel-close" type="button" id="mobile-right-close" aria-label="Close workspace" data-en="Close ×" data-zh="关闭 ×">Close ×</button>
       
       
       <section class="workspace-section" id="document-info-section">
@@ -569,6 +574,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=355"></script>
+  <script type="module" src="mathreader.js?v=360"></script>
 </body>
 </html>

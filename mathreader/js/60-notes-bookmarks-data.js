@@ -486,6 +486,15 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
   restoringSession = true;
   let freshReadingSession = false;
   try {
+    if (pdfDoc && currentFileKey) {
+      const previousId = currentFileKey;
+      await flushCurrentDocumentSession();
+      // Reopening the same PDF may have read its IndexedDB record before
+      // the current session was flushed. Do not overwrite a newer position.
+      if (cachedRecord && meta.id === previousId) {
+        cachedRecord = (await dbGet('documents', meta.id)) || cachedRecord;
+      }
+    }
     const lib = await ensurePdfJs();
     if (pdfDoc) { try { await pdfDoc.destroy(); } catch (_) {} }
     const task = lib.getDocument({ data });
@@ -521,6 +530,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     setOcrMode(false);
     hideSelectionToolbar();
     loadDocumentState(cachedRecord?.session || null);
+    await loadConfirmedBibliographyLinks(meta.id);
     if (!documentTextFeaturesAvailable()) clearTextDerivedIndexesForUnavailableDocument();
     updateDocumentTextAvailabilityUI();
     documentTitle.textContent = meta.name;
@@ -535,6 +545,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     await Promise.all([renderOutline(), renderCurrentPage()]);
     renderStructureIndex();
     renderBibliographyIndex();
+    updateCrossDocumentReturnButton();
     ensureEquationIndexRendered().catch(() => {});
     renderReferenceStack();
     updateReadingBackButton();

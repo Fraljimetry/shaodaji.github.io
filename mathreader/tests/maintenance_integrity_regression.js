@@ -1,4 +1,4 @@
-// MathReader v355: maintenance / assembly guard (no external Node packages).
+// MathReader v358: maintenance / assembly guard (no external Node packages).
 // Run: node mathreader/tests/maintenance_integrity_regression.js
 'use strict';
 const assert = require('node:assert/strict');
@@ -20,8 +20,8 @@ check(parts.length === 10, 'exactly ten original subsystem parts');
 check(new Set(parts).size === parts.length, 'no duplicate subsystem parts');
 check(parts[0] === 'js/00-core.js' && parts.at(-1) === 'js/70-command-ui-runtime.js', 'core and event wiring remain the boundaries');
 check(parts.every((part) => fs.existsSync(path.join(root, part))), 'all declared module parts exist');
-check(bootstrap.includes("const VERSION = '355';"), 'bootstrap version advanced once to v355');
-check(html.includes('mathreader.js?v=355') && html.includes('mathreader.css?v=355'), 'HTML cache keys follow bootstrap');
+check(bootstrap.includes("const VERSION = '360';"), 'bootstrap version advanced once to v360');
+check(html.includes('mathreader.js?v=360') && html.includes('mathreader.css?v=360'), 'HTML cache keys follow bootstrap');
 check(bootstrap.includes('Promise.all(PARTS.map(fetchPart))'), 'fetching retains parallel acquisition with ordered assembly');
 check(bootstrap.includes("sources.join('\\n')"), 'parts remain one assembled lexical module');
 check(!parts.some((part) => html.includes(`src="${part}"`)), 'subsystems not individually injected as scripts');
@@ -43,5 +43,5 @@ check(bootstrap.includes("banner.classList.remove('is-hidden')"), 'startup failu
 check(css.length > 10000, 'existing reader layout stylesheet preserved');
 
 // Parse only: no DOM, network, or model initialization is performed here.
-check(Boolean(new vm.Script(joined, { filename: 'mathreader-runtime-v355.js' })), 'assembled runtime parses as one script');
-console.log(`OK: ${count} MathReader v355 maintenance integrity assertions`);
+check(Boolean(new vm.Script(joined, { filename: 'mathreader-runtime-v358.js' })), 'assembled runtime parses as one script');
+console.log(`OK: ${count} MathReader v360 maintenance integrity assertions`);

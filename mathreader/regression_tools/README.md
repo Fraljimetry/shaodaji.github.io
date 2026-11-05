@@ -140,3 +140,18 @@ claim proxy/browser equivalence. Browser indexing requires the exact
 `pdfjs-dist@4.10.38` assets. Model recognition requires real Texify; synthetic
 or Tesseract-only outputs must remain UNVERIFIED. All tests run locally and
 only generate reports outside the deployed application.
+
+
+## v357 — Additional real P1 browser acceptance
+
+Use `p1_browser_e2e.py` (or `p0_gate.py --p1-source-pdf ... --p1-target-pdf ... --require-p1-real`) for the real two-PDF Chromium/IndexedDB/PDF.js link-and-return scenario. It requires local pinned `pdfjs-dist@4.10.38` assets and two byte-distinct original PDFs, one with numbered bibliography entries. Without those exact assets, it reports BLOCKED. The normal cached parser runner does not test real P1 navigation; test-only `p1_browser_probe.js` is never used by the production application.
+
+## v358 version and paired P0/P1 audit provenance
+
+The offline runner reports the **actual tested application's bootstrap version** when present. This corrects the previous hard-coded v354 audit version; `infrastructure_origin` still identifies the tool's history. Test fixtures with no bootstrap report `UNKNOWN`. The v358 regression reused 110 original PDFs and 15 manually transcribed, source-page-linked LaTeX references. Tesseract remains a text-only proxy; only actual browser/PDF.js + Texify and independent ground truth can close P0/P1 acceptance.
+
+## v359 acceptance-gap corrections
+
+The P0 real-browser runner now decouples PDF.js indexing from actual formula-model inference. Pass `--pdfjs-build` for genuine `pdfjs-dist@4.10.38` and `--formula-cases` to obtain SHA-256-attested browser PDF crops, even without Texify network permission; those crops are **not** OCR results. Only explicit real Texify inference, compilation, independent approved LaTeX, and whole-document reviewer coverage can contribute to full P0 formula acceptance.
+
+P0's per-document *execution status* no longer excludes failed formula cases, navigation or persisted reopen. Its strict truth gate rejects NaN/Infinity performance evidence. Real P1 browser assertions now fail even if the first assertion fails; missing pinned PDF.js remains BLOCKED. The new P0/P1 gap-regression tests exercise these negative paths without substituting a fake PDF engine for full acceptance. For actual acceptance, use the real PDF.js distribution in `node_modules/pdfjs-dist/build` (version exactly `4.10.38`) when available, passed explicitly with `--pdfjs-build`; do not use an alternate renderer to claim equivalence.

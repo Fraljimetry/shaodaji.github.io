@@ -164,7 +164,52 @@ def maybe_read_manifest(manifest: Path | None, paths: list[str]):
     return result
 
 
-def full_document(page, source_path: Path, sha: str, timeout_ms: int, formula_cases: list, crop_dir: Path):
+def dependency_preflight(pdfs: list, pdfbuild: Path | None,
+                         formula_cases: list, allow_texify_network: bool):
+    # A missing Texify model must not prevent independent PDF.js indexing.
+    pdf_blockers = []
+    if pdfs and (not pdfbuild or not (pdfbuild/'pdf.min.mjs').is_file()
+                 or not (pdfbuild/'pdf.worker.min.mjs').is_file()):
+        pdf_blockers.append('Pinned pdfjs-dist@4.10.38 browser and worker assets unavailable')
+    formula_limitations = []
+    if formula_cases and not allow_texify_network:
+        formula_limitations.append(
+            'Actual Texify not enabled; original-PDF formula crops may be captured '
+            'but no formula OCR recognition/accuracy is verified.')
+    return pdf_blockers, formula_limitations
+
+
+def classify_document_capture(record: dict, formula_cases_requested: bool = False) -> str:
+    """Classify browser *execution*, not independent mathematical accuracy.
+
+    In particular an actual formula OCR failure must never be silently
+    excluded from an otherwise COMPLETE document capture.
+    """
+    if record.get('capture_source') != 'mathreader_actual_browser_pdfjs':
+        return 'UNVERIFIED'
+    if record.get('errors') or any(record.get(stage, {}).get('status') == 'FAIL'
+                                   for stage in ('navigation', 'persistence')):
+        return 'FAIL'
+    stages = record.get('stages')
+    if not isinstance(stages, dict) or any(stages.get(k) != 'COMPLETE'
+        for k in ('structure', 'results', 'equations', 'bibliography')):
+        return 'UNVERIFIED'
+    if formula_cases_requested:
+        cases = record.get('formula_cases')
+        if isinstance(cases, list) and any(
+            case.get('origin') == 'actual_texify_browser' and case.get('compiled') is False
+            for case in cases if isinstance(case, dict)):
+            return 'FAIL'
+        if stages.get('formulas') != 'COMPLETE':
+            return 'UNVERIFIED'
+    if any(record.get(stage, {}).get('status') != 'PASS'
+           for stage in ('navigation', 'persistence')):
+        return 'UNVERIFIED'
+    return 'COMPLETE'
+
+
+def full_document(page, source_path: Path, sha: str, timeout_ms: int,
+                  formula_cases: list, crop_dir: Path, run_formula_ocr: bool = True):
     errors=[]
     loaded=False
     started=time.perf_counter()
@@ -181,7 +226,7 @@ def full_document(page, source_path: Path, sha: str, timeout_ms: int, formula_ca
     open_elapsed_ms=round((time.perf_counter()-started)*1000)
     first=page.evaluate('window.__mathreaderP0.snapshot()')
     result=dict(schema=1,capture_source='mathreader_actual_browser_pdfjs',pdf_sha256=sha,pages=first['pages'],
-                engine={'pdfjs':first['pdfjsVersion']},stages={},indexes={},formula_cases=[],errors=[],
+                engine={'pdfjs':first['pdfjsVersion']},stages={},indexes={},formula_cases=[],errors=[],limitations=[],
                 navigation={'status':'UNVERIFIED'},persistence={'status':'UNVERIFIED'})
     result['metrics']={'open_ms':open_elapsed_ms,'index_ms':None,'js_heap_bytes':None}
     if first['pdfjsVersion']!=PDFJS_VERSION:
@@ -203,7 +248,14 @@ def full_document(page, source_path: Path, sha: str, timeout_ms: int, formula_ca
         result['metrics']['js_heap_bytes']=page.evaluate('performance.memory?.usedJSHeapSize || null')
         result['indexes']=snap['indexes'];result['stages']=snap['stages']
     except Exception as error:
-        result['errors'].append(f'Final index build error/timeout: {str(error)[:240]}')
+        message = str(error)
+        if 'P0_REQUIRES_DOCUMENT_OCR' in message:
+            # The PDF opened, but image-only pages need an explicit actual
+            # document-OCR workflow before indexes can be verified. Absence of
+            # that separate stage is UNVERIFIED, not a false application FAIL.
+            result['limitations'].append('Image-only PDF: document OCR was not executed; final indexes UNVERIFIED')
+        else:
+            result['errors'].append(f'Final index build error/timeout: {message[:240]}')
     try:
         if first['pages']>=2:
             reached=page.evaluate('window.__mathreaderP0.navigate(2)')
@@ -220,7 +272,8 @@ def full_document(page, source_path: Path, sha: str, timeout_ms: int, formula_ca
         try:
             rec=page.evaluate('arg => window.__mathreaderP0.imageFormulaCase(arg)',
                               dict(id=case['id'],page=case['page'],
-                                   rectPdfPt=case['rect_pdf_pt'],scale=case.get('scale',2)))
+                                   rectPdfPt=case['rect_pdf_pt'],scale=case.get('scale',2),
+                                   cropOnly=not run_formula_ocr))
             png_data_url=rec.pop('crop_png_data_url',None)
             if png_data_url:
                 crop_bytes=base64.b64decode(png_data_url.split(',',1)[1],validate=True)
@@ -290,9 +343,6 @@ def main(argv=None):
     if not args.shell_only and not pdfs: raise ValueError('Supply --pdf or --manifest, or use --shell-only')
     pdfbuild=args.pdfjs_build.resolve() if args.pdfjs_build else None
     mathjax=args.mathjax_js.resolve() if args.mathjax_js else None
-    preflight=[]
-    if pdfs and (not pdfbuild or not (pdfbuild/'pdf.min.mjs').is_file() or not (pdfbuild/'pdf.worker.min.mjs').is_file()):
-        preflight.append('Pinned pdfjs-dist@4.10.38 browser and worker assets unavailable')
     formula_cases=[]
     if args.formula_cases:
         manifest=json.loads(args.formula_cases.read_text(encoding='utf8'))
@@ -309,12 +359,12 @@ def main(argv=None):
             rect=case.get('rect_pdf_pt')
             if not isinstance(rect,list) or len(rect)!=4 or not all(isinstance(x,(int,float)) for x in rect):
                 raise ValueError('Formula case requires PDF-rendered top-left rect_pdf_pt [x0,y0,x1,y1]')
-        if not args.allow_texify_network:
-            preflight.append('Real Texify model assets/network not explicitly available: --allow-texify-network required')
+    preflight, formula_limitations = dependency_preflight(
+        pdfs, pdfbuild, formula_cases, args.allow_texify_network)
     args.out_dir.mkdir(parents=True,exist_ok=True)
     app_version=re.search(r"const VERSION = '(\d+)'",(source/'mathreader.js').read_text(encoding='utf8')).group(1)
     output=dict(schema=1,run_at=datetime.now(timezone.utc).isoformat(),version=app_version,
-                browser='Chromium/Playwright',preflight=preflight,shell=None,documents=[],
+                browser='Chromium/Playwright',preflight=preflight,formula_limitations=formula_limitations,shell=None,documents=[],
                 limitations=['No human-reviewed whole-document ground truth is supplied by browser execution alone.',
                              'Formula OCR checks are unverified unless actual Texify inference is explicitly run.'])
     if args.shell_only:
@@ -360,11 +410,15 @@ def main(argv=None):
                                 page.goto(f'http://127.0.0.1:{server.server_port}/mathreader/index.html',wait_until='domcontentloaded')
                                 page.wait_for_function('Boolean(window.__mathreaderP0)',timeout=15000)
                                 cases=[c for c in formula_cases if c.get('pdf_sha256')==hash_]
-                                item=full_document(page,path,hash_,args.timeout_ms,cases,args.out_dir/'browser_formula_crops')
+                                item=full_document(page,path,hash_,args.timeout_ms,cases,
+                                                   args.out_dir/'browser_formula_crops',args.allow_texify_network)
                                 (args.out_dir/f'{hash_}.json').write_text(json.dumps(item,indent=2,ensure_ascii=False)+'\n',encoding='utf8')
                                 output['documents'].append({'pdf':path.name,'sha256':hash_,
-                                                            'status':'COMPLETE' if not item['errors'] and all(v=='COMPLETE' for k,v in item['stages'].items() if k!='formulas') else 'UNVERIFIED',
-                                                            'errors':item['errors'],'stages':item['stages']})
+                                                            'status':classify_document_capture(item,bool(cases)),
+                                                            'errors':item['errors'],'stages':item['stages'],
+                                                            'navigation':item['navigation'],
+                                                            'persistence':item['persistence'],
+                                                            'limitations':item.get('limitations',[])})
                         output['dependency_routes']=routes
                     finally: browser.close()
             finally:server.shutdown();server.server_close()
@@ -372,7 +426,10 @@ def main(argv=None):
     print(json.dumps({'shell_status':output['shell']['status'] if output['shell'] else 'NOT_RUN',
                       'document_statuses': [x['status'] for x in output['documents']],
                       'preflight':preflight,'summary':str(args.out_dir/'browser_p0_summary.json')},indent=2))
-    return 2 if preflight or output['shell'] and output['shell']['status']!='PASS' or any(x['status']!='COMPLETE' for x in output['documents']) else 0
+    if (output['shell'] and output['shell']['status']=='FAIL'
+        or any(x['status']=='FAIL' for x in output['documents'])):
+        return 1
+    return 2 if preflight or any(x['status']!='COMPLETE' for x in output['documents']) else 0
 
 if __name__=='__main__':
     raise SystemExit(main())
