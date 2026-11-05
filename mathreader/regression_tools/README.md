@@ -129,3 +129,14 @@ node mathreader/tests/maintenance_integrity_regression.js
 The smoke test verifies genuine extraction/detector reuse, invalidation on a
 changed PDF, hash-mismatch/duplicate rejection, and source-linked MathJax
 compilation. Its generated PDFs are temporary and not product accuracy tests.
+
+## v355 P0 continuous reliability gate
+
+For the new independently verified golden-corpus plus real Chromium acceptance
+pipeline, see [`P0_ACCEPTANCE.md`](P0_ACCEPTANCE.md). Run
+`python mathreader/regression_tools/p0_gate.py --source-root mathreader --out-dir /path/to/report`.
+This extends the existing cached *offline proxy* but **does not replace** it or
+claim proxy/browser equivalence. Browser indexing requires the exact
+`pdfjs-dist@4.10.38` assets. Model recognition requires real Texify; synthetic
+or Tesseract-only outputs must remain UNVERIFIED. All tests run locally and
+only generate reports outside the deployed application.

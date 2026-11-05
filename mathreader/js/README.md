@@ -64,3 +64,15 @@ page metrics with guesses. `mathreader.css` removes an accidental duplicate
 OCR-modal rule inside the mobile media block. No detection or OCR behavior was
 changed. Validate with `node mathreader/tests/performance_safe_regression.js`
 as well as the complete regression suite.
+
+## v355 P0 reliability infrastructure (offline tests only)
+
+`../regression_tools/p0_gate.py`, `p0_browser.py`, `p0_browser_probe.js` and
+`p0_ground_truth.py` implement the automated P0 code/browser/truth gates.
+The probe is appended **only to a temporary test copy** of the final module;
+it must not ship in the production runtime. No extra runtime JavaScript
+module, panel, OCR trigger, cache schema or detector/recovery behavior was
+introduced. Browser PDF.js and actual Texify acceptance require their real
+pinned assets and whole-document independent ground truth. See
+`../regression_tools/P0_ACCEPTANCE.md` and the v355 section of
+`../REGRESSION.md` for exact PASS/FAIL/UNVERIFIED definitions.

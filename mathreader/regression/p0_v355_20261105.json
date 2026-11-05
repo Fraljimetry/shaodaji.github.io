@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "release": "v355",
+  "campaign": "P0 initial automated infrastructure and real-original pilot",
+  "source_version": "v354 application subsystems preserved; v355 bootstrap/cache-bust metadata",
+  "corpus_selection": "Eight existing byte-distinct originals deliberately covering old, modern, handwritten and nonmathematical negatives; NOT a new PDF corpus",
+  "sample_count": 8,
+  "pages": 540,
+  "sample_documents": [
+    {
+      "name": "Ahlfors-Conformal-Invariants.pdf",
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "pages": 172,
+      "discipline": "complex analysis / historical print",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "caffarelli1989.pdf",
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "pages": 27,
+      "discipline": "PDE / historical scan",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "581 Note 8.pdf",
+      "sha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "pages": 3,
+      "discipline": "handwritten inverse problems",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "581 Note 2.pdf",
+      "sha256": "dce01da39ac90062dc65eb638212ad1b46a663f1c90ee34f5b6af7d890d554f2",
+      "pages": 2,
+      "discipline": "handwritten inverse problems",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "2610.07774v1.pdf",
+      "sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "pages": 15,
+      "discipline": "AI / modern technical",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "SPS_1988__22__485_0.pdf",
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "pages": 18,
+      "discipline": "harmonic analysis / historical",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "Fraljiculator_Performance_Optimization_Closeout_Report.pdf",
+      "sha256": "d4d27608861aa951945d1bda0d686bf51dcecb2f0ad2565065273604bc0a67c0",
+      "pages": 6,
+      "discipline": "software engineering",
+      "status": "UNVERIFIED"
+    },
+    {
+      "name": "McGraw-Hill's Dictionary of American Idioms and Phrasal_803-1099.pdf",
+      "sha256": "1ac6a39b79c6b7bec8865106401d3c26128e224ea024a14d8312f5b58a3c8af4",
+      "pages": 297,
+      "discipline": "nonmath negative control",
+      "status": "UNVERIFIED"
+    }
+  ],
+  "offline_source_level": {
+    "engine": "PyMuPDF native extraction + actual source-level JS detector proxy",
+    "formula_region_method": "heuristic crop selection; Tesseract plain-text proxy, NOT Texify",
+    "extract_count": 8,
+    "pages": 540,
+    "ocr": {
+      "scheduled": 8,
+      "deferred_due_to_budget": 0,
+      "cache_hits": 0,
+      "execution_failures": 0,
+      "timeouts": 0,
+      "empty_transcripts": 0
+    },
+    "elapsed_ms": 5513,
+    "end_to_end_verified": false,
+    "warm_repeat": {
+      "elapsed_ms": 374,
+      "extraction_cache_hits": 8,
+      "detector_cache_hits": 8,
+      "ocr_cache_hits": 8,
+      "first_run_vs_repeat_times_not_browser_performance": true
+    }
+  },
+  "chromium_shell": {
+    "scope": "isolated_dom_real_application_js_no_pdfjs_or_persistence",
+    "outcomes": {
+      "startup_without_pdf": "PASS",
+      "no_eager_texify": "PASS",
+      "language_control": "PASS",
+      "theme_control": "PASS",
+      "modal_appears_during_failed_init": "PASS",
+      "failure_releases_reader": "PASS",
+      "control_works_after_failure": "PASS"
+    },
+    "status": "PASS",
+    "fault_injection": "explicit offline model import failure; no actual model or PDF.js tested",
+    "check_count": 7
+  },
+  "browser_pdfjs": {
+    "status": "BLOCKED",
+    "reason": "Pinned PDF.js 4.10.38 browser+worker modules unavailable in test environment",
+    "model_inference": "NOT_RUN",
+    "original_pages_browser_indexed": 0
+  },
+  "independent_ground_truth": {
+    "status": "MISSING",
+    "fully_verified_docs": 0
+  },
+  "acceptance": {
+    "classification_counts": {
+      "UNVERIFIED": 8
+    },
+    "fully_verified_pass": 0,
+    "result": "INCOMPLETE"
+  },
+  "known_regression_defects": "All previously recorded FAIL and UNVERIFIED remain open; no detector code changed.",
+  "limitations": [
+    "No full-browser PDF.js detection; no actual Texify/handwritten accuracy; no independently verified full-document ground truth",
+    "Successful source-level/isolated-shell tests cannot verify complete mathematical correctness."
+  ],
+  "p0_comparator_unit_tests": {
+    "passed": 30,
+    "synthetic_cases": 30,
+    "real_ground_truth_approval": 0
+  }
+}
