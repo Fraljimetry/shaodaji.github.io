@@ -1609,12 +1609,24 @@ function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
     const key = `${item?.page}:${item?.label}:${Math.round(Number(item?.ratio || 0) * 500)}`;
     if (!margins.has(key)) margins.set(key, item);
   }
+  // Older equation-margin scans normalized against a canvas already reset to
+  // height=1, producing ratio=1 for unrelated labels. Once a fresh scan
+  // supplies genuine geometry for the same page/label, retire only that
+  // unusable position; preserve the label and all valid observations.
+  const marginItems = [...margins.values()];
+  const repairedMargins = marginItems.filter((item) =>
+    Number(item?.ratio) < 0.999 || !marginItems.some((other) =>
+      other !== item && Number(other?.page) === Number(item?.page) &&
+      String(other?.label) === String(item?.label) &&
+      Number.isFinite(Number(other?.ratio)) && Number(other?.ratio) < 0.999
+    )
+  );
   return {
     ...incoming,
     lines: merged,
     text: merged.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim(),
     words: [...(existing?.words || []), ...(incoming?.words || [])],
-    equationMarginEvidence: [...margins.values()]
+    equationMarginEvidence: repairedMargins
   };
 }
 

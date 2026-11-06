@@ -1752,3 +1752,11 @@ must resolve inside the overlaid website tree. See
 **Compatibility note:** A manual drag order created before v382 cannot be reliably distinguished from the automatically saved key order in old sessions. Such old custom order may return to document/numerical order. New explicit drag orders persist correctly. This is a known migration limitation and is preferable to silently perpetuating misordered OCR indexes.
 
 **Acceptance:** Run `node mathreader/tests/equation_order_ocr_regression.js` and all available zero-network Node regression suites, `node --check` on each source part and assembled runtime, and ZIP integrity. Live browser verification remains required for the displayed Giusti PDF and real meticulous OCR (including reference positions and navigation). No automatic OCR recognition accuracy is claimed.
+
+## v383 — Meticulous OCR equation navigation geometry
+
+**Confirmed defect:** `equationMarginOcrLines` cleared `fullCanvas.height` before calling `pageRecordFromHocr`. Its vertical normalization denominator therefore became 1, clipping OCR y-ratios to the bottom of the PDF page even for correctly read equation numbers. When rendering a fresh page, a second defect initialized canvas height from its default instead of the PDF viewport. This affected manual meticulous-margin evidence and automatic supplemental margin passes, and could yield wrong or missing navigation coordinates.
+
+**Fix:** Capture source-page height before cleanup, initialize fresh render canvas from the PDF viewport, and never modify a caller-owned page canvas. Continue releasing private canvases after OCR. Retire legacy ratio=1 margin navigation coordinates **only when** a fresh observation of the same page/label supplies a usable position; the equation label itself and other evidence remain intact. Add geometry and replacement tests in `tests/equation_margin_navigation_regression.js`.
+
+**Manual verification pending:** On a real old scanned PDF, run meticulous page OCR again on an affected page; click a newly recovered label and compare its landing position against the printed equation. Pre-v383 invalid cached targets may persist until a fresh OCR pass replaces their geometry. No live browser test or accuracy percentage is claimed here.

@@ -1945,7 +1945,7 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
     const viewport = page.getViewport({ scale });
     fullCanvas = document.createElement('canvas');
     fullCanvas.width = Math.max(1, Math.ceil(viewport.width));
-    fullCanvas.height = Math.max(1, fullCanvas.height);
+    fullCanvas.height = Math.max(1, Math.ceil(viewport.height));
     const fullContext = fullCanvas.getContext('2d', { alpha: false });
     fullContext.fillStyle = '#fff';
     fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
@@ -1954,6 +1954,7 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
 
   // Equation labels live at the outer edge. A narrow crop is both faster and
   // less likely to OCR inline prose references as candidate labels.
+  const sourceHeight = Math.max(1, fullCanvas.height);
   const cropWidth = Math.max(1, Math.ceil(fullCanvas.width * marginFraction));
   const cropX = side === 'right' ? Math.max(0, fullCanvas.width - cropWidth) : 0;
   const cropCanvas = document.createElement('canvas');
@@ -1972,12 +1973,14 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
     if (typeof onTiming === 'function') {
       try { onTiming({ renderMs: rendered - started, recognizeMs: equationDetectionNowMs() - rendered }); } catch (_) {}
     }
+    // Do not mutate a caller-owned canvas. Preserve the source dimensions
+    // until OCR coordinates have been normalized to the whole PDF page.
     if (!existingCanvas) fullCanvas.width = 1;
-    fullCanvas.height = 1;
+    if (!existingCanvas) fullCanvas.height = 1;
     cropCanvas.width = 1;
     cropCanvas.height = 1;
   }
-  const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, Math.max(1, fullCanvas.height), pageNum);
+  const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, sourceHeight, pageNum);
   return (record.lines || []).map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
 }
 
