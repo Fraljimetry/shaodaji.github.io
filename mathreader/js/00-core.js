@@ -347,6 +347,9 @@ let readingBackStack = [];
 let readingTrailExpanded = false;
 let suppressReadingHistory = false;
 let equationLabelIndex = null;
+// Persisted per document: run bounded image-backed equation recovery once, then require user action.
+let equationInitialRecoveryDone = false;
+let equationInitialRecoveryAttempted = false;
 let equationNumberingSide = 'right';
 let tocOutlineTargets = null;
 let tocDecorationSerial = 0;
@@ -720,6 +723,8 @@ async function exactDocumentKey(data, name, size, lastModified) {
 }
 
 function clearDocumentMapForIncomingPdf() {
+  equationInitialRecoveryDone = false;
+  equationInitialRecoveryAttempted = false;
   // Never leave one document's indexes visible while another document is opening/OCRing.
   inferredOutline = [];
   inferredOutlineDetectionDone = false;
@@ -798,6 +803,7 @@ function snapshotSession() {
     portableContentDetection: portableContentDetectionActive,
     equationEdits,
     equationManualOrder,
+    equationInitialRecoveryDone,
     // Keep the automatic equation detections themselves, not only their count.
     // This makes reading-data exports portable: a re-import can render the
     // detected equation rows immediately instead of depending on a fresh text
@@ -2582,6 +2588,8 @@ function loadDocumentState(cachedSession = null) {
   structureEntries = [];
   bibliographyEntries = [];
   portableContentDetectionActive = false;
+  equationInitialRecoveryDone = false;
+  equationInitialRecoveryAttempted = false;
   equationEdits = [];
   equationManualOrder = [];
   draggedEquationKey = null;
@@ -2613,6 +2621,7 @@ function loadDocumentState(cachedSession = null) {
   }
 
   if (session && typeof session === 'object') {
+    equationInitialRecoveryDone = session.equationInitialRecoveryDone === true;
     bookmarks = normalizeBookmarks(session.bookmarks);
     notes = session.notes && typeof session.notes === 'object' ? session.notes : {};
     annotations = normalizeAnnotations(session.annotations);
@@ -2669,7 +2678,7 @@ function loadDocumentState(cachedSession = null) {
     }
     const portableDetectionRequested = Boolean(session.portableContentDetection);
     const restoredEquationIndex = restoreEquationIndexFromPersistence(session.equationIndexSnapshot, { portable: portableDetectionRequested });
-    if (restoredEquationIndex) {
+    if (restoredEquationIndex && equationInitialRecoveryDone) {
       equationAutomaticLabelIndex = restoredEquationIndex;
       equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
       equationIndexKnownCount = equationLabelIndex.size;

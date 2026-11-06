@@ -18,8 +18,8 @@ check(/async function forceEquationImageOcr\(\)/.test(pipeline), 'manual action 
 check(/!documentTextFeaturesAvailable\(\) \|\| equationIndexBuildPromise \|\| equationImageAssistPromise/.test(pipeline), 'busy and unavailable guards');
 check(/buildEquationLabelIndex\(\{ forceImageOcr: true \}\)/.test(pipeline), 'forced rebuild passes explicit flag');
 check(/if \(forceImageOcr\) comprehensivePages = Array\.from\(\{ length: pageCount \}/.test(pipeline), 'manual pass covers all pages');
-check(/if \(forceImageOcr && !equationImageAssistPromise\)/.test(pipeline), 'image margin OCR only runs when manually requested');
-check(/if \(!forceImageOcr\)/.test(pipeline), 'native-only indexing completes without image OCR');
+check(pipeline.includes("if ((forceImageOcr || initialImageOcr) && !equationImageAssistPromise)"), 'first-open recovery and manual OCR are explicit modes');
+check(/if \(!forceImageOcr && !initialImageOcr\)/.test(pipeline), 'native-only indexing completes without image OCR');
 check(/pdfDoc !== sourceDoc \|\| currentFileKey !== sourceKey/.test(pipeline), 'document switching guard retained');
 check(/equationSupplementalOcrCache\.get\(cacheKey\)/.test(pipeline), 'cached page margins reused');
 check(/denseSupplementalEquationFamilies\(comprehensiveRecords\)/.test(pipeline), 'conservative index promotion retained');

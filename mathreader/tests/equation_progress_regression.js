@@ -51,8 +51,8 @@ check(status.textContent.includes('Saved') && status.textContent.includes('not r
 run("updateEquationDetectionProgress({phase:'unavailable'},2,true)");
 check(status.textContent.includes('full OCR needed') && status.title.includes('OCR required'),'unavailable text has accurate status');
 run("updateEquationDetectionProgress({phase:'complete',ocrTotal:0,nativeDone:12,nativeTotal:12,labels:9},2,true)");
-check(!status.textContent.includes('OCR 0/') && status.textContent.includes('Auto done') && status.textContent.includes('Text 12/12'),'no scheduled OCR distinguished from completed image OCR');
-check(status.title.includes('Automatic check finished'),'finished means scheduled work done, not full correctness');
+check(!status.textContent.includes('OCR 0/') && status.textContent.includes('Text done') && status.textContent.includes('Text 12/12'),'no scheduled OCR distinguished from completed image OCR');
+check(status.title.includes('Equation text check finished'),'finished means scheduled work done, not full correctness');
 lang = 'zh';
 run("updateEquationDetectionProgress({phase:'ocr',ocrDone:3,ocrTotal:8,documentPages:100,labels:16,recovered:2},2,true)");
 check(status.textContent.includes('选页') && status.textContent.includes('补 2') && status.title.includes('仅覆盖选定页面'),'Chinese status retains coverage/recovery semantics');
@@ -62,7 +62,7 @@ check(status.textContent.includes('Index failed') && status.title.includes('Equa
 const css=fs.readFileSync(path.join(__dirname,'../mathreader.css'),'utf8');
 check(/\.equation-detection-status\{[^}]*white-space:nowrap[^}]*text-overflow:ellipsis/.test(css),'one-line CSS with narrow-pane ellipsis');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-check(html.includes('mathreader.js?v=379') && html.includes('mathreader.css?v=379'),'cache busters updated to v379');
+check(html.includes('mathreader.js?v=380') && html.includes('mathreader.css?v=380'),'cache busters updated to v379');
 check(html.includes('Expand to index equations.') && html.includes('Numbered references appear here.'),'sidebar empty hints shortened');
 
 const doc={getPage:async()=>({getViewport:()=>({width:250,height:100}),render:()=>({promise:Promise.resolve()})})};

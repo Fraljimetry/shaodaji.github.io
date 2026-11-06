@@ -1825,7 +1825,7 @@ function equationDetectionSummary(state) {
     : phase === 'ocr' ? t('Reading equation margins', '读取公式边缘')
     : phase === 'validating' ? t('Validating recovered labels', '验证补回编号')
     : phase === 'partial' ? t('Finished with OCR issues', '已结束，部分 OCR 失败')
-    : t('Automatic check finished', '自动检查已结束');
+    : scanned ? t('Equation image check finished', '公式图像检查完成') : t('Equation text check finished', '公式文本检查完成');
   const parts = [head, native, ocr, retry, labels, gain];
   if (failed) parts.push(t(`${failed} failed pages`, `${failed} 页失败`));
   if (selected) parts.push(t('selected coverage only', '仅覆盖选定页面'));
@@ -1837,7 +1837,7 @@ function equationDetectionSummary(state) {
     : phase === 'ocr' ? t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`)
     : phase === 'validating' ? t('Checking', '校验中')
     : phase === 'partial' ? t('OCR partial', 'OCR 部分失败')
-    : t('Auto done', '自动检查结束');
+    : scanned ? t('OCR done', 'OCR 已完成') : t('Text done', '文本已读取');
   const shortParts = [shortHead];
   if (failed) shortParts.push(t(`${failed} failed`, `${failed} 页失败`));
   if (scanned && phase !== 'ocr') shortParts.push(t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`));
@@ -1865,7 +1865,7 @@ function refreshEquationForceOcrButton() {
   const active = Boolean(pdfDoc && documentTextFeaturesAvailable());
   const busy = Boolean(equationIndexBuildPromise || equationImageAssistPromise || documentOcrActive || documentOcrBusy);
   equationForceOcrButton.disabled = !active || busy;
-  equationForceOcrButton.title = t('Scan equation labels from every page image (may take a while)', '逐页从图像识别公式编号（可能需要较长时间）');
+  equationForceOcrButton.title = t('Manually recheck equation labels across all pages (may take a while)', '手动重新检查全部页面的公式编号（可能需要较长时间）');
   equationForceOcrButton.setAttribute('aria-label', t('Force equation-label image OCR', '强制进行公式编号图像 OCR'));
 }
 async function forceEquationImageOcr() {
@@ -2431,7 +2431,7 @@ async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, rend
   return [...byLabel.values()];
 }
 
-async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
+async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr = false } = {}) {
   if (!pdfDoc || !documentTextFeaturesAvailable()) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
   const sourceDoc = pdfDoc;
@@ -2708,13 +2708,13 @@ async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
     return true;
   };
 
-  // Publish the native-text result immediately. Image-based equation recovery
-  // is opt-in only: never silently OCR margins on document open or index rebuild.
+  // Publish native text immediately; first open schedules one bounded image-backed
+  // recovery. Subsequent full-document rescans require the manual OCR action.
   publishAutomaticIndex();
   nativeCount = equationAutomaticLabelIndex?.size || 0;
   updateEquationDetectionProgress({ labels: nativeCount, recovered: 0 }, generation, true);
 
-  if (forceImageOcr && !equationImageAssistPromise) {
+  if ((forceImageOcr || initialImageOcr) && !equationImageAssistPromise) {
     const assistIndex = index;
     const assistPool = candidatePool;
     const onAssistProgress = (event = {}) => {
@@ -2745,6 +2745,12 @@ async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
         publishAutomaticIndex();
       }
       const current = equationDetectionProgress;
+      // Record the first automatic recovery only after the image pass is complete.
+      // A partial/error run must not silently suppress a later retry.
+      if (initialImageOcr && !current.failedPages) {
+        equationInitialRecoveryDone = true;
+        persistDocumentState();
+      }
       const finish = { phase: (current.failedPages || 0) ? 'partial' : 'complete', elapsedMs: equationDetectionNowMs() - started };
       updateEquationDetectionProgress(finish, generation, true);
       logEquationDetectionTiming(equationDetectionProgress, sourceKey);
@@ -2758,7 +2764,7 @@ async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
       if (generation === equationDetectionGeneration && pdfDoc === sourceDoc && currentFileKey === sourceKey) { equationImageAssistPromise = null; refreshEquationForceOcrButton(); }
     });
   }
-  if (!forceImageOcr) {
+  if (!forceImageOcr && !initialImageOcr) {
     updateEquationDetectionProgress({ phase: 'complete', elapsedMs: equationDetectionNowMs() - started }, generation, true);
     logEquationDetectionTiming(equationDetectionProgress, sourceKey);
   }
@@ -3014,7 +3020,19 @@ async function ensureEquationIndexRendered() {
   if (equationLabelIndex) { renderEquationIndex(); return equationLabelIndex; }
   if (equationIndexEmpty) { equationIndexEmpty.classList.remove('is-hidden'); equationIndexEmpty.textContent = t('Building equation-label index…', '正在生成公式编号索引……'); }
   try {
-    if (!equationIndexBuildPromise) equationIndexBuildPromise = buildEquationLabelIndex().finally(() => { equationIndexBuildPromise = null; });
+    if (!equationIndexBuildPromise) {
+      // One bounded image-recovery pass on first reading, not on every reopen.
+      // Existing manually saved equation edits are preserved through rebuilding.
+      if (equationLabelIndex && !equationInitialRecoveryDone) {
+        equationLabelIndex = null;
+        equationAutomaticLabelIndex = null;
+      }
+      const initialImageOcr = !equationInitialRecoveryDone && !equationInitialRecoveryAttempted;
+      if (initialImageOcr) equationInitialRecoveryAttempted = true;
+      equationIndexBuildPromise = buildEquationLabelIndex({ initialImageOcr })
+        .finally(() => { equationIndexBuildPromise = null; refreshEquationForceOcrButton(); });
+      refreshEquationForceOcrButton();
+    }
     await equationIndexBuildPromise;
     return equationLabelIndex;
   } catch (error) {
