@@ -75,7 +75,7 @@ function isMathEnvironmentLabel(text) {
 // genuine section title such as "2.1 Theorem of Stokes" remains eligible.
 function numberedResultDeclarationInOutline(text) {
   const value = normalizedHeadingText(text);
-  return /^(?:§\s*)?(?:(?:\d{1,3}|[A-Z])(?:\s*\.\s*\d{1,3}){0,4})[.)]?\s+(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b(?=\s*[:.(]|\s+\d|\s*$)/i.test(value);
+  return /^(?:§\s*)?(?:(?:\d{1,3}|[A-Z]{1,2})(?:\s*[.·\-]\s*[0-9lIO]{1,3}){0,4})[.)]?\s+(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b(?=\s*[:.(]|\s+\d|\s*$)/i.test(value);
 }
 
 // Long sentence fragments in legacy books sometimes appear larger than the
@@ -1397,7 +1397,7 @@ document.addEventListener('click', (event) => {
   });
 });
 
-const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]?\d+(?:(?:\s*[.·]\s*\d+)+|(?:\s*[-–—]\s*\d+)+)?(?:['’])?|[A-Z])\b/gi;
+const STRUCTURE_REFERENCE_RE = /\b(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]{1,2}[.·-][0-9lIO]+(?:[.·-][0-9lIO]+)*|[A-Z]?\d+(?:(?:\s*[.·]\s*\d+)+|(?:\s*[-–—]\s*\d+)+)?(?:['’])?|[A-Z])\b/gi;
 const EQUATION_TAG_SYMBOL_CLASS = '*∗⋆★☆†‡※◇◆○●◦•△▲▽▼□■♢♦⊙⊗⊕⊖⊥∥';
 const EQUATION_TAG_SYMBOL_PATTERN = `[${EQUATION_TAG_SYMBOL_CLASS.replace(/[\]\-^]/g, '\\$&')}]`;
 const CLICKABLE_REFERENCE_RE = new RegExp(

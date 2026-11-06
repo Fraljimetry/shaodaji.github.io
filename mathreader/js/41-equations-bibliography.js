@@ -101,14 +101,118 @@ function tocResultLineIndices(lines, page = 1, pageCount = 1) {
 function structureResultsIndexNavigationPage(lines) {
   const rows = Array.isArray(lines) ? lines : [];
   if (rows.length < 12) return false;
-  return rows.some((line) => Number(line?.ratio ?? 1) <= 0.11
+  return rows.some((line) => Number(line?.ratio ?? 1) <= 0.16
     && /^(?:(?:subject|name|author|phrase[-\s]?finder|general)\s+)?index\s*[.:]?$/i.test(String(line?.text || '').trim()));
+}
+
+// Appendix mathematical Results may have the number before the type, unlike
+// "Theorem 2.3" in the main text. The compact/decimal family is recognized
+// only in a declaration context, and ambiguous OCR glyphs are never guessed.
+const APPENDIX_RESULT_TYPE = '(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)';
+
+function canonicalAppendixResultDigits(raw) {
+  const original = String(raw || '').replace(/\s+/g, '');
+  if (!/^[0-9lIO]+(?:[.·\-][0-9lIO]+)*$/.test(original)) return null;
+  const digits = original.replace(/[lI]/g, '1').replace(/O/g, '0').replace(/·/g, '.');
+  const parts = digits.split(/[.\-]/);
+  if (parts.some(part => part.length > 3 || !/^\d+$/.test(part) || Number(part) > 999)) return null;
+  return digits;
+}
+
+function appendixResultNumberPrefix(raw, separator, rawDigits) {
+  const digits = canonicalAppendixResultDigits(rawDigits);
+  if (!digits) return null;
+  return `${raw}${separator === '·' ? '.' : separator}${digits}`;
+}
+
+function appendixResultDeclarationSuffix(value) {
+  const tail = String(value || '').trim();
+  if (!tail) return true; // A standalone bold "C.10 Theorem" is a real label.
+  if (/^[.:]\s*\S/.test(tail)) return true;
+  if (/^\([^()]{2,85}\)\s*[:.]\s*\S/.test(tail)) return true;
+  if (/^(?:Let|Suppose|If|Assume|Given|For\s+every|There\s+(?:exists?|is|are))\b/i.test(tail)) return true;
+  return false; // "A.2 Theorem A.1 for ..." is a section heading.
+}
+
+function detectedAppendixResult(line, page) {
+  const rawText = normalizedStructureResultText(line?.text)
+    .replace(/^[·•]\s+(?=[A-Z]{1,2}[.·\-][0-9lIOS]+\b)/, '');
+  // An isolated S (e.g. Giusti C.S) is ambiguous between 5 and 8. Keep the
+  // original *observation*; resolve only when explicit neighbors independently
+  // bracket one unique value. Never publish a guessed label from C.S alone.
+  const ambiguous = rawText.match(/^([A-Z]{1,2})[.·\-]S[.)]?\s+(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture)\b(.*)$/);
+  if (ambiguous && appendixResultDeclarationSuffix(ambiguous[3])) {
+    return { ambiguousAppendixOCR: true, appendixPrefix: ambiguous[1], appendixType: canonicalStructureResultType(ambiguous[2]),
+      rawText, titleTail: String(ambiguous[3] || '').trim(), page, ratio: line.ratio };
+  }
+  const first = rawText.match(new RegExp('^([A-Z]{1,2})([.·\\-])([0-9lIO]{1,3}(?:[.·\\-][0-9lIO]{1,3}){0,3})[.)]?\\s+' + APPENDIX_RESULT_TYPE + '\\b(.*)$', 'i'));
+  const compact = first ? null : rawText.match(new RegExp('^([A-Z]{1,2})([0-9]{1,3})[.)]?\\s+' + APPENDIX_RESULT_TYPE + '\\b(.*)$'));
+  const match = first || compact;
+  if (match) {
+    // Prefix letters are alphabetic section identifiers, not variables;
+    // lowercase math symbols such as "n.1 theorem" are not appendix labels.
+    if (match[1] !== match[1].toUpperCase()) return null;
+    const type = canonicalStructureResultType(first ? match[4] : match[3]);
+    const number = first ? appendixResultNumberPrefix(match[1].toUpperCase(),match[2],match[3]) : `${match[1]}${match[2]}`;
+    const tail = String(first ? match[5] : match[4] || '').trim();
+    if (!number || !appendixResultDeclarationSuffix(tail)) return null;
+    return {label:`${type} ${number}`,title:`${type} ${number}${tail ? `. ${tail.replace(/^[.:]\s*/, '')}` : ''}`.slice(0,180),page,ratio:line.ratio};
+  }
+  // Eponymic forms: "A.1 De La Vallée Poussin Theorem: Suppose ...".
+  // A colon and actual statement are required: section titles such as
+  // "A.2 Theorem A.1 for measures" must not become Results.
+  const eponymic=rawText.match(/^([A-Z]{1,2})([.·\-])([0-9lIO]{1,3})[.)]?\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’\-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’\-]*){1,6})\s+(Theorem|Lemma|Proposition|Corollary)\s*:\s*(.{8,})$/);
+  if (eponymic) {
+    const number=appendixResultNumberPrefix(eponymic[1],eponymic[2],eponymic[3]);
+    if (!number || structureResultProseReferenceTail(eponymic[6])) return null;
+    const type=canonicalStructureResultType(eponymic[5]);
+    return {label:`${type} ${number}`,title:`${type} ${number}. ${eponymic[4]} ${type}: ${eponymic[6]}`.slice(0,180),page,ratio:line.ratio};
+  }
+  return null;
+}
+
+function normalizedStructureResultReference(value) {
+  const text = String(value || '').replace(/\b(Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]{1,2})([.·\-])([0-9lIO]{1,3}(?:[.·\-][0-9lIO]{1,3})*)\b/gi,
+    (all,type,prefix,separator,digits) => {
+      const number=appendixResultNumberPrefix(prefix.toUpperCase(),separator,digits);
+      return number ? `${type} ${number}` : all;
+    });
+  return normalizedReferenceLabel(text);
+}
+
+function recoverBoundedAppendixResultConfusables(entries, observations) {
+  const accepted = Array.isArray(entries) ? entries : [];
+  for (const candidate of observations || []) {
+    if (!candidate || !candidate.ambiguousAppendixOCR) continue;
+    const sameFamily = accepted.filter(r => r.label && r.label.startsWith(`${candidate.appendixType} ${candidate.appendixPrefix}.`));
+    const before = sameFamily.filter(r => r.page < candidate.page ||
+      (r.page === candidate.page && Number(r.ratio) < Number(candidate.ratio)));
+    const after = sameFamily.filter(r => r.page > candidate.page ||
+      (r.page === candidate.page && Number(r.ratio) > Number(candidate.ratio)));
+    const previous=before[before.length-1];
+    const next=after[0];
+    const prevNum=Number(previous?.label?.match(/\.(\d+)$/)?.[1]);
+    const nextNum=Number(next?.label?.match(/\.(\d+)$/)?.[1]);
+    // S can be misread as 5 or 8. Only 7->S->9 uniquely supports 8;
+    // no sequence completion, no synthetic result, and no cross-family merge.
+    if (prevNum !== 7 || nextNum !== 9 || candidate.page - previous.page > 3 || next.page - candidate.page > 3) continue;
+    const label=`${candidate.appendixType} ${candidate.appendixPrefix}.8`;
+    if (accepted.some(r=>normalizedStructureResultReference(r.label)===normalizedStructureResultReference(label))) continue;
+    accepted.push({label,title:`${label}. ${candidate.titleTail.replace(/^[.:]\s*/, '')}`.slice(0,180),
+      page:candidate.page,ratio:candidate.ratio,
+      appendixOcrNumberResolved:true,appendixOriginalNumberText:candidate.rawText,
+      key:`${candidate.page}:${normalizedReferenceLabel(label)}`,proofReferences:[],usedByProofs:[]});
+  }
+  accepted.sort((a,b) => Number(a.page)-Number(b.page) || Number(a.ratio)-Number(b.ratio));
+  return accepted;
 }
 
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
   const cleaned = normalizedStructureResultText(line?.text);
   if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned)) return null;
+  const appendix = detectedAppendixResult(line, page);
+  if (appendix) return appendix;
 
   // Classical papers use both “Lemma 2.3” and “2.3. LEMMA”. Require the
   // declaration to start the visual line so body references cannot qualify.
@@ -122,6 +226,20 @@ function detectedStructureResult(lines, lineIndex, page) {
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
       page,
       ratio: line.ratio,
+    };
+  }
+
+  // Type-first appendix declarations also suffer 1/l, 0/O confusion in old
+  // PDF text layers. Restrict repairs to the actual number token of a labeled
+  // Result; prose references are still guarded by the existing tail check.
+  match=cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]{1,2})([.·\-])([0-9lIO]{1,3}(?:[.·\-][0-9lIO]{1,3})*)\b(?:[.:)]\s*|\s+|$)(.*)$/i);
+  if(match) {
+    if (match[2] !== match[2].toUpperCase()) return null;
+    const type=canonicalStructureResultType(match[1]);
+    const number=appendixResultNumberPrefix(match[2],match[3],match[4]);
+    const tail=String(match[5]||'').trim();
+    if(number && !structureResultProseReferenceTail(tail)) return {
+      label:`${type} ${number}`,title:`${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0,180),page,ratio:line.ratio
     };
   }
 
@@ -4074,6 +4192,8 @@ async function buildStructureIndex({ force = false } = {}) {
   let activeBibliographyRecoveryCandidate = null;
   let pendingUnnumberedBibliographyEntry = null;
   let activeProofEntry = null;
+  const ambiguousAppendixResultObservations = [];
+  let resultsIndexMode = false;
   try {
     // Structure stays bounded for performance, but old books and long technical
     // texts often place References far beyond page 800. Always include a tail
@@ -4094,7 +4214,19 @@ async function buildStructureIndex({ force = false } = {}) {
       const tailOnlyPage = page > primaryPageCount;
       const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode);
       const tocResultRows = tailOnlyPage ? new Set() : tocResultLineIndices(lines, page, sourceDoc.numPages);
-      const indexNavigationPage = !tailOnlyPage && structureResultsIndexNavigationPage(lines);
+      // A back-of-book Subject Index continues after its title page. Its
+      // continuation pages must not contribute phantom results such as
+      // "Theorem 125" (a subject-index folio).
+      const currentResultsIndexHeading = !tailOnlyPage && structureResultsIndexNavigationPage(lines);
+      if (currentResultsIndexHeading && page >= Math.floor(sourceDoc.numPages * 0.8)) resultsIndexMode = true;
+      // Rare books place appendices after the index. Restart Results only if
+      // a real top-of-page Appendix/Chapter marker explicitly begins again.
+      if (resultsIndexMode && !currentResultsIndexHeading && lines.some((row) =>
+        Number(row?.ratio ?? 1) <= 0.19
+        && /^(?:Appendix\s+[A-Z](?:\.\s+[^0-9].*)?|Chapter\s+\d+(?:\.\s+[^0-9].*)?)$/i.test(String(row?.text || '').trim()))) {
+        resultsIndexMode = false;
+      }
+      const indexNavigationPage = currentResultsIndexHeading || resultsIndexMode;
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
         const line = lines[lineIndex];
         const cleaned = String(line.text || '').replace(/\s+/g, ' ').trim();
@@ -4140,7 +4272,9 @@ async function buildStructureIndex({ force = false } = {}) {
           // such as "Proposition 2.1 shows ..." stay out of Results.
           const detectedResult = indexNavigationPage || tocResultRows.has(lineIndex)
             ? null : detectedStructureResult(lines, lineIndex, page);
-          if (detectedResult) {
+          if (detectedResult?.ambiguousAppendixOCR) {
+            ambiguousAppendixResultObservations.push(detectedResult);
+          } else if (detectedResult) {
             const key = `${page}:${normalizedReferenceLabel(detectedResult.label)}`;
             if (!nextEntries.some((entry) => entry.key === key)) {
               const entry = { key, ...detectedResult, proofReferences: [], usedByProofs: [] };
@@ -4152,8 +4286,8 @@ async function buildStructureIndex({ force = false } = {}) {
           if (proofMatch) {
             let target = null;
             if (proofMatch[1]) {
-              const wanted = normalizedReferenceLabel(proofMatch[1]);
-              target = [...nextEntries].reverse().find((entry) => normalizedReferenceLabel(entry.label) === wanted) || null;
+              const wanted = normalizedStructureResultReference(proofMatch[1]);
+              target = [...nextEntries].reverse().find((entry) => normalizedStructureResultReference(entry.label) === wanted) || null;
             }
             if (!target) target = [...nextEntries].reverse().find((entry) => page - entry.page <= 1 && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(entry.label || '')) || null;
             if (target && !target.proofPage) {
@@ -4492,6 +4626,11 @@ async function buildStructureIndex({ force = false } = {}) {
 
     const cleanedBibliography = pruneIsolatedNumericEntriesFromAuthorKeyBibliography(nextBibliography);
 
+    // Resolve only ambiguous OCR glyphs that have an actual observed result
+    // declaration and uniquely supported immediately neighboring labels.
+    // Never synthesize a missing declaration from numbering alone.
+    recoverBoundedAppendixResultConfusables(nextEntries, ambiguousAppendixResultObservations);
+
     // Apply document-order sequence consistency after local detection. Exact
     // result labels are unique, and numeric result numbering must not move
     // backwards through the paper. This removes repeated prose-derived labels
@@ -4500,11 +4639,11 @@ async function buildStructureIndex({ force = false } = {}) {
 
     // Resolve proof dependencies into a directed graph and derive the reverse
     // relation from the same sequence-cleaned structure index.
-    const structureByLabel = new Map(sequenceCleanEntries.map((entry) => [normalizedReferenceLabel(entry.label), entry]));
+    const structureByLabel = new Map(sequenceCleanEntries.map((entry) => [normalizedStructureResultReference(entry.label), entry]));
     for (const owner of sequenceCleanEntries) {
       const resolved = [];
       for (const reference of owner.proofReferences || []) {
-        const target = structureByLabel.get(normalizedReferenceLabel(reference));
+        const target = structureByLabel.get(normalizedStructureResultReference(reference));
         if (!target || target === owner) continue;
         if (!resolved.some((item) => item.label === target.label)) resolved.push({ label: target.label, page: target.page, ratio: target.ratio });
         target.usedByProofs = target.usedByProofs || [];
@@ -4519,7 +4658,7 @@ async function buildStructureIndex({ force = false } = {}) {
       if (!/^corollary\b/i.test(entry.label || '')) continue;
       const refs = String(entry.title || '').match(STRUCTURE_REFERENCE_RE) || [];
       for (const ref of refs) {
-        const parent = structureByLabel.get(normalizedReferenceLabel(ref));
+        const parent = structureByLabel.get(normalizedStructureResultReference(ref));
         if (!parent || parent === entry) continue;
         parent.corollaries = parent.corollaries || [];
         if (!parent.corollaries.some((item) => item.label === entry.label)) parent.corollaries.push({ label: entry.label, page: entry.page, ratio: entry.ratio });
