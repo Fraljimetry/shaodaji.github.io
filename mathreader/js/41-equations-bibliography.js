@@ -747,6 +747,17 @@ function chooseCanonicalEquationCandidate(candidates) {
   const usable = (candidates || []).filter(Boolean);
   if (!usable.length) return null;
   return [...usable].sort((a, b) => {
+    // The user-triggered margin observation has actual page-image geometry.
+    // This takes precedence over a native-text target of the same label,
+    // which may be an inline citation or have corrupt placement.
+    const aVerified = a.meticulousPageVerified === true && Number.isFinite(a.ratio) && a.ratio >= 0 && a.ratio < 0.999;
+    const bVerified = b.meticulousPageVerified === true && Number.isFinite(b.ratio) && b.ratio >= 0 && b.ratio < 0.999;
+    if (aVerified !== bVerified) return aVerified ? -1 : 1;
+    // Fresh actual hOCR geometry supersedes pre-v384 cached margin candidates
+    // whose coordinates may have been fallback estimates.
+    const aMeasured = aVerified && a.ocrGeometryMeasured === true;
+    const bMeasured = bVerified && b.ocrGeometryMeasured === true;
+    if (aMeasured !== bMeasured) return aMeasured ? -1 : 1;
     // Compare the equation-label token itself, not the whole line, and prefer
     // the document's inferred numbering margin. This handles both modern
     // right-numbered papers and older left-numbered papers.
@@ -1981,7 +1992,10 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
     cropCanvas.height = 1;
   }
   const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, sourceHeight, pageNum);
-  return (record.lines || []).map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
+  // A plain-text OCR fallback has no hOCR boxes. Its synthetic y-ratios may be
+  // useful for reading order, but are not valid *equation navigation* evidence.
+  return (record.lines || []).filter((line) => line.geometryEstimated !== true)
+    .map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
 }
 
 function equationExpectedNumericOcrRecord(line, page, expectedLabel) {
@@ -2442,7 +2456,8 @@ async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, rend
       if (!equationCandidateAlignedToNumberingSide(record)) continue;
       if (equationReferenceProseContext(record.text)) continue;
       const existing = byLabel.get(record.label);
-      if (!existing || record.confidence > existing.confidence) byLabel.set(record.label, record);
+      if (!existing || record.confidence > existing.confidence)
+        byLabel.set(record.label, { ...record, ocrGeometryMeasured: true });
     }
   }
   return [...byLabel.values()];
@@ -2701,7 +2716,14 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
           !evidence.numeric?.prefix || !Number.isFinite(evidence.ratio) ||
           !equationCandidateAlignedToNumberingSide(evidence) ||
           !/^\(\d+(?:[.\-]\d+)+\)$/.test(String(evidence.label || ''))) continue;
-      if (!index.has(evidence.label)) index.set(evidence.label, [{ ...evidence, meticulousPageVerified: true }]);
+      const candidates = index.get(evidence.label) || [];
+      // A correctly read number is not enough: the image-margin position must
+      // also correct stale/native candidate positions for this *same* label.
+      if (!candidates.some((other) => Number(other.page) === Number(evidence.page)
+        && Math.abs(Number(other.ratio) - Number(evidence.ratio)) < 0.008
+        && other.meticulousPageVerified === true)) {
+        index.set(evidence.label, [...candidates, { ...evidence, meticulousPageVerified: true }]);
+      }
     }
   }
   // Gap recovery can promote a local-column candidate *after* the initial

@@ -1185,6 +1185,11 @@ function commitFormulaResult(item, statusMessage = '') {
 
 async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRect = null, diagnosticsMeta = {}) {
   if (!crop || !page) return;
+  // Inference can outlive a document switch. Never publish a result into an
+  // unrelated PDF's notes, history, or persistence state.
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const stillCurrent = () => sourceDoc === pdfDoc && sourceKey === currentFileKey;
   const endToEndStart = Number.isFinite(Number(diagnosticsMeta.startedAt)) ? Number(diagnosticsMeta.startedAt) : ocrNow();
   setOcrMode(false);
   const preview = crop.toDataURL('image/png');
@@ -1216,6 +1221,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
   await yieldForOcrProgressPaint();
   try {
     const result = await runImageFormulaRecognition(crop, { vectorCandidate: vector });
+    if (!stillCurrent()) return;
     const item = {
       page,
       kind,
@@ -1270,6 +1276,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     logOcrTiming({ type: 'recognition', ...lastOcrRunTiming });
   } catch (error) {
     recognitionFailed = true;
+    if (!stillCurrent()) return;
     console.error(error);
     // Do not silently replace Image OCR with PDF vector. Vector reconstruction
     // can be badly corrupted by PDF font encodings even for simple formulas.
@@ -1313,6 +1320,9 @@ async function canvasFromDataUrl(dataUrl) {
 
 async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null, ratio = null, diagnosticsMeta = {}) {
   if (!crop || !page) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const stillCurrent = () => sourceDoc === pdfDoc && sourceKey === currentFileKey;
   const endToEndStart = Number.isFinite(Number(diagnosticsMeta.startedAt)) ? Number(diagnosticsMeta.startedAt) : ocrNow();
   mathOcrLoading = true;
   let recognitionFailed = false;
@@ -1320,6 +1330,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
   setOcrProcessing(true);
   try {
     const result = await runImageFormulaRecognition(crop);
+    if (!stillCurrent()) return;
     const item = {
       page,
       kind,
@@ -1369,6 +1380,7 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
     logOcrTiming({ type: 'recognition', comparison: true, ...lastOcrRunTiming });
   } catch (error) {
     recognitionFailed = true;
+    if (!stillCurrent()) return;
     console.error(error);
     const detail = detailedOcrError(error, mathOcrBackend);
     setOcrStatus(detail);
@@ -1387,21 +1399,26 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
 
 async function tryImageOcrForCurrentResult() {
   if (!currentOcrResult?.preview || mathOcrLoading) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const sourceResult = currentOcrResult;
   try {
     const prepStart = ocrNow();
-    const crop = await canvasFromDataUrl(currentOcrResult.preview);
+    const crop = await canvasFromDataUrl(sourceResult.preview);
+    if (sourceDoc !== pdfDoc || sourceKey !== currentFileKey || sourceResult !== currentOcrResult) return;
     const cropMs = ocrNow() - prepStart;
     await recognizeImageFallbackCrop(
       crop,
-      Number(currentOcrResult.page) || currentPage,
-      currentOcrResult.kind || 'primary',
-      currentOcrResult.preview,
-      currentOcrResult.vectorAlternative || null,
-      currentOcrResult.vectorAlternativeText || null,
-      currentOcrResult.ratio,
+      Number(sourceResult.page) || currentPage,
+      sourceResult.kind || 'primary',
+      sourceResult.preview,
+      sourceResult.vectorAlternative || null,
+      sourceResult.vectorAlternativeText || null,
+      sourceResult.ratio,
       { startedAt: prepStart, cropMs }
     );
   } catch (error) {
+    if (sourceDoc !== pdfDoc || sourceKey !== currentFileKey) return;
     console.error(error);
     showError(t('The selected formula image could not be prepared for image OCR.', '无法为图像 OCR 准备当前框选公式。'));
   }

@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "version": "384",
+  "baseline": "reconstructed v383",
+  "test_summary": {
+    "node_regression_files": 27,
+    "node_failures": 0,
+    "new_executable_node_assertions": 34,
+    "chromium_dom_canvas_assertions": 13,
+    "chromium_responsive_assertions": 176,
+    "historical_pdfs": 2,
+    "original_pages_diagnostic_ocr": 3,
+    "actual_browser_texify_end_to_end": "UNVERIFIED",
+    "actual_browser_pdfjs_tesseract_end_to_end": "UNVERIFIED"
+  },
+  "p0_gate": {
+    "source_status": "PASS",
+    "source_checks": 78,
+    "source_failed": 0,
+    "browser_shell_status": "PASS",
+    "p0_full_document_acceptance": "INCOMPLETE",
+    "exit_code": 0
+  },
+  "changed_files": [
+    "OCR_AUDIT_v384.md",
+    "REGRESSION.md",
+    "index.html",
+    "js/00-core.js",
+    "js/11-formula-vector.js",
+    "js/41-equations-bibliography.js",
+    "mathreader.js",
+    "regression/ocr_v384_pdf_samples.json",
+    "tests/equation_progress_regression.js",
+    "tests/formula_ocr_lazy_regression.js",
+    "tests/maintenance_integrity_regression.js",
+    "tests/ocr_browser_geometry_regression.py",
+    "tests/ocr_reliability_deep_regression.js",
+    "v384_RELEASE.md"
+  ],
+  "sha256_files": {
+    "OCR_AUDIT_v384.md": "47eebec1ebfd895d73a17037301e3d49e256cda765dfe1cfa8565131dae4ff81",
+    "REGRESSION.md": "e3f8b00ff9c368626641f07326fcd5348aacc9011d03304073b00eef2eb736e7",
+    "index.html": "31ec0b2c08d01f597d94e22763a7648da30e6d4815d0f9c3c1478b223f124532",
+    "js/00-core.js": "f46cc36ed0e7a979d7071e2b12aa2bc0debb9069f9af7bf665e759dad660b4ab",
+    "js/11-formula-vector.js": "024d8e5fd06253190eadeaf7fd873ec876943b457b3658d872355a57b4e24a25",
+    "js/41-equations-bibliography.js": "a06cda68871d4ab91b686c7720933973f970af03d0fe6ed8873da6db7151e6a0",
+    "mathreader.js": "f840a15a3eea48c513ac59a4d5c93bca1e7a8bbf03d5f281f289b68cc1a2807f",
+    "regression/ocr_v384_pdf_samples.json": "4d7d12703c91c4a785484a38f5c76e140a4578c12a8a8a67a5695ac33141b577",
+    "tests/equation_progress_regression.js": "6fca3ab6322eaeef79b48ac43154e4bdedd43a49b8ff91079cbe201a7706788c",
+    "tests/formula_ocr_lazy_regression.js": "3e237d6477ef63b950b0739657c4f7f7f56def43589df0aed66e97ba8cabad15",
+    "tests/maintenance_integrity_regression.js": "338eedad8f5fd39497952c040003b99e70f48f68fe7d34f2223bc27f6613c555",
+    "tests/ocr_browser_geometry_regression.py": "9507f606a44571cb59d3f860350ccf9c7462db59727444fbf9454c89fef5ea58",
+    "tests/ocr_reliability_deep_regression.js": "e191378a3d2d20d9eb3bd3afa86995b43ec36719369c2249c94f5542a255209c",
+    "v384_RELEASE.md": "d6eb72e31075057924386838a817deeef0e2d62578b0804129a59e777a142b70"
+  },
+  "limits": [
+    "Tesseract diagnostic on original PDFs is not deployed MathReader OCR.",
+    "Full P0 original-PDF/MathJax/Texify/ground-truth acceptance remains incomplete.",
+    "Historical 50 textbook candidate list does not constitute 50 processed original PDFs."
+  ]
+}

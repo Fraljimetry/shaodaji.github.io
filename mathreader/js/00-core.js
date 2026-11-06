@@ -874,7 +874,7 @@ function snapshotEquationIndexForPersistence(index) {
       for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
         if (Number.isFinite(Number(candidate[key]))) row[key] = Math.min(1, Math.max(0, Number(candidate[key])));
       }
-      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd']) {
+      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured']) {
         if (candidate[key] === true) row[key] = true;
       }
       if (Number.isInteger(Number(candidate.equationColumnIndex))) row.equationColumnIndex = Number(candidate.equationColumnIndex);
@@ -907,7 +907,7 @@ function restoreEquationIndexFromPersistence(snapshot, { portable = false } = {}
     for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
       if (Number.isFinite(Number(raw?.[key]))) candidate[key] = Math.min(1, Math.max(0, Number(raw[key])));
     }
-    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd']) {
+    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured']) {
       if (raw?.[key] === true) candidate[key] = true;
     }
     if (Number.isInteger(Number(raw?.equationColumnIndex))) candidate.equationColumnIndex = Number(raw.equationColumnIndex);
@@ -1603,7 +1603,26 @@ function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
       Math.abs(Number(old.xStartRatio || 0) - Number(line.xStartRatio || 0)) < 0.075);
     if (!duplicate) merged.push({ ...line });
   }
-  merged.sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0) || Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0));
+  // v381-v382 could cache line coordinates at ratio=1 after a canvas was
+  // reset. Correct an exact text observation using newly measured geometry,
+  // without discarding the recognized text or a distinct legitimate repeat.
+  for (const fresh of incoming?.lines || []) {
+    if (!identity(fresh) || !Number.isFinite(fresh?.ratio) || fresh.ratio >= 0.999) continue;
+    for (let i = merged.length - 1; i >= 0; i -= 1) {
+      const old = merged[i];
+      if (old === fresh || identity(old) !== identity(fresh) || Number(old.ratio) < 0.999) continue;
+      if (Math.abs(Number(old.xStartRatio || 0) - Number(fresh.xStartRatio || 0)) > 0.075) continue;
+      merged[i] = { ...old, ...fresh };
+    }
+  }
+  const uniqueLines = [];
+  for (const line of merged) {
+    const duplicate = uniqueLines.some((old) => identity(old) === identity(line) &&
+      Math.abs(Number(old.ratio || 0) - Number(line.ratio || 0)) < 0.025 &&
+      Math.abs(Number(old.xStartRatio || 0) - Number(line.xStartRatio || 0)) < 0.075);
+    if (!duplicate) uniqueLines.push(line);
+  }
+  uniqueLines.sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0) || Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0));
   const margins = new Map();
   for (const item of [...(existing?.equationMarginEvidence || []), ...(incoming?.equationMarginEvidence || [])]) {
     const key = `${item?.page}:${item?.label}:${Math.round(Number(item?.ratio || 0) * 500)}`;
@@ -1621,11 +1640,25 @@ function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
       Number.isFinite(Number(other?.ratio)) && Number(other?.ratio) < 0.999
     )
   );
+  const words = [];
+  const seenWords = new Set();
+  for (const word of [...(existing?.words || []), ...(incoming?.words || [])]) {
+    const text = String(word?.text || '').replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    // The same Tesseract word observation must not be saved indefinitely on
+    // every manual rescan. Geometry is part of identity, so repeated words in
+    // different parts of a mathematical page are still independent evidence.
+    const coord = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value) * 200) : '?';
+    const key = `${text.toLowerCase()}|${coord(word.xStartRatio)}|${coord(word.yStartRatio)}|${coord(word.xEndRatio)}|${coord(word.yEndRatio)}`;
+    if (seenWords.has(key)) continue;
+    seenWords.add(key);
+    words.push({ ...word });
+  }
   return {
     ...incoming,
-    lines: merged,
-    text: merged.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim(),
-    words: [...(existing?.words || []), ...(incoming?.words || [])],
+    lines: uniqueLines,
+    text: uniqueLines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim(),
+    words,
     equationMarginEvidence: repairedMargins
   };
 }
@@ -1904,7 +1937,9 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
     const rawLines = String(fallbackText || '').split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
     rawLines.forEach((text, index) => {
       const ratio = Math.min(0.98, 0.04 + index * (0.92 / Math.max(1, rawLines.length)));
-      lines.push({ text, parts: [{ start: 0, end: text.length, xStartRatio: 0.06, xEndRatio: 0.94 }], confidence: null, ratio, xStartRatio: 0.06, xEndRatio: 0.94, heightRatio: 0.018 });
+      // These are only reading-order placeholders. No image bbox was measured:
+      // equation-margin recovery must never promote this ratio as a target.
+      lines.push({ text, parts: [{ start: 0, end: text.length, xStartRatio: 0.06, xEndRatio: 0.94 }], confidence: null, ratio, xStartRatio: 0.06, xEndRatio: 0.94, heightRatio: 0.018, geometryEstimated: true });
     });
   }
   const text = lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
@@ -2092,6 +2127,7 @@ async function runFullDocumentOcr() {
 
   let worker = null;
   let prefetchedCanvasOutcome = null;
+  let pageCanvasInFlight = null;
   let lastProgressPage = 0;
   let lastProgressPct = -1;
   let lastProgressAt = 0;
@@ -2148,6 +2184,7 @@ async function runFullDocumentOcr() {
       const currentOutcome = await prefetchedCanvasOutcome;
       if (!currentOutcome?.ok) throw currentOutcome?.error || new Error('Document OCR page render failed.');
       const pageCanvas = currentOutcome.canvas;
+      pageCanvasInFlight = pageCanvas;
       const recognizePromise = worker.recognize(pageCanvas, {}, { hocr: true });
       prefetchedCanvasOutcome = pageNum < pageCount
         ? renderOcrPage(pageNum + 1).then(
@@ -2167,6 +2204,7 @@ async function runFullDocumentOcr() {
       map.set(pageNum, record);
       pageCanvas.width = 1;
       pageCanvas.height = 1;
+      pageCanvasInFlight = null;
       await nextFrame();
     }
     ensureCurrent();
@@ -2184,6 +2222,24 @@ async function runFullDocumentOcr() {
     throw error;
   } finally {
     controller.currentPage = 0;
+    // On stop/error the current recognition canvas and one concurrently
+    // prefetched page were not released. A full-resolution page can occupy
+    // tens of MB; explicitly release both before returning to the reader.
+    if (pageCanvasInFlight) {
+      pageCanvasInFlight.width = 1;
+      pageCanvasInFlight.height = 1;
+      pageCanvasInFlight = null;
+    }
+    if (prefetchedCanvasOutcome) {
+      try {
+        const outcome = await prefetchedCanvasOutcome; // wrapped: no rejection
+        if (outcome?.ok && outcome.canvas) {
+          outcome.canvas.width = 1;
+          outcome.canvas.height = 1;
+        }
+      } catch (_) {}
+      prefetchedCanvasOutcome = null;
+    }
     try { await worker?.terminate?.(); } catch (_) {}
     if (documentOcrRunController === controller) documentOcrRunController = null;
     documentOcrBusy = false;
@@ -2202,6 +2258,9 @@ async function ensureDocumentTextReady(savedPreference = 'ask') {
   documentTextPreference = ['skip', 'ocr', 'native'].includes(savedPreference) ? savedPreference : 'ask';
 
   if (await loadCachedDocumentOcr()) {
+    // Cached full-document OCR and explicit page-level meticulous OCR are
+    // independent evidence stores. Restore both before any index is built.
+    await loadManualIndexOcrPages();
     imageDocumentDetected = true;
     documentTextMode = 'ocr';
     documentTextPreference = 'ocr';

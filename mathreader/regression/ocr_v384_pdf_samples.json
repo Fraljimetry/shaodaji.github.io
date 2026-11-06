@@ -1,0 +1,61 @@
+[
+  {
+    "file": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+    "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+    "pdf_page": 20,
+    "page_count": 253,
+    "native_chars": 1496,
+    "ocr_full_chars": 1455,
+    "ocr_left_chars": 462,
+    "ocr_right_chars": 234,
+    "seconds": 7.9,
+    "expected_label_checks": {
+      "(1.4)": {
+        "native": false,
+        "full_tesseract": false,
+        "left_tesseract": true,
+        "right_tesseract": false
+      },
+      "(1.5)": {
+        "native": true,
+        "full_tesseract": true,
+        "left_tesseract": true,
+        "right_tesseract": false
+      }
+    },
+    "limitations": "Tesseract diagnostic from rasterized original; not MathReader PDF.js or Texify; no complete ground truth"
+  },
+  {
+    "file": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+    "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+    "pdf_page": 24,
+    "page_count": 253,
+    "native_chars": 900,
+    "ocr_full_chars": 845,
+    "ocr_left_chars": 337,
+    "ocr_right_chars": 61,
+    "seconds": 4.98,
+    "expected_label_checks": {
+      "(1.7)": {
+        "native": false,
+        "full_tesseract": false,
+        "left_tesseract": false,
+        "right_tesseract": false
+      }
+    },
+    "limitations": "Tesseract diagnostic from rasterized original; not MathReader PDF.js or Texify; no complete ground truth"
+  },
+  {
+    "file": "Riemannian Geometry by Manfredo P. do Carmo.pdf",
+    "sha256": "eda07d1c1f099c73974e3d9f2e231b798befcd11153e2df719069cf197d082c4",
+    "pdf_page": 10,
+    "page_count": 315,
+    "native_chars": 0,
+    "ocr_full_chars": 1092,
+    "ocr_left_chars": 303,
+    "ocr_right_chars": 250,
+    "seconds": 2.46,
+    "expected_label_checks": {},
+    "limitations": "Tesseract diagnostic from rasterized original; not MathReader PDF.js or Texify; no complete ground truth"
+  }
+]
