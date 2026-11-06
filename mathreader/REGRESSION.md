@@ -1615,3 +1615,14 @@ must resolve inside the overlaid website tree. See
 **Scope and safeguards.** Changes are confined to `tutorial.html`, `tutorial.css`, version/cache keys in `mathreader.js` and `index.html`, test fixtures, and this documentation. No PDF.js, OCR, mathematical detection, storage, navigation, annotations or shortcut dispatch behavior was modified. Existing reader layout CSS is untouched.
 
 **Executed validation.** `node --check` on the bootstrap, ten subsystem JS files, and test JS; 16/16 bundled zero-network JavaScript regression scripts passed, including 879 formula LaTeX checks, 228 MathJax compilations, 1,204 performance/CSS parity checks, and 11 new grouped shortcut assertions. Chromium Help/tutorial regression: 130/130 assertions across five widths, including the 34px Help button. Additional responsive shortcut rendering: 12/12 checks across six widths (320, 375, 520, 768, 1024, 1440) × English/Chinese, with no page horizontal overflow or shortcut-label/key overlap. This is a no-real-PDF UI regression, **not** browser acceptance of PDF.js/Texify mathematical correctness; full end-to-end PDF and visual human assessment remain UNVERIFIED.
+
+
+## v370 — Shortcut reference column alignment (2026-11-06 Beijing UTC+08)
+
+**Visual defect:** With three groups flowing through a two-column CSS grid, the third group (Reading & notes) began beneath the tallest group (Workspace), leaving a large blank rectangle under Document; labels and keys also stretched across overwide rows. This is shown in the user's v369 desktop screenshot.
+
+**Conservative fix:** Two explicit aligned columns: Document then Reading & notes at left; Workspace at right. The Reading group immediately follows Document without an artificial grid-row gap. Limit the shortcut layout to 700px inside the 790px guide content, tighten group/row spacing, and retain the small-screen one-column layout. Keep all 17 bindings, bilingual labels, and keyboard behaviors. No decorative separator rules or new UI instructions.
+
+**Gates:** JavaScript syntax, zero-network JavaScript tests, tutorial Chromium assertions and English/Chinese breakpoint checks when available. Screenshots/browser layout are not a substitute for real PDF/OCR acceptance. The PDF reading pipeline, index detection, and data models are unchanged.
+
+**Executed v370 checks:** 16/16 zero-network Node regression suites passed; Chromium rendered the actual standalone tutorial CSS/HTML at 320, 375, 520, 768, 1024 and 1440px in both English and Chinese: 48/48 geometry assertions passed (no page overflow, label/key collision, wrong column start or separated left-stack group). The separately hosted-site navigation and actual PDF.js OCR/index behavior were not exercised; remain UNVERIFIED.

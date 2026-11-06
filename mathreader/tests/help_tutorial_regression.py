@@ -19,8 +19,8 @@ from p0_browser import inline_shell_browser
 def tutorial_html():
     html=(ROOT/'tutorial.html').read_text(encoding='utf8')
     css=(ROOT/'tutorial.css').read_text(encoding='utf8')
-    assert '<link rel="stylesheet" href="tutorial.css?v=369">' in html
-    return html.replace('<link rel="stylesheet" href="tutorial.css?v=369">',f'<style>{css}</style>')
+    assert '<link rel="stylesheet" href="tutorial.css?v=370">' in html
+    return html.replace('<link rel="stylesheet" href="tutorial.css?v=370">',f'<style>{css}</style>')
 
 def run():
     checks=[]
