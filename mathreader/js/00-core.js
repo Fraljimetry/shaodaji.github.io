@@ -1621,6 +1621,20 @@ async function runMeticulousPageIndexOcr(pageNum) {
     if (!Array.isArray(record?.lines) || !record.lines.some((line) => String(line.text || '').trim())) {
       throw new Error('No readable text detected; existing Contents retained');
     }
+    // General text OCR often omits small equation numbers. A second, narrow
+    // margin recognition uses the already-rendered page, only for this click.
+    // Failure leaves the general page OCR usable and is not treated as evidence.
+    try {
+      if (typeof worker.setParameters === 'function') await worker.setParameters({
+        tessedit_pageseg_mode: '11', tessedit_char_whitelist: '',
+      });
+      record.equationMarginEvidence = await meticulousEquationMarginEvidence(
+        sourceDoc, pageNum, worker, imageCanvas
+      );
+      if (!valid()) return;
+    } catch (marginError) {
+      console.warn('MathReader page equation-margin OCR unavailable.', marginError);
+    }
     // Commit only after an accepted recognition. Keep the native text layer and
     // other pages unchanged; any subsequent scan replaces only this page.
     manualIndexOcrPages.set(pageNum, record);

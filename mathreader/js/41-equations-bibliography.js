@@ -1921,19 +1921,22 @@ function logEquationDetectionTiming(state, sourceKey) {
   });
 }
 
-async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { marginFraction = 0.28, onTiming = null } = {}) {
+async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { marginFraction = 0.28, onTiming = null, existingCanvas = null } = {}) {
   const started = equationDetectionNowMs();
-  const page = await sourceDoc.getPage(pageNum);
-  const base = page.getViewport({ scale: 1 });
-  const scale = Math.max(2.4, Math.min(3.6, 3200 / Math.max(1, base.width, base.height)));
-  const viewport = page.getViewport({ scale });
-  const fullCanvas = document.createElement('canvas');
-  fullCanvas.width = Math.max(1, Math.ceil(viewport.width));
-  fullCanvas.height = Math.max(1, Math.ceil(viewport.height));
-  const fullContext = fullCanvas.getContext('2d', { alpha: false });
-  fullContext.fillStyle = '#fff';
-  fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
-  await page.render({ canvasContext: fullContext, viewport }).promise;
+  let fullCanvas = existingCanvas;
+  if (!fullCanvas) {
+    const page = await sourceDoc.getPage(pageNum);
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.max(2.4, Math.min(3.6, 3200 / Math.max(1, base.width, base.height)));
+    const viewport = page.getViewport({ scale });
+    fullCanvas = document.createElement('canvas');
+    fullCanvas.width = Math.max(1, Math.ceil(viewport.width));
+    fullCanvas.height = Math.max(1, fullCanvas.height);
+    const fullContext = fullCanvas.getContext('2d', { alpha: false });
+    fullContext.fillStyle = '#fff';
+    fullContext.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+    await page.render({ canvasContext: fullContext, viewport }).promise;
+  }
 
   // Equation labels live at the outer edge. A narrow crop is both faster and
   // less likely to OCR inline prose references as candidate labels.
@@ -1955,12 +1958,12 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
     if (typeof onTiming === 'function') {
       try { onTiming({ renderMs: rendered - started, recognizeMs: equationDetectionNowMs() - rendered }); } catch (_) {}
     }
-    fullCanvas.width = 1;
+    if (!existingCanvas) fullCanvas.width = 1;
     fullCanvas.height = 1;
     cropCanvas.width = 1;
     cropCanvas.height = 1;
   }
-  const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, Math.max(1, Math.ceil(viewport.height)), pageNum);
+  const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', cropWidth, Math.max(1, fullCanvas.height), pageNum);
   return (record.lines || []).map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
 }
 
@@ -2402,6 +2405,32 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   }
 }
 
+// Meticulous page OCR is an explicit user action. Read equation-number margins
+// separately from general text OCR, but never synthesize labels from gaps.
+// Only parenthesized labels actually observed at the numbering edge are saved.
+async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, renderedCanvas) {
+  const side = equationNumberingSide === 'left' ? 'left' : 'right';
+  const lines = await equationMarginOcrLines(sourceDoc, pageNum, side, worker, {
+    existingCanvas: renderedCanvas,
+  });
+  const byLabel = new Map();
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    for (const candidate of equationLabelCandidatesInLine(line.text)) {
+      if (candidate.bare || candidate.sequenceOnly) continue;
+      const record = equationSupplementalRecord(line, pageNum, i, lines, candidate);
+      if (!record || !record.explicitParenthesized || !record.numeric?.prefix) continue;
+      if (!record.candidateAtLineStart && side === 'left') continue;
+      if (!record.candidateAtLineEnd && side === 'right') continue;
+      if (!equationCandidateAlignedToNumberingSide(record)) continue;
+      if (equationReferenceProseContext(record.text)) continue;
+      const existing = byLabel.get(record.label);
+      if (!existing || record.confidence > existing.confidence) byLabel.set(record.label, record);
+    }
+  }
+  return [...byLabel.values()];
+}
+
 async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
   if (!pdfDoc || !documentTextFeaturesAvailable()) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
@@ -2646,6 +2675,18 @@ async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
   reconcileOcrEquationSequenceOrder(index);
   suppressSparseAmbiguousOcrEquationFamilies(index);
   suppressSparseAmbiguousNativeBareEquationFamilies(index);
+  // Preserve individually image-verified margin labels from the user's
+  // deliberate Meticulous OCR action, even when the full-page text OCR missed
+  // the tiny parenthesized number. No scan is started here or on reopen.
+  for (const [pageNum, saved] of manualIndexOcrPages.entries()) {
+    for (const evidence of saved?.equationMarginEvidence || []) {
+      if (Number(evidence?.page) !== Number(pageNum) || !evidence.explicitParenthesized ||
+          !evidence.numeric?.prefix || !Number.isFinite(evidence.ratio) ||
+          !equationCandidateAlignedToNumberingSide(evidence) ||
+          !/^\(\d+(?:[.\-]\d+)+\)$/.test(String(evidence.label || ''))) continue;
+      if (!index.has(evidence.label)) index.set(evidence.label, [{ ...evidence, meticulousPageVerified: true }]);
+    }
+  }
   // Gap recovery can promote a local-column candidate *after* the initial
   // supplement pass. Reapply only display-column metadata, never detections.
   annotateEquationColumnsForOrder(index, columnProfiles);
