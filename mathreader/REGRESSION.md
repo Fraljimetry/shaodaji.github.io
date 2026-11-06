@@ -1,3 +1,15 @@
+## v368 — Reader-facing manual copy edit (2026-11-06, Beijing UTC+08)
+
+**Scope:** Bilingual `tutorial.html` prose only, plus v368 cache/version metadata, updated regression assertions, and this audit record. No changes to the PDF parser, mathematical detectors, OCR engine, navigation, storage, or actual interaction semantics.
+
+**Editorial policy:** The guide addresses what the reader can do and how to do it. Remove internal milestone labels (P0/P1), stale release history, redundant negative explanations (e.g. the top-right `?` is “not” the PDF-open command), and over-technical implementation caveats. Preserve meaningful limitations (OCR reliability, browser storage, actual PDF-link behavior), real command labels, bilingual parity, and accessible markup. The Help icon description is concise and functional. Link-to-PDF instructions use a simple step sequence instead of implementation-oriented discussion. Also update “Export reading data” to the current “Export” label.
+
+**Regression requirement:** `tests/manual_version_regression.js` now guards against release/milestone labels in the manual, redundant Help icon phrasing, and missing key user-facing descriptions. Exercise the guide in English and Chinese, light and dark themes, small and large screens, and check every link and keyboard instruction against an actual current UI before promoting these browser checks to PASS. Source assertions alone cannot verify all control labels or browser behavior.
+
+**Open verification risks:** Original-pinned PDF.js, Texify, large-PDF performance, full-document OCR/semantic truth, and full browser persistence are outside the manual-only change and remain at their previous UNVERIFIED/BLOCKED states. Existing operational documentation must continue to retain those historical audit records; simplifying the *user-facing* manual must not erase developer regression obligations.
+
+---
+
 # MathReader Regression / Behavioral Audit Record — v367
 
 ## v367 — Remove version label from the user guide (Beijing UTC+08, 2026-11-06)
