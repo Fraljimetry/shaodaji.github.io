@@ -1,0 +1,34 @@
+{
+  "version": "366",
+  "baseline": "v365 patch over mathreader(9).zip",
+  "changes": [
+    "Both desktop sidebars default visible",
+    "Contents Structure/Results/Equations/Bibliography default expanded",
+    "Contents Annotations defaults collapsed, expands after new highlights or margin notes",
+    "Right sections remain collapsed",
+    "Saved user section and per-document sidebar states still honored"
+  ],
+  "checks": {
+    "node_regression_files": 14,
+    "node_regression_status": "PASS",
+    "sidebar_assertions": 27,
+    "chromium_help_tutorial_assertions": 130,
+    "chromium_help_tutorial_status": "PASS",
+    "node_syntax": "PASS",
+    "real_pdf_and_ocr": "UNVERIFIED",
+    "full_browser_persistence": "UNVERIFIED"
+  },
+  "modified_files": [
+    "mathreader/index.html",
+    "mathreader/mathreader.js",
+    "mathreader/js/00-core.js",
+    "mathreader/js/20-selection-annotations.js",
+    "mathreader/js/README.md",
+    "mathreader/REGRESSION.md",
+    "mathreader/tests/sidebar_defaults_regression.js",
+    "mathreader/tests/maintenance_integrity_regression.js",
+    "mathreader/tests/formula_ocr_lazy_regression.js",
+    "mathreader/tests/equation_progress_regression.js",
+    "mathreader/regression/v366_sidebar_defaults.json"
+  ]
+}

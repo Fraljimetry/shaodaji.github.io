@@ -2084,7 +2084,7 @@ function persistSearchPreferences() {
 function loadWorkspaceCollapseState() {
   let saved = null;
   try { saved = generalPrefs.rememberSectionCollapse === false ? null : JSON.parse(safeGet(WORKSPACE_COLLAPSE_KEY, 'null')); } catch (_) { saved = null; }
-  const defaults = new Set(['settings-section','ocr-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-theorems-section','contents-equations-section','contents-bibliography-section','contents-annotations-section']);
+  const defaults = new Set(['settings-section','ocr-section','note-section','annotations-section','symbol-glossary-section','backlinks-section','undo-section','recovery-section','reading-trail-section','reference-section','shortcuts-section','document-info-section','contents-annotations-section']);
   document.querySelectorAll('.workspace-section[id]').forEach((section) => {
     const collapsed = saved && Object.prototype.hasOwnProperty.call(saved, section.id) ? Boolean(saved[section.id]) : defaults.has(section.id);
     section.classList.toggle('is-collapsed', collapsed);
@@ -2400,7 +2400,7 @@ function loadDocumentState(cachedSession = null) {
   zoomScale = 1.2;
   searchInput.value = '';
   shell.classList.remove('mobile-left-open', 'mobile-right-open');
-  shell.classList.add('left-collapsed', 'right-collapsed');
+  shell.classList.remove('left-collapsed', 'right-collapsed');
   activatePanel('outline-panel', false);
 
   let session = cachedSession;
@@ -2511,7 +2511,7 @@ function loadDocumentState(cachedSession = null) {
     } else {
       // Start from the clean default when sidebar visibility is not remembered,
       // and for legacy sessions created before sidebar visibility was saved.
-      shell.classList.add('left-collapsed', 'right-collapsed');
+      shell.classList.remove('left-collapsed', 'right-collapsed');
     }
     if (generalPrefs.rememberActivePanel !== false && session.ui?.activePanel) activatePanel(session.ui.activePanel, false);
     else activatePanel('outline-panel', false);

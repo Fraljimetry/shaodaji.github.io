@@ -1578,3 +1578,10 @@ remain UNVERIFIED from previous rounds. A no-PDF regression can never certify
 PDF/index accuracy. Patch ZIP must contain only changed files; all link targets
 must resolve inside the overlaid website tree. See
 `regression/help_tutorial_v362_20261106.json` for this release audit.
+
+## v366 — Desktop sidebar / Contents defaults and annotation reveal (2026-11-06 Beijing UTC+08)
+
+- **Requested defaults:** both desktop sidebars start open for first-time/new-document use. Contents starts with Structure, Results, Equations, and Bibliography expanded, but Annotations collapsed. Every right-sidebar workspace section remains collapsed by default, unchanged. On narrow mobile viewports, existing off-canvas visibility semantics take precedence; do not force sidebars across the reading canvas.
+- **Persistence policy:** saved per-document sidebar visibility and saved per-section collapse choices continue to win over the defaults. Turning off the corresponding remember preference restores the new defaults. Do not reset the user's explicitly collapsed/expanded sections merely because a PDF opens.
+- **Annotation reaction:** new highlight or margin-note creation expands Contents → Annotations without automatically switching the left sidebar tab, scrolling, navigating, or changing focus. Existing margin-note behavior also reveals the right Annotations section; simple highlights do not newly open the right sidebar. Deletion does not automatically collapse the section. No OCR or formula-detection behavior changes.
+- **Regression scope:** run `node mathreader/tests/sidebar_defaults_regression.js` and the normal zero-network Node suites. Manually verify first launch, document reopen with saved visibility, disabled remember preferences, mobile viewport, both highlight and margin-note additions, delete/restore, and layout widths. A source-only test does not establish real-browser persistence or PDF interaction accuracy; record unavailable gates as UNVERIFIED.

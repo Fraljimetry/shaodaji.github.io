@@ -218,6 +218,8 @@ function addSelectionAnnotation(type) {
   };
   annotations.push(item);
   persistDocumentState(); renderAnnotationList(); rerenderVisibleAnnotations();
+  // New annotations appear in Contents without changing the active tab, viewport, or right panel.
+  expandWorkspaceSection('contents-annotations-section');
   if (type === 'margin') autoOpenRightSection('annotations-section');
 }
 

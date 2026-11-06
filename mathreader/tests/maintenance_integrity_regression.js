@@ -20,8 +20,8 @@ check(parts.length === 10, 'exactly ten original subsystem parts');
 check(new Set(parts).size === parts.length, 'no duplicate subsystem parts');
 check(parts[0] === 'js/00-core.js' && parts.at(-1) === 'js/70-command-ui-runtime.js', 'core and event wiring remain the boundaries');
 check(parts.every((part) => fs.existsSync(path.join(root, part))), 'all declared module parts exist');
-check(bootstrap.includes("const VERSION = '365';"), 'bootstrap version advanced once to v365');
-check(html.includes('mathreader.js?v=365') && html.includes('mathreader.css?v=365'), 'HTML cache keys follow bootstrap');
+check(bootstrap.includes("const VERSION = '366';"), 'bootstrap version advanced once to v366');
+check(html.includes('mathreader.js?v=366') && html.includes('mathreader.css?v=366'), 'HTML cache keys follow bootstrap');
 check(bootstrap.includes('Promise.all(PARTS.map(fetchPart))'), 'fetching retains parallel acquisition with ordered assembly');
 check(bootstrap.includes("sources.join('\\n')"), 'parts remain one assembled lexical module');
 check(!parts.some((part) => html.includes(`src="${part}"`)), 'subsystems not individually injected as scripts');
@@ -44,4 +44,4 @@ check(css.length > 10000, 'existing reader layout stylesheet preserved');
 
 // Parse only: no DOM, network, or model initialization is performed here.
 check(Boolean(new vm.Script(joined, { filename: 'mathreader-runtime-v358.js' })), 'assembled runtime parses as one script');
-console.log(`OK: ${count} MathReader v365 maintenance integrity assertions`);
+console.log(`OK: ${count} MathReader v366 maintenance integrity assertions`);

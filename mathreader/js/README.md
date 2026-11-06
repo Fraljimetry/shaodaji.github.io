@@ -174,3 +174,7 @@ Header tutorial `?` used a 20px glyph in the existing 34px button; no changes to
 ## v365 header refinement
 
 Header tutorial `?` uses a 15px glyph in the unchanged 34px button.
+
+## v366 sidebar defaults
+
+Desktop shell and new document default to both sidebars visible. Contents sections expand by default except Annotations; all right-side sections continue collapsed. Per-document sidebar visibility and per-section collapse state persist when enabled. Newly created highlights and margin notes reveal the left Contents Annotations section without tab switch or document navigation; the existing right margin-note reveal is retained. See `REGRESSION.md` and `tests/sidebar_defaults_regression.js`.
