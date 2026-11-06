@@ -11,7 +11,7 @@ const checks=[
   ['side aligned',eq.includes('if (!equationCandidateAlignedToNumberingSide(record)) continue;')],
   ['persistent verified evidence',eq.includes('saved?.equationMarginEvidence || []')],
   ['no scan on reopen',eq.includes('No scan is started here or on reopen.')],
-  ['screen numbering syntax',eq.includes('!/^\\(\\d+')],
+  ['screen numbering syntax',eq.includes('isPlausibleEquationTagInner(normalizedEquationLabel(evidence.label).slice(1, -1))')],
 ];
 for(const [name,pass] of checks){if(!pass) throw Error(name)}
 console.log(`OK: ${checks.length} meticulous equation margin assertions`);

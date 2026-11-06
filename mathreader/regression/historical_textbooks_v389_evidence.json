@@ -1,0 +1,414 @@
+{
+  "schema": 1,
+  "baseline": "v388 reconstructed complete chain v374->v388",
+  "type": "partial original-document and parser diagnostic; not full browser OCR acceptance",
+  "original_pdfs_verified": 9,
+  "fully_extracted_pdfs": 8,
+  "fully_extracted_pages": 585,
+  "image_only_do_carmo_pages": 315,
+  "do_carmo_complete_extraction_status": "INCOMPLETE due to tool execution limit",
+  "selected_proxy_ocr_regions": 8,
+  "selected_proxy_ocr_error_count": 0,
+  "full_page_tesseract_hocr_samples": 11,
+  "actual_texify_formula_extractions": 0,
+  "full_browser_pdfjs_ocr_tests": 0,
+  "source_parser_documents": [
+    {
+      "document": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+      "pages": 253,
+      "native_text_chars": 250170,
+      "native_lines": 7905,
+      "low_native_pages": 5,
+      "source_parser_raw_result_count": 126,
+      "source_parser_raw_equation_candidate_lines": 927,
+      "proxy_ocr_page": [
+        75
+      ],
+      "proxy_ocr_chars": [
+        21
+      ]
+    },
+    {
+      "document": "Ahlfors-Conformal-Invariants(1).pdf",
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "pages": 172,
+      "native_text_chars": 284007,
+      "native_lines": 7533,
+      "low_native_pages": 5,
+      "source_parser_raw_result_count": 100,
+      "source_parser_raw_equation_candidate_lines": 540,
+      "proxy_ocr_page": [
+        29
+      ],
+      "proxy_ocr_chars": [
+        23
+      ]
+    },
+    {
+      "document": "geometrical_hypothesis_Banach(3).pdf",
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "pages": 10,
+      "native_text_chars": 21344,
+      "native_lines": 443,
+      "low_native_pages": 0,
+      "source_parser_raw_result_count": 15,
+      "source_parser_raw_equation_candidate_lines": 36,
+      "proxy_ocr_page": [
+        9
+      ],
+      "proxy_ocr_chars": [
+        301
+      ]
+    },
+    {
+      "document": "yau1978(2).pdf",
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "pages": 73,
+      "native_text_chars": 75320,
+      "native_lines": 2276,
+      "low_native_pages": 1,
+      "source_parser_raw_result_count": 13,
+      "source_parser_raw_equation_candidate_lines": 417,
+      "proxy_ocr_page": [
+        10
+      ],
+      "proxy_ocr_chars": [
+        179
+      ]
+    },
+    {
+      "document": "SPS_1988__22__485_0(1).pdf",
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "pages": 18,
+      "native_text_chars": 23546,
+      "native_lines": 1246,
+      "low_native_pages": 0,
+      "source_parser_raw_result_count": 8,
+      "source_parser_raw_equation_candidate_lines": 87,
+      "proxy_ocr_page": [
+        15
+      ],
+      "proxy_ocr_chars": [
+        58
+      ]
+    },
+    {
+      "document": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon(3).pdf",
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "pages": 13,
+      "native_text_chars": 18305,
+      "native_lines": 463,
+      "low_native_pages": 0,
+      "source_parser_raw_result_count": 4,
+      "source_parser_raw_equation_candidate_lines": 9,
+      "proxy_ocr_page": [
+        3
+      ],
+      "proxy_ocr_chars": [
+        129
+      ]
+    },
+    {
+      "document": "caffarelli1989.pdf",
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "pages": 27,
+      "native_text_chars": 33534,
+      "native_lines": 924,
+      "low_native_pages": 0,
+      "source_parser_raw_result_count": 18,
+      "source_parser_raw_equation_candidate_lines": 154,
+      "proxy_ocr_page": [
+        13
+      ],
+      "proxy_ocr_chars": [
+        206
+      ]
+    },
+    {
+      "document": "Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(7).pdf",
+      "sha256": "5bfd5494b77a04debe8ba17b62d02cdce5a64f895b5dfb4ef72be55d230fc88c",
+      "pages": 19,
+      "native_text_chars": 0,
+      "native_lines": 0,
+      "low_native_pages": 19,
+      "source_parser_raw_result_count": 0,
+      "source_parser_raw_equation_candidate_lines": 0,
+      "proxy_ocr_page": [
+        10
+      ],
+      "proxy_ocr_chars": [
+        2369
+      ]
+    }
+  ],
+  "page_ocr_cases": [
+    {
+      "document": "ahlfors",
+      "pdf_page": 29,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(1-24)",
+        "(1-25)"
+      ],
+      "exact_ocr_line_matches": {
+        "(1-24)": true,
+        "(1-25)": true
+      },
+      "line_count": 56,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(1-24)",
+          "x_ratio": 0.8489,
+          "y_ratio": 0.145
+        },
+        {
+          "text_excerpt": "(1-25)",
+          "x_ratio": 0.853,
+          "y_ratio": 0.2431
+        },
+        {
+          "text_excerpt": "punctured disk 0 < |t| < e‘, We use (1-25) only in @, and extend p to",
+          "x_ratio": 0.0742,
+          "y_ratio": 0.3086
+        },
+        {
+          "text_excerpt": "(1-25) in @, and part of %, constitutes a supporting metric provided",
+          "x_ratio": 0.0755,
+          "y_ratio": 0.4306
+        },
+        {
+          "text_excerpt": "We conclude that (1-23) holds. The passage to (1-24) is a trivial",
+          "x_ratio": 0.1374,
+          "y_ratio": 0.9151
+        }
+      ]
+    },
+    {
+      "document": "ahlfors",
+      "pdf_page": 86,
+      "ocr_status": "ok",
+      "printed_label_targets": [],
+      "exact_ocr_line_matches": {},
+      "line_count": 64,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(4-17)",
+          "x_ratio": 0.8544,
+          "y_ratio": 0.4111
+        },
+        {
+          "text_excerpt": "(4-18)",
+          "x_ratio": 0.853,
+          "y_ratio": 0.6463
+        },
+        {
+          "text_excerpt": "When substituting in (4-18) we separate the factor n = 0 and change",
+          "x_ratio": 0.136,
+          "y_ratio": 0.8161
+        }
+      ]
+    },
+    {
+      "document": "carmo",
+      "pdf_page": 10,
+      "ocr_status": "ok",
+      "printed_label_targets": [],
+      "exact_ocr_line_matches": {},
+      "line_count": 19,
+      "measured_label_or_reference_examples": []
+    },
+    {
+      "document": "carmo",
+      "pdf_page": 156,
+      "ocr_status": "ok",
+      "printed_label_targets": [],
+      "exact_ocr_line_matches": {},
+      "line_count": 49,
+      "measured_label_or_reference_examples": []
+    },
+    {
+      "document": "giusti",
+      "pdf_page": 20,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(1.4)",
+        "(1.5)"
+      ],
+      "exact_ocr_line_matches": {
+        "(1.4)": false,
+        "(1.5)": true
+      },
+      "line_count": 40,
+      "measured_label_or_reference_examples": []
+    },
+    {
+      "document": "giusti",
+      "pdf_page": 28,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(1.12)",
+        "(1.13)",
+        "(1.14)"
+      ],
+      "exact_ocr_line_matches": {
+        "(1.12)": true,
+        "(1.13)": true,
+        "(1.14)": true
+      },
+      "line_count": 29,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(1.12) spte*(fode Qi+2 — Qi-2",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.2376
+        },
+        {
+          "text_excerpt": "It follows from (1.12) that the sum defining f, is locally finite, and",
+          "x_ratio": 0.0856,
+          "y_ratio": 0.4625
+        }
+      ]
+    },
+    {
+      "document": "giusti",
+      "pdf_page": 222,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(17.11)"
+      ],
+      "exact_ocr_line_matches": {
+        "(17.11)": true
+      },
+      "line_count": 39,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(17.11)",
+          "x_ratio": 0.0815,
+          "y_ratio": 0.8699
+        }
+      ]
+    },
+    {
+      "document": "giusti",
+      "pdf_page": 238,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(B.2)",
+        "(B.3)",
+        "(B.4)"
+      ],
+      "exact_ocr_line_matches": {
+        "(B.2)": true,
+        "(B.3)": false,
+        "(B.4)": true
+      },
+      "line_count": 35,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(B.2)",
+          "x_ratio": 0.0829,
+          "y_ratio": 0.1165
+        },
+        {
+          "text_excerpt": "(B.4)",
+          "x_ratio": 0.0829,
+          "y_ratio": 0.3469
+        },
+        {
+          "text_excerpt": "Since the right-hand side of (B.4) is a C*~'-function, we conclude tha",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.3875
+        },
+        {
+          "text_excerpt": "of class C* in Sp,. Also from (B.4) it follows that the mean curvature",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.4083
+        },
+        {
+          "text_excerpt": "We can estimate the last quantity using again (B.4). We have:",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.5375
+        },
+        {
+          "text_excerpt": "(B.2):",
+          "x_ratio": 0.0829,
+          "y_ratio": 0.6432
+        }
+      ]
+    },
+    {
+      "document": "giusti",
+      "pdf_page": 240,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(C.5)",
+        "(C.6)",
+        "(C.7)"
+      ],
+      "exact_ocr_line_matches": {
+        "(C.5)": false,
+        "(C.6)": true,
+        "(C.7)": false
+      },
+      "line_count": 40,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(C.6) | {aix)Djw + bi(x)} Dipdx = 0,",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.2204
+        }
+      ]
+    },
+    {
+      "document": "giusti",
+      "pdf_page": 246,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "(C.12)"
+      ],
+      "exact_ocr_line_matches": {
+        "(C.12)": true
+      },
+      "line_count": 57,
+      "measured_label_or_reference_examples": [
+        {
+          "text_excerpt": "(Q) be a solution of (C.12), with the coefficients aij",
+          "x_ratio": 0.3854,
+          "y_ratio": 0.3306
+        },
+        {
+          "text_excerpt": "derivative w = D,u satisfies equation (C.6) with",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.4851
+        },
+        {
+          "text_excerpt": "C10 Theorem: Let we W}:2(Q) be a solution of (C.12) with conditions (C",
+          "x_ratio": 0.0843,
+          "y_ratio": 0.6576
+        }
+      ]
+    },
+    {
+      "document": "schoen",
+      "pdf_page": 19,
+      "ocr_status": "ok",
+      "printed_label_targets": [
+        "[11]"
+      ],
+      "exact_ocr_line_matches": {
+        "[11]": true
+      },
+      "line_count": 57,
+      "measured_label_or_reference_examples": []
+    }
+  ],
+  "confirmed_regression": "mixed separator OCR B.3->B3 accepted into B.2 B3 B.4 dense family; fixed in v389",
+  "unverified": [
+    "actual browser Texify formula semantic accuracy",
+    "four completed browser indexes on originals",
+    "full scanned-book OCR throughput",
+    "handwritten OCR",
+    "full old-textbook 50-PDF campaign"
+  ]
+}

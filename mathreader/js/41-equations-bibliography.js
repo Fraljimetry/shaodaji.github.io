@@ -411,6 +411,14 @@ function parsedEquationNumber(label) {
   };
 }
 
+// OCR often drops the separator in appendix labels (B.3 -> B3). These are
+// distinct printed formats: mixed styles must not corroborate one another as
+// a dense sequential family or license an inferred missing-label OCR query.
+function equationSequenceFamilyKey(parsed) {
+  if (!parsed?.prefix) return 'integer';
+  return `prefix:${parsed.prefix}:separator:${parsed.separator || 'compact'}`;
+}
+
 function equationDocumentPosition(item) {
   return Number(item?.page || 0) * 10 + (Number(item?.ratio) || 0);
 }
@@ -1573,9 +1581,10 @@ function reconcileOcrEquationSequenceOrder(index) {
     if (!parsed?.prefix || !(candidates || []).some((item) => Boolean(item?.ocrSource))) continue;
     const candidate = chooseCanonicalEquationCandidate(candidates);
     if (!candidate) continue;
-    const list = byPrefix.get(parsed.prefix) || [];
+    const familyKey = equationSequenceFamilyKey(parsed);
+    const list = byPrefix.get(familyKey) || [];
     list.push({ label, parsed, candidate });
-    byPrefix.set(parsed.prefix, list);
+    byPrefix.set(familyKey, list);
   }
   for (const entries of byPrefix.values()) {
     if (entries.length < 4) continue;
@@ -1601,7 +1610,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
     if (!parsed || !Number.isInteger(parsed.last) || parsed.last < 1) continue;
     const candidate = chooseCanonicalEquationCandidate(candidates);
     if (!candidate || candidate.ocrSource) continue;
-    const familyKey = parsed.prefix ? `prefix:${parsed.prefix}` : 'integer';
+    const familyKey = equationSequenceFamilyKey(parsed);
     const list = byPrefix.get(familyKey) || [];
     list.push({ label, parsed, candidate });
     byPrefix.set(familyKey, list);
@@ -1718,7 +1727,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
   for (const record of referenceEvidence || []) {
     const parsed = record?.numeric || parsedEquationNumber(record?.label);
     if (!parsed?.prefix || !Number.isInteger(parsed.last)) continue;
-    const key = `prefix:${parsed.prefix}`;
+    const key = equationSequenceFamilyKey(parsed);
     const byLabel = referenceFamilies.get(key) || new Map();
     const existing = byLabel.get(record.label);
     if (!existing || equationDocumentPosition(record) < equationDocumentPosition(existing)) byLabel.set(record.label, record);
@@ -2195,9 +2204,10 @@ function denseSupplementalEquationFamilies(records) {
       if (record.standaloneTag && equationCandidateAlignedToNumberingSide(record)) integerRecords.push(record);
       continue;
     }
-    const list = byPrefix.get(parsed.prefix) || [];
+    const familyKey = equationSequenceFamilyKey(parsed);
+    const list = byPrefix.get(familyKey) || [];
     list.push(record);
-    byPrefix.set(parsed.prefix, list);
+    byPrefix.set(familyKey, list);
   }
   const accepted = [];
   for (const recordsForPrefix of byPrefix.values()) {
