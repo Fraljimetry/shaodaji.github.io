@@ -333,7 +333,10 @@ function isPlausibleNumericEquationTagInner(inner) {
 // symbols, multiple-choice lists and citations.
 function isPlausibleAppendixEquationTagInner(inner) {
   const value = String(inner || '');
-  return /^[A-Za-z]{1,2}(?:(?:\.\d{1,4}){1,3}|(?:-\d{1,4}){1,3}|\d{1,4})(?:[a-z])?$/.test(value);
+  // Dotted lower-case appendix numbering remains possible, but bare/compact
+  // lower-case tokens such as (n-1), (j-2), (k1) are overwhelmingly formula
+  // variables, not appendix labels. Preserve uppercase A-1, A1, AA.3 etc.
+  return /^(?:[A-Z]{1,2}(?:(?:\.\d{1,4}){1,3}|(?:-\d{1,4}){1,3}|\d{1,4})(?:[a-z])?|[a-z]{1,2}(?:\.\d{1,4}){1,3}(?:[a-z])?)$/.test(value);
 }
 
 function isPlausibleEquationTagInner(inner) {
@@ -1466,6 +1469,30 @@ function reconcileEquationNumberingFamilies(index) {
   if (hierarchical < 10 || numericTotal < 12 || hierarchical / numericTotal < 0.88 || integers > Math.max(12, Math.ceil(hierarchical * 0.08))) return index;
   for (const { label, parsed, confirmedLocalIntegerFamily } of numericEntries) {
     if (!parsed.prefix && !confirmedLocalIntegerFamily) index.delete(label);
+  }
+  return index;
+}
+
+// A single unparenthesized A1/J-00-like token is commonly a mathematical
+// variable or a degraded OCR fragment. Do not promote it to an appendix
+// equation without corroboration from another independent label in the same
+// compact/hyphen family. Explicit parenthesized tags and dotted appendix
+// families retain the existing conservative margin/geometry classifier.
+function suppressIsolatedBareAppendixTokens(index) {
+  const familyCounts = new Map();
+  for (const label of index.keys()) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed?.appendix || parsed.separator === '.') continue;
+    const key = equationSequenceFamilyKey(parsed);
+    familyCounts.set(key, (familyCounts.get(key) || 0) + 1);
+  }
+  for (const [label, records] of [...index.entries()]) {
+    const parsed = parsedEquationNumber(label);
+    if (!parsed?.appendix || parsed.separator === '.') continue;
+    if ((familyCounts.get(equationSequenceFamilyKey(parsed)) || 0) >= 2) continue;
+    if ((records || []).length && (records || []).every((record) => record?.bareSource === true && record?.explicitParenthesized !== true)) {
+      index.delete(label);
+    }
   }
   return index;
 }
@@ -2804,6 +2831,7 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
   reconcileOcrEquationSequenceOrder(index);
   suppressSparseAmbiguousOcrEquationFamilies(index);
   suppressSparseAmbiguousNativeBareEquationFamilies(index);
+  suppressIsolatedBareAppendixTokens(index);
   // Preserve individually image-verified margin labels from the user's
   // deliberate Meticulous OCR action, even when the full-page text OCR missed
   // the tiny parenthesized number. No scan is started here or on reopen.
@@ -2880,6 +2908,7 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
         reconcileOcrEquationSequenceOrder(assistIndex);
         suppressSparseAmbiguousOcrEquationFamilies(assistIndex);
         suppressSparseAmbiguousNativeBareEquationFamilies(assistIndex);
+        suppressIsolatedBareAppendixTokens(assistIndex);
         annotateEquationColumnsForOrder(assistIndex, columnProfiles);
         updateEquationDetectionProgress({ validationMs: (equationDetectionProgress.validationMs || 0) + equationDetectionNowMs() - validatedAt }, generation);
         publishAutomaticIndex();

@@ -1,3 +1,14 @@
+## v392 — Two real reading-data exports: Structure/Equation classification and long-book index cap (2026-11-07, Beijing UTC+08)
+
+**Baseline:** complete v390 source plus v391 cache-integrity root patch. **Release:** v392. Read `OCR_EXPORT_AUDIT_v392.md` for exact evidence counts, source hashes, examples, fixes, conservative limitations and browser-vs-OCR scope. This is P0 recognition reliability, not a feature expansion.
+
+- **Confirmed v391 source defects:** Giusti's 253-page export contains 240 Structure entries ending on p.191; 68 numbered theorem/lemma/etc. declarations duplicated into Structure. The parser misclassifies `Table of Contents` and Appendix TOC entries, and its equation appendix grammar admits algebraic variables such as `(n-1)` as labels. Yau's p.25 mathematical fragment also entered Structure. The fixes change the root classifier, not isolated book-specific strings.
+- **Corrected:** strict numbered-result/prose/formula Structure guards; `Table of Contents` support and early-book cover metadata suppression; shared 1,200-entry cap at all four outline mutation/restoration paths; conservative appendix label grammar and isolated bare-family filter in initial and post-image OCR. Version bumps: Structure 46→47 and Equation 25→26, normal local summaries rebuild. Manual corrections and verified reading evidence preserved.
+- **Test scope:** 63 new real-export-derived JS assertions plus 15 full-detector synthetic native-page assertions; **35/35 JS suites PASS**, five Python test scripts PASS, runtime assembly and 7 Chromium scripts PASS. **No original PDF page/real Tesseract/Texify inference executed.** The two JSONs have `documentOcr:null`, not source OCR records; no accuracy/certification claim.
+- **Still open:** original Giusti bibliography author/title segmentation, uncertain `(IS212)` label, potential lower-case appendix conventions, long-outline browser performance, actual PDF-by-PDF precision/recall and 50-textbook certification. Do not silently alter imported user detections. See audit file for actionable follow-up and fail-closed classifications.
+
+---
+
 ## v374 — Compatibility, multi-PDF concurrency and performance audit (2026-11-06, Beijing UTC+08)
 
 **Baseline:** applied v373 source plus the full v373 History-only lazy-opening implementation. This release preserves its History-only design, first-file-only eager load, other Files unparsed until click, no horizontal tabs, no automatic OCR of pending PDFs, one PDF.js document rendered, and all current user reading preferences.

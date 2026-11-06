@@ -69,6 +69,37 @@ function isMathEnvironmentLabel(text) {
   return /^(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|proof)\b/i.test(text.trim());
 }
 
+// In classical textbooks, "1.9 Theorem: ..." is a numbered result, not
+// Section 1.9. Results owns these declarations even when the text layer gives
+// them large typography. Only reject declaration punctuation/numbering: a
+// genuine section title such as "2.1 Theorem of Stokes" remains eligible.
+function numberedResultDeclarationInOutline(text) {
+  const value = normalizedHeadingText(text);
+  return /^(?:§\s*)?\d{1,3}(?:\s*\.\s*\d{1,3}){0,4}[.)]?\s+(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b(?=\s*[:.(]|\s+\d|\s*$)/i.test(value);
+}
+
+// Long sentence fragments in legacy books sometimes appear larger than the
+// page's median font. Require multiple prose cues before rejecting an
+// unnumbered style heading; short legitimate literary titles are unaffected.
+// OCR can read a large formula fragment as a numbered heading (for
+// example "2 C (g_ij + ...)"). A one-letter lead followed by a mathematical
+// parenthesis and an operator is not a section title.
+function numberedFormulaFragmentInOutline(text) {
+  const value = normalizedHeadingText(text);
+  return /^\d{1,3}\s+[A-Za-z]\s*[([{][^)]{0,90}[+*/=@]/.test(value);
+}
+
+function obviousProseFragmentInOutline(text) {
+  const value = normalizedHeadingText(text);
+  if (!value || isKnownHeading(value) || headingNumberDepth(value) !== null) return false;
+  const words = value.split(/\s+/).filter(Boolean);
+  if (words.length < 7) return false;
+  const sentenceStarter = /^(?:roughly speaking\b|in addition\b|if\b|since\b|obviously\b|now\b|we\b|let\b|given\b|from\b|provided\b|and\b|then\b|thus\b|hence\b|because\b|therefore\b|consequently\b|by\b|for every\b)/i.test(value);
+  const sentenceVerb = /\b(?:is|are|was|were|has|have|had|can|could|will|would|must|may|follows?|gives?|gave|defines?|satisfies?|suppose|supposing|letting|minimizes?|shows?|obtain|we have)\b/i.test(value);
+  return (sentenceStarter && (sentenceVerb || /[,;:]|\bthen\b/i.test(value)))
+    || (words.length >= 10 && sentenceVerb && /[,;:.]\s|[,;:.]$/.test(value));
+}
+
 
 function isLikelyFormulaHeading(text) {
   const value = String(text || '').trim();
@@ -416,7 +447,7 @@ async function detectOutlineFromTypography() {
   const strongModernNumberedLines = allLines.filter((line) => {
     const { value, ratio, words } = lineMetrics(line);
     if (words.length > 18 || ratio < 1.15) return false;
-    if (headingNumberDepth(value) === null) return false;
+    if (headingNumberDepth(value) === null || numberedResultDeclarationInOutline(value)) return false;
     const match = value.match(/^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+(.+)$/);
     const title = String(match?.[1] || '').trim();
     if (!match || !/^[A-Z][A-Za-z]{2,}/.test(title)) return false;
@@ -565,6 +596,7 @@ async function detectOutlineFromTypography() {
     const value = String(text || '').trim();
     if (!value || value.length > 100) return false;
     if (/^(?:bibliography|references)$/i.test(value)) return true;
+    if (/^appendix(?:\s+[A-Z0-9]+)?\s*$/i.test(value)) return true;
     if (/^appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s)\s*\S/i.test(value)) return true;
     if (!/^(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+\S/.test(value)) return false;
     const words = value.split(/\s+/).filter(Boolean);
@@ -575,7 +607,7 @@ async function detectOutlineFromTypography() {
   };
   for (const lines of pages) {
     const orderedLines = [...lines].sort((a, b) => Number(b.y) - Number(a.y));
-    const contentsIndex = orderedLines.findIndex((line) => /^contents$/i.test(String(line.text || '').trim()));
+    const contentsIndex = orderedLines.findIndex((line) => /^(?:table\s+of\s+)?contents$/i.test(String(line.text || '').trim()));
     if (contentsIndex >= 0) {
       contentsLines.add(orderedLines[contentsIndex]);
       let tocRows = 0;
@@ -605,12 +637,23 @@ async function detectOutlineFromTypography() {
     const dottedRows = orderedLines.filter((line) => /^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\s+.*(?:\.\s*){3,}.*\d+\s*$/.test(line.text));
     if (dottedRows.length >= 4) for (const line of dottedRows) contentsLines.add(line);
   }
+  // A preliminary Contents page is reliable evidence that preceding large
+  // typography belongs to the book's cover/series/author metadata. Do not
+  // remove genuine numbered headings or known Preface/Introduction headings.
+  const preliminaryContentsPage = pages
+    .flatMap((lines) => lines.filter((line) => /^(?:table\s+of\s+)?contents$/i.test(String(line.text || '').trim())).map((line) => line.page))
+    .filter((page) => Number.isInteger(page) && page <= Math.min(12, Math.ceil(maxPages * 0.10)))
+    .sort((a, b) => a - b)[0] || null;
   const candidates = [];
   for (const lines of pages) {
     for (const line of lines) {
       const text = line.text;
       if (!text || text.length < 2) continue;
       if (contentsLines.has(line)) continue;
+      if (preliminaryContentsPage && line.page < preliminaryContentsPage
+          && !isKnownHeading(text) && headingNumberDepth(text) === null) continue;
+      if (numberedResultDeclarationInOutline(text) || numberedFormulaFragmentInOutline(text)
+          || obviousProseFragmentInOutline(text)) continue;
       if (explicitSectionMarkerMode) {
         const value = String(text || '').trim();
         const explicitSection = qualifiedSectionMarkerLines.includes(line);
@@ -914,7 +957,7 @@ async function detectOutlineFromTypography() {
   }
   const contentsPages = new Set();
   for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-    if ((pages[pageIndex] || []).some((line) => /^contents$/i.test(String(line?.text || '').trim()))) contentsPages.add(pageIndex + 1);
+    if ((pages[pageIndex] || []).some((line) => /^(?:table\s+of\s+)?contents$/i.test(String(line?.text || '').trim()))) contentsPages.add(pageIndex + 1);
   }
   const cleaned = deduped.filter((candidate, index) => {
     if (!contentsPages.has(candidate.page)) return true;
@@ -930,7 +973,7 @@ async function detectOutlineFromTypography() {
     seenTerminalHeadings.add(key);
     return true;
   });
-  return finalCandidates.slice(0, 240).map(({ _tailY, _tailSize, ...candidate }) => candidate);
+  return finalCandidates.slice(0, MAX_INFERRED_OUTLINE_ENTRIES).map(({ _tailY, _tailSize, ...candidate }) => candidate);
 }
 
 function positionOutlineEditActions(trigger, actions) {

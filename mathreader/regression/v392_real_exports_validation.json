@@ -1,0 +1,52 @@
+{
+  "version": "392",
+  "classification": "source-export regression, NOT original-PDF OCR certification",
+  "source_versions": {
+    "structure": 47,
+    "equation": 26
+  },
+  "exports": [
+    {
+      "document": "yau1978.pdf",
+      "pdf_pages_reported": 73,
+      "export_sha256": "72eca1795f4b54afccc890fcc4f7afdfe12be9d3b735ab8298d8789aa2bc4cf0",
+      "documentOcr_is_null": true,
+      "saved_structures": 14,
+      "last_structure_page": 73,
+      "numbered_result_declarations_in_structure": 0,
+      "saved_results": 13,
+      "saved_equations": 269,
+      "saved_bibliography": 15
+    },
+    {
+      "document": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "pdf_pages_reported": 253,
+      "export_sha256": "0fe02453b3b0a4c45ff78431a058cd6ff03d6100e7a5aca68b31a6705a94fd23",
+      "documentOcr_is_null": true,
+      "saved_structures": 240,
+      "last_structure_page": 191,
+      "numbered_result_declarations_in_structure": 68,
+      "saved_results": 185,
+      "saved_equations": 275,
+      "saved_bibliography": 74
+    }
+  ],
+  "executed": {
+    "java_script_suites": "35/35 PASS",
+    "export_derived_assertions": "63 PASS",
+    "detector_native_mock_integration_assertions": "15 PASS",
+    "chromium_component_scripts": "7/7 PASS",
+    "python_regression_scripts": "5/5 PASS",
+    "assembled_runtime_syntax": "PASS"
+  },
+  "original_pdf_reprocess": "NOT RUN — original PDFs absent",
+  "real_tesseract_texify": "NOT RUN",
+  "independent_visual_ground_truth": "NOT AVAILABLE",
+  "ocr_accuracy_certified": false,
+  "unresolved": [
+    "Giusti bibliography author/title boundaries",
+    "ambiguous uppercase compact equation tags",
+    "OCR index fidelity against original pages",
+    "1,200-entry outline performance in production"
+  ]
+}
