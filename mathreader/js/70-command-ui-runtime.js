@@ -700,8 +700,8 @@ window.addEventListener('drop', (event) => {
   event.preventDefault();
   dragDepth = 0;
   dropOverlay.classList.add('is-hidden');
-  const file = [...(event.dataTransfer?.files || [])].find((item) => item.type === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf'));
-  if (file) openPdfFile(file); else showError(t('Drop a PDF file to open it.', '请拖入 PDF 文件。'));
+  const files = [...(event.dataTransfer?.files || [])].filter((item) => item.type === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf'));
+  if (files.length) queueOpenedPdfFiles(files); else showError(t('Drop PDF files to open them.', '请拖入 PDF 文件。'));
 });
 
 window.addEventListener('resize', () => {

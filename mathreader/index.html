@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=371">
+  <link rel="stylesheet" href="mathreader.css?v=372">
   <script>
     (() => {
       try {
@@ -94,7 +94,7 @@
     </div>
   </header>
 
-  <input id="file-input" type="file" accept="application/pdf,.pdf" hidden>
+  <input id="file-input" type="file" accept="application/pdf,.pdf" multiple hidden>
 
   <main class="reader-shell" id="reader-shell">
     <aside class="sidebar sidebar-left" id="left-sidebar" aria-label="Document navigation">
@@ -237,6 +237,7 @@
         </div>
       </div>
 
+      <div class="document-tabs is-hidden" id="document-tabs" role="tablist" aria-label="Open PDFs"></div>
       <div class="reader-viewport" id="reader-viewport">
         <section class="welcome" id="welcome">
           <div class="welcome-emblem welcome-emblem-icon" aria-hidden="true"><img src="../assets/img/tool-mathreader-file-search.svg" alt=""></div>
@@ -575,6 +576,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=371"></script>
+  <script type="module" src="mathreader.js?v=372"></script>
 </body>
 </html>
