@@ -3484,6 +3484,26 @@ function malformedNumericBibliographyCandidate(text, line, page) {
       };
     }
   }
+  // On degraded scans, a numbered key may retain its opening delimiter
+  // but lose the closing delimiter and read a narrow "1" as "j":
+  // "{lj , Global properties ...". Keep this as *candidate evidence* only.
+  // The final pass requires one unique missing key between two exact numeric
+  // neighbors; an isolated OCR token never creates a bibliography entry.
+  const openDitto = line?.ocrSource && Number(line.xStartRatio || 0) < 0.18
+    ? String(text || '').match(/^[\[{(]\s*([1lI|tj]{2,3})\s*[,;:]\s+(.{20,})$/u)
+    : null;
+  if (openDitto) {
+    const digitText = openDitto[1].replace(/[lI|tj]/g, '1');
+    const body = openDitto[2].trim();
+    if (/^\d{2,3}$/.test(digitText) && bibliographyReferenceBodyLooksStrong(body)) {
+      return {
+        token: openDitto[1], digitText, bracketedSingleGlyph: false,
+        body, page, ratio: Number(line.ratio || 0),
+        xStartRatio: Number(line.xStartRatio || 0),
+        ocrSource: true, used: false, continuations: [], openOcrDitto: true
+      };
+    }
+  }
   const match = String(text || '').match(/^(\S{2,8})\s+(.{8,})$/u);
   if (!match) return null;
   const token = match[1];

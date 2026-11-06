@@ -20,8 +20,8 @@ check(parts.length === 10, 'exactly ten original subsystem parts');
 check(new Set(parts).size === parts.length, 'no duplicate subsystem parts');
 check(parts[0] === 'js/00-core.js' && parts.at(-1) === 'js/70-command-ui-runtime.js', 'core and event wiring remain the boundaries');
 check(parts.every((part) => fs.existsSync(path.join(root, part))), 'all declared module parts exist');
-check(bootstrap.includes("const VERSION = '370';"), 'bootstrap version advanced once to v370');
-check(html.includes('mathreader.js?v=370') && html.includes('mathreader.css?v=370'), 'HTML cache keys follow bootstrap');
+check(bootstrap.includes("const VERSION = '371';"), 'bootstrap version advanced once to v371');
+check(html.includes('mathreader.js?v=371') && html.includes('mathreader.css?v=371'), 'HTML cache keys follow bootstrap');
 check(bootstrap.includes('Promise.all(PARTS.map(fetchPart))'), 'fetching retains parallel acquisition with ordered assembly');
 check(bootstrap.includes("sources.join('\\n')"), 'parts remain one assembled lexical module');
 check(!parts.some((part) => html.includes(`src="${part}"`)), 'subsystems not individually injected as scripts');
@@ -29,7 +29,7 @@ check(html.includes('formula-ocr-init-overlay') && css.includes('.formula-ocr-in
 
 const sources = Object.fromEntries(parts.map((part) => [part, read(part)]));
 const joined = parts.map((part) => sources[part]).join('\n');
-check(sources['js/00-core.js'].includes('const STRUCTURE_INDEX_VERSION = 45;'), 'Structure persistence schema remains v45');
+check(sources['js/00-core.js'].includes('const STRUCTURE_INDEX_VERSION = 46;'), 'Structure index rebuilt under v46');
 check(sources['js/00-core.js'].includes('const EQUATION_INDEX_SUMMARY_VERSION = 23;'), 'Equation summary persistence schema remains v23');
 check(sources['js/10-formula-ocr.js'].includes('async function ensureMathOcrPipeline()'), 'lazy model loader retained');
 check(sources['js/11-formula-vector.js'].includes('const pipe = await ensureMathOcrPipeline();'), 'first image extraction still acquires model');
@@ -44,4 +44,4 @@ check(css.length > 10000, 'existing reader layout stylesheet preserved');
 
 // Parse only: no DOM, network, or model initialization is performed here.
 check(Boolean(new vm.Script(joined, { filename: 'mathreader-runtime-v358.js' })), 'assembled runtime parses as one script');
-console.log(`OK: ${count} MathReader v370 maintenance integrity assertions`);
+console.log(`OK: ${count} MathReader v371 maintenance integrity assertions`);
