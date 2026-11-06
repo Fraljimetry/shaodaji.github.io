@@ -606,11 +606,15 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
   }
 }
 
+let documentOpenBusy = false;
+
 async function openPdfFile(file, recoveryId = null) {
   if (!file || (file.type && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'))) {
     showError(t('Please choose a PDF file.', '请选择 PDF 文件。'));
-    return;
+    return false;
   }
+  if (documentOpenBusy) return false;
+  documentOpenBusy = true;
   let sourceStarted = false;
   let pdfEngineError = null;
   // Acknowledge the selection immediately. Previously the browser could
@@ -678,6 +682,7 @@ async function openPdfFile(file, recoveryId = null) {
       cachedRecord,
       cacheBlob: blob
     });
+    return true;
   } catch (error) {
     // openPdfSource owns its own error/loading cleanup once control reaches it.
     // Failures before that point (file read/hash/PDF-engine warm-up) need the same
@@ -686,7 +691,9 @@ async function openPdfFile(file, recoveryId = null) {
       console.error(error);
       showError(error?.message || t('This PDF could not be opened.', '无法打开此 PDF。'));
     }
+    return false;
   } finally {
+    documentOpenBusy = false;
     if (!sourceStarted) {
       setLoading(false);
       fileInput.value = '';
@@ -694,6 +701,8 @@ async function openPdfFile(file, recoveryId = null) {
   }
 }
 async function openCachedDocument(id, options = {}) {
+  if (documentOpenBusy) return false;
+  documentOpenBusy = true;
   try {
     const [record, fileRecord] = await Promise.all([dbGet('documents', id), dbGet('files', id)]);
     if (!record || !fileRecord?.blob) throw new Error(t('The cached PDF is unavailable. Open the original file once to cache it again.', '本地缓存的 PDF 已不可用。请重新打开原文件以再次缓存。'));
@@ -712,6 +721,8 @@ async function openCachedDocument(id, options = {}) {
     } catch (_) {}
     if (!options.silent) showError(error?.message || t('The cached PDF could not be reopened. Reopen the original file from History to recover the session.', '无法重新打开本地缓存的 PDF。请从历史中重新选择原文件以恢复阅读现场。'));
     return false;
+  } finally {
+    documentOpenBusy = false;
   }
 }
 
@@ -753,8 +764,7 @@ async function activatePendingPdf(id) {
   openingPendingPdfId = id;
   renderLocalLibrary();
   try {
-    await openPdfFile(entry.file);
-    return true;
+    return await openPdfFile(entry.file);
   } catch (error) {
     // Preserve the File for explicit retry in History, without loading others.
     console.error('Pending PDF open failed', error);

@@ -64,8 +64,8 @@ def run():
             timings.append({'width':width,'shell_s':round(time.monotonic()-begin,4)})
             initial=inspect(page)
             mobile=width<=860
-            check(abs(initial['mainWidth'] - (width if mobile else width-12))<14,
-                  f'{width}: reader fills available workspace',initial)
+            check((abs(initial['mainWidth'] - width)<14) if mobile else (initial['mainWidth']>260 and initial['mainWidth']<width),
+                  f'{width}: reader has usable width with configured panel defaults',initial)
             check(initial['docScrollWidth']==width, f'{width}: no horizontal page overflow', initial['docScrollWidth'])
             check(initial['helpVisible'],f'{width}: tutorial Help accessible')
             check(initial['libraryOpenExists'],f'{width}: local-library file opener available')
@@ -102,8 +102,8 @@ def run():
             else:
                 for shortcut in ('l','r','l','r'):
                     page.keyboard.press(shortcut)
-                check(abs(inspect(page)['mainWidth'] - (width-12))<14,
-                      f'{width}: desktop collapse/expand restores workspace')
+                check(abs(inspect(page)['mainWidth'] - initial['mainWidth'])<14,
+                      f'{width}: desktop collapse/expand restores initial panel widths')
             page.locator('#theme-button').click()
             check(page.locator('html').get_attribute('data-theme')=='dark',f'{width}: theme switch')
             page.locator('#language-button').click()

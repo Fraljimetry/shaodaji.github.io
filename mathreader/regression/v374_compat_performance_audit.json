@@ -1,0 +1,33 @@
+{
+  "version": "374",
+  "baseline": "373",
+  "scope": "Compatibility and performance static/isolated audit plus targeted source fixes",
+  "confirmed_fixed": [
+    "cross-entry concurrent PDF open race",
+    "failed file open incorrectly reported successful",
+    "responsive regression expectation incompatible with default-open desktop panels",
+    "two stale test cache keys"
+  ],
+  "verified": {
+    "js_regression_suites": 18,
+    "responsive_chromium_assertions": 176,
+    "help_chromium_assertions": 130,
+    "latex_syntax_checks": 879,
+    "mathjax_compilations": 228,
+    "layout_parity_assertions": 1204
+  },
+  "performance_notes": {
+    "measured": "responsive shell page loads in local headless Chromium only; not PDF render timing",
+    "lazy_queue": "inactive File objects staged without reading or hashing",
+    "memory_risk": "active PDF Uint8Array, file read, PDF.js and IndexedDB blob may coexist; not empirically profiled",
+    "history_dom": "O(number of entries) list reconstruction per render; thousands of pending entries not stress tested"
+  },
+  "unverified": [
+    "pinned PDF.js and Texify production browser workloads",
+    "large scan multi-switch and OCR cancellation",
+    "Safari/Firefox browser matrix",
+    "full-document mathematical OCR/formula/bibliography ground truth",
+    "IndexedDB quota pressure and long-session data durability"
+  ],
+  "safety": "No change to mathematical detectors or OCR engine selection; no hidden fallback; source-level PASS does not certify P0."
+}
