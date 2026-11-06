@@ -1695,3 +1695,10 @@ must resolve inside the overlaid website tree. See
 - Page-specific Meticulous OCR context menu and its status label now use the same defined MathReader CSS theme tokens as the bibliography context menu (`--paper`, `--ink`, `--line-strong`, `--surface-soft`, `--accent`) and compact menu dimensions. This removes undefined white-fallback variables in dark mode.
 - Equation indexing continues to parse the existing native/OCR text evidence automatically, but it **does not launch any posterior equation-margin image OCR** on normal open, restore, or index refresh. The Equations **OCR** button explicitly requests the image pass across pages; no automatic periodic or repeated scan is scheduled. The separate right-click Meticulous Page OCR remains explicitly user-triggered.
 - Current scope: This is a trigger-policy/style change, not an improvement to formula-symbol transcription. Mathematically correct equation recovery, Chromium rendering, browser OCR, scan-to-Contents refresh, Firefox/Safari styling, and stress behavior remain **UNVERIFIED** until tested in the actual browser. No false mathematical certainty is implied by source checks.
+
+
+## v378 — Page OCR completion notice automatically dismisses
+
+- Confirmed UI defect: `manualPageIndexOcrMessage` displayed the completion toast without any dismissal. Added a single cancellable timer: success is displayed for 3.5 seconds, errors for 6.5 seconds; in-progress notices remain until the OCR phase ends. A new status clears the prior timer, so an older completion cannot hide a newer operation.
+- No change to OCR recognition, indexes, document evidence or manual-only triggers.
+- Source-level tests exercise timer replacement, visibility, and progress persistence. Actual live browser interaction is not independently verified; other P0 OCR and rendering limitations remain open.

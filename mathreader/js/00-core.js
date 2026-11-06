@@ -1565,10 +1565,21 @@ async function loadManualIndexOcrPages() {
     }
   } catch (error) { console.warn('MathReader page OCR cache unavailable.', error); }
 }
-function manualPageIndexOcrMessage(message) {
+let manualPageIndexOcrStatusTimer = null;
+function manualPageIndexOcrMessage(message, dismissAfterMs = 0) {
+  if (manualPageIndexOcrStatusTimer !== null) {
+    clearTimeout(manualPageIndexOcrStatusTimer);
+    manualPageIndexOcrStatusTimer = null;
+  }
   if (!manualPageIndexOcrStatus) return;
   manualPageIndexOcrStatus.textContent = message;
   manualPageIndexOcrStatus.classList.remove('is-hidden');
+  if (dismissAfterMs > 0) {
+    manualPageIndexOcrStatusTimer = setTimeout(() => {
+      manualPageIndexOcrStatusTimer = null;
+      manualPageIndexOcrStatus.classList.add('is-hidden');
+    }, dismissAfterMs);
+  }
 }
 async function runMeticulousPageIndexOcr(pageNum) {
   if (!pdfDoc || manualPageOcrBusy || documentOcrBusy || !documentTextFeaturesAvailable() ||
@@ -1633,12 +1644,12 @@ async function runMeticulousPageIndexOcr(pageNum) {
     resetEquationDetectionProgress();
     await ensureEquationIndexRendered();
     if (!valid()) return;
-    manualPageIndexOcrMessage(t(`Page ${pageNum} · Contents updated`, `第 ${pageNum} 页 · 目录已更新`));
+    manualPageIndexOcrMessage(t(`Page ${pageNum} · Contents updated`, `第 ${pageNum} 页 · 目录已更新`), 3500);
     persistDocumentState();
   } catch (error) {
     if (valid()) {
       console.warn('MathReader meticulous page OCR failed.', error);
-      manualPageIndexOcrMessage(t(`Page OCR failed: ${error.message || error}`, `单页 OCR 失败：${error.message || error}`));
+      manualPageIndexOcrMessage(t(`Page OCR failed: ${error.message || error}`, `单页 OCR 失败：${error.message || error}`), 6500);
     }
   } finally {
     if (imageCanvas) { imageCanvas.width = 1; imageCanvas.height = 1; }
