@@ -874,7 +874,7 @@ function snapshotEquationIndexForPersistence(index) {
       for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
         if (Number.isFinite(Number(candidate[key]))) row[key] = Math.min(1, Math.max(0, Number(candidate[key])));
       }
-      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured']) {
+      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured','marginLocationVerifiedV385']) {
         if (candidate[key] === true) row[key] = true;
       }
       if (Number.isInteger(Number(candidate.equationColumnIndex))) row.equationColumnIndex = Number(candidate.equationColumnIndex);
@@ -907,7 +907,7 @@ function restoreEquationIndexFromPersistence(snapshot, { portable = false } = {}
     for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
       if (Number.isFinite(Number(raw?.[key]))) candidate[key] = Math.min(1, Math.max(0, Number(raw[key])));
     }
-    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured']) {
+    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured','marginLocationVerifiedV385']) {
       if (raw?.[key] === true) candidate[key] = true;
     }
     if (Number.isInteger(Number(raw?.equationColumnIndex))) candidate.equationColumnIndex = Number(raw.equationColumnIndex);
@@ -1623,8 +1623,15 @@ function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
     if (!duplicate) uniqueLines.push(line);
   }
   uniqueLines.sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0) || Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0));
+  const vettedReplacements = new Set((incoming?.equationMarginEvidence || [])
+    .filter((item) => item?.marginLocationVerifiedV385 === true)
+    .map((item) => `${item.page}:${item.label}`));
   const margins = new Map();
   for (const item of [...(existing?.equationMarginEvidence || []), ...(incoming?.equationMarginEvidence || [])]) {
+    // Re-scanning an existing *label* can repair its stale target without
+    // breaking the non-destructive guarantee for the index and other labels.
+    if (vettedReplacements.has(`${item?.page}:${item?.label}`)
+        && item?.marginLocationVerifiedV385 !== true) continue;
     const key = `${item?.page}:${item?.label}:${Math.round(Number(item?.ratio || 0) * 500)}`;
     if (!margins.has(key)) margins.set(key, item);
   }
@@ -1703,6 +1710,13 @@ async function runMeticulousPageIndexOcr(pageNum) {
     if (!Array.isArray(record?.lines) || !record.lines.some((line) => String(line.text || '').trim())) {
       throw new Error('No readable text detected; existing Contents retained');
     }
+    // Uncropped Tesseract AND native-PDF lines are evidence about prose
+    // citations near the margin; neither text layer alone is always reliable.
+    // Read the native layer before promoting any cropped equation tag.
+    let nativeLines = [];
+    try { nativeLines = await pageTextLines(pageNum, sourceDoc, new Map(), null, { ignoreManual: true }); }
+    catch (nativeError) { console.warn('MathReader native text merge unavailable.', nativeError); }
+    if (!valid()) return;
     // General text OCR often omits small equation numbers. A second, narrow
     // margin recognition uses the already-rendered page, only for this click.
     // Failure leaves the general page OCR usable and is not treated as evidence.
@@ -1711,7 +1725,7 @@ async function runMeticulousPageIndexOcr(pageNum) {
         tessedit_pageseg_mode: '11', tessedit_char_whitelist: '',
       });
       record.equationMarginEvidence = await meticulousEquationMarginEvidence(
-        sourceDoc, pageNum, worker, imageCanvas
+        sourceDoc, pageNum, worker, imageCanvas, [...record.lines, ...nativeLines]
       );
       if (!valid()) return;
     } catch (marginError) {
@@ -1722,10 +1736,6 @@ async function runMeticulousPageIndexOcr(pageNum) {
     const previousStructure = structureEntries.slice();
     const previousBibliography = bibliographyEntries.slice();
     const previousEquations = new Map(equationAutomaticLabelIndex || equationLabelIndex || []);
-    let nativeLines = [];
-    try { nativeLines = await pageTextLines(pageNum, sourceDoc, new Map(), null, { ignoreManual: true }); }
-    catch (nativeError) { console.warn('MathReader native text merge unavailable.', nativeError); }
-    if (!valid()) return;
     const mergedRecord = mergePageIndexOcrEvidence(manualIndexOcrPages.get(pageNum), record, nativeLines);
     manualIndexOcrPages.set(pageNum, mergedRecord);
     lineCache.delete(pageNum);

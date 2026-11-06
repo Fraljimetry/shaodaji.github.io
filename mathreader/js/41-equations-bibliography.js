@@ -752,6 +752,12 @@ function chooseCanonicalEquationCandidate(candidates) {
     // which may be an inline citation or have corrupt placement.
     const aVerified = a.meticulousPageVerified === true && Number.isFinite(a.ratio) && a.ratio >= 0 && a.ratio < 0.999;
     const bVerified = b.meticulousPageVerified === true && Number.isFinite(b.ratio) && b.ratio >= 0 && b.ratio < 0.999;
+    // Only the revised outer-margin + uncropped-prose check certifies a new
+    // navigation location. Historical v381-v384 coordinates remain preserved
+    // for an unrescanned label but cannot outrank a newly vetted position.
+    const aVetted = aVerified && a.marginLocationVerifiedV385 === true;
+    const bVetted = bVerified && b.marginLocationVerifiedV385 === true;
+    if (aVetted !== bVetted) return aVetted ? -1 : 1;
     if (aVerified !== bVerified) return aVerified ? -1 : 1;
     // Fresh actual hOCR geometry supersedes pre-v384 cached margin candidates
     // whose coordinates may have been fallback estimates.
@@ -2436,10 +2442,43 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   }
 }
 
+// A narrow margin crop may include the first words of ordinary prose. On
+// Giusti p.28, for example, the genuine (1.12) lies at x=.084 while a later
+// "It follows from (1.12)" is near x=.24. Both lie inside a 28% left crop.
+// Only promote an hOCR tag with measured outer-edge geometry. A broader edge
+// position needs independent same-row display-math evidence from full-page OCR.
+function meticulousMarginTargetGeometry(record, side, fullPageLines = []) {
+  const start = Number(record?.candidateXStartRatio);
+  const end = Number(record?.candidateXEndRatio);
+  const ratio = Number(record?.ratio);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || !Number.isFinite(ratio)
+      || ratio < 0 || ratio >= 0.999 || start < 0 || end > 1 || end <= start) return false;
+  const strongOuter = side === 'left' ? end <= 0.205 : start >= 0.795;
+  const weakOuter = side === 'left' ? end <= 0.285 : start >= 0.715;
+  if (!weakOuter) return false;
+  const near = (fullPageLines || []).filter((line) =>
+    Number.isFinite(Number(line?.ratio)) && Math.abs(Number(line.ratio) - ratio) <= 0.014);
+  // Even a "standalone" tag returned by a clipped margin crop is not reliable
+  // if the uncropped page shows this exact occurrence in reference prose.
+  if (near.some((line) => {
+    const lineStart = Number(line?.xStartRatio);
+    const lineEnd = Number(line?.xEndRatio);
+    // An unrelated citation in the other column at the same y is not a
+    // reason to discard the genuine numbered equation on this side.
+    const overlapsToken = Number.isFinite(lineStart) && Number.isFinite(lineEnd)
+      && lineStart <= end + 0.012 && lineEnd >= start - 0.012;
+    return overlapsToken && equationReferenceProseContext(line.text)
+      && equationLabelCandidatesInLine(line.text).some((item) => item.label === record.label);
+  })) return false;
+  if (strongOuter) return true;
+  return near.some((line) => !equationReferenceProseContext(line.text)
+    && equationLineMathSignalCount(line.text) >= 2);
+}
+
 // Meticulous page OCR is an explicit user action. Read equation-number margins
 // separately from general text OCR, but never synthesize labels from gaps.
 // Only parenthesized labels actually observed at the numbering edge are saved.
-async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, renderedCanvas) {
+async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, renderedCanvas, fullPageLines = []) {
   const side = equationNumberingSide === 'left' ? 'left' : 'right';
   const lines = await equationMarginOcrLines(sourceDoc, pageNum, side, worker, {
     existingCanvas: renderedCanvas,
@@ -2455,9 +2494,16 @@ async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, rend
       if (!record.candidateAtLineEnd && side === 'right') continue;
       if (!equationCandidateAlignedToNumberingSide(record)) continue;
       if (equationReferenceProseContext(record.text)) continue;
+      if (!meticulousMarginTargetGeometry(record, side, fullPageLines)) continue;
+      const verified = { ...record, ocrGeometryMeasured: true, marginLocationVerifiedV385: true };
       const existing = byLabel.get(record.label);
-      if (!existing || record.confidence > existing.confidence)
-        byLabel.set(record.label, { ...record, ocrGeometryMeasured: true });
+      // Prefer the measured outer label over a more OCR-confident duplicate
+      // farther into the body. A page can cite its own equation repeatedly.
+      const edge = (item) => side === 'left'
+        ? Number(item.candidateXEndRatio) : 1 - Number(item.candidateXStartRatio);
+      if (!existing || edge(verified) < edge(existing) - 0.012
+          || (Math.abs(edge(verified) - edge(existing)) <= 0.012
+              && verified.confidence > existing.confidence)) byLabel.set(record.label, verified);
     }
   }
   return [...byLabel.values()];
@@ -2722,7 +2768,10 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
       if (!candidates.some((other) => Number(other.page) === Number(evidence.page)
         && Math.abs(Number(other.ratio) - Number(evidence.ratio)) < 0.008
         && other.meticulousPageVerified === true)) {
-        index.set(evidence.label, [...candidates, { ...evidence, meticulousPageVerified: true }]);
+        index.set(evidence.label, [...candidates, {
+          ...evidence, meticulousPageVerified: true,
+          marginLocationVerifiedV385: evidence.marginLocationVerifiedV385 === true
+        }]);
       }
     }
   }
@@ -2962,7 +3011,7 @@ function renderEquationIndex() {
     const meta = document.createElement('span'); meta.textContent = `${t(`Page ${entry.page}`, `第 ${entry.page} 页`)} · ${equationConfidenceTier(entry.score)}`;
     copy.append(label,meta); button.append(copy);
     button.title = entry.text || entry.label;
-    button.addEventListener('click', async () => { equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu')); const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label); updateBacklinksForTarget(entry.label, target); });
+    button.addEventListener('click', async () => { equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu')); const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label, { positionOnly: true }); updateBacklinksForTarget(entry.label, target); });
     const menu = document.createElement('button'); menu.type='button'; menu.className='outline-overflow-button'; menu.textContent='⋯'; menu.title=t('Edit equation','编辑公式'); menu.setAttribute('aria-label',menu.title); menu.setAttribute('aria-expanded','false');
     menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions)); });
     const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
@@ -4377,7 +4426,7 @@ function renderStructureIndex() {
         const prefix = document.createElement('span'); prefix.className = 'structure-relations-label'; prefix.textContent = `${relation.prefix}:`; graph.append(prefix);
         for (const related of relation.items.slice(0, 8)) {
           const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'structure-relation-chip'; chip.textContent = related.label; chip.dataset.page=String(related.page);
-          chip.addEventListener('click', async () => { await goToMatchedLocation(related.page, Number(related.ratio) || 0, related.label); updateBacklinksForTarget(related.label, { page: related.page, ratio: Number(related.ratio) || 0 }); });
+          chip.addEventListener('click', async () => { await goToMatchedLocation(related.page, Number(related.ratio) || 0, related.label, { positionOnly: true }); updateBacklinksForTarget(related.label, { page: related.page, ratio: Number(related.ratio) || 0 }); });
           graph.append(chip);
         }
         graphWrap.append(graph);

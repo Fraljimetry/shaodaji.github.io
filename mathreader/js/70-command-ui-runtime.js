@@ -58,7 +58,7 @@ function commandPaletteEntities() {
   if (equationLabelIndex instanceof Map) {
     for (const [label, candidates] of equationLabelIndex.entries()) {
       const target = (candidates || []).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0))[0];
-      if (target) push(t('Equation','公式'), label, t(`Page ${target.page}`,`第 ${target.page} 页`), () => goToMatchedLocation(target.page, Number(target.ratio)||0, label), label,'equation');
+      if (target) push(t('Equation','公式'), label, t(`Page ${target.page}`,`第 ${target.page} 页`), () => goToMatchedLocation(target.page, Number(target.ratio)||0, label, { positionOnly: true }), label,'equation');
     }
   }
   for (const entry of bibliographyEntries || []) push(t('Reference','文献'), entry.label, entry.title || '', () => goToMatchedLocation(entry.page, Number(entry.ratio)||0, entry.label), `${entry.title} ${bibliographyCitationSummary(entry)}`,'reference');

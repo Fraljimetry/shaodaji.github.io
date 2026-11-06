@@ -57,7 +57,7 @@ check(choose([{...verified,ratio:.92},{...verified,ratio:.40,ocrGeometryMeasured
   'measured hOCR margin corrects older unmeasured same-number evidence');
 check(equation.includes('filter((line) => line.geometryEstimated !== true)'),
   'synthetic OCR fallback locations forbidden from equation-margin indexing');
-check(equation.includes('index.set(evidence.label, [...candidates, { ...evidence, meticulousPageVerified: true }]);'),'verified coordinates merged for preexisting same-number label');
+check(equation.includes('marginLocationVerifiedV385: evidence.marginLocationVerifiedV385 === true'),'verified coordinates merged for preexisting same-number label');
 
 // Delayed Texify inference may finish after moving to another PDF. Use an
 // actual Promise and exercise the recognizer instead of only source matching.

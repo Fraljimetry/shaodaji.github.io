@@ -758,7 +758,9 @@ async function goToReferenceQuery(query, originPage = currentPage, originRatio =
   if (!pdfDoc || !query) return;
   const target = await resolveReferenceTarget(query, originPage, originRatio);
   if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
-  await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.matchText || query);
+  await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.matchText || query, {
+    positionOnly: isEquationLabelQuery(query),
+  });
   updateBacklinksForTarget(target.matchText || query, target);
 }
 
@@ -1198,10 +1200,15 @@ async function emphasizeSemanticDestination(page, ratio, query) {
 
 async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
   await goToLocation(page, ratio, options);
-  if (query) {
-    const emphasized = await emphasizeSemanticDestination(page, ratio, query);
-    if (!emphasized) showNavigationLandingCue(page, ratio);
-  } else showNavigationLandingCue(page, ratio);
+  // Indexed equation targets are measured page coordinates. A scanned PDF's
+  // searchable text may contain ONLY a later prose citation of (1.12); moving
+  // to the nearest text-layer match would override the correct OCR geometry.
+  if (options?.positionOnly || !query) {
+    showNavigationLandingCue(page, ratio);
+    return;
+  }
+  const emphasized = await emphasizeSemanticDestination(page, ratio, query);
+  if (!emphasized) showNavigationLandingCue(page, ratio);
 }
 
 function searchMatchRangeInLayer(layer, query, ordinal = 0) {
