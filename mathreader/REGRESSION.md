@@ -1788,3 +1788,13 @@ must resolve inside the overlaid website tree. See
 **Gate:** all 29 Node JS regression files passed, including the 17-assertion v386 test and earlier v385 reference-vs-display cases. Chromium passed 19 browser DOM geometry/hOCR normalization assertions, using simulated long-document page surfaces and the real asynchronous `goToLocation()` body rather than a live PDF.js renderer. `node --check` on bootstrap, JS modules and assembled runtime passed. Package integrity passed. **Real original-PDF browser Texify/Tesseract.js acceptance remains UNVERIFIED.** Existing inaccurate persisted positions should be explicitly rescanned once; v386 does not automatically run Meticulous OCR.
 
 See `OCR_NAVIGATION_v386.md` and `tests/equation_meticulous_navigation_v386_regression.js` / `tests/equation_navigation_browser_geometry_v386.py` for exact cases, limitations and source coordinates.
+
+## v387 — Meticulous OCR must preserve the *current reading/Contents position* (2026-11-06)
+
+**Failure class:** v383–v386 corrected equation target coordinates but did not enclose manually triggered page OCR and its asynchronous index rebuild in a viewport-preserving transaction. Rebuilding the equation list can reset its own scroll and, in some conditions, leave the PDF reading viewport or persisted position elsewhere. This is independent of the equation's `page/ratio` target and of OCR recognition accuracy.
+
+**Required invariants:** Save the active PDF page+relative position (or exact single-page scroll) and independent left/sidebar index scroll *before* manual OCR begins; after updates, restore the same reading position, and keep the same previously visible equation row at the same relative screen offset even if new equations are inserted above it. Never add a navigation history item, jump to a newly detected equation, or overwrite a deliberate navigation that happened during OCR. Never apply a snapshot to a different PDF or mode. Apply on failure too. Preserve additive index content and user edits; do not add automatic OCR triggers.
+
+**New tests:** `tests/meticulous_position_preservation_v387_regression.js` (25 executable checks with user-input event guards) and `tests/meticulous_viewport_browser_v387.py` (real Chromium scroll container geometry with rows inserted above the existing viewport). `OCR_VIEWPORT_v387.md` documents implementation and human acceptance.
+
+**Remaining uncertainty:** Full original-Giusti/Tesseract.js browser interaction, post-update font/layout shifts, and target-landing correctness require real browser acceptance; browser-shell simulation is not proof of the complete OCR engine. Do not mark full P0 OCR accuracy complete on these tests.

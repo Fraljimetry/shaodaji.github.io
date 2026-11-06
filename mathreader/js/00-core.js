@@ -1681,12 +1681,102 @@ function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
   };
 }
 
+// A meticulous scan updates Contents; it is not a navigation command. Capture
+// both the PDF reading point and the independently scrolling Contents lists so
+// replacement of their DOM rows cannot move the reader or lose the user's
+// place in Equations. Deliberate navigation while OCR is running wins.
+function captureMeticulousOcrReadingPosition() {
+  if (!pdfDoc || !primaryCanvasWrap) return null;
+  const flow = readingFlow;
+  const scrollers = [
+    el('left-sidebar'), el('outline-list'), structureIndex,
+    equationIndex, bibliographyIndex
+  ].filter(Boolean).map((element) => {
+    const state = { element, top: element.scrollTop, left: element.scrollLeft };
+    if (element === equationIndex) {
+      const bounds = element.getBoundingClientRect();
+      const first = [...element.querySelectorAll('.equation-edit-row')].find((row) => {
+        const box = row.getBoundingClientRect();
+        return box.bottom > bounds.top + 1 && box.top < bounds.bottom - 1;
+      });
+      if (first?.dataset?.equationOrderKey) {
+        state.rowKey = first.dataset.equationOrderKey;
+        state.rowOffset = first.getBoundingClientRect().top - bounds.top;
+      }
+    }
+    return state;
+  });
+  const anchor = flow === 'continuous' ? captureContinuousAnchor() : null;
+  return {
+    doc: pdfDoc, key: currentFileKey, flow,
+    page: currentPage, anchor: anchor ? { ...anchor } : null,
+    top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft,
+    navigationSerial: readerNavigationSerial,
+    scrollers
+  };
+}
+
+function restoreMeticulousOcrReadingPosition(snapshot, { reader = true, contents = true } = {}) {
+  if (!snapshot || pdfDoc !== snapshot.doc || currentFileKey !== snapshot.key) return false;
+  if (reader && readingFlow === snapshot.flow && readerNavigationSerial === snapshot.navigationSerial) {
+    // Never call goToLocation here: that would create a history entry, change
+    // the current page, and potentially race a fresh user navigation.
+    if (snapshot.flow === 'continuous' && snapshot.anchor) {
+      if (!restoreContinuousAnchor(snapshot.anchor)) primaryCanvasWrap.scrollTop = snapshot.top;
+      continuousSavedAnchor = { ...snapshot.anchor };
+      continuousScrollTop = primaryCanvasWrap.scrollTop;
+    } else if (snapshot.flow === 'single' && Number(currentPage) === Number(snapshot.page)) {
+      primaryCanvasWrap.scrollTop = snapshot.top;
+      scrollByPage[String(snapshot.page)] = { top: snapshot.top, left: snapshot.left };
+    }
+    primaryCanvasWrap.scrollLeft = snapshot.left;
+  }
+  if (contents) {
+    for (const state of snapshot.scrollers || []) {
+      if (!state.element?.isConnected) continue;
+      state.element.scrollTop = state.top;
+      state.element.scrollLeft = state.left;
+      // Insertion before the visible equation row changes its scroll offset.
+      // Keep the SAME entry at the SAME viewport position, not just the old
+      // numeric scrollTop (which can move the visible labels after a merge).
+      if (state.element === equationIndex && state.rowKey) {
+        const row = [...equationIndex.querySelectorAll('.equation-edit-row')]
+          .find((item) => item.dataset.equationOrderKey === state.rowKey);
+        if (row) {
+          const offset = row.getBoundingClientRect().top - equationIndex.getBoundingClientRect().top;
+          equationIndex.scrollTop += offset - state.rowOffset;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+function monitorMeticulousOcrUserNavigation() {
+  const controller = new AbortController();
+  const result = { readerTouched: false, contentsTouched: false, stop: () => controller.abort() };
+  const options = { passive: true, signal: controller.signal };
+  for (const type of ['wheel', 'touchstart', 'pointerdown']) {
+    primaryCanvasWrap?.addEventListener(type, () => { result.readerTouched = true; }, options);
+    el('left-sidebar')?.addEventListener(type, () => { result.contentsTouched = true; }, options);
+  }
+  // Keyboard scrolling and page/zoom controls are intentional reading actions.
+  document.addEventListener('keydown', (event) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'ArrowLeft', 'ArrowRight'].includes(event.key)
+        && !event.target?.matches?.('input, textarea, [contenteditable="true"]')) result.readerTouched = true;
+  }, options);
+  el('reader-toolbar')?.addEventListener('pointerdown', () => { result.readerTouched = true; }, options);
+  return result;
+}
+
 async function runMeticulousPageIndexOcr(pageNum) {
   if (!pdfDoc || manualPageOcrBusy || documentOcrBusy || !documentTextFeaturesAvailable() ||
       structureIndexBuilding || equationIndexBuildPromise || equationImageAssistPromise) return;
   if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pdfDoc.numPages) return;
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
+  const originalPosition = captureMeticulousOcrReadingPosition();
+  const navigationActivity = monitorMeticulousOcrUserNavigation();
   manualPageOcrBusy = true;
   let worker = null;
   let imageCanvas = null;
@@ -1795,7 +1885,6 @@ async function runMeticulousPageIndexOcr(pageNum) {
       Math.max(0, bibliographyEntries.length - previousBibliography.length) +
       Math.max(0, (equationAutomaticLabelIndex?.size || 0) - previousEquations.size);
     manualPageIndexOcrMessage(t(`Page ${pageNum} · ${added} entries added · 0 removed`, `第 ${pageNum} 页 · 新增 ${added} 项 · 删除 0 项`), 3500);
-    persistDocumentState();
   } catch (error) {
     if (valid()) {
       console.warn('MathReader meticulous page OCR failed.', error);
@@ -1804,6 +1893,24 @@ async function runMeticulousPageIndexOcr(pageNum) {
   } finally {
     if (imageCanvas) { imageCanvas.width = 1; imageCanvas.height = 1; }
     try { await worker?.terminate?.(); } catch (_) {}
+    // Index updates, including failure/cancellation, must not silently replace
+    // the reading position. Restore after the DOM has finished updating, but
+    // never undo a user-initiated scroll, page change, or document switch.
+    if (valid() && originalPosition) {
+      const restore = () => restoreMeticulousOcrReadingPosition(originalPosition, {
+        reader: !navigationActivity.readerTouched,
+        contents: !navigationActivity.contentsTouched
+      });
+      restore();
+      // requestAnimationFrame is suspended in background tabs; do not leave
+      // meticulous OCR permanently busy when the user changes tabs.
+      if (document.visibilityState !== 'hidden') {
+        await Promise.race([nextFrame(), new Promise((resolve) => setTimeout(resolve, 160))]);
+      }
+      if (valid()) restore();
+      if (valid()) persistDocumentState();
+    }
+    navigationActivity.stop();
     manualPageOcrBusy = false;
   }
 }
