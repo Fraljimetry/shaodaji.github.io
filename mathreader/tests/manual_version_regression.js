@@ -1,0 +1,10 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const root=path.resolve(__dirname,'..');
+const manual=fs.readFileSync(path.join(root,'tutorial.html'),'utf8');
+const assert=require('node:assert/strict');
+assert.doesNotMatch(manual, /v362/i, 'stale version must not appear in manual');
+assert.match(manual, /User guide · No document uploads/);
+assert.match(manual, /使用指南 · 不上传文档/);
+assert.match(manual, /MathReader<\/p>/);
+console.log('OK: 4 version-neutral manual assertions');

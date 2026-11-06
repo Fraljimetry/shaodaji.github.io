@@ -1,4 +1,12 @@
-# MathReader Regression / Behavioral Audit Record — v365
+# MathReader Regression / Behavioral Audit Record — v367
+
+## v367 — Remove version label from the user guide (Beijing UTC+08, 2026-11-06)
+
+**Baseline:** complete v363 source with applied v364, v365, and v366 patches. **Release:** v366 → v367.
+
+- Remove the stale `v362` badge from the standalone English/Chinese tutorial's visible header and footer. The guide is now version-neutral; its substantive instructions and privacy statement are unchanged.
+- Bump reader bootstrap and HTML cache keys to v367. No feature, state, annotation, OCR, or indexing logic is modified.
+- Manual gate: open Help in English and Chinese, confirm no version number in visible manual header/footer and all guide links/sections work. Live browser/PDF-specific behavior remains unverified unless exercised.
 
 ## v365 — 15px Help glyph and targeted broad regression audit (Beijing UTC+08, 2026-11-06)
 
