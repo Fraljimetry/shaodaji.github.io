@@ -1688,3 +1688,10 @@ must resolve inside the overlaid website tree. See
 - Cached OCR evidence is scoped by document key and page count. A failed/empty recognition is rejected without replacing prior evidence. Concurrent document OCR or index-building disables the action; document identity is checked through asynchronous stages.
 - Limitations: This is Tesseract-based text/label OCR, **not verified full mathematical expression-to-LaTeX transcription**. Index reconstruction is document-wide for consistency and may take time on books. Browser OCR accuracy, persistence under quota errors, equation results, and continuous-page interactions remain unverified; regression script asserts code invariants only.
 - No arbitrary filling of missing mathematical symbols or bibliography entries. Inspect actual scanned page image before accepting OCR text.
+
+
+## v377 — Theme-aligned page menu and opt-in equation image recovery
+
+- Page-specific Meticulous OCR context menu and its status label now use the same defined MathReader CSS theme tokens as the bibliography context menu (`--paper`, `--ink`, `--line-strong`, `--surface-soft`, `--accent`) and compact menu dimensions. This removes undefined white-fallback variables in dark mode.
+- Equation indexing continues to parse the existing native/OCR text evidence automatically, but it **does not launch any posterior equation-margin image OCR** on normal open, restore, or index refresh. The Equations **OCR** button explicitly requests the image pass across pages; no automatic periodic or repeated scan is scheduled. The separate right-click Meticulous Page OCR remains explicitly user-triggered.
+- Current scope: This is a trigger-policy/style change, not an improvement to formula-symbol transcription. Mathematically correct equation recovery, Chromium rendering, browser OCR, scan-to-Contents refresh, Firefox/Safari styling, and stress behavior remain **UNVERIFIED** until tested in the actual browser. No false mathematical certainty is implied by source checks.

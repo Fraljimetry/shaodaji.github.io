@@ -2667,14 +2667,13 @@ async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
     return true;
   };
 
-  // Publish the native-text result immediately. Posterior image OCR is an
-  // enhancement, not a prerequisite for a usable Equation index, and may take
-  // several seconds on scan-backed papers.
+  // Publish the native-text result immediately. Image-based equation recovery
+  // is opt-in only: never silently OCR margins on document open or index rebuild.
   publishAutomaticIndex();
   nativeCount = equationAutomaticLabelIndex?.size || 0;
   updateEquationDetectionProgress({ labels: nativeCount, recovered: 0 }, generation, true);
 
-  if (!equationImageAssistPromise) {
+  if (forceImageOcr && !equationImageAssistPromise) {
     const assistIndex = index;
     const assistPool = candidatePool;
     const onAssistProgress = (event = {}) => {
@@ -2717,6 +2716,10 @@ async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
     }).finally(() => {
       if (generation === equationDetectionGeneration && pdfDoc === sourceDoc && currentFileKey === sourceKey) { equationImageAssistPromise = null; refreshEquationForceOcrButton(); }
     });
+  }
+  if (!forceImageOcr) {
+    updateEquationDetectionProgress({ phase: 'complete', elapsedMs: equationDetectionNowMs() - started }, generation, true);
+    logEquationDetectionTiming(equationDetectionProgress, sourceKey);
   }
   return equationLabelIndex;
 }
