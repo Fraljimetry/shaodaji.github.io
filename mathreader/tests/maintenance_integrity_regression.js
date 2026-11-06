@@ -20,8 +20,8 @@ check(parts.length === 10, 'exactly ten original subsystem parts');
 check(new Set(parts).size === parts.length, 'no duplicate subsystem parts');
 check(parts[0] === 'js/00-core.js' && parts.at(-1) === 'js/70-command-ui-runtime.js', 'core and event wiring remain the boundaries');
 check(parts.every((part) => fs.existsSync(path.join(root, part))), 'all declared module parts exist');
-check(bootstrap.includes("const VERSION = '389';"), 'bootstrap advanced to v388');
-check(html.includes('mathreader.js?v=389') && html.includes('mathreader.css?v=389'), 'HTML cache keys follow bootstrap');
+check(bootstrap.includes("const VERSION = '390';"), 'bootstrap advanced to v390');
+check(html.includes('mathreader.js?v=390') && html.includes('mathreader.css?v=390'), 'HTML cache keys follow bootstrap');
 check(bootstrap.includes('Promise.all(PARTS.map(fetchPart))'), 'fetching retains parallel acquisition with ordered assembly');
 check(bootstrap.includes("sources.join('\\n')"), 'parts remain one assembled lexical module');
 check(!parts.some((part) => html.includes(`src="${part}"`)), 'subsystems not individually injected as scripts');
@@ -41,7 +41,9 @@ check(sources['js/41-equations-bibliography.js'].includes('function bareEquation
 check(bootstrap.includes("window.dispatchEvent(new CustomEvent('mathreader:ready'))"), 'startup ready notification preserved');
 check(bootstrap.includes("banner.classList.remove('is-hidden')"), 'startup failure banner preserved');
 check(css.length > 10000, 'existing reader layout stylesheet preserved');
+check(css.includes('.page-ocr-context-menu{') && css.includes('position:fixed;z-index:420'), 'manual page OCR context menu remains viewport positioned');
+check(css.includes('.page-ocr-status{') && css.includes('position:absolute;bottom:12px;left:12px'), 'manual page OCR status remains an overlay, not a grid child');
 
 // Parse only: no DOM, network, or model initialization is performed here.
 check(Boolean(new vm.Script(joined, { filename: 'mathreader-runtime-v358.js' })), 'assembled runtime parses as one script');
-console.log(`OK: ${count} MathReader v389 maintenance integrity assertions`);
+console.log(`OK: ${count} MathReader v390 maintenance integrity assertions`);

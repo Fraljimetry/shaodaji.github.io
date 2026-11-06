@@ -1813,3 +1813,11 @@ See `OCR_NAVIGATION_v386.md` and `tests/equation_meticulous_navigation_v386_regr
 ## v389 — Historical textbook OCR / separator-consistency repair (2026-11-06, Beijing UTC+08)
 
 Nine distinct old mathematics PDFs examined, eight fully extracted (585 original pages), 11 real raster hOCR page probes; one confirmed detector defect in Appendix B mixed dotted/compact tags fixed. v388 source reconstructed from v374 + v375–v388 patches; an obsolete digit-only test was corrected. Details, independent provenance, limitations and unresolved original-browser verification are in `OCR_HISTORICAL_v389.md` and `regression/historical_textbooks_v389_evidence.json`. This does not certify full Texify or 50-book recognition. Future audits must continue both all-four-Contents and paired formula transcription accuracy checks with manually verified image ground truth.
+
+## v390 — Meticulous OCR context-menu / transient status layout repair (2026-11-06)
+
+**Real screenshot:** On Giusti PDF page 231 the right-click `Meticulous OCR · page 231` action appeared displaced at the lower-left of the browser. The page OCR menu and its status were created dynamically but had **no CSS for their two class names**. `left/top` assignments on an unpositioned menu are ignored; the unpositioned status was also an implicit extra child of the PDF pane grid.
+
+**Minimal change:** Style `.page-ocr-context-menu` as a viewport-fixed, clamped, theme-aware menu; position `.page-ocr-status` absolutely within `.pdf-pane`; preserve the original user-invoked OCR code, additive merge, equation navigation, OCR accuracy policy, cache and reading position. The existing Equations sidebar `OCR` button is unchanged. Increment resource versions to v390.
+
+**Mandatory regression:** `tests/meticulous_ocr_menu_browser_v390.py` covers real Chromium DOM/CSS placement, viewport edges, theme, disabled/menu activation, Escape/outside close, OCR status overlay, unchanged PDF scroll/grid. Run all Node regression suites and earlier Chromium cases (v385 reference vs target, v386 page geometry, v387 viewport preservation, v388/389 appendix families and list pagination). Document all failures, timeouts and unverified original-PDF browser OCR. See `OCR_CONTEXT_MENU_v390.md`.
