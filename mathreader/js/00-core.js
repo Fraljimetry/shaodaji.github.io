@@ -1560,18 +1560,25 @@ function manualIndexOcrCacheKey(fileKey = currentFileKey) {
   return fileKey ? `page-index-ocr-v1:${fileKey}` : null;
 }
 async function loadManualIndexOcrPages() {
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
   manualIndexOcrPages = new Map();
-  const key = manualIndexOcrCacheKey();
-  if (!key || !pdfDoc?.numPages) return;
+  const key = manualIndexOcrCacheKey(sourceKey);
+  if (!key || !sourceDoc?.numPages) return;
   try {
     const saved = await dbMetaGet(key);
-    if (Number(saved?.pageCount) !== pdfDoc.numPages || !Array.isArray(saved?.pages)) return;
+    // IndexedDB resolution can arrive after another PDF has become active.
+    // Stage the restored pages locally; publish only for their original PDF.
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+    if (Number(saved?.pageCount) !== sourceDoc.numPages || !Array.isArray(saved?.pages)) return;
+    const restored = new Map();
     for (const record of saved.pages) {
       const page = Number(record?.page);
-      if (Number.isInteger(page) && page >= 1 && page <= pdfDoc.numPages && Array.isArray(record?.lines)) {
-        manualIndexOcrPages.set(page, record);
+      if (Number.isInteger(page) && page >= 1 && page <= sourceDoc.numPages && Array.isArray(record?.lines)) {
+        restored.set(page, record);
       }
     }
+    manualIndexOcrPages = restored;
   } catch (error) { console.warn('MathReader page OCR cache unavailable.', error); }
 }
 let manualPageIndexOcrStatusTimer = null;
@@ -2150,14 +2157,27 @@ async function pdfNeedsDocumentOcr(doc = pdfDoc) {
 }
 
 async function loadCachedDocumentOcr() {
-  const key = documentOcrCacheKey();
-  if (!key) return false;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const key = documentOcrCacheKey(sourceKey);
+  if (!key || !sourceDoc?.numPages) return false;
   try {
     const cached = await dbMetaGet(key);
-    if (!cached || Number(cached.version) !== DOCUMENT_OCR_CACHE_VERSION || Number(cached.pageCount) !== Number(pdfDoc?.numPages) || !Array.isArray(cached.pages)) return false;
+    // Page counts are not document identities: another same-length PDF can
+    // replace the original before an asynchronous IndexedDB read returns.
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+    if (!cached || Number(cached.version) !== DOCUMENT_OCR_CACHE_VERSION ||
+        Number(cached.pageCount) !== sourceDoc.numPages || !Array.isArray(cached.pages)) return false;
     const map = new Map();
-    for (const record of cached.pages) if (record && Number(record.page) >= 1 && Array.isArray(record.lines)) map.set(Number(record.page), record);
-    if (map.size !== pdfDoc.numPages) return false;
+    for (const record of cached.pages) {
+      const page = Number(record?.page);
+      // A purported full-document cache with pages 1 and 3 for a two-page
+      // document is incomplete, even if its Map happens to contain two rows.
+      if (!Number.isInteger(page) || page < 1 || page > sourceDoc.numPages ||
+          !Array.isArray(record?.lines) || map.has(page)) return false;
+      map.set(page, record);
+    }
+    if (map.size !== sourceDoc.numPages) return false;
     documentOcrPages = map;
     documentOcrActive = true;
     return true;

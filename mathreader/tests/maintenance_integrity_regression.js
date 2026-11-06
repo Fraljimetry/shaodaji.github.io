@@ -20,8 +20,8 @@ check(parts.length === 10, 'exactly ten original subsystem parts');
 check(new Set(parts).size === parts.length, 'no duplicate subsystem parts');
 check(parts[0] === 'js/00-core.js' && parts.at(-1) === 'js/70-command-ui-runtime.js', 'core and event wiring remain the boundaries');
 check(parts.every((part) => fs.existsSync(path.join(root, part))), 'all declared module parts exist');
-check(bootstrap.includes("const VERSION = '390';"), 'bootstrap advanced to v390');
-check(html.includes('mathreader.js?v=390') && html.includes('mathreader.css?v=390'), 'HTML cache keys follow bootstrap');
+check(bootstrap.includes("const VERSION = '391';"), 'bootstrap advanced to v391');
+check(html.includes('mathreader.js?v=391') && html.includes('mathreader.css?v=391'), 'HTML cache keys follow bootstrap');
 check(bootstrap.includes('Promise.all(PARTS.map(fetchPart))'), 'fetching retains parallel acquisition with ordered assembly');
 check(bootstrap.includes("sources.join('\\n')"), 'parts remain one assembled lexical module');
 check(!parts.some((part) => html.includes(`src="${part}"`)), 'subsystems not individually injected as scripts');
@@ -46,4 +46,4 @@ check(css.includes('.page-ocr-status{') && css.includes('position:absolute;botto
 
 // Parse only: no DOM, network, or model initialization is performed here.
 check(Boolean(new vm.Script(joined, { filename: 'mathreader-runtime-v358.js' })), 'assembled runtime parses as one script');
-console.log(`OK: ${count} MathReader v390 maintenance integrity assertions`);
+console.log(`OK: ${count} MathReader v391 maintenance integrity assertions`);
