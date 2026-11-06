@@ -326,11 +326,26 @@ function isPlausibleNumericEquationTagInner(inner) {
   return /^\d+(?:(?:\.\d+)+|(?:-\d+)+)$/.test(value);
 }
 
+// Numbered appendix displays have their own families (A.1, B-2, A1,
+// AA.3, A.1.2). Keep the alphabetic prefix: it is part of the equation's
+// identity, not an alternative spelling of the main-text integer label.
+// Do not admit bare alphabetic tags like (A), which collide with formula
+// symbols, multiple-choice lists and citations.
+function isPlausibleAppendixEquationTagInner(inner) {
+  const value = String(inner || '');
+  return /^[A-Za-z]{1,2}(?:(?:\.\d{1,4}){1,3}|(?:-\d{1,4}){1,3}|\d{1,4})(?:[a-z])?$/.test(value);
+}
+
+function isPlausibleEquationTagInner(inner) {
+  return isPlausibleNumericEquationTagInner(inner)
+    || isPlausibleAppendixEquationTagInner(inner);
+}
+
 function isEquationLabelQuery(value) {
   const label = normalizedEquationLabel(value);
   const inner = label.slice(1, -1);
   if (isLikelyCalendarYearEquationLabel(label)) return false;
-  return isPlausibleNumericEquationTagInner(inner) || isSymbolicEquationTagInner(inner);
+  return isPlausibleEquationTagInner(inner) || isSymbolicEquationTagInner(inner);
 }
 
 function parsedSequentialLabel(value) {
@@ -379,10 +394,21 @@ function normalizeSequentialStructureEntries(entries) {
 
 function parsedEquationNumber(label) {
   const inner = normalizedEquationLabel(label).slice(1, -1);
-  if (!isPlausibleNumericEquationTagInner(inner)) return null;
-  const separator = inner.includes('-') ? '-' : '.';
-  const parts = inner.split(separator).map((part) => Number(part));
-  return { parts, prefix: parts.slice(0, -1).join(separator), last: parts[parts.length - 1], separator };
+  if (isPlausibleNumericEquationTagInner(inner)) {
+    const separator = inner.includes('-') ? '-' : '.';
+    const parts = inner.split(separator).map((part) => Number(part));
+    return { parts, prefix: parts.slice(0, -1).join(separator), last: parts[parts.length - 1], separator, suffix: '', appendix: false };
+  }
+  if (!isPlausibleAppendixEquationTagInner(inner)) return null;
+  const match = inner.match(/^([A-Za-z]{1,2})([.\-]?)(\d+(?:[.\-]\d+)*)([a-z]?)$/);
+  if (!match) return null;
+  const [, letter, separator, digits, suffix] = match;
+  const parts = separator ? digits.split(separator).map(Number) : [Number(digits)];
+  if (!parts.length || parts.some((part) => !Number.isInteger(part))) return null;
+  return {
+    parts, prefix: letter + (parts.length > 1 ? separator + parts.slice(0, -1).join(separator) : ''),
+    last: parts[parts.length - 1], separator, suffix, appendix: true,
+  };
 }
 
 function equationDocumentPosition(item) {
@@ -824,7 +850,7 @@ function recoverSequentialEquationGaps(index, candidatePool) {
     const leftPos = equationDocumentPosition(left.candidate);
     const rightPos = equationDocumentPosition(right.candidate);
     for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
-      const separator = left.parsed.separator || '.';
+      const separator = left.parsed.separator ?? '.';
       const expected = left.parsed.prefix ? `(${left.parsed.prefix}${separator}${missing})` : `(${missing})`;
       if (index.has(expected)) continue;
       const matches = (candidatePool.get(expected) || []).filter((item) => {
@@ -874,7 +900,7 @@ function equationLabelCandidatesInLine(text) {
     // dotted/hyphen labels and the deliberately small symbolic tag alphabet.
     // Numeric extraction rejects digit-whitespace-digit so a broken text layer
     // cannot silently turn "2 2" into equation (22).
-    const numeric = isPlausibleNumericEquationTagInner(numericInner);
+    const numeric = isPlausibleEquationTagInner(numericInner);
     const symbolic = isSymbolicEquationTagInner(symbolicInner);
     if (!numeric && !symbolic) continue;
     const label = normalizedEquationLabel(`(${numeric ? numericInner : symbolicInner})`);
@@ -907,12 +933,16 @@ function equationLabelCandidatesInLine(text) {
   // leading token here; geometry and mathematical context below still decide
   // whether it is a real equation target. This deliberately does not admit a
   // bare integer prefix, which would collide heavily with section numbering.
-  const leadingBare = source.match(/^\s*([0-9０-９]+\s*(?:[.．]\s*[0-9０-９]+)+)(?=\s|$)/u);
+  const leadingBare = source.match(/^\s*((?:[0-9０-９]+\s*(?:[.．]\s*[0-9０-９]+)+|[A-Za-z]{1,2}\s*(?:(?:[.．\-－]\s*[0-9０-９]+)+|[0-9０-９]+)))(?=\s|$)/u);
   if (leadingBare) {
     const raw = leadingBare[1];
     const compact = raw.normalize('NFKC').replace(/\s+/g, '');
     const label = normalizedEquationLabel(compact);
-    if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
+    // Compact A1/A2 tokens are ordinary identifiers in prose. Accept them
+    // without parentheses only if the entire line contains the token.
+    const compactAppendix = /^[A-Za-z]{1,2}\d{1,4}[a-z]?$/.test(compact);
+    if ((!compactAppendix || source.trim() === raw.trim()) && isPlausibleEquationTagInner(compact)
+        && !isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = source.indexOf(raw);
       out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + raw.length, bare: true });
     }
@@ -925,7 +955,7 @@ function equationLabelCandidatesInLine(text) {
   const trimmedSource = source.trim();
   const trimmed = trimmedSource.normalize('NFKC');
   const compactBare = /\s/.test(trimmed) ? '' : trimmed;
-  if (isPlausibleNumericEquationTagInner(compactBare) && /[.\-]/.test(compactBare)) {
+  if (isPlausibleEquationTagInner(compactBare) && /[.\-]/.test(compactBare)) {
     const label = normalizedEquationLabel(compactBare);
     if (!isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = source.indexOf(trimmedSource);
@@ -1229,7 +1259,7 @@ function equationReferenceProseContext(text) {
   // that grammatically *refer to* an equation; genuine display tags normally
   // sit beside formula text rather than after "properties", "expansion", "of",
   // etc., or before a prose continuation such as "we have" / "this shows".
-  const tag = String.raw`[（(]\s*\d{1,4}\s*(?:(?:[.．]\s*\d{1,4})+|(?:[-－]\s*\d{1,4})+)?\s*[)）]`;
+  const tag = String.raw`[（(]\s*(?:\d{1,4}(?:(?:[.．\-－]\s*\d{1,4})+)?|[A-Za-z]{1,2}(?:(?:[.．\-－]\s*\d{1,4})+|\d{1,4}))(?:[a-z])?\s*[)）]`;
   const before = new RegExp(String.raw`\b(?:equation|eq\.?|see|from|by|using|according\s+to|as\s+in|in\s+view\s+of|follows?\s+from|recall(?:ing)?|substitut(?:e|ing)|insert(?:ing)?|apply(?:ing)?|combin(?:e|ing)|properties?|assumptions?|hypotheses?|requirements?|expansion|formula|identity|estimate|relation|conditions?|case|version|form|of|into)\s*${tag}`, 'i');
   const after = new RegExp(String.raw`${tag}\s*(?:[.,;:]\s*)?(?:and|or|but|then|hence|therefore|thus|where|which|that|is|are|was|were|holds?|gives?|implies?|shows?|yields?|we|this|it)\b`, 'i');
   return before.test(source) || after.test(source);
@@ -1308,6 +1338,10 @@ function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext 
     bareHanChars.length >= 4
   );
   const parsed = parsedEquationNumber(label);
+  // Appendix section headings such as "(A.1) Preliminary notation" are not
+  // equations. A non-isolated alphabetic tag needs nearby *display math* or
+  // mathematical symbols; otherwise a prose heading could become a target.
+  if (parsed?.appendix && !item?.standaloneTag && mathSignals === 0 && !item?.nearbyDisplayMath) return -Infinity;
   const explicitReferenceContext = Boolean(parsed && item?.explicitParenthesized && equationReferenceProseContext(text));
   const integerTag = Boolean(parsed && !parsed.prefix);
   const alphaWords = text.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
@@ -1584,7 +1618,7 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
     if (baselinePriority) baselinePriorityPages.add(page);
   };
   const expectedLabel = (parsed, last) => parsed.prefix
-    ? `(${parsed.prefix}${parsed.separator || '.'}${last})`
+    ? `(${parsed.prefix}${parsed.separator ?? '.'}${last})`
     : `(${last})`;
 
   for (const entries0 of byPrefix.values()) {
@@ -2012,6 +2046,7 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
 
 function equationExpectedNumericOcrRecord(line, page, expectedLabel) {
   const numeric = parsedEquationNumber(expectedLabel);
+  if (numeric?.appendix) return null; // Numeric-only retry cannot verify an alphabetic prefix.
   if (!numeric || !Number.isInteger(numeric.last)) return null;
   const core = numeric.prefix
     ? `${numeric.prefix}${numeric.separator || '.'}${numeric.last}`
@@ -2063,7 +2098,7 @@ function equationSupplementalNumericRetryQueries(records, pageCount) {
   const byPrefix = new Map();
   for (const record of records || []) {
     const parsed = record?.numeric || parsedEquationNumber(record?.label);
-    if (!parsed?.prefix || !Number.isInteger(parsed.last)) continue;
+    if (!parsed?.prefix || parsed.appendix || !Number.isInteger(parsed.last)) continue;
     const list = byPrefix.get(parsed.prefix) || [];
     list.push({ record, parsed });
     byPrefix.set(parsed.prefix, list);
@@ -2094,7 +2129,7 @@ function equationSupplementalNumericRetryQueries(records, pageCount) {
       const rightPage = Number(right.record.page);
       if (gap < 2 || gap > 4 || rightPage < leftPage || rightPage - leftPage > 2) continue;
       for (let missing = left.parsed.last + 1; missing < right.parsed.last; missing += 1) {
-        const label = `(${left.parsed.prefix}${left.parsed.separator || '.'}${missing})`;
+        const label = `(${left.parsed.prefix}${left.parsed.separator ?? '.'}${missing})`;
         for (let page = leftPage; page <= rightPage; page += 1) addExpected(page, label);
       }
     }
@@ -2182,7 +2217,7 @@ function denseSupplementalEquationFamilies(records) {
     let last = -1;
     for (const item of canonical) {
       if (item.parsed.last < last) continue;
-      if (item.parsed.last === last) continue;
+      if (item.parsed.last === last && !item.parsed.suffix) continue;
       last = item.parsed.last;
       monotone.push(item);
     }
@@ -2767,7 +2802,7 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
       if (Number(evidence?.page) !== Number(pageNum) || !evidence.explicitParenthesized ||
           !evidence.numeric?.prefix || !Number.isFinite(evidence.ratio) ||
           !equationCandidateAlignedToNumberingSide(evidence) ||
-          !/^\(\d+(?:[.\-]\d+)+\)$/.test(String(evidence.label || ''))) continue;
+          !isPlausibleEquationTagInner(normalizedEquationLabel(evidence.label).slice(1, -1))) continue;
       const candidates = index.get(evidence.label) || [];
       // A correctly read number is not enough: the image-margin position must
       // also correct stale/native candidate positions for this *same* label.
@@ -2885,8 +2920,10 @@ function compareEquationIndexRows(a, b) {
   if (pageDelta) return pageDelta;
   const aNumber = parsedEquationNumber(a.label);
   const bNumber = parsedEquationNumber(b.label);
-  if (aNumber && bNumber && aNumber.prefix === bNumber.prefix && aNumber.last !== bNumber.last)
-    return aNumber.last - bNumber.last;
+  if (aNumber && bNumber && aNumber.prefix === bNumber.prefix) {
+    if (aNumber.last !== bNumber.last) return aNumber.last - bNumber.last;
+    if (aNumber.suffix !== bNumber.suffix) return String(aNumber.suffix).localeCompare(String(bNumber.suffix));
+  }
   if (a.equationTwoColumn && b.equationTwoColumn
       && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
       && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
@@ -3003,6 +3040,7 @@ function verifiedEquationNavigationTarget(entry) {
 function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
   if (equationDetectionProgress.phase === 'idle' && equationLabelIndex) updateEquationDetectionProgress({ phase: 'saved' }, equationDetectionGeneration, true);
+  const previousRenderedEquationRows = equationIndex.querySelectorAll('.equation-edit-row').length;
   equationIndex.replaceChildren();
   if (!equationLabelIndex) {
     equationIndexCount.textContent = Number.isInteger(equationIndexKnownCount) ? String(equationIndexKnownCount) : '…';
@@ -3054,7 +3092,18 @@ function renderEquationIndex() {
   equationIndexEmpty.classList.toggle('is-hidden', visibleRows.length > 0);
   if (!rows.length) equationIndexEmpty.textContent = t('No reliable equation labels detected.', '未检测到可靠的公式编号。');
   else if (!visibleRows.length) equationIndexEmpty.textContent = t('No equations match this confidence filter.', '没有符合当前置信度筛选的公式。');
-  for (const entry of visibleRows.slice(0, 500)) {
+  const equationTextFilter = String(el('map-filter-equations')?.value || '').trim().toLocaleLowerCase();
+  const displayRows = equationTextFilter
+    ? visibleRows.filter((row) => [row.label, row.text, `Page ${row.page}`].some((part) => String(part || '').toLocaleLowerCase().includes(equationTextFilter)))
+    : visibleRows;
+  const initialBatchSize = equationTextFilter ? displayRows.length : Math.max(500, previousRenderedEquationRows);
+  let renderedRows = 0;
+  let moreButton = null;
+  const appendEquationRows = () => {
+    if (renderedRows >= displayRows.length) return;
+    if (moreButton) { moreButton.remove(); moreButton = null; }
+    const until = Math.min(displayRows.length, renderedRows + (renderedRows === 0 ? initialBatchSize : 500));
+    for (const entry of displayRows.slice(renderedRows, until)) {
     const row = document.createElement('div'); row.className = 'outline-edit-row equation-edit-row';
     const button = document.createElement('button'); button.type = 'button'; button.className = 'equation-index-item'; button.dataset.page=String(entry.page); button.dataset.confidence=entry.score >= 20 ? 'high' : entry.score >= 12 ? 'medium' : 'review';
     const copy=document.createElement('span'); copy.className='equation-index-copy';
@@ -3147,8 +3196,22 @@ function renderEquationIndex() {
     });
 
     row.append(button, menu, actions); equationIndex.append(row);
-  }
-  applyDocumentMapFilter(el('map-filter-equations')); updateDocumentMapCurrentLocation();
+    }
+    renderedRows = until;
+    if (renderedRows < displayRows.length) {
+      moreButton = document.createElement('button');
+      moreButton.type = 'button'; moreButton.className = 'text-button';
+      moreButton.textContent = t(`Show more equations (${displayRows.length - renderedRows})`, `显示更多公式（${displayRows.length - renderedRows}）`);
+      moreButton.addEventListener('click', appendEquationRows);
+      equationIndex.append(moreButton);
+    }
+    applyDocumentMapFilter(el('map-filter-equations'));
+    updateDocumentMapCurrentLocation();
+  };
+  equationIndex.onscroll = () => {
+    if (renderedRows < displayRows.length && equationIndex.scrollTop + equationIndex.clientHeight >= equationIndex.scrollHeight - 110) appendEquationRows();
+  };
+  appendEquationRows();
 }
 
 async function ensureEquationIndexRendered() {

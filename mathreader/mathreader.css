@@ -411,11 +411,6 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .contents-section.is-collapsed{padding-bottom:10px}
 .contents-section .outline-list,.contents-section .structure-index,.contents-section .bibliography-index,.contents-section .equation-index{margin-top:5px}
 /* Lightweight per-document pipeline status; no progress bar that implies complete OCR coverage. */
-.equation-status-row{display:flex;align-items:center;gap:5px;margin:4px 2px 6px;min-width:0}
-.equation-status-row .equation-detection-status{flex:1;margin:0}
-.equation-force-ocr{flex:none;font:inherit;font-size:.65rem;line-height:1.3;padding:2px 6px;border:1px solid var(--line);border-radius:4px;background:var(--surface-soft);color:var(--muted);cursor:pointer}
-.equation-force-ocr:hover:not(:disabled){border-color:var(--accent);color:var(--accent-deep)}
-.equation-force-ocr:disabled{opacity:.45;cursor:default}
 .equation-detection-status{display:block;min-width:0;max-width:100%;margin:4px 2px 6px;color:var(--muted);font-size:.65rem;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
 .equation-detection-status:empty{display:none}
 .equation-detection-status[data-phase="running"]{color:var(--accent-deep)}
@@ -618,10 +613,9 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
   .sidebar-right>.mobile-panel-close{margin-right:0}
 }
 
-/* Page-specific, explicit Contents OCR. Context action stays out of the toolbar. */
-.page-ocr-context-menu{position:fixed;z-index:10000;display:grid;min-width:165px;max-width:min(280px,calc(100vw - 12px));padding:3px;border:1px solid var(--line-strong);border-radius:7px;background:var(--paper);color:var(--ink);box-shadow:0 8px 22px rgba(0,0,0,.2)}
-.page-ocr-context-menu button{display:block;width:100%;padding:7px 9px;border:0;border-radius:4px;background:transparent;color:var(--ink);font:inherit;font-size:11px;text-align:left;cursor:pointer}
-.page-ocr-context-menu button:hover:not(:disabled),.page-ocr-context-menu button:focus-visible{background:var(--surface-soft)}
-.page-ocr-context-menu button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.page-ocr-context-menu button:disabled{opacity:.45;cursor:not-allowed}
-.page-ocr-status{position:absolute;z-index:9;bottom:8px;left:50%;transform:translateX(-50%);max-width:min(80%,480px);border-radius:5px;padding:5px 10px;font-size:11px;background:var(--paper);color:var(--ink);border:1px solid var(--line-strong);box-shadow:0 2px 8px rgba(0,0,0,.08);pointer-events:none}
+/* Compact manual equation OCR action; shared light/dark theme variables. */
+.equation-status-row{display:flex;align-items:center;gap:6px;min-width:0}
+.equation-status-row>.equation-detection-status{flex:1;min-width:0;margin:4px 2px 6px}
+.equation-force-ocr{flex:none;min-width:34px;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--muted);font-size:.63rem;font-weight:650;cursor:pointer}
+.equation-force-ocr:hover:not(:disabled){background:var(--surface-soft);color:var(--accent-deep);border-color:var(--line-strong)}
+.equation-force-ocr:disabled{opacity:.45;cursor:default}

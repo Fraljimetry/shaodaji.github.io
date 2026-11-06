@@ -401,7 +401,10 @@ referenceCanvasWrap.addEventListener('scroll', () => {
   persistDocumentState();
 }, { passive: true });
 
-document.querySelectorAll('.map-filter[data-map-target]').forEach((input) => input.addEventListener('input', () => applyDocumentMapFilter(input)));
+document.querySelectorAll('.map-filter[data-map-target]').forEach((input) => input.addEventListener('input', () => {
+  if (input.id === 'map-filter-equations') renderEquationIndex();
+  else applyDocumentMapFilter(input);
+}));
 documentReadingStatus?.addEventListener('change',()=>{ documentReadingState=['unread','reading','finished'].includes(documentReadingStatus.value)?documentReadingStatus.value:'unread'; renderDocumentMetadata(); persistDocumentState(); });
 documentTagsInput?.addEventListener('change',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });
 documentTagsInput?.addEventListener('blur',()=>{ documentTags=normalizeDocumentTags(documentTagsInput.value); renderDocumentMetadata(); persistDocumentState(); });

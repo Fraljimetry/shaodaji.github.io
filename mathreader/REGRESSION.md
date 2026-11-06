@@ -1798,3 +1798,13 @@ See `OCR_NAVIGATION_v386.md` and `tests/equation_meticulous_navigation_v386_regr
 **New tests:** `tests/meticulous_position_preservation_v387_regression.js` (25 executable checks with user-input event guards) and `tests/meticulous_viewport_browser_v387.py` (real Chromium scroll container geometry with rows inserted above the existing viewport). `OCR_VIEWPORT_v387.md` documents implementation and human acceptance.
 
 **Remaining uncertainty:** Full original-Giusti/Tesseract.js browser interaction, post-update font/layout shifts, and target-landing correctness require real browser acceptance; browser-shell simulation is not proof of the complete OCR engine. Do not mark full P0 OCR accuracy complete on these tests.
+
+## v388 — Appendix equation label families and long-index completeness (2026-11-06)
+
+**Confirmed source omissions:** v387 equated an equation's numeric label with a digit-led label, rejecting common appendix `(A.1)`, `(B-3)`, `(A1)`, `(AA.5)`, `(A.1.2)`, `(C.2a)` tags during both native-text and OCR indexing. The Equation sidebar also silently rendered only `visibleRows.slice(0, 500)`, hiding later appendix equations in long mathematical textbooks.
+
+**Permanent policy:** index main and appendix equation numbering as independent document-order families, allow explicit alphabetic prefixes conservatively, prevent appendix prose citations and section headings from becoming equation targets, never synthesize an appendix prefix from numeric-only OCR, preserve original navigation geometry and additive meticulous-page evidence, and never silently truncate the equation list. Filtering must find entries that are not yet rendered; a large index may be displayed incrementally. Running OCR may not change reader/Contents position. Existing user edits always win.
+
+**Implementation:** shared appendix label grammar, prefix-aware sorting/gap handling, conservative prose/reference and compact bare-tag controls, persisted summary detector version 24, 500-row incremental DOM batches plus all-row search, and CSS alignment for the existing manual Equation OCR control. Exact changed-file list and execution evidence are in `OCR_APPENDIX_v388.md`.
+
+**Regression:** `tests/appendix_equations_v388_regression.js`, `tests/appendix_equation_sidebar_browser_v388.py`, existing Node and Chromium geometry/viewport/responsive suites, assembled runtime parse and ZIP verification. **Not verified:** browser-side PDF.js/Tesseract.js/Texify on real scanned appendices, mixed physical numbering sides between chapters and appendices, long-prefix/roman/nonstandard labels, and false negatives in degraded handwritten scans. Those remain explicit human-review risks, not silently passed cases.
