@@ -1870,7 +1870,10 @@ function refreshEquationForceOcrButton() {
 }
 async function forceEquationImageOcr() {
   if (!pdfDoc || !documentTextFeaturesAvailable() || equationIndexBuildPromise || equationImageAssistPromise || documentOcrActive || documentOcrBusy) return;
-  // Preserve the native text layer and edits; only recompute the equation index.
+  // Explicit image rechecks may add labels but never erase previous detections.
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const previousEquations = new Map(equationAutomaticLabelIndex || equationLabelIndex || []);
   equationLabelIndex = null;
   equationAutomaticLabelIndex = null;
   equationIndexKnownCount = null;
@@ -1878,7 +1881,18 @@ async function forceEquationImageOcr() {
   const promise = buildEquationLabelIndex({ forceImageOcr: true });
   equationIndexBuildPromise = promise;
   refreshEquationForceOcrButton();
-  try { await promise; }
+  try {
+    await promise;
+    if (pdfDoc === sourceDoc && currentFileKey === sourceKey && previousEquations.size) {
+      if (!(equationAutomaticLabelIndex instanceof Map)) equationAutomaticLabelIndex = new Map();
+      for (const [label, candidates] of previousEquations) {
+        if (!equationAutomaticLabelIndex.has(label)) equationAutomaticLabelIndex.set(label, candidates);
+      }
+      equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
+      renderEquationIndex();
+      persistDocumentState();
+    }
+  }
   catch (error) {
     console.warn('MathReader forced equation OCR failed.', error);
     updateEquationDetectionProgress({ phase: 'failed', error: String(error?.message || error) }, equationDetectionGeneration, true);
@@ -3061,9 +3075,9 @@ async function findEquationLabelLocation(query, originPage = null, originRatio =
   return best ? { page: best.page, ratio: best.ratio } : null;
 }
 
-async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache) {
+async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache, { ignoreManual = false } = {}) {
   if (cache.has(pageNum)) return cache.get(pageNum);
-  if (sourceDoc === pdfDoc && manualIndexOcrPages.has(Number(pageNum))) {
+  if (!ignoreManual && sourceDoc === pdfDoc && manualIndexOcrPages.has(Number(pageNum))) {
     const record = manualIndexOcrPages.get(Number(pageNum));
     const lines = (record.lines || []).map((line) => ({...line, ocrSource: true, parts: Array.isArray(line.parts) ? line.parts.map((part) => ({...part})) : []}));
     cache.set(pageNum, lines);

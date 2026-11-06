@@ -1719,3 +1719,25 @@ must resolve inside the overlaid website tree. See
 - Status now says `Text done` when no image OCR occurred, rather than ambiguous `Auto done`. Image OCR displays actual bounded coverage.
 - Coverage is limited by the existing gap/page plan on long books (not an all-page accuracy guarantee). The v379 manual OCR remains available for a complete recheck.
 - Source-level tests only. Real Chromium PDF.js/Tesseract runs, memory and model time, image-only initial OCR, and equation-label accuracy are not verified.
+
+
+## v381 — Monotonic meticulous OCR and forced equation recheck
+
+**Source of truth:** Full v374 ZIP plus v375, v376, v377, v378, v379, v380 root patches, applied in order. The v380 event handler and button styling are already present, and are deliberately unchanged.
+
+**Confirmed defects corrected:**
+
+1. Meticulous page OCR previously replaced the saved page record wholesale. A second OCR pass could therefore erase previously recognized lines or margin equation labels. The new merge preserves prior OCR evidence, adds new detections and native text evidence, removes exact near-position duplicates, and keeps conflicting reads separate rather than arbitrarily selecting an interpretation.
+2. Rebuilding Structure/Results and Bibliography after the manual page scan could discard entries already indexed. Explicit meticulous recovery now unions previous entries back by existing index keys and restores document order.
+3. Both meticulous page reindexing and the manually forced Equations image OCR rebuild could discard previously detected equation labels. Explicit recovery now unions earlier equation labels into the rebuilt automatic index, then applies existing manual edits; it checks the original document identity before publication.
+4. Completion status reports additive total index-entry differences and zero removals; does not claim OCR accuracy or count duplicate text observations as newly verified results.
+
+**Tests:** New `mathreader/tests/meticulous_additive_ocr_regression.js` checks idempotence, preservation of old lines/margin labels, and conflicting-recognition retention. All existing Node OCR, navigation, progress, theme and runtime tests must pass. `node --check` on all modules and assembled runtime and ZIP integrity are release gates. Real browser PDF.js/Tesseract and paired formula/text OCR evaluation were not run; no complete-accuracy claim.
+
+**Open limitations and verification needed:**
+- Additive observations can preserve a false positive from an earlier run. This intentionally prioritizes non-destructive recovery; manual correction and conservative confidence gating remain necessary. Contradictory OCR text is retained as competing evidence, not a verified mathematical result.
+- Deduplication by normalized text and nearby geometry is heuristic. Visually repeated identical lines or large OCR coordinate shifts may require manual review.
+- The existing index caps and book-wide structure heuristics still exist; additive behavior is specifically guaranteed for a completed explicit OCR action, not every auto-index rebuild or cache purge.
+- A failed/aborted scan does not publish partial results. Storage quota, crashes, browser switching, old degraded/handwritten PDFs, Giusti labels (1.4), (1.5), (1.7), formula-to-LaTeX semantics and full-document scanned bibliography OCR require real-browser verification. All unresolved P0 accuracy obligations remain open.
+
+**Changed files:** `mathreader/js/00-core.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/mathreader.js`, `mathreader/index.html` (asset cache keys), `mathreader/tests/meticulous_additive_ocr_regression.js`, `mathreader/tests/page_context_ocr_regression.js`, `mathreader/tests/maintenance_integrity_regression.js`, `mathreader/tests/equation_progress_regression.js`, `mathreader/tests/formula_ocr_lazy_regression.js`, and `mathreader/REGRESSION.md`. Other v380 files, including `js/70-command-ui-runtime.js` and `mathreader.css`, are untouched.

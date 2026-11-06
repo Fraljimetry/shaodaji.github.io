@@ -1587,6 +1587,34 @@ function manualPageIndexOcrMessage(message, dismissAfterMs = 0) {
     }, dismissAfterMs);
   }
 }
+// Monotonic page evidence: an OCR pass may add observations, never erase
+// earlier manual scans or native PDF text. Keep distinct conflicting reads
+// for later verification rather than guessing which one is correct.
+function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
+  const merged = [];
+  const identity = (line) => String(line?.text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  for (const line of [...(existing?.lines || []), ...nativeLines, ...(incoming?.lines || [])]) {
+    if (!identity(line)) continue;
+    const duplicate = merged.some((old) => identity(old) === identity(line) &&
+      Math.abs(Number(old.ratio || 0) - Number(line.ratio || 0)) < 0.025 &&
+      Math.abs(Number(old.xStartRatio || 0) - Number(line.xStartRatio || 0)) < 0.075);
+    if (!duplicate) merged.push({ ...line });
+  }
+  merged.sort((a, b) => Number(a.ratio || 0) - Number(b.ratio || 0) || Number(a.xStartRatio || 0) - Number(b.xStartRatio || 0));
+  const margins = new Map();
+  for (const item of [...(existing?.equationMarginEvidence || []), ...(incoming?.equationMarginEvidence || [])]) {
+    const key = `${item?.page}:${item?.label}:${Math.round(Number(item?.ratio || 0) * 500)}`;
+    if (!margins.has(key)) margins.set(key, item);
+  }
+  return {
+    ...incoming,
+    lines: merged,
+    text: merged.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim(),
+    words: [...(existing?.words || []), ...(incoming?.words || [])],
+    equationMarginEvidence: [...margins.values()]
+  };
+}
+
 async function runMeticulousPageIndexOcr(pageNum) {
   if (!pdfDoc || manualPageOcrBusy || documentOcrBusy || !documentTextFeaturesAvailable() ||
       structureIndexBuilding || equationIndexBuildPromise || equationImageAssistPromise) return;
@@ -1641,9 +1669,17 @@ async function runMeticulousPageIndexOcr(pageNum) {
     } catch (marginError) {
       console.warn('MathReader page equation-margin OCR unavailable.', marginError);
     }
-    // Commit only after an accepted recognition. Keep the native text layer and
-    // other pages unchanged; any subsequent scan replaces only this page.
-    manualIndexOcrPages.set(pageNum, record);
+    // Preserve previous detections even when this scan misses them. Read native
+    // text independently of the manual overlay, using a disposable cache.
+    const previousStructure = structureEntries.slice();
+    const previousBibliography = bibliographyEntries.slice();
+    const previousEquations = new Map(equationAutomaticLabelIndex || equationLabelIndex || []);
+    let nativeLines = [];
+    try { nativeLines = await pageTextLines(pageNum, sourceDoc, new Map(), null, { ignoreManual: true }); }
+    catch (nativeError) { console.warn('MathReader native text merge unavailable.', nativeError); }
+    if (!valid()) return;
+    const mergedRecord = mergePageIndexOcrEvidence(manualIndexOcrPages.get(pageNum), record, nativeLines);
+    manualIndexOcrPages.set(pageNum, mergedRecord);
     lineCache.delete(pageNum);
     textCache.delete(pageNum);
     const key = manualIndexOcrCacheKey(sourceKey);
@@ -1658,13 +1694,38 @@ async function runMeticulousPageIndexOcr(pageNum) {
     inferredOutlineDetectionDone = false;
     await buildStructureIndex({force: true});
     if (!valid()) return;
+    // A rebuilt classifier can be more conservative than an earlier one.
+    // This explicit recovery operation may only append to the saved indexes.
+    const resultKeys = new Set(structureEntries.map((entry) => entry.key));
+    for (const entry of previousStructure) {
+      if (!resultKeys.has(entry.key)) { structureEntries.push(entry); resultKeys.add(entry.key); }
+    }
+    structureEntries.sort((a, b) => a.page - b.page || (a.ratio || 0) - (b.ratio || 0));
+    const bibKeys = new Set(bibliographyEntries.map((entry) => normalizedBibliographyKey(entry.number)));
+    for (const entry of previousBibliography) {
+      const key = normalizedBibliographyKey(entry.number);
+      if (!bibKeys.has(key)) { bibliographyEntries.push(entry); bibKeys.add(key); }
+    }
+    bibliographyEntries.sort((a, b) => a.page - b.page || (a.ratio || 0) - (b.ratio || 0));
+    renderStructureIndex(); renderBibliographyIndex();
     equationLabelIndex = null;
     equationAutomaticLabelIndex = null;
     equationIndexKnownCount = null;
     resetEquationDetectionProgress();
     await ensureEquationIndexRendered();
     if (!valid()) return;
-    manualPageIndexOcrMessage(t(`Page ${pageNum} · Contents updated`, `第 ${pageNum} 页 · 目录已更新`), 3500);
+    if (previousEquations.size) {
+      if (!(equationAutomaticLabelIndex instanceof Map)) equationAutomaticLabelIndex = new Map();
+      for (const [label, candidates] of previousEquations) {
+        if (!equationAutomaticLabelIndex.has(label)) equationAutomaticLabelIndex.set(label, candidates);
+      }
+      equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);
+      renderEquationIndex();
+    }
+    const added = Math.max(0, structureEntries.length - previousStructure.length) +
+      Math.max(0, bibliographyEntries.length - previousBibliography.length) +
+      Math.max(0, (equationAutomaticLabelIndex?.size || 0) - previousEquations.size);
+    manualPageIndexOcrMessage(t(`Page ${pageNum} · ${added} entries added · 0 removed`, `第 ${pageNum} 页 · 新增 ${added} 项 · 删除 0 项`), 3500);
     persistDocumentState();
   } catch (error) {
     if (valid()) {

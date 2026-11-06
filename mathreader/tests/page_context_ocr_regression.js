@@ -5,8 +5,8 @@ const core=read('js/00-core.js'), index=read('js/41-equations-bibliography.js'),
 let count=0;function check(ok,message){if(!ok)throw Error(message);count++;}
 check(core.includes("addEventListener('contextmenu'") && core.includes("closest('.continuous-page-frame')"),'page-local context menu');
 check(core.includes('manualPageOcrBusy || documentOcrBusy') && core.includes('sourceDoc === pdfDoc && sourceKey === currentFileKey'),'single operation and document guard');
-check(core.includes('pageRecordFromHocr') && core.includes('manualIndexOcrPages.set(pageNum, record)'),'recognized result commit');
-check(core.indexOf('manualIndexOcrPages.set(pageNum, record)')>core.indexOf("if (!Array.isArray(record?.lines)"),'reject empty OCR before commit');
+check(core.includes('pageRecordFromHocr') && core.includes('manualIndexOcrPages.set(pageNum, mergedRecord)'),'recognized result commit');
+check(core.indexOf('manualIndexOcrPages.set(pageNum, mergedRecord)')>core.indexOf("if (!Array.isArray(record?.lines)"),'reject empty OCR before commit');
 check(core.includes('await dbMetaSet(key, {pageCount: sourceDoc.numPages'),'per-document persistence');
 check(index.includes('manualIndexOcrPages.has(Number(pageNum))'),'Structure, Results, Bibliography, Equations read manual page evidence');
 check(search.includes('manualIndexOcrPages.has(Number(pageNum))'),'page text used for indexes/search');
