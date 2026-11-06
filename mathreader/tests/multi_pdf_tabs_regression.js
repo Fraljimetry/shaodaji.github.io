@@ -1,4 +1,4 @@
-// v372: source + actual isolated tab state transitions (zero network).
+// v373: History-only, lazy multi-PDF selection (zero network).
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -8,66 +8,60 @@ const root = path.resolve(__dirname, '..');
 const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
 const html = read('index.html');
 const css = read('mathreader.css');
+const core = read('js/00-core.js');
 const notes = read('js/60-notes-bookmarks-data.js');
 const runtime = read('js/70-command-ui-runtime.js');
 let checks = 0;
-function check(value, label) { assert.ok(value, label); checks++; }
-check(/id="file-input"[^>]*\bmultiple\b/.test(html), 'native picker accepts multiple PDF files');
-check(html.includes('id="document-tabs"'), 'reader has a document tabs strip');
-check(css.includes('.document-tabs') && css.includes('grid-template-rows:48px auto minmax(0,1fr)'), 'tab row integrates into reader grid without covering canvas');
-check(notes.includes('rememberOpenedPdf(meta, cacheBlob)'), 'every successful PDF source is registered');
-check(notes.includes('await flushCurrentDocumentSession()'), 'switch/close persists reading sessions');
-check(notes.includes('new File([blob], meta.name'), 'non-picker PDF sources receive named File for reopen');
-check(notes.includes('if (pdfTabSwitchBusy || documentOcrInteractionLocked()) return;'), 'close guarded during OCR/switch');
-check(runtime.includes('queueOpenedPdfFiles(files)'), 'multi-drop routed into tabs');
-check(notes.includes('queueOpenedPdfFiles(files, recoveryId)'), 'multi-selection routed into tabs');
-const start = notes.indexOf('// Tabs are only a document switcher');
+const check = (value, label) => { assert.ok(value, label); checks++; };
+check(/id="file-input"[^>]*\bmultiple\b/.test(html), 'picker allows multiple PDFs');
+check(!html.includes('id="document-tabs"'), 'no horizontal PDF tab strip');
+check(!css.includes('.document-tabs'), 'no tab styling or extra grid row');
+check(notes.includes('rememberOpenedPdf(meta, cacheBlob)'), 'successful open removes staged item');
+check(runtime.includes('queueOpenedPdfFiles(files)'), 'multi-drop stages files');
+check(notes.includes('queueOpenedPdfFiles(files, recoveryId)'), 'multi-picker stages files');
+check(core.includes('for (const entry of pendingPdfFiles)'), 'pending files shown in History');
+check(core.includes('activatePendingPdf(entry.id)'), 'pending file clicked from History');
+check(core.includes("t('Not loaded', '尚未加载')"), 'unopened state labelled');
+check(!notes.includes('activateOpenPdfTab'), 'tab switcher removed');
+const start = notes.indexOf('// The History list is the only multi-document switcher.');
 const end = notes.indexOf('async function changeZoom(delta)', start);
-check(start >= 0 && end > start, 'tab state machine located');
-const listeners = [];
-function makeNode() {
-  return {
-    children: [], className: '', dataset: {},
-    classList: { toggle() {} },
-    setAttribute() {}, addEventListener(event, cb) { listeners.push([event, cb]); },
-    append(...items) { this.children.push(...items); },
-    appendChild(item) { this.children.push(item); },
-    replaceChildren(...items) { this.children = [...items]; }
-  };
-}
-const tabStrip = makeNode();
-const opens = [];
+check(start >= 0 && end > start, 'pending-file state machine present');
+const opened = [];
 const context = vm.createContext({
-  document: { getElementById: () => tabStrip, createElement: () => makeNode() },
-  t: (en) => en, console, File: class FakeFile { constructor(parts, name, opts) { this.name=name; this.type=opts.type; this.parts=parts; this.lastModified=opts.lastModified; } },
-  pdfDoc: { destroy: async () => {} }, currentFileKey: null, currentFileName: '',
+  console, t: (en) => en,
+  async openPdfFile(file) {
+    opened.push(file.name);
+    if (file.name === 'bad.pdf') throw new Error('simulated open failure');
+    vm.runInContext(`rememberOpenedPdf({id:${JSON.stringify(file.name)}, name:${JSON.stringify(file.name)}})`, context);
+  },
   documentOcrInteractionLocked: () => false,
-  async openPdfFile(file) { opens.push(file.name); context.currentFileKey=file.name; vm.runInContext(`rememberOpenedPdf({id:${JSON.stringify(file.name)},name:${JSON.stringify(file.name)}}, null)`, context); },
-  async openCachedDocument(key) { opens.push('cached:' + key); return true; },
-  async flushCurrentDocumentSession() {},
-  documentTitle: {textContent:''}, pdfWorkspace: {classList:{add(){}}}, welcome:{classList:{remove(){}}},
-  enableReaderControls() {}, renderLocalLibrary() {}, showError(msg) { throw new Error(msg); }
+  renderLocalLibrary() {},
 });
 vm.runInContext(notes.slice(start, end), context);
 const run = (code) => vm.runInContext(code, context);
 (async () => {
-  context.files = [
+  const files = [
     {name:'A.pdf', type:'application/pdf'},
     {name:'B.pdf', type:'application/pdf'},
     {name:'C.pdf', type:'application/pdf'}
   ];
+  context.files = files;
   run('queueOpenedPdfFiles(files)');
   await new Promise((resolve) => setImmediate(resolve));
-  check(run('openedPdfTabs.length') === 3, 'three PDFs staged as separate tabs');
-  check(opens.join(',') === 'A.pdf', 'only first PDF parsed, other PDFs remain lazy');
-  await run('activateOpenPdfTab(openedPdfTabs[2].id)');
-  check(opens.join(',') === 'A.pdf,C.pdf', 'switch opens selected third PDF');
-  check(run('openedPdfTabs.filter(x => x.id === activePdfTabId).length') === 1, 'exactly one tab active');
-  await run('closeOpenPdfTab(openedPdfTabs[1].id)');
-  check(run('openedPdfTabs.length') === 2, 'close inactive tab without affecting active document');
-  await run('closeOpenPdfTab(activePdfTabId)');
-  check(opens.at(-1) === 'A.pdf', 'closing active tab activates neighbor');
-  await run('closeOpenPdfTab(activePdfTabId)');
-  check(run('openedPdfTabs.length') === 0 && run('activePdfTabId') === null, 'closing final tab empties tab strip');
-  console.log(`OK: ${checks} multi-PDF tab regression assertions`);
+  check(opened.join(',') === 'A.pdf', 'only first selected PDF loads');
+  check(run('pendingPdfFiles.length') === 2, 'other two remain pending');
+  check(run('pendingPdfFiles[0].file.name') === 'B.pdf', 'selection order preserved');
+  await run('activatePendingPdf(pendingPdfFiles[1].id)');
+  check(opened.join(',') === 'A.pdf,C.pdf', 'click loads only selected pending file');
+  check(run('pendingPdfFiles.length') === 1, 'successful open removed from pending list');
+  run('removePendingPdf(pendingPdfFiles[0].id)');
+  check(run('pendingPdfFiles.length') === 0, 'explicit removal does not auto-open other files');
+  context.files = [{name:'bad.pdf', type:'application/pdf'}, {name:'D.pdf', type:'application/pdf'}];
+  run('queueOpenedPdfFiles(files)');
+  await new Promise((resolve) => setImmediate(resolve));
+  check(opened.at(-1) === 'bad.pdf', 'first failed PDF attempted');
+  check(run('pendingPdfFiles.length') === 2, 'failed PDF stays for retry, next PDF untouched');
+  await run('activatePendingPdf(pendingPdfFiles[1].id)');
+  check(opened.at(-1) === 'D.pdf', 'user can load next PDF after failed first');
+  console.log(`OK: ${checks} History-only multi-PDF regression assertions`);
 })().catch((error) => { console.error(error); process.exitCode = 1; });

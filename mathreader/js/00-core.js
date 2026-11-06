@@ -1050,9 +1050,29 @@ function formatHistoryTime(timestamp) {
 function renderLocalLibrary() {
   historyList?.replaceChildren();
   welcomeRecentList?.replaceChildren();
-  historyCount.textContent = String(localLibrary.length);
-  historyEmpty.classList.toggle('is-hidden', localLibrary.length > 0);
-  welcomeRecent.classList.toggle('is-hidden', localLibrary.length === 0 || Boolean(pdfDoc));
+  historyCount.textContent = String(localLibrary.length + pendingPdfFiles.length);
+  historyEmpty.classList.toggle('is-hidden', localLibrary.length + pendingPdfFiles.length > 0);
+  welcomeRecent.classList.toggle('is-hidden', (localLibrary.length + pendingPdfFiles.length) === 0 || Boolean(pdfDoc));
+
+  // New multi-selections appear one by one in History immediately. Only the
+  // first opens automatically; remaining files have no IndexedDB/OCR work.
+  for (const entry of pendingPdfFiles) {
+    const wrapper = document.createElement('div'); wrapper.className = 'history-entry';
+    const row = document.createElement('div'); row.className = 'history-item';
+    const open = document.createElement('button'); open.type = 'button'; open.className = 'history-open';
+    const title = document.createElement('strong'); title.textContent = entry.file.name;
+    const meta = document.createElement('span'); meta.className = 'history-meta';
+    meta.textContent = entry.id === openingPendingPdfId ? t('Opening…', '正在打开…') : t('Not loaded', '尚未加载');
+    open.append(title, meta);
+    open.disabled = pendingPdfBusy || documentOcrInteractionLocked();
+    open.addEventListener('click', () => activatePendingPdf(entry.id));
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'history-remove';
+    remove.textContent = '×'; remove.title = t('Remove from list', '从列表移除');
+    remove.setAttribute('aria-label', t('Remove from list', '从列表移除'));
+    remove.disabled = pendingPdfBusy;
+    remove.addEventListener('click', () => removePendingPdf(entry.id));
+    row.append(open, remove); wrapper.append(row); historyList.append(wrapper);
+  }
 
   for (const record of localLibrary) {
     const entry = document.createElement('div'); entry.className = 'history-entry';

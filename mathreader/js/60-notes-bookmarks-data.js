@@ -715,118 +715,62 @@ async function openCachedDocument(id, options = {}) {
   }
 }
 
-// Tabs are only a document switcher, not independent PDF.js/OCR instances.
-// Keep File/Blob references lazily; persist reading state via existing per-PDF sessions.
-const documentTabsNode = document.getElementById('document-tabs');
-const openedPdfTabs = [];
-let activePdfTabId = null;
-let openingPdfTabId = null;
-let pdfTabSwitchBusy = false;
-let nextPdfTabSerial = 0;
+// The History list is the only multi-document switcher. Selection is lazy:
+// unselected Files are retained in memory but never parsed, cached or OCR'd.
+const pendingPdfFiles = [];
+let pendingPdfBusy = false;
+let nextPendingPdfId = 0;
 
-function updateOpenPdfTabs() {
-  if (!documentTabsNode) return;
-  documentTabsNode.replaceChildren();
-  documentTabsNode.classList.toggle('is-hidden', !openedPdfTabs.length);
-  for (const tab of openedPdfTabs) {
-    const item = document.createElement('div');
-    item.className = 'document-tab' + (tab.id === activePdfTabId ? ' is-active' : '');
-    const select = document.createElement('button');
-    select.type = 'button'; select.className = 'document-tab-select';
-    select.setAttribute('role', 'tab'); select.setAttribute('aria-selected', String(tab.id === activePdfTabId));
-    select.title = tab.name; select.textContent = tab.name;
-    select.addEventListener('click', () => { activateOpenPdfTab(tab.id); });
-    const close = document.createElement('button');
-    close.type = 'button'; close.className = 'document-tab-close';
-    close.setAttribute('aria-label', t('Close ', '关闭 ') + tab.name);
-    close.title = t('Close PDF', '关闭 PDF'); close.textContent = '×';
-    close.addEventListener('click', () => { closeOpenPdfTab(tab.id); });
-    item.append(select, close); documentTabsNode.appendChild(item);
+function rememberOpenedPdf(meta) {
+  // Remove a staged entry only after the corresponding PDF successfully opened.
+  if (openingPendingPdfId !== null) {
+    const index = pendingPdfFiles.findIndex((item) => item.id === openingPendingPdfId);
+    if (index >= 0) pendingPdfFiles.splice(index, 1);
   }
+  renderLocalLibrary();
 }
-
-function rememberOpenedPdf(meta, blob = null) {
-  let tab = openedPdfTabs.find((item) => item.id === openingPdfTabId);
-    // Direct opens from History, citation links and the first file are also tabs.
-  if (!tab) tab = openedPdfTabs.find((item) => item.key === meta.id);
-  if (!tab) {
-    tab = { id: 'pdf-tab-' + (++nextPdfTabSerial), name: meta.name, key: null, file: null };
-    openedPdfTabs.push(tab);
-  }
-  tab.key = meta.id; tab.name = meta.name;
-  if (blob && !tab.file) tab.file = new File([blob], meta.name, { type: 'application/pdf', lastModified: meta.lastModified || Date.now() });
-  // If the same PDF was selected twice, keep one tab for its exact identity.
-  for (let i = openedPdfTabs.length - 1; i >= 0; i--) {
-    if (openedPdfTabs[i] !== tab && openedPdfTabs[i].key === meta.id) {
-      if (!tab.file) tab.file = openedPdfTabs[i].file;
-      openedPdfTabs.splice(i, 1);
-    }
-  }
-  activePdfTabId = tab.id;
-  updateOpenPdfTabs();
-}
+let openingPendingPdfId = null;
 
 function queueOpenedPdfFiles(files, recoveryId = null) {
   const valid = files.filter((file) => file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)));
   if (!valid.length) return;
-  // A recovery selection must remain a single exact-file operation.
   if (recoveryId) { openPdfFile(valid[0], recoveryId); return; }
   let first = null;
   for (const file of valid) {
-    // Keep the blob until selected; never eagerly parse dozens of PDFs.
-    const existing = openedPdfTabs.find((tab) => tab.file === file);
-    if (existing) { if (!first) first = existing.id; continue; }
-    const tab = { id: 'pdf-tab-' + (++nextPdfTabSerial), name: file.name, key: null, file };
-    openedPdfTabs.push(tab);
-    if (!first) first = tab.id;
+    // Do not read arrayBuffer, identify, OCR, or store a waiting file.
+    const entry = { id: ++nextPendingPdfId, file };
+    pendingPdfFiles.push(entry);
+    if (first === null) first = entry.id;
   }
-  updateOpenPdfTabs();
-  if (first) activateOpenPdfTab(first);
+  renderLocalLibrary();
+  if (first !== null) activatePendingPdf(first);
 }
 
-async function activateOpenPdfTab(id) {
-  const tab = openedPdfTabs.find((item) => item.id === id);
-  if (!tab || pdfTabSwitchBusy || documentOcrInteractionLocked()) return;
-  if (tab.id === activePdfTabId && pdfDoc && currentFileKey === tab.key) return;
-  pdfTabSwitchBusy = true;
-  openingPdfTabId = tab.id;
+async function activatePendingPdf(id) {
+  const entry = pendingPdfFiles.find((item) => item.id === id);
+  if (!entry || pendingPdfBusy || documentOcrInteractionLocked()) return false;
+  pendingPdfBusy = true;
+  openingPendingPdfId = id;
+  renderLocalLibrary();
   try {
-    if (tab.file) await openPdfFile(tab.file);
-    else if (tab.key) await openCachedDocument(tab.key);
-    else throw new Error(t('PDF unavailable. Open it again.', 'PDF 不可用，请重新打开。'));
+    await openPdfFile(entry.file);
+    return true;
   } catch (error) {
-    console.error('PDF tab open failed', error);
-    showError(error?.message || t('Could not switch PDF.', '无法切换 PDF。'));
+    // Preserve the File for explicit retry in History, without loading others.
+    console.error('Pending PDF open failed', error);
+    return false;
   } finally {
-    openingPdfTabId = null;
-    pdfTabSwitchBusy = false;
-    updateOpenPdfTabs();
+    openingPendingPdfId = null;
+    pendingPdfBusy = false;
+    renderLocalLibrary();
   }
 }
-
-async function closeOpenPdfTab(id) {
-  if (pdfTabSwitchBusy || documentOcrInteractionLocked()) return;
-  const index = openedPdfTabs.findIndex((tab) => tab.id === id);
+function removePendingPdf(id) {
+  if (pendingPdfBusy) return;
+  const index = pendingPdfFiles.findIndex((entry) => entry.id === id);
   if (index < 0) return;
-  const isActive = activePdfTabId === id;
-  openedPdfTabs.splice(index, 1);
-  if (!isActive) { updateOpenPdfTabs(); return; }
-  if (pdfDoc && currentFileKey) await flushCurrentDocumentSession();
-  activePdfTabId = null;
-  if (openedPdfTabs.length) {
-    updateOpenPdfTabs();
-    await activateOpenPdfTab(openedPdfTabs[Math.min(index, openedPdfTabs.length - 1)].id);
-  } else {
-    // Closing the last tab clears the visible reader, without deleting its library copy.
-    pdfTabSwitchBusy = true;
-    try {
-      if (pdfDoc) await pdfDoc.destroy();
-      pdfDoc = null; currentFileKey = null; currentFileName = '';
-      documentTitle.textContent = t('No PDF open', '尚未打开 PDF');
-      pdfWorkspace.classList.add('is-hidden'); welcome.classList.remove('is-hidden');
-      enableReaderControls(false); renderLocalLibrary();
-    } finally { pdfTabSwitchBusy = false; updateOpenPdfTabs(); }
-  }
+  pendingPdfFiles.splice(index, 1);
+  renderLocalLibrary();
 }
 
 async function changeZoom(delta) {
