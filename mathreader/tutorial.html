@@ -17,7 +17,7 @@
       } catch (_) {}
     })();
   </script>
-  <link rel="stylesheet" href="tutorial.css?v=362">
+  <link rel="stylesheet" href="tutorial.css?v=369">
 </head>
 <body>
   <a class="skip" href="#guide"><span class="lang en">Skip to instructions</span><span class="lang zh">跳到使用指南</span></a>
@@ -42,7 +42,7 @@
       <a href="#notes"><span class="lang en">8 · Notes & references</span><span class="lang zh">8 · 批注与参考页</span></a>
       <a href="#library"><span class="lang en">9 · Library & privacy</span><span class="lang zh">9 · 资料库与隐私</span></a>
       <a href="#appearance"><span class="lang en">10 · Display & mobile</span><span class="lang zh">10 · 显示与移动端</span></a>
-      <a href="#shortcuts"><span class="lang en">11 · Shortcut reference</span><span class="lang zh">11 · 快捷键速查</span></a>
+      <a href="#shortcuts"><span class="lang en">11 · Shortcuts</span><span class="lang zh">11 · 快捷键速查</span></a>
       <a href="#troubleshooting"><span class="lang en">12 · Troubleshooting</span><span class="lang zh">12 · 常见问题</span></a>
     </nav>
     <main id="guide" class="guide-content">
@@ -67,8 +67,8 @@
           <li>阅读中可再次按 <kbd>O</kbd> 切换论文；触屏设备可在左侧的<strong>历史 → 本地资料库 → 打开 PDF</strong>中选择文件。</li>
           <li>已缓存的论文可在<strong>历史</strong>以及欢迎页的最近阅读中重新打开。</li>
         </ol>
-        <p class="notice lang en">Select <strong>?</strong> in the upper-right corner whenever you want to return to this guide.</p>
-        <p class="notice lang zh">随时点击右上角的 <strong>?</strong> 查看本指南。</p>
+        <p class="notice lang en">Use <strong>?</strong> in the header to open this guide.</p>
+        <p class="notice lang zh">点击顶栏的 <strong>?</strong> 可打开本指南。</p>
       </section>
 
       <section id="layout">
@@ -167,32 +167,46 @@
         <h2><span class="lang en">10. Display and mobile layout</span><span class="lang zh">10. 显示设置与移动端</span></h2>
         <p class="lang en">Press <kbd>D</kbd> for display settings: continuous/single-page reading, page tone, brightness, contrast, spacing and shadows. The header switches language and light/dark themes. On narrow screens, the reader becomes full width: use <strong>☰ Contents</strong> and <strong>☷ Workspace</strong> to open panels and the visible <strong>Close ×</strong> controls to dismiss them.</p>
         <p class="lang zh">按 <kbd>D</kbd> 进入显示设置，可调整连续/单页阅读、纸张色调、亮度、对比度、间距和阴影。顶栏可切换语言与明暗主题。窄屏时阅读区铺满宽度；使用<strong>☰ 目录</strong>、<strong>☷ 工作区</strong>展开面板，再点击<strong>关闭 ×</strong>收起。</p>
-        <p class="muted lang en">The <strong>?</strong> button opens this guide in a new tab, leaving your reading position intact.</p>
-        <p class="muted lang zh">点击 <strong>?</strong> 可在新标签页查看指南，阅读进度不受影响。</p>
+        
       </section>
 
       <section id="shortcuts">
-        <h2><span class="lang en">11. Keyboard shortcut reference</span><span class="lang zh">11. 快捷键速查</span></h2>
-        <p class="lang en">Single-letter shortcuts generally work when focus is not inside an input. Browser or operating-system shortcuts may take precedence.</p>
-        <p class="lang zh">单字母快捷键通常只在焦点不处于输入框时起作用；浏览器或操作系统快捷键可能优先生效。</p>
-        <div class="shortcut-grid">
-          <div><kbd>O</kbd><span class="lang en">Open PDF</span><span class="lang zh">打开 PDF</span></div>
-          <div><kbd>F</kbd><span class="lang en">Formula selection</span><span class="lang zh">公式选取</span></div>
-          <div><kbd>C</kbd><span class="lang en">Contents</span><span class="lang zh">目录</span></div>
-          <div><kbd>H</kbd><span class="lang en">History / library</span><span class="lang zh">历史 / 资料库</span></div>
-          <div><kbd>S</kbd><span class="lang en">Bookmarks</span><span class="lang zh">书签</span></div>
-          <div><kbd>D</kbd><span class="lang en">Display settings</span><span class="lang zh">显示设置</span></div>
-          <div><kbd>N</kbd><span class="lang en">Page note</span><span class="lang zh">页注</span></div>
-          <div><kbd>P</kbd><span class="lang en">Pin page</span><span class="lang zh">固定页面</span></div>
-          <div><kbd>L</kbd><span class="lang en">Toggle left sidebar</span><span class="lang zh">切换左侧栏</span></div>
-          <div><kbd>R</kbd><span class="lang en">Toggle right sidebar</span><span class="lang zh">切换右侧栏</span></div>
-          <div><kbd>B</kbd><span class="lang en">Toggle both (desktop)</span><span class="lang zh">切换两侧栏（桌面）</span></div>
-          <div><kbd>Ctrl/Cmd</kbd> + <kbd>K</kbd><span class="lang en">Command palette</span><span class="lang zh">命令面板</span></div>
-          <div><kbd>Ctrl/Cmd</kbd> + <kbd>F</kbd><span class="lang en">Search PDF</span><span class="lang zh">搜索 PDF</span></div>
-          <div><kbd>Alt</kbd> + <kbd>←</kbd><span class="lang en">Reading trail back</span><span class="lang zh">返回阅读轨迹</span></div>
-          <div><kbd>←</kbd> / <kbd>→</kbd><span class="lang en">Previous / next page</span><span class="lang zh">上一页 / 下一页</span></div>
-          <div><kbd>↑</kbd> / <kbd>↓</kbd><span class="lang en">Scroll reading area</span><span class="lang zh">滚动阅读区</span></div>
-          <div><kbd>Shift</kbd> + <kbd>F10</kbd><span class="lang en">Bibliography PDF menu (focused entry)</span><span class="lang zh">参考文献右键菜单（条目有焦点时）</span></div>
+        <h2><span class="lang en">11. Keyboard shortcuts</span><span class="lang zh">11. 快捷键速查</span></h2>
+        <p class="lang en">Shortcuts work while you are reading, not typing in a field. Some may be handled by your browser.</p>
+        <p class="lang zh">在阅读区使用快捷键；输入文字时不生效。部分组合键可能由浏览器接管。</p>
+        <div class="shortcut-groups">
+          <div class="shortcut-group">
+            <h3><span class="lang en">Document</span><span class="lang zh">文档</span></h3>
+            <dl class="shortcut-list">
+              <div class="shortcut-row"><dt><span class="lang en">Open PDF</span><span class="lang zh">打开 PDF</span></dt><dd><kbd>O</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Search PDF</span><span class="lang zh">搜索 PDF</span></dt><dd><kbd>Ctrl/Cmd</kbd> <span class="shortcut-sep">+</span> <kbd>F</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Previous / next page</span><span class="lang zh">上一页 / 下一页</span></dt><dd><kbd>← / →</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Scroll</span><span class="lang zh">滚动页面</span></dt><dd><kbd>↑ / ↓</kbd></dd></div>
+            </dl>
+          </div>
+          <div class="shortcut-group">
+            <h3><span class="lang en">Workspace</span><span class="lang zh">工作区</span></h3>
+            <dl class="shortcut-list">
+              <div class="shortcut-row"><dt><span class="lang en">Contents</span><span class="lang zh">目录</span></dt><dd><kbd>C</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">History / library</span><span class="lang zh">历史 / 资料库</span></dt><dd><kbd>H</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Left sidebar</span><span class="lang zh">左侧栏</span></dt><dd><kbd>L</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Right sidebar</span><span class="lang zh">右侧栏</span></dt><dd><kbd>R</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Both sidebars (desktop)</span><span class="lang zh">两侧栏（桌面）</span></dt><dd><kbd>B</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Commands</span><span class="lang zh">命令面板</span></dt><dd><kbd>Ctrl/Cmd</kbd> <span class="shortcut-sep">+</span> <kbd>K</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Display settings</span><span class="lang zh">显示设置</span></dt><dd><kbd>D</kbd></dd></div>
+            </dl>
+          </div>
+          <div class="shortcut-group">
+            <h3><span class="lang en">Reading & notes</span><span class="lang zh">阅读与批注</span></h3>
+            <dl class="shortcut-list">
+              <div class="shortcut-row"><dt><span class="lang en">Select formula</span><span class="lang zh">选取公式</span></dt><dd><kbd>F</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Bookmarks</span><span class="lang zh">书签</span></dt><dd><kbd>S</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Page note</span><span class="lang zh">页注</span></dt><dd><kbd>N</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Pin page</span><span class="lang zh">固定页面</span></dt><dd><kbd>P</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Back to previous paper</span><span class="lang zh">返回上一论文</span></dt><dd><kbd>Alt</kbd> <span class="shortcut-sep">+</span> <kbd>←</kbd></dd></div>
+              <div class="shortcut-row"><dt><span class="lang en">Reference menu</span><span class="lang zh">参考文献菜单</span></dt><dd><kbd>Shift</kbd> <span class="shortcut-sep">+</span> <kbd>F10</kbd></dd></div>
+            </dl>
+          </div>
         </div>
       </section>
 
@@ -215,7 +229,7 @@
           <h3>怎样避免丢失阅读数据？</h3><p>本地数据依赖浏览器存储。请独立备份原始 PDF 和导出的阅读数据；参考文献关联目前不包含在导出内容中。</p>
         </div>
       </section>
-      <footer class="guide-footer"><a href="index.html"><span class="lang en">← Back to MathReader</span><span class="lang zh">← 返回 MathReader</span></a><span class="lang en">User guide · Local-first reading</span><span class="lang zh">使用指南 · 本地优先</span></footer>
+      <footer class="guide-footer"><a href="index.html"><span class="lang en">← Back to MathReader</span><span class="lang zh">← 返回 MathReader</span></a><span class="lang en">MathReader · User guide</span><span class="lang zh">MathReader · 使用指南</span></footer>
     </main>
   </div>
   <script>

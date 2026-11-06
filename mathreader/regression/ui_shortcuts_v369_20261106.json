@@ -1,0 +1,18 @@
+{
+  "version": "369",
+  "scope": "guide shortcuts grouped layout and concise bilingual copy",
+  "source_baseline": "v368 overlaid on supplied mathreader(9).zip",
+  "assertions": {
+    "zero_network_js_suites": 16,
+    "shortcut_group_source_assertions": 11,
+    "help_tutorial_chromium": 130,
+    "responsive_bilingual_chromium": 12
+  },
+  "result": "PASS for executed source and simulated reader-shell/browser UI gates",
+  "unverified": [
+    "real PDF.js/Texify end-to-end",
+    "full mathematical formula/index truth",
+    "all reader-facing UI strings and live real-PDF workflows"
+  ],
+  "no_runtime_subsystem_changes": true
+}
