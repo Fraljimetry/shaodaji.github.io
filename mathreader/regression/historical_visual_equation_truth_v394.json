@@ -1,0 +1,123 @@
+{
+  "schema": "mathreader.manual-visual-original-page-equation-targets@1",
+  "provenance": "Original source PDF rendered pages visually inspected; approximate normalized vertical locations are manually estimated to 0.01 page units, NOT copied from MathReader detections",
+  "limitations": "Only four selected original-PDF pages; targets are printed equation numbers, not formula LaTeX truth. OCR missing labels must not be invented.",
+  "pages": [
+    {
+      "document": "yau",
+      "page": 5,
+      "printedTargets": [
+        {
+          "label": "(1.4)",
+          "approxTopRatio": 0.18
+        },
+        {
+          "label": "(1.5)",
+          "approxTopRatio": 0.28
+        },
+        {
+          "label": "(1.6)",
+          "approxTopRatio": 0.35
+        },
+        {
+          "label": "(1.7)",
+          "approxTopRatio": 0.4
+        },
+        {
+          "label": "(1.8)",
+          "approxTopRatio": 0.47
+        },
+        {
+          "label": "(1.9)",
+          "approxTopRatio": 0.55
+        },
+        {
+          "label": "(1.10)",
+          "approxTopRatio": 0.64
+        },
+        {
+          "label": "(1.11)",
+          "approxTopRatio": 0.75
+        },
+        {
+          "label": "(1.12)",
+          "approxTopRatio": 0.82
+        }
+      ]
+    },
+    {
+      "document": "yau",
+      "page": 8,
+      "printedTargets": [
+        {
+          "label": "(1.29)",
+          "approxTopRatio": 0.17
+        },
+        {
+          "label": "(1.30)",
+          "approxTopRatio": 0.21
+        },
+        {
+          "label": "(1.31)",
+          "approxTopRatio": 0.29
+        },
+        {
+          "label": "(1.32)",
+          "approxTopRatio": 0.32
+        },
+        {
+          "label": "(1.33)",
+          "approxTopRatio": 0.36
+        },
+        {
+          "label": "(1.21)",
+          "approxTopRatio": 0.45
+        },
+        {
+          "label": "(2.1)",
+          "approxTopRatio": 0.76
+        }
+      ]
+    },
+    {
+      "document": "giusti",
+      "page": 231,
+      "printedTargets": [
+        {
+          "label": "(A.1)",
+          "approxTopRatio": 0.28
+        },
+        {
+          "label": "(A.2)",
+          "approxTopRatio": 0.38
+        },
+        {
+          "label": "(A.3)",
+          "approxTopRatio": 0.49
+        }
+      ]
+    },
+    {
+      "document": "giusti",
+      "page": 239,
+      "printedTargets": [
+        {
+          "label": "(C.1)",
+          "approxTopRatio": 0.35
+        },
+        {
+          "label": "(C.2)",
+          "approxTopRatio": 0.43
+        },
+        {
+          "label": "(C.3)",
+          "approxTopRatio": 0.52
+        },
+        {
+          "label": "(C.4)",
+          "approxTopRatio": 0.56
+        }
+      ]
+    }
+  ]
+}

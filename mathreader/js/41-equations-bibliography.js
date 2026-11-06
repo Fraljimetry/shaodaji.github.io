@@ -2957,15 +2957,30 @@ function equationRowOrderKey(entry) {
 function compareEquationIndexRows(a, b) {
   const pageDelta = (Number(a.page) || 0) - (Number(b.page) || 0);
   if (pageDelta) return pageDelta;
+  if (a.equationTwoColumn && b.equationTwoColumn
+      && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
+      && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
+  // Yau (1978), PDF p.8 actually PRINTS (1.21) after (1.33). A global
+  // numeric sort moved it to the wrong location despite independently measured
+  // x/y label geometry. Prefer print-page order when BOTH labels have measured
+  // candidate bounding boxes and are separated by more than a line-height.
+  // For approximate OCR-only ratios (no measured candidate bounds), preserve
+  // the previous numerical ordering so additive OCR does not jumble entries.
+  const aMeasured = Number.isFinite(a.ratio) && Number.isFinite(a.candidateXStartRatio)
+    && Number.isFinite(a.candidateXEndRatio)
+    && a.candidateXStartRatio >= 0 && a.candidateXEndRatio <= 1
+    && a.candidateXStartRatio < a.candidateXEndRatio;
+  const bMeasured = Number.isFinite(b.ratio) && Number.isFinite(b.candidateXStartRatio)
+    && Number.isFinite(b.candidateXEndRatio)
+    && b.candidateXStartRatio >= 0 && b.candidateXEndRatio <= 1
+    && b.candidateXStartRatio < b.candidateXEndRatio;
+  if (aMeasured && bMeasured && Math.abs(a.ratio - b.ratio) >= 0.024) return a.ratio - b.ratio;
   const aNumber = parsedEquationNumber(a.label);
   const bNumber = parsedEquationNumber(b.label);
   if (aNumber && bNumber && aNumber.prefix === bNumber.prefix) {
     if (aNumber.last !== bNumber.last) return aNumber.last - bNumber.last;
     if (aNumber.suffix !== bNumber.suffix) return String(aNumber.suffix).localeCompare(String(bNumber.suffix));
   }
-  if (a.equationTwoColumn && b.equationTwoColumn
-      && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
-      && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
   return (Number(a.ratio) || 0) - (Number(b.ratio) || 0) || String(a.label).localeCompare(String(b.label), undefined, { numeric: true });
 }
 
@@ -3395,6 +3410,35 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
 
 function bibliographyHeadingText(value) {
   return /^(?:references(?:\s+and\s+notes)?|notes\s+and\s+references|bibliography|literature\s+cited|参考文献|參考文獻|参考资料|參考資料|参考书目|參考書目)\s*[.:：]?$/iu.test(String(value || '').replace(/\s+/g, ' ').trim());
+}
+
+// Some older reference lists put authors on their own *preceding* line:
+//   ADAMS, R.A.
+//   [AR] Sobolev Spaces ...
+// Never attach that author heading to the previous reference. Require an
+// immediately following author-keyed row (not a prose citation), a left-margin
+// author line and uppercase surname/initials evidence.
+function bibliographyStandaloneAuthorHeading(line, nextLine) {
+  const text = String(line?.text || '').replace(/\s+/g, ' ').trim();
+  const nextText = String(nextLine?.text || '').replace(/\s+/g, ' ').trim();
+  if (!text || !nextText || text.length > 105 || text.length < 6
+      || Number(line?.xStartRatio) > 0.16 || Number(line?.xEndRatio) > 0.77
+      || !/^\[\s*[A-Za-z][A-Za-z0-9\s]{0,11}\s*[\]}]/u.test(nextText)
+      || Number(nextLine?.xStartRatio) > 0.25
+      || Number(nextLine?.ratio) - Number(line?.ratio) > 0.037
+      || Number(nextLine?.ratio) <= Number(line?.ratio)) return false;
+  const initialSurname = /^(?:[A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'’\- ]{1,50}),\s*(?:[A-Z]\.?){1,4}/u.test(text);
+  if (!initialSurname) return false;
+  const letters = [...text].filter((ch) => /\p{L}/u.test(ch));
+  const uppercase = letters.filter((ch) => /\p{Lu}/u.test(ch)).length;
+  return letters.length >= 4 && uppercase / letters.length >= 0.67
+    && !/[=<>∫∑]/u.test(text);
+}
+
+function bibliographyRepairAuthorKeyBrace(text, line, hasAuthorHeading) {
+  if (!hasAuthorHeading || Number(line?.xStartRatio) > 0.25) return text;
+  return String(text || '').replace(/^\[\s*([A-Za-z][A-Za-z0-9\s]{1,10})\s*\}\s+(?=[A-ZÀ-ÖØ-Þ])/u,
+    (_, key) => `[${key.trim()}] `);
 }
 
 function bibliographyEntryLooksCompleteForPostscript(entry) {
@@ -4025,6 +4069,7 @@ async function buildStructureIndex({ force = false } = {}) {
   let pendingBibliographyKey = null;
   let syntheticBibliographyMode = null;
   let activeBibliographyEntry = null;
+  let currentBibliographyAuthorHeading = '';
   const bibliographyLastPosition = new WeakMap();
   let activeBibliographyRecoveryCandidate = null;
   let pendingUnnumberedBibliographyEntry = null;
@@ -4131,6 +4176,14 @@ async function buildStructureIndex({ force = false } = {}) {
         }
 
         if (bibliographyMode) {
+          // The author heading immediately above a keyed reference is neither
+          // a continuation of the preceding citation nor a separate entry.
+          if (bibliographyStandaloneAuthorHeading(line, lines[lineIndex + 1])) {
+            currentBibliographyAuthorHeading = cleaned;
+            activeBibliographyEntry = null;
+            activeBibliographyRecoveryCandidate = null;
+            continue;
+          }
           const addBibliographyEntry = (rawKey, body, bracketKey = true, entryPage = page, entryRatio = line.ratio) => {
             const number = bracketKey ? rawKey : Number(rawKey);
             const label = bracketKey ? `[${rawKey}]` : `[${number}]`;
@@ -4138,8 +4191,10 @@ async function buildStructureIndex({ force = false } = {}) {
             if (!normalizedKey) return null;
             const existing = nextBibliography.find((entry) => normalizedBibliographyKey(entry.number) === normalizedKey);
             if (existing) return existing;
-            const meta = bibliographyMetadata(body);
-            const entry = { number, label, page: entryPage, ratio: entryRatio, title: body.slice(0, 640), citations: [], ...meta };
+            const entryBody = bracketKey && currentBibliographyAuthorHeading
+              ? `${currentBibliographyAuthorHeading} ${body}` : body;
+            const meta = bibliographyMetadata(entryBody);
+            const entry = { number, label, page: entryPage, ratio: entryRatio, title: entryBody.slice(0, 640), citations: [], ...meta };
             nextBibliography.push(entry);
             bibliographyLastPosition.set(entry, { page: entryPage, ratio: entryRatio });
             return entry;
@@ -4171,6 +4226,8 @@ async function buildStructureIndex({ force = false } = {}) {
             activeBibliographyRecoveryCandidate = null;
             continue;
           }
+          bibliographyLine = bibliographyRepairAuthorKeyBrace(
+            bibliographyLine, line, Boolean(currentBibliographyAuthorHeading));
           // Native text extraction in older scans can also confuse 1/l and the
           // closing bracket. Repair only the *next expected* numeric key, so a
           // malformed [l], [ll], [ 101 or [ 131 cannot invent a new sequence.

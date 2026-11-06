@@ -62,7 +62,7 @@ function headingNumberDepth(text) {
 }
 
 function isKnownHeading(text) {
-  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|foreword|afterword|preface|appendix(?:\s+[A-Z0-9]+)?|contents)$/i.test(text.trim());
+  return /^(?:abstract|introduction|background|preliminaries|notation|setup|main results?|results?|discussion|conclusions?|references|bibliography|acknowledg(?:e)?ments?|purpose|foreword|afterword|preface|appendix(?:\s+[A-Z0-9]+)?\.?|contents)$/i.test(text.trim());
 }
 
 function isMathEnvironmentLabel(text) {
@@ -75,7 +75,7 @@ function isMathEnvironmentLabel(text) {
 // genuine section title such as "2.1 Theorem of Stokes" remains eligible.
 function numberedResultDeclarationInOutline(text) {
   const value = normalizedHeadingText(text);
-  return /^(?:§\s*)?\d{1,3}(?:\s*\.\s*\d{1,3}){0,4}[.)]?\s+(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b(?=\s*[:.(]|\s+\d|\s*$)/i.test(value);
+  return /^(?:§\s*)?(?:(?:\d{1,3}|[A-Z])(?:\s*\.\s*\d{1,3}){0,4})[.)]?\s+(?:theorem|lemma|proposition|corollary|definition|remark|example|claim|conjecture|question|assumption|hypothesis)\b(?=\s*[:.(]|\s+\d|\s*$)/i.test(value);
 }
 
 // Long sentence fragments in legacy books sometimes appear larger than the
@@ -457,6 +457,34 @@ async function detectOutlineFromTypography() {
   });
   const modernHierarchyMode = !documentOcrActive && !explicitSectionMarkerMode && strongModernNumberedLines.length >= 5;
 
+  // Real scanned-text-layer books can have a strongly bimodal font profile:
+  // true chapter titles use noticeably larger type, while display mathematics
+  // has enlarged glyph boxes (integrals, fractions, sums). If several genuine
+  // large lexical titles occur across distinct pages, do not allow the loose
+  // 1.18x native fallback to promote those math glyphs or prose fragments.
+  // Explicit numbered headings and canonical headings still use their own
+  // independent rules; this applies ONLY to unnumbered style inference.
+  const nativeStrongTitle = (text) => {
+    const value = normalizedHeadingText(text);
+    const alphaWords = value.match(/[A-Za-z]{3,}/g) || [];
+    const letters = (value.match(/[A-Za-z]/g) || []).length;
+    const compact = value.replace(/\s/g, '');
+    if (/^(?:part|chapter|lecture|appendix)\s+(?:\d+|[IVXLC]+|[A-Z])[.]?$/i.test(value)) return true;
+    if (/^(?:Let|Consider|Now|Then|For|If|Since|Suppose|Assume|We|By|In|Using|There|Given)\b/i.test(value)) return false;
+    return alphaWords.length >= 2 && alphaWords.length <= 11
+      && letters / Math.max(1, compact.length) >= 0.72
+      && !/[=+*<>~{}\[\]\\∫∑∏√∂∇∞]/u.test(value)
+      && (value.match(/[;?!:]/g) || []).length < 2
+      && !isLikelyFormulaHeading(value) && !obviousProseFragmentInOutline(value)
+      && (!/\.[ \t]+[A-Z][a-z]/.test(value) || /^appendix\s+[A-Z]\.\s+/i.test(value));
+  };
+  const nativeLargeTitlePages = new Set(!documentOcrActive ? allLines
+    .filter((line) => Number(line.size) / Math.max(1, bodySize) >= 1.63
+      && Number(line.xStartRatio) <= 0.48
+      && nativeStrongTitle(line.text))
+    .map((line) => line.page) : []);
+  const nativeBookTitleProfile = nativeLargeTitlePages.size >= 5;
+
   const paragraphLeadLines = allLines.filter((line) => {
     const value = String(line?.text || '').trim();
     const match = value.match(/^(\d{1,2})[.)]\s+([^.!?]{2,90})[.]\s+(?=[A-Z][a-z])/);
@@ -734,8 +762,18 @@ async function detectOutlineFromTypography() {
           || (nativeStyleCommaCount >= 2 && words.length >= 6)
           || /[.!?]\s+[A-Z]/.test(headingText)
         );
-        const styleHeading = ratio >= 1.18 && words.length <= 14 && !/[.;,]$/.test(headingText) && !nativeStyleProseLike;
+        const styleHeading = ratio >= (nativeBookTitleProfile && numberedDepth === null && !known ? 1.55 : 1.18)
+          && words.length <= 14 && !/[.;,]$/.test(headingText) && !nativeStyleProseLike
+          && (!nativeBookTitleProfile || numberedDepth !== null || known || nativeStrongTitle(headingText));
         if (numberedDepth !== null && ratio < 1.08 && !known) continue;
+        // A number followed by prose or OCR formula debris is not a heading.
+        // Require book headings to have a lexical, title-like body, but leave
+        // the established journal/modern profile unchanged.
+        if (nativeBookTitleProfile && numberedDepth !== null && !known) {
+          const numberedBody = headingText.replace(/^\s*(?:§\s*)?(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+/, '');
+          if (!/^[A-Z]/.test(numberedBody) || numberedBodyLooksLikeProse(numberedBody)
+              || !nativeStrongTitle(numberedBody)) continue;
+        }
         if (!known && numberedDepth === null && !styleHeading && !acronymHeading && !containerHeading) continue;
         if (isMathEnvironmentLabel(headingText) && ratio < 1.35) continue;
       } else {
@@ -783,6 +821,10 @@ async function detectOutlineFromTypography() {
       // merely contain words like "PROOF OF THEOREM 2" have already passed
       // through the numbered-heading grammar above and do not start with a
       // math-environment label themselves.
+      if (nativeBookTitleProfile && !documentOcrActive && isKnownHeading(headingText)
+          && /^appendix(?:\s+[A-Z0-9]+)?[.]?$/i.test(headingText)
+          && Number(line.size) < bodySize * 0.96
+          && Number(line.y) > Number(line.pageHeight) * 0.87) continue;
       if (isLikelyFormulaHeading(headingText) && !(documentOcrActive && ocrHyphenSectionMode && ocrHyphenLineSet.has(line))) continue;
       if (/^[\d\s()[\]{}.,:+\-–—=<>≤≥∑∫∞]+$/.test(headingText)) continue;
       // Bibliography/reference fragments can be typographically prominent in
@@ -803,8 +845,23 @@ async function detectOutlineFromTypography() {
         longestConsecutiveRepeats = Math.max(longestConsecutiveRepeats, consecutiveRepeats);
       }
       const edgeRepeat = ((repetition?.top || 0) + (repetition?.bottom || 0)) >= repeatedOn * 0.7;
+      // Facing-page book headers often repeat every *other* page. The old
+      // consecutive-page check missed Appendix A/B/C running heads and indexed
+      // them as separate chapter entries. Restrict this additional pattern to
+      // small, top-margin lines in native books with a strong title profile.
+      // Discard distant TOC/header occurrences before looking for repeated
+      // facing-page headers: an Appendix C TOC row on page 6 must not break
+      // the even-page running-header sequence at pages 240, 242, 244, 246.
+      const alternatingHeaderPages = repeatedPages.some((page) =>
+        repeatedPages.includes(page + 2) && repeatedPages.includes(page + 4)
+        && (line.page === page || line.page === page + 2 || line.page === page + 4));
+      const alternatingBookHeader = !documentOcrActive && nativeBookTitleProfile
+        && alternatingHeaderPages && repeatedOn >= 3
+        && Number(line.size) < bodySize * 1.08
+        && Number(line.y) > Number(line.pageHeight) * 0.87;
       const likelyRunningHeader = repeatedOn >= 3 && edgeRepeat && (
         repeatedOn >= Math.max(3, Math.ceil(maxPages * 0.25)) || longestConsecutiveRepeats >= 3
+        || alternatingBookHeader
       );
       if (likelyRunningHeader) continue;
 
@@ -872,7 +929,8 @@ async function detectOutlineFromTypography() {
   // same-style lines directly below it. This keeps body prose out while avoiding
   // fragmented Structure rows for books and lecture notes.
   for (const anchor of [...candidates]) {
-    if (!/^(?:chapter|lecture)\s+(?:\d+|[IVXLC]+)\b/i.test(String(anchor.title || '').trim())) continue;
+    if (!/^(?:chapter|lecture|part|appendix)\s+(?:\d+|[IVXLC]+|[A-Z])\b/i.test(String(anchor.title || '').trim())
+        || Number(anchor.size) < bodySize * 1.45) continue;
     const pageLines = [...(pages[anchor.page - 1] || [])].filter((line) => Number(line.y) < Number(anchor.y)).sort((a, b) => Number(b.y) - Number(a.y));
     let tailY = Number(anchor.y);
     let tailSize = Number(anchor.size);
@@ -882,7 +940,10 @@ async function detectOutlineFromTypography() {
       if (gap > 86) break;
       const size = Number(line.size);
       if (!Number.isFinite(size) || size < Math.max(1, tailSize) * 0.92 || size > Math.max(1, tailSize) * 1.38) continue;
-      const text = normalizedHeadingText(line.text);
+      // Old PDF character maps occasionally append a stray interpunct to
+      // otherwise clear large-print part titles ("Minimal Surfaces.·").
+      // Clean that residue ONLY after a verified chapter/part/appendix anchor.
+      const text = normalizedHeadingText(line.text).replace(/[.·]\s*[·.]*\s*$/, '');
       const words = text.split(/\s+/).filter(Boolean);
       if (!text || words.length > 16 || headingNumberDepth(text) !== null || isMathEnvironmentLabel(text) || isLikelyFormulaHeading(text)) break;
       const existing = candidates.find((item) => item.page === anchor.page && normalizedHeadingText(item.title).toLocaleLowerCase() === text.toLocaleLowerCase());
@@ -893,6 +954,53 @@ async function detectOutlineFromTypography() {
       });
       tailY = Number(line.y);
       tailSize = size;
+    }
+  }
+
+  // Multi-line large type titles in older books do not always begin with a
+  // Chapter/Part token: e.g. "Approximation of Minimal" + "Sets (I)" and
+  // "The a priori Estimate" + "for the Gradient". The continuation may have
+  // only one substantive word, so it is not a standalone heading candidate.
+  // Extend only an already accepted, oversized lexical book title; never
+  // promote an orphan line or an equation using this reconstruction path.
+  if (nativeBookTitleProfile) {
+    for (const anchor of [...candidates]) {
+      if (Number(anchor.size) < bodySize * 1.65 || !nativeStrongTitle(anchor.title)
+          || /^(?:chapter|lecture|part|appendix)\b/i.test(anchor.title)) continue;
+      let tailY = Number(anchor.y);
+      let tailSize = Number(anchor.size);
+      const pageLines = [...(pages[anchor.page - 1] || [])]
+        .filter((line) => Number(line.y) < tailY)
+        .sort((a, b) => Number(b.y) - Number(a.y));
+      for (const line of pageLines) {
+        const gap = tailY - Number(line.y);
+        if (gap <= 0) continue;
+        if (gap > 32) break;
+        const text = normalizedHeadingText(line.text);
+        const size = Number(line.size);
+        const compact = text.replace(/\s/g, '');
+        const letterCount = (text.match(/[A-Za-z]/g) || []).length;
+        if (size < tailSize * 0.90 || size > tailSize * 1.12
+            || Math.abs(Number(line.xStartRatio) - Number(anchor.xStartRatio)) > 0.075
+            || !/^[A-Za-z]/.test(text) || letterCount < 4
+            || letterCount / Math.max(1, compact.length) < 0.63
+            || text.split(/\s+/).length > 10 || /[=+*<>~{}\[\]\\∫∑∏√∂∇∞]/u.test(text)
+            || isMathEnvironmentLabel(text)
+            || (isLikelyFormulaHeading(text) && !/^[A-Za-z]{3,}\s*\([IVX]+\)$/i.test(text))
+            || numberedResultDeclarationInOutline(text) || headingNumberDepth(text) !== null
+            || /[.!?]\s+[A-Z]/.test(text)) break;
+        const existing = candidates.find((item) => item.page === anchor.page
+          && normalizedHeadingText(item.title).toLocaleLowerCase() === text.toLocaleLowerCase());
+        if (existing) existing.continuationOnly = true;
+        else candidates.push({
+          title: text, page: anchor.page, depth: anchor.depth, size: Number(size.toFixed(2)),
+          y: line.y, xStartRatio: line.xStartRatio, xEndRatio: line.xEndRatio,
+          ratio: Math.min(1, Math.max(0, (line.pageHeight - line.y) / Math.max(1, line.pageHeight))),
+          continuationOnly: true,
+        });
+        tailY = Number(line.y);
+        tailSize = size;
+      }
     }
   }
 
@@ -922,23 +1030,39 @@ async function detectOutlineFromTypography() {
   const merged = [];
   for (const candidate of ordered) {
     const previous = merged[merged.length - 1];
-    const previousContainer = previous && /^(?:chapter|lecture)\s+(?:\d+|[IVXLC]+)\b/i.test(previous.title);
+    const previousContainer = previous && /^(?:chapter|lecture|part|appendix)\s+(?:\d+|[IVXLC]+|[A-Z])\b/i.test(previous.title)
+      && Number(previous.size) >= bodySize * 1.45;
     const tailY = Number(previous?._tailY ?? previous?.y);
     const tailSize = Number(previous?._tailSize ?? previous?.size);
     const verticalGap = tailY - Number(candidate.y);
     const numberedContinuation = previous && headingNumberDepth(previous.title) !== null
       && (Boolean(candidate.continuationOnly) || (Math.abs(tailSize - Number(candidate.size)) <= 0.85 && !isKnownHeading(candidate.title)));
     const containerContinuation = previousContainer
-      && Number(candidate.size) >= Math.max(1, tailSize) * 0.95
+      && Number(candidate.size) >= Math.max(1, tailSize) * 0.90
       && Number(candidate.size) <= Math.max(1, tailSize) * 1.35;
+    const bookTitleContinuation = nativeBookTitleProfile && previous && !previousContainer
+      && Number(candidate.size) >= bodySize * 1.65
+      && tailSize >= bodySize * 1.65
+      && Number(candidate.size) >= tailSize * 0.90
+      && Number(candidate.size) <= tailSize * 1.12
+      && Math.abs(Number(candidate.xStartRatio) - Number(previous.xStartRatio)) <= 0.065
+      && nativeStrongTitle(previous.title)
+      && (Boolean(candidate.continuationOnly) || nativeStrongTitle(candidate.title) || /^(?:and|of|the|or|with)\s+[A-Za-z]/i.test(candidate.title));
+    const inlineContainerContinuation = previousContainer && previous.page === candidate.page
+      && Math.abs(verticalGap) <= 2
+      && Number(candidate.xStartRatio) >= Number(previous.xEndRatio)
+      && Number(candidate.xStartRatio) - Number(previous.xEndRatio) <= 0.10
+      && Number(candidate.size) >= tailSize * 0.85
+      && Number(candidate.size) <= tailSize * 1.20;
     const continuation = previous
       && previous.page === candidate.page
       && headingNumberDepth(candidate.title) === null
       && verticalGap > 0
       && verticalGap <= (previousContainer ? 82 : Math.max(32, tailSize * 2.1))
-      && !/[.!?]$/.test(previous.title)
-      && (numberedContinuation || containerContinuation);
-    if (continuation) {
+      && (!/[.!?]$/.test(previous.title) || /^appendix\s+[A-Z]\.$/i.test(previous.title))
+      && (numberedContinuation || containerContinuation || bookTitleContinuation);
+    const shouldMerge = continuation || inlineContainerContinuation;
+    if (shouldMerge) {
       previous.title = normalizedHeadingText(`${previous.title.replace(/-$/, '')}${/-$/.test(previous.title) ? '' : ' '}${candidate.title}`);
       previous._tailY = candidate.y;
       previous._tailSize = candidate.size;
@@ -962,7 +1086,10 @@ async function detectOutlineFromTypography() {
   const cleaned = deduped.filter((candidate, index) => {
     if (!contentsPages.has(candidate.page)) return true;
     const key = normalizedHeadingText(candidate.title).toLocaleLowerCase();
-    return !deduped.slice(index + 1).some((later) => later.page > candidate.page && normalizedHeadingText(later.title).toLocaleLowerCase() === key);
+    return !deduped.slice(index + 1).some((later) => later.page > candidate.page && (
+      normalizedHeadingText(later.title).toLocaleLowerCase() === key
+      || (/^appendix\s+[A-Z]$/i.test(candidate.title) && normalizedHeadingText(later.title).toLocaleLowerCase().startsWith(`${key}.`))
+    ));
   });
   const seenTerminalHeadings = new Set();
   const finalCandidates = cleaned.filter((candidate) => {
@@ -973,6 +1100,25 @@ async function detectOutlineFromTypography() {
     seenTerminalHeadings.add(key);
     return true;
   });
+  // In old books the printed chapter number may occupy its own PDF.js text
+  // run on the same baseline as the large title. Join only the measured marker
+  // immediately to the left, without synthesizing any absent chapter number.
+  if (nativeBookTitleProfile) {
+    for (const candidate of finalCandidates) {
+      if (Number(candidate.size) < bodySize * 1.65
+          || headingNumberDepth(candidate.title) !== null || isKnownHeading(candidate.title)
+          || /^(?:part|chapter|lecture|appendix)\b/i.test(candidate.title)) continue;
+      const marker = (pages[candidate.page - 1] || []).find((line) => {
+        const text = normalizedHeadingText(line.text);
+        return /^\d{1,2}\.$/.test(text)
+          && Math.abs(Number(line.y) - Number(candidate.y)) <= 2.4
+          && Number(line.xEndRatio) <= Number(candidate.xStartRatio)
+          && Number(candidate.xStartRatio) - Number(line.xEndRatio) < 0.12
+          && Number(line.size) >= Number(candidate.size) * 0.85;
+      });
+      if (marker) candidate.title = normalizedHeadingText(`${normalizedHeadingText(marker.text)} ${candidate.title}`);
+    }
+  }
   return finalCandidates.slice(0, MAX_INFERRED_OUTLINE_ENTRIES).map(({ _tailY, _tailSize, ...candidate }) => candidate);
 }
 
