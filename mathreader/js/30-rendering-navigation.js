@@ -851,19 +851,50 @@ function navigationTargetLeadPx() {
   return Math.round(Math.min(96, Math.max(72, height ? height * 0.085 : 80)));
 }
 
+// Measure the *rendered* PDF page, not the cumulative heights of placeholder
+// frames. In continuous mode tiny differences in page layout / zoom / padding
+// can otherwise turn an accurate OCR y-ratio into an increasingly early landing.
+// Work in viewport pixels so the same method covers single and continuous mode.
+function alignReaderNavigationToSurface(page, ratio, targetLead) {
+  if (!primaryCanvasWrap) return false;
+  const surface = readingFlow === 'continuous'
+    ? continuousPageNodes.get(Number(page))?.surface
+    : (Number(page) === Number(currentPage) ? primaryPageSurface : null);
+  if (!surface) return false;
+  const box = surface.getBoundingClientRect();
+  const viewport = primaryCanvasWrap.getBoundingClientRect();
+  if (![box.top, box.height, viewport.top, viewport.height].every(Number.isFinite)
+      || box.height <= 0 || viewport.height <= 0) return false;
+  const position = Math.max(0, Math.min(1, Number(ratio) || 0));
+  const lead = Math.max(0, Number(targetLead) || 0);
+  const delta = box.top + box.height * position - (viewport.top + lead);
+  if (Math.abs(delta) > 0.75) primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + delta);
+  return true;
+}
+
+// A newer navigation or document switch must never be pulled backwards by
+// an older request's post-render frame correction.
+let readerNavigationSerial = 0;
+
 async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
   if (!pdfDoc) return;
+  const sourceDoc = pdfDoc;
+  const sourceFlow = readingFlow;
+  const serial = ++readerNavigationSerial;
+  const stillCurrent = () => readerNavigationSerial === serial && pdfDoc === sourceDoc && readingFlow === sourceFlow;
   if (!suppressReadingHistory && generalPrefs.recordReadingTrail !== false) {
     const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
     const targetPage = Math.min(Math.max(1, Number(page) || 1), pdfDoc.numPages);
     if (here && (Number(here.page) !== targetPage || Math.abs(Number(here.ratio || 0) - Number(ratio || 0)) > 0.02)) {
       const entry = await readingTrailEntry(here);
+      if (!stillCurrent()) return;
       const last = readingBackStack.at(-1);
       if (!last || last.page !== entry.page || Math.abs(last.ratio - entry.ratio) > 0.015) readingBackStack.push(entry);
       if (readingBackStack.length > 40) readingBackStack.shift();
       updateReadingBackButton(); renderReadingTrail();
     }
   }
+  if (!stillCurrent()) return;
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
   const targetLead = contextLead ? navigationTargetLeadPx() : 0;
@@ -876,13 +907,21 @@ async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
     let record = continuousPageNodes.get(next);
     if (!record) {
       await buildContinuousDocument({ anchor: { page: next, ratio: localRatio } });
+      if (!stillCurrent()) return;
       record = continuousPageNodes.get(next);
     }
     if (record) {
       await renderContinuousPage(next, continuousGeneration);
+      if (!stillCurrent()) return;
       const surfaceTop = record.frame.offsetTop + (record.surface?.offsetTop || 0);
       const surfaceHeight = Math.max(1, record.surface?.offsetHeight || record.frame.offsetHeight || 1);
+      // Fast initial jump, followed by exact correction against the visible
+      // page rectangle (which includes all intervening frames, zoom and gaps).
       primaryCanvasWrap.scrollTop = Math.max(0, surfaceTop + surfaceHeight * localRatio - targetLead);
+      alignReaderNavigationToSurface(next, localRatio, targetLead);
+      await nextFrame();
+      if (!stillCurrent()) return;
+      alignReaderNavigationToSurface(next, localRatio, targetLead);
       currentPage = next;
       updateNavigationState();
       continuousSavedAnchor = { page: next, ratio: localRatio };
@@ -891,8 +930,13 @@ async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
     return;
   }
   if (changed) await renderCurrentPage(); else updateNavigationState();
+  if (!stillCurrent()) return;
   const pageHeight = Math.max(1, primaryPageSurface?.offsetHeight || canvas?.getBoundingClientRect().height || 1);
   primaryCanvasWrap.scrollTop = Math.max(0, pageHeight * localRatio - targetLead);
+  alignReaderNavigationToSurface(next, localRatio, targetLead);
+  await nextFrame();
+  if (!stillCurrent()) return;
+  alignReaderNavigationToSurface(next, localRatio, targetLead);
   scrollByPage[String(next)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
   persistDocumentState();
 }

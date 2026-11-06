@@ -874,7 +874,7 @@ function snapshotEquationIndexForPersistence(index) {
       for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
         if (Number.isFinite(Number(candidate[key]))) row[key] = Math.min(1, Math.max(0, Number(candidate[key])));
       }
-      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured','marginLocationVerifiedV385']) {
+      for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured','marginLocationVerifiedV385','marginLocationVerifiedV386']) {
         if (candidate[key] === true) row[key] = true;
       }
       if (Number.isInteger(Number(candidate.equationColumnIndex))) row.equationColumnIndex = Number(candidate.equationColumnIndex);
@@ -907,7 +907,7 @@ function restoreEquationIndexFromPersistence(snapshot, { portable = false } = {}
     for (const key of ['xStartRatio','xEndRatio','candidateXStartRatio','candidateXEndRatio']) {
       if (Number.isFinite(Number(raw?.[key]))) candidate[key] = Math.min(1, Math.max(0, Number(raw[key])));
     }
-    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured','marginLocationVerifiedV385']) {
+    for (const key of ['ocrSource','equationTwoColumn','manualReselect','manualAdd','meticulousPageVerified','ocrGeometryMeasured','marginLocationVerifiedV385','marginLocationVerifiedV386']) {
       if (raw?.[key] === true) candidate[key] = true;
     }
     if (Number.isInteger(Number(raw?.equationColumnIndex))) candidate.equationColumnIndex = Number(raw.equationColumnIndex);
@@ -1626,10 +1626,21 @@ function mergePageIndexOcrEvidence(existing, incoming, nativeLines = []) {
   const vettedReplacements = new Set((incoming?.equationMarginEvidence || [])
     .filter((item) => item?.marginLocationVerifiedV385 === true)
     .map((item) => `${item.page}:${item.label}`));
+  const correctedFrameReplacements = new Set((incoming?.equationMarginEvidence || [])
+    .filter((item) => item?.marginLocationVerifiedV386 === true)
+    .map((item) => `${item.page}:${item.label}`));
   const margins = new Map();
-  for (const item of [...(existing?.equationMarginEvidence || []), ...(incoming?.equationMarginEvidence || [])]) {
+  // A new individually verified v386 location is the replacement observation
+  // for that SAME page/label, even if the earlier observation also carried a
+  // v386 marker. This keeps repeated rescans idempotent while retaining all
+  // other page labels and all text observations.
+  const preservedMargins = (existing?.equationMarginEvidence || []).filter((item) =>
+    !correctedFrameReplacements.has(`${item?.page}:${item?.label}`));
+  for (const item of [...preservedMargins, ...(incoming?.equationMarginEvidence || [])]) {
     // Re-scanning an existing *label* can repair its stale target without
     // breaking the non-destructive guarantee for the index and other labels.
+    if (correctedFrameReplacements.has(`${item?.page}:${item?.label}`)
+        && item?.marginLocationVerifiedV386 !== true) continue;
     if (vettedReplacements.has(`${item?.page}:${item?.label}`)
         && item?.marginLocationVerifiedV385 !== true) continue;
     const key = `${item?.page}:${item?.label}:${Math.round(Number(item?.ratio || 0) * 500)}`;
@@ -1889,6 +1900,19 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
   if (hocr) {
     try {
       const doc = new DOMParser().parseFromString(String(hocr), 'text/html');
+      // Tesseract's hOCR boxes are expressed in its own image coordinate
+      // space. Tesseract.js can resize the supplied canvas internally; using
+      // the caller's canvas height then makes every lower label land too high,
+      // with error proportional to its distance from the top of the page.
+      // The hOCR page bbox is the authority for ALL its word/line boxes.
+      const pageBox = parseHocrBbox(doc.querySelector('.ocr_page')?.getAttribute('title'));
+      const hasOcrPageFrame = Boolean(pageBox && pageBox.x1 > pageBox.x0 && pageBox.y1 > pageBox.y0);
+      const originX = hasOcrPageFrame ? pageBox.x0 : 0;
+      const originY = hasOcrPageFrame ? pageBox.y0 : 0;
+      const ocrWidth = hasOcrPageFrame ? pageBox.x1 - pageBox.x0 : safeWidth;
+      const ocrHeight = hasOcrPageFrame ? pageBox.y1 - pageBox.y0 : safeHeight;
+      const normX = (value) => Math.min(1, Math.max(0, (value - originX) / ocrWidth));
+      const normY = (value) => Math.min(1, Math.max(0, (value - originY) / ocrHeight));
       for (const lineNode of doc.querySelectorAll('.ocr_line, .ocrx_line')) {
         const lineBox = parseHocrBbox(lineNode.getAttribute('title'));
         const lineWords = [];
@@ -1901,10 +1925,10 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
           words.push({
             text,
             confidence,
-            xStartRatio: Math.min(1, Math.max(0, box.x0 / safeWidth)),
-            xEndRatio: Math.min(1, Math.max(0, box.x1 / safeWidth)),
-            yStartRatio: Math.min(1, Math.max(0, box.y0 / safeHeight)),
-            yEndRatio: Math.min(1, Math.max(0, box.y1 / safeHeight))
+            xStartRatio: Math.min(1, Math.max(0, normX(box.x0))),
+            xEndRatio: Math.min(1, Math.max(0, normX(box.x1))),
+            yStartRatio: Math.min(1, Math.max(0, normY(box.y0))),
+            yEndRatio: Math.min(1, Math.max(0, normY(box.y1)))
           });
         }
         if (!lineWords.length) continue;
@@ -1923,8 +1947,8 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
           parts.push({
             start,
             end: text.length,
-            xStartRatio: Math.min(1, Math.max(0, item.box.x0 / safeWidth)),
-            xEndRatio: Math.min(1, Math.max(0, item.box.x1 / safeWidth))
+            xStartRatio: Math.min(1, Math.max(0, normX(item.box.x0))),
+            xEndRatio: Math.min(1, Math.max(0, normX(item.box.x1)))
           });
         }
         const confidenceValues = lineWords.map((item) => item.confidence).filter(Number.isFinite);
@@ -1933,10 +1957,10 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
           text,
           parts,
           confidence,
-          ratio: Math.min(1, Math.max(0, box.y0 / safeHeight)),
-          xStartRatio: Math.min(1, Math.max(0, box.x0 / safeWidth)),
-          xEndRatio: Math.min(1, Math.max(0, box.x1 / safeWidth)),
-          heightRatio: Math.min(1, Math.max(0.001, (box.y1 - box.y0) / safeHeight))
+          ratio: Math.min(1, Math.max(0, normY(box.y0))),
+          xStartRatio: Math.min(1, Math.max(0, normX(box.x0))),
+          xEndRatio: Math.min(1, Math.max(0, normX(box.x1))),
+          heightRatio: Math.min(1, Math.max(0.001, (box.y1 - box.y0) / ocrHeight))
         });
       }
     } catch (error) {

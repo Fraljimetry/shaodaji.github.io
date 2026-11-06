@@ -757,6 +757,12 @@ function chooseCanonicalEquationCandidate(candidates) {
     // for an unrescanned label but cannot outrank a newly vetted position.
     const aVetted = aVerified && a.marginLocationVerifiedV385 === true;
     const bVetted = bVerified && b.marginLocationVerifiedV385 === true;
+    // v386 page-frame normalization fixes vertical drift from OCR engines
+    // using a different internal image size. Never prefer older v385 geometry
+    // when the same physical label has newly verified v386 measurements.
+    const aNew = aVerified && a.marginLocationVerifiedV386 === true;
+    const bNew = bVerified && b.marginLocationVerifiedV386 === true;
+    if (aNew !== bNew) return aNew ? -1 : 1;
     if (aVetted !== bVetted) return aVetted ? -1 : 1;
     if (aVerified !== bVerified) return aVerified ? -1 : 1;
     // Fresh actual hOCR geometry supersedes pre-v384 cached margin candidates
@@ -2495,7 +2501,7 @@ async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, rend
       if (!equationCandidateAlignedToNumberingSide(record)) continue;
       if (equationReferenceProseContext(record.text)) continue;
       if (!meticulousMarginTargetGeometry(record, side, fullPageLines)) continue;
-      const verified = { ...record, ocrGeometryMeasured: true, marginLocationVerifiedV385: true };
+      const verified = { ...record, ocrGeometryMeasured: true, marginLocationVerifiedV385: true, marginLocationVerifiedV386: true };
       const existing = byLabel.get(record.label);
       // Prefer the measured outer label over a more OCR-confident duplicate
       // farther into the body. A page can cite its own equation repeatedly.
@@ -2770,7 +2776,8 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
         && other.meticulousPageVerified === true)) {
         index.set(evidence.label, [...candidates, {
           ...evidence, meticulousPageVerified: true,
-          marginLocationVerifiedV385: evidence.marginLocationVerifiedV385 === true
+          marginLocationVerifiedV385: evidence.marginLocationVerifiedV385 === true,
+          marginLocationVerifiedV386: evidence.marginLocationVerifiedV386 === true
         }]);
       }
     }
@@ -2949,6 +2956,50 @@ function saveEquationDragOrder(rows, visibleRows, draggedKey, targetKey, before)
   return true;
 }
 
+// Trust the exact measured page-margin observation when an old imported or
+// cached Equations row still points at a different location. This is a read-
+// only navigation repair: it does not delete an entry or modify manual edits.
+function verifiedEquationNavigationTarget(entry) {
+  const original = { page: Number(entry?.page) || 1, ratio: Math.min(1, Math.max(0, Number(entry?.ratio) || 0)) };
+  if (!entry?.label || entry.manualEditId || entry.manualAdd || entry.manualReselect
+      || !(manualIndexOcrPages instanceof Map)) return original;
+  const label = normalizedEquationLabel(equationSourceLabelForDisplayed(entry.label));
+  const verified = [];
+  for (const [pageNum, record] of manualIndexOcrPages) {
+    for (const item of record?.equationMarginEvidence || []) {
+      if (normalizedEquationLabel(item?.label) !== label
+          || item.marginLocationVerifiedV385 !== true
+          || item.ocrGeometryMeasured !== true
+          || !Number.isFinite(Number(item.ratio))
+          || Number(item.ratio) < 0 || Number(item.ratio) >= 0.999
+          || !Number.isInteger(Number(pageNum)) || Number(pageNum) < 1) continue;
+      verified.push({ page: Number(pageNum), ratio: Number(item.ratio), candidate: item });
+    }
+  }
+  if (!verified.length) return original;
+  // New v386 measurements are normalized to the actual hOCR page bbox;
+  // old v385 positions may carry an affine (y-dependent) scale error.
+  const newMeasurements = verified.filter((item) => item.candidate.marginLocationVerifiedV386 === true);
+  const usable = newMeasurements.length ? newMeasurements : verified;
+  const samePage = usable.filter((item) => item.page === original.page);
+  // Other-page recovery is safe only when there is exactly one independently
+  // vetted page for the label; otherwise retain the original target.
+  const group = samePage.length ? samePage
+    : new Set(usable.map((item) => item.page)).size === 1 ? usable : [];
+  if (!group.length) return original;
+  const side = equationNumberingSide === 'left' ? 'left' : 'right';
+  group.sort((a, b) => {
+    const edge = (item) => side === 'left'
+      ? Number(item.candidate?.candidateXEndRatio)
+      : 1 - Number(item.candidate?.candidateXStartRatio);
+    const ax = edge(a);
+    const bx = edge(b);
+    if (Number.isFinite(ax) && Number.isFinite(bx) && Math.abs(ax-bx) > 0.012) return ax-bx;
+    return Math.abs(a.ratio-original.ratio) - Math.abs(b.ratio-original.ratio);
+  });
+  return { page: group[0].page, ratio: group[0].ratio };
+}
+
 function renderEquationIndex() {
   if (!equationIndex || !equationIndexEmpty || !equationIndexCount) return;
   if (equationDetectionProgress.phase === 'idle' && equationLabelIndex) updateEquationDetectionProgress({ phase: 'saved' }, equationDetectionGeneration, true);
@@ -3011,7 +3062,7 @@ function renderEquationIndex() {
     const meta = document.createElement('span'); meta.textContent = `${t(`Page ${entry.page}`, `第 ${entry.page} 页`)} · ${equationConfidenceTier(entry.score)}`;
     copy.append(label,meta); button.append(copy);
     button.title = entry.text || entry.label;
-    button.addEventListener('click', async () => { equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu')); const target = { page: entry.page, ratio: Number(entry.ratio) || 0 }; await goToMatchedLocation(target.page, target.ratio, entry.label, { positionOnly: true }); updateBacklinksForTarget(entry.label, target); });
+    button.addEventListener('click', async () => { equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu')); const target = verifiedEquationNavigationTarget(entry); await goToMatchedLocation(target.page, target.ratio, entry.label, { positionOnly: true }); updateBacklinksForTarget(entry.label, target); });
     const menu = document.createElement('button'); menu.type='button'; menu.className='outline-overflow-button'; menu.textContent='⋯'; menu.title=t('Edit equation','编辑公式'); menu.setAttribute('aria-label',menu.title); menu.setAttribute('aria-expanded','false');
     menu.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); const willOpen = !row.classList.contains('has-edit-menu'); equationIndex.querySelectorAll('.equation-edit-row.has-edit-menu').forEach((node) => { node.classList.remove('has-edit-menu'); node.querySelector('.outline-overflow-button')?.setAttribute('aria-expanded','false'); }); row.classList.toggle('has-edit-menu', willOpen); menu.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); if (willOpen) requestAnimationFrame(() => positionOutlineEditActions(menu, actions)); });
     const actions = document.createElement('div'); actions.className = 'outline-edit-actions';
