@@ -251,6 +251,7 @@ let pendingEquationReselectKey = null;
 let pendingEquationAddKey = null;
 let equationEdits = [];
 let equationManualOrder = [];
+let equationOrderCustomized = false;
 let embeddedOutlineEdits = [];
 let embeddedOutlineEntries = [];
 let equationIndexBuildPromise = null;
@@ -742,6 +743,7 @@ function clearDocumentMapForIncomingPdf() {
   resetEquationDetectionProgress();
   equationEdits = [];
   equationManualOrder = [];
+  equationOrderCustomized = false;
   draggedEquationKey = null;
   try { dragDepth = 0; dropOverlay?.classList.add('is-hidden'); } catch (_) {}
   pendingEquationReselectKey = null;
@@ -803,6 +805,7 @@ function snapshotSession() {
     portableContentDetection: portableContentDetectionActive,
     equationEdits,
     equationManualOrder,
+    equationOrderCustomized,
     equationInitialRecoveryDone,
     // Keep the automatic equation detections themselves, not only their count.
     // This makes reading-data exports portable: a re-import can render the
@@ -2653,6 +2656,7 @@ function loadDocumentState(cachedSession = null) {
   equationInitialRecoveryAttempted = false;
   equationEdits = [];
   equationManualOrder = [];
+  equationOrderCustomized = false;
   draggedEquationKey = null;
   pendingEquationReselectKey = null;
   pendingEquationAddKey = null;
@@ -2717,7 +2721,10 @@ function loadDocumentState(cachedSession = null) {
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
-    equationManualOrder = Array.isArray(session.equationManualOrder) ? session.equationManualOrder.map((item) => String(item || '')).filter(Boolean).slice(0, 1000) : [];
+    equationOrderCustomized = session.equationOrderCustomized === true;
+    // Older builds saved automatic order as though it were a manual drag order.
+    // Only explicit drag-and-drop from this version onward can override detection order.
+    equationManualOrder = equationOrderCustomized && Array.isArray(session.equationManualOrder) ? session.equationManualOrder.map((item) => String(item || '')).filter(Boolean).slice(0, 1000) : [];
     const equationSummary = session.equationIndexSummary;
     // Invalidate only a v340/earlier *automatic* order when its snapshot
     // belongs to an older detector. An edited/dragged order will differ from
@@ -2727,6 +2734,7 @@ function loadDocumentState(cachedSession = null) {
         && Number(equationSummary?.version || 0) !== EQUATION_INDEX_SUMMARY_VERSION
         && storedEquationOrderMatchesOldAutomaticSnapshot(equationManualOrder, session.equationIndexSnapshot)) {
       equationManualOrder = [];
+      equationOrderCustomized = false;
     }
     if (equationSummary && Number(equationSummary.version) === EQUATION_INDEX_SUMMARY_VERSION
       && Number.isInteger(Number(equationSummary.count)) && Number(equationSummary.count) >= 0) {

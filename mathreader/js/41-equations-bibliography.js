@@ -2797,9 +2797,30 @@ function equationRowOrderKey(entry) {
   return `label:${normalizedEquationLabel(source || entry?.label || '')}`;
 }
 
+// Page order is primary, but within the same numbered family OCR coordinates
+// may be approximate. Respect the printed equation sequence, not OCR arrival time.
+function compareEquationIndexRows(a, b) {
+  const pageDelta = (Number(a.page) || 0) - (Number(b.page) || 0);
+  if (pageDelta) return pageDelta;
+  const aNumber = parsedEquationNumber(a.label);
+  const bNumber = parsedEquationNumber(b.label);
+  if (aNumber && bNumber && aNumber.prefix === bNumber.prefix && aNumber.last !== bNumber.last)
+    return aNumber.last - bNumber.last;
+  if (a.equationTwoColumn && b.equationTwoColumn
+      && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
+      && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
+  return (Number(a.ratio) || 0) - (Number(b.ratio) || 0) || String(a.label).localeCompare(String(b.label), undefined, { numeric: true });
+}
+
 function reconcileEquationManualOrder(rows) {
   if (!Array.isArray(rows) || !rows.length) { equationManualOrder = []; return rows || []; }
   const currentKeys = rows.map(equationRowOrderKey);
+  // The automatic index is always re-sorted after an OCR merge. Never let the
+  // historically persisted auto-generated key list append new equations at the end.
+  if (!equationOrderCustomized) {
+    equationManualOrder = currentKeys;
+    return rows;
+  }
   const valid = new Set(currentKeys);
   const seen = new Set();
   const order = [];
@@ -2849,6 +2870,7 @@ function saveEquationDragOrder(rows, visibleRows, draggedKey, targetKey, before)
   const visibleSet = new Set(visibleKeys);
   let cursor = 0;
   equationManualOrder = fullKeys.map((key) => visibleSet.has(key) ? visibleKeys[cursor++] : key);
+  equationOrderCustomized = true;
   persistDocumentState();
   return true;
 }
@@ -2873,14 +2895,7 @@ function renderEquationIndex() {
     }
     if (best) rows.push({ label, ...best });
   }
-  rows.sort((a,b) => {
-    const pageDelta = a.page - b.page;
-    if (pageDelta) return pageDelta;
-    if (a.equationTwoColumn && b.equationTwoColumn
-        && Number.isInteger(a.equationColumnIndex) && Number.isInteger(b.equationColumnIndex)
-        && a.equationColumnIndex !== b.equationColumnIndex) return a.equationColumnIndex - b.equationColumnIndex;
-    return a.ratio - b.ratio || a.label.localeCompare(b.label);
-  });
+  rows.sort(compareEquationIndexRows);
   for (const edit of equationEdits.filter((item) => item.action === 'add')) {
     const addedIndex = rows.findIndex((row) => row.manualEditId && String(row.manualEditId) === String(edit.id));
     if (addedIndex < 0) continue;

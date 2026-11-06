@@ -1741,3 +1741,14 @@ must resolve inside the overlaid website tree. See
 - A failed/aborted scan does not publish partial results. Storage quota, crashes, browser switching, old degraded/handwritten PDFs, Giusti labels (1.4), (1.5), (1.7), formula-to-LaTeX semantics and full-document scanned bibliography OCR require real-browser verification. All unresolved P0 accuracy obligations remain open.
 
 **Changed files:** `mathreader/js/00-core.js`, `mathreader/js/41-equations-bibliography.js`, `mathreader/mathreader.js`, `mathreader/index.html` (asset cache keys), `mathreader/tests/meticulous_additive_ocr_regression.js`, `mathreader/tests/page_context_ocr_regression.js`, `mathreader/tests/maintenance_integrity_regression.js`, `mathreader/tests/equation_progress_regression.js`, `mathreader/tests/formula_ocr_lazy_regression.js`, and `mathreader/REGRESSION.md`. Other v380 files, including `js/70-command-ui-runtime.js` and `mathreader.css`, are untouched.
+
+
+## v382 — Meticulous OCR equation ordering (2026-11-06)
+
+**Confirmed problem:** After v381 additive OCR, newly recovered labels could appear after earlier rows rather than in printed numerical sequence. `reconcileEquationManualOrder` persisted an automatically synthesized order, then inserted new detection keys relative to that stale order. The initial coordinate sort also trusted imprecise OCR positions even for neighboring labels from one numbering family.
+
+**Fix:** The default Equations order is recomputed from the current detected rows, prioritizing PDF page and numerical labels within the same numbering family; coordinate/column sort remains for mixed/non-numeric labels. New recovered labels are inserted in sequence; previously detected labels remain present. Explicit user drag-and-drop now sets `equationOrderCustomized = true` and retains its chosen order on reopen. Legacy auto-generated saved orders without this explicit marker are discarded rather than treated as deliberate manual sorting. Manual add-before/after placement remains independent.
+
+**Compatibility note:** A manual drag order created before v382 cannot be reliably distinguished from the automatically saved key order in old sessions. Such old custom order may return to document/numerical order. New explicit drag orders persist correctly. This is a known migration limitation and is preferable to silently perpetuating misordered OCR indexes.
+
+**Acceptance:** Run `node mathreader/tests/equation_order_ocr_regression.js` and all available zero-network Node regression suites, `node --check` on each source part and assembled runtime, and ZIP integrity. Live browser verification remains required for the displayed Giusti PDF and real meticulous OCR (including reference positions and navigation). No automatic OCR recognition accuracy is claimed.
