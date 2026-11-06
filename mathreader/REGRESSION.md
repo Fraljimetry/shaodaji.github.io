@@ -1,4 +1,17 @@
-# MathReader Regression / Behavioral Audit Record — v363
+# MathReader Regression / Behavioral Audit Record — v364
+
+## v364 — Compact Help glyph, unchanged 34px control (2026-11-06, Beijing UTC+08)
+
+**Baseline:** user-provided complete v363 ZIP (`mathreader(9).zip`). **Release:** v363 → v364.
+
+- Decrease the header tutorial question-mark glyph from 25px to **20px** without changing its 34px button height, existing min-width, responsive overrides, keyboard focus, title, accessibility label or new-tab destination.
+- Preserve the v363 concise **Export** label and full tooltip/accessibility name.
+- Update version/cache keys and inherited test assertions. This is a presentation-only change: no PDF/OCR, index, navigation, data export or mathematical semantics modified.
+- Scope of verification: automated JavaScript and isolated Chromium shell checks only; full PDF.js/Texify end-to-end mathematical accuracy remains unverified, as documented below.
+
+---
+
+## Historical record — v363
 
 ## v363 — Header button height + concise Export label (2026-11-06, Beijing UTC+08)
 

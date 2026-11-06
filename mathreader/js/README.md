@@ -166,3 +166,7 @@ or Texify processing.
 ## v363 UI detail
 
 Header tutorial `?` stays prominent but is exactly 34px tall like the adjacent theme/language controls across desktop and mobile. Local library's visible `Export` / `导出` label is deliberately concise; the full reading-data export description stays in the tooltip and accessible name. No feature semantics or PDF runtime changes.
+
+## v364 UI detail
+
+Header tutorial `?` uses a 20px glyph in the existing 34px button; no changes to behavior or PDF detection.
