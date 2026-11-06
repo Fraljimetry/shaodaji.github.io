@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=374">
+  <link rel="stylesheet" href="mathreader.css?v=375">
   <script>
     (() => {
       try {
@@ -141,7 +141,10 @@
             <span class="count-badge" id="equation-index-count">0</span>
           </div>
           <input class="map-filter" id="map-filter-equations" type="search" autocomplete="off" data-map-target="equation-index" data-en-placeholder="Filter equations…" data-zh-placeholder="筛选公式…" placeholder="Filter equations…">
-          <div class="equation-detection-status" id="equation-detection-status" role="status" aria-live="polite" aria-atomic="true"></div>
+          <div class="equation-status-row">
+            <div class="equation-detection-status" id="equation-detection-status" role="status" aria-live="polite" aria-atomic="true"></div>
+            <button class="equation-force-ocr" id="equation-force-ocr" type="button" disabled data-en="OCR" data-zh="OCR" title="Recheck equation labels from page images" aria-label="Recheck equation labels with image OCR">OCR</button>
+          </div>
           <div class="equation-index" id="equation-index"></div>
           <div class="empty-panel" id="equation-index-empty" data-en="Expand to index equations." data-zh="展开以索引公式。">Expand to index equations.</div>
         </section>
@@ -575,6 +578,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=374"></script>
+  <script type="module" src="mathreader.js?v=375"></script>
 </body>
 </html>

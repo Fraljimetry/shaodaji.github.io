@@ -79,6 +79,7 @@ const equationIndex = el('equation-index');
 const equationIndexEmpty = el('equation-index-empty');
 const equationIndexCount = el('equation-index-count');
 const equationDetectionStatus = el('equation-detection-status');
+const equationForceOcrButton = el('equation-force-ocr');
 const exportReadingDataButton = el('export-reading-data');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');

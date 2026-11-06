@@ -1860,8 +1860,36 @@ function equationDetectionSummary(state) {
   ];
   return [shortParts.join(' · '), `${parts.filter(Boolean).join(' · ')}\n${detailed.join(' · ')}`];
 }
+function refreshEquationForceOcrButton() {
+  if (typeof equationForceOcrButton === 'undefined' || !equationForceOcrButton) return;
+  const active = Boolean(pdfDoc && documentTextFeaturesAvailable());
+  const busy = Boolean(equationIndexBuildPromise || equationImageAssistPromise || documentOcrActive || documentOcrBusy);
+  equationForceOcrButton.disabled = !active || busy;
+  equationForceOcrButton.title = t('Scan equation labels from every page image (may take a while)', '逐页从图像识别公式编号（可能需要较长时间）');
+  equationForceOcrButton.setAttribute('aria-label', t('Force equation-label image OCR', '强制进行公式编号图像 OCR'));
+}
+async function forceEquationImageOcr() {
+  if (!pdfDoc || !documentTextFeaturesAvailable() || equationIndexBuildPromise || equationImageAssistPromise || documentOcrActive || documentOcrBusy) return;
+  // Preserve the native text layer and edits; only recompute the equation index.
+  equationLabelIndex = null;
+  equationAutomaticLabelIndex = null;
+  equationIndexKnownCount = null;
+  resetEquationDetectionProgress();
+  const promise = buildEquationLabelIndex({ forceImageOcr: true });
+  equationIndexBuildPromise = promise;
+  refreshEquationForceOcrButton();
+  try { await promise; }
+  catch (error) {
+    console.warn('MathReader forced equation OCR failed.', error);
+    updateEquationDetectionProgress({ phase: 'failed', error: String(error?.message || error) }, equationDetectionGeneration, true);
+  } finally {
+    if (equationIndexBuildPromise === promise) equationIndexBuildPromise = null;
+    refreshEquationForceOcrButton();
+  }
+}
 function updateEquationDetectionStatus(force = false) {
   if (!equationDetectionStatus) return;
+  refreshEquationForceOcrButton();
   const state = equationDetectionProgress;
   const now = equationDetectionNowMs();
   if (!force && now - equationDetectionLastPaint < 400) return;
@@ -2150,7 +2178,7 @@ function denseSupplementalEquationFamilies(records) {
   return accepted;
 }
 
-async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index, referenceEvidence = [], onProgress = null) {
+async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index, referenceEvidence = [], onProgress = null, forceImageOcr = false) {
   if (!sourceDoc?.numPages || documentTextMode !== 'native' || documentOcrActive || documentOcrBusy) return false;
 
   const pageCount = Math.max(0, Number(sourceDoc.numPages) || 0);
@@ -2163,7 +2191,8 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   // several consecutive printed labels can be absent from the text layer.
   const imageBacked = await equationDocumentLooksImageBacked(sourceDoc, index);
   let comprehensivePages = [];
-  if (imageBacked) {
+  if (forceImageOcr) comprehensivePages = Array.from({ length: pageCount }, (_, i) => i + 1);
+  else if (imageBacked) {
     if (pageCount <= 120) comprehensivePages = Array.from({ length: pageCount }, (_, i) => i + 1);
     else comprehensivePages = equationSupplementalOcrPagePlan(sourceDoc, index).slice(0, 72);
   }
@@ -2373,7 +2402,7 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   }
 }
 
-async function buildEquationLabelIndex() {
+async function buildEquationLabelIndex({ forceImageOcr = false } = {}) {
   if (!pdfDoc || !documentTextFeaturesAvailable()) return new Map();
   if (equationLabelIndex) return equationLabelIndex;
   const sourceDoc = pdfDoc;
@@ -2660,7 +2689,7 @@ async function buildEquationLabelIndex() {
       if (changed) publishAutomaticIndex();
     };
     equationImageAssistPromise = (async () => {
-      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence, onAssistProgress);
+      const added = await supplementEquationIndexFromPageImages(sourceDoc, sourceKey, assistIndex, referenceOcrEvidence, onAssistProgress, forceImageOcr);
       if (generation !== equationDetectionGeneration || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
       if (added) {
         updateEquationDetectionProgress({ phase: 'validating' }, generation, true);
@@ -2686,7 +2715,7 @@ async function buildEquationLabelIndex() {
         logEquationDetectionTiming(equationDetectionProgress, sourceKey);
       }
     }).finally(() => {
-      if (generation === equationDetectionGeneration && pdfDoc === sourceDoc && currentFileKey === sourceKey) equationImageAssistPromise = null;
+      if (generation === equationDetectionGeneration && pdfDoc === sourceDoc && currentFileKey === sourceKey) { equationImageAssistPromise = null; refreshEquationForceOcrButton(); }
     });
   }
   return equationLabelIndex;

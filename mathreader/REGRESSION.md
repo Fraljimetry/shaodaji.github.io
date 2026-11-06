@@ -1670,3 +1670,12 @@ must resolve inside the overlaid website tree. See
 **Safeguards:** one active PDF.js document at a time; preserve existing per-document session save/restore, cached History, cross-paper navigation and OCR interaction guard. No OCR detection heuristics, library formats, auto-fallback, or sidebar defaults change. The new queue is session-only because browser File objects cannot be resurrected after refresh without user permission.
 
 **Gates:** zero-network lazy queue tests cover first-only open, deferred activation, order, removal and failure/retry. Run all Node regression suites and JS syntax check. In a real browser manually verify a mixed scanned/native PDF batch, individual OCR gating after selection, page-position restoration when switching, memory pressure, refresh semantics, duplicates and failed File/IndexedDB operations. These tests are NOT verification of full document OCR, mathematical indexes, or real PDF.js switching. Retain P0 full-document ground-truth requirements.
+
+
+## v375 — Explicit Equations image OCR (2026-11-06 Beijing UTC+08)
+
+**Request:** Add a small `OCR` action immediately after the one-line Equations status (including `Saved · not rescanned`). A PDF text layer is not sufficient evidence that equation labels were extracted correctly. The action is opt-in and scans equation-number margins on **every page**, including native-text PDFs; automatic bounded assistance remains unchanged. Existing Tesseract image-assistance, numeric-gap rechecks and conservative dense-family filtering are reused. Native text is retained and manual equation edits remain applied. The action does not claim to recognize arbitrary formula LaTeX or replace full-document text OCR.
+
+**Performance:** This explicit full-book pass may be slow on 253/303-page books, uses one worker and page-at-a-time processing, reuses previously recognized page margins and shows OCR page progress. No OCR starts for pending documents. During index work the control is disabled; document switching uses existing source-document checks and generation guards.
+
+**Limitations:** This only covers the current equation-numbering side and uses the existing OCR candidate-validation policy; it is not a mathematical guarantee of completeness. Giusti and do Carmo represent distinct scan/text-layer challenges; browser recognition quality and memory behavior need real PDF.js/Tesseract testing. Full-page formula semantics and missing mathematical expressions are not addressed. Real-browser acceptance remains UNVERIFIED unless independently performed.

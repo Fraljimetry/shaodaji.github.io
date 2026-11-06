@@ -1,0 +1,25 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'mathreader.css'), 'utf8');
+const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
+const pipeline = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
+const runtime = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8');
+let checked = 0;
+function check(condition, label) { assert.ok(condition, label); checked++; }
+check(/equation-detection-status[^]*?id="equation-force-ocr"/.test(html), 'manual OCR action directly follows status');
+check(/equation-status-row/.test(css) && /equation-force-ocr:disabled/.test(css), 'compact action and disabled UI');
+check(/const equationForceOcrButton = el\('equation-force-ocr'\)/.test(core), 'button is bound');
+check(/equationForceOcrButton\?\.addEventListener\('click'/.test(runtime), 'only explicit click launches forced OCR');
+check(/async function forceEquationImageOcr\(\)/.test(pipeline), 'manual action exists');
+check(/!documentTextFeaturesAvailable\(\) \|\| equationIndexBuildPromise \|\| equationImageAssistPromise/.test(pipeline), 'busy and unavailable guards');
+check(/buildEquationLabelIndex\(\{ forceImageOcr: true \}\)/.test(pipeline), 'forced rebuild passes explicit flag');
+check(/if \(forceImageOcr\) comprehensivePages = Array\.from\(\{ length: pageCount \}/.test(pipeline), 'manual pass covers all pages');
+check(/else if \(imageBacked\)/.test(pipeline), 'automatic behavior still uses conditional image-backed plan');
+check(/pdfDoc !== sourceDoc \|\| currentFileKey !== sourceKey/.test(pipeline), 'document switching guard retained');
+check(/equationSupplementalOcrCache\.get\(cacheKey\)/.test(pipeline), 'cached page margins reused');
+check(/denseSupplementalEquationFamilies\(comprehensiveRecords\)/.test(pipeline), 'conservative index promotion retained');
+console.log(`OK: ${checked} forced equation-image OCR checks`);

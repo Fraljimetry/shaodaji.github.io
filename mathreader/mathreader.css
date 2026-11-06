@@ -411,6 +411,11 @@ html[data-theme="dark"] .annotation-highlight{background:rgba(244,194,64,.28);bo
 .contents-section.is-collapsed{padding-bottom:10px}
 .contents-section .outline-list,.contents-section .structure-index,.contents-section .bibliography-index,.contents-section .equation-index{margin-top:5px}
 /* Lightweight per-document pipeline status; no progress bar that implies complete OCR coverage. */
+.equation-status-row{display:flex;align-items:center;gap:5px;margin:4px 2px 6px;min-width:0}
+.equation-status-row .equation-detection-status{flex:1;margin:0}
+.equation-force-ocr{flex:none;font:inherit;font-size:.65rem;line-height:1.3;padding:2px 6px;border:1px solid var(--line);border-radius:4px;background:var(--surface-soft);color:var(--muted);cursor:pointer}
+.equation-force-ocr:hover:not(:disabled){border-color:var(--accent);color:var(--accent-deep)}
+.equation-force-ocr:disabled{opacity:.45;cursor:default}
 .equation-detection-status{display:block;min-width:0;max-width:100%;margin:4px 2px 6px;color:var(--muted);font-size:.65rem;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
 .equation-detection-status:empty{display:none}
 .equation-detection-status[data-phase="running"]{color:var(--accent-deep)}

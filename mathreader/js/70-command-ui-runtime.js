@@ -264,6 +264,7 @@ ocrEngineSelect?.addEventListener('change', async () => { mathOcrEngineMode = no
 ocrRetryButton?.addEventListener('click', async () => { setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR reset · loads on next image extraction', 'OCR 已重置 · 下次图像公式提取时加载'));  });
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 contentsRunDocumentOcr?.addEventListener('click', () => { enableDocumentOcrFromReader().catch((error) => { console.warn('Document OCR could not be started from Contents.', error); }); });
+equationForceOcrButton?.addEventListener('click', () => { void forceEquationImageOcr(); });
 pinPageButton?.addEventListener('click', () => setPinnedPage(currentPage));
 pinFromSidebar.addEventListener('click', () => setPinnedPage(currentPage));
 unpinPage.addEventListener('click', clearPinnedPage);
