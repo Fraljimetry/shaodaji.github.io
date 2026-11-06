@@ -878,6 +878,12 @@ async function renderOutline() {
 
 async function pageText(pageNum, sourceDoc = pdfDoc, cache = textCache) {
   if (cache.has(pageNum)) return cache.get(pageNum);
+  if (sourceDoc === pdfDoc && manualIndexOcrPages.has(Number(pageNum))) {
+    const record = manualIndexOcrPages.get(Number(pageNum));
+    const text = String(record?.text || (record?.lines || []).map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim();
+    cache.set(pageNum, text);
+    return text;
+  }
   if (sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
     const text = String(documentOcrPages.get(Number(pageNum))?.text || '').replace(/\s+/g, ' ').trim();
     cache.set(pageNum, text);

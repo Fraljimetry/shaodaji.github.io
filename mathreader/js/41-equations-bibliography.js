@@ -3001,6 +3001,13 @@ async function findEquationLabelLocation(query, originPage = null, originRatio =
 
 async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache) {
   if (cache.has(pageNum)) return cache.get(pageNum);
+  if (sourceDoc === pdfDoc && manualIndexOcrPages.has(Number(pageNum))) {
+    const record = manualIndexOcrPages.get(Number(pageNum));
+    const lines = (record.lines || []).map((line) => ({...line, ocrSource: true, parts: Array.isArray(line.parts) ? line.parts.map((part) => ({...part})) : []}));
+    cache.set(pageNum, lines);
+    if (flatCache) flatCache.set(pageNum, String(record.text || lines.map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim());
+    return lines;
+  }
   if (sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
     const record = documentOcrPages.get(Number(pageNum));
     const lines = (record?.lines || []).map((line) => ({

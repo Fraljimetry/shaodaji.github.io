@@ -5,7 +5,7 @@
 // source is split only for maintenance: parts are fetched in parallel, assembled
 // in their original order, and imported once. No part executes independently.
 
-const VERSION = '375';
+const VERSION = '376';
 const PARTS = [
   'js/00-core.js',
   'js/10-formula-ocr.js',

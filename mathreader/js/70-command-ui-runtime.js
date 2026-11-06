@@ -778,3 +778,5 @@ async function initializeLocalLibrary() {
 window.addEventListener('pagehide', () => persistDocumentState());
 initializeLocalLibrary();
 schedulePdfCorePreload();
+
+installManualPageIndexOcrMenu();

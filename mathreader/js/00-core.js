@@ -224,6 +224,10 @@ let documentPersonalNote = '';
 let textCache = new Map();
 let lineCache = new Map();
 let documentOcrPages = new Map();
+// Explicit page-level OCR evidence for Contents only; native PDF text stays untouched.
+let manualIndexOcrPages = new Map();
+let manualPageOcrBusy = false;
+
 let documentOcrActive = false;
 let documentOcrModulePromise = null;
 let documentTextMode = 'native'; // native | ocr | unavailable
@@ -1539,6 +1543,158 @@ async function enableDocumentOcrFromReader() {
   }
 }
 
+
+// A right-click page scan is deliberately independent of full-document OCR.
+// It augments Contents indexing without changing selectable PDF text or the
+// document-wide OCR preference. Never publish partial/failed OCR evidence.
+function manualIndexOcrCacheKey(fileKey = currentFileKey) {
+  return fileKey ? `page-index-ocr-v1:${fileKey}` : null;
+}
+async function loadManualIndexOcrPages() {
+  manualIndexOcrPages = new Map();
+  const key = manualIndexOcrCacheKey();
+  if (!key || !pdfDoc?.numPages) return;
+  try {
+    const saved = await dbMetaGet(key);
+    if (Number(saved?.pageCount) !== pdfDoc.numPages || !Array.isArray(saved?.pages)) return;
+    for (const record of saved.pages) {
+      const page = Number(record?.page);
+      if (Number.isInteger(page) && page >= 1 && page <= pdfDoc.numPages && Array.isArray(record?.lines)) {
+        manualIndexOcrPages.set(page, record);
+      }
+    }
+  } catch (error) { console.warn('MathReader page OCR cache unavailable.', error); }
+}
+function manualPageIndexOcrMessage(message) {
+  if (!manualPageIndexOcrStatus) return;
+  manualPageIndexOcrStatus.textContent = message;
+  manualPageIndexOcrStatus.classList.remove('is-hidden');
+}
+async function runMeticulousPageIndexOcr(pageNum) {
+  if (!pdfDoc || manualPageOcrBusy || documentOcrBusy || !documentTextFeaturesAvailable() ||
+      structureIndexBuilding || equationIndexBuildPromise || equationImageAssistPromise) return;
+  if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pdfDoc.numPages) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  manualPageOcrBusy = true;
+  let worker = null;
+  let imageCanvas = null;
+  const valid = () => sourceDoc === pdfDoc && sourceKey === currentFileKey;
+  try {
+    manualPageIndexOcrMessage(t(`OCR page ${pageNum}…`, `正在识别第 ${pageNum} 页……`));
+    const module = await loadDocumentOcrModule();
+    if (!valid()) return;
+    const createWorker = documentOcrCreateWorker(module);
+    if (typeof createWorker !== 'function') throw new Error('OCR worker unavailable');
+    worker = await createWorker('eng', 1);
+    if (!valid()) return;
+    if (typeof worker.setParameters === 'function') await worker.setParameters({
+      preserve_interword_spaces: '1', user_defined_dpi: '300', tessedit_pageseg_mode: '3'
+    });
+    const page = await sourceDoc.getPage(pageNum);
+    if (!valid()) return;
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.max(2.20, Math.min(3.60, 3200 / Math.max(1, base.width, base.height)));
+    const viewport = page.getViewport({ scale });
+    imageCanvas = document.createElement('canvas');
+    imageCanvas.width = Math.max(1, Math.ceil(viewport.width));
+    imageCanvas.height = Math.max(1, Math.ceil(viewport.height));
+    const context = imageCanvas.getContext('2d', {alpha: false});
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, imageCanvas.width, imageCanvas.height);
+    await page.render({canvasContext: context, viewport}).promise;
+    if (!valid()) return;
+    const result = await worker.recognize(imageCanvas, {}, {hocr: true});
+    if (!valid()) return;
+    const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', imageCanvas.width, imageCanvas.height, pageNum);
+    if (!Array.isArray(record?.lines) || !record.lines.some((line) => String(line.text || '').trim())) {
+      throw new Error('No readable text detected; existing Contents retained');
+    }
+    // Commit only after an accepted recognition. Keep the native text layer and
+    // other pages unchanged; any subsequent scan replaces only this page.
+    manualIndexOcrPages.set(pageNum, record);
+    lineCache.delete(pageNum);
+    textCache.delete(pageNum);
+    const key = manualIndexOcrCacheKey(sourceKey);
+    if (key) {
+      try { await dbMetaSet(key, {pageCount: sourceDoc.numPages, pages: [...manualIndexOcrPages.values()]}); }
+      catch (error) { console.warn('MathReader page index OCR could not be saved.', error); }
+    }
+    if (!valid()) return;
+    manualPageIndexOcrMessage(t(`Page ${pageNum} OCR complete · refreshing Contents…`, `第 ${pageNum} 页识别完成 · 正在更新目录……`));
+    // Explicitly rebuilt derived indexes; never clear saved/manual edits.
+    structureIndexVersion = 0;
+    inferredOutlineDetectionDone = false;
+    await buildStructureIndex({force: true});
+    if (!valid()) return;
+    equationLabelIndex = null;
+    equationAutomaticLabelIndex = null;
+    equationIndexKnownCount = null;
+    resetEquationDetectionProgress();
+    await ensureEquationIndexRendered();
+    if (!valid()) return;
+    manualPageIndexOcrMessage(t(`Page ${pageNum} · Contents updated`, `第 ${pageNum} 页 · 目录已更新`));
+    persistDocumentState();
+  } catch (error) {
+    if (valid()) {
+      console.warn('MathReader meticulous page OCR failed.', error);
+      manualPageIndexOcrMessage(t(`Page OCR failed: ${error.message || error}`, `单页 OCR 失败：${error.message || error}`));
+    }
+  } finally {
+    if (imageCanvas) { imageCanvas.width = 1; imageCanvas.height = 1; }
+    try { await worker?.terminate?.(); } catch (_) {}
+    manualPageOcrBusy = false;
+  }
+}
+
+// One compact context action on actual reader page surfaces. Pages in the
+// continuous stack carry their own page number, unlike the single page view.
+let manualPageIndexOcrMenu = null;
+let manualPageIndexOcrStatus = null;
+function closeManualPageIndexOcrMenu() {
+  manualPageIndexOcrMenu?.remove();
+  manualPageIndexOcrMenu = null;
+}
+function installManualPageIndexOcrMenu() {
+  if (!primaryCanvasWrap) return;
+  manualPageIndexOcrStatus = document.createElement('div');
+  manualPageIndexOcrStatus.className = 'page-ocr-status is-hidden';
+  manualPageIndexOcrStatus.setAttribute('role', 'status');
+  primaryCanvasWrap.parentElement?.append(manualPageIndexOcrStatus);
+  primaryCanvasWrap.addEventListener('contextmenu', (event) => {
+    const surface = event.target?.closest?.('.page-surface');
+    if (!surface || !primaryCanvasWrap.contains(surface) || !pdfDoc) return;
+    const pageNum = Number(surface.closest('.continuous-page-frame')?.dataset.page || currentPage);
+    if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pdfDoc.numPages) return;
+    event.preventDefault();
+    closeManualPageIndexOcrMenu();
+    const menu = document.createElement('div');
+    menu.className = 'page-ocr-context-menu';
+    menu.setAttribute('role', 'menu');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('role', 'menuitem');
+    button.textContent = t(`Meticulous OCR · page ${pageNum}`, `精细 OCR · 第 ${pageNum} 页`);
+    button.disabled = manualPageOcrBusy || documentOcrBusy || !documentTextFeaturesAvailable() || structureIndexBuilding || !!equationIndexBuildPromise || !!equationImageAssistPromise;
+    button.addEventListener('click', () => {
+      closeManualPageIndexOcrMenu();
+      void runMeticulousPageIndexOcr(pageNum);
+    });
+    menu.append(button);
+    document.body.append(menu);
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - rect.width - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - rect.height - 8))}px`;
+    manualPageIndexOcrMenu = menu;
+    button.focus();
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (manualPageIndexOcrMenu && !manualPageIndexOcrMenu.contains(event.target)) closeManualPageIndexOcrMenu();
+  });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeManualPageIndexOcrMenu(); });
+  primaryCanvasWrap.addEventListener('scroll', closeManualPageIndexOcrMenu, {passive:true});
+}
+
 async function ensurePdfJs() {
   if (pdfjsLib) return pdfjsLib;
   if (!pdfModulePromise) {
@@ -1932,6 +2088,7 @@ async function runFullDocumentOcr() {
 
 async function ensureDocumentTextReady(savedPreference = 'ask') {
   documentOcrPages = new Map();
+  manualIndexOcrPages = new Map();
   documentOcrActive = false;
   documentTextMode = 'native';
   imageDocumentDetected = false;
@@ -1948,6 +2105,7 @@ async function ensureDocumentTextReady(savedPreference = 'ask') {
   setLoading(true, t('Checking PDF text layer…', '正在检查 PDF 文本层……'));
   const needsOcr = await pdfNeedsDocumentOcr(pdfDoc);
   if (!needsOcr) {
+    await loadManualIndexOcrPages();
     documentTextMode = 'native';
     documentTextPreference = 'native';
     return true;

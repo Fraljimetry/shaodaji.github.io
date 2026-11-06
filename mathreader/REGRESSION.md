@@ -1679,3 +1679,12 @@ must resolve inside the overlaid website tree. See
 **Performance:** This explicit full-book pass may be slow on 253/303-page books, uses one worker and page-at-a-time processing, reuses previously recognized page margins and shows OCR page progress. No OCR starts for pending documents. During index work the control is disabled; document switching uses existing source-document checks and generation guards.
 
 **Limitations:** This only covers the current equation-numbering side and uses the existing OCR candidate-validation policy; it is not a mathematical guarantee of completeness. Giusti and do Carmo represent distinct scan/text-layer challenges; browser recognition quality and memory behavior need real PDF.js/Tesseract testing. Full-page formula semantics and missing mathematical expressions are not addressed. Real-browser acceptance remains UNVERIFIED unless independently performed.
+
+
+## v376 — Manual meticulous page OCR (source-level)
+
+- Added a compact page-surface right-click action for explicit OCR of that single page in both single-page and continuous reading.
+- Reuses the document OCR engine at high resolution, saves page-specific OCR evidence, and rebuilds Contents indexes (Structure, Results, Equations, Bibliography). Existing PDF text selection and the original native text layer are not overwritten.
+- Cached OCR evidence is scoped by document key and page count. A failed/empty recognition is rejected without replacing prior evidence. Concurrent document OCR or index-building disables the action; document identity is checked through asynchronous stages.
+- Limitations: This is Tesseract-based text/label OCR, **not verified full mathematical expression-to-LaTeX transcription**. Index reconstruction is document-wide for consistency and may take time on books. Browser OCR accuracy, persistence under quota errors, equation results, and continuous-page interactions remain unverified; regression script asserts code invariants only.
+- No arbitrary filling of missing mathematical symbols or bibliography entries. Inspect actual scanned page image before accepting OCR text.
