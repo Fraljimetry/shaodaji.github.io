@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "version": "363",
+  "baseline": "complete v347 ZIP + exact sequential v348–v362 root patch overlays",
+  "scope": [
+    "header help button size",
+    "concise local-library Export label",
+    "regression/tests/docs/version"
+  ],
+  "version_increment": "362 -> 363",
+  "confirmed_initial_mismatch": {
+    "desktop_help_px": 38,
+    "mobile_help_px": 36,
+    "neighbor_px": 34
+  },
+  "verified_after": {
+    "header_controls_px": 34,
+    "widths_px": [
+      320,
+      375,
+      768,
+      1024,
+      1440
+    ],
+    "browser_tutorial_assertions": 130,
+    "browser_tutorial_passed": 130,
+    "export_visible_en": "Export",
+    "export_visible_zh": "导出",
+    "export_action": "unchanged",
+    "export_full_tooltip": "preserved",
+    "p0_browser_shell": "PASS"
+  },
+  "test_execution": {
+    "source_gate_components": "50/50 independently passing (29 JS checks, 13 JS suites, 8 Python suites)",
+    "combined_gate": "TIMEOUT/INCOMPLETE (no combined success claimed)",
+    "individual_browser": "PASS",
+    "full_pdfjs_texify_e2e": "NOT RUN (unavailable pinned browser assets)"
+  },
+  "unchanged": [
+    "ten production JS subsystems",
+    "P0/P1 data semantics",
+    "document PDF parsers",
+    "formula OCR inference",
+    "IndexedDB storage format",
+    "tutorial.html",
+    "tutorial.css"
+  ],
+  "risks": [
+    "Full live PDF.js/Texify acceptance from earlier releases remains UNVERIFIED."
+  ],
+  "changed_paths": [
+    "mathreader/REGRESSION.md",
+    "mathreader/index.html",
+    "mathreader/js/README.md",
+    "mathreader/mathreader.css",
+    "mathreader/mathreader.js",
+    "mathreader/tests/equation_progress_regression.js",
+    "mathreader/tests/formula_ocr_lazy_regression.js",
+    "mathreader/tests/help_tutorial_regression.py",
+    "mathreader/tests/maintenance_integrity_regression.js",
+    "mathreader/tests/performance_safe_regression.js"
+  ],
+  "date_beijing": "2026-11-06"
+}

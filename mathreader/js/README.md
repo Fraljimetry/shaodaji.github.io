@@ -161,3 +161,8 @@ isolated Chromium rendering. Run `tests/help_tutorial_regression.py` and
 `tests/ui_responsive_regression.py` in addition to the P0 gate.
 No changes were made to P0 truth semantics, P1 link storage, detection, PDF.js
 or Texify processing.
+
+
+## v363 UI detail
+
+Header tutorial `?` stays prominent but is exactly 34px tall like the adjacent theme/language controls across desktop and mobile. Local library's visible `Export` / `导出` label is deliberately concise; the full reading-data export description stays in the tooltip and accessible name. No feature semantics or PDF runtime changes.

@@ -1,3 +1,16 @@
+# MathReader Regression / Behavioral Audit Record — v363
+
+## v363 — Header button height + concise Export label (2026-11-06, Beijing UTC+08)
+
+**Baseline:** original v347 complete source ZIP overlaid sequentially with exact v348–v362 root code patches. **Release:** v362 → v363. This is a presentation-only adjustment to the reader header and History → Local library controls.
+
+- Make the **?** tutorial control exactly 34px tall at desktop, tablet and narrow-phone breakpoints, equal to adjacent theme and language controls; keep its large 25px glyph, accessible label, keyboard focus and new-tab behavior. Previously it was 38px on desktop and 36px on mobile while neighbors were 34px.
+- Rename the visible **Export reading data** button to **Export** (Chinese **导出**); retain its descriptive full hover title and accessibility label. Preserve its export action, disabled-state semantics, JSON payload and command-palette name.
+- Regression: Chromium shell checks at 320/375/768/1024/1440 widths assert matching header-button heights, unaltered prominent glyph, accessible export label, and both language variants; the inherited entire source gate must still pass. No claims about real PDF.js/Texify inference or actual P1 two-PDF browser navigation are implied by these checks.
+- This release does **not** change mathematical detectors, OCR configuration, P0/P1 data semantics, IndexedDB schema or bibliography right-click linking. Full live-engine mathematical acceptance remains outstanding as recorded in prior audits.
+
+---
+
 # MathReader Regression / Behavioral Audit Record — v360
 
 ## v360 — Cross-viewport UI, performance and stability regression (2026-11-06, Beijing UTC+08)

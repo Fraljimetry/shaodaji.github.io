@@ -90,5 +90,5 @@ check(mockWidths(widthNew,huge).stack.width==='949px','overflow max on large cor
 const css=fs.readFileSync(path.join(root,'mathreader.css'),'utf8');
 check((css.match(/\.formula-ocr-init-overlay\{position:fixed/g)||[]).length===1,'modal CSS duplicated');
 check(!css.includes('.reference-pane/* Formula model startup'),'orphaned selector still present');
-check(css.includes('@media(max-width:860px)') && css.includes('.canvas-wrap{padding:14px}') && css.includes('.header-actions .header-help{min-width:36px') && !css.includes('.header-actions .icon-button:first-child{display:none}'), 'v362 mobile reader/help rules lost');
+check(css.includes('@media(max-width:860px)') && css.includes('.canvas-wrap{padding:14px}') && css.includes('.header-actions .header-help{min-width:34px') && !css.includes('.header-actions .icon-button:first-child{display:none}'), 'v362 mobile reader/help rules lost');
 console.log(`OK: ${assertions} scroll/layout/CSS parity assertions; rect reads 30k pages: ${old.rectCalls} -> ${improved.rectCalls}`);

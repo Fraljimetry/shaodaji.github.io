@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v362 real Chromium DOM/style regression for reader Help and static tutorial.
+"""v363 reader header and Export interaction plus static tutorial Chromium regression.
 
 The sandbox blocks HTTP/file/data navigation, so this checks the real reader
 shell and independently renders the genuine tutorial HTML/CSS in Chromium.
@@ -36,6 +36,19 @@ def run():
             help_link=reader.locator('#help-button')
             check(reader.locator('#open-button').count()==0,f'{width}: top Open button removed')
             check(help_link.is_visible(),f'{width}: prominent Help visible')
+            header_heights=reader.evaluate("""() => ['help-button','theme-button','language-button']
+                .map(id => Math.round(document.getElementById(id).getBoundingClientRect().height * 100) / 100)""")
+            check(all(abs(height-34)<0.5 for height in header_heights),
+                  f'{width}: Help/Theme/Language uniform 34px height (actual {header_heights})')
+            check(reader.evaluate("getComputedStyle(document.getElementById('help-button')).fontSize")=='25px',
+                  f'{width}: prominent question-mark glyph retained')
+            export_button=reader.locator('#export-reading-data')
+            check(export_button.inner_text()=='Export' and
+                  export_button.get_attribute('data-en')=='Export' and
+                  export_button.get_attribute('data-zh')=='导出',
+                  f'{width}: concise bilingual Export action')
+            check(export_button.get_attribute('title')=='Export reading data',
+                  f'{width}: full export description retained on hover')
             check(help_link.get_attribute('href')=='tutorial.html',f'{width}: Help targets tutorial.html')
             check(help_link.get_attribute('target')=='_blank' and help_link.get_attribute('rel')=='noopener',f'{width}: safe new-tab contract')
             check(reader.evaluate('document.documentElement.scrollWidth===innerWidth'),f'{width}: reader has no overflow')
@@ -44,6 +57,12 @@ def run():
             check(reader.evaluate('window.__fileClicks')==1,f'{width}: O shortcut retains file chooser')
             reader.keyboard.press('h')
             check(reader.locator('#library-open-pdf').is_visible(),f'{width}: History alternative PDF opener visible')
+            reader.locator('#language-button').click()
+            check(reader.locator('#export-reading-data').inner_text()=='导出',
+                  f'{width}: language switch uses concise Chinese Export')
+            reader.locator('#language-button').click()
+            check(reader.locator('#export-reading-data').inner_text()=='Export',
+                  f'{width}: switching back restores concise English Export')
             reader.locator('#library-open-pdf').click()
             check(reader.evaluate('window.__fileClicks')==2,f'{width}: History open triggers chooser')
             check(not errors,f'{width}: no reader JS exceptions')
