@@ -1,3 +1,15 @@
+# v393 — Raw detector evidence in reading-data exports (Beijing UTC+08, 2026-11-07)
+
+**Scope:** Export now includes a page-complete `rawDetection@1` diagnostic payload alongside unchanged `contentDetection`, `documentOcr`, and `session` in the same `mathreader.reading-data@1` file. Original native PDF.js text items / transforms, effective detector line inputs, saved Meticulous OCR page records, and currently available equation-margin OCR lines become inspectable without the original PDF. Newly executed full-document or Meticulous OCR also saves direct Tesseract text (`ocrRawText`); raw hOCR HTML is not retained and old OCR caches cannot retroactively supply it. Source data is not auto-corrected, imported, or used as ground truth. Full detail: `OCR_RAW_EXPORT_v393.md`.
+
+**Safety:** asynchronous capture is scoped to one PDF object and SHA identity; partial page-extraction errors mark the exported evidence `complete: false`. Long documents may produce large JSON. No new worker, engine, side-effect, UI control, network request, or background OCR is introduced by evidence capture; the existing export settlement behavior remains.
+
+**Open evidence gaps:** PDF.js/Tesseract actual browser export using the original 73-page Yau and 253-page Giusti PDFs is not yet proven here; old `mathreader` JSON exports lack the raw evidence by construction. Original hOCR, rejected candidate traces, Texify crop images, and source page pixels are still unavailable. Output size and memory for extremely long books require a browser acceptance run. Never interpret this code-level regression as measured printed-text OCR accuracy.
+
+**Regression gate executed:** **36/36 Node JavaScript suites PASS**, including **37 direct v393 export assertions**; **7/7 Chromium shell/component scripts PASS** (simulated PDF, not live OCR); **5/5 additional Python regression scripts PASS** (including 54 P0 comparator unit tests); all ten subsystem JS files plus the assembled runtime and bootstrap passed `node --check`. Clean patch replay and ZIP integrity are verified separately during delivery. These are code/regression results, not measurements of Yau/Giusti OCR precision.
+
+---
+
 ## v392 — Two real reading-data exports: Structure/Equation classification and long-book index cap (2026-11-07, Beijing UTC+08)
 
 **Baseline:** complete v390 source plus v391 cache-integrity root patch. **Release:** v392. Read `OCR_EXPORT_AUDIT_v392.md` for exact evidence counts, source hashes, examples, fixes, conservative limitations and browser-vs-OCR scope. This is P0 recognition reliability, not a feature expansion.

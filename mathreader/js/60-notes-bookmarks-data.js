@@ -1070,6 +1070,87 @@ async function settleContentDetectionForExport() {
   return structureIndexVersion === STRUCTURE_INDEX_VERSION && equationLabelIndex instanceof Map;
 }
 
+// A reading-data export is also a reproducible detector-input snapshot.  The
+// four published indexes alone cannot explain rejected headings/equation tags.
+// Do not invoke OCR for export: use original PDF.js text content plus evidence
+// from OCR runs already performed, with explicit provenance and missing-data
+// markers. This is diagnostic evidence only; import intentionally ignores it.
+async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
+  if (!sourceDoc?.numPages || !sourceKey) return null;
+  const pageCount = Number(sourceDoc.numPages);
+  const sameDocument = () => pdfDoc === sourceDoc && currentFileKey === sourceKey;
+  const pageRecords = [];
+  const errors = [];
+  const marginByPage = new Map();
+  const cachePrefix = `${sourceKey}|`;
+  if (equationSupplementalOcrCache instanceof Map) {
+    for (const [key, lines] of equationSupplementalOcrCache) {
+      if (typeof key !== 'string' || !key.startsWith(cachePrefix) || !Array.isArray(lines)) continue;
+      const remainder = key.slice(cachePrefix.length);
+      const match = remainder.match(/^(left|right)\|(\d+)$/);
+      if (!match) continue;
+      const pageNum = Number(match[2]);
+      if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > pageCount) continue;
+      if (!marginByPage.has(pageNum)) marginByPage.set(pageNum, []);
+      marginByPage.get(pageNum).push({ side: match[1], lines: jsonClone(lines, []) });
+    }
+  }
+  // A private per-export cache avoids filling the long-lived page cache with
+  // every page of a large textbook. The native PDF LRU remains bounded.
+  const exportLineCache = new Map();
+  for (let pageNum = 1; pageNum <= pageCount; pageNum += 1) {
+    if (!sameDocument()) return null;
+    const record = { page: pageNum };
+    try {
+      const { page, content } = await nativePageTextData(sourceDoc, pageNum);
+      if (!sameDocument()) return null;
+      const items = jsonClone(content?.items || [], []);
+      record.nativePdf = {
+        view: jsonClone(page?.view || [], []),
+        items, styles: jsonClone(content?.styles || {}, {}),
+        // PDF.js item order is the native extraction order, not reading order.
+        rawText: items.map((item) => `${String(item?.str || '')}${item?.hasEOL ? '\n' : ''}`).join('')
+      };
+    } catch (error) {
+      if (!sameDocument()) return null;
+      errors.push({ page: pageNum, stage: 'native-pdf', message: String(error?.message || error).slice(0, 300) });
+    }
+    const meticulous = manualIndexOcrPages instanceof Map ? manualIndexOcrPages.get(pageNum) : null;
+    const fullOcr = documentOcrPages instanceof Map && documentOcrActive ? documentOcrPages.get(pageNum) : null;
+    record.textSource = meticulous ? 'meticulous-ocr' : fullOcr ? 'document-ocr' : 'native-pdf';
+    if (meticulous) record.meticulousOcr = jsonClone(meticulous, null);
+    // Complete normalized full-document OCR evidence is already exported once
+    // at top-level documentOcr, avoiding potentially huge duplicate page data.
+    if (fullOcr) record.documentOcrPageRef = pageNum;
+    if (meticulous || fullOcr) record.directOcrTextAvailable = typeof (meticulous || fullOcr)?.ocrRawText === 'string';
+    if (marginByPage.has(pageNum)) record.equationMarginOcr = marginByPage.get(pageNum);
+    try {
+      const lines = await pageTextLines(pageNum, sourceDoc, exportLineCache, null);
+      if (!sameDocument()) return null;
+      record.detectorInputLines = jsonClone(lines, []);
+    } catch (error) {
+      if (!sameDocument()) return null;
+      errors.push({ page: pageNum, stage: 'detector-lines', message: String(error?.message || error).slice(0, 300) });
+    }
+    exportLineCache.delete(pageNum);
+    pageRecords.push(record);
+    // Do not keep the event loop occupied throughout a hundreds-page export.
+    if (pageNum % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  if (!sameDocument()) return null;
+  return {
+    version: 1,
+    pageCount,
+    complete: errors.length === 0 && pageRecords.length === pageCount,
+    errors,
+    // OCR that never ran cannot be reconstructed from saved indexes. In older
+    // caches even a completed run may lack the direct Tesseract ocrRawText.
+    fullDocumentOcrStoredAt: documentOcrActive ? 'documentOcr' : null,
+    rawHocrAvailable: false,
+    pages: pageRecords
+  };
+}
+
 async function exportReadingData() {
   if (!pdfDoc || !currentFileKey) return;
   const sourceDoc = pdfDoc;
@@ -1084,6 +1165,8 @@ async function exportReadingData() {
       }
       return;
     }
+    const rawDetection = await readingDataRawDetectionSnapshot(sourceDoc, sourceKey);
+    if (!rawDetection || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
     const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
     const session = snapshotSession();
     downloadJsonFile(`${safeName}-mathreader.json`, {
@@ -1092,6 +1175,10 @@ async function exportReadingData() {
       // Portable detection is explicit in the export instead of being an
       // accidental side effect of whichever session fields happen to exist.
       contentDetection: readingDataContentDetectionSnapshot(session),
+      // Actual pre-classification page inputs, including original PDF.js items,
+      // previous Meticulous OCR observations and completed margin OCR lines.
+      // Does not trigger recognition or mutate an existing reading session.
+      rawDetection,
       // For scan-backed PDFs the OCR page geometry is the document text source.
       // Export it with the reading data so import does not require re-running OCR
       // merely to recover Structure / Results / Equations / Bibliography.

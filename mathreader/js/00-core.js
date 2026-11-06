@@ -2093,7 +2093,11 @@ function pageRecordFromHocr(hocr, fallbackText, width, height, pageNum) {
     });
   }
   const text = lines.map((line) => line.text).join(' ').replace(/\s+/g, ' ').trim();
-  return { page: pageNum, width: safeWidth, height: safeHeight, text, lines, words };
+  // Keep the unmodified Tesseract plain-text answer as well as the normalized
+  // line/word geometry. Earlier versions retained only normalized lines, so
+  // their original engine text cannot be reconstructed retroactively.
+  return { page: pageNum, width: safeWidth, height: safeHeight, text, lines, words,
+    ocrRawText: String(fallbackText || '') };
 }
 
 function documentNativeTextSamplePages(pageCount) {
