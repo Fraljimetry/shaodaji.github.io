@@ -1,0 +1,108 @@
+{
+  "version": 365,
+  "baseline": "v364 overlaid on supplied mathreader(9).zip",
+  "source_test_files": 13,
+  "node_all_pass": true,
+  "node_results": [
+    {
+      "file": "mathreader/tests/bibliography_boundary_regression.js",
+      "code": 0,
+      "seconds": 0.06,
+      "output": "OK: 15 boundary-bibliography class assertions\n"
+    },
+    {
+      "file": "mathreader/tests/cross_document_regression.js",
+      "code": 0,
+      "seconds": 0.11,
+      "output": "OK: 74 MathReader v358 cross-document and persistence assertions\n"
+    },
+    {
+      "file": "mathreader/tests/embedded_outline_title_regression.js",
+      "code": 0,
+      "seconds": 0.08,
+      "output": "OK: 25 embedded-outline malformed-tail class-level assertions\n"
+    },
+    {
+      "file": "mathreader/tests/equation_progress_regression.js",
+      "code": 0,
+      "seconds": 0.06,
+      "output": "OK: 33 equation progress / timing regression assertions\n"
+    },
+    {
+      "file": "mathreader/tests/formula_latex_syntax_regression.js",
+      "code": 0,
+      "seconds": 2.76,
+      "output": "OK: 879 formula LaTeX checks; 228 MathJax compilations\n"
+    },
+    {
+      "file": "mathreader/tests/formula_ocr_initialization_regression.js",
+      "code": 0,
+      "seconds": 0.13,
+      "output": "ormula_ocr_initialization_regression.js:110:9)\nMathReader OCR backend failed { label: 'CPU', official: true } Error: Formula OCR initialization exceeded its 120-second safety limit.\n    at formulaOcrTimeoutError (evalmachine.<anonymous>:46:17)\n    at Timeout._onTimeout (evalmachine.<anonymous>:58:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7) {\n  code: 'FORMULA_OCR_INIT_TIMEOUT'\n}\n"
+    },
+    {
+      "file": "mathreader/tests/formula_ocr_lazy_regression.js",
+      "code": 0,
+      "seconds": 0.07,
+      "output": "OK: 28 formula OCR lazy-initialization assertions\n"
+    },
+    {
+      "file": "mathreader/tests/formula_preview_compilation_regression.js",
+      "code": 0,
+      "seconds": 0.04,
+      "output": "OK: 12 formula MathJax preview lifecycle assertions\n"
+    },
+    {
+      "file": "mathreader/tests/maintenance_integrity_regression.js",
+      "code": 0,
+      "seconds": 0.25,
+      "output": "OK: 24 MathReader v365 maintenance integrity assertions\n"
+    },
+    {
+      "file": "mathreader/tests/p0_probe_evidence_regression.js",
+      "code": 0,
+      "seconds": 0.05,
+      "output": "OK: 5 test-only P0 probe evidence checks\n"
+    },
+    {
+      "file": "mathreader/tests/performance_safe_regression.js",
+      "code": 0,
+      "seconds": 0.21,
+      "output": "OK: 1204 scroll/layout/CSS parity assertions; rect reads 30k pages: 30000 -> 10\n"
+    },
+    {
+      "file": "mathreader/tests/precision_context_regression.js",
+      "code": 0,
+      "seconds": 0.08,
+      "output": "OK: 33 MathReader v348 precision class assertions\n"
+    },
+    {
+      "file": "mathreader/tests/results_toc_regression.js",
+      "code": 0,
+      "seconds": 0.07,
+      "output": "OK: 23 MathReader TOC/Results class-level assertions\n"
+    }
+  ],
+  "help_browser": {
+    "assertions": 130,
+    "passed": 130,
+    "status": "PASS"
+  },
+  "responsive_browser": {
+    "status": "INCOMPLETE",
+    "reason": "execution timeout"
+  },
+  "full_gate": {
+    "status": "INCOMPLETE",
+    "reason": "execution timeout"
+  },
+  "p0_actual_pdf_texify": "UNVERIFIED",
+  "p1_actual_pdf_idb": "UNVERIFIED",
+  "new_confirmed_bugs": [],
+  "risk_categories": [
+    "large PDF/continuous-mode real memory & load speed not benchmarked",
+    "CDN/model availability requires online validation",
+    "printed/scanned/handwritten formula+text ground-truth coverage incomplete",
+    "two-document P1 persistent navigation not accepted with actual PDF.js"
+  ]
+}

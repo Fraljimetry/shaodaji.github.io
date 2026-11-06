@@ -1,4 +1,28 @@
-# MathReader Regression / Behavioral Audit Record — v364
+# MathReader Regression / Behavioral Audit Record — v365
+
+## v365 — 15px Help glyph and targeted broad regression audit (Beijing UTC+08, 2026-11-06)
+
+**Baseline:** supplied complete `mathreader(9).zip` (v363), with previous v364 patch overlaid. **Release:** v364 → v365. User-visible behavior change is limited to reducing the Help `?` glyph **20px → 15px**, while preserving its **34px** button dimensions, 34px mobile override, keyboard focus, accessibility label, and tutorial target. Export continues to be concise. Ten production JS subsystem files are byte-identical to v364; changes to the bootstrap and index are version/cache-key updates only.
+
+### Audit scope and actually executed gates
+
+- Read the full standing regression policy and latest historical findings; examined the ten-module bootstrap, CSS/responsive rules, validation scripts, offline runner, browser harness and risk notes for P0/P1, image-only OCR, formula OCR, indexing, persistent local library, cross-document navigation and memory/performance. Reviewed source by pattern for DOM measurements, event scheduling, external model dependencies, blob URLs, and DOM content injection.
+- JS syntax checks of every subsystem, bootstrap, JS test and JS regression tool: PASS; **13/13 Node regression files PASS**, including **879 LaTeX syntax checks and 228 real MathJax compilations**, **1,204 geometric/layout and performance parity assertions**, and source-level bibliographic, Results, indexing/persistence, OCR initialization/failure-path tests. `formula_ocr_initialization_regression.js` logs a deliberately exercised simulated timeout but exits successfully.
+- Updated real Chromium shell Help/tutorial regression: **130/130 assertions PASS** at 320, 375, 768, 1024 and 1440px; checks measured Help/Theme/Language button heights of 34px, Help glyph computed font size 15px, language, Export, shortcuts and script errors. This is not a real PDF browser test.
+- Comprehensive one-command P0 gate and separate responsive Chromium test each **TIMEOUT/INCOMPLETE** in the constrained runtime. Neither is represented as PASS. Real PDF.js 4.10.38, Texify inference and full original-document visual truth were not available in this campaign. P0/P1 end-to-end mathematical accuracy and memory/performance at real document scale remain **UNVERIFIED**.
+
+### Findings, deferred concerns and next verification
+
+1. **No new confirmed application bug fixed during this audit.** The glyph edit is intentionally separate from detector, state or rendering changes. Existing historical known source-level subject-index/glossary `Definition` false-positive and other candidate misclassifications remain tracked; status **KNOWN HISTORICAL / final-browser UNVERIFIED**. Do not implement a global suppression based on a few examples.
+2. **Performance concern — large documents and continuous mode (UNVERIFIED at production scale).** Document skeleton metrics require page geometry from PDF.js. Prior bounded DOM scan optimizations have synthetic parity evidence, but browser profiling of PDF.js document loading, memory, very long continuous-mode papers, and rapid navigation is still needed. Do not replace exact metrics with guessed layout without anchor/invariant evidence.
+3. **Dependency/availability concern (UNVERIFIED online and offline).** Production loads pinned PDF.js from CDN and lazy OCR dependencies/models from network; network outage, blocked CDN, slow first model initialization and cache eviction need genuine browser evaluation. Intentional WebGPU→CPU fallback stays unchanged. Do not introduce silent alternate engines.
+4. **P0 paired detection gap (UNVERIFIED).** Need cross-disciplinary old/new/printed/scanned/handwritten original PDFs, complete document text + Structure/Results/Equations/Bibliography + formula image-to-LaTeX pairings, independent page/crop truth and real Texify browser proof; MathJax compilation alone is not semantic correctness.
+5. **P1 durability gap (BLOCKED/UNVERIFIED).** Full two-PDF bibliography link/relink/unlink and return-to-exact-page-ratio scenario through genuine PDF.js/IndexedDB remains outstanding. Existing source-level assertions do not close the gap.
+6. **UI responsive retest (INCOMPLETE).** Previous v364 176/176 responsive assertions and 130/130 Help assertions are recorded historically. Only the latter was rerun and passed under v365; responsive suite timing out is not a newly confirmed UI regression. Validate mobile with live Chrome at 320, 375, 520, 768, 860, 861, 1024 and 1440px once runtime allows.
+
+**Conservative decision:** do not make speculative changes for unverified risks. Preserve approved P0/P1 scope; P2/P3/P4 are not authorized. For independent reproduction run `python mathreader/regression_tools/p0_gate.py --source-root mathreader --out-dir <report-folder>` from the project root and supply the original PDF manifest and pinned PDF.js for real browser acceptance. `regression/v365_audit.json` contains the targeted gate results.
+
+---
 
 ## v364 — Compact Help glyph, unchanged 34px control (2026-11-06, Beijing UTC+08)
 

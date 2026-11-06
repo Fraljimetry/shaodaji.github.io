@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v364 reader header and Export interaction plus static tutorial Chromium regression.
+"""v365 reader header and Export interaction plus static tutorial Chromium regression.
 
 The sandbox blocks HTTP/file/data navigation, so this checks the real reader
 shell and independently renders the genuine tutorial HTML/CSS in Chromium.
@@ -40,8 +40,8 @@ def run():
                 .map(id => Math.round(document.getElementById(id).getBoundingClientRect().height * 100) / 100)""")
             check(all(abs(height-34)<0.5 for height in header_heights),
                   f'{width}: Help/Theme/Language uniform 34px height (actual {header_heights})')
-            check(reader.evaluate("getComputedStyle(document.getElementById('help-button')).fontSize")=='20px',
-                  f'{width}: compact question-mark glyph 20px')
+            check(reader.evaluate("getComputedStyle(document.getElementById('help-button')).fontSize")=='15px',
+                  f'{width}: compact question-mark glyph 15px')
             export_button=reader.locator('#export-reading-data')
             check(export_button.inner_text()=='Export' and
                   export_button.get_attribute('data-en')=='Export' and
