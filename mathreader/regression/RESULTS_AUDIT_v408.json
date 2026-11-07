@@ -1,0 +1,195 @@
+{
+  "audit": "v408 previous-file Results detection audit",
+  "source": "reconstructed v408 (v405 original source plus v406/v407/v408 patches)",
+  "kind": "audit-only, no source changes",
+  "original_pdf_pairs": [
+    {
+      "pdf": "Ahlfors-Conformal-Invariants.pdf",
+      "export": "Ahlfors-Conformal-Invariants-mathreader (6).json",
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "matches_export_doc_id": true,
+      "pages": 172
+    },
+    {
+      "pdf": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "export": "Enrico-Giusti---Minimal-Surfaces-and-Functions-of-Bounded-Variation-Birkh-user-1984--mathreader(4).json",
+      "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+      "matches_export_doc_id": true,
+      "pages": 253
+    },
+    {
+      "pdf": "geometrical_hypothesis_Banach(1).pdf",
+      "export": "geometrical_hypothesis_Banach-mathreader(1).json",
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "matches_export_doc_id": true,
+      "pages": 10
+    },
+    {
+      "pdf": "SPS_1988__22__485_0(1).pdf",
+      "export": "SPS_1988__22__485_0-mathreader(1).json",
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "matches_export_doc_id": true,
+      "pages": 18
+    },
+    {
+      "pdf": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "export": "Asymptotic-behaviour-of-minimal-graphs-over-exterior-domains.-L.-Simon-mathreader.json",
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "matches_export_doc_id": true,
+      "pages": 13
+    },
+    {
+      "pdf": "yau1978.pdf",
+      "export": "yau1978-mathreader(2).json",
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "matches_export_doc_id": true,
+      "pages": 73
+    }
+  ],
+  "replayed_result_exports": [
+    {
+      "document": "Ahlfors-Conformal-Invariants.pdf",
+      "pages": 172,
+      "hasLines": 167,
+      "replayedCount": 95,
+      "exportedCount": 95,
+      "removed": [],
+      "added": [],
+      "indexSuppressionActive": null
+    },
+    {
+      "document": "Asymptotic behaviour of minimal graphs over exterior domains. L. Simon.pdf",
+      "pages": 13,
+      "hasLines": 13,
+      "replayedCount": 4,
+      "exportedCount": 4,
+      "removed": [],
+      "added": [],
+      "indexSuppressionActive": null
+    },
+    {
+      "document": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "pages": 253,
+      "hasLines": 248,
+      "replayedCount": 196,
+      "exportedCount": 196,
+      "removed": [],
+      "added": [],
+      "indexSuppressionActive": false
+    },
+    {
+      "document": "SPS_1988__22__485_0.pdf",
+      "pages": 18,
+      "hasLines": 18,
+      "replayedCount": 7,
+      "exportedCount": 7,
+      "removed": [],
+      "added": [],
+      "indexSuppressionActive": null
+    },
+    {
+      "document": "geometrical_hypothesis_Banach.pdf",
+      "pages": 10,
+      "hasLines": 10,
+      "replayedCount": 14,
+      "exportedCount": 14,
+      "removed": [],
+      "added": [],
+      "indexSuppressionActive": null
+    },
+    {
+      "document": "YamabeProblem.pdf",
+      "pages": 56,
+      "hasLines": 56,
+      "replayedCount": 51,
+      "exportedCount": 51,
+      "removed": [],
+      "added": [],
+      "indexSuppressionActive": null
+    }
+  ],
+  "yau_saved_results": {
+    "pages": 73,
+    "count": 13,
+    "detector_pages": 0,
+    "direct_pdf_review": "Lemma on p.38; page-39 Lemma 1 line is prose reference, not a second declaration"
+  },
+  "confirmed_defects": [
+    {
+      "document": "Giusti",
+      "type": "reference-promoted-into-declaration",
+      "location": "PDF p.150",
+      "false_declaration": "Theorem 14.5",
+      "actual_declaration": "PDF p.175",
+      "consequence": "subsequent true declarations rejected by global monotonic theorem-number filter",
+      "affected_true_declarations": [
+        {
+          "label": "Theorem 12.9",
+          "page": 154
+        },
+        {
+          "label": "Theorem 12.10",
+          "page": 157
+        },
+        {
+          "label": "Theorem 12.11",
+          "page": 158
+        },
+        {
+          "label": "Theorem 12.12",
+          "page": 158
+        },
+        {
+          "label": "Theorem 13.2",
+          "page": 165
+        },
+        {
+          "label": "Theorem 13.4",
+          "page": 166
+        },
+        {
+          "label": "Theorem 13.5",
+          "page": 168
+        },
+        {
+          "label": "Theorem 13.6",
+          "page": 169
+        },
+        {
+          "label": "Theorem 13.7",
+          "page": 170
+        },
+        {
+          "label": "Theorem 13.8",
+          "page": 172
+        },
+        {
+          "label": "Theorem 14.2",
+          "page": 173
+        },
+        {
+          "label": "Theorem 14.5",
+          "page": 175
+        }
+      ]
+    },
+    {
+      "document": "Yau 1978",
+      "type": "prose-reference-promoted-into-duplicate-result",
+      "false_declaration": "Lemma 1",
+      "location": "PDF p.39",
+      "actual_unnumbered_lemma": "PDF p.38"
+    }
+  ],
+  "confirmed_non_defect": {
+    "document": "Giusti",
+    "label": "Theorem 125",
+    "page": 253,
+    "note": "A single-page parser misclassifies an index row, but complete builder keeps an Index mode across pages and correctly suppresses it."
+  },
+  "source_test_results": {
+    "javascript_regression_suites": "52/52 passed on v408",
+    "results_specific_suites": "4/4 passed in present audit"
+  },
+  "scope_note": "Replay agreement shows deterministic parser behavior only. No full human-annotated declaration ground truth; no mathematical accuracy percentage can be certified. Yamabe original PDF unavailable as matching SHA; export-only replay."
+}
