@@ -662,4 +662,13 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .export-setting-copy{display:flex;flex-direction:column;gap:3px;min-width:0;line-height:1.35}
 .export-setting-title{font-size:10px;font-weight:500;color:var(--ink)}
 .export-setting-description{font-size:9px;line-height:1.4;color:var(--muted);overflow-wrap:break-word}
-.export-settings-note{margin:0;border-top:1px solid var(--border);padding-top:8px;font-size:9px;line-height:1.4;color:var(--muted)}
+.export-settings-note{margin:0;border-top:1px solid var(--border);padding-top:8px;font-size:9px;line-height:1.4;color:var(--muted);text-wrap:balance}
+.export-settings-note>span{display:block;text-wrap:balance}
+
+/* v399: intentional short-copy wrapping, no single-word orphan at supported sidebar widths. */
+.sidebar-right .display-note,
+.sidebar-right .export-setting-description,
+.sidebar-right .export-settings-note,
+.sidebar-right .note-latex-help,
+.sidebar-right .ocr-help,
+.sidebar-right .compact-help-body { text-wrap: balance; }

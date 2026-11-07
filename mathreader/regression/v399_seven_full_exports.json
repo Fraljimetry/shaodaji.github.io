@@ -1,0 +1,131 @@
+{
+  "source": "Seven actual v398 reading-data JSON exports, summarized; no full copyrighted text embedded",
+  "exports": [
+    {
+      "exportFilename": "Ahlfors-Conformal-Invariants-mathreader.json",
+      "document": "Ahlfors-Conformal-Invariants.pdf",
+      "sha256_json": "69f6fcc32a06a82ce62657eeef29eb2f8fc9d05e1215ce845df6eab827973661",
+      "pdfPages": 172,
+      "exportedPages": 172,
+      "nativeTextPages": 167,
+      "structure": 61,
+      "results": 95,
+      "equations": 163,
+      "bibliography": 66,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": [
+        {
+          "owner": "Theorem 1-13",
+          "ref": "assumption f"
+        }
+      ]
+    },
+    {
+      "exportFilename": "Asymptotic-behaviour-of-minimal-graphs-over-exterior-domains.-L.-Simon-mathreader.json",
+      "document": "Asymptotic behaviour of minimal graphs over exterior domains. L. Simon.pdf",
+      "sha256_json": "a9bed956befa08d83b545a3a9a748894d4d311ad5e223fa5072d7d9409b8bfe2",
+      "pdfPages": 13,
+      "exportedPages": 13,
+      "nativeTextPages": 13,
+      "structure": 4,
+      "results": 4,
+      "equations": 34,
+      "bibliography": 18,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": [
+        {
+          "owner": "Lemma 1.1",
+          "ref": "theorem e"
+        }
+      ]
+    },
+    {
+      "exportFilename": "Enrico-Giusti---Minimal-Surfaces-and-Functions-of-Bounded-Variation-Birkh-user-1984--mathreader(3).json",
+      "document": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "sha256_json": "0c668c9ab4aef4289f2221bb619431d86928bb07e2d9b05be4cfea8dbc972f23",
+      "pdfPages": 253,
+      "exportedPages": 253,
+      "nativeTextPages": 248,
+      "structure": 24,
+      "results": 196,
+      "equations": 262,
+      "bibliography": 75,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": [
+        {
+          "owner": "Theorem 14.13",
+          "ref": "theorem a"
+        }
+      ]
+    },
+    {
+      "exportFilename": "geometrical_hypothesis_Banach-mathreader.json",
+      "document": "geometrical_hypothesis_Banach.pdf",
+      "sha256_json": "02c4d5b93690323c4fb3bcd4b2a25b2d1ead2249a6cddf102a554d99c88a8176",
+      "pdfPages": 10,
+      "exportedPages": 10,
+      "nativeTextPages": 10,
+      "structure": 6,
+      "results": 14,
+      "equations": 16,
+      "bibliography": 9,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": []
+    },
+    {
+      "exportFilename": "SPS_1988__22__485_0-mathreader.json",
+      "document": "SPS_1988__22__485_0.pdf",
+      "sha256_json": "572fd3f977a87e9c82ba7cae3deae51eba51d758746039d9c000cd67a1bf79a1",
+      "pdfPages": 18,
+      "exportedPages": 18,
+      "nativeTextPages": 18,
+      "structure": 3,
+      "results": 7,
+      "equations": 25,
+      "bibliography": 17,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": []
+    },
+    {
+      "exportFilename": "YamabeProblem-mathreader(1).json",
+      "document": "YamabeProblem.pdf",
+      "sha256_json": "800fe6703b927e64d8489781843cc9b672f6a74c77e8944189331f702f927c53",
+      "pdfPages": 56,
+      "exportedPages": 56,
+      "nativeTextPages": 56,
+      "structure": 12,
+      "results": 51,
+      "equations": 80,
+      "bibliography": 46,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": [
+        {
+          "owner": "Proposition 2.7",
+          "ref": "example u"
+        },
+        {
+          "owner": "Lemma 4.3",
+          "ref": "remark X"
+        },
+        {
+          "owner": "Theorem 4.5",
+          "ref": "hypothesis X"
+        }
+      ]
+    },
+    {
+      "exportFilename": "yau1978-mathreader(3).json",
+      "document": "yau1978.pdf",
+      "sha256_json": "73c2b880ebc30dc513abd175aaafbba2355bb981c7dc05e3d32c5213601db445",
+      "pdfPages": 73,
+      "exportedPages": 73,
+      "nativeTextPages": 73,
+      "structure": 13,
+      "results": 13,
+      "equations": 268,
+      "bibliography": 15,
+      "fullDocumentOcr": "not-stored",
+      "suspectUnresolvedLetterReferences": []
+    }
+  ]
+}

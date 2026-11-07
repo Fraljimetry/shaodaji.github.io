@@ -28,7 +28,7 @@ const sandbox = {
   textCache: new Map(), lineCache: new Map(), structureIndexBuildToken: 0,
   structureEntries: [], bibliographyEntries: [], structureIndexVersion: 0,
   pendingOutlineReselectKey: null,
-  STRUCTURE_INDEX_VERSION: 49, STRUCTURE_REFERENCE_RE: referenceRe,
+  STRUCTURE_INDEX_VERSION: 50, STRUCTURE_REFERENCE_RE: referenceRe,
   async suppliedTextLines(page) { return linesByPage.get(page) || []; },
   async *orderedPrefetch(items, fn) {
     for (const item of items) yield { item, value: await fn(item) };

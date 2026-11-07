@@ -1,0 +1,26 @@
+{
+  "note": "Supplemental direct standalone tests after concurrent and sequential runner intermittency; original complete runner ledger retained.",
+  "checks": [
+    {
+      "test": "p1_browser_smoke.py",
+      "status": "PASS",
+      "assertions": 36,
+      "repeated": 4
+    },
+    {
+      "test": "meticulous_ocr_menu_browser_v390.py",
+      "status": "PASS",
+      "scope": "real browser simulated OCR menu"
+    },
+    {
+      "test": "settings_text_orphans_v399.py",
+      "status": "PASS",
+      "width_theme_cases": 12
+    },
+    {
+      "test": "ui_responsive_regression.py",
+      "status": "PASS",
+      "scope": "responsive browser layout"
+    }
+  ]
+}

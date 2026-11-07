@@ -75,6 +75,6 @@ with sync_playwright() as p:
         assert bounds and 0<=bounds['x']<375 and bounds['x']+bounds['width']<=375, bounds
         item.check()
     assert a.is_checked() and b.is_checked()
-    assert 'Reading data always included' in details.inner_text()
+    assert 'Reading data is always included.' in details.inner_text() and 'Export never starts OCR.' in details.inner_text()
     browser.close()
 print('PASS | Chromium v397 export settings | defaults, four states, preference restore, dark/light, mobile, localization markup')

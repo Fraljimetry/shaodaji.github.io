@@ -620,13 +620,18 @@ async function detectOutlineFromTypography() {
   // section immediately below the table of contents on page 1. Mark only the
   // actual TOC lines so the body heading remains eligible.
   const contentsLines = new Set();
+  // Old scans may carry a printed running folio and OCR-confusable letters in
+  // the Contents header ("CONTEN1'S vii"). Accept the variant ONLY as a
+  // candidate header; multiple navigation rows below must still corroborate
+  // that this is a real table of contents before it suppresses any headings.
+  const contentsHeader = (text) => /^(?:(?:table\s+of\s+)?contents|conten1'?s)(?:\s+[ivxlcdm]{1,7})?$/i.test(String(text || '').trim());
   const shortTocEntry = (text) => {
     const value = String(text || '').trim();
     if (!value || value.length > 100) return false;
-    if (/^(?:bibliography|references)$/i.test(value)) return true;
+    if (/^(?:bibliography|references|index|errata)(?:\s+\d{1,4})?$/i.test(value)) return true;
     if (/^appendix(?:\s+[A-Z0-9]+)?\s*$/i.test(value)) return true;
     if (/^appendix(?:\s+[A-Z0-9]+)?(?:[:.]|\s)\s*\S/i.test(value)) return true;
-    if (!/^(?:\d+(?:\.\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+\S/.test(value)) return false;
+    if (!/^(?:\d+(?:[.\-]\d+){0,4}|[A-H](?:\.\d+){1,4}|[A-H][.)])(?:[.)])?\s+\S/.test(value)) return false;
     const words = value.split(/\s+/).filter(Boolean);
     if (words.length > 12) return false;
     // A body section that immediately continues into prose is not a TOC row.
@@ -635,9 +640,9 @@ async function detectOutlineFromTypography() {
   };
   for (const lines of pages) {
     const orderedLines = [...lines].sort((a, b) => Number(b.y) - Number(a.y));
-    const contentsIndex = orderedLines.findIndex((line) => /^(?:table\s+of\s+)?contents$/i.test(String(line.text || '').trim()));
+    const contentsIndex = orderedLines.findIndex((line) => contentsHeader(line.text));
     if (contentsIndex >= 0) {
-      contentsLines.add(orderedLines[contentsIndex]);
+      const possibleContents = [orderedLines[contentsIndex]];
       let tocRows = 0;
       const tocKeys = new Set();
       const tocRowKey = (value) => normalizedHeadingText(value)
@@ -652,13 +657,16 @@ async function detectOutlineFromTypography() {
           // contents. Once a TOC title repeats without its trailing page
           // number, the duplicate is the body heading, not another TOC row.
           if (tocRows >= 2 && key && tocKeys.has(key)) break;
-          contentsLines.add(line);
+          possibleContents.push(line);
           if (key) tocKeys.add(key);
           tocRows += 1;
           continue;
         }
         if (tocRows >= 2) break;
       }
+      // A single ambiguous "Contents"-looking line is not enough to
+      // suppress a real section or Appendix. Require at least two TOC rows.
+      if (tocRows >= 2) for (const line of possibleContents) contentsLines.add(line);
     }
     // Also cover traditional dotted-leader TOCs even when the word Contents
     // is absent or extracted poorly.
@@ -669,7 +677,7 @@ async function detectOutlineFromTypography() {
   // typography belongs to the book's cover/series/author metadata. Do not
   // remove genuine numbered headings or known Preface/Introduction headings.
   const preliminaryContentsPage = pages
-    .flatMap((lines) => lines.filter((line) => /^(?:table\s+of\s+)?contents$/i.test(String(line.text || '').trim())).map((line) => line.page))
+    .flatMap((lines) => lines.filter((line) => contentsHeader(line.text)).map((line) => line.page))
     .filter((page) => Number.isInteger(page) && page <= Math.min(12, Math.ceil(maxPages * 0.10)))
     .sort((a, b) => a - b)[0] || null;
   const candidates = [];
@@ -1081,7 +1089,7 @@ async function detectOutlineFromTypography() {
   }
   const contentsPages = new Set();
   for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-    if ((pages[pageIndex] || []).some((line) => /^(?:table\s+of\s+)?contents$/i.test(String(line?.text || '').trim()))) contentsPages.add(pageIndex + 1);
+    if ((pages[pageIndex] || []).some((line) => contentsHeader(line?.text))) contentsPages.add(pageIndex + 1);
   }
   const cleaned = deduped.filter((candidate, index) => {
     if (!contentsPages.has(candidate.page)) return true;
@@ -1119,7 +1127,22 @@ async function detectOutlineFromTypography() {
       if (marker) candidate.title = normalizedHeadingText(`${normalizedHeadingText(marker.text)} ${candidate.title}`);
     }
   }
-  return finalCandidates.slice(0, MAX_INFERRED_OUTLINE_ENTRIES).map(({ _tailY, _tailSize, ...candidate }) => candidate);
+  // A page-top running head can repeat an actual front-matter title on the
+  // very next page. Preserve the first heading, and reject only a measured,
+  // substantially smaller adjacent echo (e.g. Foreword -> FOREWORD). Later
+  // genuine sections with the same name and similarly sized typography stay.
+  const headingsWithoutRunningEchoes = finalCandidates.filter((candidate, index) => {
+    if (!isKnownHeading(candidate.title) || Number(candidate.ratio) > 0.16) return true;
+    const key = normalizedHeadingText(candidate.title).toLocaleLowerCase();
+    const preceding = finalCandidates.slice(0, index).reverse().find((earlier) =>
+      normalizedHeadingText(earlier.title).toLocaleLowerCase() === key
+      && earlier.page < candidate.page);
+    if (!preceding || Number(candidate.page) - Number(preceding.page) !== 1) return true;
+    if (Number(preceding.ratio) > 0.16) return true;
+    return !(Number(candidate.size) > 0 && Number(preceding.size) > 0
+      && Number(candidate.size) < Number(preceding.size) * 0.82);
+  });
+  return headingsWithoutRunningEchoes.slice(0, MAX_INFERRED_OUTLINE_ENTRIES).map(({ _tailY, _tailSize, ...candidate }) => candidate);
 }
 
 function positionOutlineEditActions(trigger, actions) {

@@ -35,11 +35,15 @@ check(run("updateEquationDetectionProgress({phase:'native',nativeDone:4,nativeTo
 check(status.textContent.includes('Text 4/12'),'native progress visible');
 run("updateEquationDetectionProgress({phase:'ocr',ocrDone:3,ocrTotal:8,documentPages:100,labels:16,recovered:2},1,true)");
 check(status.textContent.includes('OCR 3/8'),'OCR denominator is actual plan');
-check(!status.textContent.includes('planned pages') && status.title.includes('image OCR 3/8 planned pages'),'detailed OCR schedule moved to tooltip');
+check(!status.textContent.includes('planned pages') && status.title.includes('equation-margin OCR 3/8 selected pages out of 100 PDF pages (not full-document OCR)'),'tooltip distinguishes the selected equation-margin pass from complete OCR');
 check(status.textContent.includes('selected') && status.title.includes('selected coverage only'),'partial automatic coverage explicitly labeled in short and full status');
-check(status.textContent.includes('+2 recovered') && status.title.includes('+2 recovered'),'recovered labels reported, with expanded details on hover');
+check(status.textContent.includes('+2') && status.title.includes('+2 recovered'),'compact gain remains detailed on hover');
 check(status.textContent.length < 40,'representative OCR status is compact');
 check(!status.textContent.includes('16 labels') && status.title.includes('16 labels'),'total labels remain available in tooltip and adjacent count badge');
+run("updateEquationDetectionProgress({phase:'ocr',ocrDone:28,ocrTotal:49,documentPages:172,labels:163,recovered:3,nativeDone:172,nativeTotal:172},1,true)");
+check(status.textContent.includes('Eq OCR 28/49') && status.textContent.includes('selected'),'actual Ahlfors screenshot scope: 28 of 49 targeted pages');
+check(status.title.includes('172 PDF pages') && status.title.includes('Text 172/172'),'Ahlfors tooltip explains full native pass vs targeted OCR');
+check(status.title.includes('not full-document OCR'),'no false full-OCR completeness assertion');
 run("updateEquationDetectionProgress({phase:'partial',failedPages:1,nativeMs:1040,renderMs:4200,recognizeMs:8300,validationMs:100,elapsedMs:15000},1,true)");
 check(status.textContent.includes('1 failed') && status.title.includes('1 failed pages'),'failed pages never shown as complete success');
 check(status.title.includes('PDF rendering 4.20s') && status.title.includes('OCR recognition 8.30s'),'timing breakdown independently visible');
@@ -55,14 +59,14 @@ check(!status.textContent.includes('OCR 0/') && status.textContent.includes('Tex
 check(status.title.includes('Equation text check finished'),'finished means scheduled work done, not full correctness');
 lang = 'zh';
 run("updateEquationDetectionProgress({phase:'ocr',ocrDone:3,ocrTotal:8,documentPages:100,labels:16,recovered:2},2,true)");
-check(status.textContent.includes('选页') && status.textContent.includes('补 2') && status.title.includes('仅覆盖选定页面'),'Chinese status retains coverage/recovery semantics');
+check(status.textContent.includes('选页') && status.textContent.includes('+2') && status.title.includes('并非全文 OCR'),'Chinese status distinguishes partial margins from full OCR');
 lang = 'en';
 run("updateEquationDetectionProgress({phase:'failed'},2,true)");
 check(status.textContent.includes('Index failed') && status.title.includes('Equation indexing failed'),'explicit failed state retains detail');
 const css=fs.readFileSync(path.join(__dirname,'../mathreader.css'),'utf8');
 check(/\.equation-detection-status\{[^}]*white-space:nowrap[^}]*text-overflow:ellipsis/.test(css),'one-line CSS with narrow-pane ellipsis');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-check(html.includes('mathreader.js?v=398') && html.includes('mathreader.css?v=398'),'cache busters updated to v397');
+check(html.includes('mathreader.js?v=399') && html.includes('mathreader.css?v=399'),'cache busters updated to v397');
 check(html.includes('Expand to index equations.') && html.includes('Numbered references appear here.'),'sidebar empty hints shortened');
 
 const doc={getPage:async()=>({getViewport:()=>({width:250,height:100}),render:()=>({promise:Promise.resolve()})})};

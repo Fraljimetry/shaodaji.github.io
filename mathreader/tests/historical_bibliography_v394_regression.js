@@ -15,7 +15,7 @@ async function replay(data){
   structureEmpty:{classList:{remove(){}},textContent:''},bibliographyEmpty:{classList:{remove(){}},textContent:''},
   textCache:new Map(),lineCache:new Map(),structureIndexBuildToken:0,
   structureEntries:[],bibliographyEntries:[],structureIndexVersion:0,pendingOutlineReselectKey:null,
-  STRUCTURE_INDEX_VERSION:49,STRUCTURE_REFERENCE_RE:/(?:Theorem|Lemma|Proposition|Corollary)\s+\d+(?:\.\d+)*/gi,
+  STRUCTURE_INDEX_VERSION:50,STRUCTURE_REFERENCE_RE:/(?:Theorem|Lemma|Proposition|Corollary)\s+\d+(?:\.\d+)*/gi,
   async injectedPageTextLines(n){return pageLines.get(n)||[]},
   async *orderedPrefetch(items,fn){for(const item of items)yield {item,value:await fn(item)}},
   backlinkSnippet(line,fragment,i){return String(line).slice(Math.max(0,i-20),i+50)},
@@ -24,7 +24,7 @@ async function replay(data){
  vm.runInContext(src,c,{timeout:15000});
  vm.runInContext('pageTextLines=injectedPageTextLines;tocResultLineIndices=()=>new Set();structureResultsIndexNavigationPage=()=>false;detectedStructureResult=()=>null;renderStructureIndex=()=>{};renderBibliographyIndex=()=>{};rerenderReferenceLinks=()=>{};',c);
  await c.buildStructureIndex({force:true});
- check(Number(c.structureIndexVersion)===49,'real builder completed without caught exception');
+ check(Number(c.structureIndexVersion)===50,'real builder completed without caught exception');
  return JSON.parse(JSON.stringify(c.bibliographyEntries));
 }
 (async()=>{

@@ -2025,7 +2025,7 @@ function equationDetectionSummary(state) {
     : t('Text scan', '文本扫描');
   const labels = Number.isInteger(state.labels) ? t(`${state.labels} labels`, `${state.labels} 编号`) : '';
   const scanned = Number(state.ocrTotal || 0);
-  const ocr = scanned ? t(`image OCR ${state.ocrDone || 0}/${scanned} planned pages`, `图像 OCR ${state.ocrDone || 0}/${scanned} 计划页`) : '';
+  const ocr = scanned ? t(`equation-margin OCR ${state.ocrDone || 0}/${scanned} selected pages out of ${state.documentPages || '?'} PDF pages (not full-document OCR)`, `公式编号边缘 OCR 已完成 ${state.ocrDone || 0}/${scanned} 选定页；PDF 共 ${state.documentPages || '?'} 页（并非全文 OCR）`) : '';
   const retry = Number(state.retryTotal || 0)
     ? t(`gap retries ${state.retryDone || 0}/${state.retryTotal}`, `缺口重试 ${state.retryDone || 0}/${state.retryTotal}`) : '';
   const gain = scanned ? t(`+${state.recovered || 0} recovered`, `补回 ${state.recovered || 0} 个`) : '';
@@ -2045,16 +2045,16 @@ function equationDetectionSummary(state) {
   // before less urgent counts, so narrow panes truncate the least critical end.
   const shortHead = phase === 'native' ? native
     : phase === 'planning' ? t('OCR plan', 'OCR 计划')
-    : phase === 'ocr' ? t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`)
+    : phase === 'ocr' ? t(`Eq OCR ${state.ocrDone || 0}/${scanned}`, `公式 OCR ${state.ocrDone || 0}/${scanned}`)
     : phase === 'validating' ? t('Checking', '校验中')
     : phase === 'partial' ? t('OCR partial', 'OCR 部分失败')
-    : scanned ? t('OCR done', 'OCR 已完成') : t('Text done', '文本已读取');
+    : scanned ? t('Eq OCR done', '公式 OCR 已完成') : t('Text done', '文本已读取');
   const shortParts = [shortHead];
   if (failed) shortParts.push(t(`${failed} failed`, `${failed} 页失败`));
-  if (scanned && phase !== 'ocr') shortParts.push(t(`OCR ${state.ocrDone || 0}/${scanned}`, `OCR ${state.ocrDone || 0}/${scanned}`));
+  if (scanned && phase !== 'ocr') shortParts.push(t(`${state.ocrDone || 0}/${scanned} pages`, `${state.ocrDone || 0}/${scanned} 页`));
   if (!scanned && phase !== 'native' && state.nativeTotal > 0) shortParts.push(native);
   if (selected) shortParts.push(t('selected', '选页'));
-  if (scanned && Number(state.recovered || 0)) shortParts.push(t(`+${state.recovered} recovered`, `补 ${state.recovered}`));
+  if (scanned && Number(state.recovered || 0)) shortParts.push(t(`+${state.recovered}`, `+${state.recovered}`));
   if (phase === 'ocr' && Number(state.retryTotal || 0)) shortParts.push(t(`retry ${state.retryDone || 0}/${state.retryTotal}`, `重试 ${state.retryDone || 0}/${state.retryTotal}`));
   // The adjacent equation-count badge already shows total labels; do not duplicate it here.
 
@@ -4160,6 +4160,27 @@ function pruneIsolatedNumericEntriesFromAuthorKeyBibliography(entries) {
   return rejected.size ? list.filter((entry) => !rejected.has(entry)) : list;
 }
 
+function credibleStructureProofReferences(owner, structureByLabel) {
+  const output = [];
+  const seen = new Set();
+  const ownKey = normalizedStructureResultReference(owner?.label);
+  for (const raw of owner?.proofReferences || []) {
+    const reference = String(raw || '').trim();
+    if (!reference) continue;
+    const key = normalizedStructureResultReference(reference);
+    const target = structureByLabel?.get(key);
+    // A lone alphabetic identifier is indistinguishable from prose such as
+    // "the example u" unless another detection supplies its exact Result.
+    if (!target && /^(?:Theorem|Lemma|Proposition|Corollary|Definition|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+[A-Z]{1,2}$/i.test(reference)) continue;
+    const label = target?.label || reference;
+    const canonical = normalizedStructureResultReference(label);
+    if (!canonical || canonical === ownKey || seen.has(canonical)) continue;
+    seen.add(canonical);
+    output.push(label);
+  }
+  return output;
+}
+
 async function buildStructureIndex({ force = false } = {}) {
   if (!pdfDoc || !documentTextFeaturesAvailable() || !structureIndex || structureIndexBuilding) return;
   if (force && pendingOutlineReselectKey) { pendingOutlineReselectKey = null; refreshSelectionUI(); }
@@ -4639,8 +4660,16 @@ async function buildStructureIndex({ force = false } = {}) {
 
     // Resolve proof dependencies into a directed graph and derive the reverse
     // relation from the same sequence-cleaned structure index.
+    // The general reference grammar intentionally recognizes named results such
+    // as "Theorem A". In ordinary proof prose that same grammar also matches
+    // mathematical variables: "the example u", "the hypothesis X" and "by
+    // assumption f". A bare letter has no reliable citation semantics unless
+    // that exact labeled Result was actually detected in this document.
+    // Keep unresolved NUMBERED references: they may point to a missed theorem
+    // and are useful for conservative diagnosis rather than invented links.
     const structureByLabel = new Map(sequenceCleanEntries.map((entry) => [normalizedStructureResultReference(entry.label), entry]));
     for (const owner of sequenceCleanEntries) {
+      owner.proofReferences = credibleStructureProofReferences(owner, structureByLabel);
       const resolved = [];
       for (const reference of owner.proofReferences || []) {
         const target = structureByLabel.get(normalizedStructureResultReference(reference));
