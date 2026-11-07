@@ -165,12 +165,15 @@ function canvasHasVisibleContent(sourceCanvas) {
   }
 }
 
-async function recoverInitialContinuousCanvasFromPrimary(pageNum, activeRecord) {
+async function recoverInitialContinuousCanvasFromPrimary(pageNum, activeRecord, generation = continuousGeneration) {
   if (!activeRecord?.canvas || !canvas || !primaryPageSurface) return false;
+  const sourceDoc = pdfDoc;
+  if (!sourceDoc || generation !== continuousGeneration) return false;
   const previousTop = primaryCanvasWrap?.scrollTop || 0;
   const previousLeft = primaryCanvasWrap?.scrollLeft || 0;
   try {
     await renderPage(pageNum, canvas, primaryCanvasWrap, 'primary');
+    if (generation !== continuousGeneration || pdfDoc !== sourceDoc || continuousPageNodes.get(pageNum) !== activeRecord) return false;
     if (!canvasHasVisibleContent(canvas)) return false;
     const target = activeRecord.canvas;
     target.width = canvas.width;
@@ -184,14 +187,31 @@ async function recoverInitialContinuousCanvasFromPrimary(pageNum, activeRecord) 
     ctx.drawImage(canvas, 0, 0);
     activeRecord.surface.classList.remove('is-placeholder', 'is-render-error');
     activeRecord.surface.removeAttribute('data-placeholder-label');
+    const needsContinuousOverlay = !activeRecord.rendered;
     activeRecord.rendered = true;
     activeRecord.failed = false;
+    if (needsContinuousOverlay) {
+      // A failed initial continuous render never reached its selectable-text
+      // and annotation overlays. Recover those after copying a valid primary
+      // paint, without hiding the page again if an optional overlay fails.
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: continuousScale(base) });
+        await renderSelectableText(page, viewport, activeRecord.textLayer, activeRecord.surface, pageNum, 'continuous');
+        renderAnnotationsForPage(pageNum, activeRecord.surface, 'continuous');
+        activeRecord.ocrLayer.dataset.page = String(pageNum);
+        activeRecord.ocrLayer.dataset.kind = 'continuous';
+      } catch (overlayError) {
+        console.warn('MathReader recovered continuous overlay unavailable', pageNum, overlayError);
+      }
+    }
     return canvasHasVisibleContent(target);
   } catch (error) {
     console.warn('MathReader initial continuous primary-render fallback failed', error);
     return false;
   } finally {
-    if (primaryCanvasWrap) {
+    if (primaryCanvasWrap && generation === continuousGeneration && pdfDoc === sourceDoc) {
       primaryCanvasWrap.scrollTop = previousTop;
       primaryCanvasWrap.scrollLeft = previousLeft;
     }
@@ -264,6 +284,27 @@ async function renderContinuousPage(pageNum, generation, { retry = true } = {}) 
   // recover independently from neighboring lazy renders.
   await new Promise((resolve) => setTimeout(resolve, 0));
   return renderContinuousPage(pageNum, generation, { retry: false });
+}
+
+// An occasional first-open render can resolve before the browser has painted a
+// useful continuous canvas, even when a later zoom renders the same PDF fine.
+// Retry with a NEW canvas after layout has settled; never change zoom or the
+// saved reading anchor, and never reuse a canvas owned by a stale document.
+async function repaintInitialContinuousPage(pageNum, generation, record) {
+  if (generation !== continuousGeneration || !pdfDoc || continuousPageNodes.get(pageNum) !== record || !record?.canvas) return false;
+  const sourceDoc = pdfDoc;
+  await nextFrame();
+  await nextFrame();
+  if (generation !== continuousGeneration || pdfDoc !== sourceDoc || continuousPageNodes.get(pageNum) !== record) return false;
+  const oldCanvas = record.canvas;
+  const freshCanvas = document.createElement('canvas');
+  const ariaLabel = oldCanvas.getAttribute('aria-label');
+  if (ariaLabel) freshCanvas.setAttribute('aria-label', ariaLabel);
+  oldCanvas.replaceWith(freshCanvas);
+  record.canvas = freshCanvas;
+  record.rendered = false;
+  record.failed = false;
+  return renderContinuousPage(pageNum, generation);
 }
 
 function continuousViewportAnchorOffset() {
@@ -469,28 +510,45 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
   // Allow anchor capture again, but keep observer/prefetch disabled until the
   // active page is visibly painted and the placeholder state is actually gone.
   continuousRebuilding = false;
-  const ok = await renderContinuousPage(activePage, generation);
+  let ok = await renderContinuousPage(activePage, generation);
   if (generation !== continuousGeneration) return;
   const activeRecord = continuousPageNodes.get(activePage);
-  let placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
-  let canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
-  let canvasContent = canvasReady && canvasHasVisibleContent(activeRecord?.canvas);
+  const hasPaintedSurface = () => Boolean(activeRecord?.rendered &&
+    activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder') &&
+    activeRecord?.canvas?.width && activeRecord?.canvas?.height);
+  let canvasContent = hasPaintedSurface() && canvasHasVisibleContent(activeRecord.canvas);
 
-  // A resolved PDF.js render task can still leave an effectively blank canvas
-  // in the first continuous view on some PDFs/browser states. Single-page
-  // rendering is an independent, proven path in MathReader, so use it as a
-  // narrowly-scoped first-load recovery source rather than leaving a gray page.
-  if (ok && activeRecord?.rendered && placeholderGone && canvasReady && !canvasContent) {
-    console.warn('[MathReader] initial continuous: blank canvas detected; trying primary-render fallback', { generation, activePage });
-    const recovered = await recoverInitialContinuousCanvasFromPrimary(activePage, activeRecord);
+  // The pixel-sampling heuristic is a useful hint that an initial browser
+  // paint may be blank, NOT proof that PDF.js failed: genuine blank/sparse
+  // pages and thin text can also look uniform after downsampling to 48×48.
+  // First try the independent primary renderer, retaining the original scale.
+  if (ok && hasPaintedSurface() && !canvasContent) {
+    console.warn('[MathReader] initial continuous: inconclusive canvas sample; trying primary-render fallback', { generation, activePage });
+    const recovered = await recoverInitialContinuousCanvasFromPrimary(activePage, activeRecord, generation);
     if (generation !== continuousGeneration) return;
-    placeholderGone = Boolean(activeRecord?.surface && !activeRecord.surface.classList.contains('is-placeholder'));
-    canvasReady = Boolean(activeRecord?.canvas?.width && activeRecord?.canvas?.height);
     canvasContent = recovered && canvasHasVisibleContent(activeRecord?.canvas);
-    console.info('[MathReader] initial continuous: fallback result', { generation, activePage, recovered, canvasContent });
   }
 
-  if (!ok || !activeRecord?.rendered || !placeholderGone || !canvasReady || !canvasContent) {
+  // A manual zoom used to recover this intermittent first-open failure by
+  // creating a fresh page canvas. Do the same automatically, once, after two
+  // layout frames; also retry genuine transient PDF.js render failures.
+  if (!ok || (hasPaintedSurface() && !canvasContent)) {
+    ok = await repaintInitialContinuousPage(activePage, generation, activeRecord);
+    if (generation !== continuousGeneration) return;
+    canvasContent = hasPaintedSurface() && canvasHasVisibleContent(activeRecord.canvas);
+  }
+
+  // If PDF.js still rejects the refreshed canvas, the existing single-page
+  // renderer is a final independent recovery path. Never infer success from
+  // canvas dimensions alone when no render task has resolved successfully.
+  if (!ok) {
+    const recovered = await recoverInitialContinuousCanvasFromPrimary(activePage, activeRecord, generation);
+    if (generation !== continuousGeneration) return;
+    ok = recovered && hasPaintedSurface();
+    canvasContent = ok && canvasHasVisibleContent(activeRecord.canvas);
+  }
+
+  if (!ok || !hasPaintedSurface()) {
     initialContinuousReady = false;
     activeRecord?.surface?.classList.add('is-render-error');
     if (activeRecord?.surface) activeRecord.surface.dataset.placeholderLabel = t(
@@ -498,8 +556,13 @@ async function buildInitialContinuousDocument({ anchor = null } = {}) {
       `第 ${activePage} 页无法渲染`,
     );
     showError(t('Continuous reading could not render the current page.', '连续阅读无法渲染当前页面。'));
-    console.error('[MathReader] initial continuous: active page verification failed', { generation, activePage });
+    console.error('[MathReader] initial continuous: active page render task failed', { generation, activePage });
     return;
+  }
+  if (!canvasContent) {
+    // A successful PDF.js paint is authoritative. Do not block the entire
+    // continuous document because a blank/sparse page fooled the sampler.
+    console.info('[MathReader] initial continuous: canvas pixel sample inconclusive; PDF.js render succeeded', { generation, activePage });
   }
 
   // Only after the active page is definitely visible may lazy rendering begin.

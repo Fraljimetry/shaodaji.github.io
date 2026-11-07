@@ -1,0 +1,25 @@
+{
+  "version": "410",
+  "baseline": "409",
+  "problem": "Intermittent first-open blank continuous page yields false or unrecovered rendering error; zoom rebuild succeeds",
+  "root_cause": "The initial active-page verification hard-failed on a 48x48 canvas-content heuristic; later zoom path did not apply that gate",
+  "fix": "Bounded same-zoom fresh-canvas repaint plus PDF.js task success distinction, guarded document generation and primary fallback",
+  "test": {
+    "new": "tests/continuous_initial_repaint_v410.py",
+    "before": "FAIL first_blank_then_good, exact existing error message",
+    "after": "PASS 25 Chromium assertions; six scenarios plus stale generation"
+  },
+  "suites": {
+    "javascript_pass": 55,
+    "javascript_total": 55,
+    "python_pass": 23,
+    "python_total": 23,
+    "python_harness_note": "two historical slow harness tests rerun separately"
+  },
+  "limitations": [
+    "No live production-site PDF.js original-PDF reproduction",
+    "Mocked paint lifecycle is not a genuine browser-specific GPU failure",
+    "Render failures across all paths are still reported",
+    "A downsampled-content heuristic cannot prove semantic page content"
+  ]
+}
