@@ -338,7 +338,11 @@ function equationLabelFromSelectionText(value) {
   if (!match) return null;
   const rawInner = String(match[1] || '');
   const numericInner = compactNumericEquationTagInner(rawInner);
-  if (isPlausibleNumericEquationTagInner(numericInner)) {
+  // Manual corrections use the same numbered-tag grammar as the Equation
+  // index, including printed appendix labels (A.1), (B-3), (A1), (AA.5).
+  // The user still has to select the actual printed location: this parser
+  // never infers missing numbers or changes automatic OCR classification.
+  if (isPlausibleEquationTagInner(numericInner)) {
     const label = normalizedEquationLabel(`(${numericInner})`);
     return isLikelyCalendarYearEquationLabel(label) ? null : label;
   }
@@ -547,13 +551,13 @@ async function applyEquationPointCorrection(pageNum, ratio) {
     let addedLabel = nearby?.label || null;
     if (!addedLabel) {
       const typed = window.prompt(t(
-        'Equation label for this point (for example (12.45), (7), (*), or (†)):',
-        '请输入该位置的公式编号（例如 (12.45)、(7)、(*) 或 (†)）：'
+        'Equation label for this point (e.g. (A.1), (12.45), (7), or (*)):',
+        '请输入该位置的公式编号（如 (A.1)、(12.45)、(7) 或 (*)）：'
       ), '');
       if (typed == null || !String(typed).trim()) return true;
       addedLabel = equationLabelFromSelectionText(typed);
       if (!addedLabel) {
-        showError(t('Enter only a short equation label such as (12.45), (7), (*), or (†).', '只能输入简短的公式编号，例如 (12.45)、(7)、(*) 或 (†)。'));
+        showError(t('Enter a short equation label such as (A.1), (12.45), (7), or (*).', '请输入简短的公式编号，如 (A.1)、(12.45)、(7) 或 (*)。'));
         return true;
       }
     }
