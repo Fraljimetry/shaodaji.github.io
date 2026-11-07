@@ -1178,10 +1178,23 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
     if (pageNum % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
   if (!sameDocument()) return null;
+  // The entire PDF was *visited*, but a page without native PDF.js text may
+  // be a blank, illustration, or image-only scan. Do not describe it as a
+  // successfully transcribed page or infer OCR that was never performed.
+  const pagesWithoutNativeText = pageRecords
+    .filter((record) => !String(record.nativePdf?.rawText || '').trim())
+    .map((record) => record.page);
   return {
     version: 1,
     pageCount,
+    // `complete` means per-page extraction completed without errors, NOT
+    // that all pages have text or that image OCR covered the whole PDF.
     complete: errors.length === 0 && pageRecords.length === pageCount,
+    nativeTextCoverage: {
+      pagesWithText: pageCount - pagesWithoutNativeText.length,
+      pagesWithoutText: pagesWithoutNativeText,
+      source: 'pdf-text-layer',
+    },
     errors,
     // OCR that never ran cannot be reconstructed from saved indexes. In older
     // caches even a completed run may lack the direct Tesseract ocrRawText.

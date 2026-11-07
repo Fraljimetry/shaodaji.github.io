@@ -1,0 +1,98 @@
+{
+  "version": 400,
+  "source": "user-provided MathReader full-text exports from 2026-11-06",
+  "documents": [
+    {
+      "name": "Ahlfors",
+      "sourceFile": "Ahlfors-Conformal-Invariants-mathreader.json",
+      "sha256": "69f6fcc32a06a82ce62657eeef29eb2f8fc9d05e1215ce845df6eab827973661",
+      "documentPages": 172,
+      "exportedPages": 172,
+      "nativeTextPages": 167,
+      "noNativeTextPages": [
+        1,
+        7,
+        11,
+        169,
+        172
+      ],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    },
+    {
+      "name": "Giusti",
+      "sourceFile": "Enrico-Giusti---Minimal-Surfaces-and-Functions-of-Bounded-Variation-Birkh-user-1984--mathreader(3).json",
+      "sha256": "0c668c9ab4aef4289f2221bb619431d86928bb07e2d9b05be4cfea8dbc972f23",
+      "documentPages": 253,
+      "exportedPages": 253,
+      "nativeTextPages": 248,
+      "noNativeTextPages": [
+        1,
+        3,
+        7,
+        15,
+        149
+      ],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    },
+    {
+      "name": "Yau",
+      "sourceFile": "yau1978-mathreader(3).json",
+      "sha256": "73c2b880ebc30dc513abd175aaafbba2355bb981c7dc05e3d32c5213601db445",
+      "documentPages": 73,
+      "exportedPages": 73,
+      "nativeTextPages": 73,
+      "noNativeTextPages": [],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    },
+    {
+      "name": "Yamabe",
+      "sourceFile": "YamabeProblem-mathreader(1).json",
+      "sha256": "800fe6703b927e64d8489781843cc9b672f6a74c77e8944189331f702f927c53",
+      "documentPages": 56,
+      "exportedPages": 56,
+      "nativeTextPages": 56,
+      "noNativeTextPages": [],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    },
+    {
+      "name": "Simon",
+      "sourceFile": "Asymptotic-behaviour-of-minimal-graphs-over-exterior-domains.-L.-Simon-mathreader.json",
+      "sha256": "a9bed956befa08d83b545a3a9a748894d4d311ad5e223fa5072d7d9409b8bfe2",
+      "documentPages": 13,
+      "exportedPages": 13,
+      "nativeTextPages": 13,
+      "noNativeTextPages": [],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    },
+    {
+      "name": "SPS 1988",
+      "sourceFile": "SPS_1988__22__485_0-mathreader.json",
+      "sha256": "572fd3f977a87e9c82ba7cae3deae51eba51d758746039d9c000cd67a1bf79a1",
+      "documentPages": 18,
+      "exportedPages": 18,
+      "nativeTextPages": 18,
+      "noNativeTextPages": [],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    },
+    {
+      "name": "Banach",
+      "sourceFile": "geometrical_hypothesis_Banach-mathreader.json",
+      "sha256": "02c4d5b93690323c4fb3bcd4b2a25b2d1ead2249a6cddf102a554d99c88a8176",
+      "documentPages": 10,
+      "exportedPages": 10,
+      "nativeTextPages": 10,
+      "noNativeTextPages": [],
+      "fullDocumentOcr": "not-stored",
+      "extractionComplete": true
+    }
+  ],
+  "totalPages": 595,
+  "pagesWithNativeText": 585,
+  "pagesWithoutNativeText": 10
+}

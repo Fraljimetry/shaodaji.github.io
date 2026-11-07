@@ -672,3 +672,17 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .sidebar-right .note-latex-help,
 .sidebar-right .ocr-help,
 .sidebar-right .compact-help-body { text-wrap: balance; }
+
+/* v400: Sidebar typography follows the actual parent->child hierarchy.
+   The Settings heading belongs to the same 12px tier as every other panel;
+   its nested groups must never render larger than their parent. */
+.sidebar-right .settings-section > .settings-group > summary {
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.sidebar-right .settings-section .settings-group-heading {
+  font-size: 10px;
+  font-weight: 650;
+}
