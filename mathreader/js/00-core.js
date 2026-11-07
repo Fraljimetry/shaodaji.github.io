@@ -81,6 +81,8 @@ const equationIndexCount = el('equation-index-count');
 const equationDetectionStatus = el('equation-detection-status');
 const equationForceOcrButton = el('equation-force-ocr');
 const exportReadingDataButton = el('export-reading-data');
+const exportDetectionOption = el('export-include-detection');
+const exportFullTextOption = el('export-include-full-text');
 const importReadingDataButton = el('import-reading-data');
 const importReadingInput = el('import-reading-input');
 const readingBackButton = el('reading-back');
@@ -371,6 +373,8 @@ const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catc
 mathOcrEngineMode = safeGet('mathreader-ocr-engine-v8', 'official');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
+const EXPORT_PREFS_KEY = 'mathreader-export-v1';
+let exportPreferences = { includeDetection: true, includeFullDocumentText: false };
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
@@ -471,6 +475,26 @@ function pushUndo(type, label, payload) {
   undoHistory = [{ id: `undo-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, type, label, created: Date.now(), payload: jsonClone(payload, payload) }, ...undoHistory].slice(0, 12);
   renderUndoHistory();
   persistDocumentState();
+}
+
+// Global, local-only export preferences. Never attach these to a PDF session:
+// importing another reader's data must not silently change this user's choices.
+function loadExportPreferences() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(EXPORT_PREFS_KEY, 'null')); } catch (_) { saved = null; }
+  exportPreferences = {
+    includeDetection: saved?.includeDetection !== false,
+    includeFullDocumentText: saved?.includeFullDocumentText === true,
+  };
+  if (exportDetectionOption) exportDetectionOption.checked = exportPreferences.includeDetection;
+  if (exportFullTextOption) exportFullTextOption.checked = exportPreferences.includeFullDocumentText;
+}
+function persistExportPreferences() {
+  exportPreferences = {
+    includeDetection: exportDetectionOption ? Boolean(exportDetectionOption.checked) : exportPreferences.includeDetection,
+    includeFullDocumentText: exportFullTextOption ? Boolean(exportFullTextOption.checked) : exportPreferences.includeFullDocumentText,
+  };
+  safeSet(EXPORT_PREFS_KEY, JSON.stringify(exportPreferences));
 }
 
 function loadDisplayPreferences() {
@@ -1352,6 +1376,7 @@ function waitForDocumentOcrChoice(mode, detail = '') {
 }
 
 function setDocumentOcrProgress(page, pageCount, progress = null, message = '') {
+  if (documentOcrRunController?.cancelled) return;
   configureDocumentOcrGate('progress', message);
   if (!documentOcrProgress) return;
   if (Number.isFinite(Number(progress)) && Number(pageCount) > 0) {
@@ -1372,16 +1397,53 @@ function isDocumentOcrStoppedError(error) {
   return error?.code === 'DOCUMENT_OCR_STOPPED';
 }
 
+function releaseDocumentOcrCanvas(controller, canvas) {
+  if (!canvas) return;
+  try { canvas.width = 1; canvas.height = 1; } catch (_) {}
+  controller?.canvases?.delete(canvas);
+}
+
+function terminateDocumentOcrWorker(controller, worker) {
+  if (!worker) return;
+  // Tesseract termination is asynchronous, and may itself never settle after
+  // its worker has crashed. Never block the reader's Stop/Retry UI on it.
+  if (controller?.terminatedWorkers?.has(worker)) return;
+  controller?.terminatedWorkers?.add(worker);
+  Promise.resolve().then(() => worker.terminate?.()).catch(() => {});
+}
+
+async function awaitDocumentOcrCancelable(controller, pending, onLateValue = null) {
+  // A terminated Tesseract worker does not always settle its recognize()
+  // promise; similarly a PDF.js render or an engine download can remain
+  // pending. The stop signal must independently unblock every awaited stage.
+  const outcome = Promise.resolve(pending).then(
+    (value) => {
+      if (controller.cancelled && typeof onLateValue === 'function') {
+        try { onLateValue(value); } catch (_) {}
+      }
+      return { ok: true, value };
+    },
+    (error) => ({ ok: false, error })
+  );
+  const winner = await Promise.race([outcome, controller.stopSignal]);
+  if (controller.cancelled || winner?.stopped) throw makeDocumentOcrStoppedError();
+  if (!winner?.ok) throw winner?.error || new Error('Document OCR operation failed.');
+  return winner.value;
+}
+
 function requestStopFullDocumentOcr() {
   const controller = documentOcrRunController;
-  if (!controller || controller.cancelled) return;
+  if (!controller || controller.cancelled || controller.completedRecognition) return;
   controller.cancelled = true;
   if (documentOcrPrimary) documentOcrPrimary.disabled = true;
   if (documentOcrProgressText) documentOcrProgressText.textContent = t('Stopping OCR…', '正在停止 OCR……');
-  try {
-    const result = controller.worker?.terminate?.();
-    if (result?.catch) result.catch(() => {});
-  } catch (_) {}
+  // Resolve first so the UI can leave progress mode even when teardown stalls.
+  controller.resolveStop?.({ stopped: true });
+  for (const task of controller.renderTasks || []) {
+    try { task.cancel?.(); } catch (_) {}
+  }
+  for (const canvas of [...(controller.canvases || [])]) releaseDocumentOcrCanvas(controller, canvas);
+  terminateDocumentOcrWorker(controller, controller.worker);
 }
 
 function updateDocumentTextAvailabilityUI() {
@@ -2261,7 +2323,12 @@ async function runFullDocumentOcr() {
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
   const pageCount = sourceDoc.numPages;
-  const controller = { cancelled: false, worker: null };
+  const controller = {
+    cancelled: false, completedRecognition: false, worker: null,
+    renderTasks: new Set(), canvases: new Set(), terminatedWorkers: new WeakSet(),
+    stopSignal: null, resolveStop: null
+  };
+  controller.stopSignal = new Promise((resolve) => { controller.resolveStop = resolve; });
   documentOcrRunController = controller;
   documentOcrBusy = true;
   if (welcomeOpen) welcomeOpen.disabled = true;
@@ -2282,14 +2349,22 @@ async function runFullDocumentOcr() {
     const scale = Math.max(2.20, Math.min(3.60, 3200 / Math.max(1, base.width, base.height)));
     const viewport = page.getViewport({ scale });
     const pageCanvas = document.createElement('canvas');
-    pageCanvas.width = Math.max(1, Math.ceil(viewport.width));
-    pageCanvas.height = Math.max(1, Math.ceil(viewport.height));
-    const context = pageCanvas.getContext('2d', { alpha: false });
-    context.fillStyle = '#fff';
-    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-    await page.render({ canvasContext: context, viewport }).promise;
-    ensureCurrent();
-    return pageCanvas;
+    controller.canvases.add(pageCanvas);
+    try {
+      pageCanvas.width = Math.max(1, Math.ceil(viewport.width));
+      pageCanvas.height = Math.max(1, Math.ceil(viewport.height));
+      const context = pageCanvas.getContext('2d', { alpha: false });
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      const renderTask = page.render({ canvasContext: context, viewport });
+      controller.renderTasks.add(renderTask);
+      try { await renderTask.promise; } finally { controller.renderTasks.delete(renderTask); }
+      ensureCurrent();
+      return pageCanvas;
+    } catch (error) {
+      releaseDocumentOcrCanvas(controller, pageCanvas);
+      throw error;
+    }
   };
 
   let worker = null;
@@ -2299,20 +2374,19 @@ async function runFullDocumentOcr() {
   let lastProgressPct = -1;
   let lastProgressAt = 0;
   try {
-    const module = await loadDocumentOcrModule();
+    const module = await awaitDocumentOcrCancelable(controller, loadDocumentOcrModule());
     ensureCurrent();
     const createWorker = documentOcrCreateWorker(module);
     if (typeof createWorker !== 'function') throw new Error(t('The document OCR engine could not be initialized.', '无法初始化全文 OCR 引擎。'));
-    worker = await createWorker('eng', 1, {
+    worker = await awaitDocumentOcrCancelable(controller, createWorker('eng', 1, {
       logger: (message) => {
+        // A late progress event must never reopen the locked Stop button.
+        if (controller.cancelled || controller.completedRecognition || documentOcrRunController !== controller) return;
         if (!message || message.status !== 'recognizing text' || !Number.isFinite(Number(message.progress))) return;
         const page = Number(controller.currentPage || 1);
         const progress = Number(message.progress);
         const pct = Math.round(progress * 100);
         const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
-        // Tesseract can emit dozens of nearly identical progress messages per
-        // second. Throttle only the UI writes; OCR data and cancellation are
-        // untouched.
         if (page === lastProgressPage && pct === lastProgressPct && now - lastProgressAt < 120) return;
         if (page === lastProgressPage && pct < 100 && pct - lastProgressPct < 2 && now - lastProgressAt < 90) return;
         lastProgressPage = page;
@@ -2321,93 +2395,83 @@ async function runFullDocumentOcr() {
         setDocumentOcrProgress(page, pageCount, progress, t(`Full-document OCR · page ${page}/${pageCount} · ${pct}%`, `全文 OCR · 第 ${page}/${pageCount} 页 · ${pct}%`));
         if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
       }
-    });
+    }), (lateWorker) => terminateDocumentOcrWorker(controller, lateWorker));
     controller.worker = worker;
     ensureCurrent();
     if (typeof worker.setParameters === 'function') {
       try {
-        await worker.setParameters({
+        await awaitDocumentOcrCancelable(controller, worker.setParameters({
           preserve_interword_spaces: '1',
           user_defined_dpi: '300',
           tessedit_pageseg_mode: '3'
-        });
+        }));
       } catch (error) {
+        ensureCurrent();
         console.warn('MathReader could not apply document OCR quality parameters.', error);
       }
     }
     const map = new Map();
-    // Render the first page up front. Thereafter rendering page n+1 overlaps
-    // Tesseract's worker-side recognition of page n. Pixel dimensions, scale,
-    // OCR parameters and page order are exactly the same as before.
+    // Retain page n+1 rendering in parallel with recognition of page n.
+    // Cancellation must not await either task after Stop was clicked.
     prefetchedCanvasOutcome = renderOcrPage(1).then(
-      (canvas) => ({ ok: true, canvas }),
-      (error) => ({ ok: false, error })
+      (canvas) => ({ ok: true, canvas }), (error) => ({ ok: false, error })
     );
     for (let pageNum = 1; pageNum <= pageCount; pageNum += 1) {
       ensureCurrent();
       controller.currentPage = pageNum;
       setDocumentOcrProgress(pageNum, pageCount, 0, t(`Full-document OCR · page ${pageNum}/${pageCount}`, `全文 OCR · 第 ${pageNum}/${pageCount} 页`));
       if (documentOcrPrimary) documentOcrPrimary.onclick = requestStopFullDocumentOcr;
-      const currentOutcome = await prefetchedCanvasOutcome;
+      const currentOutcome = await awaitDocumentOcrCancelable(controller, prefetchedCanvasOutcome,
+        (lateOutcome) => { if (lateOutcome?.ok) releaseDocumentOcrCanvas(controller, lateOutcome.canvas); });
       if (!currentOutcome?.ok) throw currentOutcome?.error || new Error('Document OCR page render failed.');
       const pageCanvas = currentOutcome.canvas;
       pageCanvasInFlight = pageCanvas;
       const recognizePromise = worker.recognize(pageCanvas, {}, { hocr: true });
       prefetchedCanvasOutcome = pageNum < pageCount
         ? renderOcrPage(pageNum + 1).then(
-          (canvas) => ({ ok: true, canvas }),
-          (error) => ({ ok: false, error })
+          (canvas) => ({ ok: true, canvas }), (error) => ({ ok: false, error })
         )
         : null;
-      let result;
-      try {
-        result = await recognizePromise;
-      } catch (error) {
-        if (controller.cancelled) throw makeDocumentOcrStoppedError();
-        throw error;
-      }
+      const result = await awaitDocumentOcrCancelable(controller, recognizePromise);
       ensureCurrent();
       const record = pageRecordFromHocr(result?.data?.hocr || '', result?.data?.text || '', pageCanvas.width, pageCanvas.height, pageNum);
       map.set(pageNum, record);
-      pageCanvas.width = 1;
-      pageCanvas.height = 1;
+      releaseDocumentOcrCanvas(controller, pageCanvas);
       pageCanvasInFlight = null;
-      await nextFrame();
+      await awaitDocumentOcrCancelable(controller, nextFrame());
     }
     ensureCurrent();
     if (map.size !== pageCount) throw new Error(t('Full-document OCR did not complete for every page.', '全文 OCR 未能完成所有页面。'));
+    // All OCR pages are complete. From this point persistence is a commit,
+    // not an interruptible scan. Do not label already committed evidence as
+    // "stopped" if the user clicks during the brief final save.
+    controller.completedRecognition = true;
+    if (documentOcrPrimary) documentOcrPrimary.disabled = true;
     documentOcrPages = map;
     documentOcrActive = true;
     documentTextMode = 'ocr';
     documentTextPreference = 'ocr';
     await persistDocumentOcr();
     setDocumentOcrProgress(pageCount, pageCount, 1, t('Full-document OCR complete · building MathReader indexes…', '全文 OCR 完成 · 正在生成 MathReader 索引……'));
+    if (documentOcrPrimary) documentOcrPrimary.disabled = true;
   } catch (error) {
-    // A prefetched render is wrapped into a resolved outcome, so there is no
-    // unhandled rejection if recognition fails or the user cancels mid-page.
     if (controller.cancelled && !isDocumentOcrStoppedError(error)) throw makeDocumentOcrStoppedError();
     throw error;
   } finally {
     controller.currentPage = 0;
-    // On stop/error the current recognition canvas and one concurrently
-    // prefetched page were not released. A full-resolution page can occupy
-    // tens of MB; explicitly release both before returning to the reader.
-    if (pageCanvasInFlight) {
-      pageCanvasInFlight.width = 1;
-      pageCanvasInFlight.height = 1;
-      pageCanvasInFlight = null;
-    }
+    if (pageCanvasInFlight) releaseDocumentOcrCanvas(controller, pageCanvasInFlight);
     if (prefetchedCanvasOutcome) {
-      try {
-        const outcome = await prefetchedCanvasOutcome; // wrapped: no rejection
-        if (outcome?.ok && outcome.canvas) {
-          outcome.canvas.width = 1;
-          outcome.canvas.height = 1;
-        }
-      } catch (_) {}
-      prefetchedCanvasOutcome = null;
+      // Do not await a canceled or wedged PDF.js render. If it later resolves,
+      // release its canvas without touching the active document.
+      prefetchedCanvasOutcome.then((outcome) => {
+        if (outcome?.ok) releaseDocumentOcrCanvas(controller, outcome.canvas);
+      }).catch(() => {});
     }
-    try { await worker?.terminate?.(); } catch (_) {}
+    for (const canvas of [...controller.canvases]) releaseDocumentOcrCanvas(controller, canvas);
+    if (controller.cancelled) for (const task of controller.renderTasks) {
+      try { task.cancel?.(); } catch (_) {}
+    }
+    terminateDocumentOcrWorker(controller, worker);
     if (documentOcrRunController === controller) documentOcrRunController = null;
     documentOcrBusy = false;
     if (welcomeOpen) welcomeOpen.disabled = false;

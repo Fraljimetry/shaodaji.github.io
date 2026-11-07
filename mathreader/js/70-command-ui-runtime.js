@@ -277,6 +277,8 @@ readingTrailClear?.addEventListener('click', () => { if (readingBackStack.length
 readingTrailToggle?.addEventListener('click', () => { readingTrailExpanded = !readingTrailExpanded; renderReadingTrail(); });
 buildStructureIndexButton?.remove();
 exportReadingDataButton?.addEventListener('click', exportReadingData);
+exportDetectionOption?.addEventListener('change', persistExportPreferences);
+exportFullTextOption?.addEventListener('change', persistExportPreferences);
 importReadingDataButton?.addEventListener('click', () => importReadingInput?.click());
 importReadingInput?.addEventListener('change', async () => { const file = importReadingInput.files?.[0]; importReadingInput.value = ''; if (file) await importReadingDataFile(file); });
 saveOcrEquation?.addEventListener('click', saveCurrentOcrAsEquation);
@@ -742,6 +744,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 loadDisplayPreferences();
+loadExportPreferences();
 loadSearchPreferences();
 setupWorkspaceCollapsibles();
 scheduleNotePreview();

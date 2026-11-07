@@ -1,0 +1,450 @@
+[
+  {
+    "type": "JS",
+    "name": "appendix_equations_v388_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.06,
+    "tail": "PASS: 71 appendix equation OCR / numbering / navigation / pagination assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "bibliography_boundary_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.1,
+    "tail": "OK: 25 boundary-bibliography class assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "cross_document_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.13,
+    "tail": "OK: 74 MathReader v358 cross-document and persistence assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "document_ocr_stop_v396_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.44,
+    "tail": "PASS: 39 document-OCR stop and cleanup assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "embedded_outline_title_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 25 embedded-outline malformed-tail class-level assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "equation_force_ocr_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.07,
+    "tail": "OK: 13 forced equation-image OCR checks\n"
+  },
+  {
+    "type": "JS",
+    "name": "equation_margin_navigation_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.08,
+    "tail": "PASS: equation-margin OCR geometry and cached-navigation repair\n"
+  },
+  {
+    "type": "JS",
+    "name": "equation_meticulous_navigation_v386_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.07,
+    "tail": "PASS: 17 v386 meticulous OCR equation-navigation regression assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "equation_order_ocr_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.05,
+    "tail": "PASS: additive OCR numerical ordering, stale-order bypass, explicit manual drag persistence\n"
+  },
+  {
+    "type": "JS",
+    "name": "equation_progress_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.07,
+    "tail": "OK: 33 equation progress / timing regression assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "equation_reference_ocr_target_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.05,
+    "tail": "PASS: 25 equation-reference OCR / navigation assertions (Giusti PDF p28 geometry)\n"
+  },
+  {
+    "type": "JS",
+    "name": "export_preferences_v397_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "PASS | v397 independent export options | assertions=107\n"
+  },
+  {
+    "type": "JS",
+    "name": "formula_latex_syntax_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.03,
+    "tail": "OK: 879 formula LaTeX checks; 228 MathJax compilations\n"
+  },
+  {
+    "type": "JS",
+    "name": "formula_ocr_initialization_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.19,
+    "tail": "MathReader OCR backend failed { label: 'CPU', official: true } Error: offline\n    at /mnt/data/mr_v397_work/mathreader/tests/formula_ocr_initialization_regression.js:93:53\n    at initializeMathOcrPipeline (evalmachine.<anonymous>:127:58)\n    at async ensureMathOcrPipeline (evalmachine.<anonymous>:86:16)\n    at async waitForActual (node:assert:566:5)\n    at async Function.rejects (node:assert:687:25)\n    at async tests (/mnt/data/mr_v397_work/mathreader/tests/formula_ocr_initialization_regression.js:94:3)\nMathReader OCR backend failed { label: 'WebGPU', official: false, device: 'webgpu', dtype: 'q4f16' } Error: WebGPU init failed\n    at /mnt/data/mr_v397_work/mathreader/tests/formula_ocr_initialization_regression.js:109:63\n    at initializeMathOcrPipeline (evalmachine.<anonymous>:127:58)\n    at async ensureMathOcrPipeline (evalmachine.<anonymous>:86:16)\n    at async tests (/mnt/data/mr_v397_work/mathreader/tests/formula_ocr_initialization_regression.js:110:9)\nMathReader OCR backend failed { label: 'CPU', official: true } Error: Formula OCR initialization exceeded its 120-second safety limit.\n    at formulaOcrTimeoutError (evalmachine.<anonymous>:46:17)\n    at Timeout._onTimeout (evalmachine.<anonymous>:58:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7) {\n  code: 'FORMULA_OCR_INIT_TIMEOUT'\n}\nOK: 37 formula OCR initialization/modal assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "formula_ocr_lazy_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.06,
+    "tail": "OK: 28 formula OCR lazy-initialization assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "formula_preview_compilation_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 12 formula MathJax preview lifecycle assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "historical_appendix_results_v395_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.24,
+    "tail": "PASS 164 Giusti appendix + Yau historical Results assertions; Giusti 13, Yau 13\n"
+  },
+  {
+    "type": "JS",
+    "name": "historical_appendix_separator_v389_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "PASS: 10 original-scan appendix numbering family assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "historical_bibliography_v394_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.25,
+    "tail": "PASS 27 real original-PDF bibliography assertions; Giusti 75 keyed references, Yau 15 numeric references\n"
+  },
+  {
+    "type": "JS",
+    "name": "historical_equation_positions_v394_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.13,
+    "tail": "PASS 33 source-page equation assertions: 22/23 independently visually inspected printed labels recorded; no false positives on these four pages; missing giusti p.231 (A.1)\n"
+  },
+  {
+    "type": "JS",
+    "name": "historical_native_pdf_detection_v394_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.45,
+    "tail": "PASS giusti: 24 printed headings, 43 sampled real PDF pages\nPASS yau: 13 printed headings, 18 sampled real PDF pages\nPASS 88 original native-PDF-layer regression assertions; no live OCR claim\n"
+  },
+  {
+    "type": "JS",
+    "name": "initial_equation_ocr_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 9 initial equation OCR / button checks\n"
+  },
+  {
+    "type": "JS",
+    "name": "long_book_outline_v392_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.12,
+    "tail": "PASS: 15 integrated long-book Structure/Contents/Results class assertions (synthetic native pages)\n"
+  },
+  {
+    "type": "JS",
+    "name": "maintenance_integrity_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.11,
+    "tail": "OK: 26 MathReader v396 maintenance integrity assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "manual_version_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.08,
+    "tail": "OK: 8 natural-language manual assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "meticulous_additive_ocr_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.07,
+    "tail": "PASS: 10 additive meticulous OCR regression assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "meticulous_equation_margin_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 9 meticulous equation margin assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "meticulous_position_preservation_v387_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "PASS: 25 v387 meticulous OCR reading-position regression checks\n"
+  },
+  {
+    "type": "JS",
+    "name": "multi_pdf_open_guard_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.12,
+    "tail": "OK: 11 concurrent-open and failure-return assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "multi_pdf_tabs_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.07,
+    "tail": "Pending PDF open failed Error: simulated open failure\n    at openPdfFile (/mnt/data/mr_v397_work/mathreader/tests/multi_pdf_tabs_regression.js:34:40)\n    at activatePendingPdf (evalmachine.<anonymous>:39:18)\n    at queueOpenedPdfFiles (evalmachine.<anonymous>:29:23)\n    at evalmachine.<anonymous>:1:1\n    at Script.runInContext (node:vm:149:12)\n    at Object.runInContext (node:vm:301:6)\n    at run (/mnt/data/mr_v397_work/mathreader/tests/multi_pdf_tabs_regression.js:41:26)\n    at /mnt/data/mr_v397_work/mathreader/tests/multi_pdf_tabs_regression.js:60:3\nOK: 20 History-only multi-PDF regression assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "ocr_cache_identity_v391_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.08,
+    "tail": "PASS: 10 full-document and meticulous OCR cache-integrity assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "ocr_reliability_deep_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.07,
+    "tail": "PASS: 37 executable OCR reliability assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "p0_probe_evidence_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 5 test-only P0 probe evidence checks\n"
+  },
+  {
+    "type": "JS",
+    "name": "page_context_ocr_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 10 page-specific OCR source assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "page_ocr_status_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: page OCR status auto-dismiss and timer replacement\n"
+  },
+  {
+    "type": "JS",
+    "name": "performance_safe_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.22,
+    "tail": "OK: 1204 scroll/layout/CSS parity assertions; rect reads 30k pages: 30000 -> 10\n"
+  },
+  {
+    "type": "JS",
+    "name": "precision_context_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.14,
+    "tail": "OK: 33 MathReader v348 precision class assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "raw_detection_export_v393_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.12,
+    "tail": "PASS: 37 v393 original export evidence assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "real_export_index_precision_v392_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.12,
+    "tail": "PASS: 63 real-export-derived outline/equation precision and persistence assertions (not original-PDF OCR accuracy)\n"
+  },
+  {
+    "type": "JS",
+    "name": "results_toc_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.1,
+    "tail": "OK: 23 MathReader TOC/Results class-level assertions\n"
+  },
+  {
+    "type": "JS",
+    "name": "shortcut_layout_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.09,
+    "tail": "OK: 14 grouped shortcuts UI checks\n"
+  },
+  {
+    "type": "JS",
+    "name": "sidebar_defaults_regression.js",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.08,
+    "tail": "OK: 27 sidebar default and annotation behavior checks\n"
+  },
+  {
+    "type": "PY",
+    "name": "appendix_equation_sidebar_browser_v388.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.68,
+    "tail": "PASS: Chromium rendered 500 initial rows, incrementally loaded all 622, and found all 12 appendix equations using filter\n"
+  },
+  {
+    "type": "PY",
+    "name": "document_ocr_stop_browser_v396.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.74,
+    "tail": "PASS: Chromium real Stop OCR click, stuck recognition release, late progress, Restart OCR, early module cancel, Open without OCR, lock and modal cleanup\n"
+  },
+  {
+    "type": "PY",
+    "name": "equation_navigation_browser_geometry_v386.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.96,
+    "tail": "PASS: 19 Chromium equation landing / hOCR frame checks (simulated pages, real DOM geometry)\n"
+  },
+  {
+    "type": "PY",
+    "name": "export_settings_browser_v397.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 2.26,
+    "tail": "PASS | Chromium v397 export settings | defaults, four states, preference restore, dark/light, mobile, localization markup\n"
+  },
+  {
+    "type": "PY",
+    "name": "help_tutorial_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 5.82,
+    "tail": "{\n  \"assertions\": 130,\n  \"passed\": 130,\n  \"failures\": []\n}\n"
+  },
+  {
+    "type": "PY",
+    "name": "meticulous_ocr_menu_browser_v390.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.72,
+    "tail": "PASS: Meticulous OCR menu position, edge clamp, real click, Escape, disabled, light/dark, absolute status, scroll/layout conservation (20+ assertions)\n"
+  },
+  {
+    "type": "PY",
+    "name": "meticulous_viewport_browser_v387.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.44,
+    "tail": "before {'reader': 700, 'side': 50, 'eq': 702, 'key': '(17.27)', 'offset': 1} after {'reader': 700, 'side': 50, 'eq': 756, 'key': '(17.27)', 'offset': 1}\nPASS: real Chromium scroll anchor survives 2 inserted equation rows; newer navigation is not undone\n"
+  },
+  {
+    "type": "PY",
+    "name": "ocr_browser_geometry_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.57,
+    "tail": "{\"status\": \"PASS\", \"assertions\": 13, \"scope\": \"real Chromium DOMParser/canvas; OCR worker mocked, not Texify or PDF.js\"}\n"
+  },
+  {
+    "type": "PY",
+    "name": "p0_acceptance_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.08,
+    "tail": "indexes_are_unverified_not_crash) ... ok\ntest_null_navigation_is_unverified_not_crash (__main__.P0ComparisonTests.test_null_navigation_is_unverified_not_crash) ... ok\ntest_null_performance_metrics_with_threshold_is_unverified (__main__.P0ComparisonTests.test_null_performance_metrics_with_threshold_is_unverified) ... ok\ntest_null_stages_are_unverified_not_crash (__main__.P0ComparisonTests.test_null_stages_are_unverified_not_crash) ... ok\ntest_out_of_range_index_page_cannot_pass_even_if_truth_matches (__main__.P0ComparisonTests.test_out_of_range_index_page_cannot_pass_even_if_truth_matches) ... ok\ntest_page_count_disagrees_with_pdf (__main__.P0ComparisonTests.test_page_count_disagrees_with_pdf) ... ok\ntest_partial_illegibility_is_not_whole_document_exception (__main__.P0ComparisonTests.test_partial_illegibility_is_not_whole_document_exception) ... ok\ntest_persistence_missing_is_unverified (__main__.P0ComparisonTests.test_persistence_missing_is_unverified) ... ok\ntest_proxy_capture_never_passes (__main__.P0ComparisonTests.test_proxy_capture_never_passes) ... ok\ntest_scalar_known_open_defects_is_unverified_not_crash (__main__.P0ComparisonTests.test_scalar_known_open_defects_is_unverified_not_crash) ... ok\ntest_tampered_formula_source_png_is_unverified (__main__.P0ComparisonTests.test_tampered_formula_source_png_is_unverified) ... ok\ntest_whole_source_illegibility_requires_human_evidence (__main__.P0ComparisonTests.test_whole_source_illegibility_requires_human_evidence) ... ok\ntest_wrong_engine_never_passes (__main__.P0ComparisonTests.test_wrong_engine_never_passes) ... ok\ntest_wrong_source_sha_never_passes (__main__.P0ComparisonTests.test_wrong_source_sha_never_passes) ... ok\n\n----------------------------------------------------------------------\nRan 54 tests in 0.365s\n\nOK\n"
+  },
+  {
+    "type": "PY",
+    "name": "p0_gate_isolation_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 1.7,
+    "tail": "ess) ... ok\ntest_fresh_partial_browser_errors_are_reported_as_fail (__main__.P0GateIsolation.test_fresh_partial_browser_errors_are_reported_as_fail) ... ok\ntest_real_p1_blocked_detail_is_not_hidden_by_generic_exit_status (__main__.P0GateIsolation.test_real_p1_blocked_detail_is_not_hidden_by_generic_exit_status) ... ok\ntest_required_real_p1_cannot_pass_with_missing_pinned_pdfjs (__main__.P0GateIsolation.test_required_real_p1_cannot_pass_with_missing_pinned_pdfjs) ... ok\ntest_successful_browser_still_requires_actual_comparator (__main__.P0GateIsolation.test_successful_browser_still_requires_actual_comparator) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.951s\n\nOK\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"NOT_REQUESTED\",\n  \"report\": \"/tmp/tmp6nairpzn/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"FAIL\",\n  \"p1_real_document_navigation\": \"NOT_REQUESTED\",\n  \"report\": \"/tmp/tmpoyjb19us/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"BLOCKED\",\n  \"report\": \"/tmp/tmpv9hinuwd/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"INCOMPLETE\",\n  \"report\": \"/tmp/tmpbslkz6n0/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"NOT_REQUESTED\",\n  \"report\": \"/tmp/tmp04f0mf9l/report/p0_gate.json\"\n}\n"
+  },
+  {
+    "type": "PY",
+    "name": "p0_p1_gap_closure_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.81,
+    "tail": "...............\n----------------------------------------------------------------------\nRan 15 tests in 0.002s\n\nOK\n"
+  },
+  {
+    "type": "PY",
+    "name": "p1_real_gate_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 0.85,
+    "tail": "test_exact_duplicate_pdf_never_counts_as_two_papers (__main__.P1RealGate.test_exact_duplicate_pdf_never_counts_as_two_papers) ... ok\ntest_missing_pinned_browser_assets_cannot_pass (__main__.P1RealGate.test_missing_pinned_browser_assets_cannot_pass) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.008s\n\nOK\n"
+  },
+  {
+    "type": "PY",
+    "name": "regression_runner_smoke.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 10.58,
+    "tail": "OK: 19 cached regression runner smoke assertions\n"
+  },
+  {
+    "type": "PY",
+    "name": "ui_responsive_regression.py",
+    "ok": true,
+    "exit_code": 0,
+    "seconds": 13.86,
+    "tail": "{\n  \"assertions\": 176,\n  \"passed\": 176,\n  \"failed\": [],\n  \"load_timings_s\": [\n    {\n      \"width\": 320,\n      \"shell_s\": 0.3297\n    },\n    {\n      \"width\": 375,\n      \"shell_s\": 0.1852\n    },\n    {\n      \"width\": 390,\n      \"shell_s\": 0.1661\n    },\n    {\n      \"width\": 520,\n      \"shell_s\": 0.1886\n    },\n    {\n      \"width\": 768,\n      \"shell_s\": 0.3037\n    },\n    {\n      \"width\": 860,\n      \"shell_s\": 0.2118\n    },\n    {\n      \"width\": 861,\n      \"shell_s\": 0.2309\n    },\n    {\n      \"width\": 1024,\n      \"shell_s\": 0.218\n    },\n    {\n      \"width\": 1440,\n      \"shell_s\": 0.1836\n    }\n  ]\n}\n"
+  }
+]

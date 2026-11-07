@@ -1039,6 +1039,46 @@ function downloadJsonFile(name, value) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// Serialize large optional page arrays in bounded slices. JSON.stringify of a
+// 253-page book in one expression can monopolize the browser main thread and
+// temporarily double peak memory. A Blob accepts pieces without concatenation.
+async function downloadReadingDataJsonFile(name, payload, isCurrent = () => true) {
+  if (!payload?.fullDocumentText) {
+    if (isCurrent()) downloadJsonFile(name, payload);
+    return;
+  }
+  const parts = ['{\n'];
+  let topFirst = true;
+  for (const [key, value] of Object.entries(payload)) {
+    if (!isCurrent()) return;
+    parts.push(topFirst ? '' : ',\n', JSON.stringify(key), ':');
+    topFirst = false;
+    if (value && Array.isArray(value.pages) && (key === 'fullDocumentText' || key === 'documentOcr')) {
+      const { pages, ...metadata } = value;
+      parts.push(JSON.stringify(metadata).slice(0, -1), Object.keys(metadata).length ? ',' : '', '"pages":[');
+      for (let i = 0; i < pages.length; i += 1) {
+        if (!isCurrent()) return;
+        parts.push(i ? ',' : '', JSON.stringify(pages[i]));
+        if ((i + 1) % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      parts.push(']}');
+    } else parts.push(JSON.stringify(value));
+  }
+  if (!isCurrent()) return;
+  parts.push('}\n');
+  const url = URL.createObjectURL(new Blob(parts, { type: 'application/json' }));
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = name;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
 async function settleContentDetectionForExport() {
   if (!pdfDoc || !currentFileKey || !documentTextFeaturesAvailable()) return Boolean(pdfDoc && currentFileKey);
   const sourceDoc = pdfDoc;
@@ -1151,40 +1191,95 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
   };
 }
 
+// Automatic detector snapshots are duplicated inside session for normal
+// persistence. A reading-only export must remove *both* representations, while
+// retaining user-authored equation/outline edits and personal reading data.
+function readingDataSessionForExport(session, includeDetection) {
+  const output = jsonClone(session, {});
+  if (includeDetection) return output;
+  for (const key of [
+    'structureEntries', 'bibliographyEntries',
+    'equationIndexSnapshot', 'equationIndexSummary',
+    'structureIndexVersion', 'portableContentDetection'
+  ]) delete output[key];
+  // Selection-created Structure entries are personal corrections, not detector
+  // output. They must survive reading-only backups and remain editable.
+  if (Array.isArray(output.inferredOutline)) {
+    output.inferredOutline = output.inferredOutline.filter((entry) => entry?.userEdited === true);
+    if (!output.inferredOutline.length) delete output.inferredOutline;
+  }
+  // Undo for a deleted auto-index entry is another copy of detector output.
+  // Ordinary notes, reading trail, bookmarks and user corrections survive.
+  if (Array.isArray(output.undoHistory)) {
+    output.undoHistory = output.undoHistory.filter((entry) =>
+      !['structure-outline', 'structure-embedded'].includes(entry?.type) || entry?.payload?.userEdited === true);
+  }
+  return output;
+}
+
 async function exportReadingData() {
   if (!pdfDoc || !currentFileKey) return;
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
+  // Snapshot choices at click time; toggling Settings during an async export
+  // cannot produce an internally inconsistent file.
+  const includeDetection = exportPreferences.includeDetection !== false;
+  const includeFullDocumentText = exportPreferences.includeFullDocumentText === true;
   const wasDisabled = Boolean(exportReadingDataButton?.disabled);
   if (exportReadingDataButton) exportReadingDataButton.disabled = true;
   try {
-    const settled = await settleContentDetectionForExport();
-    if (!settled || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) {
-      if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
-        showError(t('Content detection is not ready to export. Rebuild the document index and try again.', '内容检测尚未准备好导出。请重新生成文档索引后再试。'));
+    // Reading-only backups do not need to rebuild the Contents indexes.
+    if (includeDetection) {
+      const settled = await settleContentDetectionForExport();
+      if (!settled || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) {
+        if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+          showError(t('Content detection is not ready to export. Rebuild the document index and try again.', '内容检测尚未准备好导出。请重新生成文档索引后再试。'));
+        }
+        return;
       }
-      return;
     }
-    const rawDetection = await readingDataRawDetectionSnapshot(sourceDoc, sourceKey);
-    if (!rawDetection || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+    const fullDocumentText = includeFullDocumentText
+      ? await readingDataRawDetectionSnapshot(sourceDoc, sourceKey)
+      : null;
+    if (includeFullDocumentText && !fullDocumentText) return;
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
     const safeName = String(currentFileName || 'document').replace(/\.pdf$/i, '').replace(/[^a-z0-9._-]+/gi, '-');
     const session = snapshotSession();
-    downloadJsonFile(`${safeName}-mathreader.json`, {
+    const payload = {
       schema: 'mathreader.reading-data@1', exportedAt: new Date().toISOString(),
       document: { id: currentFileKey, name: currentFileName, pages: pdfDoc.numPages },
-      // Portable detection is explicit in the export instead of being an
-      // accidental side effect of whichever session fields happen to exist.
-      contentDetection: readingDataContentDetectionSnapshot(session),
-      // Actual pre-classification page inputs, including original PDF.js items,
-      // previous Meticulous OCR observations and completed margin OCR lines.
-      // Does not trigger recognition or mutate an existing reading session.
-      rawDetection,
-      // For scan-backed PDFs the OCR page geometry is the document text source.
-      // Export it with the reading data so import does not require re-running OCR
-      // merely to recover Structure / Results / Equations / Bibliography.
-      documentOcr: exportedDocumentOcrSnapshot(),
-      session
-    });
+      exportLayers: {
+        version: 1,
+        readingData: 'included',
+        detection: includeDetection ? 'included' : 'excluded',
+        fullDocumentText: !includeFullDocumentText ? 'excluded' : fullDocumentText.complete ? 'complete' : 'partial',
+        fullDocumentOcr: !includeFullDocumentText ? 'excluded' : documentOcrActive ? 'included-if-complete' : 'not-stored',
+      },
+      session: readingDataSessionForExport(session, includeDetection),
+    };
+    if (includeDetection) payload.contentDetection = readingDataContentDetectionSnapshot(session);
+    if (includeFullDocumentText) {
+      // Keep PDF.js text items, detector input lines and saved page OCR evidence
+      // in one optional block. Old `rawDetection` exports remain importable.
+      payload.fullDocumentText = fullDocumentText;
+      // Full OCR word/line geometry is stored only once, not duplicated per page.
+      payload.documentOcr = exportedDocumentOcrSnapshot();
+      payload.exportLayers.fullDocumentOcr = payload.documentOcr ? 'included' : 'not-stored';
+      if (!payload.documentOcr) {
+        // An interrupted or incomplete OCR cache cannot provide the referenced
+        // page data. Never publish dangling page refs as if they were present.
+        for (const page of fullDocumentText.pages || []) {
+          if (page.documentOcrPageRef != null) {
+            delete page.documentOcrPageRef;
+            page.documentOcrEvidenceStatus = 'not-stored';
+          }
+        }
+      }
+    }
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+    await downloadReadingDataJsonFile(`${safeName}-mathreader.json`, payload,
+      () => pdfDoc === sourceDoc && currentFileKey === sourceKey);
   } finally {
     if (exportReadingDataButton) exportReadingDataButton.disabled = wasDisabled || !pdfDoc;
   }

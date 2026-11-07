@@ -62,7 +62,7 @@ check(status.textContent.includes('Index failed') && status.title.includes('Equa
 const css=fs.readFileSync(path.join(__dirname,'../mathreader.css'),'utf8');
 check(/\.equation-detection-status\{[^}]*white-space:nowrap[^}]*text-overflow:ellipsis/.test(css),'one-line CSS with narrow-pane ellipsis');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-check(html.includes('mathreader.js?v=395') && html.includes('mathreader.css?v=395'),'cache busters updated to v395');
+check(html.includes('mathreader.js?v=397') && html.includes('mathreader.css?v=397'),'cache busters updated to v397');
 check(html.includes('Expand to index equations.') && html.includes('Numbered references appear here.'),'sidebar empty hints shortened');
 
 const doc={getPage:async()=>({getViewport:()=>({width:250,height:100}),render:()=>({promise:Promise.resolve()})})};

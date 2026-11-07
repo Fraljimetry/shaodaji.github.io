@@ -104,13 +104,15 @@ async function run() {
     const control = {disabled:false};
     Object.assign(ctx, {
       exportReadingDataButton: control,
+      exportPreferences: {includeDetection:true,includeFullDocumentText:true},
+      readingDataSessionForExport: (session) => session,
       currentFileName: 'Yau 1978.pdf',
       settleContentDetectionForExport: async () => true,
       readingDataRawDetectionSnapshot: build,
       snapshotSession: () => ({page:2, bookmarks:[]}),
       readingDataContentDetectionSnapshot: () => ({version:1, structure:[],results:[],equations:{rows:[]},bibliography:[]}),
       exportedDocumentOcrSnapshot: () => ({version:2,pageCount:2,pages:[]}),
-      downloadJsonFile: (name, value) => {downloads.push({name,value});},
+      downloadReadingDataJsonFile: async (name, value) => {downloads.push({name,value});},
       showError: () => {throw Error('unexpected error dialog');},
       t: (en) => en,
     });
@@ -122,7 +124,7 @@ async function run() {
     verify(downloads[0].value.document.id === 'sha256:document-a', 'document identity is included');
     verify(downloads[0].value.contentDetection.version === 1 && downloads[0].value.session.page === 2,
       'index and reading session fields remain present');
-    verify(downloads[0].value.rawDetection.pages[0].nativePdf.items.length === 2,
+    verify(downloads[0].value.fullDocumentText.pages[0].nativePdf.items.length === 2,
       'original text items are included in the actual exported payload');
     verify(downloads[0].value.documentOcr.version === 2, 'full OCR cache remains in top-level compatible field');
     verify(control.disabled === false, 'export control is restored after download');
@@ -132,9 +134,9 @@ async function run() {
     // relying exclusively on a helper that might never be called.
     const fn = extract(src, 'exportReadingData');
     verify(fn.includes('await readingDataRawDetectionSnapshot(sourceDoc, sourceKey)'), 'Export waits for raw evidence');
-    verify(fn.includes('rawDetection,'), 'same JSON includes rawDetection');
+    verify(fn.includes('payload.fullDocumentText = fullDocumentText'), 'opt-in export includes full-document evidence');
     const importer = extract(src, 'importReadingDataFile');
-    verify(!importer.includes('payload.rawDetection'), 'diagnostics do not silently change user data on import');
+    verify(!importer.includes('payload.fullDocumentText'), 'diagnostics do not silently change user data on import');
     verify(src.includes('schema: \'mathreader.reading-data@1\''), 'existing reading-data schema retained');
     verify(!extract(src, 'readingDataRawDetectionSnapshot').includes('recognize('), 'export never triggers OCR');
   }

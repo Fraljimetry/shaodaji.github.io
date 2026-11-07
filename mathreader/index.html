@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=395">
+  <link rel="stylesheet" href="mathreader.css?v=397">
   <script>
     (() => {
       try {
@@ -512,6 +512,17 @@
             <details class="ocr-troubleshooting"><summary data-en="Troubleshooting" data-zh="故障处理">Troubleshooting</summary><button class="text-button" type="button" id="ocr-retry" data-en="Reset OCR" data-zh="重置 OCR" data-en-title="Unload the current OCR engine. The model loads on the next image formula extraction." data-zh-title="卸载当前 OCR 引擎；下次图像公式提取时才会加载模型。">Reset OCR</button><div class="ocr-timing-panel"><div class="ocr-timing-title" data-en="OCR timing" data-zh="OCR 计时">OCR timing</div><pre id="ocr-timing-diagnostics" data-en-empty="No OCR run yet." data-zh-empty="尚无 OCR 运行记录。">No OCR run yet.</pre></div></details>
           </div>
         </details>
+
+        <details class="settings-group" id="settings-export-group">
+          <summary><span data-en="Export data" data-zh="导出数据">Export data</span></summary>
+          <div class="settings-group-body">
+            <label class="toggle-setting"><input type="checkbox" id="export-include-detection" checked><span data-en="Include detection data" data-zh="包含检测数据">Include detection data</span></label>
+            <p class="display-note" data-en="Structure, Results, Equations and Bibliography." data-zh="结构、结果、公式编号和参考文献。">Structure, Results, Equations and Bibliography.</p>
+            <label class="toggle-setting"><input type="checkbox" id="export-include-full-text"><span data-en="Include full-document text" data-zh="包含全文文本">Include full-document text</span></label>
+            <p class="display-note" data-en="PDF text, OCR evidence and coordinates, when available. Larger files; no OCR is started." data-zh="可用的 PDF 文本、OCR 证据和坐标。文件可能较大；不会启动 OCR。">PDF text, OCR evidence and coordinates, when available. Larger files; no OCR is started.</p>
+            <p class="display-note" data-en="Reading data is always included. Settings apply to future exports." data-zh="始终包含阅读数据。此设置适用于之后的导出。">Reading data is always included. Settings apply to future exports.</p>
+          </div>
+        </details>
       </section>
 
       <section class="workspace-section shortcuts" id="shortcuts-section">
@@ -578,6 +589,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=395"></script>
+  <script type="module" src="mathreader.js?v=397"></script>
 </body>
 </html>
