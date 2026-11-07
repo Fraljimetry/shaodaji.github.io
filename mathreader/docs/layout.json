@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "source_version": "v414",
+  "source_regression_sha256": "4fffa6f1dd811e46c15c9baf8db16ca26c0750262ebd00adc7ddec9ec972553f",
+  "regression_parts": [
+    {
+      "path": "REGRESSION.md",
+      "start_line": 1,
+      "end_line": 144,
+      "sha256": "689be8b62d6827e64bcb0e94dfd2555ed710ddb1af274288d0bd863508615a51"
+    },
+    {
+      "path": "docs/regression/history/v374-v404.md",
+      "start_line": 145,
+      "end_line": 277,
+      "sha256": "a794fb29401802eb6fe1082a5b264510b94af0033ca5546d3269e63533f03076"
+    },
+    {
+      "path": "docs/regression/history/v352-v371.md",
+      "start_line": 278,
+      "end_line": 693,
+      "sha256": "c6afdd556d91cfbb3918060087a5a24f11ec918cf1622845cd06178563c230b7"
+    },
+    {
+      "path": "docs/regression/history/v343-v351.md",
+      "start_line": 694,
+      "end_line": 1188,
+      "sha256": "1ca83c72224d93dfd848a312770b914e8d512d302dfa626e613a366d90921c1b"
+    },
+    {
+      "path": "docs/regression/history/v339-v342.md",
+      "start_line": 1189,
+      "end_line": 1507,
+      "sha256": "adef7b9708b746b373ef7e90bcfdd65543b0d4eddc5854a1c59eff153220d562"
+    },
+    {
+      "path": "docs/regression/history/legacy-and-followups.md",
+      "start_line": 1508,
+      "end_line": 2105,
+      "sha256": "034da91cd9007024f7c7ac7ec0031a5950ac847f535348cc8224c87ba58e9445"
+    },
+    {
+      "path": "docs/regression/history/v401-v402-addenda.md",
+      "start_line": 2106,
+      "end_line": 2120,
+      "sha256": "af64c952ea69c3169e8045c27773aac8583518348ff15a7176a81d479167b9b7"
+    }
+  ],
+  "regression_prefix_marker": "## Latest regression entries (v414–v405)\n\n",
+  "moved_root_docs": [
+    {
+      "source": "EXPORT_COVERAGE_v400.md",
+      "target": "docs/exports/EXPORT_COVERAGE_v400.md",
+      "sha256": "45681a4e2472946d17c08df936bf829008e6d23300931f7b9a5a9220b96f223e"
+    },
+    {
+      "source": "MANUAL_APPENDIX_EQUATIONS_v405.md",
+      "target": "docs/features/MANUAL_APPENDIX_EQUATIONS_v405.md",
+      "sha256": "86e7db68146ad38d6079dfbf8c7136e9d6cae2e07a9e32b963f3e4a356372694"
+    },
+    {
+      "source": "MATHREADER_FULL_AUDIT_v405.md",
+      "target": "docs/audits/MATHREADER_FULL_AUDIT_v405.md",
+      "sha256": "149311b6ec4bd33c8b69cef1a1d9035c98cd10fad0d8eb31403aeeb4b615cd0d"
+    },
+    {
+      "source": "OCR_APPENDIX_RESULTS_v395.md",
+      "target": "docs/ocr/recognition/OCR_APPENDIX_RESULTS_v395.md",
+      "sha256": "257daeb6824f3c3e1a19adcd4ea111456d68c75af544489543c5da5ffd283a7a"
+    },
+    {
+      "source": "OCR_APPENDIX_v388.md",
+      "target": "docs/ocr/recognition/OCR_APPENDIX_v388.md",
+      "sha256": "fae792e21d7fb063b9c7fcb4dae0a21e3ebbcac50be0917db9ef6c38c938134c"
+    },
+    {
+      "source": "OCR_AUDIT_v384.md",
+      "target": "docs/ocr/recognition/OCR_AUDIT_v384.md",
+      "sha256": "47eebec1ebfd895d73a17037301e3d49e256cda765dfe1cfa8565131dae4ff81"
+    },
+    {
+      "source": "OCR_CACHE_v391.md",
+      "target": "docs/ocr/persistence/OCR_CACHE_v391.md",
+      "sha256": "6ee1c77a378326ff90fe2b125a78036b1dae48632c66644071dde45aea8a6e80"
+    },
+    {
+      "source": "OCR_CONTEXT_MENU_v390.md",
+      "target": "docs/ocr/navigation/OCR_CONTEXT_MENU_v390.md",
+      "sha256": "f9f5cd4c2aafbdf1c1434245b6a954c65615b57a69e4a1004dea6bff4aab7050"
+    },
+    {
+      "source": "OCR_EVIDENCE_AND_APPENDIX_v402.md",
+      "target": "docs/ocr/persistence/OCR_EVIDENCE_AND_APPENDIX_v402.md",
+      "sha256": "21647e4e18be257e57d8dd945784ac35ef45e464b042b89ceed8d18aecdd17d8"
+    },
+    {
+      "source": "OCR_EVIDENCE_RECOVERY_v403.md",
+      "target": "docs/ocr/persistence/OCR_EVIDENCE_RECOVERY_v403.md",
+      "sha256": "ad0c0c7f19d46bb1d81d82b379f5b571d43948e26b180f9bc67c72cae4d48f50"
+    },
+    {
+      "source": "OCR_EVIDENCE_REOPEN_v404.md",
+      "target": "docs/ocr/persistence/OCR_EVIDENCE_REOPEN_v404.md",
+      "sha256": "d3e1dff71d8fe42d1d38436371493d80abcac483e5fcb414a91030a4d98d32fd"
+    },
+    {
+      "source": "OCR_EVIDENCE_v401.md",
+      "target": "docs/ocr/persistence/OCR_EVIDENCE_v401.md",
+      "sha256": "4cde819ca37ef886a1233477e072d0be588b7d3ad8b2f1331c952274902ecfc3"
+    },
+    {
+      "source": "OCR_EXPORT_AUDIT_v392.md",
+      "target": "docs/exports/OCR_EXPORT_AUDIT_v392.md",
+      "sha256": "8056cd68ec60d547874eae43f606e1b5c88df318b4bd6e5eb57600e9129ba24a"
+    },
+    {
+      "source": "OCR_EXPORT_CORPUS_v399.md",
+      "target": "docs/exports/OCR_EXPORT_CORPUS_v399.md",
+      "sha256": "5eead535d4c647e2cf4ddec820da0aad0c94a963895f6efa832319b1ce8b6739"
+    },
+    {
+      "source": "OCR_EXPORT_OPTIONS_v397.md",
+      "target": "docs/exports/OCR_EXPORT_OPTIONS_v397.md",
+      "sha256": "5d58139dbff8a297b914e050b18b338941c260d3872714108827905e426e9f34"
+    },
+    {
+      "source": "OCR_EXPORT_UI_v398.md",
+      "target": "docs/exports/OCR_EXPORT_UI_v398.md",
+      "sha256": "66dff4132d07eaf50d83524ba951ef66c006b9e9651c4252d877e280701a8b0c"
+    },
+    {
+      "source": "OCR_HISTORICAL_v389.md",
+      "target": "docs/ocr/recognition/OCR_HISTORICAL_v389.md",
+      "sha256": "02b3927f0aa5150e43fad547b960e2f836ae164b06798853d792d066a93de3b4"
+    },
+    {
+      "source": "OCR_HISTORICAL_v394.md",
+      "target": "docs/ocr/recognition/OCR_HISTORICAL_v394.md",
+      "sha256": "d22d2abc60a451301b0bb8240fbb7298ff25efb2e6ad4a90a1a86f0fb485406b"
+    },
+    {
+      "source": "OCR_NAVIGATION_v385.md",
+      "target": "docs/ocr/navigation/OCR_NAVIGATION_v385.md",
+      "sha256": "254e350db5dc30807b079c6ffae89b93db7a4dd2422440efb8ef794382996f9f"
+    },
+    {
+      "source": "OCR_NAVIGATION_v386.md",
+      "target": "docs/ocr/navigation/OCR_NAVIGATION_v386.md",
+      "sha256": "1d7334d0b141ab625225b76950a432f6d53c307097d235192e9d022ac60d2b6b"
+    },
+    {
+      "source": "OCR_RAW_EXPORT_v393.md",
+      "target": "docs/exports/OCR_RAW_EXPORT_v393.md",
+      "sha256": "fdcf56eb91d3244c107b8f0789e6355a1cd23215255487c7e8dc325a68c47d39"
+    },
+    {
+      "source": "OCR_VIEWPORT_v387.md",
+      "target": "docs/ocr/navigation/OCR_VIEWPORT_v387.md",
+      "sha256": "fa61b7ebd600535069e21d456a06531c7bf756d7478e0b03c9c6bfce58dad887"
+    },
+    {
+      "source": "V397_PATCH_MANIFEST.md",
+      "target": "docs/releases/V397_PATCH_MANIFEST.md",
+      "sha256": "ee2c530865f9ee66b9717479385e564e2ce4ac26e8ebb410a1c02b328386b159"
+    },
+    {
+      "source": "V398_PATCH_MANIFEST.md",
+      "target": "docs/releases/V398_PATCH_MANIFEST.md",
+      "sha256": "bee55c8cd4b91c82211ef36e0fd2f31d5222ccbf464a5ab2a5c6bd54c36d688a"
+    },
+    {
+      "source": "V399_PATCH_MANIFEST.md",
+      "target": "docs/releases/V399_PATCH_MANIFEST.md",
+      "sha256": "73671e5e157a7a0fd49df13f485e9bf97c8fcaa8417a31cf6fade62156aa1bea"
+    },
+    {
+      "source": "V400_PATCH_MANIFEST.md",
+      "target": "docs/releases/V400_PATCH_MANIFEST.md",
+      "sha256": "8a1b155f621a6bcfe0e1424f3a053106d465b4dd63e434feee6b1c6baf425d88"
+    },
+    {
+      "source": "V401_PATCH_MANIFEST.md",
+      "target": "docs/releases/V401_PATCH_MANIFEST.md",
+      "sha256": "4416076aa35ef3234a0c3ecf499f73d9f3e205134a36414fdd047cf45a511580"
+    },
+    {
+      "source": "V402_PATCH_MANIFEST.md",
+      "target": "docs/releases/V402_PATCH_MANIFEST.md",
+      "sha256": "0544ab886d510b63f7499b472920e1d68bf52763142bee5538bfc13555aca126"
+    },
+    {
+      "source": "V403_PATCH_MANIFEST.md",
+      "target": "docs/releases/V403_PATCH_MANIFEST.md",
+      "sha256": "da6a109194da684edaf9485d29baf58ec037a31ce7df77b8bb6b5be5a54e1622"
+    },
+    {
+      "source": "V404_PATCH_MANIFEST.md",
+      "target": "docs/releases/V404_PATCH_MANIFEST.md",
+      "sha256": "525fb5c1e5efcd79dc026c1f1256ca87eb6db9174bc42255efa7b735aaf46a58"
+    },
+    {
+      "source": "V405_AUDIT_PATCH_MANIFEST.md",
+      "target": "docs/releases/V405_AUDIT_PATCH_MANIFEST.md",
+      "sha256": "47c1342533119c81003dd57b681ff5e8d1929d3bc6ddd41ef949324ab67eeac1"
+    },
+    {
+      "source": "V405_PATCH_MANIFEST.md",
+      "target": "docs/releases/V405_PATCH_MANIFEST.md",
+      "sha256": "5902e91cb75e93a9201cae1064f309ffe073f53ba554e6a39cbee65bce0c8097"
+    },
+    {
+      "source": "V407_PATCH_MANIFEST.md",
+      "target": "docs/releases/V407_PATCH_MANIFEST.md",
+      "sha256": "2f4c27eaec77e60ecec6008cd846f1f118f61adee62f74835ebe47bc182dbb6f"
+    },
+    {
+      "source": "V408_PATCH_MANIFEST.md",
+      "target": "docs/releases/V408_PATCH_MANIFEST.md",
+      "sha256": "98befc183e49f60bba5974a93c0fb5fc6a54a7224ebb89bfdb4fcb87441e89fc"
+    },
+    {
+      "source": "V409_PATCH_MANIFEST.md",
+      "target": "docs/releases/V409_PATCH_MANIFEST.md",
+      "sha256": "25e01ed9c24a232c2a7fafa3c80cae0b567efb6be73a92e5e1f669532e914ebb"
+    },
+    {
+      "source": "V410_PATCH_MANIFEST.md",
+      "target": "docs/releases/V410_PATCH_MANIFEST.md",
+      "sha256": "ce44d0de0f1ed7ee2295a9dd1095fe324db2fb904da0ee1c21b71e305dc7def1"
+    },
+    {
+      "source": "V411_PATCH_MANIFEST.md",
+      "target": "docs/releases/V411_PATCH_MANIFEST.md",
+      "sha256": "646dc49b626d5779f10420f5892da9f9ce0204b08f5e511b6fe12a8c47699135"
+    },
+    {
+      "source": "V412_PATCH_MANIFEST.md",
+      "target": "docs/releases/V412_PATCH_MANIFEST.md",
+      "sha256": "c69c9f8888a61dcdebb2d0123ac0f481385597acc874d056574227b0fff575a2"
+    },
+    {
+      "source": "V413_PATCH_MANIFEST.md",
+      "target": "docs/releases/V413_PATCH_MANIFEST.md",
+      "sha256": "cd48014f2799aea239c8ca5b3766e868625bdc5494fc2aac17685f0e61a391c8"
+    },
+    {
+      "source": "V414_PATCH_MANIFEST.md",
+      "target": "docs/releases/V414_PATCH_MANIFEST.md",
+      "sha256": "438973b9a09d0cdd6ef124abf2f80843ec9b38f163cda7f19150304a381c4039"
+    },
+    {
+      "source": "v384_RELEASE.md",
+      "target": "docs/releases/v384_RELEASE.md",
+      "sha256": "d6eb72e31075057924386838a817deeef0e2d62578b0804129a59e777a142b70"
+    }
+  ]
+}

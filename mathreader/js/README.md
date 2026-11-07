@@ -38,7 +38,7 @@ recognized as failures even when its async API resolves. Keep the original
 recognition available for editing, do not invent missing mathematical content,
 and never represent syntax compilation as mathematical transcription accuracy.
 For the authoritative old/new example corpus and its provenance, see
-`../regression/formula_syntax_v352.json` and the v352 section of `../REGRESSION.md`.
+`../regression/formula_syntax_v352.json` and the v352 section of `../docs/regression/history/v352-v371.md`.
 
 Permanent paired regression requirement (2026-11-05): any document/text-index regression must also audit formulas from those **same** PDFs, with original-page/crop provenance, real image-to-LaTeX output when available, MathJax compilation and independent visual accuracy checks. See `../REGRESSION.md` and `../regression/paired_text_formula_50_20261105.json`. A syntax-only proxy is not recognition accuracy; incomplete stages remain UNVERIFIED.
 
@@ -48,7 +48,7 @@ content-addressed PDF text/page-geometry cache, stage-specific detector/OCR
 cache and paired formula compilation sidecar. It does not run in the website.
 Do not describe native-text parser probes or Tesseract transcripts as final
 browser indexes, Texify output, or verified mathematical recognition. See
-`../regression_tools/README.md` and v353 entry in `../REGRESSION.md`.
+`../regression_tools/README.md` and v353 entry in `../docs/regression/history/v352-v371.md`.
 
 
 ## v354 safe performance maintenance
@@ -75,7 +75,7 @@ module, panel, OCR trigger, cache schema or detector/recovery behavior was
 introduced. Browser PDF.js and actual Texify acceptance require their real
 pinned assets and whole-document independent ground truth. See
 `../regression_tools/P0_ACCEPTANCE.md` and the v355 section of
-`../REGRESSION.md` for exact PASS/FAIL/UNVERIFIED definitions.
+`../docs/regression/history/v352-v371.md` for exact PASS/FAIL/UNVERIFIED definitions.
 
 
 ## v356 P1: user-confirmed references to locally cached PDFs
@@ -98,7 +98,7 @@ Use `node mathreader/tests/cross_document_regression.js` for concurrency,
 missing-cache, exact-return, and persistence regression; the standard P0 gate
 also runs `tests/p1_browser_smoke.py` in Chromium with a **simulated** PDF
 backend. Its browser results are *not* actual PDF.js/Texify acceptance. The
-v356 historical audit and remaining limitations are in `../REGRESSION.md`.
+v356 historical audit and remaining limitations are in `../docs/regression/history/v352-v371.md`.
 
 
 ## v357 P0/P1 maintenance note
@@ -107,7 +107,7 @@ The v356 cross-document record schema (`meta/crossdoc-links:v1:<sourceId>`) and 
 
 ## v358 P0/P1 audit note
 
-v358 keeps all mathematical detectors, formula OCR runtime, lazy initialization, model fallback and index-cache schemas unchanged. A single P1 confirmed-link completion path now treats an IndexedDB write that completed after document switching as **committed to the original exact source PDF**, without touching the currently active paper's link map. P0 strict golden/capture validation and report version/status fidelity are improved in `regression_tools/`. See `../REGRESSION.md` for 110-PDF paired regression and live-engine blockers.
+v358 keeps all mathematical detectors, formula OCR runtime, lazy initialization, model fallback and index-cache schemas unchanged. A single P1 confirmed-link completion path now treats an IndexedDB write that completed after document switching as **committed to the original exact source PDF**, without touching the currently active paper's link map. P0 strict golden/capture validation and report version/status fidelity are improved in `regression_tools/`. See `../docs/regression/history/v352-v371.md` for the historical 110-PDF paired regression and live-engine blockers.
 
 
 ## v359 P0/P1 acceptance-tool cleanup
@@ -125,7 +125,7 @@ including P1 Return at ≤520px. All desktop sidebar behavior is unchanged.
 Run `python mathreader/tests/ui_responsive_regression.py` for offline actual-UI
 Chromium viewport, touch, modal and repeated-interaction checks, and the full
 `regression_tools/p0_gate.py` as before. Browser-shell tests are *not* genuine
-PDF.js document switching or Texify acceptance. See `../REGRESSION.md`.
+PDF.js document switching or Texify acceptance. See `../docs/regression/history/v352-v371.md`.
 
 
 ## v361 P1 bibliography context menu
@@ -177,4 +177,4 @@ Header tutorial `?` uses a 15px glyph in the unchanged 34px button.
 
 ## v366 sidebar defaults
 
-Desktop shell and new document default to both sidebars visible. Contents sections expand by default except Annotations; all right-side sections continue collapsed. Per-document sidebar visibility and per-section collapse state persist when enabled. Newly created highlights and margin notes reveal the left Contents Annotations section without tab switch or document navigation; the existing right margin-note reveal is retained. See `REGRESSION.md` and `tests/sidebar_defaults_regression.js`.
+Desktop shell and new document default to both sidebars visible. Contents sections expand by default except Annotations; all right-side sections continue collapsed. Per-document sidebar visibility and per-section collapse state persist when enabled. Newly created highlights and margin notes reveal the left Contents Annotations section without tab switch or document navigation; the existing right margin-note reveal is retained. See `../docs/regression/history/legacy-and-followups.md` and `../tests/sidebar_defaults_regression.js`.
