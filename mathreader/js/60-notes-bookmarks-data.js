@@ -506,7 +506,6 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     // This prevents stale Structure/Results/Equations/Bibliography rows from remaining
     // clickable against the newly opened PDF.
     clearDocumentMapForIncomingPdf();
-    await loadEquationMarginOcrEvidence(pdfDoc, currentFileKey);
     let savedTextPreference = cachedRecord?.session?.documentTextPreference;
     if (!['skip', 'ocr', 'native'].includes(savedTextPreference)) {
       try { savedTextPreference = JSON.parse(safeGet(stateKey('session-v2'), 'null'))?.documentTextPreference; } catch (_) { savedTextPreference = 'ask'; }
@@ -533,6 +532,10 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     loadDocumentState(cachedRecord?.session || null);
     await loadConfirmedBibliographyLinks(meta.id);
     if (!documentTextFeaturesAvailable()) clearTextDerivedIndexesForUnavailableDocument();
+    // Session restoration and text-availability gates reset equation caches.
+    // Load durable page observations only after the last such reset, before
+    // any equation-index builder can consume them.
+    await loadEquationMarginOcrEvidence(pdfDoc, currentFileKey);
     updateDocumentTextAvailabilityUI();
     documentTitle.textContent = meta.name;
     pageCount.textContent = pdfDoc.numPages;
@@ -1392,8 +1395,6 @@ async function importReadingDataFile(file) {
     return;
   }
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
-  if (evidenceRecovery.count) await loadEquationMarginOcrEvidence(sourceDoc, sourceKey);
-  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
   if (payload.documentOcr) {
     const normalizedOcr = normalizedImportedDocumentOcrSnapshot(payload.documentOcr, pdfDoc.numPages);
     if (normalizedOcr) {
@@ -1409,6 +1410,14 @@ async function importReadingDataFile(file) {
   }
   safeSet(stateKey('session-v2'), JSON.stringify(importedSession));
   loadDocumentState(importedSession);
+  // loadDocumentState() clears the in-memory OCR map. Loading before it made
+  // successful imports/export verifications transient until the next export.
+  if (evidenceRecovery.count && !await loadEquationMarginOcrEvidence(sourceDoc, sourceKey)) {
+    showError(t('Imported OCR evidence was saved but could not be restored. Keep the original export.',
+      '导入的 OCR 证据已保存，但无法重新读取。请保留原始导出文件。'));
+    return;
+  }
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
   // The PDF may already be sitting in the scanned-document "Text unavailable"
   // state. Import can make Contents available without OCR, so refresh that UI
   // immediately; otherwise the old CSS class keeps the restored sections hidden.

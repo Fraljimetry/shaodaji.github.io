@@ -1,0 +1,453 @@
+{
+  "version": "v404",
+  "baseline": "v403 patched over uploaded v401 source",
+  "javaScript": {
+    "passed": 48,
+    "total": 48
+  },
+  "pythonChromium": {
+    "passed": 20,
+    "total": 20
+  },
+  "oldBaselineNewRegression": "FAIL (expected): open restores session before OCR evidence",
+  "newBaselineNewRegression": "PASS: 11 assertions",
+  "realUserEvidence": {
+    "pdfSha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+    "beforeImport": {
+      "records": 49,
+      "ocrLines": 1053,
+      "annotations": 2,
+      "persistence": "verified"
+    },
+    "afterImport": {
+      "records": 172,
+      "ocrLines": 4054,
+      "annotations": 0,
+      "persistence": "verified"
+    },
+    "afterReload": {
+      "records": 0,
+      "ocrLines": 0,
+      "annotations": 0,
+      "persistence": "no-evidence"
+    },
+    "combinedRecovery": {
+      "records": 172,
+      "ocrLines": 4054,
+      "annotations": 2,
+      "exactObservationMatch": true,
+      "exactSessionMatchBeforeImport": true
+    }
+  },
+  "realProductionBrowserReloadAfterFix": "NOT TESTED",
+  "suites": [
+    {
+      "type": "node",
+      "name": "appendix_equations_v388_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "appendix_leading_equation_v402_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "bibliography_boundary_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "cross_document_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "embedded_outline_title_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_force_ocr_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_margin_navigation_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_margin_page_journal_v403_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_margin_persistence_v401_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_margin_restore_order_v404_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_meticulous_navigation_v386_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_order_ocr_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_progress_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "equation_reference_ocr_target_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "export_preferences_v397_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "formula_latex_syntax_regression.js",
+      "result": "PASS",
+      "seconds": 0.9
+    },
+    {
+      "type": "node",
+      "name": "formula_ocr_initialization_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "formula_ocr_lazy_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "formula_preview_compilation_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "full_exports_outline_v399_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "full_exports_proof_precision_v399_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "full_text_coverage_v400_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "historical_appendix_results_v395_regression.js",
+      "result": "PASS",
+      "seconds": 0.2
+    },
+    {
+      "type": "node",
+      "name": "historical_appendix_separator_v389_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "historical_bibliography_v394_regression.js",
+      "result": "PASS",
+      "seconds": 0.2
+    },
+    {
+      "type": "node",
+      "name": "historical_equation_positions_v394_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "historical_native_pdf_detection_v394_regression.js",
+      "result": "PASS",
+      "seconds": 0.3
+    },
+    {
+      "type": "node",
+      "name": "initial_equation_ocr_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "long_book_outline_v392_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "maintenance_integrity_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "manual_version_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "meticulous_additive_ocr_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "meticulous_equation_margin_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "meticulous_position_preservation_v387_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "multi_pdf_open_guard_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "multi_pdf_tabs_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "ocr_cache_identity_v391_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "ocr_reliability_deep_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "p0_probe_evidence_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "page_context_ocr_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "page_ocr_status_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "performance_safe_regression.js",
+      "result": "PASS",
+      "seconds": 0.1
+    },
+    {
+      "type": "node",
+      "name": "precision_context_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "raw_detection_export_v393_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "real_export_index_precision_v392_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "results_toc_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "shortcut_layout_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "node",
+      "name": "sidebar_defaults_regression.js",
+      "result": "PASS",
+      "seconds": 0.0
+    },
+    {
+      "type": "python",
+      "name": "appendix_equation_sidebar_browser_v388.py",
+      "result": "PASS",
+      "seconds": 2.5
+    },
+    {
+      "type": "python",
+      "name": "equation_margin_export_browser_v402.py",
+      "result": "PASS",
+      "seconds": 2.1
+    },
+    {
+      "type": "python",
+      "name": "equation_navigation_browser_geometry_v386.py",
+      "result": "PASS",
+      "seconds": 1.8
+    },
+    {
+      "type": "python",
+      "name": "export_settings_browser_v397.py",
+      "result": "PASS",
+      "seconds": 2.4
+    },
+    {
+      "type": "python",
+      "name": "export_settings_layout_v398.py",
+      "result": "PASS",
+      "seconds": 3.2
+    },
+    {
+      "type": "python",
+      "name": "full_text_exports_v400.py",
+      "result": "PASS",
+      "seconds": 1.0
+    },
+    {
+      "type": "python",
+      "name": "help_tutorial_regression.py",
+      "result": "PASS",
+      "seconds": 7.2
+    },
+    {
+      "type": "python",
+      "name": "meticulous_ocr_menu_browser_v390.py",
+      "result": "PASS",
+      "seconds": 2.1
+    },
+    {
+      "type": "python",
+      "name": "meticulous_viewport_browser_v387.py",
+      "result": "PASS",
+      "seconds": 1.7
+    },
+    {
+      "type": "python",
+      "name": "ocr_browser_geometry_regression.py",
+      "result": "PASS",
+      "seconds": 1.8
+    },
+    {
+      "type": "python",
+      "name": "p0_acceptance_regression.py",
+      "result": "PASS",
+      "seconds": 1.3
+    },
+    {
+      "type": "python",
+      "name": "p0_gate_isolation_regression.py",
+      "result": "PASS",
+      "seconds": 1.9
+    },
+    {
+      "type": "python",
+      "name": "p0_p1_gap_closure_regression.py",
+      "result": "PASS",
+      "seconds": 1.0
+    },
+    {
+      "type": "python",
+      "name": "p1_browser_smoke.py",
+      "result": "PASS",
+      "seconds": 3.8
+    },
+    {
+      "type": "python",
+      "name": "p1_real_gate_regression.py",
+      "result": "PASS",
+      "seconds": 1.4
+    },
+    {
+      "type": "python",
+      "name": "regression_runner_smoke.py",
+      "result": "PASS",
+      "seconds": 12.3
+    },
+    {
+      "type": "python",
+      "name": "settings_heading_hierarchy_v400.py",
+      "result": "PASS",
+      "seconds": 2.0
+    },
+    {
+      "type": "python",
+      "name": "settings_text_orphans_v399.py",
+      "result": "PASS",
+      "seconds": 4.0
+    },
+    {
+      "type": "python",
+      "name": "seven_export_evidence_v401.py",
+      "result": "PASS",
+      "seconds": 0.8
+    },
+    {
+      "type": "python",
+      "name": "ui_responsive_regression.py",
+      "result": "PASS",
+      "seconds": 16.4
+    }
+  ]
+}

@@ -1,3 +1,11 @@
+# v404 — Restoring OCR after session reset (2026-11-07 UTC+08)
+
+**Live Ahlfors v403 acceptance FAIL:** post-import `(4).json` contains 172 stored equation-margin page observations / 4,054 OCR lines, but the export after webpage reload `(5).json` contains zero. Earlier backup `(3).json` contains 49 matching pages / 1,053 lines and two annotations; standard old-session import replaced the two annotations. The user's original PDF SHA matches all three. A separate merged recovery JSON preserves all 172 OCR observations and the two annotations; see `OCR_EVIDENCE_REOPEN_v404.md` for explicit provenance.
+
+**Proven v403 source flaw:** `openPdfSource` and open-document `importReadingDataFile` loaded equation-margin evidence before `loadDocumentState`, whose reset wiped the in-memory evidence. v404 loads after the final reset and before equation-index generation, with an import error if the evidence cannot be reloaded. New fail-on-v403 / pass-on-v404 ordering test plus existing page-journal suites. **Do not claim the real IndexedDB reload is fixed:** exports alone cannot exclude a separate storage failure, and export also retries a database read. Production round-trip must pass after v404 deployment.
+
+---
+
 # v403 — Real Ahlfors OCR evidence loss, page-journal durability and recovery (2026-11-07 Beijing UTC+08)
 
 **P0 reproduced:** two real-browser Ahlfors exports with exactly the same SHA-256 PDF identity and 172 pages show **172 right-margin OCR page observations / 4,054 OCR lines** before closing/reopening/reloading, and **zero** after. See `OCR_EVIDENCE_RECOVERY_v403.md`, `regression/v403_release_gate.json`, and `regression_tools/compare_margin_exports_v403.py`. This is a confirmed defect in real browser behavior; the precise storage-failure mechanism is unknown from the exports.
