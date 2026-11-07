@@ -34,14 +34,14 @@ const body = (text, ratio = 0.75) => ({
 const contentsA = [body('Contents', 0.05), nav('4-1. Definition of extremal length', '50'), nav('4-2. Examples', '52'), nav('4-3. The comparison principle', '53')];
 check(toc(contentsA, 4).has(1), 'number-first Definition TOC row is excluded');
 check(!toc(contentsA, 4).has(0), 'Contents label is not an indexed Result row');
-check(detect(contentsA, 1, 4)?.label === 'Definition 4-1', 'candidate reproduction: old parser sees TOC definition');
+check(detect(contentsA, 1, 4) === null, 'unnumbered narrative-style TOC Definition of ... is rejected before section indexing');
 const continuation = [
   nav('9-1. Definition and examples', '125'), nav('9-2. Covering surfaces', '127'),
   nav('9-3. The fundamental group', '128'), nav('9-4. Subgroups and covering surfaces', '130'),
   nav('9-5. Cover transformations', '132'), nav('10-1. Existence of the Green function', '136'),
 ];
 check(toc(continuation, 6).has(0), 'continuation TOC without readable Contents header is recognized');
-check(detect(continuation, 0, 6)?.label === 'Definition 9-1', 'candidate reproduction: continuation TOC row matches parser');
+check(detect(continuation, 0, 6) === null, 'continuation TOC Definition of ... does not become a Result');
 
 // Essential recall: real content immediately below TOC must survive.
 const pageWithBody = [...contentsA, body('Definition 4-1 Let a family of curves be given.', 0.81)];

@@ -1,0 +1,93 @@
+{
+  "release": "v408",
+  "baseline": "attached v405 full ZIP + v406 and v407 patches in order",
+  "source_issue": "unpunctuated sentence-start theorem and lemma references promoted into mathematical declaration index; older phantom labels shadow real declarations by global dedup/monotone sequence filter",
+  "fix": "conservative reference-continuation guard before alternate label parsing; preserve true declaration punctuation and positions; detector index version 51",
+  "source_evidence": {
+    "export": "Principal_Minor_Theorem_4_1_Correction-mathreader.json",
+    "export_sha256": "892cc87e913ba72c9302c9cec7b502e423b9517f59f79bcc0f2b52f47ae1e625",
+    "export_document_id": "sha256:584a32cd8b40e0a6afb01fad48198b8dce5f095f8be93b0f4141f826d83a4c3d",
+    "export_pages": 9,
+    "same_named_library_pdf_sha256": "3f17cdb50b57daa73d7319b18467b040ec4aaa4d942af63c17c76fd8d9582510",
+    "binary_pdf_identity_verified": false,
+    "original_json_detector_input_replay": "all 9 pages, 45 checks passed",
+    "pre_fix_results": 10,
+    "post_fix_results": 10,
+    "removed_wrong": [
+      {
+        "label": "Theorem 4.1",
+        "page": 1,
+        "ratio": 0.3855555555555556
+      },
+      {
+        "label": "Lemma 4.4",
+        "page": 1,
+        "ratio": 0.5817891414141414
+      }
+    ],
+    "recovered_true": [
+      {
+        "label": "Lemma 2.1",
+        "page": 3,
+        "ratio": 0.18925378787878788
+      },
+      {
+        "label": "Theorem 4.1",
+        "page": 4,
+        "ratio": 0.37353661616161615
+      }
+    ]
+  },
+  "corpus_proxy": {
+    "documents_with_pdfjs_detector_lines": 6,
+    "pages": 475,
+    "unchanged_document_candidates": [
+      "Giusti",
+      "Simon",
+      "SPS",
+      "Banach"
+    ],
+    "Ahlfors": "TOC-prose Definition references removed; genuine later Definition candidates revealed",
+    "Yau": "available export lacks detectorInputLines and excluded"
+  },
+  "verification": {
+    "javascript_suites": {
+      "passed": 52,
+      "total": 52
+    },
+    "python_chromium_suites": {
+      "passed": 22,
+      "total": 22
+    },
+    "new_standalone_assertions": 23,
+    "new_full_export_replay_assertions": 45,
+    "javascript_syntax_files": 67,
+    "assembled_runtime_syntax": "PASS",
+    "python_test_ast_files": 22,
+    "zip_integrity": "PASS",
+    "patch_clean_replay": "PASS"
+  },
+  "limitations": [
+    "Source PDF binary hash in export differs from separately recovered library PDF.",
+    "No live deployed website browser confirmation.",
+    "No claimed formula transcription/OCR precision certification.",
+    "Accepted raw OCR evidence loss after hard reload unchanged.",
+    "Imported portable historical snapshots may need explicit Rebuild index."
+  ],
+  "changed_files": [
+    "mathreader/REGRESSION.md",
+    "mathreader/V408_PATCH_MANIFEST.md",
+    "mathreader/index.html",
+    "mathreader/js/00-core.js",
+    "mathreader/js/41-equations-bibliography.js",
+    "mathreader/mathreader.js",
+    "mathreader/regression/v408_release_gate.json",
+    "mathreader/tests/equation_progress_regression.js",
+    "mathreader/tests/export_preferences_v397_regression.js",
+    "mathreader/tests/formula_ocr_lazy_regression.js",
+    "mathreader/tests/maintenance_integrity_regression.js",
+    "mathreader/tests/real_export_index_precision_v392_regression.js",
+    "mathreader/tests/results_declaration_reference_v408_regression.js",
+    "mathreader/tests/results_toc_regression.js"
+  ]
+}

@@ -31,6 +31,28 @@ function structureResultProseReferenceTail(value) {
   return /^(?:(?:above|below)\s+)?(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|should|may|might|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
 }
 
+// A label at the beginning of a visual text line is not sufficient evidence of
+// a mathematical declaration. PDF line wrapping can start a sentence fragment
+// with "Theorem 4.1 of ..." or "Lemma 4.4 from ...". These unpunctuated,
+// lower-case grammatical continuations refer to a result instead of defining
+// one. Preserve actual headings with a delimiter ("Theorem 4.1. For ..."),
+// parenthetical theorem names, and direct statement starts ("Lemma 2.1 Let ...").
+function structureResultUnpunctuatedReferenceTail(fullText, tail) {
+  const continuation = String(tail || '').trim();
+  if (!/^(?:of|from|in|on|for|with|without|by|to|as|at|under|over|above|below|before|after|within|between|among|about|against|through|across|upon|since|according|and|or|but|where|which|whose|that)\b/.test(continuation)) return false;
+  const source = String(fullText || '');
+  const beforeTail = source.slice(0, source.length - continuation.length).trimEnd();
+  return !/[.:)]$/.test(beforeTail);
+}
+
+// Reject a reference before attempting multiple label grammars. Otherwise an
+// appendix reference such as "Theorem B.3 from ..." can be partly re-parsed as
+// an unrelated "Theorem B" after its complete-label branch rejects it.
+function structureResultStartsNarrativeReference(text) {
+  const match = String(text || '').match(/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]{1,2}(?:[.·-]\d+(?:[.·-]\d+)*)?|\d+(?:[.·-]\d+)*)(?:['’])?\s+(.+)$/i);
+  return Boolean(match && structureResultUnpunctuatedReferenceTail(text, match[1]));
+}
+
 // Number-first capitalized chapter/section headings can contain the word
 // "DEFINITION" without announcing a mathematical Definition. Their title
 // phrases are not Result statements, even when repeated as TOC entries.
@@ -210,7 +232,7 @@ function recoverBoundedAppendixResultConfusables(entries, observations) {
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
   const cleaned = normalizedStructureResultText(line?.text);
-  if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned)) return null;
+  if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned) || structureResultStartsNarrativeReference(cleaned)) return null;
   const appendix = detectedAppendixResult(line, page);
   if (appendix) return appendix;
 
@@ -221,6 +243,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     const type = canonicalStructureResultType(match[2]);
     const number = match[1];
     const tail = String(match[3] || '').trim();
+    if (structureResultProseReferenceTail(tail) || structureResultUnpunctuatedReferenceTail(cleaned, tail)) return null;
     return {
       label: `${type} ${number}`,
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
@@ -238,7 +261,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     const type=canonicalStructureResultType(match[1]);
     const number=appendixResultNumberPrefix(match[2],match[3],match[4]);
     const tail=String(match[5]||'').trim();
-    if(number && !structureResultProseReferenceTail(tail)) return {
+    if(number && !structureResultProseReferenceTail(tail) && !structureResultUnpunctuatedReferenceTail(cleaned, tail)) return {
       label:`${type} ${number}`,title:`${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0,180),page,ratio:line.ratio
     };
   }
@@ -254,7 +277,7 @@ function detectedStructureResult(lines, lineIndex, page) {
     // references, not declaration labels; genuine old-style A / A1 labels remain.
     if (/^[A-Za-z]/.test(number) && number[0] !== number[0].toLocaleUpperCase()) return null;
     const tail = String(match[3] || '').trim();
-    if (structureResultProseReferenceTail(tail)) return null;
+    if (structureResultProseReferenceTail(tail) || structureResultUnpunctuatedReferenceTail(cleaned, tail)) return null;
     return {
       label: `${type} ${number}`,
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
@@ -2232,6 +2255,49 @@ async function equationMarginOcrLines(sourceDoc, pageNum, side, worker, { margin
     .map((line) => remapEquationMarginOcrLine(line, side, marginFraction));
 }
 
+// Some original printed mathematics has alphabetic appendix equation tags
+// that disappear from the PDF text layer (Giusti p231, printed (A.1)). The
+// numeric-only gap retry below cannot verify those tags. Accept a retry only
+// when OCR actually reads the entire parenthesized appendix label on the
+// original margin, beside *observed* display math. Neither gaps nor ambiguous
+// confusables (e.g. OCR "Al") are evidence for an equation label.
+function equationExpectedAppendixOcrRecord(line, page, expectedLabel) {
+  const parsed = parsedEquationNumber(expectedLabel);
+  if (!parsed?.appendix) return null;
+  const text = String(line?.text || '');
+  const candidates = equationLabelCandidatesInLine(text).filter((candidate) =>
+    candidate.label === expectedLabel && !candidate.bare && !candidate.sequenceOnly
+    && !candidate.attachedFunctionCall);
+  if (!candidates.length) return null;
+  const ratio = Number(line?.ratio);
+  if (!Number.isFinite(ratio) || ratio < 0.07 || ratio > 0.93) return null;
+  for (const candidate of candidates) {
+    const before = text.slice(0, candidate.index).trim();
+    const after = text.slice(candidate.end).trim();
+    const remainder = equationNumberingSide === 'left' ? after : before;
+    // A heading, citation or bare isolated margin token cannot pass: the
+    // source OCR line must itself contain a mathematical operator or relation
+    // outside the tag. This deliberately sacrifices uncertain recall.
+    if (!remainder || !/[=<>≤≥≠≈≡∈∉∑∏∫√∂∇^_+−×÷]/u.test(remainder)
+        || (remainder.match(/\b[A-Za-z]{3,}\b/g) || []).length > 2) continue;
+    // OCR often reduces a printed ≤/≥ to ASCII </>. Only this
+    // exact-tag appendix retry may count that observed relation as math;
+    // generic equation detection remains unchanged.
+    const record = equationSupplementalRecord(line, page, 0, [line], candidate,
+      { countAsciiInequality: /[<>]/u.test(remainder) });
+    if (!record || !record.explicitParenthesized) continue;
+    const start = Number(record.candidateXStartRatio);
+    const end = Number(record.candidateXEndRatio);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > 1 || end <= start) continue;
+    const atOuterMargin = equationNumberingSide === 'left'
+      ? record.candidateAtLineStart && end <= 0.22
+      : record.candidateAtLineEnd && start >= 0.78;
+    if (!atOuterMargin || equationReferenceProseContext(text)) continue;
+    return { ...record, appendixGapCorroborated: true, ocrGeometryMeasured: true };
+  }
+  return null;
+}
+
 function equationExpectedNumericOcrRecord(line, page, expectedLabel) {
   const numeric = parsedEquationNumber(expectedLabel);
   if (numeric?.appendix) return null; // Numeric-only retry cannot verify an alphabetic prefix.
@@ -2325,7 +2391,7 @@ function equationSupplementalNumericRetryQueries(records, pageCount) {
   return expectedByPage;
 }
 
-function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
+function equationSupplementalRecord(line, page, lineIndex, lines, candidate, { countAsciiInequality = false } = {}) {
   const numeric = parsedEquationNumber(candidate.label);
   if (!numeric || !Number.isInteger(numeric.last)) return null;
   const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
@@ -2353,7 +2419,7 @@ function equationSupplementalRecord(line, page, lineIndex, lines, candidate) {
     nearbyDisplayMath: hasNearbyDisplayMath(lines, lineIndex),
     nearbyHeadingContext: Boolean(candidate.bare) && bareEquationHasNearbyHeadingContext(lines, lineIndex),
     axisNumericCluster: false,
-    mathSignals: equationLineMathSignalCount(line.text),
+    mathSignals: equationLineMathSignalCount(line.text) + (countAsciiInequality && /[<>]/u.test(String(line.text || '')) ? 1 : 0),
     ocrSource: true,
     supplementalEquationOcr: true,
     attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
@@ -2584,7 +2650,8 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
     // exact digit/dot core must still be read as a standalone margin line.
     const numericRetryExpectedByPage = new Map();
     const addNumericRetryExpected = (pageNum, label) => {
-      if (index.has(label)) return;
+      // Alphabetic families cannot be verified by the digits-only OCR pass.
+      if (index.has(label) || parsedEquationNumber(label)?.appendix) return;
       const page = Number(pageNum);
       if (!Number.isInteger(page) || page < 1 || page > pageCount) return;
       const labels = numericRetryExpectedByPage.get(page) || new Set();
@@ -2598,6 +2665,8 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
       for (const label of labels) addNumericRetryExpected(pageNum, label);
     }
 
+    let numericRetryDone = 0;
+    let numericRetryElapsed = 0;
     if (typeof onProgress === 'function') onProgress({ retryTotal: numericRetryExpectedByPage.size, retryDone: 0 });
     if (numericRetryExpectedByPage.size) {
       const activeWorker = await ensureWorker();
@@ -2626,6 +2695,7 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
               console.warn(`MathReader equation numeric-gap OCR skipped page ${pageNum}.`, error);
               failedPages += 1;
               retryDone += 1;
+              numericRetryDone = retryDone;
               if (typeof onProgress === 'function') onProgress({ retryDone, failedPages });
               continue;
             }
@@ -2643,10 +2713,106 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
               }
             }
             retryDone += 1;
+            numericRetryDone = retryDone;
             if (typeof onProgress === 'function') onProgress({ retryDone, failedPages, changed: pageAdded });
             await nextFrame();
           }
-          if (typeof onProgress === 'function') onProgress({ retryMs: equationDetectionNowMs() - retryStarted });
+          numericRetryElapsed = equationDetectionNowMs() - retryStarted;
+          if (typeof onProgress === 'function') onProgress({ retryMs: numericRetryElapsed });
+        } finally {
+          if (typeof activeWorker.setParameters === 'function') {
+            try {
+              await activeWorker.setParameters({
+                preserve_interword_spaces: '1',
+                user_defined_dpi: '300',
+                tessedit_pageseg_mode: '11',
+                tessedit_char_whitelist: '',
+              });
+            } catch (_) {}
+          }
+        }
+      }
+    }
+
+    // Bounded second pass for printed appendix labels missed by the normal
+    // wide-margin scan. Unlike the numeric-only pass, keep the alphabetic
+    // glyph and the formula visible; OCR must observe the exact parenthesized
+    // tag and mathematical context before any label is published.
+    const appendixRetryExpectedByPage = new Map();
+    for (const [pageNum, labels] of gapPlan.expectedByPage.entries()) {
+      const missing = [...labels].filter((label) => !index.has(label) && parsedEquationNumber(label)?.appendix);
+      if (missing.length) appendixRetryExpectedByPage.set(pageNum, missing);
+    }
+    // If the document contains many appendix schemes, prioritize a missing
+    // *first* equation corroborated by a mature native sequence, then pages
+    // with multiple missing labels. Never use document-specific page numbers.
+    const appendixRetryPages = [...appendixRetryExpectedByPage.keys()].sort((a, b) => {
+      const firstMissing = (page) => Number((appendixRetryExpectedByPage.get(page) || [])
+        .some((label) => parsedEquationNumber(label)?.last === 1));
+      return firstMissing(b) - firstMissing(a)
+        || appendixRetryExpectedByPage.get(b).length - appendixRetryExpectedByPage.get(a).length
+        || a - b;
+    }).slice(0, 8);
+    if (typeof onProgress === 'function') onProgress({
+      retryTotal: numericRetryExpectedByPage.size + appendixRetryPages.length,
+      retryDone: numericRetryDone,
+    });
+    if (appendixRetryPages.length) {
+      const activeWorker = await ensureWorker();
+      if (activeWorker) {
+        try {
+          if (typeof activeWorker.setParameters === 'function') {
+            await activeWorker.setParameters({
+              preserve_interword_spaces: '1',
+              user_defined_dpi: '300',
+              tessedit_pageseg_mode: '6',
+              tessedit_char_whitelist: '',
+            });
+          }
+          const appendixStarted = equationDetectionNowMs();
+          let appendixDone = 0;
+          for (const pageNum of appendixRetryPages) {
+            if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return added;
+            let retryLines = [];
+            try {
+              retryLines = await equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker, {
+                marginFraction: 0.28, onTiming: (measurement) => {
+                  if (typeof onProgress === 'function') onProgress({ timing: measurement });
+                },
+              });
+            } catch (error) {
+              console.warn(`MathReader appendix equation OCR skipped page ${pageNum}.`, error);
+              failedPages += 1;
+              appendixDone += 1;
+              if (typeof onProgress === 'function') onProgress({
+                retryDone: numericRetryDone + appendixDone, failedPages,
+              });
+              continue;
+            }
+            // The OCR worker may finish after the user has opened another PDF.
+            if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return added;
+            let pageAdded = false;
+            for (const expectedLabel of appendixRetryExpectedByPage.get(pageNum) || []) {
+              if (index.has(expectedLabel)) continue;
+              for (const line of retryLines) {
+                const record = equationExpectedAppendixOcrRecord(line, pageNum, expectedLabel);
+                if (!record) continue;
+                index.set(expectedLabel, [{ ...record, nativeGapCorroborated: true }]);
+                comprehensiveRecords.push(record);
+                added = true;
+                pageAdded = true;
+                break;
+              }
+            }
+            appendixDone += 1;
+            if (typeof onProgress === 'function') onProgress({
+              retryDone: numericRetryDone + appendixDone, failedPages, changed: pageAdded,
+            });
+            await nextFrame();
+          }
+          if (typeof onProgress === 'function') onProgress({
+            retryMs: numericRetryElapsed + equationDetectionNowMs() - appendixStarted,
+          });
         } finally {
           if (typeof activeWorker.setParameters === 'function') {
             try {
