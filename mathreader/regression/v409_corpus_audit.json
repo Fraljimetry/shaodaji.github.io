@@ -1,0 +1,387 @@
+{
+  "reportVersion": "MathReader-v409-content-detection-audit-1",
+  "baseline": "v408 source tree; v409 parser, unchanged indexed data unless explicitly regenerated",
+  "corpus": {
+    "distinctPdfCount": 14,
+    "pages": 1228,
+    "historicalOriginal": {
+      "pdfCount": 7,
+      "pages": 595
+    },
+    "additionalTextLayer": {
+      "pdfCount": 5,
+      "pages": 299
+    },
+    "additionalImageOnly": {
+      "pdfCount": 2,
+      "pages": 334
+    },
+    "deduplication": "Unique documents, not duplicate file copies"
+  },
+  "replayMethod": "Full production buildStructureIndex against exact user-exported per-page PDF.js detectorInputLines for six exports; not a live browser OCR test",
+  "savedInputReplays": [
+    {
+      "name": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "pages": 253,
+      "originalPdfSha256MatchesExport": true,
+      "savedDetectorInputPages": 248,
+      "results": {
+        "old": 196,
+        "new": 207,
+        "added": [
+          {
+            "label": "Theorem 12.9",
+            "page": 154,
+            "ratio": 0.770776401971502
+          },
+          {
+            "label": "Theorem 12.10",
+            "page": 157,
+            "ratio": 0.6723773375045121
+          },
+          {
+            "label": "Theorem 12.11",
+            "page": 158,
+            "ratio": 0.36396102375310785
+          },
+          {
+            "label": "Theorem 12.12",
+            "page": 158,
+            "ratio": 0.48969893807267567
+          },
+          {
+            "label": "Theorem 13.2",
+            "page": 165,
+            "ratio": 0.14914421692607402
+          },
+          {
+            "label": "Theorem 13.4",
+            "page": 166,
+            "ratio": 0.5732565497406051
+          },
+          {
+            "label": "Theorem 13.5",
+            "page": 168,
+            "ratio": 0.9031465720282861
+          },
+          {
+            "label": "Theorem 13.6",
+            "page": 169,
+            "ratio": 0.5330393487739058
+          },
+          {
+            "label": "Theorem 13.7",
+            "page": 170,
+            "ratio": 0.558359373915778
+          },
+          {
+            "label": "Theorem 13.8",
+            "page": 172,
+            "ratio": 0.4291085908679648
+          },
+          {
+            "label": "Theorem 14.2",
+            "page": 173,
+            "ratio": 0.8844201627687779
+          },
+          {
+            "label": "Theorem 14.5",
+            "page": 175,
+            "ratio": 0.8055198295834933
+          }
+        ],
+        "removed": [
+          {
+            "label": "Theorem 14.5",
+            "page": 150,
+            "ratio": 0.46114799656950406
+          }
+        ]
+      },
+      "bibliography": {
+        "old": 75,
+        "new": 75,
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "name": "Ahlfors-Conformal-Invariants.pdf",
+      "pages": 172,
+      "originalPdfSha256MatchesExport": true,
+      "savedDetectorInputPages": 167,
+      "results": {
+        "old": 95,
+        "new": 95,
+        "added": [],
+        "removed": []
+      },
+      "bibliography": {
+        "old": 66,
+        "new": 66,
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "name": "SPS_1988__22__485_0.pdf",
+      "pages": 18,
+      "originalPdfSha256MatchesExport": true,
+      "savedDetectorInputPages": 18,
+      "results": {
+        "old": 7,
+        "new": 7,
+        "added": [],
+        "removed": []
+      },
+      "bibliography": {
+        "old": 17,
+        "new": 17,
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "name": "Asymptotic behaviour of minimal graphs over exterior domains. L. Simon.pdf",
+      "pages": 13,
+      "originalPdfSha256MatchesExport": true,
+      "savedDetectorInputPages": 13,
+      "results": {
+        "old": 4,
+        "new": 4,
+        "added": [],
+        "removed": []
+      },
+      "bibliography": {
+        "old": 18,
+        "new": 18,
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "name": "geometrical_hypothesis_Banach.pdf",
+      "pages": 10,
+      "originalPdfSha256MatchesExport": true,
+      "savedDetectorInputPages": 10,
+      "results": {
+        "old": 14,
+        "new": 14,
+        "added": [],
+        "removed": []
+      },
+      "bibliography": {
+        "old": 9,
+        "new": 9,
+        "added": [],
+        "removed": []
+      }
+    },
+    {
+      "name": "YamabeProblem.pdf",
+      "pages": 56,
+      "originalPdfSha256MatchesExport": false,
+      "savedDetectorInputPages": 56,
+      "results": {
+        "old": 51,
+        "new": 51,
+        "added": [],
+        "removed": []
+      },
+      "bibliography": {
+        "old": 46,
+        "new": 46,
+        "added": [],
+        "removed": []
+      }
+    }
+  ],
+  "Yau": {
+    "pages": 73,
+    "originalPdfMatchedExportSha256": true,
+    "savedExportDetectorInputAvailable": false,
+    "method": "existing real-PDF.js regression fixture + printed original PDF page 38-39",
+    "before": 13,
+    "after": 12,
+    "fix": "remove false Lemma 1 in body prose p39; true unnumbered LEMMA declaration on p38 survives"
+  },
+  "additionalPdfTextLayerProxy": [
+    {
+      "name": "2309.00806v2.pdf",
+      "pages": 15,
+      "sha256": "2b3f517b0f9a67b499a9cb3c757f5c4016a551fca9a8b22fbd02e6eb7b365501",
+      "resultsCount": 26,
+      "bibliographyCount": 18,
+      "sourceType": "PyMuPDF native-text line/coordinate proxy into production detector, not actual PDF.js",
+      "accuracy": "Selected headings and reference keys verified; no exhaustive Results/Structure/Formula precision-and-recall certification"
+    },
+    {
+      "name": "Schoen_and_Yau_s_Proof_of_the_Positive_Mass_Theorem(3).pdf",
+      "pages": 14,
+      "sha256": "775d1629e59e98eec1ae1d7cc19ad08203bbae90846732dcf140e1f524ba49b0",
+      "resultsCount": 7,
+      "bibliographyCount": 7,
+      "sourceType": "PyMuPDF native-text line/coordinate proxy into production detector, not actual PDF.js",
+      "accuracy": "Selected headings and reference keys verified; no exhaustive Results/Structure/Formula precision-and-recall certification"
+    },
+    {
+      "name": "Inverse_Problems_Lectures_1_8.pdf",
+      "pages": 43,
+      "sha256": "d3c8b086654f0cc55fc1ddae6a6d31989c52d87f45b1df6123348f558f1ffd79",
+      "resultsCount": 30,
+      "bibliographyCount": 0,
+      "sourceType": "PyMuPDF native-text line/coordinate proxy into production detector, not actual PDF.js",
+      "accuracy": "Selected headings and reference keys verified; no exhaustive Results/Structure/Formula precision-and-recall certification"
+    },
+    {
+      "name": "2610.07774v1.pdf",
+      "pages": 15,
+      "sha256": "b31687d3a7700af9e626af46e80a5f6d5b736af1c6f6a6c56a9b675dd3c51855",
+      "resultsCount": 0,
+      "bibliographyCount": 18,
+      "sourceType": "PyMuPDF native-text line/coordinate proxy into production detector, not actual PDF.js",
+      "accuracy": "Selected headings and reference keys verified; no exhaustive Results/Structure/Formula precision-and-recall certification"
+    },
+    {
+      "name": "0810.5645v6.pdf",
+      "pages": 212,
+      "sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "resultsCount": 188,
+      "bibliographyCount": 105,
+      "sourceType": "PyMuPDF native-text line/coordinate proxy into production detector, not actual PDF.js",
+      "accuracy": "Selected headings and reference keys verified; no exhaustive Results/Structure/Formula precision-and-recall certification"
+    }
+  ],
+  "previousYamabe": {
+    "name": "YamabeProblem.pdf",
+    "pages": 56,
+    "exportOriginalSha256Matched": false,
+    "status": "PDF/export pairing blocked; saved PDF.js inputs replay without attributing them to the separately available PDF"
+  },
+  "imageOnlyPdfs": [
+    {
+      "name": "Uniqueness, Symmetry, and Embeddedness of Minimal Surfaces(7).pdf",
+      "sha256": "5bfd5494b77a04debe8ba17b62d02cdce5a64f895b5dfb4ef72be55d230fc88c",
+      "pages": 19,
+      "nativeTextPages": 0,
+      "resultsAccuracy": "NOT_VERIFIED",
+      "bibliographyAccuracy": "NOT_VERIFIED",
+      "reason": "No native PDF text layer; separate actual OCR and printed-page validation required"
+    },
+    {
+      "name": "Riemannian Geometry by Manfredo P. do Carmo.pdf",
+      "sha256": "eda07d1c1f099c73974e3d9f2e231b798befcd11153e2df719069cf197d082c4",
+      "pages": 315,
+      "nativeTextPages": 0,
+      "resultsAccuracy": "NOT_VERIFIED",
+      "bibliographyAccuracy": "NOT_VERIFIED",
+      "reason": "No native PDF text layer; separate actual OCR and printed-page validation required"
+    }
+  ],
+  "independentGroundTruth": [
+    {
+      "document": "Giusti",
+      "printedPages": [
+        150,
+        154,
+        157,
+        158,
+        165,
+        166,
+        168,
+        169,
+        170,
+        172,
+        173,
+        175
+      ],
+      "finding": "p150 contains (see Theorem 14.5) citation; p175 is the true Theorem 14.5; twelve genuine statements were previously dropped by monotonic number filter",
+      "fix": "p150 false citation removed; original printed 12 theorem declarations restored, printed navigation ratios unchanged"
+    },
+    {
+      "document": "Yau (1978)",
+      "printedPages": [
+        38,
+        39
+      ],
+      "finding": "Lemma 1 at p39 is prose citation; actual unnumbered lemma is p38",
+      "fix": "fake p39 result removed from fixture"
+    },
+    {
+      "document": "Ahlfors",
+      "printedPages": [
+        62,
+        136
+      ],
+      "finding": "previous Contents Definition references are filtered; actual Definitions retained",
+      "fix": "unchanged from v408"
+    },
+    {
+      "document": "Inverse Problems Lectures 1-8",
+      "printedPages": [
+        1,
+        8,
+        14,
+        24
+      ],
+      "finding": "Definition 1 restarts by lecture; no-space parenthesized names are genuine declarations",
+      "fix": "retains repeated local labels rather than document-global collapsing"
+    },
+    {
+      "document": "0810.5645v6",
+      "printedPages": [
+        198
+      ],
+      "finding": "reference [16]Anneaux has no extracted whitespace",
+      "fix": "separate supplementary no-space rule; verified numeric [1] to [105] from native-text proxy, not a certified browser build"
+    },
+    {
+      "document": "Banach",
+      "printedPages": [
+        10
+      ],
+      "finding": "Greek-initial [6] reference must not be lost to ASCII-only no-space heuristic",
+      "fix": "prior whitespace grammar retained and full export replay preserved 9 entries"
+    },
+    {
+      "document": "Yamabe export",
+      "printedPages": [],
+      "finding": "author-repetition bibliography entries begin [ADM2] , etc",
+      "fix": "prior whitespace grammar retained; saved export replay preserves all 46 entries"
+    },
+    {
+      "document": "Uniqueness Symmetry and Embeddedness",
+      "printedPages": [
+        19
+      ],
+      "finding": "printed bibliography [11] not reliably read in offline OCR sample",
+      "fix": "not fixed; do not synthesize [11] without printed OCR evidence"
+    }
+  ],
+  "structure": {
+    "productionOutlineImplementationModified": false,
+    "replayedSnapshotStatus": "Existing native Outline and Structure regression suites passed, not exhaustive independent visual precision audit",
+    "notes": "TOC exclusion, appendix and navigation continue to be tested; global accuracy still UNVERIFIED"
+  },
+  "equationsAndFormula": {
+    "detectorModified": false,
+    "replay": "Existing formula syntax/initialization, equation navigation and OCR suites passed",
+    "semanticAccuracy": "UNVERIFIED on original source figures; OCR process success is not a correctness proof"
+  },
+  "bibliography": {
+    "sixExportFullReplaysPreserveAll": true,
+    "originalExportCounts": [
+      75,
+      66,
+      17,
+      18,
+      9,
+      46
+    ],
+    "proxyAlgebraicGeometryPrintedKeys": "1..105 with no missing number in native-text proxy",
+    "scannedAccuracy": "NOT_VERIFIED"
+  },
+  "accuracyCertification": "NOT_CERTIFIED; uneditable indexes cannot be guaranteed error-free for every arbitrary native/scanned PDF",
+  "knownLimitation": "Previously accepted Ahlfors equation-margin raw OCR evidence unavailable after hard reload; unchanged",
+  "provenance": "Original file-library PDFs and hash-matched MathReader exports, plus selected visual/manual checks and the production parser in an isolated JS runtime"
+}

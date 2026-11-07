@@ -1,0 +1,30 @@
+{
+  "version": "409",
+  "baseline": "v408",
+  "jsSuitesPassed": 55,
+  "jsSuitesTotal": 55,
+  "pythonChromiumSuitesPassed": 22,
+  "pythonChromiumSuitesTotal": 22,
+  "browserMethod": "isolated Chromium and mocked PDF-dependent paths, not live deployed website with original PDFs",
+  "jsSyntaxFilesPassed": 70,
+  "jsSyntaxFilesTotal": 70,
+  "fullExportReplays": 6,
+  "fullExportBibliographyParity": true,
+  "GiustiBeforeAfter": [
+    196,
+    207
+  ],
+  "GiustiAdded": 12,
+  "GiustiRemoved": 1,
+  "YauBeforeAfterFixture": [
+    13,
+    12
+  ],
+  "corpusPdfCount": 14,
+  "corpusPages": 1228,
+  "actualDocumentWideAccuracyCertified": false,
+  "zipIntegrity": "PASS",
+  "patchReplay": "PASS",
+  "assembledRuntimeSyntax": "PASS",
+  "allOriginalSourceFilesPreserved": true
+}

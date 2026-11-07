@@ -53,6 +53,58 @@ function structureResultStartsNarrativeReference(text) {
   return Boolean(match && structureResultUnpunctuatedReferenceTail(text, match[1]));
 }
 
+// Visual PDF text extraction may begin a NEW visual line in the middle of a
+// sentence. A later line beginning "Theorem N" is not a declaration when
+// the preceding adjacent line supplies "(see", "deduce", "from", etc.
+// Use the actual neighboring physical lines; never infer a reference solely
+// from the theorem number or from a remote paragraph elsewhere on the page.
+function structureResultWrappedProseReference(lines, lineIndex, cleaned) {
+  const label = String(cleaned || '').match(/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]{1,2}[.·-])?\d+(?:[.·-]\d+)*(?:['’])?(?:[.):,;]|\s|$)/i);
+  if (!label || lineIndex < 1) return false;
+  const previous = lines?.[lineIndex - 1];
+  const current = lines?.[lineIndex];
+  if (!previous || !current) return false;
+  const distance = Number(current.ratio) - Number(previous.ratio);
+  // A real separated heading generally has a visibly larger gap. Do not
+  // connect distant columns or different reading blocks by content alone.
+  if (!Number.isFinite(distance) || distance < 0 || distance > 0.032) return false;
+  const prevEnd = Number(previous.xEndRatio);
+  const currentStart = Number(current.xStartRatio);
+  if (Number.isFinite(prevEnd) && Number.isFinite(currentStart)
+      && currentStart > prevEnd + 0.12) return false;
+  const before = normalizedStructureResultText(previous.text);
+  const endedWithReferenceLead = /(?:\(\s*(?:see|cf\.?|compare)|\b(?:deduce|deduced|from|of|by|see|apply|applying|using|invoke|invoking|recall|recalling|refer\s+to|according\s+to|in|on|with|to))\s*$/i.test(before);
+  if (!endedWithReferenceLead) return false;
+  // A semicolon/dot may be part of a quoted label, not a declaration. The
+  // source-line reference lead is decisive, regardless of what follows it.
+  return true;
+}
+
+// A typeset heading sometimes has no PDF text space before its parenthetical
+// title: "Theorem 1(Positive mass).Let ...". This is different from citing
+// a subpart "Theorem 2.1(a)". Promote only a substantive named heading with
+// an actual statement or an otherwise standalone name, never a short part
+// marker or a parenthetical prose citation.
+function structureResultParentheticalHeadingTail(tail) {
+  const source = String(tail || '').trim();
+  const match = source.match(/^\(([^()]{3,90})\)(?:\s*([.:])\s*|\s+|$)(.*)$/);
+  if (!match) return null;
+  const name = match[1].trim();
+  const after = String(match[3] || '').trim();
+  if (!/[A-Za-zÀ-ÿ]{2,}/.test(name) || /^(?:see|cf\.?|compare|by|after|before|above|below)\b/i.test(name)) return null;
+  if (after && (structureResultProseReferenceTail(after)
+    || /^(?:and|or|in|from|on|under|as|which|whose|where|that|than|by)\b/i.test(after))) return null;
+  return {name, after};
+}
+
+// PDF extraction can split "Proposition 3.1, ..." into a spurious
+// "Proposition 3" because the generic numeric-token regex backtracks at
+// the first period. Never turn a *prefix* of the observed number into a Result.
+function structureResultHasTruncatedNumber(cleaned, recognizedNumber) {
+  const observed = String(cleaned || '').match(/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:[.·-]\d+)*)/i);
+  return Boolean(observed && observed[1] !== String(recognizedNumber || '').replace(/['’]$/, ''));
+}
+
 // Number-first capitalized chapter/section headings can contain the word
 // "DEFINITION" without announcing a mathematical Definition. Their title
 // phrases are not Result statements, even when repeated as TOC entries.
@@ -232,7 +284,8 @@ function recoverBoundedAppendixResultConfusables(entries, observations) {
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
   const cleaned = normalizedStructureResultText(line?.text);
-  if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned) || structureResultStartsNarrativeReference(cleaned)) return null;
+  if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned) || structureResultStartsNarrativeReference(cleaned)
+    || structureResultWrappedProseReference(lines, lineIndex, cleaned)) return null;
   const appendix = detectedAppendixResult(line, page);
   if (appendix) return appendix;
 
@@ -249,6 +302,7 @@ function detectedStructureResult(lines, lineIndex, page) {
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
       page,
       ratio: line.ratio,
+      declarationEvidence: 'number-first',
     };
   }
 
@@ -266,10 +320,11 @@ function detectedStructureResult(lines, lineIndex, page) {
     };
   }
 
-  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:(?:\.\d+)+|(?:-\d+)+)?(?:['’])?|[A-Z])(?:[.:)]\s*|\s+|$)(.*)$/i);
+  match = cleaned.match(/^(Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+([A-Z]?\d+(?:(?:\.\d+)+|(?:-\d+)+)?(?:['’])?|[A-Z])(?:(?=\()|[.:)]\s*|\s+|$)(.*)$/i);
   if (match) {
     const type = canonicalStructureResultType(match[1]);
     const number = match[2].replace('’', "'");
+    if (structureResultHasTruncatedNumber(cleaned, number)) return null;
     // The declaration regex is case-insensitive for the result type, but a
     // single alphabetic label is case-sensitive notation.  Without this check
     // ordinary prose such as "the hypothesis y \in ..." is promoted to a
@@ -277,12 +332,22 @@ function detectedStructureResult(lines, lineIndex, page) {
     // references, not declaration labels; genuine old-style A / A1 labels remain.
     if (/^[A-Za-z]/.test(number) && number[0] !== number[0].toLocaleUpperCase()) return null;
     const tail = String(match[3] || '').trim();
-    if (structureResultProseReferenceTail(tail) || structureResultUnpunctuatedReferenceTail(cleaned, tail)) return null;
+    const named = tail.startsWith('(') ? structureResultParentheticalHeadingTail(tail) : null;
+    if ((tail.startsWith('(') && !named) || structureResultProseReferenceTail(tail)
+      || structureResultUnpunctuatedReferenceTail(cleaned, tail)) return null;
     return {
       label: `${type} ${number}`,
       title: `${type} ${number}${tail ? `. ${tail}` : ''}`.slice(0, 180),
       page,
       ratio: line.ratio,
+      ...(named ? {declarationEvidence:'named'} :
+        // An explicit type/number delimiter followed by a statement-start
+        // is independent printed evidence; lecture/chapter numbering can
+        // legitimately restart, including repeated "Definition 1" labels.
+        /^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+[A-Z]?\d+(?:[.·-]\d+)*[.:]\s*/i.test(cleaned)
+        && (/^(?:A|An|Any|All|Each|Every|Let|Given|Suppose|If|For|There|The)\b/i.test(tail)
+          || /^(?:A|An|If|For|Let|The|Given|There)[a-z]/.test(tail))
+          ? {declarationEvidence:'explicit-statement'} : {}),
     };
   }
 
@@ -516,21 +581,42 @@ function compareNumberParts(a, b) {
 }
 
 function normalizeSequentialStructureEntries(entries) {
+  const observed = Array.isArray(entries) ? entries : [];
+  const strength = (item) => item?.declarationEvidence === 'number-first' ? 3
+    : (item?.declarationEvidence === 'named' || item?.declarationEvidence === 'explicit-statement') ? 2 : 1;
+  const byLabel = new Map();
+  for (const entry of observed) {
+    const key = normalizedReferenceLabel(entry?.label);
+    if (!key) continue;
+    if (!byLabel.has(key)) byLabel.set(key, []);
+    byLabel.get(key).push(entry);
+  }
+  // For a shared label, use the strongest actual printed evidence. Separate
+  // strongly marked declarations are allowed to restart numbering in new
+  // chapters/lectures. Mere narrative mentions NEVER create duplicate entries.
+  const chosen = new Set();
+  for (const occurrences of byLabel.values()) {
+    const max = Math.max(...occurrences.map(strength));
+    const good = occurrences.filter(entry => strength(entry) === max);
+    const byPage = new Map();
+    for (const entry of good) if (!byPage.has(entry.page)) byPage.set(entry.page,entry);
+    if (max > 1) for (const entry of byPage.values()) chosen.add(entry);
+    else chosen.add(good[0]);
+  }
   const accepted = [];
-  const seen = new Set();
   const lastNumericByType = new Map();
-  for (const entry of entries || []) {
-    const labelKey = normalizedReferenceLabel(entry?.label);
-    if (!labelKey || seen.has(labelKey)) continue;
+  for (const entry of observed) {
+    if (!chosen.has(entry)) continue;
     const parsed = parsedSequentialLabel(entry?.label);
     if (parsed && !parsed.prefix) {
-      // Numbering is monotone within each result family, not across families:
-      // Theorem 5 may legitimately be followed by Lemma 1.
       const lastNumeric = lastNumericByType.get(parsed.type) || null;
-      if (lastNumeric && compareNumberParts(parsed.parts, lastNumeric.parts) < 0) continue;
+      // A prior weak citation must not erase a number-first printed theorem.
+      // Monotonicity cannot override independent strong named evidence when
+      // each chapter/lecture restarts its own numbering scheme.
+      if (lastNumeric && compareNumberParts(parsed.parts, lastNumeric.parts) < 0
+        && strength(entry) === 1) continue;
       lastNumericByType.set(parsed.type, parsed);
     }
-    seen.add(labelKey);
     accepted.push(entry);
   }
   return accepted;
@@ -4630,10 +4716,16 @@ async function buildStructureIndex({ force = false } = {}) {
           bibliographyLine = bibliographyLine.replace(/^\[\s*(\d{1,3})1\s+(.+)$/u, (full, digits, body) => Number(digits) === expectedBibliographyNumber ? `[${digits}] ${body}` : full);
           bibliographyLine = repairOcrExpectedBibliographyKey(bibliographyLine, line, expectedBibliographyNumber);
           bibliographyLine = repairOcrExpectedBibliographyKeyOnly(bibliographyLine, line, expectedBibliographyNumber, numericBibliographyNumbers.length);
+          // Preserve the established whitespace-delimited grammar verbatim:
+          // historical scientific bibliographies may begin with punctuation,
+          // digits or OCR-encoded symbols. Only *add* the strictly observed
+          // no-space author-heading alternative, never replace old matching.
           let bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?\s+(.{3,})$/);
+          if (!bib) bib = bibliographyLine.match(/^\[\s*(\d{1,3})\s*\][.)]?(?=[A-Za-zÀ-ÖØ-Þ])(.{3,})$/u);
           let bracketKey = false;
           if (!bib) {
             bib = bibliographyLine.match(/^\[\s*([A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?\s+(.{3,})$/);
+            if (!bib) bib = bibliographyLine.match(/^\[\s*([A-Za-z][A-Za-z0-9\s]{0,12})\s*\][.)]?(?=[A-Za-zÀ-ÖØ-Þ])(.{3,})$/u);
             if (bib) bib[1] = bib[1].trim();
             bracketKey = Boolean(bib);
           }
@@ -4887,12 +4979,29 @@ async function buildStructureIndex({ force = false } = {}) {
     // that exact labeled Result was actually detected in this document.
     // Keep unresolved NUMBERED references: they may point to a missed theorem
     // and are useful for conservative diagnosis rather than invented links.
-    const structureByLabel = new Map(sequenceCleanEntries.map((entry) => [normalizedStructureResultReference(entry.label), entry]));
+    const structureOccurrences = new Map();
+    for (const entry of sequenceCleanEntries) {
+      const labelKey = normalizedStructureResultReference(entry.label);
+      if (!structureOccurrences.has(labelKey)) structureOccurrences.set(labelKey, []);
+      structureOccurrences.get(labelKey).push(entry);
+    }
+    // The Map below maintains the established proof-reference lexical filter;
+    // physical link resolution is local to the proof owner when a name occurs
+    // in several chapters. Ambiguous forward references remain unresolved.
+    const structureByLabel = new Map([...structureOccurrences].map(([key, rows]) => [key, rows[0]]));
+    const nearbyResult = (label, owner) => {
+      const candidates = structureOccurrences.get(normalizedStructureResultReference(label)) || [];
+      if (candidates.length === 1) return candidates[0];
+      const ownerPosition = Number(owner?.proofPage || owner?.page || 0) + Number(owner?.proofRatio ?? owner?.ratio ?? 0) / 10;
+      const earlier = candidates.filter(entry => entry !== owner &&
+        Number(entry.page || 0) + Number(entry.ratio || 0) / 10 <= ownerPosition);
+      return earlier.length ? earlier[earlier.length - 1] : null;
+    };
     for (const owner of sequenceCleanEntries) {
       owner.proofReferences = credibleStructureProofReferences(owner, structureByLabel);
       const resolved = [];
       for (const reference of owner.proofReferences || []) {
-        const target = structureByLabel.get(normalizedStructureResultReference(reference));
+        const target = nearbyResult(reference, owner);
         if (!target || target === owner) continue;
         if (!resolved.some((item) => item.label === target.label)) resolved.push({ label: target.label, page: target.page, ratio: target.ratio });
         target.usedByProofs = target.usedByProofs || [];
@@ -4907,7 +5016,7 @@ async function buildStructureIndex({ force = false } = {}) {
       if (!/^corollary\b/i.test(entry.label || '')) continue;
       const refs = String(entry.title || '').match(STRUCTURE_REFERENCE_RE) || [];
       for (const ref of refs) {
-        const parent = structureByLabel.get(normalizedStructureResultReference(ref));
+        const parent = nearbyResult(ref, entry);
         if (!parent || parent === entry) continue;
         parent.corollaries = parent.corollaries || [];
         if (!parent.corollaries.some((item) => item.label === entry.label)) parent.corollaries.push({ label: entry.label, page: entry.page, ratio: entry.ratio });
@@ -4916,6 +5025,9 @@ async function buildStructureIndex({ force = false } = {}) {
       }
     }
 
+    // Internal classifier strength is an implementation detail, not a
+    // user-authored annotation or a new persisted reading-data contract.
+    for (const entry of sequenceCleanEntries) delete entry.declarationEvidence;
     structureEntries = sequenceCleanEntries.slice(0, 500);
     bibliographyEntries = cleanedBibliography.slice(0, 400);
     structureIndexVersion = STRUCTURE_INDEX_VERSION;

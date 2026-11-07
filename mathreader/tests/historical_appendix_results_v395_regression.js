@@ -155,7 +155,9 @@ function parseLine(page, regex) {
   vm.runInContext('pageTextLines=suppliedTextLines;renderStructureIndex=()=>{};renderBibliographyIndex=()=>{};rerenderReferenceLinks=()=>{};',yauContext);
   await yauContext.buildStructureIndex({ force: true });
   const yauResults = JSON.parse(JSON.stringify(yauContext.structureEntries));
-  equal(yauResults.map(x => x.label),yauFixture.expectedLabels,
+  // v409 independent PDF review: p39 "Lemma 1" is the continuation of
+  // "we can deduce" and must NOT be treated as a second lemma declaration.
+  equal(yauResults.map(x => x.label),yauFixture.expectedLabels.filter(label => label !== 'Lemma 1'),
     `original Yau results nonregression: ${JSON.stringify(yauResults.map(x=>x.label))}`);
   for(const entry of yauResults) check(entry.page>=1&&entry.page<=73&&Number.isFinite(entry.ratio),
     `Yau retains valid original page location for ${entry.label}`);
