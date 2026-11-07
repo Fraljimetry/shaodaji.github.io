@@ -1,0 +1,428 @@
+{
+  "schema": "mathreader.v404-postrelease-comprehensive-audit-suite@1",
+  "scope": "final v404 code + audit docs/tool patch; freshly executed standalone sequential suites",
+  "summary": {
+    "scripts": 69,
+    "pass": 69,
+    "fail": 0,
+    "timeout": 0,
+    "javascript": 48,
+    "pythonChromium": 21
+  },
+  "scripts": [
+    {
+      "kind": "javascript",
+      "file": "appendix_equations_v388_regression.js",
+      "status": "PASS",
+      "seconds": 0.07
+    },
+    {
+      "kind": "javascript",
+      "file": "appendix_leading_equation_v402_regression.js",
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "kind": "javascript",
+      "file": "bibliography_boundary_regression.js",
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    {
+      "kind": "javascript",
+      "file": "cross_document_regression.js",
+      "status": "PASS",
+      "seconds": 0.08
+    },
+    {
+      "kind": "javascript",
+      "file": "embedded_outline_title_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_force_ocr_regression.js",
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_margin_navigation_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_margin_page_journal_v403_regression.js",
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_margin_persistence_v401_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_margin_restore_order_v404_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_meticulous_navigation_v386_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_order_ocr_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_progress_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "equation_reference_ocr_target_regression.js",
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "kind": "javascript",
+      "file": "export_preferences_v397_regression.js",
+      "status": "PASS",
+      "seconds": 0.06
+    },
+    {
+      "kind": "javascript",
+      "file": "formula_latex_syntax_regression.js",
+      "status": "PASS",
+      "seconds": 1.07
+    },
+    {
+      "kind": "javascript",
+      "file": "formula_ocr_initialization_regression.js",
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    {
+      "kind": "javascript",
+      "file": "formula_ocr_lazy_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "formula_preview_compilation_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "full_exports_outline_v399_regression.js",
+      "status": "PASS",
+      "seconds": 0.07
+    },
+    {
+      "kind": "javascript",
+      "file": "full_exports_proof_precision_v399_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "full_text_coverage_v400_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "historical_appendix_results_v395_regression.js",
+      "status": "PASS",
+      "seconds": 0.19
+    },
+    {
+      "kind": "javascript",
+      "file": "historical_appendix_separator_v389_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "historical_bibliography_v394_regression.js",
+      "status": "PASS",
+      "seconds": 0.16
+    },
+    {
+      "kind": "javascript",
+      "file": "historical_equation_positions_v394_regression.js",
+      "status": "PASS",
+      "seconds": 0.07
+    },
+    {
+      "kind": "javascript",
+      "file": "historical_native_pdf_detection_v394_regression.js",
+      "status": "PASS",
+      "seconds": 0.24
+    },
+    {
+      "kind": "javascript",
+      "file": "initial_equation_ocr_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "long_book_outline_v392_regression.js",
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "kind": "javascript",
+      "file": "maintenance_integrity_regression.js",
+      "status": "PASS",
+      "seconds": 0.08
+    },
+    {
+      "kind": "javascript",
+      "file": "manual_version_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "meticulous_additive_ocr_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "meticulous_equation_margin_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "meticulous_position_preservation_v387_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "multi_pdf_open_guard_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "multi_pdf_tabs_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "ocr_cache_identity_v391_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "ocr_reliability_deep_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "p0_probe_evidence_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "page_context_ocr_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "page_ocr_status_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "performance_safe_regression.js",
+      "status": "PASS",
+      "seconds": 0.12
+    },
+    {
+      "kind": "javascript",
+      "file": "precision_context_regression.js",
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "kind": "javascript",
+      "file": "raw_detection_export_v393_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "real_export_index_precision_v392_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "results_toc_regression.js",
+      "status": "PASS",
+      "seconds": 0.04
+    },
+    {
+      "kind": "javascript",
+      "file": "shortcut_layout_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "javascript",
+      "file": "sidebar_defaults_regression.js",
+      "status": "PASS",
+      "seconds": 0.03
+    },
+    {
+      "kind": "python",
+      "file": "appendix_equation_sidebar_browser_v388.py",
+      "status": "PASS",
+      "seconds": 2.65
+    },
+    {
+      "kind": "python",
+      "file": "corpus_integrity_v405_regression.py",
+      "status": "PASS",
+      "seconds": 0.92
+    },
+    {
+      "kind": "python",
+      "file": "equation_margin_export_browser_v402.py",
+      "status": "PASS",
+      "seconds": 2.26
+    },
+    {
+      "kind": "python",
+      "file": "equation_navigation_browser_geometry_v386.py",
+      "status": "PASS",
+      "seconds": 1.85
+    },
+    {
+      "kind": "python",
+      "file": "export_settings_browser_v397.py",
+      "status": "PASS",
+      "seconds": 2.13
+    },
+    {
+      "kind": "python",
+      "file": "export_settings_layout_v398.py",
+      "status": "PASS",
+      "seconds": 2.93
+    },
+    {
+      "kind": "python",
+      "file": "full_text_exports_v400.py",
+      "status": "PASS",
+      "seconds": 0.76
+    },
+    {
+      "kind": "python",
+      "file": "help_tutorial_regression.py",
+      "status": "PASS",
+      "seconds": 6.88
+    },
+    {
+      "kind": "python",
+      "file": "meticulous_ocr_menu_browser_v390.py",
+      "status": "PASS",
+      "seconds": 2.12
+    },
+    {
+      "kind": "python",
+      "file": "meticulous_viewport_browser_v387.py",
+      "status": "PASS",
+      "seconds": 1.73
+    },
+    {
+      "kind": "python",
+      "file": "ocr_browser_geometry_regression.py",
+      "status": "PASS",
+      "seconds": 1.95
+    },
+    {
+      "kind": "python",
+      "file": "p0_acceptance_regression.py",
+      "status": "PASS",
+      "seconds": 1.64
+    },
+    {
+      "kind": "python",
+      "file": "p0_gate_isolation_regression.py",
+      "status": "PASS",
+      "seconds": 2.02
+    },
+    {
+      "kind": "python",
+      "file": "p0_p1_gap_closure_regression.py",
+      "status": "PASS",
+      "seconds": 0.87
+    },
+    {
+      "kind": "python",
+      "file": "p1_browser_smoke.py",
+      "status": "PASS",
+      "seconds": 4.03
+    },
+    {
+      "kind": "python",
+      "file": "p1_real_gate_regression.py",
+      "status": "PASS",
+      "seconds": 1.06
+    },
+    {
+      "kind": "python",
+      "file": "regression_runner_smoke.py",
+      "status": "PASS",
+      "seconds": 12.42
+    },
+    {
+      "kind": "python",
+      "file": "settings_heading_hierarchy_v400.py",
+      "status": "PASS",
+      "seconds": 2.44
+    },
+    {
+      "kind": "python",
+      "file": "settings_text_orphans_v399.py",
+      "status": "PASS",
+      "seconds": 5.27
+    },
+    {
+      "kind": "python",
+      "file": "seven_export_evidence_v401.py",
+      "status": "PASS",
+      "seconds": 0.92
+    },
+    {
+      "kind": "python",
+      "file": "ui_responsive_regression.py",
+      "status": "PASS",
+      "seconds": 17.95
+    }
+  ]
+}

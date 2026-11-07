@@ -1,0 +1,180 @@
+{
+  "schema": "mathreader.v405.offline-tesseract-sample-summary@1",
+  "scope": "Diagnostic sample only; NOT the production MathReader Texify or browser OCR pipeline; not accuracy certification",
+  "engine": "Tesseract CLI 5.5, eng, PSM 3, approximately 126-dpi grayscale",
+  "summary": {
+    "documents": 11,
+    "sampledPages": 90,
+    "successfulPages": 90,
+    "nonemptyOcrPages": 88,
+    "errors": 0,
+    "totalWorkerWallSeconds": 88.232
+  },
+  "documents": [
+    {
+      "file": "Ahlfors.pdf",
+      "pages": 172,
+      "sampledPages": [
+        1,
+        14,
+        43,
+        86,
+        129,
+        158,
+        172
+      ]
+    },
+    {
+      "file": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "pages": 13,
+      "sampledPages": [
+        1,
+        3,
+        6,
+        10,
+        12,
+        13
+      ]
+    },
+    {
+      "file": "Giusti.pdf",
+      "pages": 253,
+      "sampledPages": [
+        1,
+        8,
+        16,
+        20,
+        63,
+        87,
+        98,
+        125,
+        126,
+        148,
+        190,
+        231,
+        233,
+        237,
+        239,
+        248,
+        253
+      ]
+    },
+    {
+      "file": "SPS_1988__22__485_0(1).pdf",
+      "pages": 18,
+      "sampledPages": [
+        1,
+        4,
+        9,
+        14,
+        17,
+        18
+      ]
+    },
+    {
+      "file": "YamabeProblem.pdf",
+      "pages": 56,
+      "sampledPages": [
+        1,
+        4,
+        14,
+        28,
+        42,
+        52,
+        56
+      ]
+    },
+    {
+      "file": "geometrical_hypothesis_Banach.pdf",
+      "pages": 10,
+      "sampledPages": [
+        1,
+        2,
+        5,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "file": "yau1978.pdf",
+      "pages": 73,
+      "sampledPages": [
+        1,
+        2,
+        5,
+        6,
+        8,
+        18,
+        25,
+        36,
+        55,
+        65,
+        67,
+        69,
+        73
+      ]
+    },
+    {
+      "file": "1209.2203v2.pdf",
+      "pages": 88,
+      "sampledPages": [
+        1,
+        7,
+        22,
+        44,
+        66,
+        81,
+        88
+      ]
+    },
+    {
+      "file": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "pages": 26,
+      "sampledPages": [
+        1,
+        2,
+        6,
+        13,
+        20,
+        24,
+        26
+      ]
+    },
+    {
+      "file": "cc081a23-02da-4e37-9d44-4aca9dc71cbf.pdf",
+      "pages": 137,
+      "sampledPages": [
+        1,
+        11,
+        34,
+        68,
+        103,
+        126,
+        137
+      ]
+    },
+    {
+      "file": "geometric_measure_theory_split_pages.pdf",
+      "pages": 274,
+      "sampledPages": [
+        1,
+        22,
+        68,
+        137,
+        206,
+        252,
+        274
+      ]
+    }
+  ],
+  "independentSpotChecks": [
+    {
+      "document": "Giusti (1984)",
+      "pdfPage": 231,
+      "visualPrintedLabel": "(A.1)",
+      "fullPageTesseractReads": "(Al)",
+      "finding": "OCR process success is not mathematical label correctness"
+    }
+  ]
+}

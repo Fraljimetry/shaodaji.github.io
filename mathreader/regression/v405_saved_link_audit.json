@@ -1,0 +1,77 @@
+{
+  "schema": "mathreader.v405.saved-index-link-audit@1",
+  "summary": {
+    "documents": 7,
+    "bibliographyCitations": 356,
+    "proofUses": 208,
+    "usedByProofs": 208,
+    "invalidSavedLinkTargets": 0,
+    "unresolvedProofReferenceTexts": 30
+  },
+  "documents": [
+    {
+      "name": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "results": 4,
+      "bibliographyEntries": 18,
+      "bibliographyCitations": 27,
+      "proofUses": 3,
+      "usedByProofs": 3,
+      "unresolvedReferences": 2
+    },
+    {
+      "name": "SPS_1988__22__485_0(1).pdf",
+      "results": 7,
+      "bibliographyEntries": 17,
+      "bibliographyCitations": 24,
+      "proofUses": 2,
+      "usedByProofs": 2,
+      "unresolvedReferences": 0
+    },
+    {
+      "name": "Giusti.pdf",
+      "results": 196,
+      "bibliographyEntries": 75,
+      "bibliographyCitations": 110,
+      "proofUses": 140,
+      "usedByProofs": 140,
+      "unresolvedReferences": 18
+    },
+    {
+      "name": "yau1978.pdf",
+      "results": 13,
+      "bibliographyEntries": 15,
+      "bibliographyCitations": 17,
+      "proofUses": 4,
+      "usedByProofs": 4,
+      "unresolvedReferences": 0
+    },
+    {
+      "name": "YamabeProblem.pdf",
+      "results": 51,
+      "bibliographyEntries": 46,
+      "bibliographyCitations": 78,
+      "proofUses": 26,
+      "usedByProofs": 26,
+      "unresolvedReferences": 1
+    },
+    {
+      "name": "geometrical_hypothesis_Banach.pdf",
+      "results": 14,
+      "bibliographyEntries": 9,
+      "bibliographyCitations": 12,
+      "proofUses": 9,
+      "usedByProofs": 9,
+      "unresolvedReferences": 0
+    },
+    {
+      "name": "Ahlfors.pdf",
+      "results": 95,
+      "bibliographyEntries": 66,
+      "bibliographyCitations": 88,
+      "proofUses": 24,
+      "usedByProofs": 24,
+      "unresolvedReferences": 9
+    }
+  ],
+  "issues": []
+}

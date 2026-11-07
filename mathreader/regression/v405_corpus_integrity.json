@@ -1,0 +1,243 @@
+{
+  "schema": "mathreader.original-corpus-integrity@1",
+  "scope": "original PDF bytes plus saved export consistency; no new OCR / no mathematical correctness certification",
+  "summary": {
+    "documents": 11,
+    "pdfPages": 1120,
+    "exportPairs": 7,
+    "fatalIssues": 0,
+    "blockedIdentityPairs": 1
+  },
+  "documents": [
+    {
+      "name": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "pdf": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "export": {
+        "name": "Asymptotic-behaviour-of-minimal-graphs-over-exterior-domains.-L.-Simon-mathreader.json",
+        "pdfShaMatch": true,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 13,
+        "fullTextComplete": true,
+        "structureEntries": 4,
+        "resultEntries": 4,
+        "equationEntries": 34,
+        "bibliographyEntries": 18,
+        "annotations": 0,
+        "marginOcrRecords": 13,
+        "nativeCoverage": null,
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 13,
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "nativeTextPages": 13
+    },
+    {
+      "name": "SPS_1988__22__485_0(1).pdf",
+      "pdf": "SPS_1988__22__485_0(1).pdf",
+      "export": {
+        "name": "SPS_1988__22__485_0-mathreader(1).json",
+        "pdfShaMatch": true,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 18,
+        "fullTextComplete": true,
+        "structureEntries": 3,
+        "resultEntries": 7,
+        "equationEntries": 25,
+        "bibliographyEntries": 17,
+        "annotations": 0,
+        "marginOcrRecords": 0,
+        "nativeCoverage": {
+          "pagesWithText": 18,
+          "pagesWithoutText": [],
+          "source": "pdf-text-layer"
+        },
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 18,
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "nativeTextPages": 18
+    },
+    {
+      "name": "Giusti.pdf",
+      "pdf": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "export": {
+        "name": "Enrico-Giusti---Minimal-Surfaces-and-Functions-of-Bounded-Variation-Birkh-user-1984--mathreader(4).json",
+        "pdfShaMatch": true,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 253,
+        "fullTextComplete": true,
+        "structureEntries": 24,
+        "resultEntries": 196,
+        "equationEntries": 262,
+        "bibliographyEntries": 75,
+        "annotations": 0,
+        "marginOcrRecords": 0,
+        "nativeCoverage": {
+          "pagesWithText": 248,
+          "pagesWithoutText": [
+            1,
+            3,
+            7,
+            15,
+            149
+          ],
+          "source": "pdf-text-layer"
+        },
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 253,
+      "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+      "nativeTextPages": 248
+    },
+    {
+      "name": "yau1978.pdf",
+      "pdf": "yau1978.pdf",
+      "export": {
+        "name": "yau1978-mathreader(4).json",
+        "pdfShaMatch": true,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 73,
+        "fullTextComplete": true,
+        "structureEntries": 13,
+        "resultEntries": 13,
+        "equationEntries": 268,
+        "bibliographyEntries": 15,
+        "annotations": 0,
+        "marginOcrRecords": 0,
+        "nativeCoverage": {
+          "pagesWithText": 73,
+          "pagesWithoutText": [],
+          "source": "pdf-text-layer"
+        },
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 73,
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "nativeTextPages": 72
+    },
+    {
+      "name": "YamabeProblem.pdf",
+      "pdf": "YamabeProblem.pdf",
+      "export": {
+        "name": "YamabeProblem-mathreader(2).json",
+        "pdfShaMatch": false,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 56,
+        "fullTextComplete": true,
+        "structureEntries": 12,
+        "resultEntries": 51,
+        "equationEntries": 80,
+        "bibliographyEntries": 46,
+        "annotations": 0,
+        "marginOcrRecords": 0,
+        "nativeCoverage": {
+          "pagesWithText": 56,
+          "pagesWithoutText": [],
+          "source": "pdf-text-layer"
+        },
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 56,
+      "sha256": "11a7a3c6feb9ec6531b6bd99e30644d13ad9759d952a83c69d08ea3ad60f0b67",
+      "nativeTextPages": 56
+    },
+    {
+      "name": "geometrical_hypothesis_Banach.pdf",
+      "pdf": "geometrical_hypothesis_Banach.pdf",
+      "export": {
+        "name": "geometrical_hypothesis_Banach-mathreader(1).json",
+        "pdfShaMatch": true,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 10,
+        "fullTextComplete": true,
+        "structureEntries": 6,
+        "resultEntries": 14,
+        "equationEntries": 16,
+        "bibliographyEntries": 9,
+        "annotations": 0,
+        "marginOcrRecords": 0,
+        "nativeCoverage": {
+          "pagesWithText": 10,
+          "pagesWithoutText": [],
+          "source": "pdf-text-layer"
+        },
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 10,
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "nativeTextPages": 10
+    },
+    {
+      "name": "Ahlfors.pdf",
+      "pdf": "Ahlfors-Conformal-Invariants(1).pdf",
+      "export": {
+        "name": "Ahlfors-Conformal-Invariants-mathreader (7).json",
+        "pdfShaMatch": true,
+        "pageCountMatch": true,
+        "fullTextPageRecords": 172,
+        "fullTextComplete": true,
+        "structureEntries": 60,
+        "resultEntries": 95,
+        "equationEntries": 163,
+        "bibliographyEntries": 66,
+        "annotations": 2,
+        "marginOcrRecords": 0,
+        "nativeCoverage": {
+          "pagesWithText": 167,
+          "pagesWithoutText": [
+            1,
+            7,
+            11,
+            169,
+            172
+          ],
+          "source": "pdf-text-layer"
+        },
+        "fullDocumentOcr": "not-stored"
+      },
+      "pages": 172,
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "nativeTextPages": 167
+    },
+    {
+      "name": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "pdf": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "export": null,
+      "pages": 26,
+      "sha256": "4c64c76edaf0868ccf232e33fdcf1a696dce0490e374526754db80ba4fd305f1",
+      "nativeTextPages": 26
+    },
+    {
+      "name": "1209.2203v2.pdf",
+      "pdf": "1209.2203v2.pdf",
+      "export": null,
+      "pages": 88,
+      "sha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "nativeTextPages": 88
+    },
+    {
+      "name": "cc081a23-02da-4e37-9d44-4aca9dc71cbf.pdf",
+      "pdf": "cc081a23-02da-4e37-9d44-4aca9dc71cbf.pdf",
+      "export": null,
+      "pages": 137,
+      "sha256": "ba7fd4a53bf0f1d0ac54aec50bb72c4bba196b8e784d65cd0a7fd85131a3bf03",
+      "nativeTextPages": 137
+    },
+    {
+      "name": "geometric_measure_theory_split_pages.pdf",
+      "pdf": "geometric_measure_theory_split_pages.pdf",
+      "export": null,
+      "pages": 274,
+      "sha256": "7111b094337a1028fdeffe5690ad4554c8b770b6492d37eb1045b4d8c078824a",
+      "nativeTextPages": 267
+    }
+  ],
+  "issues": [
+    {
+      "document": "YamabeProblem.pdf",
+      "severity": "BLOCKED_PAIR",
+      "code": "identity_mismatch",
+      "message": "Export/PDF identity or page count differs; do not use pair as OCR ground truth"
+    }
+  ]
+}

@@ -1,3 +1,13 @@
+# v404 post-release comprehensive audit (campaign v405; 2026-11-07 Beijing UTC+08)
+
+Full audit: `MATHREADER_FULL_AUDIT_v405.md`, `regression/v405_*`, `regression_tools/corpus_integrity_v405.py`. Reconstructed v404 source passed 48/48 JavaScript and 20/20 Python/Chromium suites sequentially (68/68); audit-overlay final run passed **48/48 JavaScript and 21/21 Python/Chromium suites (69/69)** including new corpus negative controls. Seven original mathematical PDFs and four additional mathematics PDFs: 11 files / 1,120 pages. Seven full exports: 595 pages, indexes 122 Structure / 380 Results / 848 Equations / 246 Bibliography entries; zero stored index-coordinate errors; 356 bibliography citation and 208 resolved proof-use link targets structurally valid. Source-level parser: 1,120 pages, zero exceptions (595 saved PDF.js detector inputs plus 525 PyMuPDF proxy pages). Offline Tesseract: 90/90 process completions across 11 PDFs, not mathematical recognition certification. Available Yamabe original PDF SHA differs from 56-page export; that pair is **BLOCKED**, not a false MathReader failure.
+
+**Confirmed v404 live known limitation:** Ahlfors `(6).json` → `(7).json` after Ctrl+Shift+R loses raw equation-margin observations (172 page-side records / 4,054 lines → 0) despite pre-reload `verified` status; all final indexes and two annotations remain. User accepts this limitation and requests no repeated fixes for now. Never claim reload itself inherently clears IndexedDB or that all reading data is lost. **Confirmed** missing Giusti printed equation `(A.1)` on PDF p.231; do not interpolate missing labels. True end-to-end Texify accuracy, original-source math transcription and printed navigation targets remain unverified.
+
+This audit adds **read-only regression tooling/docs only**, makes **no production change**, and leaves runtime version v404 unchanged.
+
+---
+
 # v404 — Restoring OCR after session reset (2026-11-07 UTC+08)
 
 **Live Ahlfors v403 acceptance FAIL:** post-import `(4).json` contains 172 stored equation-margin page observations / 4,054 OCR lines, but the export after webpage reload `(5).json` contains zero. Earlier backup `(3).json` contains 49 matching pages / 1,053 lines and two annotations; standard old-session import replaced the two annotations. The user's original PDF SHA matches all three. A separate merged recovery JSON preserves all 172 OCR observations and the two annotations; see `OCR_EVIDENCE_REOPEN_v404.md` for explicit provenance.

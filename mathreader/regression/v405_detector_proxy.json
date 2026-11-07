@@ -1,0 +1,126 @@
+{
+  "schema": "mathreader.v405.source-detector-proxy@1",
+  "summary": {
+    "documents": 11,
+    "pages": 1120,
+    "sourceDetectorErrors": 0,
+    "rawLineEquationCandidates": 6315,
+    "rawResultCandidates": 943,
+    "replayScopes": {
+      "originalPdfJs": 7,
+      "geometryProxy": 4
+    }
+  },
+  "documents": [
+    {
+      "name": "Asymptotic behaviour of  minimal graphs over exterior domains. L. Simon.pdf",
+      "sha256": "b66fbbb8815c9c2c5893a18532e0c911b56d369df65012253958a4386efa1a82",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 13,
+      "errors": 0,
+      "resultCandidates": 4,
+      "rawEquationLines": 8,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "SPS_1988__22__485_0(1).pdf",
+      "sha256": "7365e2caea0cdcf9f5cfb14bc7820126bf5d55c37acd54ed0304ba24f55f0bca",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 18,
+      "errors": 0,
+      "resultCandidates": 8,
+      "rawEquationLines": 76,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "Giusti.pdf",
+      "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 253,
+      "errors": 0,
+      "resultCandidates": 222,
+      "rawEquationLines": 824,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "yau1978.pdf",
+      "sha256": "95df2ace5484e438d9f5f8b0b1287f9955f086221e00e74fbfd55e14376253ac",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 73,
+      "errors": 0,
+      "resultCandidates": 13,
+      "rawEquationLines": 395,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "YamabeProblem.pdf",
+      "sha256": "11a7a3c6feb9ec6531b6bd99e30644d13ad9759d952a83c69d08ea3ad60f0b67",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 56,
+      "errors": 0,
+      "resultCandidates": 63,
+      "rawEquationLines": 193,
+      "bibliographyHeadingLines": 2
+    },
+    {
+      "name": "geometrical_hypothesis_Banach.pdf",
+      "sha256": "1e8a00c22db41010e2e53b18d1129d123929b99d7ea2d7213421eb13891a660a",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 10,
+      "errors": 0,
+      "resultCandidates": 15,
+      "rawEquationLines": 35,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "Ahlfors.pdf",
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "provenance": "saved MathReader PDF.js detector input",
+      "pages": 172,
+      "errors": 0,
+      "resultCandidates": 100,
+      "rawEquationLines": 455,
+      "bibliographyHeadingLines": 2
+    },
+    {
+      "name": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "sha256": "4c64c76edaf0868ccf232e33fdcf1a696dce0490e374526754db80ba4fd305f1",
+      "provenance": "PyMuPDF geometry proxy, NOT actual PDF.js detector input",
+      "pages": 26,
+      "errors": 0,
+      "resultCandidates": 13,
+      "rawEquationLines": 379,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "1209.2203v2.pdf",
+      "sha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "provenance": "PyMuPDF geometry proxy, NOT actual PDF.js detector input",
+      "pages": 88,
+      "errors": 0,
+      "resultCandidates": 65,
+      "rawEquationLines": 514,
+      "bibliographyHeadingLines": 1
+    },
+    {
+      "name": "cc081a23-02da-4e37-9d44-4aca9dc71cbf.pdf",
+      "sha256": "ba7fd4a53bf0f1d0ac54aec50bb72c4bba196b8e784d65cd0a7fd85131a3bf03",
+      "provenance": "PyMuPDF geometry proxy, NOT actual PDF.js detector input",
+      "pages": 137,
+      "errors": 0,
+      "resultCandidates": 220,
+      "rawEquationLines": 1718,
+      "bibliographyHeadingLines": 3
+    },
+    {
+      "name": "geometric_measure_theory_split_pages.pdf",
+      "sha256": "7111b094337a1028fdeffe5690ad4554c8b770b6492d37eb1045b4d8c078824a",
+      "provenance": "PyMuPDF geometry proxy, NOT actual PDF.js detector input",
+      "pages": 274,
+      "errors": 0,
+      "resultCandidates": 220,
+      "rawEquationLines": 1718,
+      "bibliographyHeadingLines": 3
+    }
+  ]
+}
