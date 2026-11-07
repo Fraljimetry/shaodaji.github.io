@@ -1,0 +1,53 @@
+{
+  "schema": "mathreader-v402-original-document-evidence@1",
+  "date_beijing": "2026-11-07",
+  "originals": [
+    {
+      "name": "Giusti Minimal Surfaces and Functions of Bounded Variation (1984)",
+      "pdfPages": 253,
+      "sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+      "originalPdfPage": 231,
+      "printedEquation": "(A.1)",
+      "approxPrintedRatio": 0.28,
+      "nativePdfTextMissing": "(A.1)",
+      "nativePdfTextPresent": [
+        "(A.2)",
+        "(A.3)"
+      ],
+      "savedIndexAnchors": [
+        {
+          "label": "(A.2)",
+          "page": 231
+        },
+        {
+          "label": "(A.3)",
+          "page": 231
+        },
+        {
+          "label": "(A.4)",
+          "page": 233
+        },
+        {
+          "label": "(A.5)",
+          "page": 233
+        }
+      ],
+      "offlineTesseractLeftMargin": "(A.1)",
+      "baselinePlannerIncludesPage231": false,
+      "v402PlannerIncludesPage231": true,
+      "browserOcrPublication": "UNVERIFIED"
+    },
+    {
+      "name": "Ahlfors Conformal Invariants",
+      "pdfPages": 172,
+      "sha256": "970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+      "originalPdfPage": 81,
+      "printedEquation": "(4-12)",
+      "sourceBboxTopRatio": 0.5566,
+      "offlineTesseractRightMargin": "(4-12)",
+      "browserOcrPublication": "UNVERIFIED"
+    }
+  ],
+  "scope": "Two original PDFs inspected with real images and source-native text; no independent full-page or formula correctness certification; browser OCR unavailable",
+  "giustiPreviousUserExportSha256": "6b65e74f1972976c8052ce7598eb9a76a37560e960d6f121c78e0e609c02ac20"
+}

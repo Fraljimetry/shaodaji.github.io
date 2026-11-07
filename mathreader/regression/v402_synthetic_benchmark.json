@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "restored": true,
+  "records": 49,
+  "observations": 392,
+  "cache_json_bytes": 50208,
+  "write_clone_ms": 5.8,
+  "restore_ms": 5.71,
+  "post_gc_heap_delta_bytes": 132056,
+  "note": "Node VM + structuredClone simulated IndexedDB, synthetic line text; not a live Chromium or engine benchmark"
+}

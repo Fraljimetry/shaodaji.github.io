@@ -1,0 +1,79 @@
+{
+  "schema": "mathreader-release-gate-v402@1",
+  "source_baseline": "user-uploaded mathreader(20261107-014000).zip",
+  "targetVersion": "402",
+  "date_beijing": "2026-11-07",
+  "nodeInitialAggregate": {
+    "total": 46,
+    "passed": 41,
+    "failed": 5,
+    "reasons": "four obsolete v401 asset-key assertions; one isolated test harness omitted three v396 cleanup helpers"
+  },
+  "nodeFinal": {
+    "total": 46,
+    "passed": 46,
+    "failed": 0,
+    "resultsFile": "regression/v402_js_gate.json"
+  },
+  "pythonSequentialFirstPass": {
+    "total": 20,
+    "passed": 19,
+    "failed": 1,
+    "failedTest": "p1_browser_smoke.py: simulated local-link context menu check"
+  },
+  "pythonIsolatedRerun": {
+    "test": "p1_browser_smoke.py",
+    "status": "PASS",
+    "assertions": 36
+  },
+  "pythonFinalDistinct": {
+    "total": 20,
+    "passedAcrossRuns": 20,
+    "singleAggregateClean": false,
+    "note": "P1 browser test intermittent and only passed on isolated rerun"
+  },
+  "newBrowserMock": {
+    "test": "equation_margin_export_browser_v402.py",
+    "assertions": 6,
+    "result": "PASS",
+    "limitations": "actual JS functions with in-memory storage and simulated PDF"
+  },
+  "actualBrowserIndexedDb": {
+    "test": "regression_tools/equation_margin_indexeddb_browser_v402.py",
+    "status": "BLOCKED",
+    "reason": "Chromium navigation ERR_BLOCKED_BY_ADMINISTRATOR on all local/mock origins"
+  },
+  "originalPdfChecks": {
+    "distinct": 2,
+    "pagesInOriginals": 425,
+    "visualPagesInspected": 2,
+    "offlineTesseractMarginCrops": 2,
+    "productionPdfJsOcrRuns": 0,
+    "formulaTruthCertified": 0
+  },
+  "unverified": [
+    "actual production OCR evidence reload",
+    "Ahlfors full round trip with both export boxes",
+    "Giusti A.1 production OCR publication/navigation",
+    "full formula text recognition faithfulness",
+    "storage eviction/quota and true browser memory performance",
+    "interrupted OCR before end-of-pass commit"
+  ],
+  "syntheticBenchmark": "regression/v402_synthetic_benchmark.json",
+  "assetSyntax": {
+    "bootstrapPlus10SourceParts": "PASS",
+    "assembledScript": "PASS",
+    "pythonCompileForNewBrowserScripts": "PASS"
+  },
+  "patchArchive": {
+    "status": "PASS",
+    "rootPrefix": "mathreader/",
+    "entryCount": 18,
+    "modifiedV401Files": 9,
+    "newFiles": 9,
+    "removedFiles": 0,
+    "crcIntegrity": "PASS",
+    "fullBaselineOverlayReplay": "PASS",
+    "unchangedV401BytesPreserved": "PASS"
+  }
+}

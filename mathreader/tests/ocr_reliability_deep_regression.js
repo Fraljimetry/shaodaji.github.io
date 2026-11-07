@@ -129,6 +129,11 @@ const result = {latex:'x+y',penalty:0,assessment:{warnings:[]},timing:{passes:[]
     getViewport:({scale})=>({width:100*scale,height:200*scale}),
     render:()=>({promise:Promise.resolve()}),
   })};
+  // Exercise real v396 cancellation/cleanup helpers rather than calling the
+  // current OCR runner with an obsolete, incomplete VM test environment.
+  for (const helper of ['releaseDocumentOcrCanvas','terminateDocumentOcrWorker','awaitDocumentOcrCancelable']) {
+    documentCtx[helper]=vm.runInNewContext(`(${fn(core,helper)})`,documentCtx);
+  }
   const fullOcr=vm.runInNewContext(`(${fn(core,'runFullDocumentOcr')})`,documentCtx);
   await assert.rejects(fullOcr(),/simulated recognition failure/);assertions+=1;
   check(canvasList.length===2,'current and prefetched pages both rendered before failure');

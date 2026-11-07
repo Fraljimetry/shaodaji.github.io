@@ -1905,7 +1905,41 @@ function equationNativeImageGapPlan(index, pageCount, referenceEvidence = []) {
     .filter((page) => !basePageSet.has(page))
     .sort((a, b) => (referencePageScores.get(b) || 0) - (referencePageScores.get(a) || 0) || a - b)
     .slice(0, 12);
-  const pages = [...new Set([...basePages, ...referencePages])].sort((a, b) => a - b);
+  const pages = [...new Set([...basePages, ...referencePages])];
+  // A first appendix equation can be missing even though the native text
+  // preserves its immediate successors. An established A.2, A.3, A.4, A.5
+  // family with A.2 and A.3 on the same page warrants a *query* for A.1.
+  // Preserve the older 24-page gap plan and the 12-page reference supplement;
+  // permit at most four ADDITIONAL leading-appendix pages per document.
+  let extraLeadingPages = 0;
+  for (const entries of byPrefix.values()) {
+    if (entries.length < 4) continue;
+    const distinct = new Map();
+    for (const entry of entries) {
+      const existing = distinct.get(entry.parsed.last);
+      if (!existing || equationDocumentPosition(entry.candidate) < equationDocumentPosition(existing.candidate)) {
+        distinct.set(entry.parsed.last, entry);
+      }
+    }
+    const family = [...distinct.values()].sort((a, b) => equationDocumentPosition(a.candidate) - equationDocumentPosition(b.candidate));
+    const first = family[0];
+    const second = family[1];
+    if (!first?.parsed.appendix || first.parsed.last !== 2 || first.parsed.separator !== '.' ||
+        first.parsed.suffix || second?.parsed.last !== 3 ||
+        Number(first.candidate.page) !== Number(second.candidate.page)) continue;
+    const label = expectedLabel(first.parsed, 1);
+    const page = Number(first.candidate.page);
+    if (index.has(label) || !Number.isInteger(page) || page < 1 || page > pageCount) continue;
+    if (!pages.includes(page)) {
+      if (extraLeadingPages >= 4) continue;
+      pages.push(page);
+      extraLeadingPages += 1;
+    }
+    // Only an actually observed, geometry-validated margin label can enter
+    // the Equation index. The sequence itself is never published as evidence.
+    addExpected(page, label);
+  }
+  pages.sort((a, b) => a - b);
   const allowedPages = new Set(pages);
   for (const page of [...expectedByPage.keys()]) if (!allowedPages.has(page)) expectedByPage.delete(page);
   return { pages, expectedByPage };
@@ -2680,10 +2714,18 @@ function meticulousMarginTargetGeometry(record, side, fullPageLines = []) {
 // separately from general text OCR, but never synthesize labels from gaps.
 // Only parenthesized labels actually observed at the numbering edge are saved.
 async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, renderedCanvas, fullPageLines = []) {
+  const sourceKey = currentFileKey;
   const side = equationNumberingSide === 'left' ? 'left' : 'right';
   const lines = await equationMarginOcrLines(sourceDoc, pageNum, side, worker, {
     existingCanvas: renderedCanvas,
   });
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return [];
+  // Explicit page OCR also produces valuable measured margin observations.
+  // v401 persisted only the automatic equation assistance pass, so this user-
+  // initiated route lost its raw evidence on reopen even if labels survived.
+  equationSupplementalOcrCache.set(`${sourceKey}|${side}|${pageNum}`, lines);
+  await persistEquationMarginOcrEvidence(sourceDoc, sourceKey);
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return [];
   const byLabel = new Map();
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
