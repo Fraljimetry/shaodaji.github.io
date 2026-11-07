@@ -1119,6 +1119,10 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
   if (!sourceDoc?.numPages || !sourceKey) return null;
   const pageCount = Number(sourceDoc.numPages);
   const sameDocument = () => pdfDoc === sourceDoc && currentFileKey === sourceKey;
+  // Restore previously stored page-margin observations on reopen. Importantly,
+  // this reads existing evidence only; it never starts image OCR.
+  await loadEquationMarginOcrEvidence(sourceDoc, sourceKey);
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return null;
   const pageRecords = [];
   const errors = [];
   const marginByPage = new Map();
@@ -1194,6 +1198,11 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
       pagesWithText: pageCount - pagesWithoutNativeText.length,
       pagesWithoutText: pagesWithoutNativeText,
       source: 'pdf-text-layer',
+    },
+    equationMarginOcrCoverage: {
+      pagesWithEvidence: pageRecords.filter((record) => Array.isArray(record.equationMarginOcr) && record.equationMarginOcr.length > 0).length,
+      // This refers to prior targeted margin observations, not a full-page OCR transcript.
+      source: 'stored-equation-margin-observations',
     },
     errors,
     // OCR that never ran cannot be reconstructed from saved indexes. In older

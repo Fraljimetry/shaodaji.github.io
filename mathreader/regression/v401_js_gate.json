@@ -1,0 +1,278 @@
+[
+  {
+    "test": "appendix_equations_v388_regression.js",
+    "pass": true,
+    "seconds": 0.13,
+    "log": "PASS: 71 appendix equation OCR / numbering / navigation / pagination assertions\n"
+  },
+  {
+    "test": "bibliography_boundary_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "OK: 25 boundary-bibliography class assertions\n"
+  },
+  {
+    "test": "cross_document_regression.js",
+    "pass": true,
+    "seconds": 0.15,
+    "log": "OK: 74 MathReader v358 cross-document and persistence assertions\n"
+  },
+  {
+    "test": "document_ocr_stop_v396_regression.js",
+    "pass": true,
+    "seconds": 0.4,
+    "log": "PASS: 39 document-OCR stop and cleanup assertions\n"
+  },
+  {
+    "test": "embedded_outline_title_regression.js",
+    "pass": true,
+    "seconds": 0.04,
+    "log": "OK: 25 embedded-outline malformed-tail class-level assertions\n"
+  },
+  {
+    "test": "equation_force_ocr_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "OK: 13 forced equation-image OCR checks\n"
+  },
+  {
+    "test": "equation_margin_navigation_regression.js",
+    "pass": true,
+    "seconds": 0.1,
+    "log": "PASS: equation-margin OCR geometry and cached-navigation repair\n"
+  },
+  {
+    "test": "equation_margin_persistence_v401_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "PASS | v401 margin OCR evidence persistence | 34 assertions\n"
+  },
+  {
+    "test": "equation_meticulous_navigation_v386_regression.js",
+    "pass": true,
+    "seconds": 0.04,
+    "log": "PASS: 17 v386 meticulous OCR equation-navigation regression assertions\n"
+  },
+  {
+    "test": "equation_order_ocr_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "PASS: additive OCR numerical ordering, stale-order bypass, explicit manual drag persistence\n"
+  },
+  {
+    "test": "equation_progress_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "OK: 36 equation progress / timing regression assertions\n"
+  },
+  {
+    "test": "equation_reference_ocr_target_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "PASS: 25 equation-reference OCR / navigation assertions (Giusti PDF p28 geometry)\n"
+  },
+  {
+    "test": "export_preferences_v397_regression.js",
+    "pass": true,
+    "seconds": 0.07,
+    "log": "PASS | v397 independent export options | assertions=112\n"
+  },
+  {
+    "test": "formula_latex_syntax_regression.js",
+    "pass": true,
+    "seconds": 0.86,
+    "log": "OK: 879 formula LaTeX checks; 228 MathJax compilations\n"
+  },
+  {
+    "test": "formula_ocr_initialization_regression.js",
+    "pass": true,
+    "seconds": 0.12,
+    "log": "at initializeMathOcrPipeline (evalmachine.<anonymous>:127:58)\n    at async ensureMathOcrPipeline (evalmachine.<anonymous>:86:16)\n    at async waitForActual (node:assert:566:5)\n    at async Function.rejects (node:assert:687:25)\n    at async tests (/mnt/data/mr_v401_work/mathreader/tests/formula_ocr_initialization_regression.js:94:3)\nMathReader OCR backend failed { label: 'WebGPU', official: false, device: 'webgpu', dtype: 'q4f16' } Error: WebGPU init failed\n    at /mnt/data/mr_v401_work/mathreader/tests/formula_ocr_initialization_regression.js:109:63\n    at initializeMathOcrPipeline (evalmachine.<anonymous>:127:58)\n    at async ensureMathOcrPipeline (evalmachine.<anonymous>:86:16)\n    at async tests (/mnt/data/mr_v401_work/mathreader/tests/formula_ocr_initialization_regression.js:110:9)\nMathReader OCR backend failed { label: 'CPU', official: true } Error: Formula OCR initialization exceeded its 120-second safety limit.\n    at formulaOcrTimeoutError (evalmachine.<anonymous>:46:17)\n    at Timeout._onTimeout (evalmachine.<anonymous>:58:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7) {\n  code: 'FORMULA_OCR_INIT_TIMEOUT'\n}\n"
+  },
+  {
+    "test": "formula_ocr_lazy_regression.js",
+    "pass": true,
+    "seconds": 0.06,
+    "log": "OK: 28 formula OCR lazy-initialization assertions\n"
+  },
+  {
+    "test": "formula_preview_compilation_regression.js",
+    "pass": true,
+    "seconds": 0.04,
+    "log": "OK: 12 formula MathJax preview lifecycle assertions\n"
+  },
+  {
+    "test": "full_exports_outline_v399_regression.js",
+    "pass": true,
+    "seconds": 0.07,
+    "log": "INFO | pass MATHREADER_EXPORT_CORPUS_DIR to replay all 595 pages\nPASS | 3 Ahlfors TOC and multi-export Structure assertions\n"
+  },
+  {
+    "test": "full_exports_proof_precision_v399_regression.js",
+    "pass": true,
+    "seconds": 0.04,
+    "log": "INFO | original large JSONs not bundled; pass MATHREADER_EXPORT_CORPUS_DIR to replay them\nPASS | 27 proof-reference precision assertions; full-document OCR accuracy not claimed\n"
+  },
+  {
+    "test": "full_text_coverage_v400_regression.js",
+    "pass": true,
+    "seconds": 0.04,
+    "log": "PASS | v400 real export coverage regression | 13 assertions\n"
+  },
+  {
+    "test": "historical_appendix_results_v395_regression.js",
+    "pass": true,
+    "seconds": 0.26,
+    "log": "PASS 164 Giusti appendix + Yau historical Results assertions; Giusti 13, Yau 13\n"
+  },
+  {
+    "test": "historical_appendix_separator_v389_regression.js",
+    "pass": true,
+    "seconds": 0.09,
+    "log": "PASS: 10 original-scan appendix numbering family assertions\n"
+  },
+  {
+    "test": "historical_bibliography_v394_regression.js",
+    "pass": true,
+    "seconds": 0.17,
+    "log": "PASS 27 real original-PDF bibliography assertions; Giusti 75 keyed references, Yau 15 numeric references\n"
+  },
+  {
+    "test": "historical_equation_positions_v394_regression.js",
+    "pass": true,
+    "seconds": 0.07,
+    "log": "PASS 33 source-page equation assertions: 22/23 independently visually inspected printed labels recorded; no false positives on these four pages; missing giusti p.231 (A.1)\n"
+  },
+  {
+    "test": "historical_native_pdf_detection_v394_regression.js",
+    "pass": true,
+    "seconds": 0.3,
+    "log": "PASS giusti: 24 printed headings, 43 sampled real PDF pages\nPASS yau: 13 printed headings, 18 sampled real PDF pages\nPASS 88 original native-PDF-layer regression assertions; no live OCR claim\n"
+  },
+  {
+    "test": "initial_equation_ocr_regression.js",
+    "pass": true,
+    "seconds": 0.07,
+    "log": "OK: 9 initial equation OCR / button checks\n"
+  },
+  {
+    "test": "long_book_outline_v392_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "PASS: 15 integrated long-book Structure/Contents/Results class assertions (synthetic native pages)\n"
+  },
+  {
+    "test": "maintenance_integrity_regression.js",
+    "pass": true,
+    "seconds": 0.06,
+    "log": "OK: 26 MathReader v397 maintenance integrity assertions\n"
+  },
+  {
+    "test": "manual_version_regression.js",
+    "pass": true,
+    "seconds": 0.04,
+    "log": "OK: 8 natural-language manual assertions\n"
+  },
+  {
+    "test": "meticulous_additive_ocr_regression.js",
+    "pass": true,
+    "seconds": 0.07,
+    "log": "PASS: 10 additive meticulous OCR regression assertions\n"
+  },
+  {
+    "test": "meticulous_equation_margin_regression.js",
+    "pass": true,
+    "seconds": 0.07,
+    "log": "OK: 9 meticulous equation margin assertions\n"
+  },
+  {
+    "test": "meticulous_position_preservation_v387_regression.js",
+    "pass": true,
+    "seconds": 0.06,
+    "log": "PASS: 25 v387 meticulous OCR reading-position regression checks\n"
+  },
+  {
+    "test": "multi_pdf_open_guard_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "OK: 11 concurrent-open and failure-return assertions\n"
+  },
+  {
+    "test": "multi_pdf_tabs_regression.js",
+    "pass": true,
+    "seconds": 0.05,
+    "log": "OK: 20 History-only multi-PDF regression assertions\nPending PDF open failed Error: simulated open failure\n    at openPdfFile (/mnt/data/mr_v401_work/mathreader/tests/multi_pdf_tabs_regression.js:34:40)\n    at activatePendingPdf (evalmachine.<anonymous>:39:18)\n    at queueOpenedPdfFiles (evalmachine.<anonymous>:29:23)\n    at evalmachine.<anonymous>:1:1\n    at Script.runInContext (node:vm:149:12)\n    at Object.runInContext (node:vm:301:6)\n    at run (/mnt/data/mr_v401_work/mathreader/tests/multi_pdf_tabs_regression.js:41:26)\n    at /mnt/data/mr_v401_work/mathreader/tests/multi_pdf_tabs_regression.js:60:3\n"
+  },
+  {
+    "test": "ocr_cache_identity_v391_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "PASS: 10 full-document and meticulous OCR cache-integrity assertions\n"
+  },
+  {
+    "test": "ocr_reliability_deep_regression.js",
+    "pass": true,
+    "seconds": 0.12,
+    "log": "PASS: 37 executable OCR reliability assertions\n"
+  },
+  {
+    "test": "p0_probe_evidence_regression.js",
+    "pass": true,
+    "seconds": 0.11,
+    "log": "OK: 5 test-only P0 probe evidence checks\n"
+  },
+  {
+    "test": "page_context_ocr_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "OK: 10 page-specific OCR source assertions\n"
+  },
+  {
+    "test": "page_ocr_status_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "OK: page OCR status auto-dismiss and timer replacement\n"
+  },
+  {
+    "test": "performance_safe_regression.js",
+    "pass": true,
+    "seconds": 0.2,
+    "log": "OK: 1204 scroll/layout/CSS parity assertions; rect reads 30k pages: 30000 -> 10\n"
+  },
+  {
+    "test": "precision_context_regression.js",
+    "pass": true,
+    "seconds": 0.11,
+    "log": "OK: 33 MathReader v348 precision class assertions\n"
+  },
+  {
+    "test": "raw_detection_export_v393_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "PASS: 38 v393 original export evidence assertions\n"
+  },
+  {
+    "test": "real_export_index_precision_v392_regression.js",
+    "pass": true,
+    "seconds": 0.1,
+    "log": "PASS: 63 real-export-derived outline/equation precision and persistence assertions (not original-PDF OCR accuracy)\n"
+  },
+  {
+    "test": "results_toc_regression.js",
+    "pass": true,
+    "seconds": 0.1,
+    "log": "OK: 23 MathReader TOC/Results class-level assertions\n"
+  },
+  {
+    "test": "shortcut_layout_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "OK: 14 grouped shortcuts UI checks\n"
+  },
+  {
+    "test": "sidebar_defaults_regression.js",
+    "pass": true,
+    "seconds": 0.08,
+    "log": "OK: 27 sidebar default and annotation behavior checks\n"
+  }
+]

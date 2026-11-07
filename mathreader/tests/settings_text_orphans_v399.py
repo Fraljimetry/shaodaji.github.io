@@ -37,10 +37,9 @@ with sync_playwright() as p:
     page.set_content(markup)
     for group in page.locator('.settings-group').all():
         group.evaluate('(e)=>e.open=true')
-    notes=page.locator('.export-settings-note > span')
-    assert notes.count()==2, 'explicitly two short note lines, not browser-dependent orphan folding'
-    assert notes.nth(0).inner_text().strip()=='Reading data is always included.'
-    assert notes.nth(1).inner_text().strip()=='Export never starts OCR.'
+    assert page.locator('.export-settings-note').count()==0, 'redundant export note must be absent'
+    assert 'Reading data is always included.' not in page.locator('#settings-export-group').inner_text()
+    assert 'Export never starts OCR.' not in page.locator('#settings-export-group').inner_text()
     checks=0
     for theme in ['dark','light']:
         page.evaluate('(theme)=>document.documentElement.dataset.theme=theme',theme)
@@ -49,18 +48,14 @@ with sync_playwright() as p:
             assert page.evaluate(measure)==[],f'orphan last word at {width}px {theme}: {page.evaluate(measure)}'
             side=page.locator('.sidebar-right')
             assert side.evaluate('(e)=>e.scrollWidth<=e.clientWidth+1'),f'horizontal sidebar overflow at {width}px {theme}'
-            if width>=244:
-                assert all(span.evaluate('(e)=>e.getClientRects().length===1') for span in notes.all())
-                # One intentional line for each sentence, no accidental third line.
-                assert notes.nth(1).bounding_box()['y']>notes.nth(0).bounding_box()['y']
             for i in range(2):
                 cb=page.locator('.export-setting-option input[type=checkbox]').nth(i)
                 cb.check();assert cb.is_checked()
                 cb.uncheck();assert not cb.is_checked()
             checks+=1
-    # Translation uses existing data-en/data-zh on each short note.
     page.evaluate('''()=>{document.documentElement.dataset.lang="zh";document.querySelectorAll('[data-zh]').forEach(el=>el.textContent=el.dataset.zh)}''')
-    assert '导出不会启动 OCR。' in notes.nth(1).inner_text()
+    assert '始终包含阅读数据。' not in page.locator('#settings-export-group').inner_text()
+    assert '导出不会启动 OCR。' not in page.locator('#settings-export-group').inner_text()
     assert page.locator('.sidebar-right').evaluate('(e)=>e.scrollWidth<=e.clientWidth+1')
     browser.close()
-print(f'PASS | {checks} widths/themes, no orphan line, intentional two-line note, clickability and Chinese fallback')
+print(f'PASS | {checks} widths/themes, no orphan line, redundant note absent, clickability and Chinese fallback')

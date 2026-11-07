@@ -16,6 +16,7 @@ const pages=[
 ];
 const ctx={pdfDoc:d,currentFileKey:key,Map,JSON,String,Number,setTimeout,
   jsonClone:clone,
+  loadEquationMarginOcrEvidence:async()=>false,
   manualIndexOcrPages:new Map(),
   documentOcrActive:false,documentOcrPages:new Map(),
   equationSupplementalOcrCache:new Map(),
@@ -32,6 +33,7 @@ const run=vm.runInNewContext('('+m[0]+')',ctx);
  check(out.pages[0].nativePdf.rawText.includes('Theorem A'),'actual original text present');
  check(out.pages[1].nativePdf.rawText.length===1,'empty-page raw item retained faithfully');
  check(out.fullDocumentOcrStoredAt===null,'no fabricated full-document OCR');
+ check(out.equationMarginOcrCoverage.pagesWithEvidence===0,'no fabricated margin OCR evidence');
  check(!src.match(/async function readingDataRawDetectionSnapshot\([^]*?\n\}/m)?.[0].includes('recognize('),'export does not run image OCR');
  // Failed extraction is not a successful transcription. Error page remains
  // indexed for troubleshooting and counts as missing native text.
@@ -45,6 +47,7 @@ const run=vm.runInNewContext('('+m[0]+')',ctx);
  let unblock;
  ctx.nativePageTextData=()=>new Promise(res=>unblock=res);
  const pending=run(d,key);
+ await new Promise((resolve)=>setImmediate(resolve));
  ctx.pdfDoc={numPages:4};ctx.currentFileKey='sha256:other';
  unblock({page:{view:[]},content:{items:[],styles:{}}});
  check(await pending===null,'late PDF read cannot be attributed to another document');

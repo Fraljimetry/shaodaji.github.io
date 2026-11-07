@@ -1,0 +1,50 @@
+{
+  "version": 401,
+  "javascript": {
+    "total": 46,
+    "passed": 46
+  },
+  "pythonChromium": {
+    "total": 20,
+    "passedIndividually": 20,
+    "aggregateCompleted": false,
+    "aggregateCompletedBeforeTimeout": 17,
+    "subsequentIndependentPasses": [
+      "settings_text_orphans_v399.py",
+      "seven_export_evidence_v401.py",
+      "ui_responsive_regression.py"
+    ]
+  },
+  "sourceExportReplay": {
+    "documents": 7,
+    "pages": 595,
+    "nativePagesWithText": 585,
+    "previousMarginEvidencePages": 291,
+    "newMarginEvidencePages": 0,
+    "actualFilesVerified": true
+  },
+  "syntax": "individual and assembled runtime PASS",
+  "realProductionOcr": "not tested",
+  "pythonScripts": [
+    "appendix_equation_sidebar_browser_v388.py",
+    "document_ocr_stop_browser_v396.py",
+    "equation_navigation_browser_geometry_v386.py",
+    "export_settings_browser_v397.py",
+    "export_settings_layout_v398.py",
+    "full_text_exports_v400.py",
+    "help_tutorial_regression.py",
+    "meticulous_ocr_menu_browser_v390.py",
+    "meticulous_viewport_browser_v387.py",
+    "ocr_browser_geometry_regression.py",
+    "p0_acceptance_regression.py",
+    "p0_gate_isolation_regression.py",
+    "p0_p1_gap_closure_regression.py",
+    "p1_browser_smoke.py",
+    "p1_real_gate_regression.py",
+    "regression_runner_smoke.py",
+    "settings_heading_hierarchy_v400.py",
+    "settings_text_orphans_v399.py",
+    "seven_export_evidence_v401.py",
+    "ui_responsive_regression.py"
+  ]
+}

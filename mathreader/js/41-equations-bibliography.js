@@ -2634,6 +2634,11 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
     }
     return added;
   } finally {
+    // Save observed OCR lines independently of the published equation labels.
+    // Reopening a cached PDF must not discard evidence needed by a later export.
+    if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+      await persistEquationMarginOcrEvidence(sourceDoc, sourceKey);
+    }
     try { await worker?.terminate?.(); } catch (_) {}
   }
 }

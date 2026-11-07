@@ -25,6 +25,7 @@ function fixture() {
     documentOcrActive: true,
     documentOcrPages: new Map([[1, {page: 1, text: 'ocr text', lines: [{text: 'ocr text', ratio: 0.3}], words: [{text: 'ocr'}], ocrRawText: 'ocr  text\n'}]]),
     manualIndexOcrPages: new Map([[2, {page: 2, text: 'meticulous', lines: [{text: 'meticulous', ratio: 0.5}], words: [{text:'meticulous'}]}]]),
+    loadEquationMarginOcrEvidence: async () => false,
     equationSupplementalOcrCache: new Map([
       ['sha256:document-a|left|1', [{text:'(1.2)', ratio:0.2}]],
       ['sha256:document-a|right|2', [{text:'(1.3)', ratio:0.5}]],
@@ -60,6 +61,7 @@ async function run() {
     verify(result.pages[1].textSource === 'meticulous-ocr', 'meticulous provenance wins');
     verify(result.pages[1].meticulousOcr.words[0].text === 'meticulous', 'meticulous OCR words retained');
     verify(result.pages[0].equationMarginOcr[0].lines[0].text === '(1.2)', 'margin OCR observations preserved');
+    verify(result.equationMarginOcrCoverage.pagesWithEvidence === 2, 'explicit actual margin evidence coverage, not full OCR');
     verify(result.pages[1].equationMarginOcr[0].side === 'right', 'margin side preserved');
     verify(!JSON.stringify(result).includes('FOREIGN'), 'foreign cached margin OCR rejected');
     verify(!JSON.stringify(result).includes('OUT OF RANGE'), 'out of range cache rejected');
