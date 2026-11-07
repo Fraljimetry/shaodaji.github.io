@@ -506,6 +506,7 @@ async function openPdfSource({ data, meta, cachedRecord = null, cacheBlob = null
     // This prevents stale Structure/Results/Equations/Bibliography rows from remaining
     // clickable against the newly opened PDF.
     clearDocumentMapForIncomingPdf();
+    await loadEquationMarginOcrEvidence(pdfDoc, currentFileKey);
     let savedTextPreference = cachedRecord?.session?.documentTextPreference;
     if (!['skip', 'ocr', 'native'].includes(savedTextPreference)) {
       try { savedTextPreference = JSON.parse(safeGet(stateKey('session-v2'), 'null'))?.documentTextPreference; } catch (_) { savedTextPreference = 'ask'; }
@@ -1123,6 +1124,12 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
   // this reads existing evidence only; it never starts image OCR.
   await loadEquationMarginOcrEvidence(sourceDoc, sourceKey);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return null;
+  // Export is a durability gate: verify that in-memory evidence is on disk.
+  // Never start OCR during export, and never silently treat a failed write as durable.
+  const currentRecords = equationMarginEvidenceRecords(sourceKey, Number(sourceDoc.numPages));
+  const evidencePersistence = !currentRecords.length ? 'no-evidence'
+    : await persistEquationMarginOcrEvidence(sourceDoc, sourceKey) ? 'verified' : 'failed';
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return null;
   const pageRecords = [];
   const errors = [];
   const marginByPage = new Map();
@@ -1200,6 +1207,7 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
       source: 'pdf-text-layer',
     },
     equationMarginOcrCoverage: {
+      persistence: evidencePersistence,
       pagesWithEvidence: pageRecords.filter((record) => Array.isArray(record.equationMarginOcr) && record.equationMarginOcr.length > 0).length,
       // This refers to prior targeted margin observations, not a full-page OCR transcript.
       source: 'stored-equation-margin-observations',
@@ -1334,6 +1342,8 @@ async function importReadingDataFile(file) {
       const existing = await dbGet('documents', importedId);
       const now = Date.now();
       if (payload.documentOcr) await persistImportedDocumentOcr(payload.documentOcr, importedId, Number(payload.document?.pages || 0));
+      const evidenceRecovery = await restoreImportedEquationMarginEvidence(payload, importedId, Number(payload.document?.pages || 0));
+      if (!evidenceRecovery.ok) throw new Error('Imported equation-margin OCR evidence was invalid or not stored');
       await dbPut('documents', {
         ...(existing || {}),
         id: importedId,
@@ -1351,7 +1361,9 @@ async function importReadingDataFile(file) {
       activatePanel('history-panel', false);
       if (matchMedia('(max-width: 860px)').matches) shell.classList.add('mobile-left-open');
       else shell.classList.remove('left-collapsed');
-      showNotice(t('PDF required · Reading data was imported successfully. Select the matching PDF to restore this reading session.', '需要 PDF · 阅读数据已成功导入。请选择匹配的 PDF 以恢复此阅读现场。'));
+      showNotice(evidenceRecovery.count
+        ? t('Reading data and saved OCR evidence imported. Select the matching PDF.', '已导入阅读数据及 OCR 证据。请选择匹配的 PDF。')
+        : t('PDF required · Reading data was imported successfully. Select the matching PDF to restore this reading session.', '需要 PDF · 阅读数据已成功导入。请选择匹配的 PDF 以恢复此阅读现场。'));
     } catch (error) {
       console.warn('MathReader could not import local reading data.', error);
       showError(t('The reading data could not be imported into the local library.', '无法将阅读数据导入本地资料库。'));
@@ -1372,6 +1384,16 @@ async function importReadingDataFile(file) {
       return;
     }
   }
+  const sourceDoc = pdfDoc, sourceKey = currentFileKey;
+  const evidenceRecovery = await restoreImportedEquationMarginEvidence(payload, sourceKey, sourceDoc.numPages);
+  if (!evidenceRecovery.ok) {
+    showError(t('OCR evidence could not be restored. The existing reading data was not changed.',
+      'OCR 证据无法恢复；现有阅读数据未更改。'));
+    return;
+  }
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
+  if (evidenceRecovery.count) await loadEquationMarginOcrEvidence(sourceDoc, sourceKey);
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
   if (payload.documentOcr) {
     const normalizedOcr = normalizedImportedDocumentOcrSnapshot(payload.documentOcr, pdfDoc.numPages);
     if (normalizedOcr) {
@@ -1395,6 +1417,7 @@ async function importReadingDataFile(file) {
   renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton();
   updateDocumentTextAvailabilityUI();
   persistDocumentState(); scheduleAutomaticStructureIndex();
+  if (evidenceRecovery.count) showNotice(t('Saved equation-margin OCR evidence restored.', '已恢复保存的公式边缘 OCR 证据。'));
 }
 
 

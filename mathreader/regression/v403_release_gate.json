@@ -1,0 +1,514 @@
+{
+  "release": "v403",
+  "sourceBaseline": "v402 (v401 original archive + v402 patch)",
+  "dates": "2026-11-07 Beijing UTC+08",
+  "testCounts": {
+    "node": 47,
+    "pythonChromium": 20,
+    "pass": 67,
+    "fail": 0,
+    "timeout": 0
+  },
+  "tests": [
+    {
+      "file": "appendix_equations_v388_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "appendix_leading_equation_v402_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "bibliography_boundary_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "cross_document_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "embedded_outline_title_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_force_ocr_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_margin_navigation_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_margin_page_journal_v403_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_margin_persistence_v401_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_meticulous_navigation_v386_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "equation_order_ocr_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_progress_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "equation_reference_ocr_target_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "export_preferences_v397_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "formula_latex_syntax_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 1.0
+    },
+    {
+      "file": "formula_ocr_initialization_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "formula_ocr_lazy_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "formula_preview_compilation_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "full_exports_outline_v399_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "full_exports_proof_precision_v399_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "full_text_coverage_v400_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "historical_appendix_results_v395_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.2
+    },
+    {
+      "file": "historical_appendix_separator_v389_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "historical_bibliography_v394_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.2
+    },
+    {
+      "file": "historical_equation_positions_v394_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "historical_native_pdf_detection_v394_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.2
+    },
+    {
+      "file": "initial_equation_ocr_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "long_book_outline_v392_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "maintenance_integrity_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "manual_version_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "meticulous_additive_ocr_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "meticulous_equation_margin_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "meticulous_position_preservation_v387_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "multi_pdf_open_guard_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "multi_pdf_tabs_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "ocr_cache_identity_v391_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "ocr_reliability_deep_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "p0_probe_evidence_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "page_context_ocr_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "page_ocr_status_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "performance_safe_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "precision_context_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "raw_detection_export_v393_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "real_export_index_precision_v392_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "results_toc_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.1
+    },
+    {
+      "file": "shortcut_layout_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "sidebar_defaults_regression.js",
+      "kind": "node",
+      "status": "PASS",
+      "durationSeconds": 0.0
+    },
+    {
+      "file": "appendix_equation_sidebar_browser_v388.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.4
+    },
+    {
+      "file": "equation_margin_export_browser_v402.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.4
+    },
+    {
+      "file": "equation_navigation_browser_geometry_v386.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.6
+    },
+    {
+      "file": "export_settings_browser_v397.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.2
+    },
+    {
+      "file": "export_settings_layout_v398.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.6
+    },
+    {
+      "file": "full_text_exports_v400.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 0.9
+    },
+    {
+      "file": "help_tutorial_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 6.7
+    },
+    {
+      "file": "meticulous_ocr_menu_browser_v390.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.0
+    },
+    {
+      "file": "meticulous_viewport_browser_v387.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 1.7
+    },
+    {
+      "file": "ocr_browser_geometry_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 1.8
+    },
+    {
+      "file": "p0_acceptance_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 1.3
+    },
+    {
+      "file": "p0_gate_isolation_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.0
+    },
+    {
+      "file": "p0_p1_gap_closure_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 1.0
+    },
+    {
+      "file": "p1_browser_smoke.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 3.7
+    },
+    {
+      "file": "p1_real_gate_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 0.9
+    },
+    {
+      "file": "regression_runner_smoke.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 11.9
+    },
+    {
+      "file": "settings_heading_hierarchy_v400.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 2.2
+    },
+    {
+      "file": "settings_text_orphans_v399.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 4.0
+    },
+    {
+      "file": "seven_export_evidence_v401.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 0.8
+    },
+    {
+      "file": "ui_responsive_regression.py",
+      "kind": "python",
+      "status": "PASS",
+      "durationSeconds": 17.6
+    }
+  ],
+  "realAhlfors": {
+    "status": "FAIL",
+    "pdfId": "sha256:970cda290270daa397d0bd5a06da4e423bb548d1556e71c1135f54fd637ac949",
+    "pdfPages": 172,
+    "beforeExportSha256": "2116a243fa268085f6d01b35ec38ccc2d4af3127db76448d4f14e31469f46830",
+    "afterExportSha256": "8ad3e066956312036c3ff7c1c836ae36370f9ea16d9e6d7e551d7069f96f835c",
+    "before": {
+      "pageSideRecords": 172,
+      "pagesWithEvidence": 172,
+      "ocrLines": 4054,
+      "coverage": {
+        "pagesWithEvidence": 172,
+        "source": "stored-equation-margin-observations"
+      }
+    },
+    "after": {
+      "pageSideRecords": 0,
+      "pagesWithEvidence": 0,
+      "ocrLines": 0,
+      "coverage": {
+        "pagesWithEvidence": 0,
+        "source": "stored-equation-margin-observations"
+      }
+    },
+    "unchangedPageSideRecords": 0,
+    "missingPageSideRecords": 172,
+    "changedPageSideRecords": 0,
+    "addedPageSideRecords": 0,
+    "missingExamples": [
+      [
+        1,
+        "right"
+      ],
+      [
+        2,
+        "right"
+      ],
+      [
+        3,
+        "right"
+      ],
+      [
+        4,
+        "right"
+      ],
+      [
+        5,
+        "right"
+      ],
+      [
+        6,
+        "right"
+      ],
+      [
+        7,
+        "right"
+      ],
+      [
+        8,
+        "right"
+      ],
+      [
+        9,
+        "right"
+      ],
+      [
+        10,
+        "right"
+      ],
+      [
+        11,
+        "right"
+      ],
+      [
+        12,
+        "right"
+      ]
+    ],
+    "changedExamples": []
+  },
+  "recovery": {
+    "status": "PASS_OFFLINE_STORAGE_REPLAY",
+    "inputDocument": "Ahlfors original 172-page first export",
+    "recordsRestored": 172,
+    "linesRestored": 4054,
+    "approxStorageBytes": 1947658,
+    "durationMs": 154,
+    "marginRecordsSha256": "e182b71161519cc84ef9deb37b312af63c50db51ab369444d6002c8cc6f62e56",
+    "productionIndexedDbOriginRoundTrip": "NOT_RUN"
+  },
+  "limitations": [
+    "Original production browser failure reproduced by exported evidence, but exact original browser storage failure mechanism not observable from JSON.",
+    "Chromium source-function harness uses in-memory database stand-in, not production IndexedDB/PDF.js/Tesseract.",
+    "v403 post-deploy real-browser reload, eviction, navigation, and user import round-trip unverified.",
+    "One known preexisting transient browser test can be nondeterministic; final v403 sequential run passed."
+  ],
+  "intermediateRun": "An earlier intermediate 47/47 JS + 19/20 Python run failed once in p1_browser_smoke.py at a simulated Open PDF context menu; isolated rerun passed 36 assertions. Final sequential 47/47 + 20/20 run is clean.",
+  "finalRunFile": "v403_gate_terminal.log (local audit, not bundled)"
+}

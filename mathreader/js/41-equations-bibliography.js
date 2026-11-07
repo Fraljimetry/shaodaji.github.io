@@ -2510,17 +2510,24 @@ async function supplementEquationIndexFromPageImages(sourceDoc, sourceKey, index
   };
 
   const cachedLinesForPage = async (pageNum) => {
-    const cacheKey = `${String(sourceKey || '')}|${equationNumberingSide}|${pageNum}`;
+    // Freeze the numbering side before worker setup: a Settings change while
+    // the worker is loading cannot miskey the stored margin observation.
+    const side = equationNumberingSide === 'left' ? 'left' : 'right';
+    const cacheKey = `${String(sourceKey || '')}|${side}|${pageNum}`;
     const cached = equationSupplementalOcrCache.get(cacheKey);
     if (Array.isArray(cached)) return cached;
     if (cached && typeof cached.then === 'function') return cached;
     const activeWorker = await ensureWorker();
     if (!activeWorker) throw new Error('Equation OCR worker unavailable');
-    const pending = equationMarginOcrLines(sourceDoc, pageNum, equationNumberingSide, activeWorker, { onTiming: (measurement) => {
+    const pending = equationMarginOcrLines(sourceDoc, pageNum, side, activeWorker, { onTiming: (measurement) => {
       if (typeof onProgress === 'function') onProgress({ timing: measurement });
     } })
-      .then((lines) => {
-        if (pdfDoc === sourceDoc && currentFileKey === sourceKey) equationSupplementalOcrCache.set(cacheKey, lines);
+      .then(async (lines) => {
+        if (pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+          equationSupplementalOcrCache.set(cacheKey, lines);
+          // Commit each completed page before reporting it as scanned.
+          await persistEquationMarginOcrPage(sourceDoc, sourceKey, pageNum, side, lines);
+        }
         return lines;
       })
       .catch((error) => {
@@ -2724,7 +2731,7 @@ async function meticulousEquationMarginEvidence(sourceDoc, pageNum, worker, rend
   // v401 persisted only the automatic equation assistance pass, so this user-
   // initiated route lost its raw evidence on reopen even if labels survived.
   equationSupplementalOcrCache.set(`${sourceKey}|${side}|${pageNum}`, lines);
-  await persistEquationMarginOcrEvidence(sourceDoc, sourceKey);
+  await persistEquationMarginOcrPage(sourceDoc, sourceKey, pageNum, side, lines);
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return [];
   const byLabel = new Map();
   for (let i = 0; i < lines.length; i += 1) {

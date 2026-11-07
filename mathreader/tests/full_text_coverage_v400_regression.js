@@ -17,6 +17,7 @@ const pages=[
 const ctx={pdfDoc:d,currentFileKey:key,Map,JSON,String,Number,setTimeout,
   jsonClone:clone,
   loadEquationMarginOcrEvidence:async()=>false,
+  equationMarginEvidenceRecords:()=>[],persistEquationMarginOcrEvidence:async()=>true,
   manualIndexOcrPages:new Map(),
   documentOcrActive:false,documentOcrPages:new Map(),
   equationSupplementalOcrCache:new Map(),

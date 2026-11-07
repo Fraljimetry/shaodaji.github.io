@@ -264,6 +264,11 @@ let equationAutomaticLabelIndex = null;
 // Per-document posterior equation OCR evidence. Successful page reads are cached
 // independently so one failing page cannot discard already confirmed labels.
 let equationSupplementalOcrCache = new Map();
+// Only in-memory acknowledgements; the durable authority is the per-page IDB journal.
+let equationMarginPersistedPageRefs = new Map();
+let equationMarginStorageWarningKey = null;
+let equationMarginStorageBlockedKey = null;
+
 // Keep a tiny persisted equation summary so the collapsed Equations
 // badge can restore immediately without serializing or eagerly rebuilding the
 // full label index. null means the count is not known yet.
@@ -717,6 +722,42 @@ async function dbMetaSet(key, value) {
   return dbPut('meta', { key, value });
 }
 
+// Page-journal OCR evidence is queried by a bounded key range; unlike a single
+// multi-megabyte snapshot, a completed page can survive an interrupted scan.
+async function dbMetaEntriesByPrefix(prefix) {
+  const db = await openLocalDb();
+  const tx = db.transaction('meta', 'readonly');
+  const cursor = tx.objectStore('meta').openCursor(IDBKeyRange.bound(prefix, `${prefix}\uffff`));
+  return new Promise((resolve, reject) => {
+    const records = [];
+    cursor.onsuccess = () => {
+      const entry = cursor.result;
+      if (!entry) { resolve(records); return; }
+      if (records.length >= 1024) { reject(new Error('Too many stored OCR page records')); return; }
+      records.push(entry.value);
+      entry.continue();
+    };
+    cursor.onerror = () => reject(cursor.error || new Error('Could not list OCR page records'));
+    tx.onabort = () => reject(tx.error || new Error('OCR page record transaction aborted'));
+  });
+}
+
+async function dbMetaDeleteByPrefix(prefix) {
+  const db = await openLocalDb();
+  const tx = db.transaction('meta', 'readwrite');
+  const cursor = tx.objectStore('meta').openCursor(IDBKeyRange.bound(prefix, `${prefix}\uffff`));
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error || new Error('Could not delete OCR page records'));
+    tx.onerror = () => reject(tx.error || new Error('OCR page deletion failed'));
+    cursor.onsuccess = () => {
+      const entry = cursor.result;
+      if (entry) { entry.delete(); entry.continue(); }
+    };
+    cursor.onerror = () => reject(cursor.error || new Error('Could not enumerate OCR page records'));
+  });
+}
+
 async function requestPersistentLocalStorage() {
   try {
     if (navigator.storage?.persisted && navigator.storage?.persist) {
@@ -764,6 +805,8 @@ function clearDocumentMapForIncomingPdf() {
   equationImageAssistPromise = null;
   equationAutomaticLabelIndex = null;
   equationSupplementalOcrCache = new Map();
+  equationMarginPersistedPageRefs = new Map();
+  equationMarginStorageBlockedKey = null;
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
   resetEquationDetectionProgress();
@@ -1159,8 +1202,14 @@ function renderLocalLibrary() {
         // unavailable until explicitly relinked; never guess a replacement.
         try { await dbDelete('meta', bibliographyLinkStorageKey(record.id)); }
         catch (error) { console.warn('Could not forget local PDF link metadata.', error); }
-        try { await dbDelete('meta', equationMarginEvidenceCacheKey(record.id)); }
-        catch (error) { console.warn('Could not forget cached equation-margin OCR evidence.', error); }
+        try {
+          await dbMetaDeleteByPrefix(equationMarginPagePrefix(record.id));
+          await dbDelete('meta', equationMarginEvidenceCacheKey(record.id));
+          if (currentFileKey === record.id) {
+            equationSupplementalOcrCache = new Map();
+            equationMarginPersistedPageRefs = new Map();
+          }
+        } catch (error) { console.warn('Could not forget cached equation-margin OCR evidence.', error); }
         if (currentFileKey === record.id) confirmedBibliographyLinks = new Map();
         clearLegacyDocumentState(record.id);
         const last = await dbMetaGet('lastDocumentId');
@@ -1520,6 +1569,7 @@ function clearTextDerivedIndexesForUnavailableDocument() {
   equationImageAssistPromise = null;
   equationAutomaticLabelIndex = null;
   equationSupplementalOcrCache = new Map();
+  equationMarginPersistedPageRefs = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
   resetEquationDetectionProgress();
@@ -1554,6 +1604,7 @@ function invalidateTextDerivedIndexesForOcrActivation() {
   equationImageAssistPromise = null;
   equationAutomaticLabelIndex = null;
   equationSupplementalOcrCache = new Map();
+  equationMarginPersistedPageRefs = new Map();
   equationIndexBuildPromise = null;
   equationIndexKnownCount = null;
   resetEquationDetectionProgress();
@@ -2058,19 +2109,30 @@ function documentOcrCacheKey(fileKey = currentFileKey) {
   return fileKey ? `document-ocr-v${DOCUMENT_OCR_CACHE_VERSION}:${fileKey}` : null;
 }
 
-// Targeted equation-margin OCR is separate from full-document OCR. Persist
-// completed per-page observations by exact document identity so a reopened
-// PDF can export the diagnostic evidence without repeating the OCR scan.
+// Targeted equation-margin OCR is separate from full-document OCR.
+// v403 writes each completed (document, side, page) directly to IndexedDB.
+// Legacy v401/v402 snapshot records remain readable but are never rewritten.
 const EQUATION_MARGIN_EVIDENCE_CACHE_VERSION = 1;
+const EQUATION_MARGIN_PAGE_CACHE_VERSION = 2;
 function equationMarginEvidenceCacheKey(fileKey = currentFileKey) {
   return fileKey ? `equation-margin-v${EQUATION_MARGIN_EVIDENCE_CACHE_VERSION}:${fileKey}` : null;
+}
+function equationMarginPagePrefix(fileKey) {
+  return fileKey ? `equation-margin-page-v${EQUATION_MARGIN_PAGE_CACHE_VERSION}:${fileKey}|` : null;
+}
+function equationMarginPageKey(fileKey, side, page) {
+  return `${equationMarginPagePrefix(fileKey)}${side}|${page}`;
+}
+function validEquationMarginLines(lines) {
+  return Array.isArray(lines) && lines.length <= 2000 && lines.every((line) =>
+    line && typeof line === 'object' && !Array.isArray(line) && typeof line.text === 'string');
 }
 function equationMarginEvidenceRecords(sourceKey, pageCount) {
   const records = [];
   if (!(equationSupplementalOcrCache instanceof Map) || !sourceKey) return records;
   const prefix = `${sourceKey}|`;
   for (const [key, lines] of equationSupplementalOcrCache) {
-    if (typeof key !== 'string' || !key.startsWith(prefix) || !Array.isArray(lines)) continue;
+    if (typeof key !== 'string' || !key.startsWith(prefix) || !validEquationMarginLines(lines)) continue;
     const match = key.slice(prefix.length).match(/^(left|right)\|(\d+)$/);
     if (!match) continue;
     const page = Number(match[2]);
@@ -2080,66 +2142,184 @@ function equationMarginEvidenceRecords(sourceKey, pageCount) {
   records.sort((a, b) => a.page - b.page || a.side.localeCompare(b.side));
   return records;
 }
-async function persistEquationMarginOcrEvidence(sourceDoc, sourceKey) {
-  if (!sourceDoc?.numPages || !sourceKey || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
-  const records = equationMarginEvidenceRecords(sourceKey, Number(sourceDoc.numPages));
-  if (!records.length || records.length > 1024) return false;
-  // A later partial OCR pass must not erase previously persisted page evidence.
-  // Current observations replace only records for the same page and margin.
+function validEquationMarginPageRecord(item, sourceKey, pageCount) {
+  const page = Number(item?.page);
+  return item?.version === EQUATION_MARGIN_PAGE_CACHE_VERSION && item?.documentId === sourceKey &&
+    Number(item?.pageCount) === Number(pageCount) &&
+    Number.isInteger(page) && page >= 1 && page <= pageCount &&
+    ['left', 'right'].includes(item?.side) && validEquationMarginLines(item?.lines);
+}
+async function boundedEquationMarginDbOperation(operation, timeoutMs = 5000) {
+  let timeout;
   try {
-    const key = equationMarginEvidenceCacheKey(sourceKey);
-    const existing = await dbMetaGet(key);
-    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
-    const byPage = new Map(records.map((record) => [`${record.side}|${record.page}`, record]));
-    if (Number(existing?.version) === EQUATION_MARGIN_EVIDENCE_CACHE_VERSION &&
-        Number(existing?.pageCount) === Number(sourceDoc.numPages) && Array.isArray(existing?.records) &&
-        existing.records.length <= 1024) {
-      for (const record of existing.records) {
-        const page = Number(record?.page);
-        if (!Number.isInteger(page) || page < 1 || page > sourceDoc.numPages ||
-            !['left', 'right'].includes(record?.side) || !Array.isArray(record.lines) ||
-            record.lines.length > 2000 ||
-            record.lines.some((line) => !line || typeof line !== 'object' || typeof line.text !== 'string')) continue;
-        const pageKey = `${record.side}|${page}`;
-        if (!byPage.has(pageKey)) byPage.set(pageKey, record);
+    return await Promise.race([
+      operation,
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('OCR evidence storage timed out')), timeoutMs); })
+    ]);
+  } finally { clearTimeout(timeout); }
+}
+function warnEquationMarginStorageFailure(sourceKey, error) {
+  console.warn('MathReader could not verify saved equation-margin OCR evidence.', error);
+  equationMarginStorageBlockedKey = sourceKey;
+  // Surface storage/quota/security failures once, without blocking or restarting OCR.
+  if (pdfDoc && currentFileKey === sourceKey && equationMarginStorageWarningKey !== sourceKey) {
+    equationMarginStorageWarningKey = sourceKey;
+    try { showNotice(t('OCR evidence was not saved locally. Export reading data to keep a backup.',
+      'OCR 证据未保存到本地。请导出阅读数据备份。')); } catch (_) {}
+  }
+}
+async function writeEquationMarginPageRecord(sourceKey, pageCount, record, { preserveExisting = false } = {}) {
+  const page = Number(record?.page);
+  const item = { version: EQUATION_MARGIN_PAGE_CACHE_VERSION, documentId: sourceKey,
+    pageCount, page, side: record?.side, lines: record?.lines };
+  if (!validEquationMarginPageRecord(item, sourceKey, pageCount) ||
+      JSON.stringify(item).length > 500_000) {
+    warnEquationMarginStorageFailure(sourceKey, new Error('Invalid or oversized OCR page evidence'));
+    return false;
+  }
+  const key = equationMarginPageKey(sourceKey, item.side, item.page);
+  if (equationMarginStorageBlockedKey === sourceKey) return false;
+  try {
+    // A database upgrade blocked by another tab must not freeze the OCR loop.
+    return await boundedEquationMarginDbOperation((async () => {
+      if (preserveExisting) {
+        const existing = await dbMetaGet(key);
+        if (validEquationMarginPageRecord(existing, sourceKey, pageCount)) return true;
       }
-    }
-    const payload = { version: EQUATION_MARGIN_EVIDENCE_CACHE_VERSION, pageCount: sourceDoc.numPages,
-      records: [...byPage.values()].sort((a, b) => a.page - b.page || a.side.localeCompare(b.side)) };
-    if (payload.records.length > 1024 || JSON.stringify(payload).length > 6_000_000) return false;
-    await dbMetaSet(key, payload);
-    return true;
+      await dbMetaSet(key, item);
+      const stored = await dbMetaGet(key);
+      if (!validEquationMarginPageRecord(stored, sourceKey, pageCount) ||
+          JSON.stringify(stored) !== JSON.stringify(item)) {
+        throw new Error('IndexedDB OCR page write did not round-trip');
+      }
+      return true;
+    })());
   } catch (error) {
-    console.warn('MathReader could not persist equation-margin OCR evidence.', error);
+    warnEquationMarginStorageFailure(sourceKey, error);
     return false;
   }
 }
+async function persistEquationMarginOcrPage(sourceDoc, sourceKey, page, side, lines) {
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || !sourceDoc?.numPages) return false;
+  const count = Number(sourceDoc.numPages);
+  const key = `${sourceKey}|${side}|${page}`;
+  if (equationMarginPersistedPageRefs.get(key) === lines) return true;
+  const saved = await writeEquationMarginPageRecord(sourceKey, count, { page, side, lines });
+  if (saved && pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+    equationMarginPersistedPageRefs.set(key, lines);
+  }
+  return saved;
+}
+async function persistEquationMarginOcrEvidence(sourceDoc, sourceKey) {
+  if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || !sourceDoc?.numPages) return false;
+  const records = equationMarginEvidenceRecords(sourceKey, Number(sourceDoc.numPages));
+  if (!records.length || records.length > 1024) return false;
+  // Explicit export/final-pass verification permits a retry after a transient
+  // blocked or quota failure; an ordinary scan does not retry every page.
+  equationMarginStorageBlockedKey = null;
+  let allSaved = true;
+  for (const record of records) {
+    if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
+    if (!await persistEquationMarginOcrPage(sourceDoc, sourceKey, record.page, record.side, record.lines)) allSaved = false;
+  }
+  return allSaved;
+}
 async function loadEquationMarginOcrEvidence(sourceDoc, sourceKey) {
   if (!sourceDoc?.numPages || !sourceKey) return false;
-  let cached;
-  try { cached = await dbMetaGet(equationMarginEvidenceCacheKey(sourceKey)); }
-  catch (error) { console.warn('MathReader could not restore equation-margin OCR evidence.', error); return false; }
-  // A delayed IndexedDB reply must never publish into a different PDF.
+  const pageCount = Number(sourceDoc.numPages);
+  let pageEntries = [];
+  let legacy = null;
+  try {
+    // An IndexedDB upgrade blocked by another tab must not stall PDF opening.
+    pageEntries = await boundedEquationMarginDbOperation(dbMetaEntriesByPrefix(equationMarginPagePrefix(sourceKey)));
+  } catch (error) { console.warn('MathReader could not restore equation-margin OCR page records.', error); }
+  try {
+    // v401/v402 records can fill gaps in a partially migrated page journal.
+    legacy = await boundedEquationMarginDbOperation(dbMetaGet(equationMarginEvidenceCacheKey(sourceKey)));
+  } catch (error) { console.warn('MathReader could not restore legacy equation-margin OCR evidence.', error); }
   if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
-  if (Number(cached?.version) !== EQUATION_MARGIN_EVIDENCE_CACHE_VERSION ||
-      Number(cached?.pageCount) !== Number(sourceDoc.numPages) ||
-      !Array.isArray(cached.records) || cached.records.length > 1024) return false;
   const validated = new Map();
-  for (const item of cached.records) {
-    const page = Number(item?.page);
-    if (!Number.isInteger(page) || page < 1 || page > sourceDoc.numPages ||
-        !['left', 'right'].includes(item?.side) || !Array.isArray(item?.lines) || item.lines.length > 2000 ||
-        item.lines.some((line) => !line || typeof line !== 'object' || typeof line.text !== 'string')) return false;
-    const key = `${sourceKey}|${item.side}|${page}`;
-    if (validated.has(key)) return false;
-    validated.set(key, item.lines);
+  const journalKeys = new Set();
+  for (const entry of pageEntries) {
+    const key = entry?.key;
+    const item = entry?.value;
+    if (typeof key !== 'string' || !validEquationMarginPageRecord(item, sourceKey, pageCount) ||
+        key !== equationMarginPageKey(sourceKey, item.side, item.page)) continue;
+    const cacheKey = `${sourceKey}|${item.side}|${item.page}`;
+    validated.set(cacheKey, item.lines);
+    journalKeys.add(cacheKey);
+  }
+  if (Number(legacy?.version) === EQUATION_MARGIN_EVIDENCE_CACHE_VERSION &&
+      Number(legacy?.pageCount) === pageCount && Array.isArray(legacy?.records) &&
+      legacy.records.length <= 1024) {
+    // A malformed legacy snapshot must not partially contaminate the cache.
+    const old = new Map();
+    let valid = true;
+    for (const record of legacy.records) {
+      const page = Number(record?.page);
+      if (!Number.isInteger(page) || page < 1 || page > pageCount ||
+          !['left', 'right'].includes(record?.side) || !validEquationMarginLines(record.lines)) { valid = false; break; }
+      const key = `${sourceKey}|${record.side}|${page}`;
+      if (old.has(key)) { valid = false; break; }
+      old.set(key, record.lines);
+    }
+    if (valid) for (const [key, lines] of old) if (!validated.has(key)) validated.set(key, lines);
   }
   if (!validated.size) return false;
   for (const [key, lines] of validated) {
-    // Current-run evidence, including a pending OCR Promise, wins over disk.
-    if (!equationSupplementalOcrCache.has(key)) equationSupplementalOcrCache.set(key, lines);
+    if (!equationSupplementalOcrCache.has(key)) {
+      equationSupplementalOcrCache.set(key, lines);
+      if (journalKeys.has(key)) equationMarginPersistedPageRefs.set(key, lines);
+    }
   }
   return true;
+}
+// A user-provided full-text export is a recovery source, never an OCR or
+// detection instruction. Only original observations from an exact PDF match
+// may be restored; existing verified per-page records take precedence.
+function importedEquationMarginRecords(payload, sourceKey, pageCount) {
+  const full = payload?.fullDocumentText;
+  if (!full || !Array.isArray(full.pages)) return [];
+  // Old exports may contain full-text records without margin OCR and without
+  // a modern SHA. They must remain importable as ordinary reading data.
+  if (full.pages.some((page) => page?.equationMarginOcr != null && !Array.isArray(page.equationMarginOcr))) return null;
+  if (!full.pages.some((page) => Array.isArray(page?.equationMarginOcr) && page.equationMarginOcr.length)) return [];
+  if (payload.document?.id !== sourceKey || !sourceKey.startsWith('sha256:') ||
+      Number(payload.document?.pages) !== pageCount || Number(full.pageCount) !== pageCount ||
+      full.pages.length !== pageCount) return null;
+  const records = [];
+  const seen = new Set();
+  const seenPages = new Set();
+  for (const pageRecord of full.pages) {
+    const page = Number(pageRecord?.page);
+    if (!Number.isInteger(page) || page < 1 || page > pageCount || seenPages.has(page)) return null;
+    seenPages.add(page);
+    if (pageRecord.equationMarginOcr == null) continue;
+    if (!Array.isArray(pageRecord.equationMarginOcr)) return null;
+    for (const item of pageRecord.equationMarginOcr) {
+      const key = `${item?.side}|${page}`;
+      if (!['left', 'right'].includes(item?.side) || !validEquationMarginLines(item?.lines) || seen.has(key)) return null;
+      seen.add(key); records.push({ page, side: item.side, lines: item.lines });
+      if (records.length > 1024) return null;
+    }
+  }
+  return records;
+}
+async function restoreImportedEquationMarginEvidence(payload, sourceKey, pageCount) {
+  const records = importedEquationMarginRecords(payload, sourceKey, pageCount);
+  if (records === null) return { ok: false, count: 0 };
+  if (!records.length) return { ok: true, count: 0 };
+  // An explicit user import is a retry opportunity after a transient quota or
+  // database-access failure; ordinary OCR does not retry on every page.
+  equationMarginStorageBlockedKey = null;
+  let count = 0;
+  for (const record of records) {
+    if (!await writeEquationMarginPageRecord(sourceKey, pageCount, record, { preserveExisting: true })) {
+      return { ok: false, count };
+    }
+    count++;
+  }
+  return { ok: true, count };
 }
 
 function parseHocrBbox(title) {
@@ -3056,6 +3236,7 @@ function loadDocumentState(cachedSession = null) {
   equationImageAssistPromise = null;
   equationAutomaticLabelIndex = null;
   equationSupplementalOcrCache = new Map();
+  equationMarginPersistedPageRefs = new Map();
   renderEquationIndex();
   backlinkContext = null; backlinkEntries = []; renderBacklinks();
   tocOutlineTargets = null;

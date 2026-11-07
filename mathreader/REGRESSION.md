@@ -1,3 +1,13 @@
+# v403 — Real Ahlfors OCR evidence loss, page-journal durability and recovery (2026-11-07 Beijing UTC+08)
+
+**P0 reproduced:** two real-browser Ahlfors exports with exactly the same SHA-256 PDF identity and 172 pages show **172 right-margin OCR page observations / 4,054 OCR lines** before closing/reopening/reloading, and **zero** after. See `OCR_EVIDENCE_RECOVERY_v403.md`, `regression/v403_release_gate.json`, and `regression_tools/compare_margin_exports_v403.py`. This is a confirmed defect in real browser behavior; the precise storage-failure mechanism is unknown from the exports.
+
+**Minimal correction:** per-page IndexedDB journal v2, transaction+readback verification, bounded timeout and nonblocking warning, safe current-PDF load, exact-SHA observation recovery from saved full-text reading-data imports, old v1 cache compatibility, bulk + per-page Forget cleanup, and non-OCR export persistence status. No equation label is fabricated and no OCR is started by export/import. Preserve existing editorial indexes, notes, reading positions, and prior import semantics. For user recovery, import the **first** Ahlfors JSON, but back up newer reading state because standard import restores the exported session.
+
+**Executed:** 47/47 JS tests and 20/20 sequential Python/Chromium tests PASS; 172/172 Ahlfors first-export observation records (4,054 lines) pass a source-function+mock-storage replay with coordinates and SHA identity intact. Final result metadata and exact regression inventory are in `regression/v403_release_gate.json`. Simulated browser functions and local mocked IndexedDB are **not** evidence that real v403 browser storage survives reload. Production browser persistence, browser quota/eviction, race with Forget and production OCR accuracy remain **UNVERIFIED** until a live import→export→reload→export round trip succeeds.
+
+---
+
 # v399 — Seven real full-text exports and default-width UI cleanup (2026-11-07 Beijing UTC+08)
 
 **Baseline v398, release v399.** Full audit, source PDF.js fixtures, user-JSON summary and known unverified cases are in `OCR_EXPORT_CORPUS_v399.md` and `regression/v399_seven_full_exports.json`. Seven actual full exports represent **595 PDF pages**, but all report `fullDocumentOcr: not-stored`: do not claim original image OCR accuracy. The image equation `OCR 28/49` status is **28 of 49 planned equation-margin pages within a 172-page PDF**, not 49 of 172 pages fully OCR-recognized. Revised short status and tooltip make the distinction explicit.

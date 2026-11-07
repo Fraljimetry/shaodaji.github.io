@@ -26,6 +26,7 @@ function fixture() {
     documentOcrPages: new Map([[1, {page: 1, text: 'ocr text', lines: [{text: 'ocr text', ratio: 0.3}], words: [{text: 'ocr'}], ocrRawText: 'ocr  text\n'}]]),
     manualIndexOcrPages: new Map([[2, {page: 2, text: 'meticulous', lines: [{text: 'meticulous', ratio: 0.5}], words: [{text:'meticulous'}]}]]),
     loadEquationMarginOcrEvidence: async () => false,
+    equationMarginEvidenceRecords:()=>[],persistEquationMarginOcrEvidence:async()=>true,
     equationSupplementalOcrCache: new Map([
       ['sha256:document-a|left|1', [{text:'(1.2)', ratio:0.2}]],
       ['sha256:document-a|right|2', [{text:'(1.3)', ratio:0.5}]],

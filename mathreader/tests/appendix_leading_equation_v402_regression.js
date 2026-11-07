@@ -27,7 +27,7 @@ assert.ok(source.includes('await persistEquationMarginOcrEvidence(sourceDoc, sou
 const meticulous=source.match(/async function meticulousEquationMarginEvidence\([^]*?\n\}/)?.[0];
 assert.ok(meticulous,'meticulous margin OCR source exists');
 assert.ok(meticulous.includes('equationSupplementalOcrCache.set('),'meticulous observation saved to shared cache');
-assert.ok(meticulous.includes('await persistEquationMarginOcrEvidence('),'meticulous OCR evidence persisted before returning');
+assert.ok(meticulous.includes('await persistEquationMarginOcrPage('),'meticulous OCR evidence persisted before returning');
 (async()=>{
   const doc={numPages:253};
   let persisted=0;
@@ -35,7 +35,7 @@ assert.ok(meticulous.includes('await persistEquationMarginOcrEvidence('),'meticu
     pdfDoc:doc,currentFileKey:'sha256:giusti',equationNumberingSide:'left',
     equationSupplementalOcrCache:new Map(),
     equationMarginOcrLines:async()=>[{text:'(A.1)',ratio:.28,xStartRatio:.082,xEndRatio:.13,parts:[]}],
-    persistEquationMarginOcrEvidence:async()=>{persisted++;return true},
+    persistEquationMarginOcrPage:async()=>{persisted++;return true},
     equationLabelCandidatesInLine:()=>[],
     Map, Number, console
   };
