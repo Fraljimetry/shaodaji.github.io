@@ -20,6 +20,7 @@ const names = ['normalizeEquationTagCommands','normalizedEquationLabel','isSymbo
 const context = vm.createContext({
   EQUATION_TAG_SYMBOL_CLASS:'*†‡',
   equationEdits:[], equationManualOrder:['label:(17.1)'],
+  equationLabelIndex:null, equationAutomaticLabelIndex:null,
   pendingEquationAddKey:'(17.1)', pendingEquationReselectKey:null,
   pendingOutlineReselectKey:null,
   window:{prompt:()=>'(A.1)'},
@@ -36,6 +37,7 @@ const context = vm.createContext({
 vm.runInContext([...names.map(name=>extract(equationSource,name)),
  ...['equationLabelFromSelectionText','equationSourceLabelForDisplayed','equationEditTargetFromPending',
  'equationOrderKeyFromRef','insertEquationManualOrderAfter','pendingEquationDisplayedLabel',
+ 'manualEquationLabelAlreadyIndexed','showDuplicateManualEquationLabel',
  'applyEquationPointCorrection','applyEquationLinkCorrection','applyEquationEdits'].map(name=>extract(editSource,name))].join('\n'),context);
 const run = script => vm.runInContext(script,context);
 for (const label of ['(A.1)','(A.10)','(A.1.2)','(B-3)','(A1)','(AA.5)','(C.2a)','(a.4)',
@@ -51,7 +53,7 @@ for (const bad of ['(A)','(ABCD.2)','(A.)','(A-)', '(B.2.3.4.5)','(2023)','(Axyz
 check(run("equationLabelFromSelectionText('（Ａ．１）')")==='(A.1)','Unicode full-width tag normalized');
 (async()=>{
   // Simulate the real Equation row > Add > click page > manually type (A.1) path.
-  check(await run('applyEquationPointCorrection(231,0.43)')===true,'point correction handled');
+  check(await run('applyEquationPointCorrection(231,{ratio:0.43,xRatio:0.1})')===true,'point correction handled');
   check(context.equationEdits.length===1,'one manual add created');
   check(context.equationEdits[0].label==='(A.1)' && context.equationEdits[0].page===231
     && context.equationEdits[0].ratio===.43,'appendix label and clicked coordinate recorded');
@@ -70,7 +72,7 @@ check(run("equationLabelFromSelectionText('（Ａ．１）')")==='(A.1)','Unicod
     'manual appendix navigation position can be corrected');
   // Invalid manual input must not publish or discard the pending Add selection.
   context.pendingEquationAddKey='(17.1)';context.window.prompt=()=>'(n-1)';
-  check(await run('applyEquationPointCorrection(235,.5)')===true,'invalid prompt is handled');
+  check(await run('applyEquationPointCorrection(235,{ratio:.5,xRatio:.1})')===true,'invalid prompt is handled');
   check(context.equationEdits.length===1 && context.pendingEquationAddKey==='(17.1)' && !!context.lastError,
     'invalid formula variable not added as equation label');
   console.log(`PASS: ${assertions} manual appendix equation add/reselect/guard assertions`);

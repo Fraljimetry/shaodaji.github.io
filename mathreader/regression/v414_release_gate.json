@@ -1,0 +1,62 @@
+{
+  "version": "v414",
+  "baseline": "v413",
+  "result": "PASS_OFFLINE_GATES",
+  "newOriginalPdfs": 8,
+  "newOriginalPdfPages": 145,
+  "method": "Original PDF native-line proxy replay through actual MathReader Results/Bibliography builder; separately, six saved PDF.js detector-input full-builder replays",
+  "newResultsEntries": 4,
+  "resultsRemoved": 0,
+  "newBibliographyChanges": 0,
+  "historicalSavedExportFullBuilderReplays": {
+    "count": 6,
+    "exactResultsBibliographyTitleAndCoordinatesUnchanged": true
+  },
+  "javascriptSuites": {
+    "passed": 61,
+    "total": 61
+  },
+  "pythonChromiumSuites": {
+    "passed": 27,
+    "total": 27,
+    "note": "Completed in bounded groups; previously stalled combined-responsive harness completed independently"
+  },
+  "newFocusedJavascriptAssertions": {
+    "imperativeExample": 20,
+    "chineseNumbered": 16
+  },
+  "newUiBilingualChromiumAssertions": 80,
+  "responsiveLayoutAssertions": 176,
+  "syntax": {
+    "javascriptFilesPassed": 76,
+    "pythonFilesPassed": 36,
+    "assembledRuntimePartsPassed": 10
+  },
+  "uiVisualScopes": {
+    "viewports": [
+      "320x568",
+      "320x640",
+      "390x844",
+      "768x900",
+      "1440x900"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "languages": [
+      "English",
+      "Chinese"
+    ]
+  },
+  "structureIndexVersion": 55,
+  "browserAssetVersion": 414,
+  "originalPdfIndependentPageInspections": 4,
+  "liveDeployedPdfjsVerified": false,
+  "semanticFormulaOcrAccuracyCertified": false,
+  "fullResultsBibliographyAccuracyCertified": false,
+  "acceptedHardReloadOcrEvidenceLimitationUnchanged": true,
+  "zipCrcPassed": true,
+  "cleanOverlayByteIdentical": true,
+  "changedFileCount": 18
+}

@@ -1,0 +1,39 @@
+{
+  "version": 411,
+  "baseline": "v410 exact, reconstructed from original v405 + cumulative v406-v410 patches",
+  "problem": "Manual Equation Add picked a nearby label by Y-only distance; stored Add could overwrite existing equation location",
+  "original_evidence": "regression/v411_giusti_p20_click_evidence.json",
+  "fix": [
+    "2D glyph hit-testing with strict x/y bounds",
+    "prompt when label missing/geometry coarse",
+    "reject duplicate Add and conflicting Reselect",
+    "do not shadow automatic index with historical duplicate manual edits",
+    "reject pending async results after document/mode switch"
+  ],
+  "tests": {
+    "javascript_suites_passed": 56,
+    "javascript_suites_total": 56,
+    "python_chromium_suites_passed": 24,
+    "python_chromium_suites_total": 24,
+    "python_note": "24 suites completed across bounded runs, with the two historically slow browser harnesses run individually; focused v411 browser test rerun after final correction",
+    "focused_node_assertions": 23,
+    "focused_chromium_dom_scenarios": 5,
+    "manual_appendix_regression_assertions": 38,
+    "responsive_layout_assertions": 176,
+    "syntax_js_count": 71,
+    "assembled_runtime_syntax": "PASS",
+    "pristine_v410_red": "new manual-point regression failed on its first Giusti adjacent-label capture assertion",
+    "corrected_v411_green": true
+  },
+  "exact_original_browser_acceptance": "NOT CLAIMED — browser interactions use controlled original-derived PDF text geometry",
+  "unmodified_systems": [
+    "automatic equation OCR and detection",
+    "Structure",
+    "Results",
+    "Bibliography",
+    "indexed-data formats",
+    "reading anchors",
+    "hard-reload OCR persistence known limitation"
+  ],
+  "zip_root": "mathreader/"
+}

@@ -1,0 +1,262 @@
+{
+  "auditVersion": "v414-1",
+  "baseline": "assembled original v405 + v406..v413 overlays (byte-authoritative)",
+  "scope": "Eight new library mathematics PDFs; copy and aesthetic audit of v413 UI",
+  "method": "PyMuPDF original-native-line geometry -> actual MathReader buildStructureIndex in Node VM. This is NOT live PDF.js, Texify OCR or production browser PDF loading.",
+  "distinctOriginalPdfs": 8,
+  "originalPages": 145,
+  "corpus": [
+    {
+      "file": "Where_do_Complex_Numbers_come_from_.pdf",
+      "pages": 3,
+      "sha256": "c97034a8564c94a61a4556c3f3f60ce2fe6bc2701a839303d83d377edf7f4d41",
+      "v413Results": 4,
+      "v414Results": 4,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyCount": 0,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "Riemann球面上的旋转_Fraljimetry.pdf",
+      "pages": 2,
+      "sha256": "51d68e23431152dfb6fcca0b06cbfda4ae99482100efd5cd457a24168f37cb55",
+      "v413Results": 0,
+      "v414Results": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyCount": 0,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "无穷的历史.pdf",
+      "pages": 19,
+      "sha256": "6b2c1dca9af46183fe15e19cad5252458a56c3b673a3dbf36c304dc2861b6392",
+      "v413Results": 0,
+      "v414Results": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyCount": 0,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "利用D'_Alembert函数方程定义余弦函数_汲绍达.pdf",
+      "pages": 3,
+      "sha256": "864dc3d4e2f275137d6d1849eeb7571579277151c251e6dc9feefe098bc04669",
+      "v413Results": 0,
+      "v414Results": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyCount": 2,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "实变函数论_逼近与分解思想详解.pdf",
+      "pages": 22,
+      "sha256": "81991cde7cf257d6e73a50469a93a032b9683e53e85da5b711d4d76cdb865982",
+      "v413Results": 0,
+      "v414Results": 1,
+      "resultsAdded": [
+        {
+          "label": "定理 4.1",
+          "page": 8,
+          "ratio": 0.319134
+        }
+      ],
+      "resultsRemoved": [],
+      "bibliographyCount": 0,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "lean_quintessential_examples_collection_overleaf_pdflatex.pdf",
+      "pages": 76,
+      "sha256": "273708ad97675be9e0508bf56f50d44e07cac8ebf91e5d7dab7287975496aec0",
+      "v413Results": 259,
+      "v414Results": 262,
+      "resultsAdded": [
+        {
+          "label": "Example 191",
+          "page": 57,
+          "ratio": 0.70481
+        },
+        {
+          "label": "Example 192",
+          "page": 58,
+          "ratio": 0.134129
+        },
+        {
+          "label": "Example 193",
+          "page": 58,
+          "ratio": 0.351835
+        }
+      ],
+      "resultsRemoved": [],
+      "bibliographyCount": 5,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "yamabe_problem_chapter5_streamlined_proof.pdf",
+      "pages": 11,
+      "sha256": "db2f24f0cc1ca4f67f07228a05f2cd05428091c33046e0a911da0f4ff5ef0cb2",
+      "v413Results": 8,
+      "v414Results": 8,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyCount": 0,
+      "bibliographyUnchanged": true
+    },
+    {
+      "file": "Schoen_Yau_Positive_Mass_Step_Tables.pdf",
+      "pages": 9,
+      "sha256": "402bfcde810a1ba64d5d9230861a6704f27a2e4216070fd3dd51cee8356718b7",
+      "v413Results": 0,
+      "v414Results": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyCount": 0,
+      "bibliographyUnchanged": true
+    }
+  ],
+  "independentlyPrintedPageChecks": [
+    {
+      "file": "lean_quintessential_examples_collection_overleaf_pdflatex.pdf",
+      "page": 57,
+      "label": "Example 191",
+      "finding": "Printed heading Prove equality by two inequalities; v413 false-negative; v414 detected"
+    },
+    {
+      "file": "lean_quintessential_examples_collection_overleaf_pdflatex.pdf",
+      "page": 58,
+      "label": "Example 192",
+      "finding": "Printed heading Prove a set inclusion elementwise; v413 false-negative; v414 detected"
+    },
+    {
+      "file": "lean_quintessential_examples_collection_overleaf_pdflatex.pdf",
+      "page": 58,
+      "label": "Example 193",
+      "finding": "Printed heading Prove function equality pointwise; v413 false-negative; v414 detected"
+    },
+    {
+      "file": "实变函数论_逼近与分解思想详解.pdf",
+      "page": 8,
+      "label": "定理 4.1",
+      "finding": "Printed Chinese Egorov theorem heading; v413 missed, v414 detected with bounded native-text rule"
+    }
+  ],
+  "independentNumberSeriesCheck": {
+    "leanExamples": 261,
+    "indexedByV414": 261,
+    "missingFromNumberedSeries": [],
+    "caveat": "Numbered series is independently visible in native PDF text, but not all 261 headings were inspected as page images."
+  },
+  "bibliographyPrintedKeyChecks": {
+    "leanPdf": 5,
+    "chineseDalembertPdf": 2,
+    "examinedAsOriginalPdfPageImages": true,
+    "caveat": "These 7 printed keys were cross-checked; no complete other-document bibliography recall certificate."
+  },
+  "historicalExportExactFullBuilderReplay": {
+    "documents": 6,
+    "resultsAndBibliographyUnchanged": true,
+    "counts": [
+      {
+        "file": "Giusti",
+        "results": 207,
+        "bibliography": 75
+      },
+      {
+        "file": "Ahlfors",
+        "results": 95,
+        "bibliography": 66
+      },
+      {
+        "file": "SPS",
+        "results": 7,
+        "bibliography": 17
+      },
+      {
+        "file": "Simon",
+        "results": 4,
+        "bibliography": 18
+      },
+      {
+        "file": "Banach",
+        "results": 14,
+        "bibliography": 9
+      },
+      {
+        "file": "saved Yamabe",
+        "results": 51,
+        "bibliography": 46
+      }
+    ]
+  },
+  "uiIssues": [
+    {
+      "class": "wording",
+      "before": "Filter theorems…",
+      "after": "Filter results…",
+      "reason": "Results includes lemmas, examples, propositions and definitions"
+    },
+    {
+      "class": "wording",
+      "before": "Long welcome and privacy paragraphs repeating local-storage language",
+      "after": "Short factual introduction and qualified local-browser-storage message"
+    },
+    {
+      "class": "wording",
+      "before": "No numbered bibliography entries detected before any PDF was opened",
+      "after": "Open a PDF to index references."
+    },
+    {
+      "class": "wording",
+      "before": "Preparing equation-label index before any PDF was opened",
+      "after": "Open a PDF to index equations."
+    },
+    {
+      "class": "aesthetic",
+      "before": "Welcome privacy note clipped on 320x568 viewport",
+      "after": "Scrollable only when welcome content exceeds available height"
+    },
+    {
+      "class": "aesthetic",
+      "before": "Long Chinese heading split after 阅读 at 390px",
+      "after": "Concise 数学 PDF 阅读器"
+    }
+  ],
+  "visualBrowserChecks": {
+    "method": "real Chromium DOM/CSS via inline shell; no PDF.js or site deployment",
+    "bilingualCopyAndLayoutAssertions": 80,
+    "responsiveLayoutAssertions": 176,
+    "viewports": [
+      [
+        320,
+        568
+      ],
+      [
+        320,
+        640
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        768,
+        900
+      ],
+      [
+        1440,
+        900
+      ]
+    ],
+    "lightDarkAndBilingualChecked": true
+  },
+  "limitations": [
+    "Original native PDF text-line proxy is not actual deployed PDF.js detector input and is not real OCR.",
+    "No full human-verified precision/recall certificate for all original pages, equations or bibliography.",
+    "Unnumbered Chinese example headings remain unindexed; broad Chinese scientific document recognition is not yet certified.",
+    "Formula transcription semantic accuracy on new PDFs and browser hard-reload OCR evidence restoration remain unverified/unchanged.",
+    "CSS/runtime screenshot checks are isolated Chromium, not live site acceptance."
+  ]
+}

@@ -1,0 +1,450 @@
+{
+  "auditId": "v413-original-corpus-20261108",
+  "baseline": "v412",
+  "newOriginalPdfCount": 14,
+  "newOriginalPdfPages": 1062,
+  "method": "PyMuPDF native-line extraction and actual v413 MathReader buildStructureIndex executed in Node VM; not real PDF.js or production browser. Selected original printed PDF pages independently inspected.",
+  "originalPdfBytesShaVerifiedForEveryNewFile": true,
+  "newCorpus": [
+    {
+      "file": "lectures_on_pde_split_pages.pdf",
+      "originalSha256": "873f2ac7aaeee89363b1eca9ca9201a6c652d81aa7506cfab007f558c5c4c42c",
+      "pages": 236,
+      "nativePagesWithAnyText": 232,
+      "resultsV412": 54,
+      "resultsV413": 78,
+      "resultsAdded": [
+        {
+          "label": "Lemma 3",
+          "page": 52,
+          "ratio": 0.67864432
+        },
+        {
+          "label": "Lemma 4",
+          "page": 53,
+          "ratio": 0.06659212
+        },
+        {
+          "label": "Lemma 2",
+          "page": 68,
+          "ratio": 0.29238752
+        },
+        {
+          "label": "Theorem 1",
+          "page": 93,
+          "ratio": 0.73061042
+        },
+        {
+          "label": "Theorem 2",
+          "page": 122,
+          "ratio": 0.52692059
+        },
+        {
+          "label": "Lemma 1",
+          "page": 132,
+          "ratio": 0.49648085
+        },
+        {
+          "label": "Theorem 3",
+          "page": 140,
+          "ratio": 0.35841228
+        },
+        {
+          "label": "Theorem 1",
+          "page": 152,
+          "ratio": 0.75445826
+        },
+        {
+          "label": "Theorem 2",
+          "page": 153,
+          "ratio": 0.86876354
+        },
+        {
+          "label": "Lemma 1",
+          "page": 154,
+          "ratio": 0.90961671
+        },
+        {
+          "label": "Theorem 3",
+          "page": 156,
+          "ratio": 0.57599246
+        },
+        {
+          "label": "Theorem 4",
+          "page": 159,
+          "ratio": 0.74494505
+        },
+        {
+          "label": "Theorem 1",
+          "page": 165,
+          "ratio": 0.77720363
+        },
+        {
+          "label": "Theorem 1",
+          "page": 174,
+          "ratio": 0.67322775
+        },
+        {
+          "label": "Corollary 1",
+          "page": 176,
+          "ratio": 0.38662149
+        },
+        {
+          "label": "Lemma 1",
+          "page": 178,
+          "ratio": 0.847417
+        },
+        {
+          "label": "Theorem 4",
+          "page": 184,
+          "ratio": 0.57385379
+        },
+        {
+          "label": "Theorem 1",
+          "page": 193,
+          "ratio": 0.06304311
+        },
+        {
+          "label": "Lemma 2",
+          "page": 195,
+          "ratio": 0.20458103
+        },
+        {
+          "label": "Lemma 2",
+          "page": 205,
+          "ratio": 0.73105756
+        },
+        {
+          "label": "Theorem 1",
+          "page": 216,
+          "ratio": 0.6008601
+        },
+        {
+          "label": "Theorem 1",
+          "page": 222,
+          "ratio": 0.10356734
+        },
+        {
+          "label": "Corollary 1",
+          "page": 235,
+          "ratio": 0.30812192
+        },
+        {
+          "label": "Theorem 2",
+          "page": 236,
+          "ratio": 0.06659222
+        }
+      ],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "geometric_measure_theory_split_pages.pdf",
+      "originalSha256": "7111b094337a1028fdeffe5690ad4554c8b770b6492d37eb1045b4d8c078824a",
+      "pages": 274,
+      "nativePagesWithAnyText": 268,
+      "resultsV412": 202,
+      "resultsV413": 202,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 27,
+      "bibliographyV413": 27,
+      "bibliographyChanged": false,
+      "printedBibliographyKeys": {
+        "foundOnOriginalPage": 27,
+        "matchedParserKeyAndPage": 27,
+        "missing": [],
+        "extra": []
+      }
+    },
+    {
+      "file": "covering_spaces_for_geometric_analysis.pdf",
+      "originalSha256": "2edd93daf82732ce16de9ce40a429fec5f685baad5f2ba66c4d9ef5998cb60bc",
+      "pages": 18,
+      "nativePagesWithAnyText": 18,
+      "resultsV412": 15,
+      "resultsV413": 15,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "chapter6_locally_conformally_flat_summary.pdf",
+      "originalSha256": "e2dce7d7d14bf30e541730070277737dd4b007c62dac82800efaf3909ebdd1f6",
+      "pages": 14,
+      "nativePagesWithAnyText": 14,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "yamabe_complete_streamlined.pdf",
+      "originalSha256": "343d1a54f1b7c29c5de087e6b2da210ae19b11a4c85f6ab6b167448c0e9f5e16",
+      "pages": 18,
+      "nativePagesWithAnyText": 18,
+      "resultsV412": 10,
+      "resultsV413": 10,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "581 Note 8.pdf",
+      "originalSha256": "621ff99b060b95a78c6b27a1d02d746e4b028d336a9fe8bdb7ad2ad78b882ef9",
+      "pages": 3,
+      "nativePagesWithAnyText": 3,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "581 Note 5.pdf",
+      "originalSha256": "ffaa8198e6005d82afdc30df1404b4a20c58b71a5573a5f712177bfacac5ab7e",
+      "pages": 4,
+      "nativePagesWithAnyText": 4,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "mathreader_formula_ocr_stress_test.pdf",
+      "originalSha256": "44603cabbad64f4fc93199ce91a098230ff44a215c72cc0c0b20c56ab41c93de",
+      "pages": 13,
+      "nativePagesWithAnyText": 13,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "A_Geometric_Approach_to_Integration.pdf",
+      "originalSha256": "2363c2bb5bb28382fe883cc4d27ba33e3e4bf0d6970b103efb9212d89bb5fdda",
+      "pages": 6,
+      "nativePagesWithAnyText": 6,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "Radon Measures and Riesz Representation Theorems.pdf",
+      "originalSha256": "743bb57222fea38259af4775782ba0229e18d8f929d8d32bf2b0e389ffb0d0a0",
+      "pages": 10,
+      "nativePagesWithAnyText": 10,
+      "resultsV412": 15,
+      "resultsV413": 15,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 2,
+      "bibliographyV413": 2,
+      "bibliographyChanged": false,
+      "printedBibliographyKeys": {
+        "foundOnOriginalPage": 2,
+        "matchedParserKeyAndPage": 2,
+        "missing": [],
+        "extra": []
+      }
+    },
+    {
+      "file": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+      "originalSha256": "703c20360dcc92dc51a50581e85c86a0116e2722758c05af5f2e636e7d5ea785",
+      "pages": 441,
+      "nativePagesWithAnyText": 440,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "581 Note 6.pdf",
+      "originalSha256": "7c25285efdab09cf325a5aeec4a8410eb751720f5be99d3896ca0ac6e752b634",
+      "pages": 2,
+      "nativePagesWithAnyText": 2,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "581 Note 3.pdf",
+      "originalSha256": "8c11eecc4577e9c271d1163e7f98669936d17cb3775fd00da9e2c49937dac299",
+      "pages": 3,
+      "nativePagesWithAnyText": 3,
+      "resultsV412": 0,
+      "resultsV413": 0,
+      "resultsAdded": [],
+      "resultsRemoved": [],
+      "bibliographyV412": 0,
+      "bibliographyV413": 0,
+      "bibliographyChanged": false
+    },
+    {
+      "file": "yamabe_missing_lemmas.pdf",
+      "originalSha256": "4892b51498afc42d18749aa859c32a88e42aeca7a8cda60da11d5cf1db8a117d",
+      "pages": 20,
+      "nativePagesWithAnyText": 20,
+      "resultsV412": 26,
+      "resultsV413": 28,
+      "resultsAdded": [
+        {
+          "label": "Proposition 5.3",
+          "page": 13,
+          "ratio": 0.4866775
+        },
+        {
+          "label": "Corollary 6.3",
+          "page": 14,
+          "ratio": 0.52434621
+        }
+      ],
+      "resultsRemoved": [],
+      "bibliographyV412": 5,
+      "bibliographyV413": 5,
+      "bibliographyChanged": false,
+      "printedBibliographyKeys": {
+        "foundOnOriginalPage": 5,
+        "matchedParserKeyAndPage": 5,
+        "missing": [],
+        "extra": []
+      }
+    }
+  ],
+  "newResultsPublishedCandidates": 348,
+  "addedResultsFromNewVerifiedGrammar": 26,
+  "rejectedOldResults": 0,
+  "historicalOriginalMathReaderExportReplays": [
+    {
+      "name": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "pages": 253,
+      "originalSha256MatchesSavedExport": true,
+      "results": 207,
+      "bibliography": 75,
+      "diffV412toV413": 0
+    },
+    {
+      "name": "Ahlfors-Conformal-Invariants.pdf",
+      "pages": 172,
+      "originalSha256MatchesSavedExport": true,
+      "results": 95,
+      "bibliography": 66,
+      "diffV412toV413": 0
+    },
+    {
+      "name": "SPS_1988__22__485_0.pdf",
+      "pages": 18,
+      "originalSha256MatchesSavedExport": true,
+      "results": 7,
+      "bibliography": 17,
+      "diffV412toV413": 0
+    },
+    {
+      "name": "Asymptotic behaviour of minimal graphs over exterior domains. L. Simon.pdf",
+      "pages": 13,
+      "originalSha256MatchesSavedExport": true,
+      "results": 4,
+      "bibliography": 18,
+      "diffV412toV413": 0
+    },
+    {
+      "name": "geometrical_hypothesis_Banach.pdf",
+      "pages": 10,
+      "originalSha256MatchesSavedExport": true,
+      "results": 14,
+      "bibliography": 9,
+      "diffV412toV413": 0
+    },
+    {
+      "name": "YamabeProblem.pdf",
+      "pages": 56,
+      "originalSha256MatchesSavedExport": false,
+      "results": 51,
+      "bibliography": 46,
+      "diffV412toV413": 0
+    }
+  ],
+  "bibliographyPrintedKeyAndPageChecks": {
+    "documents": 3,
+    "keys": 34,
+    "matched": 34
+  },
+  "negativeControl": {
+    "file": "77c3888b-c5fb-4c8f-ad75-eea45ff656de.pdf",
+    "pages": 441,
+    "Results": 0,
+    "Bibliography": 0
+  },
+  "pairedMathFormulaCaveat": {
+    "formulaCorpusFile": "mathreader_formula_ocr_stress_test.pdf",
+    "pages": 13,
+    "nativeTextHasFormulaSamplesOnPages2To11": true,
+    "rasterOnlyChallengesPages": [
+      12,
+      13
+    ],
+    "offlineTesseractSamples": [
+      "581 Note 8.pdf PDF p2",
+      "mathreader_formula_ocr_stress_test.pdf PDF p12"
+    ],
+    "assessment": "Tesseract output incomplete and mathematically unreliable; no independent formula-level LaTeX semantic accuracy claim. Texify/browser OCR not executed."
+  },
+  "printedDeclarationVisualSamples": [
+    {
+      "file": "lectures_on_pde_split_pages.pdf",
+      "page": 52,
+      "label": "Lemma 3"
+    },
+    {
+      "file": "lectures_on_pde_split_pages.pdf",
+      "page": 53,
+      "label": "Lemma 4"
+    },
+    {
+      "file": "yamabe_missing_lemmas.pdf",
+      "page": 13,
+      "label": "Proposition 5.3"
+    },
+    {
+      "file": "yamabe_missing_lemmas.pdf",
+      "page": 14,
+      "label": "Corollary 6.3"
+    }
+  ],
+  "limits": [
+    "26 new entries are supported by stronger syntax and selected independent original-page inspection; not all 26 have full manual adjudication.",
+    "Do not equate native text proxy with full PDF.js/production browser result.",
+    "Structure and Equations were covered by existing regression suites, not new exhaustive ground-truth precision/recall.",
+    "Bibliography output preserved across all 14 new PDFs and six historical exports, but non-numbered or OCR-only references are not certified.",
+    "Handwritten and raster-only mathematical OCR remains inaccurate/unverified.",
+    "Known OCR evidence hard-reload persistence limitation unchanged."
+  ]
+}

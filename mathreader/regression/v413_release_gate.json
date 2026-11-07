@@ -1,0 +1,38 @@
+{
+  "version": "v413",
+  "baseline": "v412",
+  "result": "PASS_OFFLINE_GATES",
+  "newOriginalPdfs": 14,
+  "newOriginalPdfPages": 1062,
+  "fullIndexReplays": 14,
+  "olderSavedExportReplays": 6,
+  "newResultsEntries": 26,
+  "newResultsRemoved": 0,
+  "newBibliographyChanges": 0,
+  "printedBibliographyKeyAndPageMatches": "34/34 in 3 documents",
+  "javascriptSuites": {
+    "passed": 59,
+    "total": 59
+  },
+  "pythonChromiumSuites": {
+    "passed": 26,
+    "total": 26
+  },
+  "newJavascriptAssertions": 37,
+  "newChromiumAssertions": 14,
+  "syntax": {
+    "javascriptFiles": 74,
+    "pythonTestFiles": 26,
+    "runtimeParts": 10,
+    "pass": true
+  },
+  "structureIndexVersion": 54,
+  "browserAssetVersion": 413,
+  "productionBrowserPdfjsOcrVerified": false,
+  "formulaOcrSemanticAccuracyCertified": false,
+  "acceptedReloadEvidenceBugUnchanged": true,
+  "fullAccuracyGuaranteed": false,
+  "zipCrcPassed": true,
+  "cleanOverlayByteIdentical": true,
+  "changedFileCount": 16
+}

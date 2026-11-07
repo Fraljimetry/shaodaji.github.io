@@ -1,0 +1,31 @@
+{
+  "version": 411,
+  "source": "Giusti 1984 original PDF, page 20 (1-based)",
+  "original_pdf_sha256": "d9799feeb8d2093e205c914ad8fabb0e7e21157270d8cd4fe77210ac58895725",
+  "export_identity_matches_original": true,
+  "page": 20,
+  "page_width": 402.0,
+  "page_height": 614.6399536132812,
+  "native_text_contains_inline_1_2": true,
+  "native_text_contains_printed_1_4": false,
+  "native_inline_1_2_bbox": [
+    174.8415985107422,
+    131.9906005859375,
+    192.30520629882812,
+    145.0637969970703
+  ],
+  "native_inline_1_2_normalized_bbox": [
+    0.434929,
+    0.214745,
+    0.478371,
+    0.236014
+  ],
+  "printed_1_4_evidence": "visible at left margin of display formula in rendered original PDF and user screenshot, absent from native text extraction",
+  "printed_1_4_approx_normalized_click": {
+    "x": 0.085,
+    "y": 0.265
+  },
+  "v410_failure": "vertical-only nearest line accepts prose 1.2 within 0.065 page height of printed 1.4 and Add overwrites existing Map label",
+  "v411_recovery": "2D exact glyph rectangle; OCR-missing 1.4 prompts for typed label; Add refuses duplicates; manual saved duplicates do not override base",
+  "accuracy_caveat": "normalized click is representative of the rendered original page; browser DOM test uses controlled PDF-text geometry, not deployed real PDF.js page"
+}

@@ -1,0 +1,85 @@
+{
+  "release": "v412",
+  "baseline": "v411",
+  "reportDateBeijing": "2026-11-08",
+  "result": "PASS_OFFLINE_RELEASE_GATES",
+  "jsSuites": 58,
+  "pythonChromiumSuites": 25,
+  "newJsAssertions": 30,
+  "newChromiumAssertions": 9,
+  "cacheIndexVersion": 53,
+  "browserAssetVersion": 412,
+  "pdfCorpus": {
+    "documents": 19,
+    "pages": 1367,
+    "historicalUserExportReplays": 6,
+    "replaysMatchingOriginalPdfSha": 5
+  },
+  "originalYamabePdfSpanReplay": {
+    "pages": 56,
+    "resultsV411": 15,
+    "resultsV412": 48,
+    "bibliographyV411": 46,
+    "bibliographyV412": 46,
+    "printedLemma9_1_page": 39,
+    "formerIncorrectReferencePage": 40,
+    "realPDFjsEngine": false
+  },
+  "mongeAmpere88PageSpanReplay": {
+    "resultsV411": 62,
+    "resultsV412": 62,
+    "bibliographyV411": 183,
+    "bibliographyV412": 183,
+    "realPDFjsEngine": false
+  },
+  "limits": [
+    "No live production browser verification",
+    "Not a complete independently annotated precision/recall certificate for all 1367 PDF pages",
+    "Formula OCR semantic accuracy not certified",
+    "Accepted browser-reload margin OCR evidence issue unchanged",
+    "A matching original for one saved Yamabe export was unavailable; its supplied original does not share the same PDF SHA-256"
+  ],
+  "gates": {
+    "javascriptSuites": {
+      "passed": 58,
+      "total": 58,
+      "source": "js_baseline.json"
+    },
+    "pythonChromiumSuites": {
+      "passed": 25,
+      "total": 25,
+      "source": "py_v412.json"
+    },
+    "javascriptFilesSyntax": {
+      "passed": 73,
+      "total": 73,
+      "command": "node --check each source .js"
+    },
+    "pythonTestFilesSyntax": {
+      "passed": 25,
+      "total": 25,
+      "method": "ast.parse on each test .py"
+    },
+    "runtimeConcatenationSyntax": {
+      "passed": true,
+      "modules": 10,
+      "command": "node --check on assembled 10-part runtime"
+    },
+    "historicalFullBuilderExportReplays": {
+      "passed": 6,
+      "total": 6,
+      "bibliographyEntriesOrLocationsChanged": 0
+    },
+    "releaseDiffZipCrc": {
+      "passed": true
+    },
+    "zipByteIdenticalReplay": {
+      "passed": true
+    },
+    "unchangedV411Files": {
+      "passed": true
+    }
+  },
+  "changedFileCount": 17,
+  "verification": "All gate claims correspond to executed local commands; no live deployed browser OCR test"
+}

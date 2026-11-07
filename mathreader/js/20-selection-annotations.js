@@ -362,9 +362,12 @@ function applyEquationEdits(index) {
   for (const edit of equationEdits) {
     if (edit.action === 'add') continue;
     const source = normalizedEquationLabel(edit.sourceLabel);
-    out.delete(source);
-    if (edit.action !== 'reselect') continue;
+    if (edit.action !== 'reselect') { out.delete(source); continue; }
     const target = normalizedEquationLabel(edit.label || edit.sourceLabel);
+    // Never let a manual correction displace a *different* indexed equation.
+    // Older saved reselect records can have this collision too.
+    if (target !== source && out.has(target)) continue;
+    out.delete(source);
     out.set(target, [{
       page: Number(edit.page) || 1, ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
       text: String(edit.text || target), xStartRatio: Number(edit.xStartRatio) || 0, xEndRatio: Number(edit.xEndRatio) || 0,
@@ -374,7 +377,9 @@ function applyEquationEdits(index) {
   for (const edit of equationEdits) {
     if (edit.action !== 'add') continue;
     const target = normalizedEquationLabel(edit.label || '');
-    if (!target || target === '()') continue;
+    // A manual Add is never a reselect. Do not overwrite the automatic index,
+    // even when replaying a previously saved incorrect manual Add.
+    if (!target || target === '()' || out.has(target)) continue;
     out.set(target, [{
       page: Number(edit.page) || 1, ratio: Math.min(1, Math.max(0, Number(edit.ratio) || 0)),
       text: String(edit.text || target), confidence: 100, manualAdd: true, manualEditId: String(edit.id || ''),
@@ -434,10 +439,32 @@ function insertEquationManualOrderAfter(sourceRef, newEditId) {
   return true;
 }
 
+function manualEquationLabelAlreadyIndexed(label, exceptSourceLabel = null) {
+  const target = normalizedEquationLabel(label || '');
+  const except = exceptSourceLabel ? normalizedEquationLabel(exceptSourceLabel) : null;
+  if (!target || target === except) return false;
+  // Current displayed index includes deletions and reselected labels. The
+  // automatic base is only needed if a displayed index is not yet available.
+  const currentIndex = equationLabelIndex || (equationAutomaticLabelIndex
+    ? applyEquationEdits(equationAutomaticLabelIndex) : null);
+  if (currentIndex?.has(target)) return true;
+  return equationEdits.some((edit) => edit.action === 'add'
+    && normalizedEquationLabel(edit.label) === target);
+}
+
+function showDuplicateManualEquationLabel() {
+  showError(t('This equation is already indexed. Use Reselect to change its position.',
+    '此公式编号已在索引中。若需更正位置，请使用“重新选择”。'));
+}
+
 function applyEquationLinkCorrection(query, page, ratio) {
   const label = equationLabelFromSelectionText(query);
   if (!label) return false;
   if (pendingEquationReselectKey) {
+    if (manualEquationLabelAlreadyIndexed(label, pendingEquationDisplayedLabel(pendingEquationReselectKey))) {
+      showDuplicateManualEquationLabel();
+      return true;
+    }
     const existingAdd = equationEditTargetFromPending(pendingEquationReselectKey);
     if (existingAdd) { existingAdd.label = label; existingAdd.page = Number(page) || 1; existingAdd.ratio = Number(ratio) || 0; existingAdd.text = query; }
     else {
@@ -450,6 +477,10 @@ function applyEquationLinkCorrection(query, page, ratio) {
     const sourceLabel = pendingEquationDisplayedLabel(pendingEquationAddKey);
     if (sourceLabel && normalizedEquationLabel(label) === normalizedEquationLabel(sourceLabel)) {
       showError(t('Choose a different equation for Add.', '添加时请选择另一个公式。'));
+      return true;
+    }
+    if (manualEquationLabelAlreadyIndexed(label)) {
+      showDuplicateManualEquationLabel();
       return true;
     }
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -495,47 +526,82 @@ function equationLabelsInTextLine(text) {
   return out;
 }
 
-async function equationLabelNearPagePoint(pageNum, ratio, excludeLabel = null) {
+// Only a direct pointer hit on the actual printed label may auto-select it.
+// Vertical nearest-line matching used to capture (1.2) in prose when a user
+// clicked an unrecognized (1.4) just below it (Giusti, PDF page 20).
+async function equationLabelNearPagePoint(pageNum, ratio, xRatio, excludeLabel = null) {
   const page = Math.max(1, Number(pageNum) || 1);
-  const targetRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const y = Number(ratio), x = Number(xRatio);
+  if (!Number.isFinite(y) || !Number.isFinite(x) || x < 0 || x > 1 || y < 0 || y > 1) return null;
   const excluded = excludeLabel ? normalizedEquationLabel(excludeLabel) : null;
   const lines = await pageTextLines(page);
   let best = null;
   for (const line of lines) {
-    const distance = Math.abs((Number(line.ratio) || 0) - targetRatio);
-    if (distance > 0.065) continue;
+    const top = Number(line.ratio);
+    if (!Number.isFinite(top)) continue;
+    const height = Number(line.heightRatio);
+    // PDF.js native lines are anchored at the text baseline; OCR lines have
+    // their top edge as ratio. Avoid matching a vertically adjacent label.
+    const safeHeight = Number.isFinite(height) && height > 0 && height < 0.08 ? height : 0.017;
+    const yMin = line.ocrSource ? top : top - safeHeight;
+    const yMax = line.ocrSource ? top + safeHeight : top + 0.003;
+    if (y < yMin - 0.002 || y > yMax + 0.002) continue;
     const candidates = equationLabelsInTextLine(line.text);
-    if (!candidates.length) continue;
-    const textLength = Math.max(1, String(line.text || '').length);
-    const lineStart = Number(line.xStartRatio) || 0;
-    const lineEnd = Number(line.xEndRatio) || lineStart;
-    const span = Math.max(0, lineEnd - lineStart);
     for (const candidate of candidates) {
+      if (candidate.bare || candidate.attachedFunctionCall || candidate.extractionRepaired) continue;
       if (excluded && normalizedEquationLabel(candidate.label) === excluded) continue;
-      const start = lineStart + span * Math.min(1, Math.max(0, Number(candidate.index || 0) / textLength));
-      const end = lineStart + span * Math.min(1, Math.max(0, Number(candidate.end || candidate.index || 0) / textLength));
-      const marginBonus = equationNumberingSide === 'left'
-        ? (start <= 0.24 ? 0.018 : 0)
-        : (end >= 0.72 ? 0.018 : 0);
-      const score = distance - marginBonus;
-      if (!best || score < best.score) best = { label:candidate.label, text:String(line.text || candidate.label), ratio:Number(line.ratio)||targetRatio, score };
+      // A whole-line x range is *not* a word/label bounding box. When the
+      // text layer lacks word geometry, ask for a typed label instead.
+      const parts = Array.isArray(line.parts) ? line.parts : [];
+      const tokenParts = parts.filter((part) => Number(part.end) > candidate.index
+        && Number(part.start) < candidate.end
+        && Number.isFinite(Number(part.xStartRatio))
+        && Number.isFinite(Number(part.xEndRatio)));
+      if (!tokenParts.length) continue;
+      // PDF.js sometimes exposes the entire line as a single text item. A
+      // proportional character offset in that item is not a measured label
+      // box, so it cannot establish that the pointer hit the printed glyphs.
+      if (tokenParts.some((part) => Number(part.end) - Number(part.start) > 18
+          && Number(part.xEndRatio) - Number(part.xStartRatio) > 0.13)) continue;
+      const box = equationCandidateTokenGeometry(line, candidate);
+      const xMin = Number(box?.xStartRatio), xMax = Number(box?.xEndRatio);
+      if (!Number.isFinite(xMin) || !Number.isFinite(xMax) || xMin >= xMax) continue;
+      // Very wide candidate boxes indicate coarse/misordered OCR geometry.
+      // Be conservative: typed Add is safer than moving a nearby equation.
+      if (xMax - xMin > Math.max(0.06, Math.min(0.18, candidate.label.length * 0.017))) continue;
+      if (x < xMin - 0.002 || x > xMax + 0.002) continue;
+      const score = Math.abs(y - (yMin + yMax) / 2) + Math.abs(x - (xMin + xMax) / 2) * 0.2;
+      if (!best || score < best.score) best = {
+        label: candidate.label, text: String(line.text || candidate.label), ratio: top, score
+      };
     }
   }
   return best;
 }
 
-async function applyEquationPointCorrection(pageNum, ratio) {
+async function applyEquationPointCorrection(pageNum, point) {
   if (!pendingEquationReselectKey && !pendingEquationAddKey) return false;
   const page = Math.max(1, Number(pageNum) || 1);
-  const anchorRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
+  const anchorRatio = Math.min(1, Math.max(0, Number(point?.ratio) || 0));
+  const xRatio = Number(point?.xRatio);
   const addSourceLabel = pendingEquationAddKey ? pendingEquationDisplayedLabel(pendingEquationAddKey) : null;
-  const nearby = await equationLabelNearPagePoint(page, anchorRatio, addSourceLabel);
+  const pendingAddAtClick = pendingEquationAddKey;
+  const pendingReselectAtClick = pendingEquationReselectKey;
+  const sourceDoc = typeof pdfDoc === 'undefined' ? null : pdfDoc;
+  const nearby = await equationLabelNearPagePoint(page, anchorRatio, xRatio, addSourceLabel);
+  // Async OCR/page text may resolve after a different operation/document opens.
+  if (pendingEquationAddKey !== pendingAddAtClick || pendingEquationReselectKey !== pendingReselectAtClick
+      || (typeof pdfDoc !== 'undefined' && sourceDoc !== pdfDoc)) return false;
 
   if (pendingEquationReselectKey) {
     const existingAdd = equationEditTargetFromPending(pendingEquationReselectKey);
     const fallbackLabel = pendingEquationDisplayedLabel(pendingEquationReselectKey);
     const label = nearby?.label || fallbackLabel;
     if (!label) return false;
+    if (manualEquationLabelAlreadyIndexed(label, fallbackLabel)) {
+      showDuplicateManualEquationLabel();
+      return true;
+    }
     if (existingAdd) {
       existingAdd.label = label;
       existingAdd.page = page;
@@ -551,8 +617,8 @@ async function applyEquationPointCorrection(pageNum, ratio) {
     let addedLabel = nearby?.label || null;
     if (!addedLabel) {
       const typed = window.prompt(t(
-        'Equation label for this point (e.g. (A.1), (12.45), (7), or (*)):',
-        '请输入该位置的公式编号（如 (A.1)、(12.45)、(7) 或 (*)）：'
+        'Equation label at the clicked point (e.g. (A.1), (12.45), (7), or (*)):',
+        '请输入所点击位置的公式编号（如 (A.1)、(12.45)、(7) 或 (*)）：'
       ), '');
       if (typed == null || !String(typed).trim()) return true;
       addedLabel = equationLabelFromSelectionText(typed);
@@ -565,6 +631,10 @@ async function applyEquationPointCorrection(pageNum, ratio) {
       showError(t('Add must use a different equation label from the source equation.', '新增公式的编号必须与当前公式不同。'));
       return true;
     }
+    if (manualEquationLabelAlreadyIndexed(addedLabel)) {
+      showDuplicateManualEquationLabel();
+      return true;
+    }
     const id = `eqadd-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const anchorRef = String(pendingEquationAddKey);
     const placement = 'below';
@@ -574,7 +644,7 @@ async function applyEquationPointCorrection(pageNum, ratio) {
     });
     insertEquationManualOrderAfter(anchorRef, id);
     pendingEquationAddKey = null;
-    }
+  }
 
   persistDocumentState();
   await refreshEquationIndexAfterManualEdit();
@@ -585,10 +655,11 @@ async function applyEquationPointCorrection(pageNum, ratio) {
 function equationPointFromClick(event, surface, pageNum) {
   if (!surface) return null;
   const rect = surface.getBoundingClientRect();
-  if (!rect.height) return null;
+  if (!rect.height || !rect.width) return null;
   return {
     page: Math.max(1, Number(pageNum) || 1),
     ratio: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+    xRatio: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
   };
 }
 
@@ -599,7 +670,7 @@ primaryPageSurface?.addEventListener('click', async (event) => {
   if (!point) return;
   event.preventDefault();
   event.stopPropagation();
-  await applyEquationPointCorrection(point.page, point.ratio);
+  await applyEquationPointCorrection(point.page, point);
 });
 
 continuousStack?.addEventListener('click', async (event) => {
@@ -613,7 +684,7 @@ continuousStack?.addEventListener('click', async (event) => {
   if (!point) return;
   event.preventDefault();
   event.stopPropagation();
-  await applyEquationPointCorrection(point.page, point.ratio);
+  await applyEquationPointCorrection(point.page, point);
 });
 
 function addOrReplaceSelectionStructureItem() {

@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=410">
+  <link rel="stylesheet" href="mathreader.css?v=414">
   <script>
     (() => {
       try {
@@ -129,7 +129,7 @@
             <span data-en="Results" data-zh="结果">Results</span>
             <span class="count-badge" id="structure-count">0</span>
           </div>
-          <input class="map-filter" id="map-filter-theorems" type="search" autocomplete="off" data-map-target="structure-index" data-en-placeholder="Filter theorems…" data-zh-placeholder="筛选定理…" placeholder="Filter theorems…">
+          <input class="map-filter" id="map-filter-theorems" type="search" autocomplete="off" data-map-target="structure-index" data-en-placeholder="Filter results…" data-zh-placeholder="筛选结果…" placeholder="Filter results…">
           <button class="text-button structure-build" id="build-structure-index" type="button" disabled data-en="Rebuild structure" data-zh="重新生成结构索引">Rebuild structure</button>
           <div class="structure-index" id="structure-index"></div>
           <div class="empty-panel" id="structure-empty" data-en="Results appear here automatically." data-zh="结果索引自动显示在这里。">Results appear here automatically.</div>
@@ -244,8 +244,8 @@
         <section class="welcome" id="welcome">
           <div class="welcome-emblem welcome-emblem-icon" aria-hidden="true"><img src="../assets/img/tool-mathreader-file-search.svg" alt=""></div>
           <p class="welcome-kicker">MathReader</p>
-          <h1 data-en="A PDF reader designed for mathematics." data-zh="为数学阅读而设计的 PDF 阅读器。">A PDF reader designed for mathematics.</h1>
-          <p class="welcome-copy" data-en="Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website." data-zh="在本地阅读 PDF，把参考页面固定在当前证明旁边，搜索全文并保存阅读位置；PDF 不会上传到本网站。">Read locally, keep references beside the current proof, search the paper, and save your place without uploading the PDF to this website.</p>
+          <h1 data-en="A focused reader for mathematical PDFs." data-zh="数学 PDF 阅读器">A focused reader for mathematical PDFs.</h1>
+          <p class="welcome-copy" data-en="Read papers, follow references, and keep your place locally." data-zh="阅读数学文献、跟随交叉引用，并在本地保存阅读进度。">Read papers, follow references, and keep your place locally.</p>
           <button class="welcome-open" type="button" id="welcome-open" data-en="Open PDF" data-zh="打开 PDF">Open PDF</button>
           <p class="drop-hint" data-en="or drop a PDF anywhere in this window" data-zh="或将 PDF 拖入此窗口">or drop a PDF anywhere in this window</p>
           <section class="welcome-recent is-hidden" id="welcome-recent" aria-label="Recent documents">
@@ -261,7 +261,7 @@
             <span data-en="Pin reference pages" data-zh="固定参考页面">Pin reference pages</span>
             <span data-en="Page notes & bookmarks" data-zh="页注与书签">Page notes & bookmarks</span>
           </div>
-          <p class="privacy-note" data-en="Your PDF stays on this device. MathReader caches opened PDFs and reading state locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website." data-zh="PDF 只保留在本设备。MathReader 会在本地缓存已打开的 PDF 与阅读状态，下次可从离开的位置继续。矩形公式默认使用本地图像 OCR，并可手动使用 PDF 矢量提取进行对照。公式图像在浏览器内处理，不会上传到本网站。">Your PDF stays on this device. MathReader caches opened PDFs and reading state locally so the last document can reopen where you left it. Formula rectangles use local Image OCR by default, with PDF vector extraction available for manual comparison. Formula images are processed in your browser and are not uploaded to this website.</p>
+          <p class="privacy-note" data-en="PDFs and reading data are kept on this device when browser storage permits. Formula images are processed in your browser, not uploaded to this website." data-zh="浏览器存储允许时，PDF 与阅读数据会保存在本设备。公式图像在浏览器内处理，不会上传到本网站。">PDFs and reading data are kept on this device when browser storage permits. Formula images are processed in your browser, not uploaded to this website.</p>
         </section>
 
         <div class="pdf-workspace is-hidden" id="pdf-workspace">
@@ -474,7 +474,7 @@
 
       <section class="workspace-section settings-section" id="settings-section">
         <div class="panel-heading">
-          <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Personalize MathReader without crowding the reading workspace. Preferences stay local to this browser." data-zh="在不挤占阅读工作区的前提下个性化 MathReader。偏好仅保存在当前浏览器。">Personalize MathReader without crowding the reading workspace. Preferences stay local to this browser.</div></details></span>
+          <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Display, OCR, and export preferences are saved in this browser." data-zh="显示、OCR 与导出偏好保存在当前浏览器。">Display, OCR, and export preferences are saved in this browser.</div></details></span>
         </div>
 
         <details class="settings-group" id="settings-display-group">
@@ -600,6 +600,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=410"></script>
+  <script type="module" src="mathreader.js?v=414"></script>
 </body>
 </html>

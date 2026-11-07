@@ -28,7 +28,7 @@ function canonicalStructureResultType(value) {
 function structureResultProseReferenceTail(value) {
   const tail = String(value || '').trim();
   if (!tail) return false;
-  return /^(?:(?:above|below)\s+)?(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|should|may|might|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
+  return /^(?:(?:above|below)\s+)?(?:(?:therefore|hence|thus|then|also|again|now|indeed|similarly|consequently|clearly|in\s+particular)\s+)?(?:shows?|showed|implies?|implied|follows?|followed|gives?|gave|states?|stated|yields?|yielded|guarantees?|guaranteed|provides?|provided|is|was|were|will|can|could|should|may|might|has|have|had|applies?|applied|extends?|extended|justifies?|justified|furnishes?|furnished|ensures?|ensured|says?|said|asserts?|asserted|proves?|proved|establishes?|established|allows?|allowed|requires?|required|means?|meant|contains?|contained)\b/i.test(tail);
 }
 
 // A label at the beginning of a visual text line is not sufficient evidence of
@@ -61,23 +61,33 @@ function structureResultStartsNarrativeReference(text) {
 function structureResultWrappedProseReference(lines, lineIndex, cleaned) {
   const label = String(cleaned || '').match(/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+(?:[A-Z]{1,2}[.·-])?\d+(?:[.·-]\d+)*(?:['’])?(?:[.):,;]|\s|$)/i);
   if (!label || lineIndex < 1) return false;
-  const previous = lines?.[lineIndex - 1];
   const current = lines?.[lineIndex];
-  if (!previous || !current) return false;
-  const distance = Number(current.ratio) - Number(previous.ratio);
-  // A real separated heading generally has a visibly larger gap. Do not
-  // connect distant columns or different reading blocks by content alone.
-  if (!Number.isFinite(distance) || distance < 0 || distance > 0.032) return false;
-  const prevEnd = Number(previous.xEndRatio);
-  const currentStart = Number(current.xStartRatio);
-  if (Number.isFinite(prevEnd) && Number.isFinite(currentStart)
-      && currentStart > prevEnd + 0.12) return false;
-  const before = normalizedStructureResultText(previous.text);
-  const endedWithReferenceLead = /(?:\(\s*(?:see|cf\.?|compare)|\b(?:deduce|deduced|from|of|by|see|apply|applying|using|invoke|invoking|recall|recalling|refer\s+to|according\s+to|in|on|with|to))\s*$/i.test(before);
-  if (!endedWithReferenceLead) return false;
-  // A semicolon/dot may be part of a quoted label, not a declaration. The
-  // source-line reference lead is decisive, regardless of what follows it.
-  return true;
+  if (!current) return false;
+  // Superscripts can be extracted as a separate, extremely short row between
+  // the prose reference lead and the quoted theorem label. Look past at most
+  // two such tiny fragments; do not skip a substantive line or a column.
+  for (let j = lineIndex - 1; j >= Math.max(0, lineIndex - 3); j -= 1) {
+    if (j < lineIndex - 1) {
+      const intervening = lines[j + 1];
+      const width = Number(intervening?.xEndRatio) - Number(intervening?.xStartRatio);
+      if (!intervening || String(intervening.text || '').trim().length > 15
+          || !Number.isFinite(width) || width > 0.16) break;
+    }
+    const previous = lines[j];
+    if (!previous) break;
+    const distance = Number(current.ratio) - Number(previous.ratio);
+    // A real separated heading generally has a visibly larger gap. Do not
+    // connect distant columns or different reading blocks by content alone.
+    if (!Number.isFinite(distance) || distance < 0 || distance > 0.032) break;
+    const prevEnd = Number(previous.xEndRatio);
+    const currentStart = Number(current.xStartRatio);
+    if (Number.isFinite(prevEnd) && Number.isFinite(currentStart)
+        && currentStart > prevEnd + 0.12) continue;
+    const before = normalizedStructureResultText(previous.text);
+    const endedWithReferenceLead = /(?:\(\s*(?:see|cf\.?|compare)|\b(?:deduce|deduced|from|of|by|see|apply|applying|using|invoke|invoking|recall|recalling|refer\s+to|according\s+to|in|on|with|to))\s*$/i.test(before);
+    if (endedWithReferenceLead) return true;
+  }
+  return false;
 }
 
 // A typeset heading sometimes has no PDF text space before its parenthetical
@@ -87,13 +97,22 @@ function structureResultWrappedProseReference(lines, lineIndex, cleaned) {
 // marker or a parenthetical prose citation.
 function structureResultParentheticalHeadingTail(tail) {
   const source = String(tail || '').trim();
-  const match = source.match(/^\(([^()]{3,90})\)(?:\s*([.:])\s*|\s+|$)(.*)$/);
+  // Real typeset headings can put sentence text immediately after a closing
+  // parenthesis: "Lemma 3. (Sobolev embedding theorem.)Ifk...". This is not
+  // a citation or a theorem subpart. Only recover a substantive named heading
+  // followed by a recognized mathematical statement opener.
+  const ordinary = source.match(/^\(([^()]{3,90})\)(?:\s*([.:])\s*|\s+|$)(.*)$/);
+  const joined = ordinary ? null : source.match(
+    /^\(([^()]{3,90})\)((?:If|Let|Suppose|For|Given|When|Whenever|There|Every|Each|All|Any|Assume).{2,})$/
+  );
+  const match = ordinary || joined;
   if (!match) return null;
   const name = match[1].trim();
-  const after = String(match[3] || '').trim();
-  if (!/[A-Za-zÀ-ÿ]{2,}/.test(name) || /^(?:see|cf\.?|compare|by|after|before|above|below)\b/i.test(name)) return null;
+  const after = String(ordinary ? match[3] : match[2] || '').trim();
+  if (!/[A-Za-zÀ-ÿ]{2,}/.test(name) || /^(?:see|cf\.?|compare|by|after|before|above|below|part\s+[a-z0-9]|case\s+[a-z0-9])\b/i.test(name)) return null;
+  const statementPreposition = /^(?:In|Under)\s+(?:the|a|an|any|every|each|this|these|that)\b/.test(after);
   if (after && (structureResultProseReferenceTail(after)
-    || /^(?:and|or|in|from|on|under|as|which|whose|where|that|than|by)\b/i.test(after))) return null;
+    || (!statementPreposition && /^(?:and|or|in|from|on|under|as|which|whose|where|that|than|by)\b/i.test(after)))) return null;
   return {name, after};
 }
 
@@ -281,13 +300,80 @@ function recoverBoundedAppendixResultConfusables(entries, observations) {
   return accepted;
 }
 
+// Scanned/historical PDF text layers frequently concatenate the typography of
+// an uppercase declaration with its number (THEOREM5.1, LEMMA3.5). Accept
+// this shape only at the beginning of an observed visual line; preserve the
+// ordinary detector's reference-tail and named-heading checks afterward.
+// Avoid global whitespace insertion: inline theorem references and equations
+// must retain their exact original text and geometry.
+function structureResultExpandJoinedHeading(value) {
+  return String(value || '').replace(
+    /^(THEOREM|LEMMA|PROPOSITION|COROLLARY|DEFINITION|MAIN RESULT|REMARK|EXAMPLE|CLAIM|CONJECTURE|QUESTION|ASSUMPTION|HYPOTHESIS)(\d+(?:[.·-]\d+)*(?:['’])?)(?=[.:(\s\[]|$)/,
+    '$1 $2'
+  );
+}
+
+// A different native-PDF font/baseline can separate the printed result number
+// from its declaration word by 2–4 PDF points. Recognize the split only when
+// BOTH original native spans are visible, the uppercase type span ends where
+// the independently printed numbered span begins, and they share one row.
+// Never borrow a numerical label from a distant column or nearby prose.
+function structureResultSplitBaselineLabel(lines, lineIndex, cleaned, page) {
+  const heading = String(cleaned || '').match(/^(THEOREM|LEMMA|PROPOSITION|COROLLARY|DEFINITION|CLAIM|CONJECTURE|ASSUMPTION|HYPOTHESIS)(?=\s|$)/);
+  const line = lines?.[lineIndex];
+  const first = Array.isArray(line?.parts) ? line.parts[0] : null;
+  const typeEnd = Number(first?.xEndRatio);
+  const lineY = Number(line?.ratio);
+  // A complete type-number label already follows the standard parser path.
+  if (!heading || /^\s+\d/.test(cleaned.slice(heading[0].length)) || !first
+      || !Number.isFinite(typeEnd) || !Number.isFinite(lineY)
+      || Number(line?.xStartRatio) > 0.35
+      || String(line.text || '').slice(Number(first.start || 0), Number(first.end || 0)).trim() !== heading[1]) return null;
+  for (const offset of [-1, 1, -2, 2]) {
+    const adjacent = lines?.[lineIndex + offset];
+    if (!adjacent) continue;
+    const number = String(adjacent.text || '').match(/^(\d{1,2}(?:[.·-]\d+){1,3})(?=[.):\s]|$)/);
+    const firstNumber = Array.isArray(adjacent.parts) ? adjacent.parts[0] : null;
+    const numericSpan = firstNumber
+      ? String(adjacent.text).slice(Number(firstNumber.start || 0), Number(firstNumber.end || 0)).trim() : '';
+    const start = Number(adjacent.xStartRatio), y = Number(adjacent.ratio);
+    const spanWidth = Number(firstNumber?.xEndRatio) - Number(firstNumber?.xStartRatio);
+    if (!number || !firstNumber || !numericSpan.startsWith(number[1])
+        || !/^(?:[.):\s]|$)/.test(numericSpan.slice(number[1].length))
+        || /^\d{1,2}(?:[.·-]\d+){1,3}\s*\(\s*(?:see|cf\.?|compare)\b/i.test(String(adjacent.text))
+        || numericSpan.length > 25 || !Number.isFinite(spanWidth) || spanWidth > 0.19
+        || !Number.isFinite(start) || !Number.isFinite(y)
+        || Math.abs(y - lineY) > 0.006
+        || start < typeEnd - 0.008 || start > typeEnd + 0.03) continue;
+    const type = canonicalStructureResultType(heading[1]);
+    return {label:`${type} ${number[1]}`,title:`${type} ${number[1]}. ${cleaned.slice(heading[1].length).trim()}`.slice(0,180),page,ratio:Math.min(y,lineY),declarationEvidence:'split-baseline'};
+  }
+  return null;
+}
+
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
-  const cleaned = normalizedStructureResultText(line?.text);
+  const cleaned = structureResultExpandJoinedHeading(normalizedStructureResultText(line?.text));
   if (!cleaned || structureResultLooksLikeNumberedSectionTitle(cleaned) || structureResultStartsNarrativeReference(cleaned)
     || structureResultWrappedProseReference(lines, lineIndex, cleaned)) return null;
+  // Numbered Chinese mathematical declarations are not English references.
+  // Require a visibly printed number, a statement delimiter and a statement
+  // opener.  Do not infer unnumbered examples or promote citations such as
+  // "定理4.1说明了..." into a Result.
+  const chinese = cleaned.match(/^(定理|引理|命题|推论|定义|例)\s*(\d{1,3}(?:[.\u00b7-]\d{1,3}){0,3})\s*(?:(?:\(([^()]{2,60})\)|（([^（）]{2,60})）)\s*)?([.。:：])\s*(.{2,})$/u);
+  if (chinese) {
+    const name = String(chinese[3] || chinese[4] || '').trim();
+    const statement = String(chinese[6] || '').trim();
+    if (!name.match(/^(?:见|参见|同上|上文|前文|see|cf\.?)/i)
+        && /^(?:设|令|若|如果|当|对|对于|任意|给定|假设|存在|有|则|称|我们称|每个|所有|以下|记|Let\b|Suppose\b|If\b|For\b)/u.test(statement)) {
+      const label = `${chinese[1]} ${chinese[2].replace(/\u00b7/g, '.')}`;
+      return { label, title: `${label}${name ? ` (${name})` : ''}. ${statement}`.slice(0, 180), page, ratio: line.ratio, declarationEvidence:'explicit-statement' };
+    }
+  }
   const appendix = detectedAppendixResult(line, page);
   if (appendix) return appendix;
+  const splitBaseline = structureResultSplitBaselineLabel(lines, lineIndex, cleaned, page);
+  if (splitBaseline) return splitBaseline;
 
   // Classical papers use both “Lemma 2.3” and “2.3. LEMMA”. Require the
   // declaration to start the visual line so body references cannot qualify.
@@ -333,7 +419,14 @@ function detectedStructureResult(lines, lineIndex, page) {
     if (/^[A-Za-z]/.test(number) && number[0] !== number[0].toLocaleUpperCase()) return null;
     const tail = String(match[3] || '').trim();
     const named = tail.startsWith('(') ? structureResultParentheticalHeadingTail(tail) : null;
-    if ((tail.startsWith('(') && !named) || structureResultProseReferenceTail(tail)
+    // Imperative tasks are genuine numbered Examples when their printed
+    // number has a sentence delimiter.  A prose reference such as
+    // "Example 191 proves ..." has no such delimiter and remains rejected.
+    // This also preserves the common "Example 191. Prove ..." heading.
+    const explicitExampleTask = type === 'Example'
+      && /^Example\s+\d+(?:[.\u00b7-]\d+)*[.)]\s+(?:Prove|Show)\b/i.test(cleaned);
+    if ((tail.startsWith('(') && !named)
+      || (structureResultProseReferenceTail(tail) && !explicitExampleTask)
       || structureResultUnpunctuatedReferenceTail(cleaned, tail)) return null;
     return {
       label: `${type} ${number}`,
@@ -346,7 +439,8 @@ function detectedStructureResult(lines, lineIndex, page) {
         // legitimately restart, including repeated "Definition 1" labels.
         /^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+[A-Z]?\d+(?:[.·-]\d+)*[.:]\s*/i.test(cleaned)
         && (/^(?:A|An|Any|All|Each|Every|Let|Given|Suppose|If|For|There|The)\b/i.test(tail)
-          || /^(?:A|An|If|For|Let|The|Given|There)[a-z]/.test(tail))
+          || /^(?:A|An|If|For|Let|The|Given|There|Suppose|When|Whenever|Assume)[a-z]/.test(tail)
+          || /^(?:Suppose|If|Let|Given|Assume)(?=[A-Z0-9\[({])/.test(tail))
           ? {declarationEvidence:'explicit-statement'} : {}),
     };
   }
@@ -582,7 +676,7 @@ function compareNumberParts(a, b) {
 
 function normalizeSequentialStructureEntries(entries) {
   const observed = Array.isArray(entries) ? entries : [];
-  const strength = (item) => item?.declarationEvidence === 'number-first' ? 3
+  const strength = (item) => (item?.declarationEvidence === 'number-first' || item?.declarationEvidence === 'split-baseline') ? 3
     : (item?.declarationEvidence === 'named' || item?.declarationEvidence === 'explicit-statement') ? 2 : 1;
   const byLabel = new Map();
   for (const entry of observed) {
@@ -3523,7 +3617,9 @@ function renderEquationIndex() {
   if (!equationLabelIndex) {
     equationIndexCount.textContent = Number.isInteger(equationIndexKnownCount) ? String(equationIndexKnownCount) : '…';
     equationIndexEmpty.classList.remove('is-hidden');
-    equationIndexEmpty.textContent = t('Preparing equation-label index…', '正在准备公式编号索引……');
+    equationIndexEmpty.textContent = !pdfDoc
+      ? t('Open a PDF to index equations.', '打开 PDF 后可建立公式索引。')
+      : t('Preparing equation-label index…', '正在准备公式编号索引……');
     return;
   }
   let rows = [];
@@ -3797,7 +3893,7 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
       rows.push(row);
       addRowToYBuckets(rowBuckets, row, 2.2);
     }
-    row.items.push({ x, width, text });
+    row.items.push({ x, width, text, height: Math.max(0, Number(item.height) || 0) });
   }
   rows.sort((a, b) => b.y - a.y);
   const pageWidth = Math.max(1, (Number(view[2]) || 1) - (Number(view[0]) || 0));
@@ -3822,6 +3918,7 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
       text: text.replace(/\s+/g, ' ').trim(),
       parts,
       ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight)),
+      heightRatio: Math.min(0.08, Math.max(0.001, Math.max(...items.map((item) => item.height || 0)) / pageHeight)),
       xStartRatio: Math.min(1, Math.max(0, (xMin - (Number(view[0]) || 0)) / pageWidth)),
       xEndRatio: Math.min(1, Math.max(0, (xMax - (Number(view[0]) || 0)) / pageWidth))
     };
@@ -5097,9 +5194,11 @@ function renderStructureIndex() {
   structureCount.textContent = String(structureEntries.length);
   structureEmpty.classList.toggle('is-hidden', structureEntries.length > 0);
   if (!structureEntries.length) {
-    structureEmpty.textContent = structureIndexBuilding
-      ? t('Building mathematical structure in the background…', '正在后台生成数学结构索引……')
-      : t('The theorem, definition, and proof index is prepared automatically for this document.', '此文档的定理、定义与证明索引会自动生成。');
+    structureEmpty.textContent = !pdfDoc
+      ? t('Open a PDF to index results.', '打开 PDF 后可建立结果索引。')
+      : structureIndexBuilding
+        ? t('Indexing results…', '正在建立结果索引……')
+        : t('No results indexed.', '尚无结果索引。');
     return;
   }
   for (const entry of structureEntries) {
@@ -5480,7 +5579,11 @@ function renderBibliographyIndex() {
   bibliographyIndex.replaceChildren(); bibliographyCount.textContent = String(bibliographyEntries.length);
   bibliographyEmpty.classList.toggle('is-hidden', bibliographyEntries.length > 0);
   if (!bibliographyEntries.length) {
-    bibliographyEmpty.textContent = structureIndexBuilding ? t('Detecting bibliography entries…', '正在检测参考文献条目……') : t('No numbered bibliography entries detected.', '未检测到编号参考文献条目。');
+    bibliographyEmpty.textContent = !pdfDoc
+      ? t('Open a PDF to index references.', '打开 PDF 后可建立参考文献索引。')
+      : structureIndexBuilding
+        ? t('Indexing references…', '正在建立参考文献索引……')
+        : t('No references indexed.', '尚无参考文献索引。');
     return;
   }
   for (const entry of bibliographyEntries) {

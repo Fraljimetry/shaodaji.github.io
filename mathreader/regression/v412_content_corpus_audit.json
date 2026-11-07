@@ -1,0 +1,365 @@
+{
+  "reportVersion": "v412-audit-1",
+  "purpose": "Conservative mathematical Results regression including baseline-shift and historical joined heading recovery",
+  "baseline": "complete v405 ZIP + v406 ... v411 differential patches in order",
+  "corpus": {
+    "jsSuites": 58,
+    "pythonChromiumSuites": 25,
+    "newJsAssertions": 30,
+    "newChromiumAssertions": 9,
+    "syntaxJsFiles": 73,
+    "fullCorpusDistinctPdfs": 19,
+    "fullCorpusPages": 1367,
+    "originalSevenPdfPages": 595,
+    "oldExpandedCorpusPages": 1228,
+    "newPdfs": 5,
+    "newPdfPages": 139
+  },
+  "savedExactUserExportInputReplays": [
+    {
+      "document": "Enrico Giusti - Minimal Surfaces and Functions of Bounded Variation-Birkhäuser (1984).pdf",
+      "pages": 253,
+      "pdfExportShaMatch": true,
+      "v412Results": 207,
+      "v412Bibliography": 75,
+      "changeAgainstV411SavedInputReplay": {
+        "resultsAdded": 0,
+        "resultsRemoved": 0,
+        "bibliographyAdded": 0,
+        "bibliographyRemoved": 0
+      }
+    },
+    {
+      "document": "Ahlfors-Conformal-Invariants.pdf",
+      "pages": 172,
+      "pdfExportShaMatch": true,
+      "v412Results": 95,
+      "v412Bibliography": 66,
+      "changeAgainstV411SavedInputReplay": {
+        "resultsAdded": 0,
+        "resultsRemoved": 0,
+        "bibliographyAdded": 0,
+        "bibliographyRemoved": 0
+      }
+    },
+    {
+      "document": "SPS_1988__22__485_0.pdf",
+      "pages": 18,
+      "pdfExportShaMatch": true,
+      "v412Results": 7,
+      "v412Bibliography": 17,
+      "changeAgainstV411SavedInputReplay": {
+        "resultsAdded": 0,
+        "resultsRemoved": 0,
+        "bibliographyAdded": 0,
+        "bibliographyRemoved": 0
+      }
+    },
+    {
+      "document": "Asymptotic behaviour of minimal graphs over exterior domains. L. Simon.pdf",
+      "pages": 13,
+      "pdfExportShaMatch": true,
+      "v412Results": 4,
+      "v412Bibliography": 18,
+      "changeAgainstV411SavedInputReplay": {
+        "resultsAdded": 0,
+        "resultsRemoved": 0,
+        "bibliographyAdded": 0,
+        "bibliographyRemoved": 0
+      }
+    },
+    {
+      "document": "geometrical_hypothesis_Banach.pdf",
+      "pages": 10,
+      "pdfExportShaMatch": true,
+      "v412Results": 14,
+      "v412Bibliography": 9,
+      "changeAgainstV411SavedInputReplay": {
+        "resultsAdded": 0,
+        "resultsRemoved": 0,
+        "bibliographyAdded": 0,
+        "bibliographyRemoved": 0
+      }
+    },
+    {
+      "document": "YamabeProblem.pdf",
+      "pages": 56,
+      "pdfExportShaMatch": false,
+      "v412Results": 51,
+      "v412Bibliography": 46,
+      "changeAgainstV411SavedInputReplay": {
+        "resultsAdded": 0,
+        "resultsRemoved": 0,
+        "bibliographyAdded": 0,
+        "bibliographyRemoved": 0
+      }
+    }
+  ],
+  "additionalNativeSpanFullBuilderReplays": [
+    {
+      "document": "YamabeProblem.pdf",
+      "pages": 56,
+      "pdfSha256": "11a7a3c6feb9ec6531b6bd99e30644d13ad9759d952a83c69d08ea3ad60f0b67",
+      "method": "actual production pageTextLines and buildStructureIndex functions; PDF.js-shaped items reconstructed from independently extracted PyMuPDF native spans, not actual browser PDF.js",
+      "resultsV411": 15,
+      "resultsV412": 48,
+      "added": [
+        {
+          "label": "Corollary 5.4",
+          "page": 24
+        },
+        {
+          "label": "Definition 6.2",
+          "page": 28
+        },
+        {
+          "label": "Definition 6.3",
+          "page": 28
+        },
+        {
+          "label": "Definition 8.2",
+          "page": 37
+        },
+        {
+          "label": "Lemma 10.6",
+          "page": 46
+        },
+        {
+          "label": "Lemma 10.7",
+          "page": 48
+        },
+        {
+          "label": "Lemma 3.4",
+          "page": 14
+        },
+        {
+          "label": "Lemma 4.3",
+          "page": 18
+        },
+        {
+          "label": "Lemma 5.3",
+          "page": 23
+        },
+        {
+          "label": "Lemma 5.5",
+          "page": 24
+        },
+        {
+          "label": "Lemma 6.1",
+          "page": 27
+        },
+        {
+          "label": "Lemma 6.4",
+          "page": 28
+        },
+        {
+          "label": "Lemma 9.1",
+          "page": 39
+        },
+        {
+          "label": "Lemma 9.7",
+          "page": 43
+        },
+        {
+          "label": "Proposition 10.2",
+          "page": 44
+        },
+        {
+          "label": "Proposition 3.1",
+          "page": 12
+        },
+        {
+          "label": "Proposition 4.2",
+          "page": 17
+        },
+        {
+          "label": "Proposition 4.4",
+          "page": 18
+        },
+        {
+          "label": "Proposition 4.6",
+          "page": 20
+        },
+        {
+          "label": "Theorem 10.1",
+          "page": 44
+        },
+        {
+          "label": "Theorem 10.3",
+          "page": 45
+        },
+        {
+          "label": "Theorem 10.4",
+          "page": 45
+        },
+        {
+          "label": "Theorem 2.3",
+          "page": 9
+        },
+        {
+          "label": "Theorem 2.4",
+          "page": 10
+        },
+        {
+          "label": "Theorem 2.5",
+          "page": 10
+        },
+        {
+          "label": "Theorem 2.6",
+          "page": 10
+        },
+        {
+          "label": "Theorem 2.8",
+          "page": 11
+        },
+        {
+          "label": "Theorem 3.3",
+          "page": 14
+        },
+        {
+          "label": "Theorem 4.1",
+          "page": 16
+        },
+        {
+          "label": "Theorem 5.2",
+          "page": 23
+        },
+        {
+          "label": "Theorem 5.6",
+          "page": 26
+        },
+        {
+          "label": "Theorem 6.5",
+          "page": 29
+        },
+        {
+          "label": "Theorem 7.2",
+          "page": 34
+        },
+        {
+          "label": "Theorem 9.5",
+          "page": 42
+        },
+        {
+          "label": "Theorem 9.6",
+          "page": 42
+        }
+      ],
+      "removed": [
+        {
+          "label": "Definition A",
+          "page": 28
+        },
+        {
+          "label": "Lemma 9.1",
+          "page": 40
+        }
+      ],
+      "bibliographyV411": 46,
+      "bibliographyV412": 46
+    },
+    {
+      "document": "1209.2203v2.pdf",
+      "pages": 88,
+      "pdfSha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "method": "actual production pageTextLines and buildStructureIndex functions; PDF.js-shaped items reconstructed from independently extracted PyMuPDF native spans, not actual browser PDF.js",
+      "resultsV411": 62,
+      "resultsV412": 62,
+      "added": [],
+      "removed": [],
+      "bibliographyV411": 183,
+      "bibliographyV412": 183
+    }
+  ],
+  "YamabeDetail": {
+    "pdf": "YamabeProblem.pdf",
+    "pages": 56,
+    "methodDifferences": {
+      "textLayerLineProxyV411": 4,
+      "textLayerLineProxyV412": 48,
+      "pdfjsLikeSpanBuilderV411": 15,
+      "pdfjsLikeSpanBuilderV412": 48
+    },
+    "agreedLabelsAndPagesBetweenIndependentExtractionStyles": true,
+    "repairedFalseReference": {
+      "label": "Lemma 9.1",
+      "incorrectPage": 40,
+      "printedDeclarationPage": 39,
+      "reason": "superscript-only text row separated preceding by from wrapped reference"
+    },
+    "previouslySplitHeadings": [
+      {
+        "label": "Theorem 2.3",
+        "page": 9
+      },
+      {
+        "label": "Lemma 3.5",
+        "page": 15
+      },
+      {
+        "label": "Theorem 5.2",
+        "page": 23
+      },
+      {
+        "label": "Lemma 5.3",
+        "page": 23
+      },
+      {
+        "label": "Definition 6.2",
+        "page": 28
+      },
+      {
+        "label": "Theorem 9.6",
+        "page": 42
+      }
+    ],
+    "bibliographyEntriesUnchanged": 46,
+    "identityCaution": "The original Yamabe PDF in library does NOT match the separate previously saved Yamabe JSON export SHA-256; only this original-PDF native-span replay is treated as paired original evidence."
+  },
+  "newOriginalPdfNativeLineProxy": [
+    {
+      "file": "1209.2203v2.pdf",
+      "pages": 88,
+      "results": 5,
+      "bibliography": 183,
+      "method": "PyMuPDF text/geometry proxy, NOT actual MathReader browser"
+    },
+    {
+      "file": "The_Classic_Solution_to_the_Yamabe_Problem_commented.pdf",
+      "pages": 26,
+      "results": 13,
+      "bibliography": 7,
+      "method": "PyMuPDF text/geometry proxy, NOT actual MathReader browser"
+    },
+    {
+      "file": "plateau_compactness_auxiliary(2).pdf",
+      "pages": 5,
+      "results": 1,
+      "bibliography": 0,
+      "method": "PyMuPDF text/geometry proxy, NOT actual MathReader browser"
+    },
+    {
+      "file": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "pages": 18,
+      "results": 17,
+      "bibliography": 14,
+      "method": "PyMuPDF text/geometry proxy, NOT actual MathReader browser"
+    },
+    {
+      "file": "lemma_3_2_inductive_proof.pdf",
+      "pages": 2,
+      "results": 1,
+      "bibliography": 0,
+      "method": "PyMuPDF text/geometry proxy, NOT actual MathReader browser"
+    }
+  ],
+  "knownUnverified": [
+    "No live production URL browser test using the exact failing pages was run.",
+    "PyMuPDF does not emit exactly the same text item segmentation as browser PDF.js; comparisons are controlled proxy evidence only.",
+    "Not all 1367 pages have independent line-by-line visual mathematical Results ground truth.",
+    "Scanned/image-only PDF mathematical formula OCR precision/recall and handwritten formula correctness not certified.",
+    "v404 accepted OCR margin evidence restoration failure across hard reload remains unchanged.",
+    "Structure and Bibliography correctness on arbitrary unseen PDFs is not guaranteed; arbitrary fixed caps may affect very long books.",
+    "The 1209.2203v2 native-line proxy omits many Results (5), while the closer span-based replay yields 62 in BOTH v411 and v412. Do not treat that proxy artifact as a genuine v411 loss."
+  ]
+}
