@@ -652,3 +652,14 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
   box-shadow:0 5px 16px rgba(0,0,0,.15);
   font:600 11px/1.45 var(--sans);
 }
+
+/* v398: compact, aligned export controls. The two option descriptions belong
+   to their respective checkboxes, not to separate grid rows with stacked margins. */
+.settings-section #settings-export-group .export-settings-body{gap:8px;padding:0 0 10px}
+.export-settings-options{display:grid;gap:4px;min-width:0}
+.export-setting-option{display:grid;grid-template-columns:14px minmax(0,1fr);align-items:start;gap:8px;padding:3px 0;cursor:pointer;color:var(--ink);min-width:0}
+.export-setting-option input[type="checkbox"]{width:13px;height:13px;margin:2px 0 0;accent-color:var(--accent)}
+.export-setting-copy{display:flex;flex-direction:column;gap:3px;min-width:0;line-height:1.35}
+.export-setting-title{font-size:10px;font-weight:500;color:var(--ink)}
+.export-setting-description{font-size:9px;line-height:1.4;color:var(--muted);overflow-wrap:break-word}
+.export-settings-note{margin:0;border-top:1px solid var(--border);padding-top:8px;font-size:9px;line-height:1.4;color:var(--muted)}

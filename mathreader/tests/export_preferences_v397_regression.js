@@ -24,6 +24,7 @@ function originalSession(){return {
   ocrHistory:[{latex:'x^2'}],inferredOutline:[{title:'AUTO SECRET HEADING'}],
   structureEntries:[{title:'AUTO SECRET THEOREM'}],bibliographyEntries:[{title:'AUTO SECRET REF'}],
   equationIndexSnapshot:{rows:[{label:'(1.1)',text:'AUTO SECRET FORMULA'}]},
+  equationManualOrder:['label:(1.1)','label:(1.2)'],equationOrderCustomized:false,
   equationIndexSummary:{version:26,count:1},structureIndexVersion:49,portableContentDetection:true,
   undoHistory:[{type:'annotation',payload:'my note'},{type:'structure-outline',payload:'AUTO SECRET'}]
 };}
@@ -58,6 +59,7 @@ async function run(){
     check(value.schema==='mathreader.reading-data@1'&&value.document.id==='sha256:test-v397','schema and sha256 identity');
     check(value.session.page===17&&value.session.bookmarks.length===1&&value.session.notes[17]==='proof idea','reading data always included');
     check(value.session.equationEdits.length===1&&value.session.embeddedOutlineEdits.length===1,'manual equation/outline corrections preserved');
+    check(value.session.equationOrderCustomized===false&&!('equationManualOrder' in value.session),'unmodified automatic equation order excluded from every export layer');
     check(('contentDetection' in value)===det,'detection top-level switch');
     check(('inferredOutline' in value.session)===det,'no hidden automatic Structure when off');
     check(('structureEntries' in value.session)===det,'no hidden automatic Results when off');
@@ -82,6 +84,14 @@ async function run(){
     await h.run();
     check(h.downloads[0].value.session.inferredOutline.length===1&&h.downloads[0].value.session.inferredOutline[0].title==='MY HEADING', 'manually selected Structure entry survives reading-only backup');
     check(h.downloads[0].value.session.undoHistory.length===1, 'manual Structure undo retained, automatic deleted Structure excluded');
+  }
+  {
+    const h=fixture(false,false);
+    h.ctx.snapshotSession=()=>({...originalSession(),equationOrderCustomized:true,
+      equationManualOrder:['label:(2.2)','label:(1.1)']});
+    await h.run();
+    check(h.downloads[0].value.session.equationManualOrder.join('|')==='label:(2.2)|label:(1.1)',
+      'genuine drag-and-drop equation ordering remains part of reading-only backups');
   }
   // Broken or inaccessible preferences must resolve to secure documented defaults.
   for(const stored of [null,'{broken}',JSON.stringify({includeDetection:false,includeFullDocumentText:true})]){
@@ -143,7 +153,7 @@ async function run(){
     const fragment=html.slice(htmlStart,htmlStop);
     check(fragment.includes('id="settings-export-group"')&&fragment.includes('id="export-include-detection"')&&fragment.includes('id="export-include-full-text"'),'both checkboxes inside Settings');
     check(ui.includes("exportDetectionOption?.addEventListener('change', persistExportPreferences)")&&ui.includes("loadExportPreferences();"),'checkbox events and startup restoration wired');
-    check(html.includes('mathreader.js?v=397')&&html.includes('mathreader.css?v=397'),'browser caches invalidated');
+    check(html.includes('mathreader.js?v=398')&&html.includes('mathreader.css?v=398'),'browser caches invalidated');
     check(!extract(src,'importReadingDataFile').includes('payload.fullDocumentText'),'diagnostic full text does not alter reading state during import');
   }
   console.log(`PASS | v397 independent export options | assertions=${checks}`);

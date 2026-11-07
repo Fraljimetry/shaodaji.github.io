@@ -1,0 +1,80 @@
+{
+  "source": "User-provided v397 exports of the same original 253-page Giusti PDF",
+  "version": 397,
+  "files": [
+    {
+      "file": "(1)",
+      "bytes": 15891884,
+      "sha256": "d3a6d7e4f83fc5233503f9030e2883703f03bd02ee55606a1d2c6e17cb1c02fd",
+      "detection": true,
+      "fullDocumentText": true,
+      "documentOcrStored": false,
+      "reading": true,
+      "autoOrderKeysWhenUncustomized": 262,
+      "structure": 24,
+      "results": 196,
+      "equations": 262,
+      "bibliography": 75,
+      "nativeTextItems": 68461,
+      "detectorLines": 6282,
+      "textPages": 253
+    },
+    {
+      "file": "(2)",
+      "bytes": 15527429,
+      "sha256": "7b7e666f02de01916dac489057fc47c046b3ac670dacee01f5d9df7ecf09f7bf",
+      "detection": false,
+      "fullDocumentText": true,
+      "documentOcrStored": false,
+      "reading": true,
+      "autoOrderKeysWhenUncustomized": 262,
+      "structure": 0,
+      "results": 0,
+      "equations": 0,
+      "bibliography": 0,
+      "nativeTextItems": 68461,
+      "detectorLines": 6282,
+      "textPages": 253
+    },
+    {
+      "file": "(3)",
+      "bytes": 566620,
+      "sha256": "42490f3957a263c6c4a2ac1b394b5bbcd87ff4248c00c871f0dcadd2f5b3bcae",
+      "detection": true,
+      "fullDocumentText": false,
+      "documentOcrStored": false,
+      "reading": true,
+      "autoOrderKeysWhenUncustomized": 262,
+      "structure": 24,
+      "results": 196,
+      "equations": 262,
+      "bibliography": 75,
+      "nativeTextItems": 0,
+      "detectorLines": 0,
+      "textPages": 0
+    },
+    {
+      "file": "(4)",
+      "bytes": 7222,
+      "sha256": "85b950f25fdb25209f6f7f653c8a2703a13ccb7a6531ba75498cad37a67e14a1",
+      "detection": false,
+      "fullDocumentText": false,
+      "documentOcrStored": false,
+      "reading": true,
+      "autoOrderKeysWhenUncustomized": 262,
+      "structure": 0,
+      "results": 0,
+      "equations": 0,
+      "bibliography": 0,
+      "nativeTextItems": 0,
+      "detectorLines": 0,
+      "textPages": 0
+    }
+  ],
+  "comparisons": {
+    "fullDocumentText_same_1_2": true,
+    "contentDetection_same_1_3": true,
+    "session_1_3_identical": true,
+    "session_2_4_identical": true
+  }
+}

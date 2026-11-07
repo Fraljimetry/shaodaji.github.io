@@ -1196,6 +1196,10 @@ async function readingDataRawDetectionSnapshot(sourceDoc, sourceKey) {
 // retaining user-authored equation/outline edits and personal reading data.
 function readingDataSessionForExport(session, includeDetection) {
   const output = jsonClone(session, {});
+  // The ordinary detector populates equationManualOrder even if the reader has
+  // never dragged a row. It is not user reading data and is ignored on restore
+  // whenever equationOrderCustomized is false; do not leak it into exports.
+  if (output.equationOrderCustomized !== true) delete output.equationManualOrder;
   if (includeDetection) return output;
   for (const key of [
     'structureEntries', 'bibliographyEntries',

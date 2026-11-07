@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=397">
+  <link rel="stylesheet" href="mathreader.css?v=398">
   <script>
     (() => {
       try {
@@ -515,12 +515,24 @@
 
         <details class="settings-group" id="settings-export-group">
           <summary><span data-en="Export data" data-zh="导出数据">Export data</span></summary>
-          <div class="settings-group-body">
-            <label class="toggle-setting"><input type="checkbox" id="export-include-detection" checked><span data-en="Include detection data" data-zh="包含检测数据">Include detection data</span></label>
-            <p class="display-note" data-en="Structure, Results, Equations and Bibliography." data-zh="结构、结果、公式编号和参考文献。">Structure, Results, Equations and Bibliography.</p>
-            <label class="toggle-setting"><input type="checkbox" id="export-include-full-text"><span data-en="Include full-document text" data-zh="包含全文文本">Include full-document text</span></label>
-            <p class="display-note" data-en="PDF text, OCR evidence and coordinates, when available. Larger files; no OCR is started." data-zh="可用的 PDF 文本、OCR 证据和坐标。文件可能较大；不会启动 OCR。">PDF text, OCR evidence and coordinates, when available. Larger files; no OCR is started.</p>
-            <p class="display-note" data-en="Reading data is always included. Settings apply to future exports." data-zh="始终包含阅读数据。此设置适用于之后的导出。">Reading data is always included. Settings apply to future exports.</p>
+          <div class="settings-group-body export-settings-body">
+            <div class="export-settings-options">
+              <label class="export-setting-option">
+                <input type="checkbox" id="export-include-detection" checked>
+                <span class="export-setting-copy">
+                  <span class="export-setting-title" data-en="Include detection data" data-zh="包含检测数据">Include detection data</span>
+                  <span class="export-setting-description" data-en="Contents indexes and detection evidence" data-zh="目录索引及检测证据">Contents indexes and detection evidence</span>
+                </span>
+              </label>
+              <label class="export-setting-option">
+                <input type="checkbox" id="export-include-full-text">
+                <span class="export-setting-copy">
+                  <span class="export-setting-title" data-en="Include full-document text" data-zh="包含全文文本">Include full-document text</span>
+                  <span class="export-setting-description" data-en="PDF/OCR text and coordinates, if available" data-zh="可用的 PDF/OCR 文本和坐标">PDF/OCR text and coordinates, if available</span>
+                </span>
+              </label>
+            </div>
+            <p class="export-settings-note" data-en="Reading data always included. No OCR starts on export." data-zh="始终包含阅读数据；导出不会启动 OCR。">Reading data always included. No OCR starts on export.</p>
           </div>
         </details>
       </section>
@@ -589,6 +601,6 @@
     </div>
   </div>
 
-  <script type="module" src="mathreader.js?v=397"></script>
+  <script type="module" src="mathreader.js?v=398"></script>
 </body>
 </html>

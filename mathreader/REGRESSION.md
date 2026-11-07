@@ -1,3 +1,13 @@
+# v398 — Verified four-export matrix and compact Export Settings (2026-11-07 Beijing UTC+08)
+
+**Baseline:** v397. Read `OCR_EXPORT_UI_v398.md` and `regression/v398_giusti_export_matrix.json` for a real 253-page Giusti four-combination export audit, exact payload truth table and recorded hashes. **All four v397 combinations were correct at the top-level layer:** both ON 15.9 MB; only full-document text 15.5 MB; only detection 567 KB; neither 7.2 KB. Full exports have native PDF.js text evidence (68,461 items, 6,282 detector lines), but **no stored full-document OCR**, not a recognition-accuracy certification.
+
+**v398 confirmed fixes:** (1) Export Settings labels and help notes were separate grid rows, combining parent grid gaps and control/paragraph margins; now each checkbox has a compact aligned description with consistent spacing and short footnote, respecting dark/light/mobile. (2) All four v397 exports contained 262 auto-generated `equationManualOrder` label keys even though `equationOrderCustomized=false`; v398 omits that redundant snapshot for automatic order but preserves genuinely custom order and reading data. Export layers, defaults, independent preferences, existing import behavior, OCR, and all four index recognizers are unchanged.
+
+**Gates:** 112 direct export assertions, 42/42 Node JS suites, 16/16 Python/Chromium suites; `regression/v398_gate_results.json` stores per-script results. New Chromium geometry tests at 220/330px, both themes. Full suite results are separate from production browser OCR; 50-historical-textbook certification and actual live Giusti/Yau re-export remain UNVERIFIED.
+
+---
+
 # v397 — Independent reading-data export controls (Beijing UTC+08, 2026-11-07)
 
 **Baseline:** v396. **Scope:** Settings → Export data adds two independent, local-only settings: `Include detection data` (default enabled) and `Include full-document text` (default disabled). Neither checkbox adds a toolbar button, changes recognition, or triggers a new OCR run. They apply to the next Export action. The `mathreader.reading-data@1` schema and local JSON import path remain unchanged. `exportLayers@1` explicitly records included, excluded, complete/partial, and not-stored evidence states.

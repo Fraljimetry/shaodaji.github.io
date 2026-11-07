@@ -1,0 +1,360 @@
+{
+  "javascript": {
+    "total": 42,
+    "passed": 42
+  },
+  "pythonAndChromium": {
+    "total": 16,
+    "passed": 16
+  },
+  "cases": [
+    {
+      "test": "appendix_equation_sidebar_browser_v388.py",
+      "pass": true,
+      "seconds": 1.58,
+      "message": "PASS: Chromium rendered 500 initial rows, incrementally loaded all 622, and found all 12 appendix equations using filter"
+    },
+    {
+      "test": "document_ocr_stop_browser_v396.py",
+      "pass": true,
+      "seconds": 1.52,
+      "message": "PASS: Chromium real Stop OCR click, stuck recognition release, late progress, Restart OCR, early module cancel, Open without OCR, lock and modal cleanup"
+    },
+    {
+      "test": "equation_navigation_browser_geometry_v386.py",
+      "pass": true,
+      "seconds": 1.47,
+      "message": "PASS: 19 Chromium equation landing / hOCR frame checks (simulated pages, real DOM geometry)"
+    },
+    {
+      "test": "export_settings_browser_v397.py",
+      "pass": true,
+      "seconds": 1.95,
+      "message": "PASS | Chromium v397 export settings | defaults, four states, preference restore, dark/light, mobile, localization markup"
+    },
+    {
+      "test": "export_settings_layout_v398.py",
+      "pass": true,
+      "seconds": 2.46,
+      "message": "PASS | Chromium v398 compact export settings | aligned text, close descriptions, two themes, narrow widths"
+    },
+    {
+      "test": "help_tutorial_regression.py",
+      "pass": true,
+      "seconds": 4.8,
+      "message": "{\n  \"assertions\": 130,\n  \"passed\": 130,\n  \"failures\": []\n}"
+    },
+    {
+      "test": "meticulous_ocr_menu_browser_v390.py",
+      "pass": true,
+      "seconds": 1.59,
+      "message": "PASS: Meticulous OCR menu position, edge clamp, real click, Escape, disabled, light/dark, absolute status, scroll/layout conservation (20+ assertions)"
+    },
+    {
+      "test": "meticulous_viewport_browser_v387.py",
+      "pass": true,
+      "seconds": 1.31,
+      "message": "ore {'reader': 700, 'side': 50, 'eq': 702, 'key': '(17.27)', 'offset': 1} after {'reader': 700, 'side': 50, 'eq': 756, 'key': '(17.27)', 'offset': 1}\nPASS: real Chromium scroll anchor survives 2 inserted equation rows; newer navigation is not undone"
+    },
+    {
+      "test": "ocr_browser_geometry_regression.py",
+      "pass": true,
+      "seconds": 1.46,
+      "message": "{\"status\": \"PASS\", \"assertions\": 13, \"scope\": \"real Chromium DOMParser/canvas; OCR worker mocked, not Texify or PDF.js\"}"
+    },
+    {
+      "test": "p0_acceptance_regression.py",
+      "pass": true,
+      "seconds": 1.13,
+      "message": "Tests.test_wrong_engine_never_passes) ... ok\ntest_wrong_source_sha_never_passes (__main__.P0ComparisonTests.test_wrong_source_sha_never_passes) ... ok\n\n----------------------------------------------------------------------\nRan 54 tests in 0.406s\n\nOK"
+    },
+    {
+      "test": "p0_gate_isolation_regression.py",
+      "pass": true,
+      "seconds": 1.57,
+      "message": "ok\ntest_successful_browser_still_requires_actual_comparator (__main__.P0GateIsolation.test_successful_browser_still_requires_actual_comparator) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.852s\n\nOK"
+    },
+    {
+      "test": "p0_p1_gap_closure_regression.py",
+      "pass": true,
+      "seconds": 0.66,
+      "message": "...............\n----------------------------------------------------------------------\nRan 15 tests in 0.002s\n\nOK"
+    },
+    {
+      "test": "p1_browser_smoke.py",
+      "pass": true,
+      "seconds": 3.19,
+      "message": "rce\",\n    \"exact ratio restored\",\n    \"transient button hidden\",\n    \"no eager formula OCR\",\n    \"manual opening invalidates transient return stack\",\n    \"obsolete Return remains hidden\",\n    \"evicted target not openable\",\n    \"relink instead\"\n  ]\n}"
+    },
+    {
+      "test": "p1_real_gate_regression.py",
+      "pass": true,
+      "seconds": 0.85,
+      "message": "counts_as_two_papers) ... ok\ntest_missing_pinned_browser_assets_cannot_pass (__main__.P1RealGate.test_missing_pinned_browser_assets_cannot_pass) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.010s\n\nOK"
+    },
+    {
+      "test": "regression_runner_smoke.py",
+      "pass": true,
+      "seconds": 9.17,
+      "message": "OK: 19 cached regression runner smoke assertions"
+    },
+    {
+      "test": "ui_responsive_regression.py",
+      "pass": true,
+      "seconds": 12.85,
+      "message": ": 0.206\n    },\n    {\n      \"width\": 860,\n      \"shell_s\": 0.1558\n    },\n    {\n      \"width\": 861,\n      \"shell_s\": 0.1742\n    },\n    {\n      \"width\": 1024,\n      \"shell_s\": 0.1738\n    },\n    {\n      \"width\": 1440,\n      \"shell_s\": 0.1724\n    }\n  ]\n}"
+    },
+    {
+      "test": "appendix_equations_v388_regression.js",
+      "pass": true,
+      "seconds": 0.053,
+      "message": "PASS: 71 appendix equation OCR / numbering / navigation / pagination assertions"
+    },
+    {
+      "test": "bibliography_boundary_regression.js",
+      "pass": true,
+      "seconds": 0.034,
+      "message": "OK: 25 boundary-bibliography class assertions"
+    },
+    {
+      "test": "cross_document_regression.js",
+      "pass": true,
+      "seconds": 0.038,
+      "message": "OK: 74 MathReader v358 cross-document and persistence assertions"
+    },
+    {
+      "test": "document_ocr_stop_v396_regression.js",
+      "pass": true,
+      "seconds": 0.395,
+      "message": "PASS: 39 document-OCR stop and cleanup assertions"
+    },
+    {
+      "test": "embedded_outline_title_regression.js",
+      "pass": true,
+      "seconds": 0.032,
+      "message": "OK: 25 embedded-outline malformed-tail class-level assertions"
+    },
+    {
+      "test": "equation_force_ocr_regression.js",
+      "pass": true,
+      "seconds": 0.032,
+      "message": "OK: 13 forced equation-image OCR checks"
+    },
+    {
+      "test": "equation_margin_navigation_regression.js",
+      "pass": true,
+      "seconds": 0.029,
+      "message": "PASS: equation-margin OCR geometry and cached-navigation repair"
+    },
+    {
+      "test": "equation_meticulous_navigation_v386_regression.js",
+      "pass": true,
+      "seconds": 0.03,
+      "message": "PASS: 17 v386 meticulous OCR equation-navigation regression assertions"
+    },
+    {
+      "test": "equation_order_ocr_regression.js",
+      "pass": true,
+      "seconds": 0.029,
+      "message": "PASS: additive OCR numerical ordering, stale-order bypass, explicit manual drag persistence"
+    },
+    {
+      "test": "equation_progress_regression.js",
+      "pass": true,
+      "seconds": 0.028,
+      "message": "OK: 33 equation progress / timing regression assertions"
+    },
+    {
+      "test": "equation_reference_ocr_target_regression.js",
+      "pass": true,
+      "seconds": 0.035,
+      "message": "PASS: 25 equation-reference OCR / navigation assertions (Giusti PDF p28 geometry)"
+    },
+    {
+      "test": "export_preferences_v397_regression.js",
+      "pass": true,
+      "seconds": 0.043,
+      "message": "PASS | v397 independent export options | assertions=112"
+    },
+    {
+      "test": "formula_latex_syntax_regression.js",
+      "pass": true,
+      "seconds": 0.817,
+      "message": "OK: 879 formula LaTeX checks; 228 MathJax compilations"
+    },
+    {
+      "test": "formula_ocr_initialization_regression.js",
+      "pass": true,
+      "seconds": 0.108,
+      "message": " (evalmachine.<anonymous>:58:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7) {\n  code: 'FORMULA_OCR_INIT_TIMEOUT'\n}"
+    },
+    {
+      "test": "formula_ocr_lazy_regression.js",
+      "pass": true,
+      "seconds": 0.032,
+      "message": "OK: 28 formula OCR lazy-initialization assertions"
+    },
+    {
+      "test": "formula_preview_compilation_regression.js",
+      "pass": true,
+      "seconds": 0.028,
+      "message": "OK: 12 formula MathJax preview lifecycle assertions"
+    },
+    {
+      "test": "historical_appendix_results_v395_regression.js",
+      "pass": true,
+      "seconds": 0.147,
+      "message": "PASS 164 Giusti appendix + Yau historical Results assertions; Giusti 13, Yau 13"
+    },
+    {
+      "test": "historical_appendix_separator_v389_regression.js",
+      "pass": true,
+      "seconds": 0.04,
+      "message": "PASS: 10 original-scan appendix numbering family assertions"
+    },
+    {
+      "test": "historical_bibliography_v394_regression.js",
+      "pass": true,
+      "seconds": 0.137,
+      "message": "PASS 27 real original-PDF bibliography assertions; Giusti 75 keyed references, Yau 15 numeric references"
+    },
+    {
+      "test": "historical_equation_positions_v394_regression.js",
+      "pass": true,
+      "seconds": 0.067,
+      "message": "PASS 33 source-page equation assertions: 22/23 independently visually inspected printed labels recorded; no false positives on these four pages; missing giusti p.231 (A.1)"
+    },
+    {
+      "test": "historical_native_pdf_detection_v394_regression.js",
+      "pass": true,
+      "seconds": 0.232,
+      "message": ": 24 printed headings, 43 sampled real PDF pages\nPASS yau: 13 printed headings, 18 sampled real PDF pages\nPASS 88 original native-PDF-layer regression assertions; no live OCR claim"
+    },
+    {
+      "test": "initial_equation_ocr_regression.js",
+      "pass": true,
+      "seconds": 0.028,
+      "message": "OK: 9 initial equation OCR / button checks"
+    },
+    {
+      "test": "long_book_outline_v392_regression.js",
+      "pass": true,
+      "seconds": 0.047,
+      "message": "PASS: 15 integrated long-book Structure/Contents/Results class assertions (synthetic native pages)"
+    },
+    {
+      "test": "maintenance_integrity_regression.js",
+      "pass": true,
+      "seconds": 0.042,
+      "message": "OK: 26 MathReader v397 maintenance integrity assertions"
+    },
+    {
+      "test": "manual_version_regression.js",
+      "pass": true,
+      "seconds": 0.026,
+      "message": "OK: 8 natural-language manual assertions"
+    },
+    {
+      "test": "meticulous_additive_ocr_regression.js",
+      "pass": true,
+      "seconds": 0.027,
+      "message": "PASS: 10 additive meticulous OCR regression assertions"
+    },
+    {
+      "test": "meticulous_equation_margin_regression.js",
+      "pass": true,
+      "seconds": 0.026,
+      "message": "OK: 9 meticulous equation margin assertions"
+    },
+    {
+      "test": "meticulous_position_preservation_v387_regression.js",
+      "pass": true,
+      "seconds": 0.03,
+      "message": "PASS: 25 v387 meticulous OCR reading-position regression checks"
+    },
+    {
+      "test": "multi_pdf_open_guard_regression.js",
+      "pass": true,
+      "seconds": 0.027,
+      "message": "OK: 11 concurrent-open and failure-return assertions"
+    },
+    {
+      "test": "multi_pdf_tabs_regression.js",
+      "pass": true,
+      "seconds": 0.028,
+      "message": "e:vm:301:6)\n    at run (/mnt/data/mr_v398_work/mathreader/tests/multi_pdf_tabs_regression.js:41:26)\n    at /mnt/data/mr_v398_work/mathreader/tests/multi_pdf_tabs_regression.js:60:3"
+    },
+    {
+      "test": "ocr_cache_identity_v391_regression.js",
+      "pass": true,
+      "seconds": 0.027,
+      "message": "PASS: 10 full-document and meticulous OCR cache-integrity assertions"
+    },
+    {
+      "test": "ocr_reliability_deep_regression.js",
+      "pass": true,
+      "seconds": 0.035,
+      "message": "PASS: 37 executable OCR reliability assertions"
+    },
+    {
+      "test": "p0_probe_evidence_regression.js",
+      "pass": true,
+      "seconds": 0.035,
+      "message": "OK: 5 test-only P0 probe evidence checks"
+    },
+    {
+      "test": "page_context_ocr_regression.js",
+      "pass": true,
+      "seconds": 0.024,
+      "message": "OK: 10 page-specific OCR source assertions"
+    },
+    {
+      "test": "page_ocr_status_regression.js",
+      "pass": true,
+      "seconds": 0.025,
+      "message": "OK: page OCR status auto-dismiss and timer replacement"
+    },
+    {
+      "test": "performance_safe_regression.js",
+      "pass": true,
+      "seconds": 0.109,
+      "message": "OK: 1204 scroll/layout/CSS parity assertions; rect reads 30k pages: 30000 -> 10"
+    },
+    {
+      "test": "precision_context_regression.js",
+      "pass": true,
+      "seconds": 0.043,
+      "message": "OK: 33 MathReader v348 precision class assertions"
+    },
+    {
+      "test": "raw_detection_export_v393_regression.js",
+      "pass": true,
+      "seconds": 0.032,
+      "message": "PASS: 37 v393 original export evidence assertions"
+    },
+    {
+      "test": "real_export_index_precision_v392_regression.js",
+      "pass": true,
+      "seconds": 0.041,
+      "message": "PASS: 63 real-export-derived outline/equation precision and persistence assertions (not original-PDF OCR accuracy)"
+    },
+    {
+      "test": "results_toc_regression.js",
+      "pass": true,
+      "seconds": 0.036,
+      "message": "OK: 23 MathReader TOC/Results class-level assertions"
+    },
+    {
+      "test": "shortcut_layout_regression.js",
+      "pass": true,
+      "seconds": 0.025,
+      "message": "OK: 14 grouped shortcuts UI checks"
+    },
+    {
+      "test": "sidebar_defaults_regression.js",
+      "pass": true,
+      "seconds": 0.027,
+      "message": "OK: 27 sidebar default and annotation behavior checks"
+    }
+  ]
+}
