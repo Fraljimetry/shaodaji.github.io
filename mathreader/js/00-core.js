@@ -370,6 +370,8 @@ let lastRecoveryFingerprint = '';
 let recoveryRestoreActive = false;
 let referencePreviewTimer = null;
 let referencePreviewSerial = 0;
+let referencePreviewActiveLink = null;
+let referencePreviewDismissalInstalled = false;
 const referenceSnapshotCache = new Map();
 
 const t = (en, zh) => root.dataset.lang === 'zh' ? zh : en;

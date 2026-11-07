@@ -1,3 +1,21 @@
+# v407 — Immediate reference preview dismissal (2026-11-07, Beijing UTC+08)
+
+**Baseline:** complete v405 ZIP with the previously delivered v406 patch cleanly applied. **Reproduced defect:** `hideReferencePreview()` cancelled only the 260 ms hover timer and hid the card; an already-started asynchronous `referencePreviewData()` PDF snapshot Promise could still resolve and **reopen the popup after `pointerleave`**. The new isolated Chromium regression (`tests/reference_hover_lifecycle_v407.py`) failed on untouched v406 at `late Promise cannot reopen after leave`, using actual browser pointer movement and real production hover handlers with controllable asynchronous PDF lookup.
+
+**Small correction:** dismissal now increments `referencePreviewSerial` to invalidate all in-flight previews and clears the active link. The completion path additionally checks current link ownership, DOM connection and pointer hover (or keyboard focus) before showing. A single passive global pointer-movement listener clears stranded popups when links are replaced without firing `pointerleave`; outside pointer-down, scroll and window blur also dismiss. Pointer-enter still opens after the existing 260 ms delay; pointer-leave and blur close synchronously. Preview remains `pointer-events:none` and cannot trap the mouse. Keyboard focus still supports previews. No OCR, mathematical indexes, PDF caching or document persistence rules are modified.
+
+**Evidence boundary:** Chromium integration uses production functions, real pointer and focus events, and a **mocked PDF target/image Promise** to force the race; this is not a test of live website preview PDF rendering or deployed behavior. A full suite, syntax/assembly gate, and replay onto the v405+v406 baseline are required for release. Previously accepted Ahlfors raw OCR evidence loss after hard reload remains unchanged.
+
+---
+
+# v406 — Appendix equation retry with observed formula context (2026-11-07, Beijing UTC+08)
+
+**Baseline:** complete uploaded v405 ZIP. **Confirmed general omission:** the old numeric-only equation-gap retry excludes every alphabetic appendix label. Original Giusti (1984) PDF p231 visibly prints `(A.1)` adjacent to the formula `μₖ(ℝⁿ) ≤ M`; the saved matched-sha export has `(A.2)` / `(A.3)` but not `(A.1)`. Offline original-image Tesseract `eng` PSM 6/11 at 18%-wide left-margin crop misreads `(A.1)` as `(AL)`, while a 28%-wide crop reads the exact label; this does **not** establish browser OCR success or a deployed v405 failure of its initial wide-margin pass. New v406 retry is bounded to eight originally evidenced appendix-gap pages, uses a 28% margin crop and PSM 6, demands an *actual exact parenthesized OCR label plus math outside the tag* on a geometrically validated display line, and never invents labels or accepts `(Al)`/theorem/prose references. Existing numeric-only retry no longer wastes work on appendix queries. Worker lifecycle/document-switch and retry timing protected. No storage repair, UI redesign or general OCR/structure classifier changes.
+
+**Evidence/tests:** `APPENDIX_MARGIN_RETRY_v406.md`, `tests/appendix_margin_retry_v406_regression.js`, `tests/appendix_retry_pipeline_v406_regression.js`, `regression/v406_original_corpus_audit.json`. The first newly added regression failed before the change (appendix retry validator absent) and passes afterward; the separate pipeline test uses a mocked OCR worker, not real PDF.js/Tesseract.js. Six original PDF/export SHA matches: 539 pages, no structural integrity errors, but genuine mathematical transcription errors persist (Giusti p231 native missing display, Ahlfors p81 native text mistakes). **Live v406 Giusti automatic recovery, exact browser navigation, complete image-to-LaTeX correctness and 100% accuracy are NOT certified.** Ahlfors hard-reload raw-evidence loss remains the accepted, unmodified limitation.
+
+---
+
 # v405 — Manual appendix equation labels (2026-11-07, Beijing UTC+08)
 
 **Baseline:** v404 application, with the audit-only v405 campaign carried forward. **Scope:** manual Equations → Add / Reselect; no automatic OCR/detection changes.

@@ -89,7 +89,27 @@ function commandPaletteMatchScore(item,qRaw) {
 
 function hideReferencePreview() {
   clearTimeout(referencePreviewTimer);
+  // Invalidate in-flight PDF snapshot promises, not just the pending hover timer.
+  ++referencePreviewSerial;
+  referencePreviewActiveLink = null;
   if (referencePreview) referencePreview.classList.add('is-hidden');
+}
+
+function dismissReferencePreviewIfPointerOutside(event) {
+  if (referencePreviewActiveLink &&
+      (!referencePreviewActiveLink.isConnected || !referencePreviewActiveLink.contains(event.target))) {
+    hideReferencePreview();
+  }
+}
+
+function ensureReferencePreviewDismissal() {
+  if (referencePreviewDismissalInstalled) return;
+  referencePreviewDismissalInstalled = true;
+  // A link may be replaced during page rendering without dispatching pointerleave.
+  document.addEventListener('pointermove', dismissReferencePreviewIfPointerOutside, { capture: true, passive: true });
+  document.addEventListener('pointerdown', dismissReferencePreviewIfPointerOutside, true);
+  document.addEventListener('scroll', hideReferencePreview, true);
+  window.addEventListener('blur', hideReferencePreview);
 }
 
 function snapshotKindForQuery(query) {
@@ -144,13 +164,18 @@ async function referencePreviewData(query, originPage, originRatio) {
 
 function attachReferencePreview(link, query, originPage, originRatio = null) {
   if (!link || !referencePreview) return;
-  const show = () => {
+  ensureReferencePreviewDismissal();
+  const show = (mode) => {
     clearTimeout(referencePreviewTimer);
+    referencePreview.classList.add('is-hidden');
+    referencePreviewActiveLink = link;
     const serial = ++referencePreviewSerial;
     referencePreviewTimer = setTimeout(async () => {
       try {
         const data = await referencePreviewData(query, originPage, originRatio);
-        if (!data || serial !== referencePreviewSerial || !link.isConnected) return;
+        if (!data || serial !== referencePreviewSerial || referencePreviewActiveLink !== link || !link.isConnected ||
+            (mode === 'pointer' && !link.matches(':hover')) ||
+            (mode === 'focus' && document.activeElement !== link)) return;
         referencePreview.replaceChildren();
         const header = document.createElement('div'); header.className='reference-preview-header';
         const strong = document.createElement('strong'); strong.textContent = query;
@@ -176,10 +201,14 @@ function attachReferencePreview(link, query, originPage, originRatio = null) {
       } catch (_) {}
     }, 260);
   };
-  link.addEventListener('pointerenter', show);
-  link.addEventListener('focus', show);
-  link.addEventListener('pointerleave', hideReferencePreview);
-  link.addEventListener('blur', hideReferencePreview);
+  link.addEventListener('pointerenter', () => show('pointer'));
+  link.addEventListener('focus', () => show('focus'));
+  link.addEventListener('pointerleave', () => {
+    if (referencePreviewActiveLink === link) hideReferencePreview();
+  });
+  link.addEventListener('blur', () => {
+    if (referencePreviewActiveLink === link) hideReferencePreview();
+  });
 }
 
 function commandActions() {
