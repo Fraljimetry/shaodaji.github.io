@@ -1,6 +1,6 @@
 # MathReader — Regression policy and recent history
 
-This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v417 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
+This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v418 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
 
 ## Standing verification requirements
 
@@ -13,6 +13,20 @@ This is the stable entry point for MathReader's development and verification rec
 ## Finding older regression records
 
 See [Documentation map](docs/README.md) for OCR, export, audit, and release documents, and the [regression history archive](docs/README.md#regression-history) for older v338–v404 notes. The historical archive preserves the supplied v414 source record in its original order, including later appendices.
+
+---
+
+## v418 — Local printed-label occurrences and wider mathematical numbering (2026-11-09 UTC)
+
+**Reproduced on the supplied v417 sources:** Leon Simon, *Lectures on PDE*, has 224 pages and its exported v417 equation snapshot retained only **19 printed-label entries** despite repeated, physically distinct, left-margin `(1)`, `(2)`, ... series in separate lectures. On PDF page 125, actual native PDF.js text preserves `(2)`–`(8)`, whereas v417 retained only `(7)` and `(8)`. The new `tests/equation_numbering_scope_v418_regression.js` runs the complete production equation builder against twelve frozen native-text pages selected from the user export, and fails on v417 before the fix. It separately checks real displayed `(1)`,`(2)`,`(3)` on p.95 and excludes a wrapped `(2))` reference on p.61. It is a **native-text proxy**, not an original-page visual truth audit.
+
+**General correction:** equation labels are display strings, **not document-wide occurrence IDs**. For strict native-margin labels retain individual verified pages, deduplicating same-label repeats *on one page* conservatively (unchanged v415 protection). Preserve existing chapter-specific and colon-font `(3:6)` → `(3.6)` safeguards. Avoid rejecting math operators and two-letter indexed variables as prose or programming syntax; explicitly exclude malformed prose `(2))`. Expand parser grammar to numbered letters `(1a)` / `(1.2a)` / `(2.4b)`, full chapter–section–equation `(1.2.3)`, Roman-prefixed `(II.7.14)`, `(III.6)`, and appendix `(A1)`, `(C.2a)` without globally rewriting strings. Exclude explicit `refer to (II.7.14)` prose contexts. A separate parser regression fails on unmodified v417, then passes on v418. Standalone numbers under definition lists remain excluded.
+
+**Independent numbering-convention research:** Atkinson and Han, *Theoretical Numerical Analysis*, explicitly document `(1.2.3)`; Ronold W. P. King, *The Theory of Linear Antennas*, explicitly documents within-section `(1)`, cross-section `(7.14)`, and cross-chapter `(II.7.14)`; R. K. Livesley, *An Introduction to Automatic Digital Computers*, Cambridge excerpt shows `(1.2a)`–`(1.2c)`; IEEE *Editing Mathematics* documents `(1a)`, `(A1)`, and `(1.2.1)`. These provide **convention-level tests**, not MathReader runs on those books' source PDF bytes. Reference URLs and test scopes are in [v418 release note](docs/releases/V418_RELEASE.md).
+
+**Measurements and gates:** full-source native replay of the supplied 224-page Simon PDE export: **v417 19 occurrences → v418 171 candidate occurrences across 20 labels** (counts alone are **not** precision/recall). The frozen 12-page source fixture yields 32 occurrences/19 labels. Previously reported Simon GMT colon-font regression retains its expected printed label pages and its conservative same-page de-duplication. All **64/64 JS** suites, **28/28 Python/isolated Chromium** tests, **176/176 responsive assertions**, 80/80 source syntax checks and P0 Chromium shell passed. Cache key v417→v418 and local equation snapshot schema 27→28 force local detector refresh; portable old exports remain importable. Evidence: `regression/v418_release_gate.json`, `regression/v418_js_results.json`, `regression/v418_python_results.json`, [release note](docs/releases/V418_RELEASE.md).
+
+**Not certified:** mathematical truth across all 224 printed PDF pages, real Texify/image-formula accuracy, real browser PDF.js on the original PDF, same-page section resets with duplicated printed labels (still conservatively collapsed), and historical Ahlfors OCR evidence persistence. No user-specific filename exceptions or new automatic OCR workload were introduced.
 
 ---
 

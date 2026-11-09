@@ -623,7 +623,9 @@ function compactNumericEquationTagInner(raw) {
 function isPlausibleNumericEquationTagInner(inner) {
   const value = String(inner || '');
   if (/^\d+$/.test(value)) return /^(?:0|[1-9]\d{0,3})$/.test(value);
-  return /^\d+(?:(?:\.\d+)+|(?:-\d+)+)$/.test(value);
+  // Aligned displays can number subexpressions (1a), (1.2a), (2.4b).
+  // A single trailing lowercase letter is a suffix, never a new chapter.
+  return /^(?:\d+(?:(?:\.\d+)+|(?:-\d+)+)[a-z]?|[1-9]\d{0,3}[a-z])$/.test(value);
 }
 
 // Numbered appendix displays have their own families (A.1, B-2, A1,
@@ -636,7 +638,7 @@ function isPlausibleAppendixEquationTagInner(inner) {
   // Dotted lower-case appendix numbering remains possible, but bare/compact
   // lower-case tokens such as (n-1), (j-2), (k1) are overwhelmingly formula
   // variables, not appendix labels. Preserve uppercase A-1, A1, AA.3 etc.
-  return /^(?:[A-Z]{1,2}(?:(?:\.\d{1,4}){1,3}|(?:-\d{1,4}){1,3}|\d{1,4})(?:[a-z])?|[a-z]{1,2}(?:\.\d{1,4}){1,3}(?:[a-z])?)$/.test(value);
+  return /^(?:[A-Z]{1,2}(?:(?:\.\d{1,4}){1,3}|(?:-\d{1,4}){1,3}|\d{1,4})(?:[a-z])?|[a-z]{1,2}(?:\.\d{1,4}){1,3}(?:[a-z])?|[IVXLCDM]{3,8}(?:\.\d{1,4}){1,3}(?:[a-z])?)$/.test(value);
 }
 
 function isPlausibleEquationTagInner(inner) {
@@ -719,12 +721,14 @@ function normalizeSequentialStructureEntries(entries) {
 function parsedEquationNumber(label) {
   const inner = normalizedEquationLabel(label).slice(1, -1);
   if (isPlausibleNumericEquationTagInner(inner)) {
-    const separator = inner.includes('-') ? '-' : '.';
-    const parts = inner.split(separator).map((part) => Number(part));
-    return { parts, prefix: parts.slice(0, -1).join(separator), last: parts[parts.length - 1], separator, suffix: '', appendix: false };
+    const suffix = (inner.match(/[a-z]$/) || [''])[0];
+    const body = suffix ? inner.slice(0, -1) : inner;
+    const separator = body.includes('-') ? '-' : '.';
+    const parts = body.split(separator).map((part) => Number(part));
+    return { parts, prefix: parts.slice(0, -1).join(separator), last: parts[parts.length - 1], separator, suffix, appendix: false };
   }
   if (!isPlausibleAppendixEquationTagInner(inner)) return null;
-  const match = inner.match(/^([A-Za-z]{1,2})([.\-]?)(\d+(?:[.\-]\d+)*)([a-z]?)$/);
+  const match = inner.match(/^([A-Za-z]{1,2}|[IVXLCDM]{3,8})([.\-]?)(\d+(?:[.\-]\d+)*)([a-z]?)$/);
   if (!match) return null;
   const [, letter, separator, digits, suffix] = match;
   const parts = separator ? digits.split(separator).map(Number) : [Number(digits)];
@@ -1154,27 +1158,48 @@ function chooseCanonicalEquationCandidate(candidates) {
   })[0];
 }
 
+// The label is display text, not a document-wide primary key. A book may
+// restart (1), (2), ... at every lecture, or reuse (1.1) in separate parts.
+// Preserve *independently printed* native-margin targets, never inline mentions
+// or unsupported OCR guesses. For two candidates on the same page, retain a
+// single best measured position; an ordinary reference does not make a second
+// occurrence just because it repeats the label.
+function equationVerifiedPrintedOccurrence(item) {
+  if (item?.confirmedColonMargin) return true;
+  if (!item || !Number.isFinite(item.confidence) || item.confidence < 8
+      || item.sequenceOnly || item.attachedFunctionCall || item.enumeratedConditionList
+      || item.axisNumericCluster || item.tabularNumericCell || item.measurementValue
+      || item.ocrTopRunningHeader || item.nearbyHeadingContext || item.sameRowHeadingContext
+      || equationReferenceProseContext(item.text)) return false;
+  if (item.ocrSource && !item.nativeGapCorroborated && !item.meticulousPageVerified) return false;
+  if (!item.explicitParenthesized || !equationCandidateAlignedToNumberingSide(item)) return false;
+  const start = Number(item.candidateXStartRatio);
+  const end = Number(item.candidateXEndRatio);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  return equationNumberingSide === 'left'
+    ? item.candidateAtLineStart && start >= 0.02 && end <= 0.22
+    : item.candidateAtLineEnd && start >= 0.74 && end <= 0.995;
+}
+
 function canonicalizeEquationIndex(index) {
   const out = new Map();
   for (const [label, candidates] of index.entries()) {
     const canonical = chooseCanonicalEquationCandidate(candidates);
     if (!canonical) continue;
-    // The same section number can restart in a later chapter. Previously one
-    // canonical label silently erased all other *printed* equations. Preserve
-    // independently corroborated colon-margin occurrences, including a dotted
-    // variant seen in another chapter. Prose references / weak OCR candidates
-    // must never multiply an index entry merely because their number matches.
-    const trusted = (candidates || []).filter((item) => item?.confirmedColonMargin);
-    const instances = [canonical, ...trusted].sort((a, b) => equationDocumentPosition(a) - equationDocumentPosition(b));
-    const distinct = [];
-    for (const item of instances) {
-      // A second occurrence of the same label on one page is normally a
-      // reference or restatement, not a second numbered equation. Keep one
-      // location per printed label per page, while retaining later chapters.
-      if (distinct.some((other) => Number(other.page) === Number(item.page))) continue;
-      distinct.push(item);
+    const trusted = (candidates || []).filter(equationVerifiedPrintedOccurrence);
+    const byPage = new Map();
+    for (const record of trusted) {
+      const page = Number(record.page);
+      const old = byPage.get(page);
+      if (!old || (record.meticulousPageVerified && !old.meticulousPageVerified)
+          || (Number(record.confidence) > Number(old.confidence))) byPage.set(page, record);
     }
-    out.set(label, distinct.length > 1 ? distinct : [canonical]);
+    if (!byPage.size) byPage.set(Number(canonical.page), canonical);
+    // Retain a canonical result on its own page even if the strict corroboration
+    // guard found no repeated family. Never add an untrusted *extra* page.
+    else if (!byPage.has(Number(canonical.page)) && !canonical.ocrSource
+        && equationVerifiedPrintedOccurrence(canonical)) byPage.set(Number(canonical.page), canonical);
+    out.set(label, [...byPage.values()].sort((a,b)=>equationDocumentPosition(a)-equationDocumentPosition(b)));
   }
   return out;
 }
@@ -1241,6 +1266,10 @@ function equationLabelCandidatesInLine(text) {
   const re = /[（(]\s*([^()（）]{1,32}?)\s*[)）]/g;
   let match;
   while ((match = re.exec(source))) {
+    // A dangling second close-paren, as in a line extracted as "(2))"
+    // after prose ending in "in view of", is a broken reference continuation,
+    // not a printed standalone margin equation.
+    if (/^\s*[)）]/u.test(source.slice(match.index + match[0].length))) continue;
     const rawInner = normalizeEquationTagCommands(String(match[1] || '').normalize('NFKC'));
     const numericInner = compactNumericEquationTagInner(rawInner);
     const symbolicInner = String(rawInner || '').replace(/\s+/g, '');
@@ -1624,8 +1653,8 @@ function equationReferenceProseContext(text) {
   // that grammatically *refer to* an equation; genuine display tags normally
   // sit beside formula text rather than after "properties", "expansion", "of",
   // etc., or before a prose continuation such as "we have" / "this shows".
-  const tag = String.raw`[（(]\s*(?:\d{1,4}(?:(?:[.．\-－]\s*\d{1,4})+)?|[A-Za-z]{1,2}(?:(?:[.．\-－]\s*\d{1,4})+|\d{1,4}))(?:[a-z])?\s*[)）]`;
-  const before = new RegExp(String.raw`\b(?:equation|eq\.?|see|from|by|using|according\s+to|as\s+in|in\s+view\s+of|follows?\s+from|recall(?:ing)?|substitut(?:e|ing)|insert(?:ing)?|apply(?:ing)?|combin(?:e|ing)|properties?|assumptions?|hypotheses?|requirements?|expansion|formula|identity|estimate|relation|conditions?|case|version|form|of|into)\s*${tag}`, 'i');
+  const tag = String.raw`[（(]\s*(?:\d{1,4}(?:(?:[.．\-－]\s*\d{1,4})+)?|(?:[A-Za-z]{1,2}|[IVXLCDM]{3,8})(?:(?:[.．\-－]\s*\d{1,4})+|\d{1,4}))(?:[a-z])?\s*[)）]`;
+  const before = new RegExp(String.raw`\b(?:equation|eq\.?|see|from|by|using|refer\s+to|according\s+to|as\s+in|in\s+view\s+of|follows?\s+from|recall(?:ing)?|substitut(?:e|ing)|insert(?:ing)?|apply(?:ing)?|combin(?:e|ing)|properties?|assumptions?|hypotheses?|requirements?|expansion|formula|identity|estimate|relation|conditions?|case|version|form|of|into)\s*${tag}`, 'i');
   const after = new RegExp(String.raw`${tag}\s*(?:[.,;:]\s*)?(?:and|or|but|then|hence|therefore|thus|where|which|that|is|are|was|were|holds?|gives?|implies?|shows?|yields?|we|this|it)\b`, 'i');
   return before.test(source) || after.test(source);
 }
@@ -1781,8 +1810,12 @@ function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext 
   if (parsed?.appendix && !item?.standaloneTag && mathSignals === 0 && !item?.nearbyDisplayMath) return -Infinity;
   const explicitReferenceContext = Boolean(parsed && item?.explicitParenthesized && equationReferenceProseContext(text));
   const integerTag = Boolean(parsed && !parsed.prefix);
-  const alphaWords = text.match(/[A-Za-z]{2,}|\p{Script=Han}{2,}/gu) || [];
-  const codeLike = (/(?:=>|;\s*$|\b(?:if|else|while|return|var|new|class|public|private|static|int|string)\b)/i.test(text)
+  // Older mathematical fonts encode indexed variables as "ij", "kl", etc.
+  // Two-letter formula subscripts are not two prose words. In particular, do
+  // not discard a valid left-margin (5) solely because its line contains ij.
+  const alphaWords = (text.match(/[A-Za-z]{3,}|\p{Script=Han}{2,}/gu) || [])
+    .filter((word) => !/^(?:sup|inf|lim|div|det|grad)$/i.test(word));
+  const codeLike = (/(?:=>|\b(?:if|else|while|return|var|new|class|public|private|static|int|string)\b)/i.test(text)
     || (/\bfor\b/i.test(text) && /[{};]/.test(text)))
     && (text.match(/[(){}\[\]]/g) || []).length >= 4;
   const onNumberingEdge = equationNumberingSide === 'left' ? Boolean(item?.candidateAtLineStart) : Boolean(item?.candidateAtLineEnd);

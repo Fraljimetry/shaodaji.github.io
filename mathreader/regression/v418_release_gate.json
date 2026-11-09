@@ -1,0 +1,79 @@
+{
+  "release": "v418",
+  "date_utc": "2026-11-09",
+  "baseline": "user uploaded complete v417 ZIP",
+  "source_changes": [
+    "mathreader.js",
+    "index.html",
+    "js/00-core.js",
+    "js/41-equations-bibliography.js"
+  ],
+  "user_document": {
+    "name": "Lectures on PDE_Leon Simon.pdf",
+    "pdf_page_count_from_export": 224,
+    "pdf_sha256_from_export": "f206d5853a9eee03af37156311475d08bda51875b29dc740826c60240d4b38dd",
+    "original_pdf_bytes_provided": false,
+    "baseline_v417_saved_equation_occurrences": 19,
+    "v418_native_replay_distinct_labels": 20,
+    "v418_native_replay_occurrences": 171,
+    "selected_original_native_pdfjs_pages_tested": [
+      14,
+      29,
+      61,
+      65,
+      82,
+      86,
+      95,
+      125,
+      129,
+      172,
+      214,
+      215
+    ],
+    "selected_pages_distinct_labels": 19,
+    "selected_pages_occurrences": 32
+  },
+  "external_conventions": {
+    "Atkinson_Han": "(1.2.3)",
+    "King_1956": "local (1), cross-section (7.14), cross-chapter (II.7.14)",
+    "Livesley_Cambridge": "(1.2a),(1.2b),(1.2c)",
+    "IEEE": "(1a),(A1),(1.2.1)"
+  },
+  "gates": {
+    "javascript_suites": {
+      "pass": 64,
+      "total": 64
+    },
+    "python_test_suites": {
+      "pass": 28,
+      "total": 28
+    },
+    "responsive_assertions": {
+      "pass": 176,
+      "total": 176
+    },
+    "javascript_syntax": {
+      "pass": 80,
+      "total": 80
+    },
+    "runtime_assembly_syntax": "PASS",
+    "isolated_chromium_browser_shell": "PASS",
+    "source_based_regressions": "PASS",
+    "prior_colon_font_regression": "PASS",
+    "original_pdf_visual_truth": "NOT_VERIFIED",
+    "real_texify_formula_inference": "NOT_VERIFIED"
+  },
+  "limitations": [
+    "Increase in source-native candidates is not independent mathematical precision/recall",
+    "External textbook PDFs were researched for conventions, not replayed through real PDF.js",
+    "Same-page ambiguous repeated labels remain conservatively merged",
+    "OCR evidence on hard refresh in Ahlfors remains an accepted limitation"
+  ],
+  "test_scripts": [
+    "tests/equation_numbering_scope_v418_regression.js",
+    "tests/equation_notation_families_v418_regression.js",
+    "tests/simon_colon_font_v415_regression.js",
+    "tests/equation_cache_v415_regression.js"
+  ],
+  "gate_wrapper_note": "A monolithic p0_gate invocation timed out; the 64 JavaScript, 28 Python, assembled runtime and Chromium shell gates were completed separately. Full original-PDF accuracy gate incomplete."
+}

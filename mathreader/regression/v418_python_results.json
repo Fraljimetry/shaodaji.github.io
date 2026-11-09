@@ -1,0 +1,151 @@
+{
+  "release": "v418",
+  "test_count": 28,
+  "pass_count": 28,
+  "test_results": [
+    {
+      "name": "appendix_equation_sidebar_browser_v388.py",
+      "status": "PASS",
+      "secs": 3.27
+    },
+    {
+      "name": "continuous_initial_repaint_v410.py",
+      "status": "PASS",
+      "secs": 4.72
+    },
+    {
+      "name": "corpus_integrity_v405_regression.py",
+      "status": "PASS",
+      "secs": 1.44
+    },
+    {
+      "name": "docs_layout_regression.py",
+      "status": "PASS",
+      "secs": 1.27
+    },
+    {
+      "name": "equation_margin_export_browser_v402.py",
+      "status": "PASS",
+      "secs": 3.63
+    },
+    {
+      "name": "equation_navigation_browser_geometry_v386.py",
+      "status": "PASS",
+      "secs": 3.04
+    },
+    {
+      "name": "export_settings_browser_v397.py",
+      "status": "PASS",
+      "secs": 4.12
+    },
+    {
+      "name": "export_settings_layout_v398.py",
+      "status": "PASS",
+      "secs": 4.61
+    },
+    {
+      "name": "full_text_exports_v400.py",
+      "status": "PASS",
+      "secs": 1.63
+    },
+    {
+      "name": "help_tutorial_regression.py",
+      "status": "PASS",
+      "secs": 12.64
+    },
+    {
+      "name": "manual_equation_click_browser_v411.py",
+      "status": "PASS",
+      "secs": 2.83
+    },
+    {
+      "name": "meticulous_ocr_menu_browser_v390.py",
+      "status": "PASS",
+      "secs": 3.8
+    },
+    {
+      "name": "meticulous_viewport_browser_v387.py",
+      "status": "PASS",
+      "secs": 3.0
+    },
+    {
+      "name": "ocr_browser_geometry_regression.py",
+      "status": "PASS",
+      "secs": 3.3
+    },
+    {
+      "name": "p0_acceptance_regression.py",
+      "status": "PASS",
+      "secs": 2.22
+    },
+    {
+      "name": "p0_gate_isolation_regression.py",
+      "status": "PASS",
+      "secs": 3.11
+    },
+    {
+      "name": "p0_p1_gap_closure_regression.py",
+      "status": "PASS",
+      "secs": 1.63
+    },
+    {
+      "name": "p1_browser_smoke.py",
+      "status": "PASS",
+      "secs": 6.27
+    },
+    {
+      "name": "p1_real_gate_regression.py",
+      "status": "PASS",
+      "secs": 1.84
+    },
+    {
+      "name": "reference_hover_lifecycle_v407.py",
+      "status": "PASS",
+      "secs": 5.51
+    },
+    {
+      "name": "regression_runner_smoke.py",
+      "status": "PASS",
+      "secs": 16.99
+    },
+    {
+      "name": "results_geometry_browser_v412.py",
+      "status": "PASS",
+      "secs": 2.52
+    },
+    {
+      "name": "results_named_boundary_browser_v413.py",
+      "status": "PASS",
+      "secs": 2.88
+    },
+    {
+      "name": "settings_heading_hierarchy_v400.py",
+      "status": "PASS",
+      "secs": 3.96
+    },
+    {
+      "name": "settings_text_orphans_v399.py",
+      "status": "PASS",
+      "secs": 6.54
+    },
+    {
+      "name": "seven_export_evidence_v401.py",
+      "status": "PASS",
+      "secs": 1.49
+    },
+    {
+      "name": "ui_copy_layout_v414.py",
+      "status": "PASS",
+      "secs": 6.37
+    },
+    {
+      "name": "ui_responsive_regression.py",
+      "status": "PASS",
+      "assertions": 176,
+      "passed": 176,
+      "failed": 0
+    }
+  ],
+  "chromium_shell_status": "PASS",
+  "report_scope": "Isolated Chromium UI plus mock/source-proxy regression; no real original-PDF OCR inferencing"
+}
