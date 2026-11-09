@@ -1,0 +1,47 @@
+{
+  "release": "v420",
+  "baseline": "v419 complete installation (v418 complete + v419 patch)",
+  "fix": "Two-column native equation detection: isolated inner-gutter labels, split-text outer-column math, determinant function names",
+  "baseline_regression_reproduction": {
+    "test": "tests/two_column_native_equations_v420_regression.js",
+    "v419": "FAILED: missing printed (1) p2, (12), (13), (14) p9, (18) p11",
+    "v420": "PASS: 21/21 distinct printed labels, 0 extra equation labels, column reading order correct"
+  },
+  "tests": {
+    "js": {
+      "passed": 67,
+      "total": 67,
+      "all_isolated": true
+    },
+    "python_chromium": {
+      "passed": 29,
+      "total": 29,
+      "method": "28 test files run in parallel isolated subprocesses; ui_responsive_regression.py rerun separately",
+      "monolithic_batch_certified": false
+    },
+    "responsive_layout": {
+      "passed": 176,
+      "total": 176
+    },
+    "source_module_syntax": "PASS",
+    "assembled_lexical_runtime": "PASS (maintenance integrity VM parser)",
+    "historical_simon_pde_224pg": {
+      "v419": {
+        "labels": 20,
+        "occurrences": 171
+      },
+      "v420": {
+        "labels": 20,
+        "occurrences": 171
+      }
+    },
+    "v419_manual_structure_browser_test": "PASS"
+  },
+  "limitations": [
+    "No live native PDF browser acceptance with an actual local PDF and Texify inference",
+    "Independent page-image truth confirmed for the STOC 2025 paper, not all regression books",
+    "Existing Giusti appendix p231 (A.1) remains a historical known miss",
+    "Accepted Ahlfors OCR evidence reload limitation remains"
+  ],
+  "deployment": "Extract ZIP over an existing v419 mathreader/ folder; only changed mathreader/... paths are included"
+}

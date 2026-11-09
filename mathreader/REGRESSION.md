@@ -1,5 +1,13 @@
 # MathReader — Regression policy and recent history
 
+
+## v420 — local-column equation tag recovery
+
+- Reproduced on the complete 12-page native-text export of the STOC 2025 paper: v419 missed printed (1), (12), (13), (14), (18). New regression fails before the fix, passes with 21/21 labels and no extras; numbered list conditions remain excluded.
+- The root cause is two-column line attribution and short determinant-display classification, not a one-off numbering dialect. The fix has no PDF-specific conditions. Equation index schema: 28 → 29; existing reading data and v419 manual Structure are preserved.
+- Broader regression: 67/67 JavaScript suites, 29/29 isolated Python/Chromium files. The combined Python batch timed out; passing isolated test files do not imply a monolithic batch passed. Leon Simon PDE (224 pages) remained 20 label strings / 171 native occurrences before and after.
+- See [`docs/releases/V420_RELEASE.md`](docs/releases/V420_RELEASE.md) and `regression/v420_release_gate.json` for evidence, assumptions and remaining limitations.
+
 This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v419 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
 
 ## Standing verification requirements

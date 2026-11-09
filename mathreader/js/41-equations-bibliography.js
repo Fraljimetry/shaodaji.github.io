@@ -903,12 +903,29 @@ function equationColumnAwareSupplementLines(rawLines) {
     const right = equationLineFragmentForColumns(line, parts.slice(best.index + 1), 1, rightStart, rightEnd);
     if (left && right) out.push(left, right); else out.push(line);
   }
-  return out;
+  // A printed tag can occupy only the gutter at the end of a left-column
+  // display. Its own PDF.js text run may have no words beside it, and a
+  // same-y right-column fragment may cause the splitter to assign the tag to
+  // the *right* column. Reclassify only isolated tags located wholly before
+  // the actual right-column text start. Do not use the median left text end:
+  // equations can protrude farther into the gutter than ordinary prose.
+  const localRightEdge = rightStart - 0.025;
+  return out.map((line) => {
+    const start = Number(line.xStartRatio);
+    const end = Number(line.xEndRatio);
+    if (!(start >= 0.37 && start < localRightEdge && end <= localRightEdge + 0.010
+        && end >= rightStart - 0.16)) return line;
+    const candidates = equationLabelCandidatesInLine(line.text);
+    if (candidates.length !== 1 || !isStandaloneEquationTagLine(line, candidates[0].label)) return line;
+    return { ...line, equationTwoColumn: true, equationColumnIndex: 0,
+      equationColumnStartRatio: leftStart,
+      equationColumnEndRatio: Math.max(leftEnd, end + 0.004) };
+  });
 }
 
-function equationCandidateAlignedToLocalColumnSide(item, side = equationNumberingSide) {
+function equationCandidateAlignedToLocalColumnSide(item, side = equationNumberingSide, columnOverride = null) {
   if (!item?.equationTwoColumn) return false;
-  const targetColumn = side === 'left' ? 1 : 0;
+  const targetColumn = Number.isInteger(columnOverride) ? columnOverride : (side === 'left' ? 1 : 0);
   if (item.equationColumnIndex !== targetColumn) return false;
   const start = Number(item?.candidateXStartRatio);
   const end = Number(item?.candidateXEndRatio);
@@ -921,10 +938,10 @@ function equationCandidateAlignedToLocalColumnSide(item, side = equationNumberin
   return start >= columnEnd - tolerance || end >= columnEnd - tolerance * 0.65;
 }
 
-function twoColumnEquationSupplementCandidates(lines, page, side = equationNumberingSide) {
+function twoColumnEquationSupplementCandidates(lines, page, side = equationNumberingSide, columnOverride = null) {
   const pageOcrConfidence = equationOcrPageConfidence(page);
   const out = [];
-  const targetColumn = side === 'left' ? 1 : 0;
+  const targetColumn = Number.isInteger(columnOverride) ? columnOverride : (side === 'left' ? 1 : 0);
   const referenceProse = /\b(?:equation|eq\.?|see|from|by|using|satisfies|implies|according\s+to|as\s+in|in\s+view\s+of|contradicts?|rewrit(?:e|ten)|follows?\s+from|inequality\s+(?:like|in)|as\s+required|cf\.?|recall|apply(?:ing)?|combin(?:e|ing)|substitut(?:e|ing)|insert|notice)\b/i;
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex];
@@ -964,7 +981,7 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
       const tagAtLocalMargin = side === 'left' ? record.candidateAtLineStart : record.candidateAtLineEnd;
       if (record.attachedFunctionCall) continue;
       if (record.bareSource && (bareEquationInTabularRow(lines, lineIndex) || bareEquationHasMeasurementSuffix(line, candidate))) continue;
-      if (!tagAtLocalMargin || !equationCandidateAlignedToLocalColumnSide(record, side)) continue;
+      if (!tagAtLocalMargin || !equationCandidateAlignedToLocalColumnSide(record, side, targetColumn)) continue;
       if (referenceProse.test(String(record.text || ''))) continue;
       if (record.bareSource) {
         const extremeTopBareMarker = record.standaloneTag
@@ -983,10 +1000,13 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
       // tag still belongs to the *local* column margin, not the physical PDF
       // edge. Require a visible operator, few prose words, and an end tag;
       // do not relax the general margin or inline-reference classifier.
+      const mathematicalFunctionWords = /^(?:det|tr|rank|lim|sup|inf|log|exp|sin|cos|max|min|grad|div|arg)$/i;
+      const proseWords = (String(record.text || '').match(/[A-Za-z]{3,}/g) || [])
+        .filter((word) => !mathematicalFunctionWords.test(word));
       const shortLocalDisplay = !record.bareSource && record.candidateAtLineEnd
         && record.mathSignals >= 1
         && /[=±×∼≈<>≤≥∈∉∑∫√^_~|]/u.test(String(record.text || ''))
-        && (String(record.text || '').match(/[A-Za-z]{3,}/g) || []).length <= 1;
+        && proseWords.length <= 1;
       if (!record.standaloneTag && !record.nearbyDisplayMath && record.mathSignals < 2 && !shortLocalDisplay) continue;
       if ((String(record.text || '').match(/[A-Za-z]{3,}/g) || []).length >= 8 && record.mathSignals < 2) continue;
       record.shortLocalDisplay = shortLocalDisplay;
@@ -1018,6 +1038,19 @@ function supplementTwoColumnEquations(index, rawPageLines) {
       rightEnd: Number(rightProfile.equationColumnEndRatio),
     });
     all.push(...twoColumnEquationSupplementCandidates(split, page, side));
+    // The same-y row merger can attach left-column algorithm prose to a
+    // legitimate right-column equation. Evaluate the outer column again using
+    // its OWN text, but only for strongly mathematical tagged displays. A
+    // two-sided numbering sequence must corroborate any newly added label.
+    const outerColumn = side === 'left' ? 0 : 1;
+    for (const record of twoColumnEquationSupplementCandidates(split, page, side, outerColumn)) {
+      if (!record.explicitParenthesized || record.standaloneTag
+          || (record.mathSignals < 2 && !record.shortLocalDisplay)
+          || record.enumeratedConditionList || equationReferenceProseContext(record.text)) continue;
+      if (side === 'right' && Number(record.candidateXStartRatio) < 0.78) continue;
+      if (side === 'left' && Number(record.candidateXEndRatio) > 0.22) continue;
+      all.push({ ...record, recoveredOuterColumn: true });
+    }
   }
   const unique = [];
   const seen = new Set();
@@ -1045,10 +1078,18 @@ function supplementTwoColumnEquations(index, rawPageLines) {
   // sequence already establishes exactly which number is missing. This
   // recovers the first equation of a two-column paper without promoting an
   // isolated prose citation or a table's parenthesized decimal.
-  let promoted = compatible;
-  if (compatible.length < 2) {
+  // A lone outer-column recovery must be bracketed by two already trusted
+  // printed numbers. It is not evidence for a new numbering family itself.
+  const knownIntegersForOuter = new Set(trustedNumeric.filter((item) => !item.prefix).map((item) => item.last));
+  const outerVerified = compatible.filter((item) => item.recoveredOuterColumn
+    && !item.numeric?.prefix
+    && knownIntegersForOuter.has(item.numeric.last - 1)
+    && knownIntegersForOuter.has(item.numeric.last + 1));
+  const innerCompatible = compatible.filter((item) => !item.recoveredOuterColumn);
+  let promoted = [...innerCompatible, ...outerVerified];
+  if (innerCompatible.length < 2) {
     const knownIntegers = new Set(trustedNumeric.filter((item) => !item.prefix).map((item) => item.last));
-    const corroborated = compatible.filter((item) => {
+    const corroborated = innerCompatible.filter((item) => {
       const n = item.numeric?.last;
       if (!item.shortLocalDisplay || item.numeric?.prefix || !Number.isInteger(n) || n < 1) return false;
       const nearSuccessors = [...knownIntegers].filter((value) => value > n && value <= n + 6);
@@ -1058,8 +1099,9 @@ function supplementTwoColumnEquations(index, rawPageLines) {
         || (knownIntegers.has(n - 1) && knownIntegers.has(n + 1))
         || supportedLeadingGap;
     });
-    if (corroborated.length !== 1) return pageProfiles;
-    promoted = corroborated;
+    if (corroborated.length === 1) promoted = [...corroborated, ...outerVerified];
+    else if (!outerVerified.length) return pageProfiles;
+    else promoted = outerVerified;
   }
   for (const item of promoted) index.set(item.label, [item]);
 

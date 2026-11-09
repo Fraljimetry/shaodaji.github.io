@@ -73,7 +73,7 @@ for(const file of ['js/20-selection-annotations.js','js/40-outline-structure.js'
   check(read(file).includes('boundedOutlineWithManualPriority('), `${file}: bounded Structure entries preserve user edits`);
 }
 check(core.includes('const STRUCTURE_INDEX_VERSION = 55;'), 'old local Structure cache is rebuilt after classifier upgrade');
-check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 28;'), 'v414 local Equation cache invalidates after colon-label correction');
+check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 29;'), 'v414 local Equation cache invalidates after colon-label correction');
 
 // The actual export includes spurious OCR/math variables read as compact
 // or hyphenated appendix equation IDs: n-1, p-0, j-00, Wn8 and k1. Keep

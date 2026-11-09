@@ -78,7 +78,7 @@ const run=(script)=>vm.runInContext(script,context,{timeout:10000});
   const original={inferredOutline:[manual,{title:'Detected',page:1,userEdited:false}],
     embeddedOutlineEdits:[{sourceKey:'1',action:'reselect',title:'Edited bookmark'}],
     structureEntries:[{title:'Automatic theorem'}],bibliographyEntries:[{label:'[1]'}],
-    equationIndexSummary:{version:28,count:1}};
+    equationIndexSummary:{version:29,count:1}};
   context.record=original;
   const exported=run('readingDataSessionForExport(record,false)');
   eq(exported.inferredOutline.length,1,'manual Structure in reading-only export');
