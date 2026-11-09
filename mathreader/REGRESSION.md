@@ -1,6 +1,6 @@
 # MathReader — Regression policy and recent history
 
-This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v415 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
+This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v416 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
 
 ## Standing verification requirements
 
@@ -13,6 +13,16 @@ This is the stable entry point for MathReader's development and verification rec
 ## Finding older regression records
 
 See [Documentation map](docs/README.md) for OCR, export, audit, and release documents, and the [regression history archive](docs/README.md#regression-history) for older v338–v404 notes. The historical archive preserves the supplied v414 source record in its original order, including later appendices.
+
+---
+
+## v416 — Non-blocking first-crop Formula OCR initialization (2026-11-09 UTC)
+
+**Reproduced on unchanged v415:** the first image-formula crop displayed `#formula-ocr-init-overlay` as a full-screen `aria-modal` dialog, made all other document-body children `inert`, and intercepted global keyboard and file-drop actions. This disabled PDF reading and navigation during model initialization even though the model import and pipeline construction were asynchronous.
+
+**Correction:** remove the blocking modal, its styling and global interception. First crop still starts exactly one asynchronous lazy Texify initialization; the saved crop waits for readiness and then follows the existing recognition path. The Formula OCR sidebar displays the work state, while page controls stay active. Keep browser asset cache v416; no mathematical index format changes. Failed, timed-out and late initialization do not lock the reader or silently retry. OCR selection and engine reset/settings remain disabled while the single recognition job is active, to prevent replacing a pipeline while its first crop is pending.
+
+**Verification:** baseline v415 fails the v416 nonblocking regression checks; all 61 Node.js tests and all 28 Python tests, including isolated Chromium UI tests, pass on v416. The P0 Chromium shell failure injection verifies theme controls remain usable while model loading is pending. The OCR lazy test confirms a queued crop produces its result after asynchronous completion, while a crop left behind by a PDF switch cannot contaminate the next document. Source/module syntax and full ZIP integrity checked separately. Actual Texify model download/initialization, original-PDF imaging, continuous frame responsiveness during synchronous ONNX/WASM compilation or inference, and mathematical OCR accuracy were **not** verified; no Web Worker conversion is claimed. Details: [v416 release note](docs/releases/V416_RELEASE.md).
 
 ---
 

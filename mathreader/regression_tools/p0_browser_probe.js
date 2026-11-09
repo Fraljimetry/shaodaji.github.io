@@ -34,7 +34,7 @@ window.__mathreaderP0 = Object.freeze({
       },
       model: { initialized: Boolean(mathOcrPipeline), loading: mathOcrLoading,
                failed: mathOcrInitializationFailed, backend: mathOcrBackend?.label || null,
-               modal: formulaOcrInitModalVisible },
+               initializing: Boolean(mathOcrInitPromise) },
       currentFormula: currentOcrResult?.source === 'image'
         ? { latex: currentOcrResult.latex, source: currentOcrResult.source,
             quality: currentOcrResult.quality } : null
@@ -135,17 +135,24 @@ window.__mathreaderP0 = Object.freeze({
     let observedWhileLoading;
     const pending = ensureMathOcrPipeline().then(() => 'UNEXPECTED_SUCCESS', () => 'EXPECTED_FAILURE');
     await new Promise((resolve) => setTimeout(resolve, 35));
+    const themeButton = document.getElementById('theme-button');
+    const initialTheme = document.documentElement.dataset.theme;
+    themeButton?.click();
+    const changedTheme = document.documentElement.dataset.theme;
+    themeButton?.click();
     observedWhileLoading = {
       ...this.snapshot().model,
-      underlyingOpenInert: document.querySelector('.app-header')?.inert === true,
-      overlayVisible: !formulaOcrInitOverlay?.classList.contains('is-hidden'),
-      focusedOverlay: document.activeElement === formulaOcrInitOverlay
+      themeChangeWorked: Boolean(themeButton && changedTheme !== initialTheme
+        && document.documentElement.dataset.theme === initialTheme),
+      readerControlsAvailable: document.querySelector('.app-header')?.inert !== true,
+      readerKeyboardAvailable: document.querySelector('.reader-shell')?.inert !== true,
+      noModal: !document.querySelector('.formula-ocr-init-overlay')
     };
     const outcome = await pending;
     const after = this.snapshot().model;
     importFormulaOcrRuntime = original;
     return { outcome, during: observedWhileLoading, after,
-             noPermanentInteractionLock: !document.querySelector('.formula-ocr-init-overlay:not(.is-hidden)')
+             noPermanentInteractionLock: !document.querySelector('.formula-ocr-init-overlay')
                && !document.getElementById('file-input').disabled };
   }
 });

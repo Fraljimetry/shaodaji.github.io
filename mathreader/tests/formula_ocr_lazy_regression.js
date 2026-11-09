@@ -19,7 +19,7 @@ check(!runtime.includes('scheduleMathOcrPreload'), 'settings/reset do not preloa
 check(runtime.includes('schedulePdfCorePreload();'), 'unrelated PDF.js startup warmup preserved');
 check(vector.includes('const pipe = await ensureMathOcrPipeline();'), 'OCR inference lazily acquires the engine');
 check(vector.includes("if (formulaExtractionMode === 'vector' && vector?.latex)"), 'usable vector formula bypasses image OCR');
-check(html.includes('mathreader.js?v=415') && html.includes('mathreader.css?v=415'), 'current v415 cache busting');
+check(html.includes('mathreader.js?v=416') && html.includes('mathreader.css?v=416'), 'current v416 cache busting');
 check(html.includes('The model loads on the next image formula extraction.'), 'reset hint describes lazy behavior');
 check(runtime.includes('OCR reset · loads on next image extraction'), 'reset says it will not preload');
 check(runtime.includes('OCR engine selected · loads on first image extraction'), 'engine settings say they will not preload');
@@ -28,9 +28,11 @@ const modeStart = ocr.indexOf('function updateOcrInteractionAvailability()');
 const modeEnd = ocr.indexOf('\nfunction normalizedOcrEngineMode(', modeStart);
 check(modeStart >= 0 && modeEnd > modeStart, 'actual selection-mode functions located');
 let imports=0, statuses=[];
+const ocrEngineSelect={disabled:false};
+const ocrRetryButton={disabled:false};
 const button={disabled:true,attrs:{},classList:{add(){},remove(){},toggle(){}},setAttribute(k,v){this.attrs[k]=v;}};
 const ctx = vm.createContext({
-  pdfDoc:{},ocrMode:false,mathOcrLoading:false,mathOcrInitializationFailed:false,
+  pdfDoc:{},ocrMode:false,mathOcrLoading:false,mathOcrInitializationFailed:false,ocrEngineSelect,ocrRetryButton,
   mathOcrPipeline:null,mathOcrBackend:null,mathOcrButton:button,ocrDrag:null,
   applyOcrModeToSurfaces(){},resetOcrBoxes(){},hideSelectionToolbar(){},
   window:{getSelection:()=>({removeAllRanges(){}})},
@@ -48,8 +50,9 @@ check(run('ocrMode') && imports===0, 'entering formula selection does not initia
 run('setOcrMode(false)');
 check(!run('ocrMode') && imports===0, 'cancel selection without model initialization');
 run('mathOcrLoading = true; updateOcrInteractionAvailability()');
-check(button.disabled, 'selection blocked while image OCR is running');
+check(button.disabled && ocrEngineSelect.disabled && ocrRetryButton.disabled, 'only OCR selection and engine controls blocked while a crop is pending');
 run('mathOcrLoading = false; mathOcrInitializationFailed = true; updateOcrInteractionAvailability()');
+check(!ocrEngineSelect.disabled && !ocrRetryButton.disabled, 'OCR engine controls return after load settles');
 check(button.disabled, 'failed image engine blocks implicit repeated image loads');
 run('setOcrMode(true)');
 check(!run('ocrMode') && imports===0 && statuses.some(x=>x.includes('Reset OCR')), 'failure guides explicit reset instead of loading');
@@ -99,5 +102,36 @@ extract.crop=crop;
   extract.formulaExtractionMode='image';
   await vm.runInContext("recognizeMathCrop(crop, 1, 'primary')",extract);
   check(imageRuns===2,'subsequent explicit image extraction still works');
+
+  // The crop is preserved in the pending recognition promise: model startup
+  // must not discard it or confuse later page navigation with a new crop.
+  let release;
+  const pendingModel = new Promise(resolve => { release = resolve; });
+  extract.runImageFormulaRecognition = async () => {
+    imageRuns++;
+    return pendingModel;
+  };
+  const precedingResults = vectorResults;
+  const pendingCrop = vm.runInContext("recognizeMathCrop(crop, 2, 'primary')",extract);
+  await Promise.resolve();
+  await Promise.resolve();
+  check(extract.mathOcrLoading, 'first crop remains queued while model initialization is pending');
+  check(vectorResults===precedingResults, 'no result is shown before recognition completes');
+  extract.currentPage=17; // Reading/navigation is unrelated to OCR's crop identity.
+  release({latex:'\\alpha+\\beta',penalty:0,timing:{},inferenceCount:1});
+  await pendingCrop;
+  check(vectorResults===precedingResults+1, 'queued first crop completes after asynchronous initialization');
+  check(!extract.mathOcrLoading, 'completion clears Formula OCR busy state');
+
+  let releaseStale;
+  extract.runImageFormulaRecognition = async () => new Promise(resolve => { releaseStale = resolve; });
+  const beforeSwitch = vectorResults;
+  const obsoleteCrop = vm.runInContext("recognizeMathCrop(crop, 2, 'primary')",extract);
+  await new Promise(resolve => setImmediate(resolve));
+  check(typeof releaseStale === 'function', 'second crop reached pending recognition');
+  extract.pdfDoc={newDocument:true};extract.currentFileKey='different-document';
+  releaseStale({latex:'x',penalty:0,timing:{},inferenceCount:1});
+  await obsoleteCrop;
+  check(vectorResults===beforeSwitch, 'stale OCR cannot write a result into a newly opened PDF');
   console.log(`OK: ${checks} formula OCR lazy-initialization assertions`);
 })().catch(e=>{console.error(e);process.exitCode=1});

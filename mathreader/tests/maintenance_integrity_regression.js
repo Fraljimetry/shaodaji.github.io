@@ -20,12 +20,12 @@ check(parts.length === 10, 'exactly ten original subsystem parts');
 check(new Set(parts).size === parts.length, 'no duplicate subsystem parts');
 check(parts[0] === 'js/00-core.js' && parts.at(-1) === 'js/70-command-ui-runtime.js', 'core and event wiring remain the boundaries');
 check(parts.every((part) => fs.existsSync(path.join(root, part))), 'all declared module parts exist');
-check(bootstrap.includes("const VERSION = '415';"), 'bootstrap advanced to v415');
-check(html.includes('mathreader.js?v=415') && html.includes('mathreader.css?v=415'), 'HTML cache keys follow bootstrap');
+check(bootstrap.includes("const VERSION = '416';"), 'bootstrap advanced to v416');
+check(html.includes('mathreader.js?v=416') && html.includes('mathreader.css?v=416'), 'HTML cache keys follow bootstrap');
 check(bootstrap.includes('Promise.all(PARTS.map(fetchPart))'), 'fetching retains parallel acquisition with ordered assembly');
 check(bootstrap.includes("sources.join('\\n')"), 'parts remain one assembled lexical module');
 check(!parts.some((part) => html.includes(`src="${part}"`)), 'subsystems not individually injected as scripts');
-check(html.includes('formula-ocr-init-overlay') && css.includes('.formula-ocr-init-overlay'), 'formula OCR initialization overlay preserved');
+check(!html.includes('formula-ocr-init-overlay') && !css.includes('.formula-ocr-init-overlay'), 'formula OCR initialization never inserts a blocking modal');
 
 const sources = Object.fromEntries(parts.map((part) => [part, read(part)]));
 const joined = parts.map((part) => sources[part]).join('\n');
@@ -34,7 +34,7 @@ check(sources['js/00-core.js'].includes('const EQUATION_INDEX_SUMMARY_VERSION = 
 check(sources['js/10-formula-ocr.js'].includes('async function ensureMathOcrPipeline()'), 'lazy model loader retained');
 check(sources['js/11-formula-vector.js'].includes('const pipe = await ensureMathOcrPipeline();'), 'first image extraction still acquires model');
 check(!joined.includes('scheduleMathOcrPreload'), 'eager Formula OCR preload not restored');
-check(sources['js/10-formula-ocr.js'].includes('setFormulaOcrInitializationModal(false)'), 'initialization dialog cleanup remains wired');
+check(!sources['js/10-formula-ocr.js'].includes('setFormulaOcrInitializationModal') && !joined.includes('formulaOcrInitModalVisible'), 'OCR initialization never makes other controls inert');
 check(sources['js/41-equations-bibliography.js'].includes('function structureResultsIndexNavigationPage('), 'subject-index precision guard retained');
 check(sources['js/41-equations-bibliography.js'].includes('function bareEquationInVerticalNumericTicks('), 'chart-axis precision guard retained');
 check(sources['js/41-equations-bibliography.js'].includes('function bareEquationHasSameRowHeadingContext('), 'section-heading precision guard retained');

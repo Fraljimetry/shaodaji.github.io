@@ -17,7 +17,7 @@ const c={window:{},document,crypto:crypto.webcrypto,atob:(s)=>Buffer.from(s,'bas
   inferredOutlineDetectionDone:true,inferredOutlineBuildPromise:null,
   structureIndexVersion:5,STRUCTURE_INDEX_VERSION:5,structureIndexBuilding:false,
   equationIndexBuildPromise:null,mathOcrPipeline:null,mathOcrLoading:false,
-  mathOcrInitializationFailed:false,mathOcrBackend:null,formulaOcrInitModalVisible:false,
+  mathOcrInitializationFailed:false,mathOcrBackend:null,mathOcrInitPromise:null,
   currentOcrResult:null, recognizeImageFallbackCrop(){throw new Error('Crop-only must not launch model');}};
 vm.createContext(c);
 vm.runInContext(script,c);

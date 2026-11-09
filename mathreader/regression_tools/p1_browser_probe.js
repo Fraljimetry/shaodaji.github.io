@@ -17,7 +17,7 @@ window.__mathreaderP1E2E = Object.freeze({
       returnDepth: crossDocumentReturnStack.length,
       returnButtonVisible: Boolean(crossDocumentReturnButton && !crossDocumentReturnButton.classList.contains('is-hidden')),
       busy: crossDocumentBusy,
-      formulaLoading: Boolean(mathOcrLoading || mathOcrPipeline || formulaOcrInitModalVisible),
+      formulaLoading: Boolean(mathOcrLoading || mathOcrPipeline || mathOcrInitPromise),
     };
   },
   async goto(page, ratio) {

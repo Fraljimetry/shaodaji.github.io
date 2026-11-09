@@ -905,6 +905,10 @@ function updateOcrInteractionAvailability() {
   // PDF-vector extraction can still work if the image model failed to load.
   const available = Boolean(pdfDoc && !mathOcrLoading &&
     (!mathOcrInitializationFailed || formulaExtractionMode === 'vector'));
+  // Prevent replacing or resetting the model while a queued crop is waiting
+  // for it; only OCR-specific controls are busy. PDF reading stays enabled.
+  if (typeof ocrEngineSelect !== 'undefined' && ocrEngineSelect) ocrEngineSelect.disabled = mathOcrLoading;
+  if (typeof ocrRetryButton !== 'undefined' && ocrRetryButton) ocrRetryButton.disabled = mathOcrLoading;
   if (mathOcrButton) {
     mathOcrButton.disabled = !available;
     mathOcrButton.setAttribute('aria-disabled', mathOcrButton.disabled ? 'true' : 'false');
@@ -1014,49 +1018,11 @@ function detailedOcrError(error, backend = null) {
 }
 
 
-// Only the initial model/runtime download and pipeline construction block the
-// reader. Formula *inference* still uses the existing sidebar busy indicator.
+// Formula recognition begins after the first completed crop. Model loading must
+// never make the PDF reader inert, capture its keyboard shortcuts, or cover the
+// page: only the Formula OCR workspace shows a non-modal busy status. The crop
+// awaits this shared promise and is recognized when the model becomes ready.
 const FORMULA_OCR_INIT_TIMEOUT_MS = 120000;
-
-function setFormulaOcrInitializationModal(active) {
-  if (!formulaOcrInitOverlay || formulaOcrInitModalVisible === Boolean(active)) return;
-  formulaOcrInitModalVisible = Boolean(active);
-  if (active) {
-    formulaOcrInitPreviousFocus = document.activeElement;
-    formulaOcrInitInertElements = [...document.body.children]
-      .filter((element) => element !== formulaOcrInitOverlay)
-      .map((element) => ({ element, inert: element.inert }));
-    for (const record of formulaOcrInitInertElements) record.element.inert = true;
-    formulaOcrInitOverlay.classList.remove('is-hidden');
-    formulaOcrInitOverlay.focus({ preventScroll: true });
-  } else {
-    formulaOcrInitOverlay.classList.add('is-hidden');
-    for (const record of formulaOcrInitInertElements) record.element.inert = record.inert;
-    formulaOcrInitInertElements = [];
-    const focus = formulaOcrInitPreviousFocus;
-    formulaOcrInitPreviousFocus = null;
-    if (focus?.isConnected && !focus.inert) focus.focus?.({ preventScroll: true });
-  }
-}
-
-// The overlay captures clicks by its fixed backdrop; inert disables underlying
-// focus/controls and this capture guard prevents document-level keyboard actions.
-document.addEventListener('keydown', (event) => {
-  if (!formulaOcrInitModalVisible) return;
-  // Keep browser reload as a last-resort recovery action.
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-}, true);
-// File drops are also application actions; do not let the global drop handler
-// bypass the modal while the model is loading.
-for (const type of ['dragenter', 'dragover', 'drop']) {
-  document.addEventListener(type, (event) => {
-    if (!formulaOcrInitModalVisible) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }, true);
-}
 
 function formulaOcrTimeoutError() {
   const error = new Error('Formula OCR initialization exceeded its 120-second safety limit.');
@@ -1109,10 +1075,9 @@ async function initializeMathOcrPipeline() {
   const deadline = engineLoadStart + FORMULA_OCR_INIT_TIMEOUT_MS;
   let runtimeImportMs = 0;
   mathOcrLoading = true;
-  setFormulaOcrInitializationModal(true);
   setOcrMode(false);
   updateOcrInteractionAvailability();
-  setOcrStatus(t(`Loading the local formula-image fallback (Texify · ${TRANSFORMERS_RUNTIME})…`, `正在加载本地公式图像备用引擎（Texify · ${TRANSFORMERS_RUNTIME}）……`), true);
+  setOcrStatus(t(`Initializing Formula OCR in background · ${TRANSFORMERS_RUNTIME}`, `后台初始化公式 OCR · ${TRANSFORMERS_RUNTIME}`), true);
   try {
     if (!mathOcrModulePromise) {
       const importStart = ocrNow();
@@ -1132,7 +1097,7 @@ async function initializeMathOcrPipeline() {
         // Initialization feedback is intentionally static.
         // Do not show estimated progress, percentages, file counts, filenames,
         // bars, rings, spinners, or other animation during engine startup.
-        setOcrStatus(t(`Initializing OCR · ${backend.label}`, `正在初始化 OCR · ${backend.label}`), true);
+        setOcrStatus(t(`Initializing OCR in background · ${backend.label}`, `后台初始化 OCR · ${backend.label}`), true);
         const progress_callback = () => {};
         const options = { progress_callback };
         if (!backend.official) {
@@ -1181,8 +1146,7 @@ async function initializeMathOcrPipeline() {
   } finally {
     mathOcrLoading = false;
     updateOcrInteractionAvailability();
-    setFormulaOcrInitializationModal(false);
-  }
+    }
 }
 
 

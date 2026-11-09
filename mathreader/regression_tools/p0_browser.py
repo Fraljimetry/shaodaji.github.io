@@ -126,14 +126,14 @@ def shell_checks(page):
     before=page.evaluate('window.__mathreaderP0.snapshot()')
     outcomes={}
     outcomes['startup_without_pdf'] = 'PASS' if not before['documentLoaded'] else 'FAIL'
-    outcomes['no_eager_texify'] = 'PASS' if not before['model']['initialized'] and not before['model']['loading'] and not before['model']['modal'] else 'FAIL'
+    outcomes['no_eager_texify'] = 'PASS' if not before['model']['initialized'] and not before['model']['loading'] and not before['model']['initializing'] else 'FAIL'
     page.locator('#language-button').click()
     outcomes['language_control'] = 'PASS' if page.locator('html').get_attribute('data-lang') == 'zh' else 'FAIL'
     page.locator('#theme-button').click()
     outcomes['theme_control'] = 'PASS' if page.locator('html').get_attribute('data-theme') == 'dark' else 'FAIL'
     data=page.evaluate('window.__mathreaderP0.testInitializationFailure()')
-    outcomes['modal_appears_during_failed_init'] = 'PASS' if data['during']['modal'] and data['during']['loading'] and data['during']['underlyingOpenInert'] and data['during']['overlayVisible'] and data['during']['focusedOverlay'] else 'FAIL'
-    outcomes['failure_releases_reader'] = 'PASS' if (data['outcome']=='EXPECTED_FAILURE' and not data['after']['modal'] and not data['after']['loading'] and data['after']['failed'] and data['noPermanentInteractionLock']) else 'FAIL'
+    outcomes['reader_remains_available_during_failed_init'] = 'PASS' if data['during']['initializing'] and data['during']['loading'] and data['during']['readerControlsAvailable'] and data['during']['readerKeyboardAvailable'] and data['during']['noModal'] and data['during']['themeChangeWorked'] else 'FAIL'
+    outcomes['failure_releases_reader'] = 'PASS' if (data['outcome']=='EXPECTED_FAILURE' and not data['after']['initializing'] and not data['after']['loading'] and data['after']['failed'] and data['noPermanentInteractionLock']) else 'FAIL'
     page.locator('#theme-button').click()
     outcomes['control_works_after_failure'] = 'PASS' if page.locator('html').get_attribute('data-theme') == 'light' else 'FAIL'
     return dict(outcomes=outcomes, status='PASS' if all(v=='PASS' for v in outcomes.values()) else 'FAIL',
@@ -231,11 +231,11 @@ def full_document(page, source_path: Path, sha: str, timeout_ms: int,
     result['metrics']={'open_ms':open_elapsed_ms,'index_ms':None,'js_heap_bytes':None}
     if first['pdfjsVersion']!=PDFJS_VERSION:
         result['errors'].append(f'Pinned PDF.js {PDFJS_VERSION} not loaded ({first["pdfjsVersion"]})')
-    if first['model']['initialized'] or first['model']['loading'] or first['model']['modal']:
+    if first['model']['initialized'] or first['model']['loading'] or first['model']['initializing']:
         result['errors'].append('Texify initialized before first formula extraction')
     try:
         mode_state=page.evaluate('window.__mathreaderP0.chooseFormulaMode()')
-        if mode_state['initialized'] or mode_state['loading'] or mode_state['modal']:
+        if mode_state['initialized'] or mode_state['loading'] or mode_state['initializing']:
             result['errors'].append('Selecting a formula mode eagerly initialized Texify')
     except Exception as error:
         result['errors'].append(f'Formula selection mode failed: {str(error)[:220]}')

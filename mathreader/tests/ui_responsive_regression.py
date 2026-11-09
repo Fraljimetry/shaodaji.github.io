@@ -40,7 +40,7 @@ def inspect(page):
         rightExpanded:document.getElementById('mobile-right-toggle').getAttribute('aria-expanded'),
         leftOpen:document.getElementById('reader-shell').classList.contains('mobile-left-open'),
         rightOpen:document.getElementById('reader-shell').classList.contains('mobile-right-open'),
-        formulaModal:!document.getElementById('formula-ocr-init-overlay').classList.contains('is-hidden'),
+        formulaModal:!!document.getElementById('formula-ocr-init-overlay'),
         toolbarItems:buttons};
     }''')
 
