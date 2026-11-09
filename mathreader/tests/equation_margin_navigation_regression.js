@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
 const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
-const fnSource = index.match(/async function equationMarginOcrLines\([\s\S]*?\n\}\n(?=\nfunction equationExpectedNumericOcrRecord)/);
+const fnSource = index.match(/async function equationMarginOcrLines\([\s\S]*?\n\}\n/);
 assert.ok(fnSource, 'margin OCR helper found');
 const canvases = [];
 function canvas() {

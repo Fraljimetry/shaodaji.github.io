@@ -1,19 +1,19 @@
 # MathReader documentation
 
-The `mathreader/` root contains the application and the [current regression policy](../REGRESSION.md). Historical documentation is grouped by purpose rather than mixed with production files. The **v414 application version is unchanged** by this documentation-only reorganization.
+The `mathreader/` root contains the application and the [current regression policy](../REGRESSION.md). Historical documentation is grouped by purpose rather than mixed with production files. The documentation-only relocation originated in v414; the **current application version is v415**, which also contains equation-indexing fixes.
 
 ## Where to look
 
 | Area | Folder | Key documents |
 |---|---|---|
-| Recent regression policy and release evidence | [REGRESSION.md](../REGRESSION.md) | Current v414–v405 entries and standing rules |
+| Recent regression policy and release evidence | [REGRESSION.md](../REGRESSION.md) | v415 current findings, v414–v405 archived entries, and standing rules |
 | OCR recognition | [ocr/recognition](ocr/recognition/) | [Recognition audit v384](ocr/recognition/OCR_AUDIT_v384.md), [historical audit v394](ocr/recognition/OCR_HISTORICAL_v394.md), [appendix Results v395](ocr/recognition/OCR_APPENDIX_RESULTS_v395.md) |
 | OCR controls and navigation | [ocr/navigation](ocr/navigation/) | [Navigation v386](ocr/navigation/OCR_NAVIGATION_v386.md), [context menu v390](ocr/navigation/OCR_CONTEXT_MENU_v390.md) |
 | OCR cache and evidence | [ocr/persistence](ocr/persistence/) | [Identity/cache v391](ocr/persistence/OCR_CACHE_v391.md), [reload evidence v404](ocr/persistence/OCR_EVIDENCE_REOPEN_v404.md) |
 | Exports | [exports](exports/) | [Raw exports v393](exports/OCR_RAW_EXPORT_v393.md), [coverage v400](exports/EXPORT_COVERAGE_v400.md) |
 | Comprehensive audits | [audits](audits/) | [Full v405 audit](audits/MATHREADER_FULL_AUDIT_v405.md) |
 | User workflows / feature notes | [features](features/) | [Appendix equation manual operation](features/MANUAL_APPENDIX_EQUATIONS_v405.md) |
-| Release manifests | [releases](releases/) | [v414](releases/V414_PATCH_MANIFEST.md), [v405](releases/V405_PATCH_MANIFEST.md), [v384](releases/v384_RELEASE.md) |
+| Release manifests | [releases](releases/) | [v415](releases/V415_PATCH_MANIFEST.md), [v414](releases/V414_PATCH_MANIFEST.md), [v405](releases/V405_PATCH_MANIFEST.md), [v384](releases/v384_RELEASE.md) |
 | Regression automation | [`../regression_tools/`](../regression_tools/) | [`README.md`](../regression_tools/README.md), [`P0_ACCEPTANCE.md`](../regression_tools/P0_ACCEPTANCE.md) |
 | Regression results and machine evidence | [`../regression/`](../regression/) | JSON reports, and [`RESULTS_AUDIT_v408.md`](../regression/RESULTS_AUDIT_v408.md) beside its JSON |
 | JavaScript subsystem layout | [`../js/README.md`](../js/README.md) | Module boundaries and maintenance notes |
@@ -36,5 +36,5 @@ The split is **lossless**: the archived file contents plus the unmodified v414�
 - Keep new behavioral/verification findings in `../REGRESSION.md` and move older records into topic or historical folders periodically. Never replace historical evidence with a success summary.
 - Prefer a **topic folder** for related operational notes, a versioned release manifest in `releases/`, and JSON measurements next to the related corpus in `../regression/`. Avoid a separate file for every minor test run.
 - Paths printed in historical manifest text (for example `mathreader/OCR_*.md`) describe the **original patch layout**, not a current hyperlink. Use this map to locate the relocated file. No production runtime or CDN path was changed.
-- **Complete-folder distribution:** unpack `mathreader_v414_complete_reorganized.zip` beside (not over) your existing MathReader directory, after renaming the existing folder to a backup. The ZIP includes the whole working `mathreader/` folder; the documents have already moved, so no migration script is required.
+- **Complete-folder distribution:** unpack `mathreader_v415_complete_fixed.zip` beside (not over) your existing MathReader directory, after renaming the existing folder to a backup. The ZIP includes the whole working `mathreader/` folder; the documents have already moved, so no migration script is required.
 - **Earlier documentation-only patch:** if instead you applied `mathreader_v414_docs_reorganization_patch.zip` over an existing tree, run `python .\mathreader\docs\apply_moves.py` from the parent directory to remove verified root-level duplicates. A ZIP overlay by itself cannot delete old files.

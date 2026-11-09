@@ -84,7 +84,7 @@ check(/renderedRows \+ \(renderedRows === 0 \? initialBatchSize : 500\)/.test(so
 check(/equationIndex\.onscroll = \(\) =>/.test(source) && /moreButton\.addEventListener\('click', appendEquationRows\)/.test(source),
       'scroll or explicit action loads all remaining equations, not first 500 only');
 check(ui.includes("input.id === 'map-filter-equations') renderEquationIndex()"), 'filter triggers full search across indexed but unrendered rows');
-check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 26;'),'old numeric-only equation summary is invalidated once');
+check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 27;'),'old equation summary invalidates after v415 label correction');
 check(style.includes('.equation-force-ocr:disabled'), 'OCR control has compact disabled styling');
 // Reopening the PDF must retain exact appendix identities and navigation geometry.
 const getCore = (name) => {

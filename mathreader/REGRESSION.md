@@ -1,6 +1,6 @@
 # MathReader — Regression policy and recent history
 
-This is the stable entry point for MathReader's development and verification record. The latest v414–v405 release entries follow **unchanged**. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
+This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v415 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
 
 ## Standing verification requirements
 
@@ -13,6 +13,18 @@ This is the stable entry point for MathReader's development and verification rec
 ## Finding older regression records
 
 See [Documentation map](docs/README.md) for OCR, export, audit, and release documents, and the [regression history archive](docs/README.md#regression-history) for older v338–v404 notes. The historical archive preserves the supplied v414 source record in its original order, including later appendices.
+
+---
+
+## v415 — Section-local equation numbering and damaged-font colon labels (2026-11-09 UTC)
+
+**Evidence:** user's MathReader export for Leon Simon, *Introduction to Geometric Measure Theory*, 267 pages; document ID `sha256:8a261ff912d78cf839d102e99f317a391949d69c017e109dd2629796d4c3b999`. The export reports **48** equation-index labels and includes 267 pages of PDF.js native text lines and geometry. Several printed-margin numbering candidates are extracted as `3:6`, `3:7`, `3:8` rather than dotted labels. Independently, section-local `(1.1)` labels restart in later chapters, but v414 canonicalized all locations with a shared label to one entry. Definition 1.4's numbered conditions `(1)`–`(3)` on PDF page 7 were incorrectly indexed as equations.
+
+**Corrections:** preserve native text offsets and derive a candidate for *leading* colon-encoded two-part numbers, but promote it only when independent document-wide left-margin alignment, distinct labels over multiple pages, and formula-like text support the damaged-font convention. Reject time/prose/axis/table/heading candidates. For credible chapter-local repetitions, retain separate physical page/ratio occurrences, render each with a stable drag key and protect navigation against cross-chapter misdirection. Because Remove/Reselect edits currently target a printed label globally, suppress those actions only for ambiguous repeated labels rather than silently modifying another chapter's equation. Strengthen exclusion of numbered conditions introduced by a Definition. Advance browser asset cache v414→v415 and local equation-index schema 26→27; **old local snapshots must rebuild**, while portable imported snapshots remain preserved when source text is unavailable. This is a general detector change, not a filename exception.
+
+**Regression evidence and limitations:** the new `tests/simon_colon_font_v415_regression.js` reproduces a **failure on untouched v414** and passes with the new source. A full **267-page native-text replay** of the production equation builder from the user's export changes recognized distinct label IDs **48→145**, producing **223 occurrence candidates** over the full document, with one duplicate label on the same page conservatively collapsed; `(1.1)` survives in multiple chapters and PDF page 7's `(1)`–`(3)` false positives are absent. These are *candidate/index counts*, **not independently certified correct printed equations**. The original PDF bytes were not provided; no original-page image comparison, live deployment, mathematical formula OCR, or comprehensive recall/precision certification is claimed. A separate cache boundary test verifies local invalidation and portable preservation. The old `tests/equation_margin_navigation_regression.js` contained an overly greedy source-function extraction causing a v414 VM syntax failure; this was corrected without altering application behavior.
+
+**Known limitations:** old v414 **imported portable** detection may intentionally retain its old 48-row snapshot; use **Rebuild index** with the native-text PDF open to refresh. Ambiguous repeated printed labels are navigable and orderable, but not safely individually Remove/Reselect-editable until edit identity includes a page/ratio. Existing hard-reload OCR-evidence loss remains accepted and unchanged. Full formula-transcription accuracy on this source remains unverified.
 
 ---
 

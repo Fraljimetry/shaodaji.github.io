@@ -67,7 +67,7 @@ for(const file of ['js/00-core.js','js/20-selection-annotations.js','js/40-outli
   check(read(file).includes('.slice(0, MAX_INFERRED_OUTLINE_ENTRIES)'), `${file}: no 240-record silent truncation`);
 }
 check(core.includes('const STRUCTURE_INDEX_VERSION = 55;'), 'old local Structure cache is rebuilt after classifier upgrade');
-check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 26;'), 'old local Equation cache is rebuilt after numeral classification upgrade');
+check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 27;'), 'v414 local Equation cache invalidates after colon-label correction');
 
 // The actual export includes spurious OCR/math variables read as compact
 // or hyphenated appendix equation IDs: n-1, p-0, j-00, Wn8 and k1. Keep

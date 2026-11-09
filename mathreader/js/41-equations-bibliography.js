@@ -1158,7 +1158,23 @@ function canonicalizeEquationIndex(index) {
   const out = new Map();
   for (const [label, candidates] of index.entries()) {
     const canonical = chooseCanonicalEquationCandidate(candidates);
-    if (canonical) out.set(label, [canonical]);
+    if (!canonical) continue;
+    // The same section number can restart in a later chapter. Previously one
+    // canonical label silently erased all other *printed* equations. Preserve
+    // independently corroborated colon-margin occurrences, including a dotted
+    // variant seen in another chapter. Prose references / weak OCR candidates
+    // must never multiply an index entry merely because their number matches.
+    const trusted = (candidates || []).filter((item) => item?.confirmedColonMargin);
+    const instances = [canonical, ...trusted].sort((a, b) => equationDocumentPosition(a) - equationDocumentPosition(b));
+    const distinct = [];
+    for (const item of instances) {
+      // A second occurrence of the same label on one page is normally a
+      // reference or restatement, not a second numbered equation. Keep one
+      // location per printed label per page, while retaining later chapters.
+      if (distinct.some((other) => Number(other.page) === Number(item.page))) continue;
+      distinct.push(item);
+    }
+    out.set(label, distinct.length > 1 ? distinct : [canonical]);
   }
   return out;
 }
@@ -1277,6 +1293,23 @@ function equationLabelCandidatesInLine(text) {
         && !isLikelyCalendarYearEquationLabel(label) && !out.some((item) => item.label === label)) {
       const index = source.indexOf(raw);
       out.push({ label, index: Math.max(0, index), end: Math.max(0, index) + raw.length, bare: true });
+    }
+  }
+
+  // Some older mathematical fonts map the printed decimal separator to
+  // ":" in PDF.js (for example a visibly numbered display 3.7 becomes
+  // "3:7"). Do not rewrite the entire line: source offsets are needed for
+  // precise click/navigation geometry, and a colon in prose can be a ratio or
+  // a clock time. This candidate is published only after the independent
+  // document-level left-margin family and page-geometry checks below.
+  const leadingColon = source.match(/^\s*(\d{1,3}\s*[:：]\s*\d{1,3})(?=\s|$)/u);
+  if (leadingColon) {
+    const raw = leadingColon[1];
+    const label = normalizedEquationLabel(raw.normalize('NFKC').replace(/\s*:\s*/g, '.'));
+    if (isPlausibleEquationTagInner(label.slice(1, -1))
+        && !out.some((item) => item.label === label)) {
+      const index = source.indexOf(raw);
+      out.push({ label, index, end: index + raw.length, bare: true, colonEncoded: true });
     }
   }
 
@@ -1637,10 +1670,82 @@ function equationEnumeratedConditionListContext(lines, lineIndex, candidate) {
       const proseCount = run.filter((item) => item.proseLike).length;
       const punctuatedCount = run.filter((item) => item.punctuated).length;
       if (proseCount >= 2 || (proseCount >= 1 && punctuatedCount >= 2)) return true;
+      // A definition can specify three purely symbolic, numbered *conditions*.
+      // Without prose words or trailing semicolons the earlier run detector
+      // indexed (1), (2), (3) as displayed equations. A leading "Definition
+      // ... if" or "following conditions" supplies independent list context.
+      const listIntroducer = (lines || []).some((earlier) => {
+        const beforeRatio = Number(earlier?.ratio);
+        if (!Number.isFinite(beforeRatio) || beforeRatio >= currentRatio
+          || currentRatio - beforeRatio > 0.095) return false;
+        const priorText = String(earlier?.text || '').trim();
+        return /(?:\bdefinition\b.*\bif\s*$|\b(?:following\s+)?(?:conditions|properties|requirements)\s*(?:are|hold|:)?\s*$)/i.test(priorText);
+      });
+      if (listIntroducer) return true;
     }
     start = end;
   }
   return false;
+}
+
+// Colon-encoded numbers are NOT ordinary numeric tokens. Only a coherent
+// family at a common physical page edge can establish this damaged font
+// encoding. This avoids interpreting times, ratios, or manuscript headings as
+// automatic equation targets. The rule applies across books, not filenames.
+function equationColonMarginFamily(records) {
+  const possible = (records || []).filter((item) => item?.colonEncoded
+    && item?.candidateAtLineStart
+    && Number(item?.candidateXStartRatio) >= 0.025
+    && Number(item?.candidateXStartRatio) <= 0.17
+    && Number(item?.candidateXEndRatio) <= 0.21
+    && Number(item?.ratio) >= 0.055
+    && Number(item?.ratio) <= 0.97
+    && !item?.ocrSource
+    && !item?.nearbyHeadingContext && !item?.sameRowHeadingContext
+    && !item?.axisNumericCluster && !item?.tabularNumericCell
+    && !item?.measurementValue && !item?.ocrTopRunningHeader
+    && !item?.attachedFunctionCall);
+  const labels = new Set(possible.map((item) => item.label));
+  const pages = new Set(possible.map((item) => item.page));
+  // Require recurring *distinct* labels on several pages. An isolated "1:2"
+  // alongside a formula can simply be a ratio; a table of daily times should
+  // not define an equation-numbering convention either.
+  if (labels.size < 6 || pages.size < 3) return null;
+  const starts = possible.map((item) => Number(item.candidateXStartRatio)).sort((a, b) => a - b);
+  const mid = starts[Math.floor(starts.length / 2)];
+  const aligned = possible.filter((item) => Math.abs(Number(item.candidateXStartRatio) - mid) <= 0.025);
+  if (aligned.length < Math.max(6, Math.ceil(possible.length * 0.80))) return null;
+  const formulaLike = aligned.filter((item) => {
+    const remainder = String(item.text || '').replace(/^\s*\d{1,3}\s*[:：]\s*\d{1,3}\s*/, '').trim();
+    if (!remainder) return Boolean(item.standaloneTag || item.nearbyDisplayMath);
+    // Broken font mappings often turn =, + and <= into D, C and control
+    // glyphs, so literal math-operator counts alone are not meaningful.
+    return /[()\[\]{}∫∑∏√≤≥=<>\u0000-\u001f]/u.test(remainder)
+      || /\b(?:lim|sup|inf|div|det|grad|tr)\b/u.test(remainder);
+  });
+  if (formulaLike.length < Math.max(5, Math.ceil(aligned.length * 0.55))) return null;
+  return { x: mid };
+}
+
+function equationColonMarginCandidateReliable(item, profile) {
+  if (!profile || !item?.colonEncoded || item.ocrSource || !item.candidateAtLineStart
+    || !item.numeric?.prefix || item.attachedFunctionCall || item.enumeratedConditionList
+    || item.nearbyHeadingContext || item.sameRowHeadingContext || item.axisNumericCluster
+    || item.tabularNumericCell || item.measurementValue || item.ocrTopRunningHeader
+    || !Number.isFinite(Number(item.candidateXStartRatio))
+    || Math.abs(Number(item.candidateXStartRatio) - profile.x) > 0.025
+    || Number(item.candidateXEndRatio) > 0.21
+    || Number(item.ratio) < 0.055 || Number(item.ratio) > 0.97) return false;
+  const remainder = String(item.text || '').replace(/^\s*\d{1,3}\s*[:：]\s*\d{1,3}\s*/, '').trim();
+  const words = remainder.match(/\b[A-Za-z]{3,}\b/g) || [];
+  const han = remainder.match(/\p{Script=Han}/gu) || [];
+  if (/^(?:chapter|section|theorem|lemma|definition|remark|example|proposition|corollary|exercise|proof)\b/i.test(remainder)
+    || (words.length >= 6 && Number(item.mathSignals) < 2)
+    || (han.length >= 8 && Number(item.mathSignals) < 2)) return false;
+  if (remainder && !/[()\[\]{}∫∑∏√≤≥=<>\u0000-\u001f]/u.test(remainder)
+      && !/\b(?:D|lim|sup|inf|div|det|grad|tr)\b/u.test(remainder)
+      && (Number(item.mathSignals) || 0) < 1) return false;
+  return true;
 }
 
 function equationCandidateConfidenceForSide(item, allowExplicitReferenceContext = false) {
@@ -3209,6 +3314,7 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
           ocrPageConfidence: Number.isFinite(pageOcrConfidence) ? Number(pageOcrConfidence) : null,
           ocrTopRunningHeader,
           attachedFunctionCall: Boolean(candidate.attachedFunctionCall),
+          colonEncoded: Boolean(candidate.colonEncoded),
           enumeratedConditionList: equationEnumeratedConditionListContext(lines, lineIndex, candidate),
         });
       }
@@ -3221,6 +3327,8 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
   const dottedSectionNumberingProfile = dottedSectionHeadingEvidence.length >= 6 && dottedSectionHeadingPages.size >= 3;
 
   equationNumberingSide = inferEquationNumberingSide(rawCandidates);
+  const colonMarginFamily = equationNumberingSide === 'left'
+    ? equationColonMarginFamily(rawCandidates) : null;
 
   for (const record0 of rawCandidates) {
     const record = { ...record0 };
@@ -3256,6 +3364,12 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
     );
     let hardRejectedCandidate = Boolean(record.axisNumericCluster || record.tabularNumericCell || record.measurementValue || record.ocrTopRunningHeader || extremeTopBareMarker || weakOcrPageCandidate || referenceContextRejectedCandidate || bareSectionHeadingCandidate);
     if (hardRejectedCandidate) confidence = -Infinity;
+    // Normal PDF math-signal heuristics see no operator when an old embedded
+    // font extracts '=' as 'D'. A corroborated left-margin colon family supplies
+    // separate, stronger positional evidence for these damaged labels.
+    const confirmedColonMargin = !hardRejectedCandidate
+      && equationColonMarginCandidateReliable(record, colonMarginFamily);
+    if (confirmedColonMargin) confidence = Math.max(confidence, 18);
     if (dottedSectionNumberingProfile && record.bareSource && record.numeric?.prefix) {
       const strongOuterMargin = equationNumberingSide === 'left'
         ? Number(record.candidateXEndRatio) <= (record.ocrSource ? 0.24 : 0.13)
@@ -3276,6 +3390,8 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
         hardRejectedCandidate = true;
       }
     }
+    if (confirmedColonMargin && !hardRejectedCandidate) confidence = Math.max(confidence, 18);
+    record.confirmedColonMargin = confirmedColonMargin;
     let reliable = confidence >= 8;
     if (!hardRejectedCandidate && !reliable && record.standaloneTag && record.nearbyDisplayMath && equationCandidateAlignedToNumberingSide(record)) {
       confidence = Math.max(confidence, 12);
@@ -3288,6 +3404,10 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
       reliable = false;
     }
     if (integerTag && record.bareSource && !(record.nearbyDisplayMath || record.mathSignals >= 2)) reliable = false;
+    if (record.colonEncoded && !confirmedColonMargin) {
+      confidence = -Infinity;
+      reliable = false;
+    }
     record.confidence = confidence;
     // Sequence recovery must never resurrect a candidate that the direct
     // classifier already rejected as implausible (for example "1.7 Lemma"
@@ -3467,7 +3587,13 @@ function equationConfidenceTier(score) {
 function equationRowOrderKey(entry) {
   if (entry?.manualEditId) return `edit:${String(entry.manualEditId)}`;
   const source = equationSourceLabelForDisplayed(entry?.label || '');
-  return `label:${normalizedEquationLabel(source || entry?.label || '')}`;
+  const base = `label:${normalizedEquationLabel(source || entry?.label || '')}`;
+  // Distinct occurrences need distinct drag/persistence identities. Keep the
+  // original key for ordinary single-occurrence PDFs and their saved edits.
+  if (entry?.repeatedPrintedEquation) {
+    return `${base}:page:${Number(entry.page) || 1}:y:${Math.round((Number(entry.ratio) || 0) * 10000)}`;
+  }
+  return base;
 }
 
 // Page order is primary, but within the same numbered family OCR coordinates
@@ -3594,6 +3720,7 @@ function verifiedEquationNavigationTarget(entry) {
   // Other-page recovery is safe only when there is exactly one independently
   // vetted page for the label; otherwise retain the original target.
   const group = samePage.length ? samePage
+    : entry.repeatedPrintedEquation ? []
     : new Set(usable.map((item) => item.page)).size === 1 ? usable : [];
   if (!group.length) return original;
   const side = equationNumberingSide === 'left' ? 'left' : 'right';
@@ -3625,12 +3752,19 @@ function renderEquationIndex() {
   let rows = [];
   for (const [label, candidates] of equationLabelIndex.entries()) {
     let best = null;
+    const instances = [];
     for (const candidate of candidates || []) {
       const score = Number.isFinite(candidate.confidence) ? candidate.confidence : equationCandidateConfidence(candidate, label);
       if (score < 8) continue;
-      if (!best || score > best.score) best = { ...candidate, score };
+      const entry = { label, ...candidate, score };
+      instances.push(entry);
+      if (!best || score > best.score) best = entry;
     }
-    if (best) rows.push({ label, ...best });
+    if (instances.length > 1) {
+      // Show both Chapter 1 (1.1) and Chapter 2 (1.1), with the correct page.
+      // Never expose label-wide Remove/Reselect for an ambiguous occurrence.
+      rows.push(...instances.map((item) => ({...item, repeatedPrintedEquation: true})));
+    } else if (best) rows.push(best);
   }
   rows.sort(compareEquationIndexRows);
   for (const edit of equationEdits.filter((item) => item.action === 'add')) {
@@ -3769,7 +3903,14 @@ function renderEquationIndex() {
       if (saveEquationDragOrder(rows, visibleRows, draggedEquationKey, orderKey, before)) renderEquationIndex();
     });
 
-    row.append(button, menu, actions); equationIndex.append(row);
+    if (entry.repeatedPrintedEquation) {
+      // Remove/Reselect currently address a global printed label. Suppress
+      // destructive, ambiguous actions for repeated chapter-local labels;
+      // location navigation and ordering remain available independently.
+      row.append(button);
+      button.title = `${entry.text || entry.label} · ${t('Repeated number in different sections; edit by location is unavailable.', '不同章节重复编号；暂不支持按位置修改。')}`;
+    } else row.append(button, menu, actions);
+    equationIndex.append(row);
     }
     renderedRows = until;
     if (renderedRows < displayRows.length) {
