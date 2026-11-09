@@ -935,11 +935,9 @@ async function restoreUndoEntry(id = null) {
       const restored = jsonClone(payload, payload);
       const key = outlineEntryKey(restored);
       if (!inferredOutline.some((entry) => outlineEntryKey(entry) === key)) inferredOutline.push(restored);
-      inferredOutline.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
-      inferredOutline = inferredOutline.slice(0, MAX_INFERRED_OUTLINE_ENTRIES);
-      inferredOutlineDetectionDone = true;
+      inferredOutline = boundedOutlineWithManualPriority(inferredOutline);
       tocOutlineTargets = null;
-      renderInferredOutline(inferredOutline);
+      renderActiveOutline();
       rerenderReferenceLinksAfterStructureEdit();
       refreshSelectionUI();
     }

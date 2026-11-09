@@ -1,0 +1,36 @@
+{
+  "release": "v419",
+  "date_utc": "2026-11-09",
+  "baseline": "uploaded v418 complete ZIP",
+  "scope": "Manual Structure additions coexist with embedded PDF outlines",
+  "baseline_reproduction": "v418 rejects selected ordinary prose via Structure in embedded outline; new test fails on baseline",
+  "checks": {
+    "javascript": {
+      "pass": 66,
+      "total": 66,
+      "method": "each JS test run independently"
+    },
+    "python_chromium": {
+      "pass": 29,
+      "total": 29,
+      "method": "isolated executions; monolithic batch did not complete"
+    },
+    "manual_structure_vm": "PASS",
+    "manual_structure_browser_dom": "PASS: Chromium with controlled PDF bookmark destinations",
+    "manual_background_and_export": "PASS",
+    "all_source_syntax": "PASS",
+    "assembled_es_module_syntax": "PASS",
+    "original_PDF_visual_truth": "NOT_VERIFIED",
+    "deployed_site": "NOT_VERIFIED"
+  },
+  "notes": [
+    "No native-PDF original-page acceptance is claimed.",
+    "A combined Python runner invocation timed out; tests were validated individually.",
+    "The regression runner smoke completed in its isolated 40-second run.",
+    "Overlay ZIP contains only changed mathreader/ paths."
+  ],
+  "accepted_limitations": [
+    "Ahlfors equation-margin OCR evidence may not survive browser hard refresh",
+    "Mathematical document ground-truth accuracy remains unverified for this feature"
+  ]
+}

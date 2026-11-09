@@ -63,8 +63,14 @@ check(!outline.numberedFormulaFragmentInOutline('2 C (The General Case)'), 'ordi
 // detection, restoring, manual addition and Undo. All now use one value.
 const core=read('js/00-core.js');
 check(core.includes('const MAX_INFERRED_OUTLINE_ENTRIES = 1200;'), 'shared bounded Structure limit');
-for(const file of ['js/00-core.js','js/20-selection-annotations.js','js/40-outline-structure.js','js/60-notes-bookmarks-data.js']) {
+for(const file of ['js/00-core.js']) {
   check(read(file).includes('.slice(0, MAX_INFERRED_OUTLINE_ENTRIES)'), `${file}: no 240-record silent truncation`);
+}
+// v419 preserves manually curated entries ahead of automatic ones when
+// the shared 1200-entry bound is reached; it deliberately no longer slices
+// blindly in manual-add and render helpers.
+for(const file of ['js/20-selection-annotations.js','js/40-outline-structure.js','js/60-notes-bookmarks-data.js']) {
+  check(read(file).includes('boundedOutlineWithManualPriority('), `${file}: bounded Structure entries preserve user edits`);
 }
 check(core.includes('const STRUCTURE_INDEX_VERSION = 55;'), 'old local Structure cache is rebuilt after classifier upgrade');
 check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 28;'), 'v414 local Equation cache invalidates after colon-label correction');

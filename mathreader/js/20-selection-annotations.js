@@ -706,10 +706,6 @@ function addOrReplaceSelectionStructureItem() {
     refreshSelectionUI();
     return;
   }
-  if (outlineMode === 'embedded') {
-    showError(t('Use Reselect on an existing Structure item; embedded outlines do not support adding new items.', '请对现有结构条目使用“重新选择”；PDF 内嵌目录不支持新增条目。'));
-    return;
-  }
   if (pendingOutlineReselectKey) {
     const index = inferredOutline.findIndex((entry) => outlineEntryKey(entry) === pendingOutlineReselectKey);
     if (index < 0) {
@@ -721,15 +717,18 @@ function addOrReplaceSelectionStructureItem() {
     selected.depth = Number(inferredOutline[index]?.depth) || 0;
     inferredOutline[index] = selected;
     pendingOutlineReselectKey = null;
-  } else {
+  } else if (!inferredOutline.some((entry) => outlineEntryKey(entry) === outlineEntryKey(selected))) {
+    if (inferredOutline.filter((entry) => entry?.userEdited === true).length >= MAX_INFERRED_OUTLINE_ENTRIES) {
+      showError(t('Manual Structure entry limit reached.', '手动结构条目已达到上限。'));
+      return;
+    }
     inferredOutline.push(selected);
   }
-  inferredOutline.sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
-  inferredOutline = inferredOutline.slice(0, MAX_INFERRED_OUTLINE_ENTRIES);
-  inferredOutlineDetectionDone = true;
+  inferredOutline = boundedOutlineWithManualPriority(inferredOutline);
+  // Adding a manual item must not mark background typography detection complete.
   tocOutlineTargets = null;
   persistDocumentState();
-  renderInferredOutline(inferredOutline);
+  renderActiveOutline();
   rerenderReferenceLinksAfterStructureEdit();
   refreshSelectionUI();
 }

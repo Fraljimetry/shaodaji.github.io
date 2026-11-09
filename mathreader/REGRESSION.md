@@ -1,6 +1,6 @@
 # MathReader — Regression policy and recent history
 
-This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v418 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
+This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v419 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
 
 ## Standing verification requirements
 
@@ -13,6 +13,18 @@ This is the stable entry point for MathReader's development and verification rec
 ## Finding older regression records
 
 See [Documentation map](docs/README.md) for OCR, export, audit, and release documents, and the [regression history archive](docs/README.md#regression-history) for older v338–v404 notes. The historical archive preserves the supplied v414 source record in its original order, including later appendices.
+
+---
+
+## v419 — Manual Structure additions alongside embedded PDF bookmarks (2026-11-09 UTC)
+
+**Reproduced on untouched v418:** `tests/structure_manual_embedded_v419_regression.js` constructs an embedded PDF outline and selects arbitrary prose for the Structure action; baseline rejects it with “Use Reselect on an existing Structure item; embedded outlines do not support adding new items.” The new test fails before the fix and checks interleaving, manual indent, Reselect, Remove, original embedded bookmark metadata, Undo and saved session behavior.
+
+**Correction:** manual Structure items now coexist with existing embedded bookmark rows in reading order without rewriting native bookmark hierarchy/order. Manually chosen text is not required to be an automatically detected heading. A common row renderer keeps manual indentation, navigation and edit actions consistent in embedded and inferred modes. Rebuilding typography indexes merges the current manual edits (including those made during in-flight detection) instead of replacing them. Schema-version cache invalidation retains user-edited entries; reading-only exports retain them. Embedded PDF bookmarks are usable even when page text is not extractable. The shared 1200-entry limit retains manual entries ahead of detector output; duplicate manual selections do not create extra rows.
+
+**Regression scope:** source-driven VM behavior, a DOM integration test in local Chromium using controlled PDF bookmark destinations, existing JavaScript suites, and focused Python/Chromium shell checks. This is *not* a deployed-site original-PDF test, nor does it certify Structure precision on every source PDF. Exact results are recorded in [v419 patch manifest](docs/releases/V419_PATCH_MANIFEST.md) and `regression/v419_release_gate.json`.
+
+**Distribution:** only changed files under a single `mathreader/` root in `mathreader_v419_patch.zip`, intended to overwrite the existing v418 folder; no full-folder delivery.
 
 ---
 

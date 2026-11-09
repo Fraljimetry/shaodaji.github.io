@@ -3284,7 +3284,7 @@ function loadDocumentState(cachedSession = null) {
     currentOcrResult = session.ocrResult?.latex ? session.ocrResult : null;
     ocrHistory = Array.isArray(session.ocrHistory) ? session.ocrHistory.slice(0, 10) : [];
     inferredOutline = Array.isArray(session.inferredOutline) ? session.inferredOutline.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, MAX_INFERRED_OUTLINE_ENTRIES) : [];
-    if (inferredOutline.length) inferredOutlineDetectionDone = true;
+    if (inferredOutline.some((entry) => entry.userEdited !== true)) inferredOutlineDetectionDone = true;
     structureEntries = Array.isArray(session.structureEntries) ? session.structureEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.title === 'string').slice(0, 500) : [];
     bibliographyEntries = Array.isArray(session.bibliographyEntries) ? session.bibliographyEntries.filter((entry) => entry && Number(entry.page) >= 1 && typeof entry.label === 'string').slice(0, 400) : [];
     equationEdits = Array.isArray(session.equationEdits) ? session.equationEdits.filter((item) => item && typeof item.sourceLabel === 'string' && ['remove','reselect','add'].includes(item.action)).slice(0, 500) : [];
@@ -3328,7 +3328,7 @@ function loadDocumentState(cachedSession = null) {
     // user-imported detections, but invalidate ordinary local inferred outlines
     // together with their source detector version.
     if (structureIndexVersion !== STRUCTURE_INDEX_VERSION && !portableDetectionRequested) {
-      inferredOutline = [];
+      inferredOutline = inferredOutline.filter((entry) => entry?.userEdited === true);
       inferredOutlineDetectionDone = false;
     }
     // Detector-version invalidation is correct for ordinary local caches, but an
@@ -3348,7 +3348,10 @@ function loadDocumentState(cachedSession = null) {
     // for section headings. Rebuild any pre-v7 inferred outline once, and also
     // discard older entries that lack an in-page ratio.
     if (!portableDetectionRequested
-        && (Number(session.version || 0) < 20 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio)))))) inferredOutline = [];
+        && (Number(session.version || 0) < 20 || (inferredOutline.length && inferredOutline.some((entry) => !Number.isFinite(Number(entry.ratio)))))) {
+      inferredOutline = inferredOutline.filter((entry) => entry?.userEdited === true);
+      inferredOutlineDetectionDone = false;
+    }
     portableContentDetectionActive = portableDetectionRequested && Boolean(
       inferredOutline.length || structureEntries.length || bibliographyEntries.length || restoredEquationIndex
     );

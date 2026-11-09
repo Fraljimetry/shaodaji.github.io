@@ -798,7 +798,7 @@ function scheduleDetectedOutlineAugmentation() {
     try {
       const detected = await detectOutlineFromTypography();
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return;
-      inferredOutline = Array.isArray(detected) ? detected : [];
+      inferredOutline = mergeDetectedAndManualOutline(detected);
       inferredOutlineDetectionDone = true;
       tocOutlineTargets = null;
       persistDocumentState();
@@ -821,17 +821,7 @@ async function renderOutline() {
   outlineMode = 'none';
   updateOutlineSource();
   if (!pdfDoc) return;
-  if (!documentTextFeaturesAvailable()) {
-    if (portableContentDetectionActive && inferredOutline.length) {
-      inferredOutlineDetectionDone = true;
-      renderInferredOutline(inferredOutline);
-      return;
-    }
-    outlineCount.textContent = '0';
-    outlineEmpty.classList.remove('is-hidden');
-    outlineEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Contents.', '文档文本不可用。运行全文 OCR 后才能启用目录。');
-    return;
-  }
+  const hasDocumentText = documentTextFeaturesAvailable();
   try {
     const outline = await pdfDoc.getOutline();
     const flat = flattenOutline(outline);
@@ -854,19 +844,30 @@ async function renderOutline() {
       }));
       embeddedOutlineEntries = resolved.filter(Boolean);
       renderEmbeddedOutline(embeddedOutlineEntries);
-      scheduleDetectedOutlineAugmentation();
+      if (hasDocumentText) scheduleDetectedOutlineAugmentation();
+      return;
+    }
+    // PDF bookmarks do not require extractable page text. For an image-only
+    // document, keep those bookmarks available, and also keep user-created
+    // Structure items visible until OCR makes typography detection possible.
+    if (!hasDocumentText) {
+      if (inferredOutline.length) renderInferredOutline(inferredOutline);
+      else {
+        outlineCount.textContent = '0';
+        outlineEmpty.classList.remove('is-hidden');
+        outlineEmpty.textContent = t('Document text unavailable. Run full-document OCR to enable Contents.', '文档文本不可用。运行全文 OCR 后才能启用目录。');
+      }
       return;
     }
 
     outlineEmpty.classList.remove('is-hidden');
     outlineEmpty.textContent = t('No embedded outline. Detecting document structure…', '没有嵌入式目录，正在自动检测文档结构……');
-    if (!inferredOutline.length) {
-      inferredOutline = await detectOutlineFromTypography();
+    if (!inferredOutlineDetectionDone) {
+      const detected = await detectOutlineFromTypography();
+      inferredOutline = mergeDetectedAndManualOutline(detected);
       inferredOutlineDetectionDone = true;
       tocOutlineTargets = null;
       persistDocumentState();
-    } else {
-      inferredOutlineDetectionDone = true;
     }
     renderInferredOutline(inferredOutline);
   } catch (error) {

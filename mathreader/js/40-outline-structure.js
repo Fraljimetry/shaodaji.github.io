@@ -21,7 +21,9 @@ function updateOutlineSource() {
   if (!outlineSource) return;
   outlineSource.classList.toggle('is-hidden', outlineMode === 'none');
   if (outlineMode === 'embedded') {
-    outlineSource.textContent = t('Embedded PDF outline', 'PDF 嵌入式目录');
+    outlineSource.textContent = inferredOutline.some((entry) => entry?.userEdited === true)
+      ? t('Embedded PDF outline · manual additions', 'PDF 嵌入式目录 · 手动添加')
+      : t('Embedded PDF outline', 'PDF 嵌入式目录');
   } else if (outlineMode === 'inferred') {
     outlineSource.textContent = t('Detected outline · inferred from page typography and numbering', '自动检测目录 · 根据页面字号与编号推断');
   } else {
@@ -1202,14 +1204,59 @@ function applyEmbeddedOutlineEdits(entries) {
   return out;
 }
 
+// Manual Structure entries and detector results share persistence, but a new
+// detector must never erase a reader-selected passage or overflow it off the
+// index. Keep the user-authored entries when applying the bounded row limit.
+function boundedOutlineWithManualPriority(entries) {
+  const sorted = (Array.isArray(entries) ? entries : []).slice().sort((a, b) =>
+    Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
+  if (sorted.length <= MAX_INFERRED_OUTLINE_ENTRIES) return sorted;
+  const autoLimit = Math.max(0, MAX_INFERRED_OUTLINE_ENTRIES - sorted.filter((entry) => entry.userEdited === true).length);
+  let autoKept = 0;
+  return sorted.filter((entry) => entry.userEdited === true || autoKept++ < autoLimit)
+    .slice(0, MAX_INFERRED_OUTLINE_ENTRIES);
+}
+
+function mergeDetectedAndManualOutline(detected, existing = inferredOutline) {
+  const manual = (existing || []).filter((entry) => entry?.userEdited === true);
+  const manualKeys = new Set(manual.map((entry) => outlineEntryKey(entry)));
+  const automatic = (Array.isArray(detected) ? detected : []).filter((entry) =>
+    entry && entry.userEdited !== true && !manualKeys.has(outlineEntryKey(entry)));
+  return boundedOutlineWithManualPriority([...automatic, ...manual]);
+}
+
+// Preserve the PDF's native bookmark order and depth. Insert manual items at
+// their page positions without sorting or rewriting the embedded tree.
+function interleaveEmbeddedAndManualOutline(embedded, manual) {
+  const combined = (embedded || []).slice();
+  const additions = (manual || []).filter((entry) => entry?.userEdited === true)
+    .slice().sort((a, b) => Number(a.page) - Number(b.page) || Number(a.ratio) - Number(b.ratio));
+  for (const added of additions) {
+    const next = combined.findIndex((entry) => Number(entry.page) > Number(added.page)
+      || (Number(entry.page) === Number(added.page) && Number(entry.ratio || 0) > Number(added.ratio || 0)));
+    if (next < 0) combined.push(added);
+    else combined.splice(next, 0, added);
+  }
+  return combined;
+}
+
+function renderActiveOutline() {
+  if (outlineMode === 'embedded') renderEmbeddedOutline(embeddedOutlineEntries);
+  else renderInferredOutline(inferredOutline);
+}
+
 function renderEmbeddedOutline(entries) {
   outlineList.replaceChildren();
-  const visible = applyEmbeddedOutlineEdits(entries);
+  const visible = interleaveEmbeddedAndManualOutline(applyEmbeddedOutlineEdits(entries), inferredOutline);
   outlineMode = 'embedded';
   updateOutlineSource();
   outlineCount.textContent = String(visible.length);
   outlineEmpty.classList.toggle('is-hidden', visible.length > 0);
   for (const entry of visible) {
+    if (entry.userEdited === true && !entry.sourceKey) {
+      appendInferredOutlineRow(entry);
+      continue;
+    }
     const row = document.createElement('div');
     row.className = 'outline-edit-row';
     row.dataset.mapFilterText = entry.title;
@@ -1300,7 +1347,11 @@ function renderInferredOutline(entries) {
   }
   outlineMode = 'inferred';
   updateOutlineSource();
-  for (const entry of entries) {
+  for (const entry of entries) appendInferredOutlineRow(entry);
+  applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
+}
+
+function appendInferredOutlineRow(entry) {
     const row = document.createElement('div');
     row.className = 'outline-edit-row';
     row.dataset.mapFilterText = entry.title;
@@ -1311,7 +1362,9 @@ function renderInferredOutline(entries) {
     button.dataset.depth = row.dataset.depth;
     button.dataset.page = String(entry.page);
     button.textContent = entry.title;
-    button.title = t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
+    button.title = entry.userEdited === true
+      ? t(`Manual Structure · page ${entry.page}`, `手动结构条目 · 第 ${entry.page} 页`)
+      : t(`Detected heading · page ${entry.page}`, `自动检测标题 · 第 ${entry.page} 页`);
     button.addEventListener('click', () => {
       outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
       setDocumentMapSelectedNode(button);
@@ -1354,7 +1407,7 @@ function renderInferredOutline(entries) {
           entry.depth = currentDepth - 1;
           row.classList.remove('has-edit-menu');
           persistDocumentState();
-          renderInferredOutline(inferredOutline);
+          renderActiveOutline();
         });
         actions.append(moveLeft);
       }
@@ -1371,7 +1424,7 @@ function renderInferredOutline(entries) {
           entry.depth = currentDepth + 1;
           row.classList.remove('has-edit-menu');
           persistDocumentState();
-          renderInferredOutline(inferredOutline);
+          renderActiveOutline();
         });
         actions.append(moveRight);
       }
@@ -1401,15 +1454,13 @@ function renderInferredOutline(entries) {
       inferredOutline = inferredOutline.filter((item) => outlineEntryKey(item) !== key);
       tocOutlineTargets = null;
       persistDocumentState();
-      renderInferredOutline(inferredOutline);
+      renderActiveOutline();
       rerenderReferenceLinksAfterStructureEdit();
       refreshSelectionUI();
     });
     actions.append(reselect, remove);
     row.append(button, menu, actions);
     outlineList.append(row);
-  }
-  applyDocumentMapFilter(el('map-filter-structure')); updateDocumentMapCurrentLocation();
 }
 
 document.addEventListener('click', (event) => {
