@@ -1022,6 +1022,9 @@ function detailedOcrError(error, backend = null) {
 // never make the PDF reader inert, capture its keyboard shortcuts, or cover the
 // page: only the Formula OCR workspace shows a non-modal busy status. The crop
 // awaits this shared promise and is recognized when the model becomes ready.
+// The first crop owns the busy state across both model startup and inference.
+// Model initialization alone may run without a crop (e.g. diagnostic calls).
+let mathOcrCropPending = false;
 const FORMULA_OCR_INIT_TIMEOUT_MS = 120000;
 
 function formulaOcrTimeoutError() {
@@ -1120,7 +1123,9 @@ async function initializeMathOcrPipeline() {
           totalMs: ocrNow() - engineLoadStart
         };
         updateOcrCapability();
-        setOcrStatus(t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`));
+        setOcrStatus(mathOcrCropPending
+          ? t('Processing formula…', '正在处理公式……')
+          : t(`OCR ready · ${backend.label}`, `OCR 就绪 · ${backend.label}`), mathOcrCropPending);
         logOcrTiming({ type: 'engine-load', ...lastOcrEngineTiming });
         return pipe;
       } catch (error) {
@@ -1144,9 +1149,11 @@ async function initializeMathOcrPipeline() {
     showNotice(t('Formula OCR could not load. PDF reading is available; use Reset OCR to retry.', '公式 OCR 加载失败。PDF 阅读仍可使用，可通过“重置 OCR”重试。'));
     throw error;
   } finally {
-    mathOcrLoading = false;
+    // Initialization is only one stage of an active crop. Do not re-enable
+    // OCR controls while the caller is still running image inference.
+    mathOcrLoading = mathOcrCropPending;
     updateOcrInteractionAvailability();
-    }
+  }
 }
 
 

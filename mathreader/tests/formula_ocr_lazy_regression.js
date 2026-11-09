@@ -19,7 +19,7 @@ check(!runtime.includes('scheduleMathOcrPreload'), 'settings/reset do not preloa
 check(runtime.includes('schedulePdfCorePreload();'), 'unrelated PDF.js startup warmup preserved');
 check(vector.includes('const pipe = await ensureMathOcrPipeline();'), 'OCR inference lazily acquires the engine');
 check(vector.includes("if (formulaExtractionMode === 'vector' && vector?.latex)"), 'usable vector formula bypasses image OCR');
-check(html.includes('mathreader.js?v=416') && html.includes('mathreader.css?v=416'), 'current v416 cache busting');
+check(html.includes('mathreader.js?v=417') && html.includes('mathreader.css?v=417'), 'current v416 cache busting');
 check(html.includes('The model loads on the next image formula extraction.'), 'reset hint describes lazy behavior');
 check(runtime.includes('OCR reset · loads on next image extraction'), 'reset says it will not preload');
 check(runtime.includes('OCR engine selected · loads on first image extraction'), 'engine settings say they will not preload');
@@ -69,7 +69,7 @@ const cropEnd=vector.indexOf('\n\nasync function canvasFromDataUrl(',cropStart);
 check(cropStart>=0 && cropEnd>cropStart, 'actual formula extraction handler located');
 let imageRuns=0,vectorResults=0,processingCalls=0;
 const extract=vm.createContext({
-  pdfDoc:{},currentFileKey:'formula-test-document',
+  pdfDoc:{},currentFileKey:'formula-test-document',mathOcrCropPending:false,mathOcrInitPromise:null,
   ocrNow:()=>123,setOcrMode(){},mathOcrLoading:false,mathOcrBackend:null,
   formulaExtractionMode:'image',t:(en)=>en,console,
   extractVectorFormulaFromLayer:()=>({latex:'x+y',text:'x+y'}),

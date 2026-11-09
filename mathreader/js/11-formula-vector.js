@@ -1184,7 +1184,7 @@ function commitFormulaResult(item, statusMessage = '') {
 }
 
 async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRect = null, diagnosticsMeta = {}) {
-  if (!crop || !page) return;
+  if (!crop || !page || mathOcrCropPending) return;
   // Inference can outlive a document switch. Never publish a result into an
   // unrelated PDF's notes, history, or persistence state.
   const sourceDoc = pdfDoc;
@@ -1212,6 +1212,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     return;
   }
 
+  mathOcrCropPending = true;
   mathOcrLoading = true;
   let recognitionFailed = false;
   setOcrProcessing(true);
@@ -1287,7 +1288,8 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       : detail);
     showError(detail);
   } finally {
-    mathOcrLoading = false;
+    mathOcrCropPending = false;
+    mathOcrLoading = Boolean(mathOcrInitPromise);
     setOcrProcessing(false);
     if (recognitionFailed) {
       await disposeMathOcrPipeline();
@@ -1319,11 +1321,12 @@ async function canvasFromDataUrl(dataUrl) {
 }
 
 async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vectorAlternative = null, vectorAlternativeText = null, ratio = null, diagnosticsMeta = {}) {
-  if (!crop || !page) return;
+  if (!crop || !page || mathOcrCropPending) return;
   const sourceDoc = pdfDoc;
   const sourceKey = currentFileKey;
   const stillCurrent = () => sourceDoc === pdfDoc && sourceKey === currentFileKey;
   const endToEndStart = Number.isFinite(Number(diagnosticsMeta.startedAt)) ? Number(diagnosticsMeta.startedAt) : ocrNow();
+  mathOcrCropPending = true;
   mathOcrLoading = true;
   let recognitionFailed = false;
   const imagePreview = preview || crop.toDataURL('image/png');
@@ -1386,7 +1389,8 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
     setOcrStatus(detail);
     showError(detail);
   } finally {
-    mathOcrLoading = false;
+    mathOcrCropPending = false;
+    mathOcrLoading = Boolean(mathOcrInitPromise);
     setOcrProcessing(false);
     if (recognitionFailed) {
       await disposeMathOcrPipeline();

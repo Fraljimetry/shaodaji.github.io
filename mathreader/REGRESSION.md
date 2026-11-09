@@ -1,6 +1,6 @@
 # MathReader — Regression policy and recent history
 
-This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v416 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
+This is the stable entry point for MathReader's development and verification record. The archived v414–v405 release entries follow **unchanged** below the current v417 findings. Earlier records were reorganized into the [historical archive](docs/README.md#regression-history) without dropping or silently rewriting their evidence.
 
 ## Standing verification requirements
 
@@ -13,6 +13,16 @@ This is the stable entry point for MathReader's development and verification rec
 ## Finding older regression records
 
 See [Documentation map](docs/README.md) for OCR, export, audit, and release documents, and the [regression history archive](docs/README.md#regression-history) for older v338–v404 notes. The historical archive preserves the supplied v414 source record in its original order, including later appendices.
+
+---
+
+## v417 — Keep first-crop OCR exclusive through inference (2026-11-09 UTC)
+
+**Reproduced on untouched v416:** `tests/formula_ocr_pending_crop_race_v417_regression.js` executed the original initialization and crop handlers with a successfully loaded, deferred pipeline. `initializeMathOcrPipeline()` cleared the shared `mathOcrLoading` flag before the waiting crop completed its actual image inference. The assertion that OCR remained busy during inference failed. This could prematurely enable selection, engine reset/settings, and competing extraction while one crop was still running.
+
+**Correction:** track an active crop separately from initialization. The engine-init `finally` keeps OCR controls busy while an outer crop is pending; both the ordinary image extraction and image-comparison path own and release the crop token, and reject a competing crop while the token is held. The existing PDF object and identity checks still prevent stale OCR commits after changing documents. A pending crop displays processing status rather than claiming that OCR is ready and finished; the rest of the reader remains interactive. No equation/Results/Bibliography detector, PDF cache schema, model backend, or persistence format change is made. Browser asset cache advanced to v417.
+
+**Verification:** the new test demonstrably fails on the original v416 source and passes after the correction. Independently reran all **62/62 JavaScript regression suites** (including the added test), **28/28 Python/isolated Chromium suites**, and `regression_tools/p0_browser.py --shell-only` (**PASS** on the assembled v417 app). Regression evidence is in `regression/v417_release_gate.json` and [the v417 release note](docs/releases/V417_RELEASE.md). Browser-shell checks are not real Texify inference and do not certify actual WASM frame responsiveness. No source-matched original PDF binaries accompanied this ZIP; neither mathematical detection completeness nor mathematical OCR accuracy was newly certified on original PDFs. The accepted Ahlfors reload limitation remains unchanged.
 
 ---
 

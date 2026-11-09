@@ -67,7 +67,7 @@ function mkFormulaContext() {
   const a={id:'a'},b={id:'b'};
   const c={
     pdfDoc:a,currentFileKey:'file-a',formulaExtractionMode:'image',mathOcrInitializationFailed:false,
-    mathOcrBackend:{label:'CPU'}, mathOcrLoading:false,
+    mathOcrBackend:{label:'CPU'}, mathOcrLoading:false, mathOcrCropPending:false, mathOcrInitPromise:null,
     ocrNow:()=>3,setOcrMode:()=>{},setOcrProcessing:()=>{},setOcrStatus:()=>{},
     extractVectorFormulaFromLayer:()=>null,yieldForOcrProgressPaint:async()=>{},
     runImageFormulaRecognition:()=>deferred,updateOcrInteractionAvailability:()=>{},
