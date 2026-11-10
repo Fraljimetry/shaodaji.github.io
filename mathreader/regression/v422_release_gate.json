@@ -1,0 +1,40 @@
+{
+  "release": "v422",
+  "js_regression_suites": {
+    "passed": 70,
+    "total": 70,
+    "status": "PASS"
+  },
+  "python_chromium_test_files": {
+    "passed": 29,
+    "total": 29,
+    "status": "PASS individually",
+    "note": "28 files recorded in batch components; standalone ui_responsive_regression.py returned 0 and 176/176 assertions after large batch timed out"
+  },
+  "responsive_assertions": {
+    "passed": 176,
+    "total": 176,
+    "status": "PASS"
+  },
+  "native_pdf_proxy": {
+    "files": 30,
+    "pages": 708,
+    "stages": 90,
+    "stage_execution_errors": 0,
+    "results_recovered": 14,
+    "status": "EXECUTED; accuracy unverified"
+  },
+  "original_pdfs_in_package": false,
+  "browser_real_pdfjs": false,
+  "ocr_inference": false,
+  "original_pdf_visual_sample": true,
+  "original_pdf_verified_accuracy_all_30": false,
+  "limitations": [
+    "Some entries are mathematical notes, not published journal papers; some are near-duplicate versions of a work.",
+    "Counts are unverified candidates, not precision/recall estimates.",
+    "PyMuPDF line construction may differ from PDF.js, including on multi-column and historical/scanned PDFs.",
+    "Image-only/scan PDFs with no meaningful native text need actual OCR (for example GA Seminar Note 1).",
+    "Weak PDF font encodings can omit printed labels; no automatic OCR was run in this corpus test.",
+    "Bib and Equation candidate counts are unchanged: no new universal accuracy certification is claimed."
+  ]
+}

@@ -105,12 +105,36 @@ function structureResultParentheticalHeadingTail(tail) {
   const joined = ordinary ? null : source.match(
     /^\(([^()]{3,90})\)((?:If|Let|Suppose|For|Given|When|Whenever|There|Every|Each|All|Any|Assume).{2,})$/
   );
-  const match = ordinary || joined;
+  // Named statements can contain nested mathematical parentheses, e.g.
+  // "(Weak (1, 1) plus strong (2, 2))" or "(sign of Δg(r−1))".
+  // Extract only a bounded, balanced name; an unbalanced reference or a
+  // short subpart token such as "(a)" is never a named declaration.
+  let match = ordinary || joined;
+  if (!match && source[0] === '(') {
+    let depth = 0;
+    let close = -1;
+    for (let i = 0; i < Math.min(source.length, 124); i += 1) {
+      if (source[i] === '(') depth += 1;
+      else if (source[i] === ')') {
+        depth -= 1;
+        if (depth < 0) break;
+        if (depth === 0) { close = i; break; }
+      }
+    }
+    if (close >= 4 && close <= 100) {
+      const following = source.slice(close + 1);
+      if (!following || /^\s+(?:[.:]\s*)?/.test(following) || /^[.:]\s*/.test(following)) {
+        const after = following.trim().replace(/^[.:]\s*/, '').trim();
+        match = [source, source.slice(1, close), after];
+      }
+    }
+  }
   if (!match) return null;
   const name = match[1].trim();
   const after = String(ordinary ? match[3] : match[2] || '').trim();
   if (!/[A-Za-zÀ-ÿ]{2,}/.test(name) || /^(?:see|cf\.?|compare|by|after|before|above|below|part\s+[a-z0-9]|case\s+[a-z0-9])\b/i.test(name)) return null;
-  const statementPreposition = /^(?:In|Under)\s+(?:the|a|an|any|every|each|this|these|that)\b/.test(after);
+  const statementPreposition = /^(?:In|Under)\s+(?:the|a|an|any|every|each|this|these|that)\b/.test(after)
+    || /^As\s+(?:distributions?|measures?|functions?|maps?|operators?|sets?|equations?|currents?|forms?|matrices|elements|tensors)\b/i.test(after);
   if (after && (structureResultProseReferenceTail(after)
     || (!statementPreposition && /^(?:and|or|in|from|on|under|as|which|whose|where|that|than|by)\b/i.test(after)))) return null;
   return {name, after};
@@ -425,13 +449,23 @@ function detectedStructureResult(lines, lineIndex, page) {
     if (/^[A-Za-z]/.test(number) && number[0] !== number[0].toLocaleUpperCase()) return null;
     const tail = String(match[3] || '').trim();
     const named = tail.startsWith('(') ? structureResultParentheticalHeadingTail(tail) : null;
+    // A genuine theorem may start with its first lettered assertion rather
+    // than a prose preamble: "Theorem 2.12. (a) If ...". Require the explicit
+    // dot after the FULL number, a first-item marker, and a substantive
+    // capitalized statement lead. Never interpret "Theorem 2.12(a) shows..."
+    // or "Theorem 2.12 (a) implies..." as a declaration.
+    const firstSubpart = /^\((?:a|i)\)\s+(.{10,})$/u.exec(tail);
+    const numberedHeadingLead = cleaned.match(/^(?:Theorem|Lemma|Proposition|Corollary|Definition|Main Result|Remark|Example|Claim|Conjecture|Question|Assumption|Hypothesis)\s+[A-Z]?\d+(?:[.\u00b7-]\d+)*[.]\s+\((?:a|i)\)\s+/i);
+    const explicitFirstSubpart = Boolean(firstSubpart && numberedHeadingLead
+      && /^\p{Lu}/u.test(firstSubpart[1])
+      && !structureResultProseReferenceTail(firstSubpart[1]));
     // Imperative tasks are genuine numbered Examples when their printed
     // number has a sentence delimiter.  A prose reference such as
     // "Example 191 proves ..." has no such delimiter and remains rejected.
     // This also preserves the common "Example 191. Prove ..." heading.
     const explicitExampleTask = type === 'Example'
       && /^Example\s+\d+(?:[.\u00b7-]\d+)*[.)]\s+(?:Prove|Show)\b/i.test(cleaned);
-    if ((tail.startsWith('(') && !named)
+    if ((tail.startsWith('(') && !named && !explicitFirstSubpart)
       || (structureResultProseReferenceTail(tail) && !explicitExampleTask)
       || structureResultUnpunctuatedReferenceTail(cleaned, tail)) return null;
     return {

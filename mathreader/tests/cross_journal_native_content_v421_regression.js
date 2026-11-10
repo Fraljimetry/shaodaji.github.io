@@ -32,7 +32,7 @@ const context = vm.createContext({
  buildStructureIndexButton:{disabled:false},structureEmpty:{classList:{remove(){}},textContent:''},
  bibliographyEmpty:{classList:{remove(){}},textContent:''},
  textCache:new Map(),lineCache:new Map(),pendingOutlineReselectKey:null,
- STRUCTURE_INDEX_VERSION:56,STRUCTURE_REFERENCE_RE:vm.runInNewContext(referenceMatch[1]),
+ STRUCTURE_INDEX_VERSION:57,STRUCTURE_REFERENCE_RE:vm.runInNewContext(referenceMatch[1]),
  backlinkSnippet:t=>t.slice(0,40),persistDocumentState(){},rerenderReferenceLinks(){},t:s=>s,
  findFirstRowInYBuckets(buckets,y,tol=2){for(const rows of buckets.values())for(const row of rows)if(Math.abs(row.y-y)<=tol)return row;return null;},
  addRowToYBuckets(buckets,row,bin=4){const k=Math.floor(row.y/bin),xs=buckets.get(k)||[];xs.push(row);buckets.set(k,xs);},

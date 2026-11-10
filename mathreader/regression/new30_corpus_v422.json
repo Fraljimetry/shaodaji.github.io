@@ -1,0 +1,677 @@
+{
+  "schema": "mathreader.native-span-corpus@1",
+  "release": "v422",
+  "purpose": "First actually executed 30-PDF native-mathematical-content regression; not a 30-journal-paper corpus",
+  "source": "Original PDF bytes available in the user-owned file library. No PDFs are distributed.",
+  "method": {
+    "pdf_extraction": "PyMuPDF native spans and coordinates, NOT PDF.js",
+    "detection": "MathReader production JS detector functions through Node VM; browser/PDF.js/OCR phases are mocked or absent",
+    "interpretation": "PASS means detector executed without an exception, NOT that printed results/equations were all correctly detected",
+    "original_page_review": "Focused printed-page render checks for Theorem 2.12 in 0810.5645v6 and Theorem 6.1 in Calderon-Zygmund note, plus source-text checks for all 14 newly recovered declarations"
+  },
+  "aggregate": {
+    "pdf_files_executed": 30,
+    "pages": 708,
+    "native_chars": 1335713,
+    "detector_stages_per_file": 3,
+    "stage_errors": 0,
+    "structure_candidates": 514,
+    "results_before": 535,
+    "results_after": 549,
+    "results_delta": 14,
+    "bibliography_candidates": 413,
+    "equation_occurrences": 1879
+  },
+  "recovered_results": [
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 21,
+      "label": "Theorem 2.12"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 37,
+      "label": "Proposition 4.2"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 48,
+      "label": "Remark 4.20"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 58,
+      "label": "Question 5.7"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 58,
+      "label": "Remark 5.8"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 61,
+      "label": "Question 5.12"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 112,
+      "label": "Remark 7.22"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 135,
+      "label": "Proposition 9.3"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 140,
+      "label": "Proposition 9.10"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 189,
+      "label": "Proposition 13.6"
+    },
+    {
+      "pdf": "0810.5645v6.pdf",
+      "page": 194,
+      "label": "Proposition 13.12"
+    },
+    {
+      "pdf": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "page": 4,
+      "label": "Lemma 3.1"
+    },
+    {
+      "pdf": "calderon_zygmund_note.pdf",
+      "page": 2,
+      "label": "Proposition 2.1"
+    },
+    {
+      "pdf": "calderon_zygmund_note.pdf",
+      "page": 4,
+      "label": "Theorem 6.1"
+    }
+  ],
+  "limits": [
+    "Some entries are mathematical notes, not published journal papers; some are near-duplicate versions of a work.",
+    "Counts are unverified candidates, not precision/recall estimates.",
+    "PyMuPDF line construction may differ from PDF.js, including on multi-column and historical/scanned PDFs.",
+    "Image-only/scan PDFs with no meaningful native text need actual OCR (for example GA Seminar Note 1).",
+    "Weak PDF font encodings can omit printed labels; no automatic OCR was run in this corpus test.",
+    "Bib and Equation candidate counts are unchanged: no new universal accuracy certification is claimed."
+  ],
+  "documents": [
+    {
+      "id": "new01",
+      "name": "0810.5645v6.pdf",
+      "sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "pages": 212,
+      "native_chars": 515422,
+      "inferred_outline": 78,
+      "results": 202,
+      "bibliography": 105,
+      "equation_occurrences": 346,
+      "equation_labels": 345,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 191,
+      "v422_results_change": 11
+    },
+    {
+      "id": "new02",
+      "name": "1209.2203v2.pdf",
+      "sha256": "bf7761c9baa71b62d125b1f04a0b8130865c3fc55ab861c43a4296b021b8b839",
+      "pages": 88,
+      "native_chars": 174146,
+      "inferred_outline": 46,
+      "results": 62,
+      "bibliography": 183,
+      "equation_occurrences": 300,
+      "equation_labels": 299,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 62,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new03",
+      "name": "2309.00806v2(1).pdf",
+      "sha256": "92282386fd26e61d880978a4150093dd3854dc082f837ba952268adc0535cee7",
+      "pages": 15,
+      "native_chars": 41252,
+      "inferred_outline": 9,
+      "results": 26,
+      "bibliography": 18,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 26,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new04",
+      "name": "A_Geometric_Approach_to_Integration.pdf",
+      "sha256": "2363c2bb5bb28382fe883cc4d27ba33e3e4bf0d6970b103efb9212d89bb5fdda",
+      "pages": 6,
+      "native_chars": 16162,
+      "inferred_outline": 4,
+      "results": 0,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 0,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new05",
+      "name": "A_Streamlined_Proof_of_the_Yamabe_Problem(1).pdf",
+      "sha256": "020a93cb9463ae1e0fafa6d4fbf177a8c272a587e589eb55afa545f47e48262d",
+      "pages": 18,
+      "native_chars": 25591,
+      "inferred_outline": 15,
+      "results": 10,
+      "bibliography": 0,
+      "equation_occurrences": 66,
+      "equation_labels": 66,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 10,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new06",
+      "name": "Complete_Proofs_Conformal_Normal_Coordinates_and_Green_Function.pdf",
+      "sha256": "15968fc77edc8f2544f8a795cc1c8ae3825c1bbe2d32a33014a631c306cf5e4d",
+      "pages": 17,
+      "native_chars": 26935,
+      "inferred_outline": 26,
+      "results": 4,
+      "bibliography": 3,
+      "equation_occurrences": 85,
+      "equation_labels": 85,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 4,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new07",
+      "name": "Conformal_Normal_Coordinates_Rewritten_Proof.pdf",
+      "sha256": "b13d28baa13d1dc3b4014b6ee906b3abae58e71ea6e969105636907eecff54f9",
+      "pages": 8,
+      "native_chars": 14216,
+      "inferred_outline": 9,
+      "results": 3,
+      "bibliography": 0,
+      "equation_occurrences": 27,
+      "equation_labels": 27,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 3,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new08",
+      "name": "Cut_Transpose_Structural_Characterization.pdf",
+      "sha256": "f41a567ac6e0cf864defc853d46766e71e59a4c8eae6b1e199df23e7d65ba11c",
+      "pages": 12,
+      "native_chars": 25272,
+      "inferred_outline": 13,
+      "results": 16,
+      "bibliography": 3,
+      "equation_occurrences": 15,
+      "equation_labels": 15,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 16,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new09",
+      "name": "Detailed_Proofs_of_the_Three_Analytic__Geometric_Inputs_for_the_Streamlined_Yamabe_Argument(1).pdf",
+      "sha256": "1fdf24a374d40a904dc3a80259e8cae9d9484b2e8aaa224a40a35c9fa6385751",
+      "pages": 15,
+      "native_chars": 23004,
+      "inferred_outline": 21,
+      "results": 7,
+      "bibliography": 0,
+      "equation_occurrences": 38,
+      "equation_labels": 38,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 7,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new10",
+      "name": "GA Seminar Note 1.pdf",
+      "sha256": "ff32f152e23be06d7d14b03e551f4f5a28945bbbbc3e77ff19403cc148c991fb",
+      "pages": 4,
+      "native_chars": 40,
+      "inferred_outline": 0,
+      "results": 0,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 0,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new11",
+      "name": "Green_Function_Expansion_Insert_Proof.pdf",
+      "sha256": "89641998ca3fc417a18fabb4ea4e3bbd20cf3d7a962be038368c033c585407e6",
+      "pages": 6,
+      "native_chars": 8811,
+      "inferred_outline": 1,
+      "results": 3,
+      "bibliography": 0,
+      "equation_occurrences": 70,
+      "equation_labels": 70,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 3,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new12",
+      "name": "Inversion_to_PMT_Bridge.pdf",
+      "sha256": "92809f20903ddb1b705a6cc144261db2f934272c970ce3f552a194b7ac7692f2",
+      "pages": 3,
+      "native_chars": 2604,
+      "inferred_outline": 0,
+      "results": 0,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 0,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new13",
+      "name": "Lean_Diagonal_Similarity_Beginner_Guide.pdf",
+      "sha256": "9b8375d5845fe229752ffa6e93a48a60346761f1805c7c6fa6abe8515e3cb606",
+      "pages": 18,
+      "native_chars": 38250,
+      "inferred_outline": 29,
+      "results": 0,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 0,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new14",
+      "name": "Marques2005.pdf",
+      "sha256": "7eb34246c5cfa5d1fcea7b091224b27c9e459bf34fe2660bdf85e409be57dca1",
+      "pages": 32,
+      "native_chars": 46025,
+      "inferred_outline": 9,
+      "results": 27,
+      "bibliography": 20,
+      "equation_occurrences": 81,
+      "equation_labels": 81,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 27,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new15",
+      "name": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "sha256": "92f5f086a7fefd4f467d6f0589573de06268a92c32dc47a481bb503857536c8b",
+      "pages": 18,
+      "native_chars": 28751,
+      "inferred_outline": 22,
+      "results": 19,
+      "bibliography": 14,
+      "equation_occurrences": 93,
+      "equation_labels": 93,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 18,
+      "v422_results_change": 1
+    },
+    {
+      "id": "new16",
+      "name": "Principal_Minor_Theorem_4_1_Correction.pdf",
+      "sha256": "3f17cdb50b57daa73d7319b18467b040ec4aaa4d942af63c17c76fd8d9582510",
+      "pages": 9,
+      "native_chars": 18389,
+      "inferred_outline": 10,
+      "results": 10,
+      "bibliography": 3,
+      "equation_occurrences": 31,
+      "equation_labels": 31,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 10,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new17",
+      "name": "Radon Measures and Riesz Representation Theorems.pdf",
+      "sha256": "743bb57222fea38259af4775782ba0229e18d8f929d8d32bf2b0e389ffb0d0a0",
+      "pages": 10,
+      "native_chars": 15718,
+      "inferred_outline": 6,
+      "results": 16,
+      "bibliography": 2,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 16,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new18",
+      "name": "The_Classic_Solution_to_the_Yamabe_Problem (1).pdf",
+      "sha256": "4c64c76edaf0868ccf232e33fdcf1a696dce0490e374526754db80ba4fd305f1",
+      "pages": 26,
+      "native_chars": 38672,
+      "inferred_outline": 25,
+      "results": 13,
+      "bibliography": 7,
+      "equation_occurrences": 270,
+      "equation_labels": 270,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 13,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new19",
+      "name": "Theorem_2_1_Self_Contained_Proof.pdf",
+      "sha256": "3ad8fcc957dce3bf1430c9bacf6f454b04b3233ac1b1f8051ab5fd29b0bfbdbb",
+      "pages": 1,
+      "native_chars": 2684,
+      "inferred_outline": 0,
+      "results": 1,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 1,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new20",
+      "name": "Yamabe_missing_inputs_detailed_proofs.pdf",
+      "sha256": "1044240619a6c240344c4769ab9b8b28739762b7b15cf807e7bc0177a4742baf",
+      "pages": 15,
+      "native_chars": 22909,
+      "inferred_outline": 21,
+      "results": 7,
+      "bibliography": 0,
+      "equation_occurrences": 38,
+      "equation_labels": 38,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 7,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new21",
+      "name": "blowup_limit_proposition.pdf",
+      "sha256": "46254d4737429590feb0ac2ac34225cd94a17e9f93fd62a279b87dbb18bc2b16",
+      "pages": 2,
+      "native_chars": 1981,
+      "inferred_outline": 0,
+      "results": 1,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 1,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new22",
+      "name": "brendle2007.pdf",
+      "sha256": "206fc4719f3dbb04f56c9a6acf4ee26dc10b86d052d8f9f90e09522be951829d",
+      "pages": 29,
+      "native_chars": 44573,
+      "inferred_outline": 7,
+      "results": 30,
+      "bibliography": 20,
+      "equation_occurrences": 6,
+      "equation_labels": 6,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 30,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new23",
+      "name": "brendle_bm_yamabe_noncompactness_reading_guide.pdf",
+      "sha256": "1adf603acd9a198e347b953d9a9fb68a2a45ba206892ef1acd22c5491a086764",
+      "pages": 21,
+      "native_chars": 28740,
+      "inferred_outline": 26,
+      "results": 1,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 1,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new24",
+      "name": "brendle_marques2009.pdf",
+      "sha256": "4dc024d33137fc022df9b1a35a5489d57734a9fe2ed7694c8ef990a5d4375c14",
+      "pages": 26,
+      "native_chars": 33275,
+      "inferred_outline": 7,
+      "results": 26,
+      "bibliography": 18,
+      "equation_occurrences": 3,
+      "equation_labels": 3,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 26,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new25",
+      "name": "caffarelli1989.pdf",
+      "sha256": "f9cf58d0907f9d569202a3ac4958a82e60aa96c599290583d4e0689c8ec61294",
+      "pages": 27,
+      "native_chars": 34519,
+      "inferred_outline": 9,
+      "results": 18,
+      "bibliography": 10,
+      "equation_occurrences": 23,
+      "equation_labels": 23,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 18,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new26",
+      "name": "calderon_zygmund_note.pdf",
+      "sha256": "d4f4a962e6c1737ac54ac0cb1df32f2e1666231a8ad23e4edd237ec0b66b6ba2",
+      "pages": 8,
+      "native_chars": 14507,
+      "inferred_outline": 15,
+      "results": 12,
+      "bibliography": 0,
+      "equation_occurrences": 22,
+      "equation_labels": 22,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 10,
+      "v422_results_change": 2
+    },
+    {
+      "id": "new27",
+      "name": "covering_spaces_for_geometric_analysis.pdf",
+      "sha256": "2edd93daf82732ce16de9ce40a429fec5f685baad5f2ba66c4d9ef5998cb60bc",
+      "pages": 18,
+      "native_chars": 23879,
+      "inferred_outline": 48,
+      "results": 15,
+      "bibliography": 0,
+      "equation_occurrences": 0,
+      "equation_labels": 0,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 15,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new28",
+      "name": "cz_beginner_detailed.pdf",
+      "sha256": "3bb5793bfe2ab1db8dc61954967ba30537d61064ef54eb95fa3fe89e649c2a42",
+      "pages": 14,
+      "native_chars": 22730,
+      "inferred_outline": 28,
+      "results": 6,
+      "bibliography": 0,
+      "equation_occurrences": 65,
+      "equation_labels": 65,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 6,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new29",
+      "name": "plateau_compactness_auxiliary(2).pdf",
+      "sha256": "e7ef10ee0b3cecc6cfb48760c29d97374c331c9a90755b7a5f8f408b37bed113",
+      "pages": 5,
+      "native_chars": 11248,
+      "inferred_outline": 4,
+      "results": 1,
+      "bibliography": 0,
+      "equation_occurrences": 30,
+      "equation_labels": 30,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 1,
+      "v422_results_change": 0
+    },
+    {
+      "id": "new30",
+      "name": "yamabe_cleaned.pdf",
+      "sha256": "977f8b89ab370c20c6469be5da4b0dc7e3b9a81ddd9ab6ee198cf2eabe668990",
+      "pages": 25,
+      "native_chars": 35408,
+      "inferred_outline": 26,
+      "results": 13,
+      "bibliography": 7,
+      "equation_occurrences": 270,
+      "equation_labels": 270,
+      "stages": {
+        "structure": "PASS",
+        "results_and_bibliography": "PASS",
+        "equations": "PASS"
+      },
+      "v421_results_before": 13,
+      "v422_results_change": 0
+    }
+  ]
+}

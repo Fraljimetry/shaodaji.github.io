@@ -383,7 +383,7 @@ const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 56;
+const STRUCTURE_INDEX_VERSION = 57;
 const EQUATION_INDEX_SUMMARY_VERSION = 29;
 // Bounded, shared limit: detection, restoration, manual edits and Undo agree.
 const MAX_INFERRED_OUTLINE_ENTRIES = 1200;

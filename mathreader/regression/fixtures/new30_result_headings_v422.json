@@ -1,0 +1,6274 @@
+{
+  "schema": 1,
+  "source": "original mathematical PDFs materialized from user library; page spans extracted with PyMuPDF, not PDF.js",
+  "cases": [
+    {
+      "name": "0810.5645v6.pdf",
+      "pdf_sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "page": 21,
+      "query": "Theorem 2.12.",
+      "expected": "Theorem 2.12",
+      "lines": [
+        {
+          "text": "µ µ",
+          "ratio": 0.47545454237196183,
+          "xStartRatio": 0.319216310588363,
+          "xEndRatio": 0.5104568082522722,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.319216310588363,
+              "xEndRatio": 0.32712457694259345
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.5025485668307036,
+              "xEndRatio": 0.5104568082522722
+            }
+          ],
+          "heightRatio": 0.008805361661044035
+        },
+        {
+          "text": "linear maps Π : SF( F ) → SF( F ) and Π : SF( F ) → SF( F ) .",
+          "ratio": 0.4800000046238755,
+          "xStartRatio": 0.21862787982217627,
+          "xEndRatio": 0.6398810093698938,
+          "parts": [
+            {
+              "start": 0,
+              "end": 11,
+              "xStartRatio": 0.21862787982217627,
+              "xEndRatio": 0.30095545450846356
+            },
+            {
+              "start": 12,
+              "end": 13,
+              "xStartRatio": 0.30095545450846356,
+              "xEndRatio": 0.31926757214116114
+            },
+            {
+              "start": 14,
+              "end": 19,
+              "xStartRatio": 0.33235330519333384,
+              "xEndRatio": 0.3674926508485881
+            },
+            {
+              "start": 20,
+              "end": 21,
+              "xStartRatio": 0.3674507141113281,
+              "xEndRatio": 0.3773970759772008
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.377450581469567,
+              "xEndRatio": 0.3837667727002911
+            },
+            {
+              "start": 24,
+              "end": 25,
+              "xStartRatio": 0.3837667727002911,
+              "xEndRatio": 0.4045137392929177
+            },
+            {
+              "start": 26,
+              "end": 29,
+              "xStartRatio": 0.409019046359592,
+              "xEndRatio": 0.43513807907603147
+            },
+            {
+              "start": 30,
+              "end": 31,
+              "xStartRatio": 0.4350961423387714,
+              "xEndRatio": 0.4450424792719822
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.4450960346296722,
+              "xEndRatio": 0.45141222586039625
+            },
+            {
+              "start": 34,
+              "end": 37,
+              "xStartRatio": 0.45141222586039625,
+              "xEndRatio": 0.4830221039017821
+            },
+            {
+              "start": 38,
+              "end": 39,
+              "xStartRatio": 0.4830221039017821,
+              "xEndRatio": 0.5025991801342933
+            },
+            {
+              "start": 40,
+              "end": 45,
+              "xStartRatio": 0.5158815072252859,
+              "xEndRatio": 0.5510204040926266
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.5509790657392515,
+              "xEndRatio": 0.5609254026724622
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.5609789580301522,
+              "xEndRatio": 0.5672951492608762
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.5672951492608762,
+              "xEndRatio": 0.5880421158535029
+            },
+            {
+              "start": 52,
+              "end": 55,
+              "xStartRatio": 0.5925474478528391,
+              "xEndRatio": 0.6186674529430913
+            },
+            {
+              "start": 56,
+              "end": 57,
+              "xStartRatio": 0.618625566071155,
+              "xEndRatio": 0.6285719030043658
+            },
+            {
+              "start": 58,
+              "end": 59,
+              "xStartRatio": 0.6286254583620557,
+              "xEndRatio": 0.6349416495927798
+            },
+            {
+              "start": 60,
+              "end": 61,
+              "xStartRatio": 0.6348997128555198,
+              "xEndRatio": 0.6398810093698938
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "1",
+          "ratio": 0.5006064212683475,
+          "xStartRatio": 0.38352879044277216,
+          "xEndRatio": 0.39001265382455064,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.38352879044277216,
+              "xEndRatio": 0.39001265382455064
+            }
+          ],
+          "heightRatio": 0.008805361661044035
+        },
+        {
+          "text": "Theorem 2.12. (a) Π defined using µ ≡ 1 is the identity on SF( F ) .",
+          "ratio": 0.5051518835202612,
+          "xStartRatio": 0.21862683265037786,
+          "xEndRatio": 0.7143924189548866,
+          "parts": [
+            {
+              "start": 0,
+              "end": 13,
+              "xStartRatio": 0.21862683265037786,
+              "xEndRatio": 0.33676092609081393
+            },
+            {
+              "start": 14,
+              "end": 19,
+              "xStartRatio": 0.33676092609081393,
+              "xEndRatio": 0.3835812736960018
+            },
+            {
+              "start": 20,
+              "end": 33,
+              "xStartRatio": 0.3966664332969516,
+              "xEndRatio": 0.48866451487821694
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.48866451487821694,
+              "xEndRatio": 0.5043095607383579
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.5043095607383579,
+              "xEndRatio": 0.5214723574569802
+            },
+            {
+              "start": 38,
+              "end": 39,
+              "xStartRatio": 0.5258821973613664,
+              "xEndRatio": 0.5340216144237643
+            },
+            {
+              "start": 40,
+              "end": 58,
+              "xStartRatio": 0.5340216144237643,
+              "xEndRatio": 0.6613051470588235
+            },
+            {
+              "start": 59,
+              "end": 62,
+              "xStartRatio": 0.6613051470588235,
+              "xEndRatio": 0.6931789123934079
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.6931369756561478,
+              "xEndRatio": 0.7030833125893586
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.7031368679470487,
+              "xEndRatio": 0.7094530591777727
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.7094111224405126,
+              "xEndRatio": 0.7143924189548866
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "(b) If φ : F → G is a 1 -morphism of Artin K -stacks with affine geometric",
+          "ratio": 0.5303028761738479,
+          "xStartRatio": 0.22941110648360907,
+          "xEndRatio": 0.7800353305791717,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.22941110648360907,
+              "xEndRatio": 0.2510214412913603
+            },
+            {
+              "start": 4,
+              "end": 6,
+              "xStartRatio": 0.2510214412913603,
+              "xEndRatio": 0.2704705381705091
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "xStartRatio": 0.2704705381705091,
+              "xEndRatio": 0.2908610674290875
+            },
+            {
+              "start": 9,
+              "end": 10,
+              "xStartRatio": 0.2908610674290875,
+              "xEndRatio": 0.30235108518912124
+            },
+            {
+              "start": 11,
+              "end": 12,
+              "xStartRatio": 0.30235108518912124,
+              "xEndRatio": 0.31935695573395373
+            },
+            {
+              "start": 13,
+              "end": 14,
+              "xStartRatio": 0.31935695573395373,
+              "xEndRatio": 0.34274793138691023
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.3498026031294679,
+              "xEndRatio": 0.36258148991204553
+            },
+            {
+              "start": 17,
+              "end": 21,
+              "xStartRatio": 0.36258148991204553,
+              "xEndRatio": 0.39694420808280995
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.39694420808280995,
+              "xEndRatio": 0.4122554305332159
+            },
+            {
+              "start": 24,
+              "end": 42,
+              "xStartRatio": 0.4123510472914752,
+              "xEndRatio": 0.5540489745295905
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.5540489745295905,
+              "xEndRatio": 0.5738233678481158
+            },
+            {
+              "start": 45,
+              "end": 74,
+              "xStartRatio": 0.5739198073842167,
+              "xEndRatio": 0.7800353305791717
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "µ µ",
+          "ratio": 0.5407575356839883,
+          "xStartRatio": 0.3831358516917509,
+          "xEndRatio": 0.4988871057049122,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.3831358516917509,
+              "xEndRatio": 0.39104411804598144
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.49097886428334353,
+              "xEndRatio": 0.4988871057049122
+            }
+          ],
+          "heightRatio": 0.008805361661044035
+        },
+        {
+          "text": "stabilizers then Π ◦ φ ∗ = φ ∗ ◦ Π : SF( F ) → SF( G ) .",
+          "ratio": 0.545454391325363,
+          "xStartRatio": 0.2592139150582108,
+          "xEndRatio": 0.6308614693435968,
+          "parts": [
+            {
+              "start": 0,
+              "end": 16,
+              "xStartRatio": 0.2592139150582108,
+              "xEndRatio": 0.36502927892348347
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "xStartRatio": 0.36502927892348347,
+              "xEndRatio": 0.3831877365610958
+            },
+            {
+              "start": 19,
+              "end": 20,
+              "xStartRatio": 0.3954884148890676,
+              "xEndRatio": 0.40362783195146545
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.40725311578488815,
+              "xEndRatio": 0.41693900613223805
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.4168610915639042,
+              "xEndRatio": 0.4235272875019148
+            },
+            {
+              "start": 25,
+              "end": 26,
+              "xStartRatio": 0.4290183073554943,
+              "xEndRatio": 0.44166694591247957
+            },
+            {
+              "start": 27,
+              "end": 28,
+              "xStartRatio": 0.44166694591247957,
+              "xEndRatio": 0.4557626761642157
+            },
+            {
+              "start": 29,
+              "end": 30,
+              "xStartRatio": 0.45568473666321996,
+              "xEndRatio": 0.4623509326012306
+            },
+            {
+              "start": 31,
+              "end": 32,
+              "xStartRatio": 0.46705692266327103,
+              "xEndRatio": 0.47519633972566894
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.47882164849175346,
+              "xEndRatio": 0.4910307740853503
+            },
+            {
+              "start": 35,
+              "end": 40,
+              "xStartRatio": 0.5041158339556526,
+              "xEndRatio": 0.5392573736851511
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.5392154369478911,
+              "xEndRatio": 0.5491617738811019
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.5492153292387919,
+              "xEndRatio": 0.5555315204695159
+            },
+            {
+              "start": 45,
+              "end": 46,
+              "xStartRatio": 0.5555315204695159,
+              "xEndRatio": 0.5762784870621426
+            },
+            {
+              "start": 47,
+              "end": 50,
+              "xStartRatio": 0.5807838190614788,
+              "xEndRatio": 0.6069027769799326
+            },
+            {
+              "start": 51,
+              "end": 52,
+              "xStartRatio": 0.6068608402426726,
+              "xEndRatio": 0.6196397270252502
+            },
+            {
+              "start": 53,
+              "end": 54,
+              "xStartRatio": 0.6196059183357587,
+              "xEndRatio": 0.6259221095664829
+            },
+            {
+              "start": 55,
+              "end": 56,
+              "xStartRatio": 0.6258801728292228,
+              "xEndRatio": 0.6308614693435968
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "(c) If µ 1 , µ 2 are weight functions as in Definition 2.10 then µ 1 µ 2 is also a",
+          "ratio": 0.5654543096368964,
+          "xStartRatio": 0.2311759150885289,
+          "xEndRatio": 0.7802779752444597,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.2311759150885289,
+              "xEndRatio": 0.25102154102200774
+            },
+            {
+              "start": 4,
+              "end": 6,
+              "xStartRatio": 0.25102154102200774,
+              "xEndRatio": 0.2704712861503651
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "xStartRatio": 0.2704712861503651,
+              "xEndRatio": 0.29097578260633683
+            },
+            {
+              "start": 9,
+              "end": 10,
+              "xStartRatio": 0.2909798466302211,
+              "xEndRatio": 0.2974637100119996
+            },
+            {
+              "start": 11,
+              "end": 14,
+              "xStartRatio": 0.2982344783209508,
+              "xEndRatio": 0.3152884439705244
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.3152936299641927,
+              "xEndRatio": 0.3217774933459712
+            },
+            {
+              "start": 17,
+              "end": 54,
+              "xStartRatio": 0.3217774933459712,
+              "xEndRatio": 0.5965995040594363
+            },
+            {
+              "start": 55,
+              "end": 59,
+              "xStartRatio": 0.5965995040594363,
+              "xEndRatio": 0.632843765557981
+            },
+            {
+              "start": 60,
+              "end": 64,
+              "xStartRatio": 0.632843765557981,
+              "xEndRatio": 0.6701284171709048
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.6701284171709048,
+              "xEndRatio": 0.687053854948555
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.6870579439051011,
+              "xEndRatio": 0.6935417823542177
+            },
+            {
+              "start": 69,
+              "end": 70,
+              "xStartRatio": 0.6943126005284926,
+              "xEndRatio": 0.7041124331405739
+            },
+            {
+              "start": 71,
+              "end": 72,
+              "xStartRatio": 0.7041165220971201,
+              "xEndRatio": 0.7106003605462368
+            },
+            {
+              "start": 73,
+              "end": 82,
+              "xStartRatio": 0.7106003605462368,
+              "xEndRatio": 0.7802779752444597
+            }
+          ],
+          "heightRatio": 0.014397553723267835
+        },
+        {
+          "text": "µ 2 µ 1 µ 1 µ 2 µ 1 µ 2",
+          "ratio": 0.5760603625364978,
+          "xStartRatio": 0.4192151836320466,
+          "xEndRatio": 0.6302397484872856,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4192151836320466,
+              "xEndRatio": 0.42712342505361517
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.42705830094081904,
+              "xEndRatio": 0.43259310254863664
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.4617639678755617,
+              "xEndRatio": 0.4696722092971303
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.46960708518433414,
+              "xEndRatio": 0.47514188679215175
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.5107835757186989,
+              "xEndRatio": 0.5186918171402676
+            },
+            {
+              "start": 10,
+              "end": 11,
+              "xStartRatio": 0.5186266930274714,
+              "xEndRatio": 0.524161494635289
+            },
+            {
+              "start": 12,
+              "end": 13,
+              "xStartRatio": 0.5535288792030484,
+              "xEndRatio": 0.561437120624617
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.5613719965118209,
+              "xEndRatio": 0.5669067981196385
+            },
+            {
+              "start": 16,
+              "end": 17,
+              "xStartRatio": 0.6025484870461857,
+              "xEndRatio": 0.6104567284677543
+            },
+            {
+              "start": 18,
+              "end": 19,
+              "xStartRatio": 0.6103916043549581,
+              "xEndRatio": 0.6159264059627757
+            },
+            {
+              "start": 20,
+              "end": 21,
+              "xStartRatio": 0.6168618295706955,
+              "xEndRatio": 0.6247700709922641
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.624704946879468,
+              "xEndRatio": 0.6302397484872856
+            }
+          ],
+          "heightRatio": 0.008805361661044035
+        },
+        {
+          "text": "weight function and Π ◦ Π = Π ◦ Π = Π .",
+          "ratio": 0.5806058247884115,
+          "xStartRatio": 0.2592146630380668,
+          "xEndRatio": 0.6367449292949602,
+          "parts": [
+            {
+              "start": 0,
+              "end": 19,
+              "xStartRatio": 0.2592146630380668,
+              "xEndRatio": 0.3994934231627221
+            },
+            {
+              "start": 20,
+              "end": 21,
+              "xStartRatio": 0.3994934231627221,
+              "xEndRatio": 0.4192664451848448
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.43784262463937396,
+              "xEndRatio": 0.44598204170177186
+            },
+            {
+              "start": 24,
+              "end": 25,
+              "xStartRatio": 0.44960735046785644,
+              "xEndRatio": 0.4618164760614532
+            },
+            {
+              "start": 26,
+              "end": 29,
+              "xStartRatio": 0.48137181101281656,
+              "xEndRatio": 0.5108360839045905
+            },
+            {
+              "start": 30,
+              "end": 31,
+              "xStartRatio": 0.529606937582976,
+              "xEndRatio": 0.5377463546453738
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.5413716634114584,
+              "xEndRatio": 0.5535807890050551
+            },
+            {
+              "start": 34,
+              "end": 37,
+              "xStartRatio": 0.5731367223403033,
+              "xEndRatio": 0.6026009952320772
+            },
+            {
+              "start": 38,
+              "end": 39,
+              "xStartRatio": 0.6317636327805862,
+              "xEndRatio": 0.6367449292949602
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "vi µ n defined with",
+          "ratio": 0.6112119501287286,
+          "xStartRatio": 0.49862660925372754,
+          "xEndRatio": 0.7802092608283547,
+          "parts": [
+            {
+              "start": 0,
+              "end": 2,
+              "xStartRatio": 0.49862660925372754,
+              "xEndRatio": 0.5091699837080015
+            },
+            {
+              "start": 3,
+              "end": 4,
+              "xStartRatio": 0.6682344324448529,
+              "xEndRatio": 0.6761426738664216
+            },
+            {
+              "start": 5,
+              "end": 6,
+              "xStartRatio": 0.6760775497536254,
+              "xEndRatio": 0.6832402547200521
+            },
+            {
+              "start": 7,
+              "end": 19,
+              "xStartRatio": 0.6832402547200521,
+              "xEndRatio": 0.7802092608283547
+            }
+          ],
+          "heightRatio": 0.015912720651337593
+        },
+        {
+          "text": "Definition 2.13. For n ⩾ 0, define Π to be the operator Π",
+          "ratio": 0.6157574123806424,
+          "xStartRatio": 0.21862638386246425,
+          "xEndRatio": 0.6682868907654208,
+          "parts": [
+            {
+              "start": 0,
+              "end": 16,
+              "xStartRatio": 0.21862638386246425,
+              "xEndRatio": 0.34577999239653545
+            },
+            {
+              "start": 17,
+              "end": 20,
+              "xStartRatio": 0.34577999239653545,
+              "xEndRatio": 0.3781280517578125
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.3781280517578125,
+              "xEndRatio": 0.3942752164952895
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.3942752164952895,
+              "xEndRatio": 0.41303878983640985
+            },
+            {
+              "start": 25,
+              "end": 36,
+              "xStartRatio": 0.41921353807636336,
+              "xEndRatio": 0.4986771228266697
+            },
+            {
+              "start": 37,
+              "end": 57,
+              "xStartRatio": 0.516469568988077,
+              "xEndRatio": 0.6682868907654208
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "n",
+          "ratio": 0.6189391396262429,
+          "xStartRatio": 0.49862660925372754,
+          "xEndRatio": 0.5066715813929739,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.49862660925372754,
+              "xEndRatio": 0.5066715813929739
+            }
+          ],
+          "heightRatio": 0.008805361661044035
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "0810.5645v6.pdf",
+      "pdf_sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "page": 37,
+      "query": "Proposition 4.2.",
+      "expected": "Proposition 4.2",
+      "lines": [
+        {
+          "text": "where the columns pass from C -algebraic varieties/cycles/constructible func-",
+          "ratio": 0.17015152748184975,
+          "xStartRatio": 0.21862745596692454,
+          "xEndRatio": 0.7801230436836193,
+          "parts": [
+            {
+              "start": 0,
+              "end": 27,
+              "xStartRatio": 0.21862745596692454,
+              "xEndRatio": 0.43395203235102636
+            },
+            {
+              "start": 28,
+              "end": 29,
+              "xStartRatio": 0.43395203235102636,
+              "xEndRatio": 0.45312584771050346
+            },
+            {
+              "start": 30,
+              "end": 77,
+              "xStartRatio": 0.45313726686963846,
+              "xEndRatio": 0.7801230436836193
+            }
+          ],
+          "heightRatio": 0.012579089463359177
+        },
+        {
+          "text": "tions to the underlying complex analytic spaces/cycles/constructible functions.",
+          "ratio": 0.1853030426333649,
+          "xStartRatio": 0.21862745596692454,
+          "xEndRatio": 0.780192555944904,
+          "parts": [
+            {
+              "start": 0,
+              "end": 79,
+              "xStartRatio": 0.21862745596692454,
+              "xEndRatio": 0.780192555944904
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "Thus we deduce:",
+          "ratio": 0.20030266347557607,
+          "xStartRatio": 0.2186274808995864,
+          "xEndRatio": 0.33705872180415136,
+          "parts": [
+            {
+              "start": 0,
+              "end": 15,
+              "xStartRatio": 0.2186274808995864,
+              "xEndRatio": 0.33705872180415136
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "Proposition 4.2. (a) If K is an algebraically closed field of characteristic zero,",
+          "ratio": 0.22409080736564868,
+          "xStartRatio": 0.2186274808995864,
+          "xEndRatio": 0.7800807578890931,
+          "parts": [
+            {
+              "start": 0,
+              "end": 20,
+              "xStartRatio": 0.2186274808995864,
+              "xEndRatio": 0.37806128208933315
+            },
+            {
+              "start": 21,
+              "end": 23,
+              "xStartRatio": 0.37806128208933315,
+              "xEndRatio": 0.39400093228209254
+            },
+            {
+              "start": 24,
+              "end": 25,
+              "xStartRatio": 0.39400093228209254,
+              "xEndRatio": 0.41480569278492646
+            },
+            {
+              "start": 26,
+              "end": 82,
+              "xStartRatio": 0.41480569278492646,
+              "xEndRatio": 0.7800807578890931
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "and X is a finite type K -scheme, then the Behrend function ν X is a well-defined",
+          "ratio": 0.23909096765999843,
+          "xStartRatio": 0.21862797955282373,
+          "xEndRatio": 0.7800833508859273,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.21862797955282373,
+              "xEndRatio": 0.24439743141722836
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.24439743141722836,
+              "xEndRatio": 0.2644597969803156
+            },
+            {
+              "start": 6,
+              "end": 22,
+              "xStartRatio": 0.2644597969803156,
+              "xEndRatio": 0.37023379755955116
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.37023379755955116,
+              "xEndRatio": 0.3877473718979779
+            },
+            {
+              "start": 25,
+              "end": 59,
+              "xStartRatio": 0.3878438363667407,
+              "xEndRatio": 0.637385249917024
+            },
+            {
+              "start": 60,
+              "end": 61,
+              "xStartRatio": 0.637385249917024,
+              "xEndRatio": 0.6505751765631382
+            },
+            {
+              "start": 62,
+              "end": 63,
+              "xStartRatio": 0.650588141547309,
+              "xEndRatio": 0.6612540351019965
+            },
+            {
+              "start": 64,
+              "end": 81,
+              "xStartRatio": 0.6612540351019965,
+              "xEndRatio": 0.7800833508859273
+            }
+          ],
+          "heightRatio": 0.014397052803424874
+        },
+        {
+          "text": "Z -valued constructible function on X, in the Zariski topology.",
+          "ratio": 0.25424248281151357,
+          "xStartRatio": 0.21862703211167278,
+          "xEndRatio": 0.6543927161522161,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.21862703211167278,
+              "xEndRatio": 0.22946872586518333
+            },
+            {
+              "start": 2,
+              "end": 35,
+              "xStartRatio": 0.22941135581022773,
+              "xEndRatio": 0.4609127667994281
+            },
+            {
+              "start": 36,
+              "end": 38,
+              "xStartRatio": 0.4609127667994281,
+              "xEndRatio": 0.48509685042636846
+            },
+            {
+              "start": 39,
+              "end": 63,
+              "xStartRatio": 0.48509685042636846,
+              "xEndRatio": 0.6543927161522161
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "(b) If Y is a complex analytic space then the Behrend function ν Y is a well-",
+          "ratio": 0.26924210365372475,
+          "xStartRatio": 0.218627181707644,
+          "xEndRatio": 0.779929316900914,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.218627181707644,
+              "xEndRatio": 0.24355091768152573
+            },
+            {
+              "start": 4,
+              "end": 6,
+              "xStartRatio": 0.24355091768152573,
+              "xEndRatio": 0.26145147186478757
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "xStartRatio": 0.26145147186478757,
+              "xEndRatio": 0.2810100729948555
+            },
+            {
+              "start": 9,
+              "end": 62,
+              "xStartRatio": 0.2810100729948555,
+              "xEndRatio": 0.680913089926726
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.680913089926726,
+              "xEndRatio": 0.6956720788494434
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.6956863403320312,
+              "xEndRatio": 0.7033324896120557
+            },
+            {
+              "start": 67,
+              "end": 77,
+              "xStartRatio": 0.7033324896120557,
+              "xEndRatio": 0.779929316900914
+            }
+          ],
+          "heightRatio": 0.014397592255563446
+        },
+        {
+          "text": "defined Z -valued locally constructible function on Y, in the analytic topology.",
+          "ratio": 0.2843936188052399,
+          "xStartRatio": 0.2186273313036152,
+          "xEndRatio": 0.7634128246432036,
+          "parts": [
+            {
+              "start": 0,
+              "end": 7,
+              "xStartRatio": 0.2186273313036152,
+              "xEndRatio": 0.26773036383335885
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.26773036383335885,
+              "xEndRatio": 0.2859399334277982
+            },
+            {
+              "start": 10,
+              "end": 51,
+              "xStartRatio": 0.28607850916245403,
+              "xEndRatio": 0.566991319843367
+            },
+            {
+              "start": 52,
+              "end": 54,
+              "xStartRatio": 0.566991319843367,
+              "xEndRatio": 0.5878429038851869
+            },
+            {
+              "start": 55,
+              "end": 80,
+              "xStartRatio": 0.5878429038851869,
+              "xEndRatio": 0.7634128246432036
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "(c) If X is a finite type C -scheme, with underlying complex analytic space X an ,",
+          "ratio": 0.299545133956755,
+          "xStartRatio": 0.21862753076491012,
+          "xEndRatio": 0.7801960963828891,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.21862753076491012,
+              "xEndRatio": 0.24139439202601615
+            },
+            {
+              "start": 4,
+              "end": 6,
+              "xStartRatio": 0.24139439202601615,
+              "xEndRatio": 0.25811882268369585
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "xStartRatio": 0.25811882268369585,
+              "xEndRatio": 0.2770085303612005
+            },
+            {
+              "start": 9,
+              "end": 25,
+              "xStartRatio": 0.2770085303612005,
+              "xEndRatio": 0.384350920035169
+            },
+            {
+              "start": 26,
+              "end": 27,
+              "xStartRatio": 0.384350920035169,
+              "xEndRatio": 0.4015569749221303
+            },
+            {
+              "start": 28,
+              "end": 75,
+              "xStartRatio": 0.40156836914860344,
+              "xEndRatio": 0.7421933342428768
+            },
+            {
+              "start": 76,
+              "end": 77,
+              "xStartRatio": 0.7421933342428768,
+              "xEndRatio": 0.7611256518395119
+            },
+            {
+              "start": 78,
+              "end": 80,
+              "xStartRatio": 0.7611769632576337,
+              "xEndRatio": 0.7748264985926011
+            },
+            {
+              "start": 81,
+              "end": 82,
+              "xStartRatio": 0.7756868748883017,
+              "xEndRatio": 0.7801960963828891
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "then the algebraic Behrend function ν X in (a) and the analytic Behrend function",
+          "ratio": 0.3145452942511048,
+          "xStartRatio": 0.21862802941814746,
+          "xEndRatio": 0.7801288280611723,
+          "parts": [
+            {
+              "start": 0,
+              "end": 35,
+              "xStartRatio": 0.21862802941814746,
+              "xEndRatio": 0.4664045844981873
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.4664045844981873,
+              "xEndRatio": 0.47900644938151044
+            },
+            {
+              "start": 38,
+              "end": 39,
+              "xStartRatio": 0.4790200626148897,
+              "xEndRatio": 0.4896859561695772
+            },
+            {
+              "start": 40,
+              "end": 42,
+              "xStartRatio": 0.4896859561695772,
+              "xEndRatio": 0.5101291930753421
+            },
+            {
+              "start": 43,
+              "end": 46,
+              "xStartRatio": 0.5101291930753421,
+              "xEndRatio": 0.5382571750217013
+            },
+            {
+              "start": 47,
+              "end": 80,
+              "xStartRatio": 0.5382571750217013,
+              "xEndRatio": 0.7801288280611723
+            }
+          ],
+          "heightRatio": 0.014397052803424874
+        },
+        {
+          "text": "ν X (b) coincide. In particular, ν X depends only on the complex analytic",
+          "ratio": 0.32969680940262,
+          "xStartRatio": 0.2186277052935432,
+          "xEndRatio": 0.7800378737106822,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.2186277052935432,
+              "xEndRatio": 0.22665315515854778
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.22666679332458894,
+              "xEndRatio": 0.23733268687927644
+            },
+            {
+              "start": 4,
+              "end": 7,
+              "xStartRatio": 0.27130550808376735,
+              "xEndRatio": 0.30296270831737643
+            },
+            {
+              "start": 8,
+              "end": 32,
+              "xStartRatio": 0.30296270831737643,
+              "xEndRatio": 0.4777264563865911
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.4777264563865911,
+              "xEndRatio": 0.49292854857600593
+            },
+            {
+              "start": 35,
+              "end": 36,
+              "xStartRatio": 0.4929421618093852,
+              "xEndRatio": 0.5036080553640727
+            },
+            {
+              "start": 37,
+              "end": 73,
+              "xStartRatio": 0.5036080553640727,
+              "xEndRatio": 0.7800378737106822
+            }
+          ],
+          "heightRatio": 0.014397052803424874
+        },
+        {
+          "text": "an in",
+          "ratio": 0.33272706619416825,
+          "xStartRatio": 0.23725517123353249,
+          "xEndRatio": 0.27130550808376735,
+          "parts": [
+            {
+              "start": 0,
+              "end": 2,
+              "xStartRatio": 0.23725517123353249,
+              "xEndRatio": 0.24884993110606873
+            },
+            {
+              "start": 3,
+              "end": 5,
+              "xStartRatio": 0.24884993110606873,
+              "xEndRatio": 0.27130550808376735
+            }
+          ],
+          "heightRatio": 0.015609432952572602
+        },
+        {
+          "text": "space X an underlying X, locally in the analytic topology.",
+          "ratio": 0.3448482474895439,
+          "xStartRatio": 0.21862810421613307,
+          "xEndRatio": 0.6185118731330422,
+          "parts": [
+            {
+              "start": 0,
+              "end": 5,
+              "xStartRatio": 0.21862810421613307,
+              "xEndRatio": 0.25513557982600593
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.25513557982600593,
+              "xEndRatio": 0.2744597640692019
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "xStartRatio": 0.2745104272381153,
+              "xEndRatio": 0.2881599875057445
+            },
+            {
+              "start": 11,
+              "end": 21,
+              "xStartRatio": 0.2881599875057445,
+              "xEndRatio": 0.36905767403396905
+            },
+            {
+              "start": 22,
+              "end": 24,
+              "xStartRatio": 0.36905767403396905,
+              "xEndRatio": 0.393333759183198
+            },
+            {
+              "start": 25,
+              "end": 58,
+              "xStartRatio": 0.393333759183198,
+              "xEndRatio": 0.6185118731330422
+            }
+          ],
+          "heightRatio": 0.014397052803424874
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "0810.5645v6.pdf",
+      "pdf_sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "page": 48,
+      "query": "Remark 4.20.",
+      "expected": "Remark 4.20",
+      "lines": [
+        {
+          "text": "Σ generate the subgroup of (0 , 0 , λ 2 , λ 3 ) ∈ Λ X with λ 2 ∈ H ( X ; Z ) and λ 3 ∈",
+          "ratio": 0.745151481243095,
+          "xStartRatio": 0.21862937578188826,
+          "xEndRatio": 0.7802551369261898,
+          "parts": [
+            {
+              "start": 0,
+              "end": 29,
+              "xStartRatio": 0.21862937578188826,
+              "xEndRatio": 0.4377493266186683
+            },
+            {
+              "start": 30,
+              "end": 31,
+              "xStartRatio": 0.43784506804023693,
+              "xEndRatio": 0.44235428953482436
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.44235428953482436,
+              "xEndRatio": 0.45323914172602636
+            },
+            {
+              "start": 34,
+              "end": 37,
+              "xStartRatio": 0.4533347335516238,
+              "xEndRatio": 0.47007935966541564
+            },
+            {
+              "start": 38,
+              "end": 39,
+              "xStartRatio": 0.4700014201644199,
+              "xEndRatio": 0.4764852586135366
+            },
+            {
+              "start": 40,
+              "end": 43,
+              "xStartRatio": 0.4772566751716963,
+              "xEndRatio": 0.49400130128548814
+            },
+            {
+              "start": 44,
+              "end": 45,
+              "xStartRatio": 0.4939233617844924,
+              "xEndRatio": 0.5004072002336091
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.5013739891301573,
+              "xEndRatio": 0.5076901803608813
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.5076901803608813,
+              "xEndRatio": 0.5247648650524663
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.5309816248276654,
+              "xEndRatio": 0.5422791125727635
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.542354459076925,
+              "xEndRatio": 0.5530203526316125
+            },
+            {
+              "start": 54,
+              "end": 58,
+              "xStartRatio": 0.5530203526316125,
+              "xEndRatio": 0.5927610210343903
+            },
+            {
+              "start": 59,
+              "end": 60,
+              "xStartRatio": 0.5927610210343903,
+              "xEndRatio": 0.6087077521031199
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.6086292142182393,
+              "xEndRatio": 0.615113052667356
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.615113052667356,
+              "xEndRatio": 0.6331964131274255
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.6394131729026246,
+              "xEndRatio": 0.6529408872517106
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.6615702809851154,
+              "xEndRatio": 0.6678864722158394
+            },
+            {
+              "start": 69,
+              "end": 70,
+              "xStartRatio": 0.6678445354785795,
+              "xEndRatio": 0.6813233818104064
+            },
+            {
+              "start": 71,
+              "end": 72,
+              "xStartRatio": 0.6827463885537939,
+              "xEndRatio": 0.6872556100483813
+            },
+            {
+              "start": 73,
+              "end": 74,
+              "xStartRatio": 0.6872556100483813,
+              "xEndRatio": 0.7008427638633579
+            },
+            {
+              "start": 75,
+              "end": 80,
+              "xStartRatio": 0.7007853688757404,
+              "xEndRatio": 0.7398201936210682
+            },
+            {
+              "start": 81,
+              "end": 82,
+              "xStartRatio": 0.7398201936210682,
+              "xEndRatio": 0.7557658276526756
+            },
+            {
+              "start": 83,
+              "end": 84,
+              "xStartRatio": 0.7556879380170036,
+              "xEndRatio": 0.7621717764661203
+            },
+            {
+              "start": 85,
+              "end": 86,
+              "xStartRatio": 0.7621717764661203,
+              "xEndRatio": 0.7802551369261898
+            }
+          ],
+          "heightRatio": 0.014674331202651516
+        },
+        {
+          "text": "6 2",
+          "ratio": 0.7557574956104008,
+          "xStartRatio": 0.2335309545978222,
+          "xEndRatio": 0.5492310866810917,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.2335309545978222,
+              "xEndRatio": 0.2400148179796007
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.5427472482319751,
+              "xEndRatio": 0.5492310866810917
+            }
+          ],
+          "heightRatio": 0.008805400193339646
+        },
+        {
+          "text": "H ( X ; Z ). Together with (4.21) for all β ∈ H ( X ; Z ), these generate Λ X .",
+          "ratio": 0.7603029963946102,
+          "xStartRatio": 0.2186291264552696,
+          "xEndRatio": 0.7405896654316023,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.2186291264552696,
+              "xEndRatio": 0.23215684080435559
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.2407862345377604,
+              "xEndRatio": 0.24710242576848448
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.24706048903122446,
+              "xEndRatio": 0.26053936029571334
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.26196231717377705,
+              "xEndRatio": 0.26647156360102636
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.26647156360102636,
+              "xEndRatio": 0.2800586426180173
+            },
+            {
+              "start": 10,
+              "end": 41,
+              "xStartRatio": 0.2800012725630617,
+              "xEndRatio": 0.4925468793881485
+            },
+            {
+              "start": 42,
+              "end": 43,
+              "xStartRatio": 0.4925468793881485,
+              "xEndRatio": 0.5072380514705882
+            },
+            {
+              "start": 44,
+              "end": 45,
+              "xStartRatio": 0.5072380514705882,
+              "xEndRatio": 0.5233921225554024
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.5278447967728758,
+              "xEndRatio": 0.5413725111219618
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.5500019048553666,
+              "xEndRatio": 0.5563180960860907
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.5562761593488307,
+              "xEndRatio": 0.5697550056806577
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.5711780124240451,
+              "xEndRatio": 0.5756872339186325
+            },
+            {
+              "start": 54,
+              "end": 55,
+              "xStartRatio": 0.5756872339186325,
+              "xEndRatio": 0.5892743877336091
+            },
+            {
+              "start": 56,
+              "end": 75,
+              "xStartRatio": 0.5892169927459916,
+              "xEndRatio": 0.7236513624004289
+            },
+            {
+              "start": 76,
+              "end": 77,
+              "xStartRatio": 0.7237272574231516,
+              "xEndRatio": 0.7343931509778391
+            },
+            {
+              "start": 78,
+              "end": 79,
+              "xStartRatio": 0.7360804439370149,
+              "xEndRatio": 0.7405896654316023
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "Remark 4.20. (a) Our proof used the Hodge Conjecture over Z for Calabi–",
+          "ratio": 0.7853030580462832,
+          "xStartRatio": 0.21862745596692454,
+          "xEndRatio": 0.780294031878702,
+          "parts": [
+            {
+              "start": 0,
+              "end": 16,
+              "xStartRatio": 0.21862745596692454,
+              "xEndRatio": 0.3613939472273284
+            },
+            {
+              "start": 17,
+              "end": 57,
+              "xStartRatio": 0.3613939472273284,
+              "xEndRatio": 0.6771486070421007
+            },
+            {
+              "start": 58,
+              "end": 59,
+              "xStartRatio": 0.6771486070421007,
+              "xEndRatio": 0.6939783033981822
+            },
+            {
+              "start": 60,
+              "end": 71,
+              "xStartRatio": 0.6939783033981822,
+              "xEndRatio": 0.780294031878702
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "Yau 3-folds, proved by Voisin [103]. But the Hodge Conjecture over Z is false",
+          "ratio": 0.8004545731977983,
+          "xStartRatio": 0.21862643372778798,
+          "xEndRatio": 0.7801664265152676,
+          "parts": [
+            {
+              "start": 0,
+              "end": 66,
+              "xStartRatio": 0.21862643372778798,
+              "xEndRatio": 0.7093005211524714
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.7093005211524714,
+              "xEndRatio": 0.7259387346654157
+            },
+            {
+              "start": 69,
+              "end": 77,
+              "xStartRatio": 0.7259387346654157,
+              "xEndRatio": 0.7801664265152676
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "in general, so the theorem may not generalize to other classes of varieties.",
+          "ratio": 0.8156060883493135,
+          "xStartRatio": 0.21862623426649305,
+          "xEndRatio": 0.7448989768433415,
+          "parts": [
+            {
+              "start": 0,
+              "end": 76,
+              "xStartRatio": 0.21862623426649305,
+              "xEndRatio": 0.7448989768433415
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "even num",
+          "ratio": 0.8296971947255761,
+          "xStartRatio": 0.4545087627336091,
+          "xEndRatio": 0.7150014241536459,
+          "parts": [
+            {
+              "start": 0,
+              "end": 4,
+              "xStartRatio": 0.4545087627336091,
+              "xEndRatio": 0.4799232732236775
+            },
+            {
+              "start": 5,
+              "end": 8,
+              "xStartRatio": 0.6901950711518331,
+              "xEndRatio": 0.7150014241536459
+            }
+          ],
+          "heightRatio": 0.008805400193339646
+        },
+        {
+          "text": "(b) In fact Λ X is a subring of H ( X ; Q ). Also, K 0 (coh( X )) , K (coh( X ))",
+          "ratio": 0.8343940503669508,
+          "xStartRatio": 0.21862623426649305,
+          "xEndRatio": 0.7802367864870557,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.21862623426649305,
+              "xEndRatio": 0.2435499702403748
+            },
+            {
+              "start": 4,
+              "end": 13,
+              "xStartRatio": 0.2435499702403748,
+              "xEndRatio": 0.3136489718568091
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.31372426849564694,
+              "xEndRatio": 0.32439016205033444
+            },
+            {
+              "start": 16,
+              "end": 31,
+              "xStartRatio": 0.32439016205033444,
+              "xEndRatio": 0.43398210114123775
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.43398210114123775,
+              "xEndRatio": 0.4531340256235958
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.48058688095192503,
+              "xEndRatio": 0.4869030721826491
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.4868611354453891,
+              "xEndRatio": 0.5003399817772161
+            },
+            {
+              "start": 38,
+              "end": 39,
+              "xStartRatio": 0.5017629885206035,
+              "xEndRatio": 0.506272210015191
+            },
+            {
+              "start": 40,
+              "end": 41,
+              "xStartRatio": 0.506272210015191,
+              "xEndRatio": 0.5216662837009803
+            },
+            {
+              "start": 42,
+              "end": 50,
+              "xStartRatio": 0.5215668023801318,
+              "xEndRatio": 0.5764667785245609
+            },
+            {
+              "start": 51,
+              "end": 52,
+              "xStartRatio": 0.5764667785245609,
+              "xEndRatio": 0.5961718590430964
+            },
+            {
+              "start": 53,
+              "end": 54,
+              "xStartRatio": 0.596273235246247,
+              "xEndRatio": 0.6027570736953636
+            },
+            {
+              "start": 55,
+              "end": 60,
+              "xStartRatio": 0.6033319211473652,
+              "xEndRatio": 0.6404323702544169
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.6403909321703942,
+              "xEndRatio": 0.6538697785022212
+            },
+            {
+              "start": 63,
+              "end": 65,
+              "xStartRatio": 0.6552927852456086,
+              "xEndRatio": 0.6678834802964154
+            },
+            {
+              "start": 66,
+              "end": 69,
+              "xStartRatio": 0.6678419424817453,
+              "xEndRatio": 0.688916723712597
+            },
+            {
+              "start": 70,
+              "end": 75,
+              "xStartRatio": 0.7156852772033292,
+              "xEndRatio": 0.7527858260410284
+            },
+            {
+              "start": 76,
+              "end": 77,
+              "xStartRatio": 0.7527442882263583,
+              "xEndRatio": 0.7662231345581852
+            },
+            {
+              "start": 78,
+              "end": 80,
+              "xStartRatio": 0.7676461413015727,
+              "xEndRatio": 0.7802367864870557
+            }
+          ],
+          "heightRatio": 0.014397592255563446
+        },
+        {
+          "text": "naturally have the structure of rings, with multiplication ‘ · ’ characterized by",
+          "ratio": 0.8493942106613005,
+          "xStartRatio": 0.21862653345843547,
+          "xEndRatio": 0.7801453833486519,
+          "parts": [
+            {
+              "start": 0,
+              "end": 60,
+              "xStartRatio": 0.21862653345843547,
+              "xEndRatio": 0.6419534620895885
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.6419534620895885,
+              "xEndRatio": 0.6492142022824755
+            },
+            {
+              "start": 63,
+              "end": 81,
+              "xStartRatio": 0.6492142022824755,
+              "xEndRatio": 0.7801453833486519
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "48",
+          "ratio": 0.8871215666183317,
+          "xStartRatio": 0.4911759819080627,
+          "xEndRatio": 0.5075506571850745,
+          "parts": [
+            {
+              "start": 0,
+              "end": 2,
+              "xStartRatio": 0.4911759819080627,
+              "xEndRatio": 0.5075506571850745
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "Positive_Mass_Theorem_Schoen_Yau_Higher_Dimensions.pdf",
+      "pdf_sha256": "92f5f086a7fefd4f467d6f0589573de06268a92c32dc47a481bb503857536c8b",
+      "page": 4,
+      "query": "Lemma 3.1",
+      "expected": "Lemma 3.1",
+      "lines": [
+        {
+          "text": "� �",
+          "ratio": 0.5215946929623382,
+          "xStartRatio": 0.461831684985192,
+          "xEndRatio": 0.6066523034588184,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.461831684985192,
+              "xEndRatio": 0.4708826900307649
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.5976012984132455,
+              "xEndRatio": 0.6066523034588184
+            }
+          ],
+          "heightRatio": 0.012579022031841856
+        },
+        {
+          "text": "m < 0 = ⇒ m < � 0 , R ≥ 0 on N, R > 0 far out in N k . (11)",
+          "ratio": 0.5256679419315222,
+          "xStartRatio": 0.24507679658777573,
+          "xEndRatio": 0.8844417995876737,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.24507679658777573,
+              "xEndRatio": 0.2795509637570849
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.2795509637570849,
+              "xEndRatio": 0.2934061187544679
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.31618689244089565,
+              "xEndRatio": 0.33005498748978757
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.3270768059624566,
+              "xEndRatio": 0.3449021383048662
+            },
+            {
+              "start": 10,
+              "end": 13,
+              "xStartRatio": 0.36767974554323685,
+              "xEndRatio": 0.40215391271254597
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.37098202674217473,
+              "xEndRatio": 0.3800330068550858
+            },
+            {
+              "start": 16,
+              "end": 17,
+              "xStartRatio": 0.40215391271254597,
+              "xEndRatio": 0.416009067709929
+            },
+            {
+              "start": 18,
+              "end": 19,
+              "xStartRatio": 0.416009815689785,
+              "xEndRatio": 0.4209652570338031
+            },
+            {
+              "start": 20,
+              "end": 21,
+              "xStartRatio": 0.4595816618476818,
+              "xEndRatio": 0.4727010789260366
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.4727010789260366,
+              "xEndRatio": 0.491944855334712
+            },
+            {
+              "start": 24,
+              "end": 28,
+              "xStartRatio": 0.49689214369829965,
+              "xEndRatio": 0.5305702857721865
+            },
+            {
+              "start": 29,
+              "end": 31,
+              "xStartRatio": 0.5305702857721865,
+              "xEndRatio": 0.5567349701925041
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.5953529208314186,
+              "xEndRatio": 0.6084723379097733
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.6084723379097733,
+              "xEndRatio": 0.6277144687627655
+            },
+            {
+              "start": 36,
+              "end": 48,
+              "xStartRatio": 0.6277144687627655,
+              "xEndRatio": 0.7213845346488205
+            },
+            {
+              "start": 49,
+              "end": 50,
+              "xStartRatio": 0.7213845346488205,
+              "xEndRatio": 0.7416158439287173
+            },
+            {
+              "start": 51,
+              "end": 52,
+              "xStartRatio": 0.7416062199212368,
+              "xEndRatio": 0.7488079694361468
+            },
+            {
+              "start": 53,
+              "end": 54,
+              "xStartRatio": 0.7499722250146803,
+              "xEndRatio": 0.7549276414260365
+            },
+            {
+              "start": 55,
+              "end": 59,
+              "xStartRatio": 0.8527483971290339,
+              "xEndRatio": 0.8844417995876737
+            }
+          ],
+          "heightRatio": 0.01377413971255524
+        },
+        {
+          "text": "− 1",
+          "ratio": 0.5492020038643268,
+          "xStartRatio": 0.42206867691738154,
+          "xEndRatio": 0.43974533579707925,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.42206867691738154,
+              "xEndRatio": 0.4328257242838542
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.4328301124323427,
+              "xEndRatio": 0.43974533579707925
+            }
+          ],
+          "heightRatio": 0.010063248451309974
+        },
+        {
+          "text": "Lemma 3.1 (Asymptotic sign of ∆ g ( r )) . For the three-dimensional asymptotic expansion ( 9 ) ,",
+          "ratio": 0.5542007600418245,
+          "xStartRatio": 0.11764710868885314,
+          "xEndRatio": 0.8749316845064848,
+          "parts": [
+            {
+              "start": 0,
+              "end": 9,
+              "xStartRatio": 0.11764710868885314,
+              "xEndRatio": 0.21691635231566586
+            },
+            {
+              "start": 10,
+              "end": 31,
+              "xStartRatio": 0.21691635231566586,
+              "xEndRatio": 0.3987276164534824
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.3987337000229779,
+              "xEndRatio": 0.4053233526890574
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.4065980848923228,
+              "xEndRatio": 0.4135321324167688
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.4135310852449704,
+              "xEndRatio": 0.4215703228719873
+            },
+            {
+              "start": 38,
+              "end": 40,
+              "xStartRatio": 0.4405637753555198,
+              "xEndRatio": 0.4544292275422539
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.45442818037045546,
+              "xEndRatio": 0.46013227475234886
+            },
+            {
+              "start": 43,
+              "end": 89,
+              "xStartRatio": 0.46013227475234886,
+              "xEndRatio": 0.839402840807547
+            },
+            {
+              "start": 90,
+              "end": 91,
+              "xStartRatio": 0.839402840807547,
+              "xEndRatio": 0.8536171507991217
+            },
+            {
+              "start": 92,
+              "end": 93,
+              "xStartRatio": 0.8536171507991217,
+              "xEndRatio": 0.8625297795713337
+            },
+            {
+              "start": 94,
+              "end": 95,
+              "xStartRatio": 0.8625297795713337,
+              "xEndRatio": 0.8694638520284416
+            },
+            {
+              "start": 96,
+              "end": 97,
+              "xStartRatio": 0.8694592644186581,
+              "xEndRatio": 0.8749316845064848
+            }
+          ],
+          "heightRatio": 0.01377413971255524
+        },
+        {
+          "text": "� �",
+          "ratio": 0.5714103236342921,
+          "xStartRatio": 0.4301324482836755,
+          "xEndRatio": 0.4669158536624285,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4301324482836755,
+              "xEndRatio": 0.4421136394824857
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.45493466246361824,
+              "xEndRatio": 0.4669158536624285
+            }
+          ],
+          "heightRatio": 0.012579022031841856
+        },
+        {
+          "text": "1 m",
+          "ratio": 0.5801274848706794,
+          "xStartRatio": 0.4440687092301113,
+          "xEndRatio": 0.5085983775020425,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4440687092301113,
+              "xEndRatio": 0.4529813878676471
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.4929477467256434,
+              "xEndRatio": 0.5085983775020425
+            }
+          ],
+          "heightRatio": 0.01377413971255524
+        },
+        {
+          "text": "− 5",
+          "ratio": 0.5837588454737808,
+          "xStartRatio": 0.5622091355666615,
+          "xEndRatio": 0.5798874400020425,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5622091355666615,
+              "xEndRatio": 0.5729661829331342
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.5729722166373059,
+              "xEndRatio": 0.5798874400020425
+            }
+          ],
+          "heightRatio": 0.010063248451309974
+        },
+        {
+          "text": "∆ g = O ( r ) . (12)",
+          "ratio": 0.5894457113863242,
+          "xStartRatio": 0.4074118620429943,
+          "xEndRatio": 0.8844416998570261,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4074118620429943,
+              "xEndRatio": 0.4222603592218137
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.4222664427913092,
+              "xEndRatio": 0.4288560954573887
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.4718693253261591,
+              "xEndRatio": 0.4857374203750511
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.5286899641448376,
+              "xEndRatio": 0.5462493896484375
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.5467401641646242,
+              "xEndRatio": 0.553674236621732
+            },
+            {
+              "start": 10,
+              "end": 11,
+              "xStartRatio": 0.5536715438942504,
+              "xEndRatio": 0.5617107815212674
+            },
+            {
+              "start": 12,
+              "end": 13,
+              "xStartRatio": 0.5807042340047999,
+              "xEndRatio": 0.5876383064619077
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.5876356137344261,
+              "xEndRatio": 0.5925910301457823
+            },
+            {
+              "start": 16,
+              "end": 20,
+              "xStartRatio": 0.8527482973983864,
+              "xEndRatio": 0.8844416998570261
+            }
+          ],
+          "heightRatio": 0.01377413971255524
+        },
+        {
+          "text": "4 +",
+          "ratio": 0.5949154092807962,
+          "xStartRatio": 0.501174827027165,
+          "xEndRatio": 0.5286899641448376,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.501174827027165,
+              "xEndRatio": 0.5080900503919016
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.5080900503919016,
+              "xEndRatio": 0.5286899641448376
+            }
+          ],
+          "heightRatio": 0.019243799074731692
+        },
+        {
+          "text": "r r",
+          "ratio": 0.5988939458673651,
+          "xStartRatio": 0.444256551904616,
+          "xEndRatio": 0.500678118537454,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.444256551904616,
+              "xEndRatio": 0.45229578953163296
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.4926388809104371,
+              "xEndRatio": 0.500678118537454
+            }
+          ],
+          "heightRatio": 0.01377413971255524
+        },
+        {
+          "text": "Hence, if m < 0 , there is R 0 sufficiently large such that",
+          "ratio": 0.6232702081853693,
+          "xStartRatio": 0.11668131709877962,
+          "xEndRatio": 0.547816158120149,
+          "parts": [
+            {
+              "start": 0,
+              "end": 9,
+              "xStartRatio": 0.11668131709877962,
+              "xEndRatio": 0.1864318099676394
+            },
+            {
+              "start": 10,
+              "end": 13,
+              "xStartRatio": 0.1864318099676394,
+              "xEndRatio": 0.22726986454982384
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.22726986454982384,
+              "xEndRatio": 0.24112501954720691
+            },
+            {
+              "start": 16,
+              "end": 26,
+              "xStartRatio": 0.2411257675270629,
+              "xEndRatio": 0.31014543421128216
+            },
+            {
+              "start": 27,
+              "end": 28,
+              "xStartRatio": 0.31014543421128216,
+              "xEndRatio": 0.330045737472235
+            },
+            {
+              "start": 29,
+              "end": 30,
+              "xStartRatio": 0.33005062427396087,
+              "xEndRatio": 0.3369658476386974
+            },
+            {
+              "start": 31,
+              "end": 59,
+              "xStartRatio": 0.3369658476386974,
+              "xEndRatio": 0.547816158120149
+            }
+          ],
+          "heightRatio": 0.01583974048344776
+        },
+        {
+          "text": "− 1",
+          "ratio": 0.6461161603831281,
+          "xStartRatio": 0.42832348393458947,
+          "xEndRatio": 0.4460001428142872,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.42832348393458947,
+              "xEndRatio": 0.4390805313010621
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.43908491944955064,
+              "xEndRatio": 0.4460001428142872
+            }
+          ],
+          "heightRatio": 0.010063286983605587
+        },
+        {
+          "text": "∆ g ( r ) < 0 for r ≥ R 0 . (13)",
+          "ratio": 0.6518030648279671,
+          "xStartRatio": 0.39013395122453276,
+          "xEndRatio": 0.8844417995876737,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.39013395122453276,
+              "xEndRatio": 0.40498244840335224
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.40498853197284773,
+              "xEndRatio": 0.4115781846389272
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.41285453746521394,
+              "xEndRatio": 0.41978858498965993
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.41978589226217833,
+              "xEndRatio": 0.42782512988919524
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.44681858237272776,
+              "xEndRatio": 0.45375265482983557
+            },
+            {
+              "start": 10,
+              "end": 11,
+              "xStartRatio": 0.45375265482983557,
+              "xEndRatio": 0.47257068110447303
+            },
+            {
+              "start": 12,
+              "end": 13,
+              "xStartRatio": 0.47257068110447303,
+              "xEndRatio": 0.4864306481055964
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "xStartRatio": 0.5228725258820976,
+              "xEndRatio": 0.5449759290109273
+            },
+            {
+              "start": 18,
+              "end": 19,
+              "xStartRatio": 0.5449759290109273,
+              "xEndRatio": 0.5593823700948478
+            },
+            {
+              "start": 20,
+              "end": 21,
+              "xStartRatio": 0.5593823700948478,
+              "xEndRatio": 0.5786997975866779
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.5836470859502655,
+              "xEndRatio": 0.5971764957203585
+            },
+            {
+              "start": 24,
+              "end": 25,
+              "xStartRatio": 0.5971813825220843,
+              "xEndRatio": 0.6040966058868209
+            },
+            {
+              "start": 26,
+              "end": 27,
+              "xStartRatio": 0.6049150454452614,
+              "xEndRatio": 0.6098704618566176
+            },
+            {
+              "start": 28,
+              "end": 32,
+              "xStartRatio": 0.8527483971290339,
+              "xEndRatio": 0.8844417995876737
+            }
+          ],
+          "heightRatio": 0.01377413971255524
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "calderon_zygmund_note.pdf",
+      "pdf_sha256": "d4f4a962e6c1737ac54ac0cb1df32f2e1666231a8ad23e4edd237ec0b66b6ba2",
+      "page": 2,
+      "query": "Proposition 2.1",
+      "expected": "Proposition 2.1",
+      "lines": [
+        {
+          "text": "Cancellation shows existence of the limit: on | z | < 1, replace f ( x − z ) by f ( x − z ) − f ( x ) = O ( | z | ),",
+          "ratio": 0.7665692586507612,
+          "xStartRatio": 0.11904729436126436,
+          "xEndRatio": 0.8835040739251361,
+          "parts": [
+            {
+              "start": 0,
+              "end": 45,
+              "xStartRatio": 0.11904729436126436,
+              "xEndRatio": 0.4671222768128213
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.4671222768128213,
+              "xEndRatio": 0.47725879682994016
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.47725423413221896,
+              "xEndRatio": 0.4857758667536416
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.48658269525629133,
+              "xEndRatio": 0.4916773317589805
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.4916773317589805,
+              "xEndRatio": 0.5110222473039583
+            },
+            {
+              "start": 54,
+              "end": 64,
+              "xStartRatio": 0.5110222473039583,
+              "xEndRatio": 0.5904611216115817
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.5904611216115817,
+              "xEndRatio": 0.6046060484761513
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.6065707256083819,
+              "xEndRatio": 0.6135569848134964
+            },
+            {
+              "start": 69,
+              "end": 70,
+              "xStartRatio": 0.6135540626363042,
+              "xEndRatio": 0.6240365786862343
+            },
+            {
+              "start": 71,
+              "end": 72,
+              "xStartRatio": 0.6263279757350608,
+              "xEndRatio": 0.6405856883859964
+            },
+            {
+              "start": 73,
+              "end": 74,
+              "xStartRatio": 0.6428816481325442,
+              "xEndRatio": 0.6514032807539668
+            },
+            {
+              "start": 75,
+              "end": 79,
+              "xStartRatio": 0.65221005799035,
+              "xEndRatio": 0.6833699511186402
+            },
+            {
+              "start": 80,
+              "end": 81,
+              "xStartRatio": 0.6833699511186402,
+              "xEndRatio": 0.6975646062617438
+            },
+            {
+              "start": 82,
+              "end": 83,
+              "xStartRatio": 0.69953097518077,
+              "xEndRatio": 0.7065172343858844
+            },
+            {
+              "start": 84,
+              "end": 85,
+              "xStartRatio": 0.7065143122086922,
+              "xEndRatio": 0.7169968282586223
+            },
+            {
+              "start": 86,
+              "end": 87,
+              "xStartRatio": 0.719288225307449,
+              "xEndRatio": 0.7335459379583845
+            },
+            {
+              "start": 88,
+              "end": 89,
+              "xStartRatio": 0.7358418977049322,
+              "xEndRatio": 0.7443635303263549
+            },
+            {
+              "start": 90,
+              "end": 91,
+              "xStartRatio": 0.7451703075627382,
+              "xEndRatio": 0.7521565667678526
+            },
+            {
+              "start": 92,
+              "end": 93,
+              "xStartRatio": 0.7544533980409314,
+              "xEndRatio": 0.7687111106918669
+            },
+            {
+              "start": 94,
+              "end": 95,
+              "xStartRatio": 0.7710070704384148,
+              "xEndRatio": 0.7799868696838164
+            },
+            {
+              "start": 96,
+              "end": 97,
+              "xStartRatio": 0.781951546816047,
+              "xEndRatio": 0.7889378060211615
+            },
+            {
+              "start": 98,
+              "end": 99,
+              "xStartRatio": 0.7889365756307648,
+              "xEndRatio": 0.7994190916806948
+            },
+            {
+              "start": 100,
+              "end": 103,
+              "xStartRatio": 0.7994089922261884,
+              "xEndRatio": 0.8254504100378529
+            },
+            {
+              "start": 104,
+              "end": 105,
+              "xStartRatio": 0.8254504100378529,
+              "xEndRatio": 0.8445269979438126
+            },
+            {
+              "start": 106,
+              "end": 107,
+              "xStartRatio": 0.8450315605390012,
+              "xEndRatio": 0.8520178197441157
+            },
+            {
+              "start": 108,
+              "end": 109,
+              "xStartRatio": 0.8520165380874525,
+              "xEndRatio": 0.8571111745901416
+            },
+            {
+              "start": 110,
+              "end": 111,
+              "xStartRatio": 0.8571066118924204,
+              "xEndRatio": 0.865628244513843
+            },
+            {
+              "start": 112,
+              "end": 113,
+              "xStartRatio": 0.8664350730164928,
+              "xEndRatio": 0.8715297095191818
+            },
+            {
+              "start": 114,
+              "end": 116,
+              "xStartRatio": 0.8715250955551942,
+              "xEndRatio": 0.8835040739251361
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "− n",
+          "ratio": 0.7766929210123648,
+          "xStartRatio": 0.3570461433310482,
+          "xEndRatio": 0.3767474619609429,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.3570461433310482,
+              "xEndRatio": 0.368105379246308
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.36811160809769133,
+              "xEndRatio": 0.3767474619609429
+            }
+          ],
+          "heightRatio": 0.009466904981365896
+        },
+        {
+          "text": "which is integrable against | z | .",
+          "ratio": 0.7826639830888781,
+          "xStartRatio": 0.11838710019745716,
+          "xEndRatio": 0.38267414996941457,
+          "parts": [
+            {
+              "start": 0,
+              "end": 27,
+              "xStartRatio": 0.11838710019745716,
+              "xEndRatio": 0.3315565043460465
+            },
+            {
+              "start": 28,
+              "end": 29,
+              "xStartRatio": 0.3315565043460465,
+              "xEndRatio": 0.3426322223659956
+            },
+            {
+              "start": 30,
+              "end": 31,
+              "xStartRatio": 0.3426276340351412,
+              "xEndRatio": 0.35114929228969705
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.3519560695260803,
+              "xEndRatio": 0.35705073166190265
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.3775794878335922,
+              "xEndRatio": 0.38267414996941457
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "Proposition 2.1 (Distributional delta correction) . As distributions,",
+          "ratio": 0.8062514254875802,
+          "xStartRatio": 0.11904731999439762,
+          "xEndRatio": 0.6702573217969195,
+          "parts": [
+            {
+              "start": 0,
+              "end": 15,
+              "xStartRatio": 0.11904731999439762,
+              "xEndRatio": 0.26003016814720226
+            },
+            {
+              "start": 16,
+              "end": 49,
+              "xStartRatio": 0.26003016814720226,
+              "xEndRatio": 0.5247359736007436
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.5245986825389762,
+              "xEndRatio": 0.5304630307673474
+            },
+            {
+              "start": 52,
+              "end": 69,
+              "xStartRatio": 0.5304630307673474,
+              "xEndRatio": 0.6702573217969195
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "δ ij",
+          "ratio": 0.8329271282774252,
+          "xStartRatio": 0.5513728490981546,
+          "xEndRatio": 0.5701209740344563,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5513728490981546,
+              "xEndRatio": 0.5595096258567362
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.55951695693285,
+              "xEndRatio": 0.5701209740344563
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "∂ ij Γ = p . v . K ij − δ 0 . (2.6)",
+          "ratio": 0.8416931247311239,
+          "xStartRatio": 0.40508271196909423,
+          "xEndRatio": 0.8831030691883381,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.40508271196909423,
+              "xEndRatio": 0.41481386961676003
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.41481263922636336,
+              "xEndRatio": 0.4254166563279696
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "xStartRatio": 0.42701706100337106,
+              "xEndRatio": 0.4731072033000711
+            },
+            {
+              "start": 11,
+              "end": 12,
+              "xStartRatio": 0.47308813224892193,
+              "xEndRatio": 0.47818276875161103
+            },
+            {
+              "start": 13,
+              "end": 14,
+              "xStartRatio": 0.47818276875161103,
+              "xEndRatio": 0.49090844029356295
+            },
+            {
+              "start": 15,
+              "end": 18,
+              "xStartRatio": 0.4910512168458491,
+              "xEndRatio": 0.5147651974233164
+            },
+            {
+              "start": 19,
+              "end": 21,
+              "xStartRatio": 0.5147612499207936,
+              "xEndRatio": 0.5253652670223998
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.5253652670223998,
+              "xEndRatio": 0.5452954382660846
+            },
+            {
+              "start": 24,
+              "end": 25,
+              "xStartRatio": 0.5737305293283033,
+              "xEndRatio": 0.5818673060868849
+            },
+            {
+              "start": 26,
+              "end": 27,
+              "xStartRatio": 0.5818763289497941,
+              "xEndRatio": 0.5889858322596468
+            },
+            {
+              "start": 28,
+              "end": 29,
+              "xStartRatio": 0.5898255737054089,
+              "xEndRatio": 0.5949202102080979
+            },
+            {
+              "start": 30,
+              "end": 35,
+              "xStartRatio": 0.8454246190044871,
+              "xEndRatio": 0.8831030691883381
+            }
+          ],
+          "heightRatio": 0.014901048506379007
+        },
+        {
+          "text": "n",
+          "ratio": 0.850581424938047,
+          "xStartRatio": 0.5560479737418285,
+          "xEndRatio": 0.5737305293283033,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5560479737418285,
+              "xEndRatio": 0.5737305293283033
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "∞",
+          "ratio": 0.8693142710573062,
+          "xStartRatio": 0.40949740397879547,
+          "xEndRatio": 0.42372981672719845,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.40949740397879547,
+              "xEndRatio": 0.42372981672719845
+            }
+          ],
+          "heightRatio": 0.009466904981365896
+        },
+        {
+          "text": "Consequently, if u = Γ ∗ f for f ∈ C , then",
+          "ratio": 0.8740168394941221,
+          "xStartRatio": 0.11687519391465315,
+          "xEndRatio": 0.47092443947002166,
+          "parts": [
+            {
+              "start": 0,
+              "end": 16,
+              "xStartRatio": 0.11687519391465315,
+              "xEndRatio": 0.24477317342906318
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "xStartRatio": 0.24477317342906318,
+              "xEndRatio": 0.26178598650958956
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "xStartRatio": 0.26178598650958956,
+              "xEndRatio": 0.2976723218143501
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.2976723218143501,
+              "xEndRatio": 0.3109003771351631
+            },
+            {
+              "start": 25,
+              "end": 26,
+              "xStartRatio": 0.31497320004650875,
+              "xEndRatio": 0.32395299929191035
+            },
+            {
+              "start": 27,
+              "end": 30,
+              "xStartRatio": 0.32395299929191035,
+              "xEndRatio": 0.35519871215037174
+            },
+            {
+              "start": 31,
+              "end": 32,
+              "xStartRatio": 0.35519871215037174,
+              "xEndRatio": 0.37072457280332766
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.37072457280332766,
+              "xEndRatio": 0.3900028678349497
+            },
+            {
+              "start": 35,
+              "end": 36,
+              "xStartRatio": 0.3950872767174661,
+              "xEndRatio": 0.4081904474130119
+            },
+            {
+              "start": 37,
+              "end": 43,
+              "xStartRatio": 0.4245593049196545,
+              "xEndRatio": 0.47092443947002166
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "c",
+          "ratio": 0.8772202988561445,
+          "xStartRatio": 0.4081853976857587,
+          "xEndRatio": 0.4143442962484782,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4081853976857587,
+              "xEndRatio": 0.4143442962484782
+            }
+          ],
+          "heightRatio": 0.009466904981365896
+        },
+        {
+          "text": "δ ij",
+          "ratio": 0.9006557134122196,
+          "xStartRatio": 0.5388743896494639,
+          "xEndRatio": 0.5576242063725609,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5388743896494639,
+              "xEndRatio": 0.5470111664080455
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.5470201892709547,
+              "xEndRatio": 0.5576242063725609
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "∂ ij u = T ij f − f. (2.7)",
+          "ratio": 0.9094216373681392,
+          "xStartRatio": 0.42374960550607904,
+          "xEndRatio": 0.8831030691883381,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.42374960550607904,
+              "xEndRatio": 0.4334807887868781
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.4334778666096859,
+              "xEndRatio": 0.44408188371129215
+            },
+            {
+              "start": 5,
+              "end": 6,
+              "xStartRatio": 0.44568395454035586,
+              "xEndRatio": 0.4561848239137037
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "xStartRatio": 0.4561848239137037,
+              "xEndRatio": 0.4755226647139004
+            },
+            {
+              "start": 9,
+              "end": 10,
+              "xStartRatio": 0.4755226647139004,
+              "xEndRatio": 0.49131139314848904
+            },
+            {
+              "start": 11,
+              "end": 13,
+              "xStartRatio": 0.49131826282820407,
+              "xEndRatio": 0.5019222799298103
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.503522710238345,
+              "xEndRatio": 0.5125025094837466
+            },
+            {
+              "start": 16,
+              "end": 17,
+              "xStartRatio": 0.5125025094837466,
+              "xEndRatio": 0.5327986706041894
+            },
+            {
+              "start": 18,
+              "end": 20,
+              "xStartRatio": 0.5612338129326745,
+              "xEndRatio": 0.5762611860430256
+            },
+            {
+              "start": 21,
+              "end": 26,
+              "xStartRatio": 0.8454246190044871,
+              "xEndRatio": 0.8831030691883381
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "n",
+          "ratio": 0.9183100100728414,
+          "xStartRatio": 0.5435495655594041,
+          "xEndRatio": 0.5612338129326745,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5435495655594041,
+              "xEndRatio": 0.5612338129326745
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "calderon_zygmund_note.pdf",
+      "pdf_sha256": "d4f4a962e6c1737ac54ac0cb1df32f2e1666231a8ad23e4edd237ec0b66b6ba2",
+      "page": 4,
+      "query": "Theorem 6.1",
+      "expected": "Theorem 6.1",
+      "lines": [
+        {
+          "text": "nonintegrable | x | decay into the integrable | x | decay. The condition b k = 0 makes this",
+          "ratio": 0.7616743536061773,
+          "xStartRatio": 0.11786801643227388,
+          "xEndRatio": 0.8809579860641883,
+          "parts": [
+            {
+              "start": 0,
+              "end": 13,
+              "xStartRatio": 0.11786801643227388,
+              "xEndRatio": 0.22518992101098717
+            },
+            {
+              "start": 14,
+              "end": 15,
+              "xStartRatio": 0.22518992101098717,
+              "xEndRatio": 0.23684430701439413
+            },
+            {
+              "start": 16,
+              "end": 17,
+              "xStartRatio": 0.2368397186835397,
+              "xEndRatio": 0.24732226036660301
+            },
+            {
+              "start": 18,
+              "end": 19,
+              "xStartRatio": 0.24731385269889208,
+              "xEndRatio": 0.2524085148347145
+            },
+            {
+              "start": 20,
+              "end": 45,
+              "xStartRatio": 0.27949220147806797,
+              "xEndRatio": 0.47551661529444983
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.47551661529444983,
+              "xEndRatio": 0.4871550831220992
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.48715221221117355,
+              "xEndRatio": 0.4976347282611036
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.4976246800728637,
+              "xEndRatio": 0.5027193165755528
+            },
+            {
+              "start": 52,
+              "end": 72,
+              "xStartRatio": 0.5479811241707938,
+              "xEndRatio": 0.7181434495758332
+            },
+            {
+              "start": 73,
+              "end": 74,
+              "xStartRatio": 0.7388925481610688,
+              "xEndRatio": 0.7467544351985164
+            },
+            {
+              "start": 75,
+              "end": 76,
+              "xStartRatio": 0.7467578187721073,
+              "xEndRatio": 0.7541618980494416
+            },
+            {
+              "start": 77,
+              "end": 80,
+              "xStartRatio": 0.7541618980494416,
+              "xEndRatio": 0.7893275321793228
+            },
+            {
+              "start": 81,
+              "end": 91,
+              "xStartRatio": 0.7893275321793228,
+              "xEndRatio": 0.8809579860641883
+            }
+          ],
+          "heightRatio": 0.015171827711058072
+        },
+        {
+          "text": "subtraction legal.",
+          "ratio": 0.7777679180798296,
+          "xStartRatio": 0.11807296614929434,
+          "xEndRatio": 0.2527515886903335,
+          "parts": [
+            {
+              "start": 0,
+              "end": 18,
+              "xStartRatio": 0.11807296614929434,
+              "xEndRatio": 0.2527515886903335
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        },
+        {
+          "text": "6 Interpolation and duality: all 1 < p < ∞",
+          "ratio": 0.8245127460520247,
+          "xStartRatio": 0.11904730717783099,
+          "xEndRatio": 0.6268255148517349,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.11904730717783099,
+              "xEndRatio": 0.13261565515930376
+            },
+            {
+              "start": 2,
+              "end": 32,
+              "xStartRatio": 0.1597282431604136,
+              "xEndRatio": 0.5067451539536237
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.5067451539536237,
+              "xEndRatio": 0.5274068435544256
+            },
+            {
+              "start": 35,
+              "end": 40,
+              "xStartRatio": 0.5274068435544256,
+              "xEndRatio": 0.5960513491128168
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.5960513491128168,
+              "xEndRatio": 0.6268255148517349
+            }
+          ],
+          "heightRatio": 0.017040530463349256
+        },
+        {
+          "text": "Theorem 6.1 (Weak (1 , 1) plus strong (2 , 2)) . If T is linear, |{| Tf | > t }| ≤ A 1 ∥ f ∥ , and",
+          "ratio": 0.8593545261740907,
+          "xStartRatio": 0.11830982911722975,
+          "xEndRatio": 0.8804378385239745,
+          "parts": [
+            {
+              "start": 0,
+              "end": 11,
+              "xStartRatio": 0.11830982911722975,
+              "xEndRatio": 0.23792405148691653
+            },
+            {
+              "start": 12,
+              "end": 20,
+              "xStartRatio": 0.23792405148691653,
+              "xEndRatio": 0.3218482370863863
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.32183221637809567,
+              "xEndRatio": 0.32692687851391805
+            },
+            {
+              "start": 23,
+              "end": 40,
+              "xStartRatio": 0.32692687851391805,
+              "xEndRatio": 0.4683409272345069
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.4682819197617308,
+              "xEndRatio": 0.47337655626441993
+            },
+            {
+              "start": 43,
+              "end": 46,
+              "xStartRatio": 0.47337655626441993,
+              "xEndRatio": 0.5003152875391598
+            },
+            {
+              "start": 47,
+              "end": 48,
+              "xStartRatio": 0.5003124678945006,
+              "xEndRatio": 0.5062941133406924
+            },
+            {
+              "start": 49,
+              "end": 51,
+              "xStartRatio": 0.5062941133406924,
+              "xEndRatio": 0.5280394692834063
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.5280394692834063,
+              "xEndRatio": 0.5460104488853791
+            },
+            {
+              "start": 54,
+              "end": 64,
+              "xStartRatio": 0.5460104488853791,
+              "xEndRatio": 0.628373756100942
+            },
+            {
+              "start": 65,
+              "end": 68,
+              "xStartRatio": 0.628373756100942,
+              "xEndRatio": 0.6551717102077904
+            },
+            {
+              "start": 69,
+              "end": 71,
+              "xStartRatio": 0.6551633538063459,
+              "xEndRatio": 0.677392919636436
+            },
+            {
+              "start": 72,
+              "end": 73,
+              "xStartRatio": 0.6793622107326545,
+              "xEndRatio": 0.6844568472353435
+            },
+            {
+              "start": 74,
+              "end": 77,
+              "xStartRatio": 0.6844568472353435,
+              "xEndRatio": 0.7155121059136459
+            },
+            {
+              "start": 78,
+              "end": 82,
+              "xStartRatio": 0.7155051337013978,
+              "xEndRatio": 0.7504346866739082
+            },
+            {
+              "start": 83,
+              "end": 84,
+              "xStartRatio": 0.7568271287138052,
+              "xEndRatio": 0.7705717173030416
+            },
+            {
+              "start": 85,
+              "end": 86,
+              "xStartRatio": 0.7705720249006408,
+              "xEndRatio": 0.7776815282104935
+            },
+            {
+              "start": 87,
+              "end": 88,
+              "xStartRatio": 0.7776815282104935,
+              "xEndRatio": 0.7907383798342295
+            },
+            {
+              "start": 89,
+              "end": 90,
+              "xStartRatio": 0.7907390975619609,
+              "xEndRatio": 0.7997188968073625
+            },
+            {
+              "start": 91,
+              "end": 92,
+              "xStartRatio": 0.8016836252058597,
+              "xEndRatio": 0.8108467013541062
+            },
+            {
+              "start": 93,
+              "end": 98,
+              "xStartRatio": 0.8376316338292559,
+              "xEndRatio": 0.8804378385239745
+            }
+          ],
+          "heightRatio": 0.014901121004158038
+        },
+        {
+          "text": "1 /t",
+          "ratio": 0.8631852363202853,
+          "xStartRatio": 0.8108474190818376,
+          "xEndRatio": 0.8376294806460616,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.8108474190818376,
+              "xEndRatio": 0.8179569223916903
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.8179569223916903,
+              "xEndRatio": 0.8376294806460616
+            }
+          ],
+          "heightRatio": 0.01678860068121813
+        },
+        {
+          "text": "∥ Tf ∥ A 2 ∥ f ∥ , then ∥ Tf ∥ C ( p, A 1 , A 2 ) ∥ f ∥ 1 < p < 2 .",
+          "ratio": 0.875448090647743,
+          "xStartRatio": 0.11904729436126436,
+          "xEndRatio": 0.6395589788661994,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.11904729436126436,
+              "xEndRatio": 0.12821035769294417
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.1282111138703755,
+              "xEndRatio": 0.15044070533359882
+            },
+            {
+              "start": 5,
+              "end": 6,
+              "xStartRatio": 0.15240997079668395,
+              "xEndRatio": 0.16157303412836377
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "xStartRatio": 0.19395708880199142,
+              "xEndRatio": 0.20770167739122786
+            },
+            {
+              "start": 9,
+              "end": 10,
+              "xStartRatio": 0.20770197217226039,
+              "xEndRatio": 0.21481148829867974
+            },
+            {
+              "start": 11,
+              "end": 12,
+              "xStartRatio": 0.21481148829867974,
+              "xEndRatio": 0.22786832710584906
+            },
+            {
+              "start": 13,
+              "end": 14,
+              "xStartRatio": 0.227869096099847,
+              "xEndRatio": 0.23684889534524858
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.2388135981106125,
+              "xEndRatio": 0.2479766486257257
+            },
+            {
+              "start": 17,
+              "end": 23,
+              "xStartRatio": 0.2559266623753384,
+              "xEndRatio": 0.3022917712925723
+            },
+            {
+              "start": 24,
+              "end": 25,
+              "xStartRatio": 0.3022917712925723,
+              "xEndRatio": 0.31801139279987845
+            },
+            {
+              "start": 26,
+              "end": 28,
+              "xStartRatio": 0.3180104700070809,
+              "xEndRatio": 0.34024003583717094
+            },
+            {
+              "start": 29,
+              "end": 30,
+              "xStartRatio": 0.34220932693338935,
+              "xEndRatio": 0.3513723774485025
+            },
+            {
+              "start": 31,
+              "end": 32,
+              "xStartRatio": 0.383805160708467,
+              "xEndRatio": 0.3969083314040128
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.3982152879697964,
+              "xEndRatio": 0.40534414429526416
+            },
+            {
+              "start": 35,
+              "end": 39,
+              "xStartRatio": 0.4053414015500048,
+              "xEndRatio": 0.43645915380720723
+            },
+            {
+              "start": 40,
+              "end": 41,
+              "xStartRatio": 0.4364513613346947,
+              "xEndRatio": 0.4435608646445474
+            },
+            {
+              "start": 42,
+              "end": 45,
+              "xStartRatio": 0.4444006060903094,
+              "xEndRatio": 0.4663002734952787
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.46629130189863593,
+              "xEndRatio": 0.47340080520848865
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.47424054665425064,
+              "xEndRatio": 0.4813694286128517
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.4813694286128517,
+              "xEndRatio": 0.493583770412433
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.4935844881401644,
+              "xEndRatio": 0.502564287385566
+            },
+            {
+              "start": 54,
+              "end": 55,
+              "xStartRatio": 0.5045290157840632,
+              "xEndRatio": 0.5136920919323097
+            },
+            {
+              "start": 56,
+              "end": 57,
+              "xStartRatio": 0.5509717930950901,
+              "xEndRatio": 0.5666809562840242
+            },
+            {
+              "start": 58,
+              "end": 63,
+              "xStartRatio": 0.5666809562840242,
+              "xEndRatio": 0.6196944797099395
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.6196944797099395,
+              "xEndRatio": 0.6339337877711909
+            },
+            {
+              "start": 66,
+              "end": 67,
+              "xStartRatio": 0.6339328649783933,
+              "xEndRatio": 0.6395589788661994
+            }
+          ],
+          "heightRatio": 0.014902280968622526
+        },
+        {
+          "text": "2 ≤ 2 p ≤ p for",
+          "ratio": 0.8792799607584022,
+          "xStartRatio": 0.16157379030579508,
+          "xEndRatio": 0.5509717930950901,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.16157379030579508,
+              "xEndRatio": 0.1686833064322144
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.1686833064322144,
+              "xEndRatio": 0.1888708471504466
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.24797741761972364,
+              "xEndRatio": 0.25508692092957636
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.35137314644250045,
+              "xEndRatio": 0.35853622300087706
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.35853622300087706,
+              "xEndRatio": 0.37871890624035554
+            },
+            {
+              "start": 10,
+              "end": 11,
+              "xStartRatio": 0.513692809660041,
+              "xEndRatio": 0.5208558862184177
+            },
+            {
+              "start": 12,
+              "end": 15,
+              "xStartRatio": 0.5208558862184177,
+              "xEndRatio": 0.5509717930950901
+            }
+          ],
+          "heightRatio": 0.01678976064568262
+        },
+        {
+          "text": "4",
+          "ratio": 0.9513261511233604,
+          "xStartRatio": 0.49509812465946385,
+          "xEndRatio": 0.5042612008077103,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.49509812465946385,
+              "xEndRatio": 0.5042612008077103
+            }
+          ],
+          "heightRatio": 0.01295789053502346
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "0810.5645v6.pdf",
+      "pdf_sha256": "e6b17b3d326a14d7b247e5a26b3a8a43b768ae339062ca9dd7b2766612bcbec7",
+      "page": 42,
+      "query": "Theorem 4.9 may",
+      "expected": "",
+      "lines": [
+        {
+          "text": "n − 1",
+          "ratio": 0.1656061037622317,
+          "xStartRatio": 0.7094112221711601,
+          "xEndRatio": 0.7341299617991728,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.7094112221711601,
+              "xEndRatio": 0.7174561943104064
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.7174503102022058,
+              "xEndRatio": 0.7276148079267515
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.7276461233500562,
+              "xEndRatio": 0.7341299617991728
+            }
+          ],
+          "heightRatio": 0.008981483151214291
+        },
+        {
+          "text": "Behrend [3, eq. (5)] gives equation (4.8) with an extra sign ( − 1) , since",
+          "ratio": 0.17015152748184975,
+          "xStartRatio": 0.24294116450291053,
+          "xEndRatio": 0.7801672243604473,
+          "parts": [
+            {
+              "start": 0,
+              "end": 62,
+              "xStartRatio": 0.24294116450291053,
+              "xEndRatio": 0.6821939804974724
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.6821568308312909,
+              "xEndRatio": 0.6948054693882761
+            },
+            {
+              "start": 65,
+              "end": 67,
+              "xStartRatio": 0.6949019089243771,
+              "xEndRatio": 0.7094534082350388
+            },
+            {
+              "start": 68,
+              "end": 75,
+              "xStartRatio": 0.7349013783573325,
+              "xEndRatio": 0.7801672243604473
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "he omits the shift [ n − 1] in Q [ n − 1], which makes φ f ( Q [ n − 1]) a perverse sheaf.",
+          "ratio": 0.1853030426333649,
+          "xStartRatio": 0.2186268825157016,
+          "xEndRatio": 0.7801950990764144,
+          "parts": [
+            {
+              "start": 0,
+              "end": 20,
+              "xStartRatio": 0.2186268825157016,
+              "xEndRatio": 0.35078268113479116
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.3507845510844312,
+              "xEndRatio": 0.3605518465727762
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.36254925198025173,
+              "xEndRatio": 0.375197890537237
+            },
+            {
+              "start": 25,
+              "end": 30,
+              "xStartRatio": 0.3772551343331929,
+              "xEndRatio": 0.40805372849009397
+            },
+            {
+              "start": 31,
+              "end": 32,
+              "xStartRatio": 0.40805372849009397,
+              "xEndRatio": 0.4253944945491217
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.42529576120812906,
+              "xEndRatio": 0.4298049827027165
+            },
+            {
+              "start": 35,
+              "end": 36,
+              "xStartRatio": 0.42980583041321996,
+              "xEndRatio": 0.4395731009689032
+            },
+            {
+              "start": 37,
+              "end": 38,
+              "xStartRatio": 0.4415705562417024,
+              "xEndRatio": 0.4542191947986877
+            },
+            {
+              "start": 39,
+              "end": 54,
+              "xStartRatio": 0.45627643859464356,
+              "xEndRatio": 0.5677866218915952
+            },
+            {
+              "start": 55,
+              "end": 56,
+              "xStartRatio": 0.5677866218915952,
+              "xEndRatio": 0.5818445043626175
+            },
+            {
+              "start": 57,
+              "end": 58,
+              "xStartRatio": 0.5817646699793199,
+              "xEndRatio": 0.5881117777107587
+            },
+            {
+              "start": 59,
+              "end": 60,
+              "xStartRatio": 0.5903922685610703,
+              "xEndRatio": 0.5967084597917943
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.5966665230545343,
+              "xEndRatio": 0.6093151616115197
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.6094117507435917,
+              "xEndRatio": 0.6139209722381791
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.6139218199486826,
+              "xEndRatio": 0.6236890905043658
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.625686545777165,
+              "xEndRatio": 0.6383351843341504
+            },
+            {
+              "start": 69,
+              "end": 90,
+              "xStartRatio": 0.6403924281301062,
+              "xEndRatio": 0.7801950990764144
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        },
+        {
+          "text": "Theorem 4.9 may be important for future work in Donaldson–Thomas theory,",
+          "ratio": 0.20030266347557607,
+          "xStartRatio": 0.21862773022620507,
+          "xEndRatio": 0.780393263872932,
+          "parts": [
+            {
+              "start": 0,
+              "end": 72,
+              "xStartRatio": 0.21862773022620507,
+              "xEndRatio": 0.780393263872932
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "as it suggests that we should try to lift from constructible functions to perverse",
+          "ratio": 0.21545417862709124,
+          "xStartRatio": 0.21862773022620507,
+          "xEndRatio": 0.7805613100139144,
+          "parts": [
+            {
+              "start": 0,
+              "end": 82,
+              "xStartRatio": 0.21862773022620507,
+              "xEndRatio": 0.7805613100139144
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "sheaves, or mixed Hodge modules [92], or some similar setting.",
+          "ratio": 0.23060569377860637,
+          "xStartRatio": 0.21862773022620507,
+          "xEndRatio": 0.6654838113223805,
+          "parts": [
+            {
+              "start": 0,
+              "end": 62,
+              "xStartRatio": 0.21862773022620507,
+              "xEndRatio": 0.6654838113223805
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "This bridge between perverse sheaves and vanishing cycles on one hand,",
+          "ratio": 0.24560585407295613,
+          "xStartRatio": 0.24294161329082414,
+          "xEndRatio": 0.7801959966522416,
+          "parts": [
+            {
+              "start": 0,
+              "end": 70,
+              "xStartRatio": 0.24294161329082414,
+              "xEndRatio": 0.7801959966522416
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "and Milnor fibres and Behrend functions on the other, is also useful because",
+          "ratio": 0.2607573692244713,
+          "xStartRatio": 0.21862787982217627,
+          "xEndRatio": 0.7801697674919578,
+          "parts": [
+            {
+              "start": 0,
+              "end": 76,
+              "xStartRatio": 0.21862787982217627,
+              "xEndRatio": 0.7801697674919578
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "we can take known results on the perverse sheaf side, and translate them into",
+          "ratio": 0.27575752951882104,
+          "xStartRatio": 0.21862787982217627,
+          "xEndRatio": 0.7800998563080831,
+          "parts": [
+            {
+              "start": 0,
+              "end": 77,
+              "xStartRatio": 0.21862787982217627,
+              "xEndRatio": 0.7800998563080831
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "properties of Milnor fibres by applying the surjective functors χ X . Here is one",
+          "ratio": 0.2909090446703362,
+          "xStartRatio": 0.21862787982217627,
+          "xEndRatio": 0.7801682715322457,
+          "parts": [
+            {
+              "start": 0,
+              "end": 63,
+              "xStartRatio": 0.21862787982217627,
+              "xEndRatio": 0.6597445120219312
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.6597445120219312,
+              "xEndRatio": 0.6756649141997294
+            },
+            {
+              "start": 66,
+              "end": 67,
+              "xStartRatio": 0.6756858077703738,
+              "xEndRatio": 0.6863517013250613
+            },
+            {
+              "start": 68,
+              "end": 81,
+              "xStartRatio": 0.6880389942842371,
+              "xEndRatio": 0.7801682715322457
+            }
+          ],
+          "heightRatio": 0.01257909909643308
+        },
+        {
+          "text": "such result. For constructible complexes, the functors ψ f , φ f commute with",
+          "ratio": 0.3060605598218513,
+          "xStartRatio": 0.21862723157296773,
+          "xEndRatio": 0.7802100088082108,
+          "parts": [
+            {
+              "start": 0,
+              "end": 12,
+              "xStartRatio": 0.21862723157296773,
+              "xEndRatio": 0.30176374647352433
+            },
+            {
+              "start": 13,
+              "end": 54,
+              "xStartRatio": 0.31490114000108504,
+              "xEndRatio": 0.6171952291251788
+            },
+            {
+              "start": 55,
+              "end": 56,
+              "xStartRatio": 0.6171952291251788,
+              "xEndRatio": 0.635107102736928
+            },
+            {
+              "start": 57,
+              "end": 58,
+              "xStartRatio": 0.6350972792681526,
+              "xEndRatio": 0.6414443869995915
+            },
+            {
+              "start": 59,
+              "end": 62,
+              "xStartRatio": 0.643724877849903,
+              "xEndRatio": 0.6606648264367596
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.660587435454325,
+              "xEndRatio": 0.6669345431857638
+            },
+            {
+              "start": 65,
+              "end": 77,
+              "xStartRatio": 0.6669345431857638,
+              "xEndRatio": 0.7802100088082108
+            }
+          ],
+          "heightRatio": 0.014397052803424874
+        },
+        {
+          "text": "proper pushdowns [18, Prop. 4.2.11]. Applying χ X yields:",
+          "ratio": 0.32106072011620107,
+          "xStartRatio": 0.21862648359311174,
+          "xEndRatio": 0.6301931244095945,
+          "parts": [
+            {
+              "start": 0,
+              "end": 45,
+              "xStartRatio": 0.21862648359311174,
+              "xEndRatio": 0.5518587399152369
+            },
+            {
+              "start": 46,
+              "end": 47,
+              "xStartRatio": 0.5518587399152369,
+              "xEndRatio": 0.5676243102628421
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.567645852082695,
+              "xEndRatio": 0.5783117456373825
+            },
+            {
+              "start": 50,
+              "end": 57,
+              "xStartRatio": 0.5783117456373825,
+              "xEndRatio": 0.6301931244095945
+            }
+          ],
+          "heightRatio": 0.014397052803424874
+        },
+        {
+          "text": "Proposition 4.10. Let X, Y be complex analytic spaces, ϕ : Y → X a proper",
+          "ratio": 0.3440907796223958,
+          "xStartRatio": 0.21862623426649305,
+          "xEndRatio": 0.7799901027305454,
+          "parts": [
+            {
+              "start": 0,
+              "end": 17,
+              "xStartRatio": 0.21862623426649305,
+              "xEndRatio": 0.3589174856547437
+            },
+            {
+              "start": 18,
+              "end": 21,
+              "xStartRatio": 0.3589174856547437,
+              "xEndRatio": 0.3893255595288245
+            },
+            {
+              "start": 22,
+              "end": 26,
+              "xStartRatio": 0.3893255595288245,
+              "xEndRatio": 0.4274794135997498
+            },
+            {
+              "start": 27,
+              "end": 54,
+              "xStartRatio": 0.4274794135997498,
+              "xEndRatio": 0.6292941523533241
+            },
+            {
+              "start": 55,
+              "end": 56,
+              "xStartRatio": 0.6292941523533241,
+              "xEndRatio": 0.6463319367053462
+            },
+            {
+              "start": 57,
+              "end": 58,
+              "xStartRatio": 0.6463319367053462,
+              "xEndRatio": 0.6558810963350183
+            },
+            {
+              "start": 59,
+              "end": 60,
+              "xStartRatio": 0.6558810963350183,
+              "xEndRatio": 0.6704215255438113
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.6704215255438113,
+              "xEndRatio": 0.6952975404028799
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.7003914328182445,
+              "xEndRatio": 0.7138702791500715
+            },
+            {
+              "start": 65,
+              "end": 73,
+              "xStartRatio": 0.7138702791500715,
+              "xEndRatio": 0.7799901027305454
+            }
+          ],
+          "heightRatio": 0.012855838043521148
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "brendle2007.pdf",
+      "pdf_sha256": "206fc4719f3dbb04f56c9a6acf4ee26dc10b86d052d8f9f90e09522be951829d",
+      "page": 11,
+      "query": "Proposition 4 with",
+      "expected": "",
+      "lines": [
+        {
+          "text": "where C is a constant that depends only on n . Hence, the assertion follows from",
+          "ratio": 0.41842751551156093,
+          "xStartRatio": 0.2069626851798662,
+          "xEndRatio": 0.7931134591694751,
+          "parts": [
+            {
+              "start": 0,
+              "end": 5,
+              "xStartRatio": 0.2069626851798662,
+              "xEndRatio": 0.24860374600279564
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.24860374600279564,
+              "xEndRatio": 0.26644525964275684
+            },
+            {
+              "start": 8,
+              "end": 42,
+              "xStartRatio": 0.26644525964275684,
+              "xEndRatio": 0.5247890497344772
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.5247890497344772,
+              "xEndRatio": 0.5405567144256791
+            },
+            {
+              "start": 45,
+              "end": 80,
+              "xStartRatio": 0.540594163283803,
+              "xEndRatio": 0.7931134591694751
+            }
+          ],
+          "heightRatio": 0.012579060564137469
+        },
+        {
+          "text": "Proposition 7. □",
+          "ratio": 0.4335035073636758,
+          "xStartRatio": 0.2069642808702257,
+          "xEndRatio": 0.7930582083907782,
+          "parts": [
+            {
+              "start": 0,
+              "end": 14,
+              "xStartRatio": 0.2069642808702257,
+              "xEndRatio": 0.30731308382321026
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.7803933137382557,
+              "xEndRatio": 0.7930582083907782
+            }
+          ],
+          "heightRatio": 0.012579060564137469
+        },
+        {
+          "text": "We now prove a more refined estimate for the difference v ( ξ,ε ) − u ( ξ,ε ) . Using",
+          "ratio": 0.45956351540305396,
+          "xStartRatio": 0.22647438797296263,
+          "xEndRatio": 0.7929506488874847,
+          "parts": [
+            {
+              "start": 0,
+              "end": 55,
+              "xStartRatio": 0.22647438797296263,
+              "xEndRatio": 0.6370523988811019
+            },
+            {
+              "start": 56,
+              "end": 57,
+              "xStartRatio": 0.6370523988811019,
+              "xEndRatio": 0.65162668664471
+            },
+            {
+              "start": 58,
+              "end": 59,
+              "xStartRatio": 0.651568643407884,
+              "xEndRatio": 0.6566509172028187
+            },
+            {
+              "start": 60,
+              "end": 63,
+              "xStartRatio": 0.6566668741064134,
+              "xEndRatio": 0.6729176340539471
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.6729415694093392,
+              "xEndRatio": 0.6780238432042739
+            },
+            {
+              "start": 66,
+              "end": 67,
+              "xStartRatio": 0.6780238432042739,
+              "xEndRatio": 0.6960962831584456
+            },
+            {
+              "start": 68,
+              "end": 69,
+              "xStartRatio": 0.7004899168326184,
+              "xEndRatio": 0.7098013684640523
+            },
+            {
+              "start": 70,
+              "end": 71,
+              "xStartRatio": 0.7098039115955627,
+              "xEndRatio": 0.7148861853904973
+            },
+            {
+              "start": 72,
+              "end": 75,
+              "xStartRatio": 0.7149021422940921,
+              "xEndRatio": 0.7311529022416258
+            },
+            {
+              "start": 76,
+              "end": 77,
+              "xStartRatio": 0.731176837597018,
+              "xEndRatio": 0.7362591113919527
+            },
+            {
+              "start": 78,
+              "end": 85,
+              "xStartRatio": 0.7371568866804534,
+              "xEndRatio": 0.7929506488874847
+            }
+          ],
+          "heightRatio": 0.014851772423946497
+        },
+        {
+          "text": "Proposition 4 with h = 0, we conclude that there exists a unique function w ( ξ,ε ) ∈",
+          "ratio": 0.47464039349796794,
+          "xStartRatio": 0.20696263531454248,
+          "xEndRatio": 0.7930147756938062,
+          "parts": [
+            {
+              "start": 0,
+              "end": 18,
+              "xStartRatio": 0.20696263531454248,
+              "xEndRatio": 0.34010332394269555
+            },
+            {
+              "start": 19,
+              "end": 20,
+              "xStartRatio": 0.34010332394269555,
+              "xEndRatio": 0.3548681720409518
+            },
+            {
+              "start": 21,
+              "end": 73,
+              "xStartRatio": 0.3548681720409518,
+              "xEndRatio": 0.7331147038079555
+            },
+            {
+              "start": 74,
+              "end": 75,
+              "xStartRatio": 0.7331147038079555,
+              "xEndRatio": 0.750187992270476
+            },
+            {
+              "start": 76,
+              "end": 77,
+              "xStartRatio": 0.7501960704529208,
+              "xEndRatio": 0.7552783442478553
+            },
+            {
+              "start": 78,
+              "end": 81,
+              "xStartRatio": 0.7552943011514501,
+              "xEndRatio": 0.7715450610989839
+            },
+            {
+              "start": 82,
+              "end": 83,
+              "xStartRatio": 0.771568996454376,
+              "xEndRatio": 0.7766512702493107
+            },
+            {
+              "start": 84,
+              "end": 85,
+              "xStartRatio": 0.7766512702493107,
+              "xEndRatio": 0.7930147756938062
+            }
+          ],
+          "heightRatio": 0.014851772423946497
+        },
+        {
+          "text": "E ( ξ,ε ) such that",
+          "ratio": 0.4897161541563092,
+          "xStartRatio": 0.20696323369842728,
+          "xEndRatio": 0.3148874021043964,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.20696323369842728,
+              "xEndRatio": 0.21555841981975082
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.21558823928334356,
+              "xEndRatio": 0.22067053801094005
+            },
+            {
+              "start": 4,
+              "end": 7,
+              "xStartRatio": 0.22068646998187297,
+              "xEndRatio": 0.23693722992940666
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.23696119021746068,
+              "xEndRatio": 0.2420434889450572
+            },
+            {
+              "start": 10,
+              "end": 19,
+              "xStartRatio": 0.2420434889450572,
+              "xEndRatio": 0.3148874021043964
+            }
+          ],
+          "heightRatio": 0.014851772423946497
+        },
+        {
+          "text": "�",
+          "ratio": 0.5031251618356416,
+          "xStartRatio": 0.34117595198886846,
+          "xEndRatio": 0.3502269321017795,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.34117595198886846,
+              "xEndRatio": 0.3502269321017795
+            }
+          ],
+          "heightRatio": 0.012579060564137469
+        },
+        {
+          "text": "� 4 �",
+          "ratio": 0.5063068120166508,
+          "xStartRatio": 0.3700000039892259,
+          "xEndRatio": 0.6514836728962419,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.3700000039892259,
+              "xEndRatio": 0.379718431460312
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.5688235214333129,
+              "xEndRatio": 0.574366451088899
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.6417652703578176,
+              "xEndRatio": 0.6514836728962419
+            }
+          ],
+          "heightRatio": 0.012579060564137469
+        },
+        {
+          "text": "n − 2",
+          "ratio": 0.5148674165359651,
+          "xStartRatio": 0.5607843336716197,
+          "xEndRatio": 0.582308152142693,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5607843336716197,
+              "xEndRatio": 0.5679551168204913
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.567941304125817,
+              "xEndRatio": 0.5767562467288347
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.5767652224871068,
+              "xEndRatio": 0.582308152142693
+            }
+          ],
+          "heightRatio": 0.006289511015920928
+        },
+        {
+          "text": "⟨ dw ( ξ,ε ) , dψ ⟩− n ( n + 2) u w ( ξ,ε ) ψ",
+          "ratio": 0.5202456387606534,
+          "xStartRatio": 0.37970539167815565,
+          "xEndRatio": 0.641185735565385,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.37970539167815565,
+              "xEndRatio": 0.38603783900441685
+            },
+            {
+              "start": 2,
+              "end": 4,
+              "xStartRatio": 0.38607852910858353,
+              "xEndRatio": 0.4061583724676394
+            },
+            {
+              "start": 5,
+              "end": 6,
+              "xStartRatio": 0.40617647358015474,
+              "xEndRatio": 0.4112587723077512
+            },
+            {
+              "start": 7,
+              "end": 10,
+              "xStartRatio": 0.4112747042786841,
+              "xEndRatio": 0.42752543929355596
+            },
+            {
+              "start": 11,
+              "end": 12,
+              "xStartRatio": 0.42754942451427186,
+              "xEndRatio": 0.4326316983092065
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "xStartRatio": 0.4334313885059232,
+              "xEndRatio": 0.45971181034262665
+            },
+            {
+              "start": 18,
+              "end": 20,
+              "xStartRatio": 0.46029458638110193,
+              "xEndRatio": 0.48296116847617954
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.48656847586039625,
+              "xEndRatio": 0.49633574641607947
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.4963731952742034,
+              "xEndRatio": 0.5027056426004647
+            },
+            {
+              "start": 25,
+              "end": 26,
+              "xStartRatio": 0.5027463327046313,
+              "xEndRatio": 0.5125136032603146
+            },
+            {
+              "start": 27,
+              "end": 31,
+              "xStartRatio": 0.5125136032603146,
+              "xEndRatio": 0.5468291737674887
+            },
+            {
+              "start": 32,
+              "end": 33,
+              "xStartRatio": 0.5468291737674887,
+              "xEndRatio": 0.5589210659849877
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.5889215905681934,
+              "xEndRatio": 0.6005771612030228
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.6005882313048917,
+              "xEndRatio": 0.6056705050998263
+            },
+            {
+              "start": 38,
+              "end": 41,
+              "xStartRatio": 0.6056864620034211,
+              "xEndRatio": 0.6219372219509549
+            },
+            {
+              "start": 42,
+              "end": 43,
+              "xStartRatio": 0.621961157306347,
+              "xEndRatio": 0.6270434311012817
+            },
+            {
+              "start": 44,
+              "end": 45,
+              "xStartRatio": 0.6270434311012817,
+              "xEndRatio": 0.641185735565385
+            }
+          ],
+          "heightRatio": 0.014851772423946497
+        },
+        {
+          "text": "( ξ,ε )",
+          "ratio": 0.5245643769851839,
+          "xStartRatio": 0.5589215646382251,
+          "xEndRatio": 0.585376764434615,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5589215646382251,
+              "xEndRatio": 0.5640038384331597
+            },
+            {
+              "start": 2,
+              "end": 5,
+              "xStartRatio": 0.5640197953367545,
+              "xEndRatio": 0.5802705552842882
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.5802944906396803,
+              "xEndRatio": 0.585376764434615
+            }
+          ],
+          "heightRatio": 0.008805438725635259
+        },
+        {
+          "text": "R n",
+          "ratio": 0.5316856076018979,
+          "xStartRatio": 0.35019609039905025,
+          "xEndRatio": 0.36560215669519763,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.35019609039905025,
+              "xEndRatio": 0.3584234698925143
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.3584313735463261,
+              "xEndRatio": 0.36560215669519763
+            }
+          ],
+          "heightRatio": 0.008805438725635259
+        },
+        {
+          "text": "� n",
+          "ratio": 0.5403978367044469,
+          "xStartRatio": 0.3755880617627911,
+          "xEndRatio": 0.4244176328571793,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.3755880617627911,
+              "xEndRatio": 0.3846390418757021
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.41637256098728553,
+              "xEndRatio": 0.4244176328571793
+            }
+          ],
+          "heightRatio": 0.012579060564137469
+        },
+        {
+          "text": "�",
+          "ratio": 0.5455492578371607,
+          "xStartRatio": 0.4086274539723116,
+          "xEndRatio": 0.4321339925130208,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4086274539723116,
+              "xEndRatio": 0.4321339925130208
+            }
+          ],
+          "heightRatio": 0.012579060564137469
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "2309.00806v2(1).pdf",
+      "pdf_sha256": "92282386fd26e61d880978a4150093dd3854dc082f837ba952268adc0535cee7",
+      "page": 8,
+      "query": "Lemma 4.2,",
+      "expected": "",
+      "lines": [
+        {
+          "text": "i = j ℓ",
+          "ratio": 0.22363597214824021,
+          "xStartRatio": 0.22745050168504902,
+          "xEndRatio": 0.5978042502808415,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.22745050168504902,
+              "xEndRatio": 0.23179693783030791
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.23179693783030791,
+              "xEndRatio": 0.2536891862457874
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.5529406179789624,
+              "xEndRatio": 0.5579316880967882
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.5927448148041768,
+              "xEndRatio": 0.5978042502808415
+            }
+          ],
+          "heightRatio": 0.01889791392316722
+        },
+        {
+          "text": "c",
+          "ratio": 0.23484809952552874,
+          "xStartRatio": 0.4380388446882659,
+          "xEndRatio": 0.44349874857983557,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.4380388446882659,
+              "xEndRatio": 0.44349874857983557
+            }
+          ],
+          "heightRatio": 0.0075474556046302875
+        },
+        {
+          "text": "ℓ ∈ X",
+          "ratio": 0.23772700145991163,
+          "xStartRatio": 0.41078383003185,
+          "xEndRatio": 0.4370548023897059,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.41078383003185,
+              "xEndRatio": 0.4164358400831036
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.4164702471564798,
+              "xEndRatio": 0.4256905948414522
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.42568565817440257,
+              "xEndRatio": 0.4370548023897059
+            }
+          ],
+          "heightRatio": 0.010274598092743845
+        },
+        {
+          "text": "Lemma 4.2, G ij ̸ = 0. Therefore, a i and b j are both nonzero. □",
+          "ratio": 0.25151470454052244,
+          "xStartRatio": 0.11764631084367341,
+          "xEndRatio": 0.8824324265025021,
+          "parts": [
+            {
+              "start": 0,
+              "end": 10,
+              "xStartRatio": 0.11764631084367341,
+              "xEndRatio": 0.2156855514626098
+            },
+            {
+              "start": 11,
+              "end": 12,
+              "xStartRatio": 0.2156855514626098,
+              "xEndRatio": 0.23704109939874388
+            },
+            {
+              "start": 13,
+              "end": 15,
+              "xStartRatio": 0.2370581284067989,
+              "xEndRatio": 0.2473509046766493
+            },
+            {
+              "start": 16,
+              "end": 17,
+              "xStartRatio": 0.2473509046766493,
+              "xEndRatio": 0.25450927135991114
+            },
+            {
+              "start": 18,
+              "end": 33,
+              "xStartRatio": 0.25450927135991114,
+              "xEndRatio": 0.38333311891244126
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.38333311891244126,
+              "xEndRatio": 0.40004076988868464
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.3999992071413526,
+              "xEndRatio": 0.40470053479562396
+            },
+            {
+              "start": 38,
+              "end": 41,
+              "xStartRatio": 0.40470053479562396,
+              "xEndRatio": 0.4427632849200878
+            },
+            {
+              "start": 42,
+              "end": 43,
+              "xStartRatio": 0.4427632849200878,
+              "xEndRatio": 0.4573411629870047
+            },
+            {
+              "start": 44,
+              "end": 45,
+              "xStartRatio": 0.4572538488051471,
+              "xEndRatio": 0.46284075967626637
+            },
+            {
+              "start": 46,
+              "end": 63,
+              "xStartRatio": 0.46284075967626637,
+              "xEndRatio": 0.6178427303538603
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.8672540203418607,
+              "xEndRatio": 0.8824324265025021
+            }
+          ],
+          "heightRatio": 0.028085072835286457
+        },
+        {
+          "text": "Lemma 4.4. Let A be an n × n irreducible matrix with entries in a field F with n ≥ 4 .",
+          "ratio": 0.27924223620482164,
+          "xStartRatio": 0.1176461612477022,
+          "xEndRatio": 0.882329105551726,
+          "parts": [
+            {
+              "start": 0,
+              "end": 10,
+              "xStartRatio": 0.1176461612477022,
+              "xEndRatio": 0.23158418742659825
+            },
+            {
+              "start": 11,
+              "end": 14,
+              "xStartRatio": 0.23158418742659825,
+              "xEndRatio": 0.2667396146487566
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.2667396146487566,
+              "xEndRatio": 0.28963101455588747
+            },
+            {
+              "start": 17,
+              "end": 22,
+              "xStartRatio": 0.28963101455588747,
+              "xEndRatio": 0.34348733440723295
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.34348733440723295,
+              "xEndRatio": 0.36336734248142616
+            },
+            {
+              "start": 25,
+              "end": 26,
+              "xStartRatio": 0.36336734248142616,
+              "xEndRatio": 0.38400009255004086
+            },
+            {
+              "start": 27,
+              "end": 28,
+              "xStartRatio": 0.38400009255004086,
+              "xEndRatio": 0.4010140662099801
+            },
+            {
+              "start": 29,
+              "end": 71,
+              "xStartRatio": 0.4010140662099801,
+              "xEndRatio": 0.7519224578259038
+            },
+            {
+              "start": 72,
+              "end": 73,
+              "xStartRatio": 0.7519224578259038,
+              "xEndRatio": 0.7721295325584661
+            },
+            {
+              "start": 74,
+              "end": 78,
+              "xStartRatio": 0.7721295325584661,
+              "xEndRatio": 0.8152554081935509
+            },
+            {
+              "start": 79,
+              "end": 80,
+              "xStartRatio": 0.8152554081935509,
+              "xEndRatio": 0.8351316763684641
+            },
+            {
+              "start": 81,
+              "end": 82,
+              "xStartRatio": 0.8351316763684641,
+              "xEndRatio": 0.8585097369025735
+            },
+            {
+              "start": 83,
+              "end": 84,
+              "xStartRatio": 0.8668607823988971,
+              "xEndRatio": 0.8764131832746119
+            },
+            {
+              "start": 85,
+              "end": 86,
+              "xStartRatio": 0.8764687332452512,
+              "xEndRatio": 0.882329105551726
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "adj",
+          "ratio": 0.2913629551126499,
+          "xStartRatio": 0.43333325354881536,
+          "xEndRatio": 0.4520624696818832,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.43333325354881536,
+              "xEndRatio": 0.4520624696818832
+            }
+          ],
+          "heightRatio": 0.010063267717457781
+        },
+        {
+          "text": "Consider G = (diag { x 1 , . . . , x n } + A ) . If A has a cut X ⊂ [ n ] such that for each i ∈ X",
+          "ratio": 0.29681789513790247,
+          "xStartRatio": 0.11764685936223447,
+          "xEndRatio": 0.8807644314236112,
+          "parts": [
+            {
+              "start": 0,
+              "end": 8,
+              "xStartRatio": 0.11764685936223447,
+              "xEndRatio": 0.1923619937273412
+            },
+            {
+              "start": 9,
+              "end": 10,
+              "xStartRatio": 0.1923619937273412,
+              "xEndRatio": 0.21468871870851206
+            },
+            {
+              "start": 11,
+              "end": 18,
+              "xStartRatio": 0.21468871870851206,
+              "xEndRatio": 0.28563056895935457
+            },
+            {
+              "start": 19,
+              "end": 20,
+              "xStartRatio": 0.28588248857485704,
+              "xEndRatio": 0.29564980899586396
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.29568641014348446,
+              "xEndRatio": 0.30654767603656047
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.30647073384203943,
+              "xEndRatio": 0.3133859821394378
+            },
+            {
+              "start": 25,
+              "end": 36,
+              "xStartRatio": 0.3143138760834738,
+              "xEndRatio": 0.3679193982891008
+            },
+            {
+              "start": 37,
+              "end": 38,
+              "xStartRatio": 0.3678429547478171,
+              "xEndRatio": 0.3762298035465814
+            },
+            {
+              "start": 39,
+              "end": 40,
+              "xStartRatio": 0.3770590140149484,
+              "xEndRatio": 0.3868263344359554
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.3868263344359554,
+              "xEndRatio": 0.4066307716120302
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.4066307716120302,
+              "xEndRatio": 0.42590711007710375
+            },
+            {
+              "start": 45,
+              "end": 46,
+              "xStartRatio": 0.42588262620315054,
+              "xEndRatio": 0.4333057777554381
+            },
+            {
+              "start": 47,
+              "end": 51,
+              "xStartRatio": 0.45294109668607024,
+              "xEndRatio": 0.4829191818735958
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.4829191818735958,
+              "xEndRatio": 0.5047303243400225
+            },
+            {
+              "start": 54,
+              "end": 63,
+              "xStartRatio": 0.5047303243400225,
+              "xEndRatio": 0.5898782568040237
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.5898782568040237,
+              "xEndRatio": 0.6133133134031608
+            },
+            {
+              "start": 66,
+              "end": 67,
+              "xStartRatio": 0.6133133134031608,
+              "xEndRatio": 0.6367475721571181
+            },
+            {
+              "start": 68,
+              "end": 69,
+              "xStartRatio": 0.643529605242162,
+              "xEndRatio": 0.6488235074710222
+            },
+            {
+              "start": 70,
+              "end": 71,
+              "xStartRatio": 0.6488234576056985,
+              "xEndRatio": 0.660231696234809
+            },
+            {
+              "start": 72,
+              "end": 73,
+              "xStartRatio": 0.6601962918549581,
+              "xEndRatio": 0.6654901940838184
+            },
+            {
+              "start": 74,
+              "end": 92,
+              "xStartRatio": 0.6654901940838184,
+              "xEndRatio": 0.8244737612655739
+            },
+            {
+              "start": 93,
+              "end": 94,
+              "xStartRatio": 0.8244737612655739,
+              "xEndRatio": 0.8384861166960274
+            },
+            {
+              "start": 95,
+              "end": 96,
+              "xStartRatio": 0.8384861166960274,
+              "xEndRatio": 0.85810862023846
+            },
+            {
+              "start": 97,
+              "end": 98,
+              "xStartRatio": 0.8649022719439339,
+              "xEndRatio": 0.8807644314236112
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "c",
+          "ratio": 0.3089390764332781,
+          "xStartRatio": 0.20941231920828227,
+          "xEndRatio": 0.2154029148076874,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.20941231920828227,
+              "xEndRatio": 0.2154029148076874
+            }
+          ],
+          "heightRatio": 0.010063267717457781
+        },
+        {
+          "text": "and j ∈ X there exists α ij ∈ F satisfying G ij = α ij G ji , then A is diagonally similar to a",
+          "ratio": 0.3143935540709833,
+          "xStartRatio": 0.11764735801547181,
+          "xEndRatio": 0.8823169384127348,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.11764735801547181,
+              "xEndRatio": 0.1480029735689849
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.1480029735689849,
+              "xEndRatio": 0.16359826630237057
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.16359826630237057,
+              "xEndRatio": 0.18497157876008477
+            },
+            {
+              "start": 8,
+              "end": 9,
+              "xStartRatio": 0.19196117625517004,
+              "xEndRatio": 0.20782331080218547
+            },
+            {
+              "start": 10,
+              "end": 22,
+              "xStartRatio": 0.22411820156122345,
+              "xEndRatio": 0.3180110657137204
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.3180110657137204,
+              "xEndRatio": 0.33803363874846815
+            },
+            {
+              "start": 25,
+              "end": 27,
+              "xStartRatio": 0.3380396724526399,
+              "xEndRatio": 0.3483324237898284
+            },
+            {
+              "start": 28,
+              "end": 29,
+              "xStartRatio": 0.3483324237898284,
+              "xEndRatio": 0.3700690175972733
+            },
+            {
+              "start": 30,
+              "end": 31,
+              "xStartRatio": 0.3772553587271497,
+              "xEndRatio": 0.38919102288539115
+            },
+            {
+              "start": 32,
+              "end": 42,
+              "xStartRatio": 0.38919102288539115,
+              "xEndRatio": 0.47506574244281047
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.47506574244281047,
+              "xEndRatio": 0.49782661986506843
+            },
+            {
+              "start": 45,
+              "end": 47,
+              "xStartRatio": 0.4978436738057853,
+              "xEndRatio": 0.5081364251429739
+            },
+            {
+              "start": 48,
+              "end": 49,
+              "xStartRatio": 0.5081364251429739,
+              "xEndRatio": 0.5317288068384906
+            },
+            {
+              "start": 50,
+              "end": 51,
+              "xStartRatio": 0.5317288068384906,
+              "xEndRatio": 0.5511706981783598
+            },
+            {
+              "start": 52,
+              "end": 54,
+              "xStartRatio": 0.5511767817478553,
+              "xEndRatio": 0.5614695330850439
+            },
+            {
+              "start": 55,
+              "end": 56,
+              "xStartRatio": 0.5629415075763379,
+              "xEndRatio": 0.5780222275677849
+            },
+            {
+              "start": 57,
+              "end": 59,
+              "xStartRatio": 0.5780399297577103,
+              "xEndRatio": 0.589212056078942
+            },
+            {
+              "start": 60,
+              "end": 66,
+              "xStartRatio": 0.5900005764431424,
+              "xEndRatio": 0.6393721337411918
+            },
+            {
+              "start": 67,
+              "end": 68,
+              "xStartRatio": 0.6393721337411918,
+              "xEndRatio": 0.661593568091299
+            },
+            {
+              "start": 69,
+              "end": 95,
+              "xStartRatio": 0.661593568091299,
+              "xEndRatio": 0.8823169384127348
+            }
+          ],
+          "heightRatio": 0.028085072835286457
+        },
+        {
+          "text": "symmetric matrix.",
+          "ratio": 0.33196921300406407,
+          "xStartRatio": 0.11764765720741421,
+          "xEndRatio": 0.2709595674003651,
+          "parts": [
+            {
+              "start": 0,
+              "end": 17,
+              "xStartRatio": 0.11764765720741421,
+              "xEndRatio": 0.2709595674003651
+            }
+          ],
+          "heightRatio": 0.015110054401436238
+        },
+        {
+          "text": "c",
+          "ratio": 0.3542418046431108,
+          "xStartRatio": 0.6323540382135927,
+          "xEndRatio": 0.6383446587456597,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.6323540382135927,
+              "xEndRatio": 0.6383446587456597
+            }
+          ],
+          "heightRatio": 0.010063248451309974
+        },
+        {
+          "text": "Proof. Lemma 4.3 implies that for all i, j ∈ X and k, ℓ ∈ X we have G ik /G jk = G iℓ /G jℓ",
+          "ratio": 0.3596967446683633,
+          "xStartRatio": 0.11764765720741421,
+          "xEndRatio": 0.8817318187040442,
+          "parts": [
+            {
+              "start": 0,
+              "end": 6,
+              "xStartRatio": 0.11764765720741421,
+              "xEndRatio": 0.16801774268056832
+            },
+            {
+              "start": 7,
+              "end": 37,
+              "xStartRatio": 0.16801774268056832,
+              "xEndRatio": 0.4368620729134753
+            },
+            {
+              "start": 38,
+              "end": 42,
+              "xStartRatio": 0.4368620729134753,
+              "xEndRatio": 0.4675192240796058
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.4675192240796058,
+              "xEndRatio": 0.48908856959124797
+            },
+            {
+              "start": 45,
+              "end": 46,
+              "xStartRatio": 0.4964708315780739,
+              "xEndRatio": 0.5123329411924274
+            },
+            {
+              "start": 47,
+              "end": 50,
+              "xStartRatio": 0.5123329411924274,
+              "xEndRatio": 0.5521759332395068
+            },
+            {
+              "start": 51,
+              "end": 55,
+              "xStartRatio": 0.5521759332395068,
+              "xEndRatio": 0.5870287028792637
+            },
+            {
+              "start": 56,
+              "end": 57,
+              "xStartRatio": 0.5945098976683773,
+              "xEndRatio": 0.6075199600917841
+            },
+            {
+              "start": 58,
+              "end": 59,
+              "xStartRatio": 0.6149022220786101,
+              "xEndRatio": 0.6307643316929636
+            },
+            {
+              "start": 60,
+              "end": 67,
+              "xStartRatio": 0.646668028987311,
+              "xEndRatio": 0.713597416098601
+            },
+            {
+              "start": 68,
+              "end": 69,
+              "xStartRatio": 0.713597416098601,
+              "xEndRatio": 0.7364551319795496
+            },
+            {
+              "start": 70,
+              "end": 72,
+              "xStartRatio": 0.736471537671058,
+              "xEndRatio": 0.7483791276520374
+            },
+            {
+              "start": 73,
+              "end": 75,
+              "xStartRatio": 0.7494125864864175,
+              "xEndRatio": 0.7741011077282476
+            },
+            {
+              "start": 76,
+              "end": 78,
+              "xStartRatio": 0.7741189595141442,
+              "xEndRatio": 0.7877915326286765
+            },
+            {
+              "start": 79,
+              "end": 80,
+              "xStartRatio": 0.7877915326286765,
+              "xEndRatio": 0.8111413693895527
+            },
+            {
+              "start": 81,
+              "end": 82,
+              "xStartRatio": 0.8111413693895527,
+              "xEndRatio": 0.8337093677396089
+            },
+            {
+              "start": 83,
+              "end": 85,
+              "xStartRatio": 0.8337264216803257,
+              "xEndRatio": 0.8440843968609579
+            },
+            {
+              "start": 86,
+              "end": 88,
+              "xStartRatio": 0.8449032852073121,
+              "xEndRatio": 0.8695918064491421
+            },
+            {
+              "start": 89,
+              "end": 91,
+              "xStartRatio": 0.8696089601205066,
+              "xEndRatio": 0.8817318187040442
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "and G ki /G kj = G ℓi /G ℓj . Therefore, α ik /α jk = α iℓ /α jℓ . Let i, j ∈ X . We claim that",
+          "ratio": 0.3772723650691485,
+          "xStartRatio": 0.11764815586065155,
+          "xEndRatio": 0.8823250165951797,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.11764815586065155,
+              "xEndRatio": 0.14845159942028568
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.14845159942028568,
+              "xEndRatio": 0.17292497672286689
+            },
+            {
+              "start": 6,
+              "end": 8,
+              "xStartRatio": 0.17294200573092192,
+              "xEndRatio": 0.18529051737068525
+            },
+            {
+              "start": 9,
+              "end": 11,
+              "xStartRatio": 0.18607963611877043,
+              "xEndRatio": 0.2107682321585861
+            },
+            {
+              "start": 12,
+              "end": 14,
+              "xStartRatio": 0.2107853608972886,
+              "xEndRatio": 0.22401944328756893
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.22401944328756893,
+              "xEndRatio": 0.2507495755463644
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "xStartRatio": 0.2507495755463644,
+              "xEndRatio": 0.2764546762104907
+            },
+            {
+              "start": 19,
+              "end": 21,
+              "xStartRatio": 0.27647170521854575,
+              "xEndRatio": 0.28685930040147567
+            },
+            {
+              "start": 22,
+              "end": 24,
+              "xStartRatio": 0.28745197470671213,
+              "xEndRatio": 0.31214059567918967
+            },
+            {
+              "start": 25,
+              "end": 27,
+              "xStartRatio": 0.3121576994852303,
+              "xEndRatio": 0.3234308529523463
+            },
+            {
+              "start": 28,
+              "end": 29,
+              "xStartRatio": 0.3250993716171364,
+              "xEndRatio": 0.3303932489133349
+            },
+            {
+              "start": 30,
+              "end": 40,
+              "xStartRatio": 0.3478441425398284,
+              "xEndRatio": 0.4331383798636642
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.4331383798636642,
+              "xEndRatio": 0.4556814455518536
+            },
+            {
+              "start": 43,
+              "end": 45,
+              "xStartRatio": 0.4556875291213491,
+              "xEndRatio": 0.4675951191023284
+            },
+            {
+              "start": 46,
+              "end": 48,
+              "xStartRatio": 0.46862857793670853,
+              "xEndRatio": 0.49038701275594876
+            },
+            {
+              "start": 49,
+              "end": 51,
+              "xStartRatio": 0.49039309632544426,
+              "xEndRatio": 0.5040656694399765
+            },
+            {
+              "start": 52,
+              "end": 53,
+              "xStartRatio": 0.5040656694399765,
+              "xEndRatio": 0.5305532318314695
+            },
+            {
+              "start": 54,
+              "end": 55,
+              "xStartRatio": 0.5305532318314695,
+              "xEndRatio": 0.5531322005527471
+            },
+            {
+              "start": 56,
+              "end": 58,
+              "xStartRatio": 0.5531382841222426,
+              "xEndRatio": 0.5634961097069036
+            },
+            {
+              "start": 59,
+              "end": 61,
+              "xStartRatio": 0.564315147649229,
+              "xEndRatio": 0.5860735824684692
+            },
+            {
+              "start": 62,
+              "end": 64,
+              "xStartRatio": 0.5860796660379647,
+              "xEndRatio": 0.5982024747561785
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.5990207148533241,
+              "xEndRatio": 0.6043146170821845
+            },
+            {
+              "start": 67,
+              "end": 70,
+              "xStartRatio": 0.6217655356413399,
+              "xEndRatio": 0.6495809118732129
+            },
+            {
+              "start": 71,
+              "end": 75,
+              "xStartRatio": 0.6495809118732129,
+              "xEndRatio": 0.6820297241210938
+            },
+            {
+              "start": 76,
+              "end": 77,
+              "xStartRatio": 0.6820297241210938,
+              "xEndRatio": 0.7065402760225183
+            },
+            {
+              "start": 78,
+              "end": 79,
+              "xStartRatio": 0.7172555362477022,
+              "xEndRatio": 0.7331176458620557
+            },
+            {
+              "start": 80,
+              "end": 81,
+              "xStartRatio": 0.7347067041334763,
+              "xEndRatio": 0.7400006063623366
+            },
+            {
+              "start": 82,
+              "end": 95,
+              "xStartRatio": 0.757451524921492,
+              "xEndRatio": 0.8823250165951797
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        }
+      ],
+      "target_index": 3
+    },
+    {
+      "name": "2309.00806v2(1).pdf",
+      "pdf_sha256": "92282386fd26e61d880978a4150093dd3854dc082f837ba952268adc0535cee7",
+      "page": 9,
+      "query": "Theorem 2.1 and",
+      "expected": "",
+      "lines": [
+        {
+          "text": "k k k",
+          "ratio": 0.430302128647313,
+          "xStartRatio": 0.1911780039469401,
+          "xEndRatio": 0.5625261792949602,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.1911780039469401,
+              "xEndRatio": 0.19762441847059461
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.31902101304796004,
+              "xEndRatio": 0.32546742757161456
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.5560797897039675,
+              "xEndRatio": 0.5625261792949602
+            }
+          ],
+          "heightRatio": 0.007547474870778093
+        },
+        {
+          "text": "Since i, k ∈ X , then G ik = P ik = H ik . Therefore res x ( H ij , f ) = H kj H ik . We apply",
+          "ratio": 0.4507565739178898,
+          "xStartRatio": 0.11764875424453636,
+          "xEndRatio": 0.882237552817351,
+          "parts": [
+            {
+              "start": 0,
+              "end": 5,
+              "xStartRatio": 0.11764875424453636,
+              "xEndRatio": 0.16104814118030025
+            },
+            {
+              "start": 6,
+              "end": 10,
+              "xStartRatio": 0.16104814118030025,
+              "xEndRatio": 0.1958265242233775
+            },
+            {
+              "start": 11,
+              "end": 12,
+              "xStartRatio": 0.1958265242233775,
+              "xEndRatio": 0.220266329696755
+            },
+            {
+              "start": 13,
+              "end": 14,
+              "xStartRatio": 0.23098158992193882,
+              "xEndRatio": 0.24684372446895425
+            },
+            {
+              "start": 15,
+              "end": 21,
+              "xStartRatio": 0.24843273287505105,
+              "xEndRatio": 0.30100080702039933
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "xStartRatio": 0.30100080702039933,
+              "xEndRatio": 0.32567065369849113
+            },
+            {
+              "start": 24,
+              "end": 26,
+              "xStartRatio": 0.32568768270654613,
+              "xEndRatio": 0.33759532255284924
+            },
+            {
+              "start": 27,
+              "end": 28,
+              "xStartRatio": 0.33759532255284924,
+              "xEndRatio": 0.36447542477277367
+            },
+            {
+              "start": 29,
+              "end": 30,
+              "xStartRatio": 0.36447542477277367,
+              "xEndRatio": 0.3874261394824857
+            },
+            {
+              "start": 31,
+              "end": 33,
+              "xStartRatio": 0.3874523437101077,
+              "xEndRatio": 0.39935995862374896
+            },
+            {
+              "start": 34,
+              "end": 35,
+              "xStartRatio": 0.39935995862374896,
+              "xEndRatio": 0.42624011070899714
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.42624011070899714,
+              "xEndRatio": 0.45270702885646447
+            },
+            {
+              "start": 38,
+              "end": 40,
+              "xStartRatio": 0.452746621923509,
+              "xEndRatio": 0.46465421190448836
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.465883591595818,
+              "xEndRatio": 0.47117749382467833
+            },
+            {
+              "start": 43,
+              "end": 56,
+              "xStartRatio": 0.4890209522122651,
+              "xEndRatio": 0.6022477991440717
+            },
+            {
+              "start": 57,
+              "end": 58,
+              "xStartRatio": 0.6023540122836244,
+              "xEndRatio": 0.6101417790830524
+            },
+            {
+              "start": 59,
+              "end": 60,
+              "xStartRatio": 0.6184327867296007,
+              "xEndRatio": 0.6258559382818882
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.6258840124591504,
+              "xEndRatio": 0.641726624731924
+            },
+            {
+              "start": 63,
+              "end": 65,
+              "xStartRatio": 0.6417662177989686,
+              "xEndRatio": 0.652058969136157
+            },
+            {
+              "start": 66,
+              "end": 69,
+              "xStartRatio": 0.653530943627451,
+              "xEndRatio": 0.6715740627712674
+            },
+            {
+              "start": 70,
+              "end": 73,
+              "xStartRatio": 0.6737273471807342,
+              "xEndRatio": 0.7066321778141595
+            },
+            {
+              "start": 74,
+              "end": 75,
+              "xStartRatio": 0.7066321778141595,
+              "xEndRatio": 0.7332951165492239
+            },
+            {
+              "start": 76,
+              "end": 78,
+              "xStartRatio": 0.7333347096162683,
+              "xEndRatio": 0.7465688169392106
+            },
+            {
+              "start": 79,
+              "end": 80,
+              "xStartRatio": 0.7480405919692096,
+              "xEndRatio": 0.7638832042419833
+            },
+            {
+              "start": 81,
+              "end": 83,
+              "xStartRatio": 0.7639227973090278,
+              "xEndRatio": 0.7758303872900072
+            },
+            {
+              "start": 84,
+              "end": 85,
+              "xStartRatio": 0.7768638461243873,
+              "xEndRatio": 0.7821577483532476
+            },
+            {
+              "start": 86,
+              "end": 94,
+              "xStartRatio": 0.8000012067408343,
+              "xEndRatio": 0.882237552817351
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "k",
+          "ratio": 0.45484727801698627,
+          "xStartRatio": 0.6101971295923968,
+          "xEndRatio": 0.6166435191833896,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.6101971295923968,
+              "xEndRatio": 0.6166435191833896
+            }
+          ],
+          "heightRatio": 0.007547474870778093
+        },
+        {
+          "text": "Theorem 2.1 and obtain the existence of a matrix B with det( { x 1 , . . . , x n } + B ) = f . □",
+          "ratio": 0.468332194318675,
+          "xStartRatio": 0.11764815586065155,
+          "xEndRatio": 0.8824353186912786,
+          "parts": [
+            {
+              "start": 0,
+              "end": 48,
+              "xStartRatio": 0.11764815586065155,
+              "xEndRatio": 0.5338069940704147
+            },
+            {
+              "start": 49,
+              "end": 50,
+              "xStartRatio": 0.5338069940704147,
+              "xEndRatio": 0.5547114353553921
+            },
+            {
+              "start": 51,
+              "end": 60,
+              "xStartRatio": 0.5547114353553921,
+              "xEndRatio": 0.6395810694476358
+            },
+            {
+              "start": 61,
+              "end": 62,
+              "xStartRatio": 0.6396092433555454,
+              "xEndRatio": 0.6493765637765523
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.6494131649241728,
+              "xEndRatio": 0.6602744308172488
+            },
+            {
+              "start": 65,
+              "end": 66,
+              "xStartRatio": 0.6601968403735192,
+              "xEndRatio": 0.6671120637382557
+            },
+            {
+              "start": 67,
+              "end": 78,
+              "xStartRatio": 0.6680399576822916,
+              "xEndRatio": 0.7218422484553717
+            },
+            {
+              "start": 79,
+              "end": 80,
+              "xStartRatio": 0.7217656054527931,
+              "xEndRatio": 0.7301524542515574
+            },
+            {
+              "start": 81,
+              "end": 82,
+              "xStartRatio": 0.7309816647199244,
+              "xEndRatio": 0.7407489851409313
+            },
+            {
+              "start": 83,
+              "end": 84,
+              "xStartRatio": 0.7407489851409313,
+              "xEndRatio": 0.7599648868336397
+            },
+            {
+              "start": 85,
+              "end": 86,
+              "xStartRatio": 0.7599648868336397,
+              "xEndRatio": 0.7788292878593495
+            },
+            {
+              "start": 87,
+              "end": 90,
+              "xStartRatio": 0.7798053517061121,
+              "xEndRatio": 0.8074163299760008
+            },
+            {
+              "start": 91,
+              "end": 92,
+              "xStartRatio": 0.8074163299760008,
+              "xEndRatio": 0.8223584742327921
+            },
+            {
+              "start": 93,
+              "end": 94,
+              "xStartRatio": 0.8245115093156403,
+              "xEndRatio": 0.8298054115445006
+            },
+            {
+              "start": 95,
+              "end": 96,
+              "xStartRatio": 0.8672569125306373,
+              "xEndRatio": 0.8824353186912786
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "Proof of Theorem 4.1 ( ⇐ ). First suppose that A is reducible. Then, after permuting some",
+          "ratio": 0.49439305006855666,
+          "xStartRatio": 0.11764745774611927,
+          "xEndRatio": 0.8822229921428206,
+          "parts": [
+            {
+              "start": 0,
+              "end": 22,
+              "xStartRatio": 0.11764745774611927,
+              "xEndRatio": 0.3107559852350771
+            },
+            {
+              "start": 23,
+              "end": 24,
+              "xStartRatio": 0.3107847076615477,
+              "xEndRatio": 0.3303193485035616
+            },
+            {
+              "start": 25,
+              "end": 27,
+              "xStartRatio": 0.3303925507988026,
+              "xEndRatio": 0.3440961152120353
+            },
+            {
+              "start": 28,
+              "end": 46,
+              "xStartRatio": 0.3440961152120353,
+              "xEndRatio": 0.507031210107741
+            },
+            {
+              "start": 47,
+              "end": 48,
+              "xStartRatio": 0.507031210107741,
+              "xEndRatio": 0.528260224784901
+            },
+            {
+              "start": 49,
+              "end": 89,
+              "xStartRatio": 0.528260224784901,
+              "xEndRatio": 0.8822229921428206
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "� �",
+          "ratio": 0.5001503530174795,
+          "xStartRatio": 0.5872549418530433,
+          "xEndRatio": 0.6485253627004187,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5872549418530433,
+              "xEndRatio": 0.5989171445759294
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.6368631599775327,
+              "xEndRatio": 0.6485253627004187
+            }
+          ],
+          "heightRatio": 0.015094949741556186
+        },
+        {
+          "text": "E F",
+          "ratio": 0.5092412775213068,
+          "xStartRatio": 0.5990196676815257,
+          "xEndRatio": 0.6350262211818322,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.5990196676815257,
+              "xEndRatio": 0.6091516033496732
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.6262747072706035,
+              "xEndRatio": 0.6350262211818322
+            }
+          ],
+          "heightRatio": 0.010063248451309974
+        },
+        {
+          "text": "rows and the corresponding columns, A can be written as , with E is a k × k submatrix.",
+          "ratio": 0.5168170350970644,
+          "xStartRatio": 0.11764745774611927,
+          "xEndRatio": 0.8821565715316074,
+          "parts": [
+            {
+              "start": 0,
+              "end": 35,
+              "xStartRatio": 0.11764745774611927,
+              "xEndRatio": 0.4200006622114992
+            },
+            {
+              "start": 36,
+              "end": 37,
+              "xStartRatio": 0.4200006622114992,
+              "xEndRatio": 0.4394368689044628
+            },
+            {
+              "start": 38,
+              "end": 55,
+              "xStartRatio": 0.4394368689044628,
+              "xEndRatio": 0.5830307505489175
+            },
+            {
+              "start": 56,
+              "end": 62,
+              "xStartRatio": 0.6486278858060152,
+              "xEndRatio": 0.69570528915505
+            },
+            {
+              "start": 63,
+              "end": 64,
+              "xStartRatio": 0.69570528915505,
+              "xEndRatio": 0.7143393123851103
+            },
+            {
+              "start": 65,
+              "end": 69,
+              "xStartRatio": 0.7143393123851103,
+              "xEndRatio": 0.7468074225132761
+            },
+            {
+              "start": 70,
+              "end": 71,
+              "xStartRatio": 0.7468074225132761,
+              "xEndRatio": 0.7611197677313113
+            },
+            {
+              "start": 72,
+              "end": 73,
+              "xStartRatio": 0.7621568667343239,
+              "xEndRatio": 0.7773352728949653
+            },
+            {
+              "start": 74,
+              "end": 75,
+              "xStartRatio": 0.7774512596379698,
+              "xEndRatio": 0.7873944051904616
+            },
+            {
+              "start": 76,
+              "end": 86,
+              "xStartRatio": 0.7873944051904616,
+              "xEndRatio": 0.8821565715316074
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        },
+        {
+          "text": "0 G",
+          "ratio": 0.5218172555017953,
+          "xStartRatio": 0.6009804719413807,
+          "xEndRatio": 0.6368488984949449,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.6009804719413807,
+              "xEndRatio": 0.6078956953061172
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.6260788362789778,
+              "xEndRatio": 0.6368488984949449
+            }
+          ],
+          "heightRatio": 0.010063248451309974
+        },
+        {
+          "text": "Let H be any k × n − k matrix such that H ij = 0 if and only if F ij ̸ = 0 and H ij = 1 otherwise.",
+          "ratio": 0.5383324285950324,
+          "xStartRatio": 0.11764705882352941,
+          "xEndRatio": 0.8819611991932189,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.11764705882352941,
+              "xEndRatio": 0.14546243505540238
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.14546243505540238,
+              "xEndRatio": 0.16662707359962214
+            },
+            {
+              "start": 6,
+              "end": 12,
+              "xStartRatio": 0.16662707359962214,
+              "xEndRatio": 0.22772710463579962
+            },
+            {
+              "start": 13,
+              "end": 14,
+              "xStartRatio": 0.22772710463579962,
+              "xEndRatio": 0.24288461722579657
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.24549065384210325,
+              "xEndRatio": 0.2606690600027446
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "xStartRatio": 0.26254915723613664,
+              "xEndRatio": 0.27395739586524714
+            },
+            {
+              "start": 19,
+              "end": 20,
+              "xStartRatio": 0.2758827458799275,
+              "xEndRatio": 0.2910611520405688
+            },
+            {
+              "start": 21,
+              "end": 22,
+              "xStartRatio": 0.29294124927396087,
+              "xEndRatio": 0.30288436989379086
+            },
+            {
+              "start": 23,
+              "end": 39,
+              "xStartRatio": 0.30288436989379086,
+              "xEndRatio": 0.4466383192274306
+            },
+            {
+              "start": 40,
+              "end": 41,
+              "xStartRatio": 0.4466383192274306,
+              "xEndRatio": 0.46760673772275835
+            },
+            {
+              "start": 42,
+              "end": 44,
+              "xStartRatio": 0.4676469790390114,
+              "xEndRatio": 0.47793973037619997
+            },
+            {
+              "start": 45,
+              "end": 63,
+              "xStartRatio": 0.47793973037619997,
+              "xEndRatio": 0.624273013445287
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.624273013445287,
+              "xEndRatio": 0.6417783849379596
+            },
+            {
+              "start": 66,
+              "end": 68,
+              "xStartRatio": 0.6417649213005515,
+              "xEndRatio": 0.65205767263774
+            },
+            {
+              "start": 69,
+              "end": 70,
+              "xStartRatio": 0.65205767263774,
+              "xEndRatio": 0.6590195200801675
+            },
+            {
+              "start": 71,
+              "end": 78,
+              "xStartRatio": 0.6590195200801675,
+              "xEndRatio": 0.7249210831386591
+            },
+            {
+              "start": 79,
+              "end": 80,
+              "xStartRatio": 0.7249210831386591,
+              "xEndRatio": 0.7460389480092167
+            },
+            {
+              "start": 81,
+              "end": 83,
+              "xStartRatio": 0.7460785410762613,
+              "xEndRatio": 0.7563712924134498
+            },
+            {
+              "start": 84,
+              "end": 98,
+              "xStartRatio": 0.7563712924134498,
+              "xEndRatio": 0.8819611991932189
+            }
+          ],
+          "heightRatio": 0.028085072835286457
+        },
+        {
+          "text": "� �",
+          "ratio": 0.5445444126321812,
+          "xStartRatio": 0.19607902975643382,
+          "xEndRatio": 0.2589176402372472,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.19607902975643382,
+              "xEndRatio": 0.20774120754665798
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.24725546244702307,
+              "xEndRatio": 0.2589176402372472
+            }
+          ],
+          "heightRatio": 0.015094949741556186
+        },
+        {
+          "text": "E H c",
+          "ratio": 0.5536353371360085,
+          "xStartRatio": 0.207647784862643,
+          "xEndRatio": 0.7579520231758068,
+          "parts": [
+            {
+              "start": 0,
+              "end": 1,
+              "xStartRatio": 0.207647784862643,
+              "xEndRatio": 0.21777972053079045
+            },
+            {
+              "start": 2,
+              "end": 3,
+              "xStartRatio": 0.23490282445172078,
+              "xEndRatio": 0.24625892888486775
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.7519614026437398,
+              "xEndRatio": 0.7579520231758068
+            }
+          ],
+          "heightRatio": 0.010063248451309974
+        },
+        {
+          "text": "Let B = . If S ⊆ [ k ], then A S = E S = B S , and similarly if S ⊆ [ k ] . Otherwise, if",
+          "ratio": 0.5612110947117661,
+          "xStartRatio": 0.11764750761144302,
+          "xEndRatio": 0.8823109545738869,
+          "parts": [
+            {
+              "start": 0,
+              "end": 3,
+              "xStartRatio": 0.11764750761144302,
+              "xEndRatio": 0.14546288384331596
+            },
+            {
+              "start": 4,
+              "end": 5,
+              "xStartRatio": 0.14546288384331596,
+              "xEndRatio": 0.16706403096516928
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "xStartRatio": 0.16706403096516928,
+              "xEndRatio": 0.18957283917595358
+            },
+            {
+              "start": 8,
+              "end": 12,
+              "xStartRatio": 0.2588242175532322,
+              "xEndRatio": 0.28740983850815716
+            },
+            {
+              "start": 13,
+              "end": 14,
+              "xStartRatio": 0.28740983850815716,
+              "xEndRatio": 0.3060741050570619
+            },
+            {
+              "start": 15,
+              "end": 16,
+              "xStartRatio": 0.3060741050570619,
+              "xEndRatio": 0.32910049039553974
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "xStartRatio": 0.3354907066993464,
+              "xEndRatio": 0.34078458399554484
+            },
+            {
+              "start": 19,
+              "end": 20,
+              "xStartRatio": 0.34078455906288296,
+              "xEndRatio": 0.35072767968271296
+            },
+            {
+              "start": 21,
+              "end": 28,
+              "xStartRatio": 0.3513729369718265,
+              "xEndRatio": 0.40629348256229575
+            },
+            {
+              "start": 29,
+              "end": 30,
+              "xStartRatio": 0.40629348256229575,
+              "xEndRatio": 0.42786791433695875
+            },
+            {
+              "start": 31,
+              "end": 32,
+              "xStartRatio": 0.4278434304630055,
+              "xEndRatio": 0.4362563089607588
+            },
+            {
+              "start": 33,
+              "end": 34,
+              "xStartRatio": 0.4362563089607588,
+              "xEndRatio": 0.4591800465303309
+            },
+            {
+              "start": 35,
+              "end": 36,
+              "xStartRatio": 0.4591800465303309,
+              "xEndRatio": 0.47983002506829553
+            },
+            {
+              "start": 37,
+              "end": 38,
+              "xStartRatio": 0.47980429456124896,
+              "xEndRatio": 0.48821717305900225
+            },
+            {
+              "start": 39,
+              "end": 40,
+              "xStartRatio": 0.48821717305900225,
+              "xEndRatio": 0.5113368314855239
+            },
+            {
+              "start": 41,
+              "end": 42,
+              "xStartRatio": 0.5113368314855239,
+              "xEndRatio": 0.5323579576280382
+            },
+            {
+              "start": 43,
+              "end": 44,
+              "xStartRatio": 0.5323536193448734,
+              "xEndRatio": 0.5407664978426266
+            },
+            {
+              "start": 45,
+              "end": 63,
+              "xStartRatio": 0.542353511635774,
+              "xEndRatio": 0.6827040030286203
+            },
+            {
+              "start": 64,
+              "end": 65,
+              "xStartRatio": 0.6827040030286203,
+              "xEndRatio": 0.7013687432981005
+            },
+            {
+              "start": 66,
+              "end": 67,
+              "xStartRatio": 0.7013687432981005,
+              "xEndRatio": 0.7241992327122907
+            },
+            {
+              "start": 68,
+              "end": 69,
+              "xStartRatio": 0.730785344940385,
+              "xEndRatio": 0.7360792471692453
+            },
+            {
+              "start": 70,
+              "end": 71,
+              "xStartRatio": 0.7360791973039216,
+              "xEndRatio": 0.7460223428564134
+            },
+            {
+              "start": 72,
+              "end": 73,
+              "xStartRatio": 0.7466675502802033,
+              "xEndRatio": 0.7519614525090635
+            },
+            {
+              "start": 74,
+              "end": 89,
+              "xStartRatio": 0.7588241676879085,
+              "xEndRatio": 0.8823109545738869
+            }
+          ],
+          "heightRatio": 0.02581236097547743
+        }
+      ],
+      "target_index": 3
+    }
+  ]
+}
