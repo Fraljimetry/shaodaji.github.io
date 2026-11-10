@@ -1,3 +1,15 @@
+# v425 — Embedded Structure heading jumps in two-column PDFs (2026-11-09)
+
+**Baseline:** v424 assembled from v418 complete + v419–v424 overlays. **User reproduction:** the embedded Structure entries `2.1 Principal Minor Equivalence` (PDF page 4) and `2.5 Cut-Transpose Operation` (PDF page 5) in the STOC 2025 *Characterizing and Testing Principal Minor Equivalence of Matrices* paper both jumped to the page top rather than the printed heading. The v423 heading recovery had matched a complete, joined PDF.js row, but `pageTextLines()` groups same-y text from *both* columns. Actual exported native item replay (not reconstructed from MathReader index) produced merged text containing the heading followed by unrelated right-column text. Thus the bounded prefix match returned `null` and navigation used ratio `0`.
+
+**Fix:** reconstruct column-local heading fragments from preexisting PDF.js `line.parts` x-coordinates, splitting only across a sufficiently broad horizontal gap or column gutter. Match full titles and safe near-prefixes *within each fragment*, never by concatenating across different columns. When an embedded bookmark is at exact page top and a unique heading is measured deeper in the page, use that measured heading even if the bookmark has an explicit page-top mode; otherwise preserve all non-top author coordinates and manual Reselect positions. Multiple matches and missing text remain conservative; document-switch and newer-navigation cancellation remains unchanged. No persisted schema, equation detection, OCR, or manual Structure edit changes.
+
+**Red/green:** new `tests/structure_two_column_navigation_v425_regression.js` failed on the unchanged v424 at section 2.1 with ratio `0`, and passes on v425; its negative cases cover crossed-column false headings, repeated headings, manual edits, and non-top XYZ destinations. The actual 12-page `PMESTOC25-mathreader.json` native PDF-text replay measured section 2.1 at `0.3206123737` (page 4) and section 2.5 at `0.2244292929` (page 5). The unchanged v424 matcher returned `null` for both and page-top jumps, while v425 returns the exact extracted ratios. Production row building and the production navigation matcher were invoked in the replay. `tests/structure_jump_position_v423.py` now also verifies both clicks against physical Chromium scroll offsets, rather than checking only the requested ratio.
+
+**Validation scope:** Chromium uses controlled page surfaces and mocked PDF destinations; actual website testing with the source paper's original embedded PDF outline is not claimed. The original export provides its native text geometry but not the PDF's raw bookmark objects. Reading/display rendering and the previously accepted Ahlfors OCR-persistence limitation are unchanged. v425 is overlay-only.
+
+---
+
 # MathReader — Regression policy and recent history
 
 ## v424 — Reading navigation and search cancellation (2026-11-10 UTC)

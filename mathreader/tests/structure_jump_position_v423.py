@@ -170,6 +170,38 @@ with sync_playwright() as p:
           return {scrollTop:wrap.scrollTop,offset:r.top+r.height*.625-w.top,page:currentPage};
         }''''''''' )
         assert physical['scrollTop']>500 and physical['page']==2 and abs(physical['offset'])<3,physical
+        # Two-column source evidence: these bookmarks were previously sent
+        # to the page top when a single baseline row contained both columns.
+        page.evaluate('''() => {
+          function splitRow(ratio, items) {
+            let text='';
+            const parts=items.map(([value,xStartRatio,xEndRatio])=>{
+              if(text) text+=' ';
+              const start=text.length; text+=value;
+              return {start,end:text.length,xStartRatio,xEndRatio};
+            });
+            return {text,ratio,parts};
+          }
+          linesByPage[4]=[splitRow(.320612, [
+            ['2.1',.088,.111], ['Principal Minor Equivalence',.128,.36],
+            ['unrelated text continuing in another column',.52,.91]
+          ])];
+          linesByPage[5]=[splitRow(.224429, [
+            ['2.5',.088,.111], ['Cut-Transpose Operation',.128,.333], ['k',.845,.852]
+          ])];
+        }''')
+        for pg, num, name, at in [(4, 3, '2.1 Principal Minor Equivalence', .320612),
+                                  (5, 4, '2.5 Cut-Transpose Operation', .224429)]:
+            target=click_entry([{'num':num},{'name':'Fit'}],title=name)
+            assert target and target['page']==pg and abs(target['ratio']-at)<.002,target
+            physical=page.evaluate('''({pg,at})=>{
+              const wrap=document.getElementById('reader');
+              const r=window._readerNodes.get(pg).surface.getBoundingClientRect();
+              const w=wrap.getBoundingClientRect();
+              return {scrollTop:wrap.scrollTop,offset:r.top+r.height*at-w.top,page:currentPage};
+            }''',{'pg':pg,'at':at})
+            assert physical['page']==pg and abs(physical['offset'])<3,physical
+        print('PASS: two-column Structure 2.1/2.5 clicks reach the true Y in Chromium')
         print('PASS: real Chromium scroll reaches the Structure heading, not the page top')
         print('PASS: Chromium Structure click placement (page-only, explicit, null, unknown, manual and inferred)')
     finally:

@@ -1,0 +1,89 @@
+{
+  "schema": "mathreader.release-gate@1",
+  "version": "v425",
+  "release_type": "overlay",
+  "baseline": "v424",
+  "bug": "Embedded Structure 2.1 and 2.5 in a two-column 12-page STOC paper navigate to page top instead of heading position",
+  "source_document": "PMESTOC25.pdf",
+  "source_export_pdf_sha256": "c1e71f0441ecb6401b085a653028921b38fa35aca5bd27726f370eb5d8153d20",
+  "real_export_text_replay": {
+    "source": "PMESTOC25-mathreader.json: fullDocumentText.pages[].nativePdf.items",
+    "method": "production pageTextLines() + production uniqueStructureHeadingRatio() + navigateToStructureEntry()",
+    "before": {
+      "2.1": {
+        "page": 4,
+        "ratio": 0
+      },
+      "2.5": {
+        "page": 5,
+        "ratio": 0
+      }
+    },
+    "after": {
+      "2.1": {
+        "page": 4,
+        "ratio": 0.32061237373737367
+      },
+      "2.5": {
+        "page": 5,
+        "ratio": 0.22442929292929284
+      }
+    },
+    "unaffected": {
+      "2.2": 0.529570707070707,
+      "2.3": 0.28906439393939387,
+      "2.4": 0.5685732323232322
+    }
+  },
+  "tests": {
+    "javascript_suites": {
+      "passed": 71,
+      "total": 71
+    },
+    "python_chromium_files": {
+      "passed": 31,
+      "total": 31
+    },
+    "responsive_assertions": {
+      "passed": 176,
+      "total": 176
+    },
+    "production_assembled_module_syntax": "PASS",
+    "two_column_chromium_physical_scroll": "PASS",
+    "docs_layout": "PASS",
+    "structure_red_green": "v424 FAIL, v425 PASS"
+  },
+  "constraints": {
+    "pdf_bytes_original_bookmark_destinations": "not available in the export; live original-PDF browser acceptance not established",
+    "model_inference": "not tested",
+    "historical_Ahlfors_reload_loss": "accepted known limitation unchanged"
+  },
+  "changed_files_excluding_gate": [
+    "REGRESSION.md",
+    "docs/README.md",
+    "docs/releases/V425_RELEASE.md",
+    "index.html",
+    "js/40-outline-structure.js",
+    "mathreader.js",
+    "tests/equation_progress_regression.js",
+    "tests/export_preferences_v397_regression.js",
+    "tests/formula_ocr_lazy_regression.js",
+    "tests/maintenance_integrity_regression.js",
+    "tests/structure_jump_position_v423.py",
+    "tests/structure_two_column_navigation_v425_regression.js"
+  ],
+  "sha256_of_changed_files_excluding_gate": {
+    "REGRESSION.md": "74ac775f1fc8362943e1e2f1e9c19e9fc996077bafaf4a2c108799c30280baa2",
+    "docs/README.md": "18dbe15b2c75f9c45062f9e3a95bf36155647d6f152d3ddc1e6338a812f11655",
+    "docs/releases/V425_RELEASE.md": "13e173c08bf5cc1b5d808c265158a1f5bbc1b461b1b87d1a2f9bb99a3107fb24",
+    "index.html": "a577b674b24a05c480e3c7df455580f263c94a3e56dfa49b2678d381687357e1",
+    "js/40-outline-structure.js": "6447650b8bc961dffce5e83aeeb8ed3106b718b75a350c94c074bb05fc8e1be9",
+    "mathreader.js": "bf39e2279f19026622a18e9046a8e4c00a77ca78b0dff02bc53ae9de6dceeaa6",
+    "tests/equation_progress_regression.js": "2a9d936c0a8c82aaebb4f23556d0ce3d9f81743fbba0780f2c297856c8b76339",
+    "tests/export_preferences_v397_regression.js": "6267c353d983537e3fd1942f39aa0016f9dbcc7cb6fbde00240f765af8996195",
+    "tests/formula_ocr_lazy_regression.js": "0dc13691d8a7ae1296a205da6939ee186458cf231a9aeb1c5d3e55ec5ecb5108",
+    "tests/maintenance_integrity_regression.js": "c65b29110413f4c1fcf8a207399fc92a1bed7251e9faae4916df8d3bc3e912ab",
+    "tests/structure_jump_position_v423.py": "3d064e18a8bf1347710f6d20a235ff38bca8880f7a71cca68cbe28e71fcaec84",
+    "tests/structure_two_column_navigation_v425_regression.js": "6456445921de1bd104c9c123abbf804d75b22c67076844fea66b2b559da10c5b"
+  }
+}

@@ -1280,23 +1280,58 @@ function comparableStructureNavigationText(value) {
     .replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// PDF.js can merge text from the left and right columns into a single
+// baseline row. Match a bookmark against column-local text, not a row that
+// starts with a true heading but ends with unrelated text from the other
+// column. The pageTextLines() parts retain their actual x positions, even
+// when the row's .text has already been joined across columns.
+function structureHeadingRowFragments(line) {
+  const text = String(line?.text || '');
+  const parts = Array.isArray(line?.parts) ? line.parts : [];
+  if (parts.length < 2) return [text];
+  if (parts.some((part) => !Number.isInteger(part.start) || !Number.isInteger(part.end)
+      || part.end <= part.start || part.start < 0 || part.end > text.length
+      || !Number.isFinite(Number(part.xStartRatio)) || !Number.isFinite(Number(part.xEndRatio)))) return [text];
+  const fragments = [];
+  let current = '';
+  let previousEnd = null;
+  for (const part of parts) {
+    const startX = Number(part.xStartRatio);
+    const endX = Number(part.xEndRatio);
+    const gap = previousEnd === null ? 0 : startX - previousEnd;
+    const crossesGutter = previousEnd !== null && previousEnd <= 0.49
+      && startX >= 0.51 && gap >= 0.025;
+    const broadGap = previousEnd !== null && gap >= 0.11;
+    if (current && (crossesGutter || broadGap)) {
+      fragments.push(current);
+      current = '';
+    }
+    const value = text.slice(part.start, part.end).trim();
+    if (value) current = current ? `${current} ${value}` : value;
+    previousEnd = endX;
+  }
+  if (current) fragments.push(current);
+  return fragments.length ? fragments : [text];
+}
+
 function uniqueStructureHeadingRatio(lines, title) {
   const wanted = comparableStructureNavigationText(title);
   if (wanted.length < 6) return null;
   const matches = [];
   for (const line of lines || []) {
-    const actual = comparableStructureNavigationText(line?.text);
-    if (!actual) continue;
-    const exact = actual === wanted;
-    // A heading's printed title can break across two PDF text lines. Only
-    // allow a near-complete prefix, never a substring in a prose reference.
-    const nearPrefix = wanted.length >= 12 && actual.length >= 10
-      && ((actual.startsWith(`${wanted} `) && actual.length <= wanted.length * 1.25)
-        || (wanted.startsWith(`${actual} `) && actual.length >= wanted.length * 0.70));
-    if (!exact && !nearPrefix) continue;
     const ratio = Number(line?.ratio);
     if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) continue;
-    matches.push(ratio);
+    for (const fragment of structureHeadingRowFragments(line)) {
+      const actual = comparableStructureNavigationText(fragment);
+      if (!actual) continue;
+      const exact = actual === wanted;
+      // Permit an incomplete PDF text line only when it retains most of the
+      // heading's complete words. Never match inside prose references.
+      const nearPrefix = wanted.length >= 12 && actual.length >= 10
+        && ((actual.startsWith(`${wanted} `) && actual.length <= wanted.length * 1.25)
+          || (wanted.startsWith(`${actual} `) && actual.length >= wanted.length * 0.70));
+      if (exact || nearPrefix) matches.push(ratio);
+    }
   }
   // Multiple plausible matches (e.g. a running head and a body heading) are
   // genuinely ambiguous; preserve the author-supplied bookmark destination.
@@ -1316,8 +1351,10 @@ async function navigateToStructureEntry(entry) {
     && pdfDoc === sourceDoc && currentFileKey === sourceKey;
   const page = Number(entry.page) || 1;
   let ratio = Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0;
-  const needsRecovery = entry.userEdited !== true && entry.positionKnown !== true
-    && ratio <= 0.001;
+  // A page-top PDF destination can be only a coarse bookmark (including
+  // explicit XYZ/FitH top=page-top). Prefer a unique measured heading in that
+  // special case; retain all non-top author destinations and manual Reselects.
+  const needsRecovery = entry.userEdited !== true && ratio <= 0.001;
   if (needsRecovery) {
     try {
       const lines = await pageTextLines(page);
