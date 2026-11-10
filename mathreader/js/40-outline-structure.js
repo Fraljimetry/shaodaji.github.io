@@ -1285,16 +1285,24 @@ function comparableStructureNavigationText(value) {
 // starts with a true heading but ends with unrelated text from the other
 // column. The pageTextLines() parts retain their actual x positions, even
 // when the row's .text has already been joined across columns.
-function structureHeadingRowFragments(line) {
+function structureHeadingRowSegments(line) {
   const text = String(line?.text || '');
   const parts = Array.isArray(line?.parts) ? line.parts : [];
-  if (parts.length < 2) return [text];
+  const ratio = Number(line?.ratio);
+  const fallback = [{ text, ratio, xStartRatio: Number(line?.xStartRatio), xEndRatio: Number(line?.xEndRatio) }];
+  if (parts.length < 2) return fallback;
   if (parts.some((part) => !Number.isInteger(part.start) || !Number.isInteger(part.end)
       || part.end <= part.start || part.start < 0 || part.end > text.length
-      || !Number.isFinite(Number(part.xStartRatio)) || !Number.isFinite(Number(part.xEndRatio)))) return [text];
+      || !Number.isFinite(Number(part.xStartRatio)) || !Number.isFinite(Number(part.xEndRatio)))) return fallback;
   const fragments = [];
   let current = '';
+  let start = null;
   let previousEnd = null;
+  const flush = () => {
+    if (current) fragments.push({text: current, ratio, xStartRatio: start, xEndRatio: previousEnd});
+    current = '';
+    start = null;
+  };
   for (const part of parts) {
     const startX = Number(part.xStartRatio);
     const endX = Number(part.xEndRatio);
@@ -1302,40 +1310,127 @@ function structureHeadingRowFragments(line) {
     const crossesGutter = previousEnd !== null && previousEnd <= 0.49
       && startX >= 0.51 && gap >= 0.025;
     const broadGap = previousEnd !== null && gap >= 0.11;
-    if (current && (crossesGutter || broadGap)) {
-      fragments.push(current);
-      current = '';
-    }
+    if (current && (crossesGutter || broadGap)) flush();
     const value = text.slice(part.start, part.end).trim();
-    if (value) current = current ? `${current} ${value}` : value;
+    if (value) {
+      if (start === null) start = startX;
+      current = current ? `${current} ${value}` : value;
+    }
     previousEnd = endX;
   }
-  if (current) fragments.push(current);
-  return fragments.length ? fragments : [text];
+  flush();
+  return fragments.length ? fragments : fallback;
+}
+
+function structureHeadingRowFragments(line) {
+  return structureHeadingRowSegments(line).map((part) => part.text);
+}
+
+// Mathematical PDF fonts routinely split A_0 into "𝑨 0" or serialize
+// subscripted expressions without the punctuation present in PDF bookmarks.
+// Use a whitespace/punctuation-free comparison only when the entire heading
+// is otherwise present; never use a substring search through body prose.
+function compactStructureNavigationText(value) {
+  return String(value || '').normalize('NFKC').toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function structureHeadingMatchQuality(candidate, wanted, wantedCompact) {
+  const actual = comparableStructureNavigationText(candidate);
+  if (!actual) return 0;
+  if (actual === wanted) return 100;
+  // An optional parenthetical subtitle or a small PDF extraction omission
+  // must not turn a heading into a page-top-only bookmark.
+  if (wanted.length >= 12 && actual.length >= 10
+      && actual.startsWith(`${wanted} `) && actual.length <= wanted.length * 1.25) return 85;
+  if (wanted.length >= 12 && actual.length >= wanted.length * 0.70
+      && wanted.startsWith(`${actual} `)) return 75;
+  const compact = compactStructureNavigationText(candidate);
+  if (wantedCompact.length < 7 || compact.length < 7) return 0;
+  if (compact === wantedCompact) return 95;
+  // A single trailing math variable can be a subscript in the print, but a
+  // full extra prose word (or an equation/reference paragraph) cannot.
+  const excess = compact.length - wantedCompact.length;
+  if (compact.startsWith(wantedCompact) && excess > 0 && excess <= 2) return 82;
+  return 0;
+}
+
+function structureSameColumnContinuation(first, next) {
+  const x = Number(first?.xStartRatio);
+  const nx = Number(next?.xStartRatio);
+  const xe = Number(first?.xEndRatio);
+  const ne = Number(next?.xEndRatio);
+  if (![x, nx, xe, ne].every(Number.isFinite)) return false;
+  // In two-column layouts never merge a heading with text from the other
+  // column, even if both share consecutive baselines.
+  if ((x < 0.49 && nx > 0.51) || (x > 0.51 && nx < 0.49)) return false;
+  if (Math.abs(x - nx) > 0.17) return false;
+  return Math.min(xe, ne) - Math.max(x, nx) >= -0.008;
 }
 
 function uniqueStructureHeadingRatio(lines, title) {
   const wanted = comparableStructureNavigationText(title);
+  const wantedCompact = compactStructureNavigationText(title);
   if (wanted.length < 6) return null;
-  const matches = [];
+  const fragments = [];
   for (const line of lines || []) {
     const ratio = Number(line?.ratio);
     if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) continue;
-    for (const fragment of structureHeadingRowFragments(line)) {
-      const actual = comparableStructureNavigationText(fragment);
-      if (!actual) continue;
-      const exact = actual === wanted;
-      // Permit an incomplete PDF text line only when it retains most of the
-      // heading's complete words. Never match inside prose references.
-      const nearPrefix = wanted.length >= 12 && actual.length >= 10
-        && ((actual.startsWith(`${wanted} `) && actual.length <= wanted.length * 1.25)
-          || (wanted.startsWith(`${actual} `) && actual.length >= wanted.length * 0.70));
-      if (exact || nearPrefix) matches.push(ratio);
-    }
+    fragments.push(...structureHeadingRowSegments(line).filter((part) => part.text));
   }
-  // Multiple plausible matches (e.g. a running head and a body heading) are
-  // genuinely ambiguous; preserve the author-supplied bookmark destination.
-  return matches.length === 1 ? matches[0] : null;
+  fragments.sort((a, b) => a.ratio - b.ratio || a.xStartRatio - b.xStartRatio);
+  const matches = new Map();
+  for (let i = 0; i < fragments.length; i++) {
+    const anchor = fragments[i];
+    const ratio = anchor.ratio;
+    let quality = structureHeadingMatchQuality(anchor.text, wanted, wantedCompact);
+    let candidate = anchor.text;
+    let cursor = anchor;
+    // A chapter heading may wrap over several baselines. Build candidate
+    // strings from the *same column*, retaining the first baseline's Y.
+    // Bound the search to a few following rows, not arbitrary nearby prose.
+    let joined = 0;
+    for (let j = i + 1; j < fragments.length && joined < 3; j++) {
+      const following = fragments[j];
+      const verticalGap = following.ratio - cursor.ratio;
+      if (following.ratio - ratio > 0.075) break;
+      if (verticalGap < 0.003) continue;  // simultaneous other-column row
+      if (verticalGap > 0.032) break;
+      if (!structureSameColumnContinuation(anchor, following)) continue;
+      candidate += ` ${following.text}`;
+      quality = Math.max(quality, structureHeadingMatchQuality(candidate, wanted, wantedCompact));
+      cursor = following;
+      joined++;
+    }
+    if (!quality) continue;
+    // Multiple readings of the same printed baseline are one candidate;
+    // distinct Y coordinates remain ambiguous and cannot be guessed.
+    const key = Math.round(ratio * 10000);
+    matches.set(key, Math.max(matches.get(key) || 0, quality));
+  }
+  if (!matches.size) return null;
+  const ranked = [...matches.entries()].sort((a, b) => b[1] - a[1]);
+  // Prefer one exact heading over a different, weaker partial match. If two
+  // printed occurrences have comparable evidence, keep the PDF destination.
+  if (ranked.length > 1 && ranked[0][1] - ranked[1][1] < 16) return null;
+  return ranked[0][0] / 10000;
+}
+
+// The existing typography detector already has precise, measured y values.
+// They are a second independent source for bookmarks when native line
+// reconstruction is unavailable (e.g. an OCR-backed Structure index). Do not
+// borrow a vaguely similar title, a different page, or a manual selection.
+function uniqueDetectedStructureHeadingRatio(entry) {
+  const entries = typeof inferredOutline === 'undefined' ? [] : inferredOutline;
+  if (!Array.isArray(entries)) return null;
+  const title = comparableStructureNavigationText(entry?.matchText || entry?.title);
+  const page = Number(entry?.page);
+  if (title.length < 6 || !Number.isInteger(page)) return null;
+  const matches = entries.filter((item) => item?.userEdited !== true
+    && Number(item?.page) === page
+    && comparableStructureNavigationText(item.title) === title
+    && Number.isFinite(Number(item.ratio)) && Number(item.ratio) >= 0 && Number(item.ratio) <= 1);
+  return matches.length === 1 ? Number(matches[0].ratio) : null;
 }
 
 let structureNavigationSerial = 0;
@@ -1354,7 +1449,9 @@ async function navigateToStructureEntry(entry) {
   // A page-top PDF destination can be only a coarse bookmark (including
   // explicit XYZ/FitH top=page-top). Prefer a unique measured heading in that
   // special case; retain all non-top author destinations and manual Reselects.
-  const needsRecovery = entry.userEdited !== true && ratio <= 0.001;
+  const needsRecovery = entry.userEdited !== true
+    && (entry.positionKnown !== true || ratio <= 0.001);
+  let headingRecovered = false;
   if (needsRecovery) {
     try {
       const lines = await pageTextLines(page);
@@ -1362,13 +1459,20 @@ async function navigateToStructureEntry(entry) {
       // previous document, even if both happen to have the same page count.
       if (!stillCurrent()) return;
       const recovered = uniqueStructureHeadingRatio(lines, entry.matchText || entry.title);
-      if (recovered !== null) ratio = recovered;
+      if (recovered !== null) {
+        ratio = recovered;
+        headingRecovered = true;
+      }
     } catch (error) {
       if (!stillCurrent()) return;
       console.warn('Structure heading position unavailable', error);
     }
   }
   if (!stillCurrent()) return;
+  if (needsRecovery && !headingRecovered) {
+    const detected = uniqueDetectedStructureHeadingRatio(entry);
+    if (detected !== null) ratio = detected;
+  }
   await goToMatchedLocation(page, ratio, '', { positionOnly: true });
 }
 

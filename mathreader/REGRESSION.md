@@ -1,3 +1,13 @@
+# v426 — Multiline and mathematical Structure bookmark recovery (2026-11-09)
+
+**Baseline:** v425. The two remaining reported bookmarks in the 12-page STOC paper, section **3** (PDF page 5) and **5.1** (PDF page 11), still landed at the page top. The former heading is split across two right-column baselines, interleaved with left-column mathematics; the latter uses mathematical-bold glyphs and separately extracted subscript digits. v425 required nearly the entire title on one line with matching word breaks. This is a general layout/text-normalization error, not a title-specific exception.
+
+**Fix:** recover headings by column-local multi-line geometry; normalize mathematical Unicode and separated identifiers conservatively; prefer a unique high-quality match while retaining ambiguity guards. An exact `(page, title)` match to an existing measured Structure detector entry is a documented secondary source when the live text layer is insufficient. Preserve explicit non-top PDF destinations, manual Reselect positions, request serial checks, and unrelated detector/OCR code. No persisted schema changes.
+
+**Evidence:** `tests/structure_multiline_math_navigation_v426_regression.js` fails on v425 and passes on v426, exercising real exported PDF.js native items. All **15** observable heading positions in the STOC export/embedded outline are recovered (14 source-detected titles plus the mathematical section 5.1). `tests/structure_multiline_math_navigation_v426.py` exercises actual Chromium clicks and physical scrolling for 2.1, 2.5, 3, and 5.1. Original source PDF bookmark objects were not supplied, so live-site verification remains outstanding. Full test counts and overlay integrity appear in `regression/v426_release_gate.json`.
+
+---
+
 # v425 — Embedded Structure heading jumps in two-column PDFs (2026-11-09)
 
 **Baseline:** v424 assembled from v418 complete + v419–v424 overlays. **User reproduction:** the embedded Structure entries `2.1 Principal Minor Equivalence` (PDF page 4) and `2.5 Cut-Transpose Operation` (PDF page 5) in the STOC 2025 *Characterizing and Testing Principal Minor Equivalence of Matrices* paper both jumped to the page top rather than the printed heading. The v423 heading recovery had matched a complete, joined PDF.js row, but `pageTextLines()` groups same-y text from *both* columns. Actual exported native item replay (not reconstructed from MathReader index) produced merged text containing the heading followed by unrelated right-column text. Thus the bounded prefix match returned `null` and navigation used ratio `0`.

@@ -1,0 +1,80 @@
+{
+  "schema": "mathreader.release-gate@1",
+  "version": "v426",
+  "baseline": "v425",
+  "delivery": "overlay",
+  "source_document": "PMESTOC25.pdf",
+  "source_export_pdf_sha256": "c1e71f0441ecb6401b085a653028921b38fa35aca5bd27726f370eb5d8153d20",
+  "reproduced": {
+    "v425": "Section 3/5.1 page-only bookmarks return ratio zero due to multiline and mathematical PDF text mismatch",
+    "v426": {
+      "section_3": {
+        "pdf_page": 5,
+        "ratio": 0.4066
+      },
+      "section_5_1": {
+        "pdf_page": 11,
+        "ratio": 0.4963
+      },
+      "observed_structure_headings_checked": 15
+    }
+  },
+  "regression": {
+    "red_green": "v425 fails new source fixture at section 3; v426 passes all original heading and negative cases",
+    "javascript_suites": {
+      "passed": 72,
+      "total": 72
+    },
+    "python_chromium_files": {
+      "passed": 32,
+      "total": 32
+    },
+    "responsive_layout_assertions": {
+      "passed": 176,
+      "total": 176
+    },
+    "source_native_rows": "PASS",
+    "physical_chromium_navigation_2_1_2_5_3_5_1": "PASS",
+    "assembled_runtime_syntax": "PASS",
+    "overlay_installation": "PASS"
+  },
+  "changed_or_new_files_excluding_gate": [
+    "REGRESSION.md",
+    "docs/README.md",
+    "docs/releases/V426_RELEASE.md",
+    "index.html",
+    "js/40-outline-structure.js",
+    "mathreader.js",
+    "regression/fixtures/structure_navigation_native_rows_v426.json",
+    "tests/equation_progress_regression.js",
+    "tests/export_preferences_v397_regression.js",
+    "tests/formula_ocr_lazy_regression.js",
+    "tests/maintenance_integrity_regression.js",
+    "tests/structure_multiline_math_navigation_v426.py",
+    "tests/structure_multiline_math_navigation_v426_regression.js"
+  ],
+  "sha256_changed_or_new_files_excluding_gate": {
+    "REGRESSION.md": "1c923819e0812c65d3763d5fd189a377c7a846f5630af64e2c321ae0cf2b7259",
+    "docs/README.md": "f2a20ddef7cc4371888b30ff5301d03791b076afeecad7efd2a0613f52e3a64c",
+    "docs/releases/V426_RELEASE.md": "3e8276c10a1b4545ec09ce5c5c048249b0a87e0c6ce655029f5fb6b8d9347aef",
+    "index.html": "057bca6e572fc1a8d76ab73e1a971ce3122449eae6b6fb4024742450d8947836",
+    "js/40-outline-structure.js": "38ccee1685dcd7f9e06566ea4a9d3e14f6b6ab24778e7c8ec047e998a6ac960e",
+    "mathreader.js": "5bc817c59098b24efe98b2aead04d67c556d03053f5692afe40787f6eaf20daa",
+    "regression/fixtures/structure_navigation_native_rows_v426.json": "2a818fb4daf95cd68bd6ed624b67f128d46c5e6e9c53e353d32975198b6dbd50",
+    "tests/equation_progress_regression.js": "6e5c2db7af6ffd069200d6444778976e2a2bd7b3eceeb170bd744cb12871810f",
+    "tests/export_preferences_v397_regression.js": "d1e4266c1407117b91588688de627de19c161ab4f8328dc6d4dfa28adbd1e5e3",
+    "tests/formula_ocr_lazy_regression.js": "08e0946d65c8e3e1233b6cf6a43ccae34b763c7225df40ac3a9537c88aeece0c",
+    "tests/maintenance_integrity_regression.js": "da91b45ef21f7dcbe7cd5fcc3c49ab75e0129c14bb018a66575d2842021859ab",
+    "tests/structure_multiline_math_navigation_v426.py": "4af3e02631cacabaf4f0b9c4e8b84aa18e1ee71fca9c46f8c0d9e0111ac56d33",
+    "tests/structure_multiline_math_navigation_v426_regression.js": "221a97b566d737fb87f2fb172e7bb0670f565c9eaa96796dea6b6d134134e4f9"
+  },
+  "constraints": {
+    "original_pdf_raw_bookmark_objects": "unavailable (export contains native text geometry; browser tests used controlled PDF destinations)",
+    "source_pdf_sha256": "from supplied reading-data export",
+    "live_website_on_user_machine": "not tested",
+    "math_ocr": "not modified or re-accepted",
+    "Ahlfors_reload_evidence_loss": "previously accepted limitation unchanged",
+    "detection_index_versions": "unchanged"
+  },
+  "date": "2026-11-09"
+}
