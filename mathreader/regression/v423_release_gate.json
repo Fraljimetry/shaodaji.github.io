@@ -1,0 +1,47 @@
+{
+  "version": "v423",
+  "test_environment": "isolated Node.js and headless Chromium, PDF.js destination/text geometry simulated; no live publisher PDF or Texify inference",
+  "baseline_reproduction": "v422 Fit page-only bookmark at page 2, heading ratio 0.625 navigated to ratio 0; v423 navigates to ratio 0.625",
+  "javascript_tests": {
+    "passed": 70,
+    "total": 70,
+    "status": "PASS"
+  },
+  "python_chromium_tests": {
+    "passed": 30,
+    "total": 30,
+    "status": "PASS after a test-mock adjustment and complete rerun"
+  },
+  "new_chromium_jump_test": {
+    "status": "PASS",
+    "production_functions": [
+      "resolveOutlineDestination",
+      "navigateToStructureEntry",
+      "renderEmbeddedOutline",
+      "appendInferredOutlineRow",
+      "goToLocation"
+    ],
+    "cases": [
+      "page-only Fit recovered unique heading",
+      "explicit XYZ preserved",
+      "XYZ null top recovered",
+      "ambiguous match stays page-only",
+      "unmatched title stays page-only",
+      "manual Reselect coordinate preserved",
+      "inferred heading coordinate preserved",
+      "rotated viewport coordinate respected",
+      "document switch invalidates pending resolution",
+      "actual scroll reaches heading instead of page top"
+    ]
+  },
+  "chromium_shell": "PASS",
+  "module_bootstrap_syntax": "PASS",
+  "no_detection_algorithm_changed": true,
+  "structure_index_schema": 57,
+  "known_limitations": [
+    "User-reported PDF was not supplied, so the exact individual document cause is unverified.",
+    "Page-only headings can be recovered only when the page text or existing OCR evidence contains a unique heading match.",
+    "No actual PDF.js file-loading run or real formula OCR inference was executed.",
+    "Fit-page may show an entire page, leaving no intra-page scroll available."
+  ]
+}

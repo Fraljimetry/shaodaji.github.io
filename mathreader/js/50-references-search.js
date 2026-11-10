@@ -768,25 +768,45 @@ async function resolveOutlineDestination(rawDest) {
   if (!pdfDoc) return null;
   let dest = rawDest;
   if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
-  if (!Array.isArray(dest) || !dest[0]) return null;
-  const pageIndex = await pdfDoc.getPageIndex(dest[0]);
+  if (!Array.isArray(dest) || dest[0] == null) return null;
+  const pageIndex = Number.isInteger(dest[0]) ? dest[0] : await pdfDoc.getPageIndex(dest[0]);
   const pageNum = pageIndex + 1;
   let ratio = 0;
+  let positionKnown = false;
   const mode = dest[1]?.name || '';
-  let top = null;
-  if (mode === 'XYZ') top = Number(dest[3]);
-  else if (mode === 'FitH' || mode === 'FitBH') top = Number(dest[2]);
-  else if (mode === 'FitR') top = Number(dest[5]);
-  if (Number.isFinite(top)) {
+  // PDF.js represents inherited/unspecified XYZ/FitH positions as null.
+  // Number(null) === 0, but interpreting that as PDF y=0 fabricated a jump
+  // to the BOTTOM of the page. A page-only Fit/FitB destination likewise
+  // contains no heading-level vertical coordinate.
+  const supplied = (value) => value != null && value !== '' && Number.isFinite(Number(value));
+  let top = null, left = null;
+  if (mode === 'XYZ' && supplied(dest[3])) {
+    top = Number(dest[3]);
+    if (supplied(dest[2])) left = Number(dest[2]);
+  } else if ((mode === 'FitH' || mode === 'FitBH') && supplied(dest[2])) {
+    top = Number(dest[2]);
+  } else if (mode === 'FitR' && supplied(dest[5])) {
+    top = Number(dest[5]);
+    if (supplied(dest[2])) left = Number(dest[2]);
+  }
+  if (top !== null) {
     try {
       const page = await pdfDoc.getPage(pageNum);
       const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
       const yMin = Number(view[1]) || 0;
       const yMax = Number(view[3]) || 1;
-      ratio = Math.min(1, Math.max(0, (yMax - top) / Math.max(1, yMax - yMin)));
+      // Respect rotated and cropped PDF pages if PDF.js supplies the
+      // viewport transform; unrotated PDF coordinates are the safe fallback.
+      const viewport = page.getViewport?.({ scale: 1 });
+      if (viewport?.convertToViewportPoint && viewport.height > 0) {
+        const x = left === null ? (Number(view[0]) + Number(view[2])) / 2 : left;
+        ratio = viewport.convertToViewportPoint(x, top)[1] / viewport.height;
+      } else ratio = (yMax - top) / Math.max(1, yMax - yMin);
+      ratio = Math.min(1, Math.max(0, ratio));
+      positionKnown = true;
     } catch (_) {}
   }
-  return { page: pageNum, ratio };
+  return { page: pageNum, ratio, positionKnown };
 }
 
 
@@ -838,6 +858,7 @@ async function renderOutline() {
           matchText: cleanTitle,
           page: Number(location.page) || 1,
           ratio: Number(location.ratio) || 0,
+          positionKnown: location.positionKnown === true,
           depth: Number(depth) || 0,
           userEdited: false,
         };

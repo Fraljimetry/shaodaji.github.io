@@ -1226,6 +1226,7 @@ function applyEmbeddedOutlineEdits(entries) {
         matchText: String(edit.matchText || edit.title || entry.title),
         page: Number(edit.page) || entry.page,
         ratio: Number(edit.ratio) || 0,
+        positionKnown: true,
         userEdited: true,
       });
     } else out.push(entry);
@@ -1269,6 +1270,71 @@ function interleaveEmbeddedAndManualOutline(embedded, manual) {
   return combined;
 }
 
+// Some embedded bookmarks specify only a page (Fit/FitB/XYZ with null top),
+// so a page-top jump is the only *literal* PDF destination available. When
+// the actual heading is unambiguous in that page's existing text layer, use
+// its measured y instead. Never replace an explicit PDF destination, a
+// manually chosen position, or a merely similar prose/reference line.
+function comparableStructureNavigationText(value) {
+  return String(value || '').normalize('NFKC').toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function uniqueStructureHeadingRatio(lines, title) {
+  const wanted = comparableStructureNavigationText(title);
+  if (wanted.length < 6) return null;
+  const matches = [];
+  for (const line of lines || []) {
+    const actual = comparableStructureNavigationText(line?.text);
+    if (!actual) continue;
+    const exact = actual === wanted;
+    // A heading's printed title can break across two PDF text lines. Only
+    // allow a near-complete prefix, never a substring in a prose reference.
+    const nearPrefix = wanted.length >= 12 && actual.length >= 10
+      && ((actual.startsWith(`${wanted} `) && actual.length <= wanted.length * 1.25)
+        || (wanted.startsWith(`${actual} `) && actual.length >= wanted.length * 0.70));
+    if (!exact && !nearPrefix) continue;
+    const ratio = Number(line?.ratio);
+    if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) continue;
+    matches.push(ratio);
+  }
+  // Multiple plausible matches (e.g. a running head and a body heading) are
+  // genuinely ambiguous; preserve the author-supplied bookmark destination.
+  return matches.length === 1 ? matches[0] : null;
+}
+
+let structureNavigationSerial = 0;
+
+async function navigateToStructureEntry(entry) {
+  if (!pdfDoc || !entry) return;
+  const requestSerial = ++structureNavigationSerial;
+  const readerSerial = readerNavigationSerial;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const stillCurrent = () => requestSerial === structureNavigationSerial
+    && readerSerial === readerNavigationSerial
+    && pdfDoc === sourceDoc && currentFileKey === sourceKey;
+  const page = Number(entry.page) || 1;
+  let ratio = Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0;
+  const needsRecovery = entry.userEdited !== true && entry.positionKnown !== true
+    && ratio <= 0.001;
+  if (needsRecovery) {
+    try {
+      const lines = await pageTextLines(page);
+      // A different PDF must never receive an async position resolved for the
+      // previous document, even if both happen to have the same page count.
+      if (!stillCurrent()) return;
+      const recovered = uniqueStructureHeadingRatio(lines, entry.matchText || entry.title);
+      if (recovered !== null) ratio = recovered;
+    } catch (error) {
+      if (!stillCurrent()) return;
+      console.warn('Structure heading position unavailable', error);
+    }
+  }
+  if (!stillCurrent()) return;
+  await goToMatchedLocation(page, ratio, '', { positionOnly: true });
+}
+
 function renderActiveOutline() {
   if (outlineMode === 'embedded') renderEmbeddedOutline(embeddedOutlineEntries);
   else renderInferredOutline(inferredOutline);
@@ -1300,7 +1366,7 @@ function renderEmbeddedOutline(entries) {
     button.addEventListener('click', async () => {
       outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
       setDocumentMapSelectedNode(button);
-      await goToMatchedLocation(entry.page, Number(entry.ratio) || 0, '');
+      await navigateToStructureEntry(entry);
     });
 
     const menu = document.createElement('button');
@@ -1397,7 +1463,7 @@ function appendInferredOutlineRow(entry) {
     button.addEventListener('click', () => {
       outlineList.querySelectorAll('.outline-edit-row.has-edit-menu').forEach((node) => node.classList.remove('has-edit-menu'));
       setDocumentMapSelectedNode(button);
-      goToMatchedLocation(entry.page, Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0, '');
+      navigateToStructureEntry(entry);
     });
     const menu = document.createElement('button');
     menu.type = 'button';

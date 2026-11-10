@@ -27,7 +27,8 @@ let inferredOutline=[], inferredOutlineDetectionDone=false, embeddedOutlineEdits
       {sourceKey:'1',title:'Section A',page:1,ratio:0.1,depth:0},
       {sourceKey:'2',title:'Section B',page:7,ratio:0.1,depth:0}
     ];
-let pdfDoc={numPages:12}, currentSelection={page:4,ratio:0.2,text:'Selected ordinary prose'},
+let pdfDoc={numPages:12}, currentFileKey='manual-structure-test', readerNavigationSerial=0,
+    currentSelection={page:4,ratio:0.2,text:'Selected ordinary prose'},
     pendingOutlineReselectKey=null,pendingEquationReselectKey=null,pendingEquationAddKey=null,
     outlineMode='embedded',tocOutlineTargets=null,saveCount=0,
     lastNavigation=null,history=[];

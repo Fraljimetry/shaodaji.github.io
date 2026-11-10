@@ -1,19 +1,19 @@
 # MathReader documentation
 
-The `mathreader/` root contains the application and the [current regression policy](../REGRESSION.md). Historical documentation is grouped by purpose rather than mixed with production files. The documentation-only relocation originated in v414; the **current application version is v422**, with reliable local-column equation tags and the v419 manual Structure additions alongside embedded PDF bookmarks; the v418 numbering and v417 nonblocking OCR fixes remain in place.
+The `mathreader/` root contains the application and the [current regression policy](../REGRESSION.md). Historical documentation is grouped by purpose rather than mixed with production files. The documentation-only relocation originated in v414; the **current application version is v423**, with reliable local-column equation tags and the v419 manual Structure additions alongside embedded PDF bookmarks; the v418 numbering and v417 nonblocking OCR fixes remain in place.
 
 ## Where to look
 
 | Area | Folder | Key documents |
 |---|---|---|
-| Recent regression policy and release evidence | [REGRESSION.md](../REGRESSION.md) | v422–v415 current findings, v414–v405 archived entries, and standing rules |
+| Recent regression policy and release evidence | [REGRESSION.md](../REGRESSION.md) | v423–v415 current findings, v414–v405 archived entries, and standing rules |
 | OCR recognition | [ocr/recognition](ocr/recognition/) | [Recognition audit v384](ocr/recognition/OCR_AUDIT_v384.md), [historical audit v394](ocr/recognition/OCR_HISTORICAL_v394.md), [appendix Results v395](ocr/recognition/OCR_APPENDIX_RESULTS_v395.md) |
 | OCR controls and navigation | [ocr/navigation](ocr/navigation/) | [Navigation v386](ocr/navigation/OCR_NAVIGATION_v386.md), [context menu v390](ocr/navigation/OCR_CONTEXT_MENU_v390.md) |
 | OCR cache and evidence | [ocr/persistence](ocr/persistence/) | [Identity/cache v391](ocr/persistence/OCR_CACHE_v391.md), [reload evidence v404](ocr/persistence/OCR_EVIDENCE_REOPEN_v404.md) |
 | Exports | [exports](exports/) | [Raw exports v393](exports/OCR_RAW_EXPORT_v393.md), [coverage v400](exports/EXPORT_COVERAGE_v400.md) |
 | Comprehensive audits | [audits](audits/) | [Full v405 audit](audits/MATHREADER_FULL_AUDIT_v405.md) |
 | User workflows / feature notes | [features](features/) | [Appendix equation manual operation](features/MANUAL_APPENDIX_EQUATIONS_v405.md) |
-| Release manifests | [releases](releases/) | [v422](releases/V422_RELEASE.md), [v421](releases/V421_RELEASE.md), [v420](releases/V420_RELEASE.md), [v419](releases/V419_PATCH_MANIFEST.md), [v418](releases/V418_RELEASE.md), [v417](releases/V417_RELEASE.md), [v416](releases/V416_RELEASE.md), [v415](releases/V415_PATCH_MANIFEST.md), [v414](releases/V414_PATCH_MANIFEST.md), [v405](releases/V405_PATCH_MANIFEST.md), [v384](releases/v384_RELEASE.md) |
+| Release manifests | [releases](releases/) | [v423](releases/V423_RELEASE.md), [v422](releases/V422_RELEASE.md), [v421](releases/V421_RELEASE.md), [v420](releases/V420_RELEASE.md), [v419](releases/V419_PATCH_MANIFEST.md), [v418](releases/V418_RELEASE.md), [v417](releases/V417_RELEASE.md), [v416](releases/V416_RELEASE.md), [v415](releases/V415_PATCH_MANIFEST.md), [v414](releases/V414_PATCH_MANIFEST.md), [v405](releases/V405_PATCH_MANIFEST.md), [v384](releases/v384_RELEASE.md) |
 | Regression automation | [`../regression_tools/`](../regression_tools/) | [`README.md`](../regression_tools/README.md), [`P0_ACCEPTANCE.md`](../regression_tools/P0_ACCEPTANCE.md) |
 | Regression results and machine evidence | [`../regression/`](../regression/) | JSON reports, and [`RESULTS_AUDIT_v408.md`](../regression/RESULTS_AUDIT_v408.md) beside its JSON |
 | JavaScript subsystem layout | [`../js/README.md`](../js/README.md) | Module boundaries and maintenance notes |

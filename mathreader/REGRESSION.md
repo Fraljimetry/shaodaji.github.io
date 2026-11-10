@@ -1,5 +1,11 @@
 # MathReader — Regression policy and recent history
 
+## v423 — Structure heading navigation (2026-11-10 UTC)
+
+- Reproduced on unchanged v422 with a real Chromium DOM test and the production embedded bookmark resolver/Structure click handler: page-only `Fit` to a heading at 62.5% of the page navigated to ratio 0. Another `XYZ` bookmark with a `null` top was misinterpreted as PDF y=0.
+- The new conservative text-line recovery applies only when the embedded bookmark lacks an authoritative vertical coordinate or when an inferred heading has no useful ratio; exactly one matching page-local heading line is required. Explicit PDF destinations and manual Reselect coordinates are preserved; asynchronous document-switch/click races are guarded.
+- The actual `goToLocation()` and a real scrollable Chromium layout were exercised after the Structure click. Other index detectors and the Structure index schema were not changed. [v423 release and limitations](docs/releases/V423_RELEASE.md).
+
 
 ## v420 — local-column equation tag recovery
 
