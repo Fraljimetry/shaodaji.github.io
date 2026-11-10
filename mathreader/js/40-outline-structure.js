@@ -1014,6 +1014,31 @@ async function detectOutlineFromTypography() {
     }
   }
 
+// A native-text two-column journal page can have perfectly valid headings in
+// both columns. Sorting all headings by page-y interleaves the two independent
+// streams (2.3 before 2.1, etc.). Do not infer two columns merely because a
+// heading is indented: require repeated BODY text confined to each half, with
+// overlapping vertical spans and few full-width body lines.
+function nativeOutlineTwoColumnPage(lines) {
+  const usable = (lines || []).filter((row) => {
+    const text = String(row?.text || '').trim();
+    const start = Number(row?.xStartRatio), end = Number(row?.xEndRatio);
+    return text.length >= 22 && Number.isFinite(start) && Number.isFinite(end)
+      && end - start >= 0.13 && end - start <= 0.70;
+  });
+  const left = usable.filter((row) => Number(row.xStartRatio) <= 0.43 && Number(row.xEndRatio) <= 0.535);
+  const right = usable.filter((row) => Number(row.xStartRatio) >= 0.49 && Number(row.xEndRatio) >= 0.65);
+  const across = usable.filter((row) => Number(row.xStartRatio) < 0.43 && Number(row.xEndRatio) > 0.62);
+  if (left.length < 7 || right.length < 7 || (left.length + right.length) < usable.length * 0.67
+      || across.length > (left.length + right.length) * 0.30) return false;
+  const leftYs = left.map((row) => Number(row.y)).filter(Number.isFinite);
+  const rightYs = right.map((row) => Number(row.y)).filter(Number.isFinite);
+  if (leftYs.length < 7 || rightYs.length < 7) return false;
+  const commonSpan = Math.min(Math.max(...leftYs), Math.max(...rightYs))
+    - Math.max(Math.min(...leftYs), Math.min(...rightYs));
+  return commonSpan >= Number(lines[0]?.pageHeight || 700) * 0.22;
+}
+
   const ocrSplitPages = new Set();
   if (documentOcrActive) {
     const pageCandidates = new Map();
@@ -1028,11 +1053,15 @@ async function detectOutlineFromTypography() {
       if (hasLeft && hasRight) ocrSplitPages.add(pageNum);
     }
   }
+  const nativeSplitPages = new Set();
+  if (!documentOcrActive) for (let i = 0; i < pages.length; i += 1) {
+    if (nativeOutlineTwoColumnPage(pages[i])) nativeSplitPages.add(i + 1);
+  }
   const ordered = candidates.sort((a, b) => {
     if (a.page !== b.page) return a.page - b.page;
-    if (documentOcrActive && ocrSplitPages.has(a.page)) {
-      const aColumn = Number(a.xStartRatio) >= 0.52 ? 1 : 0;
-      const bColumn = Number(b.xStartRatio) >= 0.52 ? 1 : 0;
+    if (ocrSplitPages.has(a.page) || nativeSplitPages.has(a.page)) {
+      const aColumn = Number(a.xStartRatio) >= 0.49 ? 1 : 0;
+      const bColumn = Number(b.xStartRatio) >= 0.49 ? 1 : 0;
       if (aColumn !== bColumn) return aColumn - bColumn;
     }
     return b.y - a.y || (Number(a.xStartRatio) || 0) - (Number(b.xStartRatio) || 0);

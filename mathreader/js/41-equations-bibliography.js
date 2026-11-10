@@ -291,12 +291,18 @@ function recoverBoundedAppendixResultConfusables(entries, observations) {
     if (prevNum !== 7 || nextNum !== 9 || candidate.page - previous.page > 3 || next.page - candidate.page > 3) continue;
     const label=`${candidate.appendixType} ${candidate.appendixPrefix}.8`;
     if (accepted.some(r=>normalizedStructureResultReference(r.label)===normalizedStructureResultReference(label))) continue;
-    accepted.push({label,title:`${label}. ${candidate.titleTail.replace(/^[.:]\s*/, '')}`.slice(0,180),
+    // Existing detections are already ordered by their physical reading
+    // columns. Inserting the one corroborated observation BEFORE its printed
+    // successor preserves that order; a global page-y sort would interleave
+    // left/right columns and corrupt Results navigation on every spread.
+    const resolved = {label,title:`${label}. ${candidate.titleTail.replace(/^[.:]\s*/, '')}`.slice(0,180),
       page:candidate.page,ratio:candidate.ratio,
       appendixOcrNumberResolved:true,appendixOriginalNumberText:candidate.rawText,
-      key:`${candidate.page}:${normalizedReferenceLabel(label)}`,proofReferences:[],usedByProofs:[]});
+      key:`${candidate.page}:${normalizedReferenceLabel(label)}`,proofReferences:[],usedByProofs:[]};
+    const successorIndex = accepted.indexOf(next);
+    if (successorIndex >= 0) accepted.splice(successorIndex, 0, resolved);
+    else accepted.push(resolved);
   }
-  accepted.sort((a,b) => Number(a.page)-Number(b.page) || Number(a.ratio)-Number(b.ratio));
   return accepted;
 }
 
@@ -4185,8 +4191,18 @@ function bibliographyEntryLooksCompleteForPostscript(entry) {
     && (/(?:\d{1,4}\s*[-–—]\s*\d{1,4}|\b(?:MR|Zbl)\s*\d+|\b(?:doi|arXiv)\b)/i.test(text) || /[.)]\s*$/.test(text));
 }
 
-function bibliographyPostscriptContactLine(line, text, activeEntry, entryCount) {
+function bibliographyPostscriptContactLine(line, text, activeEntry, entryCount, followingLines = []) {
   if (!activeEntry || entryCount < 3 || !bibliographyEntryLooksCompleteForPostscript(activeEntry)) return false;
+  // A bibliography entry can itself contain an affiliation or a university
+  // (e.g. a thesis institution). Do not mistake it for postscript contact
+  // information while the NEXT numbered author citation is plainly visible.
+  // This is sequence- and author-evidence based, not a title/page exception.
+  const nextNumber = Number(activeEntry.number) + 1;
+  if (Number.isInteger(nextNumber) && (followingLines || []).some((row) => {
+    const match = String(row?.text || '').trim().match(/^\[\s*(\d{1,3})\s*\]\s+(.{12,})$/u);
+    return match && Number(match[1]) === nextNumber
+      && bibliographyReferenceBodyLooksStrong(match[2]);
+  })) return false;
   const cleaned = String(text || '').replace(/\s+/g, ' ').trim();
   if (!cleaned || cleaned.length > 120) return false;
   if (/^E-?mail\s+address\b/i.test(cleaned)) return true;
@@ -4240,7 +4256,7 @@ function bibliographyLineFragment(line, parts, columnIndex = null) {
   };
 }
 
-function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = false) {
+function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = false, includeBodyColumns = false) {
   const lines = Array.isArray(rawLines) ? rawLines : [];
   if (!lines.length) return lines;
 
@@ -4253,7 +4269,8 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
       const left = parts[index];
       const right = parts[index + 1];
       const gap = Number(right.xStartRatio || 0) - Number(left.xEndRatio || 0);
-      if (Number(left.xEndRatio || 0) > 0.56 || Number(right.xStartRatio || 0) < 0.44 || gap < 0.04) continue;
+      if (Number(left.xEndRatio || 0) > 0.56 || Number(right.xStartRatio || 0) < 0.44
+          || gap < (includeBodyColumns && !bibliographyAlreadyActive ? 0.032 : 0.04)) continue;
       if (!bestGap || gap > bestGap.gap) bestGap = { index, gap };
     }
     if (bestGap) {
@@ -4279,10 +4296,18 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
 
   const headingLines = splitRows.filter((line) => bibliographyHeadingText(line.text));
   const headingPresent = headingLines.length > 0;
-  if (!bibliographyAlreadyActive && !headingPresent) return lines;
-
   const headingRatio = headingPresent ? Math.min(...headingLines.map((line) => Number(line.ratio || 0))) : 0;
-  const relevant = (line) => bibliographyAlreadyActive || Number(line.ratio || 0) >= headingRatio - 0.02;
+  // On a final two-column page the reference list can finish its left column
+  // then continue at the TOP of the right column, above the left References
+  // heading. Those right-column entries must not be discarded as pre-heading
+  // text merely because their page-y coordinate is smaller.
+  const rightReferencesAboveHeading = headingPresent
+    && headingLines.some((line) => line.columnIndex === 0)
+    && splitRows.some((line) => line.columnIndex === 1
+      && Number(line.ratio) < headingRatio - 0.015
+      && /^\[\s*\d{1,3}\s*\]\s+[\p{Lu}]/u.test(String(line.text || '').trim()));
+  const relevant = (line) => bibliographyAlreadyActive || !headingPresent
+    || rightReferencesAboveHeading || Number(line.ratio || 0) >= headingRatio - 0.02;
   const leftLines = splitRows.filter((line) => line.columnIndex === 0 && relevant(line));
   const rightLines = splitRows.filter((line) => line.columnIndex === 1 && relevant(line));
   const strongSplitCount = strongColumnSplitRatios.filter((ratio) => bibliographyAlreadyActive || ratio >= headingRatio - 0.02).length;
@@ -4292,6 +4317,13 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
   };
   const substantialLeftCount = leftLines.filter(substantialColumnLine).length;
   const substantialRightCount = rightLines.filter(substantialColumnLine).length;
+  // Do not split ordinary Result/prose lines on a single unusual whitespace
+  // gap. A genuine journal spread supplies repeated substantial fragments on
+  // both sides and multiple independently split baselines.
+  const confirmedBodyColumns = includeBodyColumns && !headingPresent
+    && splitRows.length - lines.length >= 8
+    && substantialLeftCount >= 7 && substantialRightCount >= 7;
+  if (!bibliographyAlreadyActive && !headingPresent && !confirmedBodyColumns) return lines;
   const headingOnLeft = headingLines.some((line) => line.columnIndex === 0);
   const headingOnRight = headingLines.some((line) => line.columnIndex === 1);
   // A single-column bibliography with hanging keys can superficially resemble
@@ -4312,7 +4344,7 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
     // a column gutter even though each entry visibly crosses the page centre.
     || (wideSameLineKeyLeads >= 3 && rightSameLineKeyLeads === 0);
   const twoColumn = !singleColumnHangingBibliography && (
-    strongSplitCount >= 2
+    confirmedBodyColumns || strongSplitCount >= 2
     || (substantialLeftCount >= 3 && substantialRightCount >= 3)
     || (headingOnRight && substantialRightCount >= 3 && (strongSplitCount >= 1 || substantialLeftCount >= 1))
     || (headingOnLeft && substantialLeftCount >= 3 && (strongSplitCount >= 1 || substantialRightCount >= 1))
@@ -4355,7 +4387,7 @@ function bibliographyColumnAwareLines(rawLines, bibliographyAlreadyActive = fals
   // halves, causing pre-heading prose to be moved after live bibliography
   // entries and appended to them.  Preserve all pre-heading lines verbatim and
   // apply column ordering only at/after the heading.
-  const headingBoundary = headingPresent ? headingRatio - 0.02 : -Infinity;
+  const headingBoundary = headingPresent && !rightReferencesAboveHeading ? headingRatio - 0.02 : -Infinity;
   const preHeading = headingPresent
     ? lines.filter((line) => Number(line.ratio || 0) < headingBoundary).map((line) => ({ ...line, columnStartRatio: Number(line.xStartRatio || 0) }))
     : [];
@@ -4510,9 +4542,19 @@ function normalizedBibliographyKey(value) {
   return String(value || '').replace(/^\s*\[|\]\s*$/g, '').replace(/\s+/g, '').trim().toLocaleLowerCase();
 }
 
+// Math uses square brackets for matrix indices and set notation as well as
+// citations. Do not manufacture reference backlinks from a directly adjacent
+// mathematical variable (A[1,2], D_t [1,1]) or from set-index brackets.
+function bibliographyBracketIsMathematicalIndex(text, start, raw) {
+  const inner = String(raw || '').slice(1, -1);
+  if (/[{}=∪∩⊆⊂∈∉\\]/u.test(inner)) return true;
+  const before = String(text || '').slice(0, Math.max(0, start)).trimEnd();
+  return /(?:^|[^\p{L}])(?:[A-Z\p{Lu}])(?:\s+[\p{Ll}\p{N}])?\s*$/u.test(before);
+}
+
 function bibliographyCitationKeys(raw, knownKeys = null) {
   const inner = String(raw || '').replace(/^\s*\[|\]\s*$/g, '').trim();
-  if (!inner) return [];
+  if (!inner || /[{}=∪∩⊆⊂∈∉\\]/u.test(inner)) return [];
   const keys = [];
   const accept = (value) => {
     const key = normalizedBibliographyKey(value);
@@ -4852,7 +4894,7 @@ async function buildStructureIndex({ force = false } = {}) {
     )) {
       if (pdfDoc !== sourceDoc || currentFileKey !== sourceKey || token !== structureIndexBuildToken) return;
       const tailOnlyPage = page > primaryPageCount;
-      const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode);
+      const lines = bibliographyColumnAwareLines(rawLines, bibliographyMode, true);
       const tocResultRows = tailOnlyPage ? new Set() : tocResultLineIndices(lines, page, sourceDoc.numPages);
       // A back-of-book Subject Index continues after its title page. Its
       // continuation pages must not contribute phantom results such as
@@ -4894,6 +4936,7 @@ async function buildStructureIndex({ force = false } = {}) {
           let bracketMatch;
           while ((bracketMatch = bracketRe.exec(cleaned))) {
             const raw = bracketMatch[0];
+            if (bibliographyBracketIsMathematicalIndex(cleaned, bracketMatch.index, raw)) continue;
             bibliographyCitationGroups.push({
               page,
               ratio: line.ratio,
@@ -4992,7 +5035,7 @@ async function buildStructureIndex({ force = false } = {}) {
           let bibliographyLine = line.ocrSource
             ? cleaned.replace(/^[\[{(]\s*(\d{1,3})\s*[\]})][.)]?\s*/, '[$1] ')
             : cleaned;
-          if (bibliographyPostscriptContactLine(line, bibliographyLine, activeBibliographyEntry, nextBibliography.length)) {
+          if (bibliographyPostscriptContactLine(line, bibliographyLine, activeBibliographyEntry, nextBibliography.length, lines.slice(lineIndex + 1, lineIndex + 15))) {
             bibliographyMode = false;
             pendingBibliographyKey = null;
             pendingUnnumberedBibliographyEntry = null;

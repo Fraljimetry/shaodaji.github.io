@@ -38,3 +38,5 @@ The split is **lossless**: the archived file contents plus the unmodified v414â€
 - Paths printed in historical manifest text (for example `mathreader/OCR_*.md`) describe the **original patch layout**, not a current hyperlink. Use this map to locate the relocated file. No production runtime or CDN path was changed.
 - **Current update distribution (v419+):** use small overlay ZIPs containing only changed paths under `mathreader/`; extract at the parent directory to overwrite the corresponding files. Back up the existing folder or maintain version control first. Do not remove untouched files. Earlier v418 was distributed as a complete-folder ZIP; this is historical and is not the v419 update method.
 - **Earlier documentation-only patch:** if instead you applied `mathreader_v414_docs_reorganization_patch.zip` over an existing tree, run `python .\mathreader\docs\apply_moves.py` from the parent directory to remove verified root-level duplicates. A ZIP overlay by itself cannot delete old files.
+
+- [v421: Two-column Structure, Results and Bibliography](releases/V421_RELEASE.md)

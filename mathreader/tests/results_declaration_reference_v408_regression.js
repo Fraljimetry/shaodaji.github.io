@@ -59,7 +59,7 @@ let clean = Array.from(ctx.normalizeSequentialStructureEntries(candidates.slice(
 same(clean.length,2,'genuine entries both survive sequence normalization without phantom citations');
 same(clean[0].page,3,'Lemma 2.1 retains its true page');
 same(clean[1].page,4,'Theorem 4.1 retains its true page');
-yes(/const STRUCTURE_INDEX_VERSION = 55\s*;/.test(core),'old detection caches are invalidated for v408');
+yes(/const STRUCTURE_INDEX_VERSION = 56\s*;/.test(core),'old detection caches are invalidated for v408');
 
 if(process.env.MATHREADER_RESULTS_EXPORT){
  const data=JSON.parse(fs.readFileSync(process.env.MATHREADER_RESULTS_EXPORT,'utf8'));

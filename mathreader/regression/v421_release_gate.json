@@ -1,0 +1,29 @@
+{
+  "schema": "mathreader.release_gate@1",
+  "version": 421,
+  "source_baseline": 420,
+  "javascript_test_files": {"passed": 69, "total": 69, "execution": "individual node invocation"},
+  "python_test_files": {"passed": 29, "total": 29, "execution": "individual python invocation"},
+  "responsive_layout_assertions": 176,
+  "chromium_shell": "PASS",
+  "original_journal_pdfs_executed": 0,
+  "publisher_verified_journal_selections": 10,
+  "publisher_verified_paper_selections": 30,
+  "stoc2025_native_export": {
+    "pages": 12,
+    "document_sha256": "c1e71f0441ecb6401b085a653028921b38fa35aca5bd27726f370eb5d8153d20",
+    "structure_headings_before": 14,
+    "structure_headings_after": 14,
+    "structure_order_fixed": true,
+    "result_candidates_before": 23,
+    "result_candidates_after": 29,
+    "bibliography_before": 24,
+    "bibliography_after": 41,
+    "equation_labels_expected_from_v420_fixture": 21,
+    "equation_labels_after": 21,
+    "page_image_truth_audit": "NOT_COMPLETED"
+  },
+  "full_cross_journal_detection_acceptance": "INCOMPLETE_NO_ORIGINAL_PDFS",
+  "formula_ocr_real_inference": "NOT_TESTED",
+  "accuracy_claim": "none; only source-level regression and bounded fixtures"
+}
