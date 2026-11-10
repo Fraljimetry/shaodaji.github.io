@@ -137,13 +137,56 @@ function tocSectionNumber(title) {
   return clean.match(/^(?:§\s*)?([A-Z]?\d+(?:\.\d+){1,4})(?:[.)])?(?:\s|$)/i)?.[1] || '';
 }
 
+// A PDF.js text row is ordered by baseline, not by reading column.  On
+// journal spreads, a single row may contain the tail of the left column and
+// the start of a completely independent right-column sentence.  Keep this
+// projection local to reading/link consumers: the detection engine continues
+// to receive its original geometrical evidence.
+function columnLocalReadingLines(lines) {
+  if (!Array.isArray(lines) || !lines.length || typeof structureHeadingRowSegments !== 'function') return lines || [];
+  const fragments = [];
+  let splitRows = 0;
+  for (const line of lines) {
+    const pieces = structureHeadingRowSegments(line).filter((item) => String(item.text || '').trim());
+    if (pieces.length > 1) splitRows++;
+    for (const piece of pieces) fragments.push({
+      ...line, text: String(piece.text).replace(/\s+/g, ' ').trim(),
+      ratio: Number(piece.ratio), xStartRatio: Number(piece.xStartRatio),
+      xEndRatio: Number(piece.xEndRatio),
+      // The parent row's part offsets refer to its full text, not this fragment.
+      parts: [],
+    });
+  }
+  const substantial = (item) => item.text.length >= 18 && item.xEndRatio - item.xStartRatio >= 0.12;
+  const left = fragments.filter((item) => item.xEndRatio <= 0.50 && substantial(item));
+  const right = fragments.filter((item) => item.xStartRatio >= 0.50 && substantial(item));
+  // Multiple *substantive* lines anchored in both halves are essential. A
+  // single-column formula and its right-margin label must not create columns.
+  const confirmed = left.length >= 3 && right.length >= 3 && (splitRows >= 2 || (left.length >= 7 && right.length >= 7));
+  if (!confirmed) return lines;
+  const center = fragments.filter((item) => item.xEndRatio > 0.50 && item.xStartRatio < 0.50);
+  // Column reading order is left top-to-bottom, then right top-to-bottom.
+  // Full-width titles above columns stay above; the uncommon central/wide
+  // elements remain separate instead of being fused into nearby paragraphs.
+  const before = [], after = [];
+  const earliest = Math.min(...left.map((i) => i.ratio), ...right.map((i) => i.ratio));
+  for (const item of center) (item.ratio < earliest ? before : after).push(item);
+  const byY = (a, b) => a.ratio - b.ratio || a.xStartRatio - b.xStartRatio;
+  return [
+    ...before.sort(byY),
+    ...fragments.filter((item) => item.xEndRatio <= 0.50).sort(byY),
+    ...after.sort(byY),
+    ...fragments.filter((item) => item.xStartRatio >= 0.50).sort(byY),
+  ];
+}
+
 async function findSectionNumberLocation(number, originPage = null) {
   if (!pdfDoc || !number) return null;
   const escaped = String(number).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const headingRe = new RegExp(`^(?:§\\s*)?${escaped}(?:[.)])?\\s+\\S`, 'i');
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     if (page === originPage) continue;
-    const lines = await pageTextLines(page);
+    const lines = columnLocalReadingLines(await pageTextLines(page));
     for (const line of lines) {
       if (headingRe.test(String(line.text || '').trim())) return { page, ratio: Number(line.ratio) || 0 };
     }
@@ -167,7 +210,14 @@ async function findTocTitleLocation(title, originPage = null) {
   let best = null;
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
     if (Number(page) === Number(originPage)) continue;
-    const lines = await pageTextLines(page);
+    const rawLines = await pageTextLines(page);
+    const located = typeof uniqueStructureHeadingRatio === 'function'
+      ? uniqueStructureHeadingRatio(rawLines, title) : null;
+    if (located !== null && Number.isFinite(located)) {
+      const exact = { page, ratio: located, score: 1.12 };
+      if (!best || exact.score > best.score) best = exact;
+    }
+    const lines = columnLocalReadingLines(rawLines);
     for (const line of lines) {
       const text = String(line.text || '').trim();
       if (!text || text.length > 240) continue;
@@ -255,7 +305,7 @@ function tocStructureMatchScore(lineText, targetTitle) {
 }
 
 async function compareTocPageWithStructure(pageNum, targets) {
-  const lines = await pageTextLines(pageNum);
+  const lines = columnLocalReadingLines(await pageTextLines(pageNum));
   const matches = [];
   const usedTargets = new Set();
   for (const line of lines) {
@@ -579,7 +629,7 @@ async function findReferenceTextLocation(query, originPage = null) {
   const wanted = normalizeSearchValue(query, false);
   let best = null;
   for (let page = 1; page <= pdfDoc.numPages; page += 1) {
-    const lines = await pageTextLines(page);
+    const lines = columnLocalReadingLines(await pageTextLines(page));
     for (const line of lines) {
       if (!normalizeSearchValue(line.text, false).includes(wanted)) continue;
       let score = page === originPage ? -2 : 0;
@@ -686,7 +736,7 @@ async function collectBacklinks(query, target) {
   }
 
   for (let page=1; page<=pdfDoc.numPages; page+=1) {
-    const lines = await pageTextLines(page);
+    const lines = columnLocalReadingLines(await pageTextLines(page));
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
       const text = String(line.text || '');

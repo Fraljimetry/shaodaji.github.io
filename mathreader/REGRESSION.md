@@ -1,3 +1,13 @@
+# v427 — Other cross-column reading/navigation defects (2026-11-09)
+
+**Baseline:** v426. An actual PDF.js-native STOC source fixture reproduced a missed wrapped TOC destination, and independent-column synthetic rows reproduced false reference matches and backlinks (`Lemma` + `5` from different columns). The v426 Structure-panel fix did not cover these TOC and reference consumers.
+
+**Repair:** add column-local reading-line projection guarded by substantial evidence from both page halves. Apply it to TOC-section/text resolution, TOC-page recognition, reference-text fallback, and backlink search. Recover wrapped TOC headings using the existing bounded Structure locator. Preserve single-column pages, embedded/manual Structure navigation, detector indexes, OCR, and saved reading-data schemas.
+
+**Proof:** `tests/multicolumn_reading_links_v427_regression.js` is red on v426 at the genuine section-3 wrapped heading, green after the fix, and includes phantom-cross-column and single-column controls. `tests/multicolumn_toc_browser_v427.py` checks actual Chromium clicks/scroll against two source-measured headings. The 30-original-PDF native-geometry detector proxy replay is unchanged in all four index outputs. See [release](docs/releases/V427_RELEASE.md) and [gate](regression/v427_release_gate.json). Search-text/copy/export column order and full live-PDF object behavior remain **unverified**, not silently marked solved.
+
+---
+
 # v426 — Multiline and mathematical Structure bookmark recovery (2026-11-09)
 
 **Baseline:** v425. The two remaining reported bookmarks in the 12-page STOC paper, section **3** (PDF page 5) and **5.1** (PDF page 11), still landed at the page top. The former heading is split across two right-column baselines, interleaved with left-column mathematics; the latter uses mathematical-bold glyphs and separately extracted subscript digits. v425 required nearly the entire title on one line with matching word breaks. This is a general layout/text-normalization error, not a title-specific exception.

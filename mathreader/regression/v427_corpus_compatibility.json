@@ -1,0 +1,503 @@
+{
+  "schema": "mathreader.detector-corpus-compatibility@1",
+  "baseline": "v426 (detector source unchanged from v422)",
+  "version": "v427",
+  "extraction": "PyMuPDF-native spans, production JavaScript detector VM proxy; NOT browser PDF.js or live OCR",
+  "documents": 30,
+  "source_pages": 708,
+  "index_counts": {
+    "results": 549,
+    "bibliography": 413,
+    "equation_occurrences": 1879,
+    "structure": 514
+  },
+  "all_three_stages_passed": true,
+  "all_four_index_output_arrays_identical_to_prior_proxy_run": true,
+  "per_document": [
+    {
+      "fixture": "01.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 78,
+        "results": 202,
+        "bibliography": 105,
+        "equation_occurrences": 346
+      }
+    },
+    {
+      "fixture": "02.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 46,
+        "results": 62,
+        "bibliography": 183,
+        "equation_occurrences": 300
+      }
+    },
+    {
+      "fixture": "03.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 9,
+        "results": 26,
+        "bibliography": 18,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "04.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 4,
+        "results": 0,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "05.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 15,
+        "results": 10,
+        "bibliography": 0,
+        "equation_occurrences": 66
+      }
+    },
+    {
+      "fixture": "06.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 26,
+        "results": 4,
+        "bibliography": 3,
+        "equation_occurrences": 85
+      }
+    },
+    {
+      "fixture": "07.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 9,
+        "results": 3,
+        "bibliography": 0,
+        "equation_occurrences": 27
+      }
+    },
+    {
+      "fixture": "08.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 13,
+        "results": 16,
+        "bibliography": 3,
+        "equation_occurrences": 15
+      }
+    },
+    {
+      "fixture": "09.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 21,
+        "results": 7,
+        "bibliography": 0,
+        "equation_occurrences": 38
+      }
+    },
+    {
+      "fixture": "10.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 0,
+        "results": 0,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "11.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 1,
+        "results": 3,
+        "bibliography": 0,
+        "equation_occurrences": 70
+      }
+    },
+    {
+      "fixture": "12.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 0,
+        "results": 0,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "13.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 29,
+        "results": 0,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "14.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 9,
+        "results": 27,
+        "bibliography": 20,
+        "equation_occurrences": 81
+      }
+    },
+    {
+      "fixture": "15.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 22,
+        "results": 19,
+        "bibliography": 14,
+        "equation_occurrences": 93
+      }
+    },
+    {
+      "fixture": "16.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 10,
+        "results": 10,
+        "bibliography": 3,
+        "equation_occurrences": 31
+      }
+    },
+    {
+      "fixture": "17.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 6,
+        "results": 16,
+        "bibliography": 2,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "18.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 25,
+        "results": 13,
+        "bibliography": 7,
+        "equation_occurrences": 270
+      }
+    },
+    {
+      "fixture": "19.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 0,
+        "results": 1,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "20.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 21,
+        "results": 7,
+        "bibliography": 0,
+        "equation_occurrences": 38
+      }
+    },
+    {
+      "fixture": "21.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 0,
+        "results": 1,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "22.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 7,
+        "results": 30,
+        "bibliography": 20,
+        "equation_occurrences": 6
+      }
+    },
+    {
+      "fixture": "23.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 26,
+        "results": 1,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "24.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 7,
+        "results": 26,
+        "bibliography": 18,
+        "equation_occurrences": 3
+      }
+    },
+    {
+      "fixture": "25.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 9,
+        "results": 18,
+        "bibliography": 10,
+        "equation_occurrences": 23
+      }
+    },
+    {
+      "fixture": "26.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 15,
+        "results": 12,
+        "bibliography": 0,
+        "equation_occurrences": 22
+      }
+    },
+    {
+      "fixture": "27.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 48,
+        "results": 15,
+        "bibliography": 0,
+        "equation_occurrences": 0
+      }
+    },
+    {
+      "fixture": "28.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 28,
+        "results": 6,
+        "bibliography": 0,
+        "equation_occurrences": 65
+      }
+    },
+    {
+      "fixture": "29.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 4,
+        "results": 1,
+        "bibliography": 0,
+        "equation_occurrences": 30
+      }
+    },
+    {
+      "fixture": "30.json",
+      "status": "PASS",
+      "unchanged": {
+        "outline": true,
+        "results": true,
+        "bibliography": true,
+        "equations": true
+      },
+      "summary": {
+        "inferred_outline": 26,
+        "results": 13,
+        "bibliography": 7,
+        "equation_occurrences": 270
+      }
+    }
+  ],
+  "limitations": [
+    "no independent printed-page accuracy certification",
+    "some documents are related versions and notes",
+    "the modified link/read-order functions are tested separately against PDF.js-export geometry"
+  ]
+}

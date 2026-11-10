@@ -153,7 +153,7 @@ async function run(){
     const fragment=html.slice(htmlStart,htmlStop);
     check(fragment.includes('id="settings-export-group"')&&fragment.includes('id="export-include-detection"')&&fragment.includes('id="export-include-full-text"'),'both checkboxes inside Settings');
     check(ui.includes("exportDetectionOption?.addEventListener('change', persistExportPreferences)")&&ui.includes("loadExportPreferences();"),'checkbox events and startup restoration wired');
-    check(html.includes('mathreader.js?v=426')&&html.includes('mathreader.css?v=426'),'v420 browser caches invalidated');
+    check(html.includes('mathreader.js?v=427')&&html.includes('mathreader.css?v=427'),'v420 browser caches invalidated');
     check(!extract(src,'importReadingDataFile').includes('payload.fullDocumentText'),'diagnostic full text does not alter reading state during import');
   }
   console.log(`PASS | v397 independent export options | assertions=${checks}`);

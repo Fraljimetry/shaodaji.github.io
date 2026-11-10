@@ -1,0 +1,81 @@
+{
+  "schema": "mathreader.release-gate@1",
+  "version": "v427",
+  "baseline": "v426",
+  "delivery": "overlay-only",
+  "reproduced": {
+    "v426": "an actual wrapped two-column STOC section 3 is absent from TOC title fallback; a synthetic split row manufactures a nonexisting Lemma 5 reference and backlink",
+    "v427": "column-local results avoid artificial matches; wrap-aware TOC destination is PDF p5 ratio 0.4066 and section 2.1 is p4 ratio 0.3206"
+  },
+  "source_export_pdf_sha256": "c1e71f0441ecb6401b085a653028921b38fa35aca5bd27726f370eb5d8153d20",
+  "fixes": [
+    "TOC page recognition and target lookup",
+    "reference-text fallback",
+    "backlink phrase/snippet attribution",
+    "retain mono-column and equation-tag non-splitting"
+  ],
+  "verification": {
+    "javascript_suites": {
+      "passed": 73,
+      "total": 73
+    },
+    "python_chromium_files": {
+      "passed": 33,
+      "total": 33
+    },
+    "responsive_assertions": {
+      "passed": 176,
+      "total": 176
+    },
+    "genuine_source_native_item_replay": "PASS",
+    "chromium_in_document_TOC_click_and_scroll": "PASS",
+    "thirty_PDF_detector_proxy_replays": {
+      "passed": 30,
+      "total": 30,
+      "all_four_outputs_unchanged": true
+    },
+    "all_module_syntax": "PASS",
+    "assembled_runtime_syntax": "PASS",
+    "zip_integrity": "PASS",
+    "overlay_installation_rehearsal": "PASS"
+  },
+  "changed_or_new_files_excluding_gate": [
+    "REGRESSION.md",
+    "docs/README.md",
+    "docs/releases/V427_RELEASE.md",
+    "index.html",
+    "js/50-references-search.js",
+    "mathreader.js",
+    "regression/v427_corpus_compatibility.json",
+    "tests/equation_progress_regression.js",
+    "tests/export_preferences_v397_regression.js",
+    "tests/formula_ocr_lazy_regression.js",
+    "tests/maintenance_integrity_regression.js",
+    "tests/multicolumn_reading_links_v427_regression.js",
+    "tests/multicolumn_toc_browser_v427.py"
+  ],
+  "sha256_changed_or_new_files_excluding_gate": {
+    "REGRESSION.md": "bb3323f6b0f44e61ca9f125d9d8cb8d4346a733c4b1db14dda227366c132fd19",
+    "docs/README.md": "511dc91f4a98a669b296a89b41eacadce3f0565d328d8888190f4a57da399078",
+    "docs/releases/V427_RELEASE.md": "451d9c54b0f64f5c726264fb5f1331ae415b039f3d55603bd4a85ee58896fc26",
+    "index.html": "fd470b772863756d8355d9601ad8d4e39208b71e0cc1f679ab714cf14ad31d0a",
+    "js/50-references-search.js": "0ff927caf993ee46a503e8901fd3ea8b46ea40c055fc4df198de40957366f1ae",
+    "mathreader.js": "f1e3260ba66aeb940ddc6bc0c8c647363a39dbed0718e8e63cdbf911fd7aed0b",
+    "regression/v427_corpus_compatibility.json": "f97100d0131f6be44d7b41d3094a20415cd878ceac64baebd9d74c648a9bfb26",
+    "tests/equation_progress_regression.js": "e3cb56fa2d8d39c181ae842154acbb9702808f4b9c54531185f3ddca6ae83642",
+    "tests/export_preferences_v397_regression.js": "a2286ebb4a1999a502243ffd1a27f12990141c680469e4ddfba26a684ceae829",
+    "tests/formula_ocr_lazy_regression.js": "580c4ad4248a38c21153af65e18d16d5535f15fabf21f6a8f17441af3efb6fe1",
+    "tests/maintenance_integrity_regression.js": "27ce97b3e2268c62cdd6f081b98de18d95c5a461e6338349e5f75626e0fac157",
+    "tests/multicolumn_reading_links_v427_regression.js": "0e195656525d435477df2c05cffa71311a9e5e6261be3419b4a0e87c0e954c3b",
+    "tests/multicolumn_toc_browser_v427.py": "f337c91e639ca030c585deacb8e4eb984f922f06493f0db8d8be2f21eeb95467"
+  },
+  "unverified": [
+    "live deployed PDF.js processing of original bookmark graph",
+    "text Search aggregation across column boundaries",
+    "text selection/copy and full-document text export order",
+    "formula OCR and handwritten math",
+    "printed-page independent detection accuracy",
+    "Ahlfors hard-reload OCR evidence limitation"
+  ],
+  "date": "2026-11-09"
+}
