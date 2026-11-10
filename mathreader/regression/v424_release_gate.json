@@ -1,0 +1,74 @@
+{
+  "version": "v424",
+  "baseline": "v418 complete + v419/v420/v421/v422/v423 overlays; 283 files matched previous v423 worktree",
+  "baseline_js": {
+    "passed": 70,
+    "total": 70
+  },
+  "red_green_reproductions": [
+    {
+      "failure": "stale semantic page adjustment",
+      "before": "new scrollTop=730, overwritten by old scrollTop=1300",
+      "after": "new 730 retained"
+    },
+    {
+      "failure": "stale search-result adjustment",
+      "before": "new 730 overwritten by old 1300",
+      "after": "new 730 retained"
+    },
+    {
+      "failure": "two overlapping text searches",
+      "before": "alpha appended after beta and overwrites status",
+      "after": "beta only"
+    },
+    {
+      "failure": "search outlives PDF switch",
+      "before": "old document hit/status injected",
+      "after": "old result discarded"
+    },
+    {
+      "failure": "search UI not cleared with other document maps",
+      "before": "old result/status remain visible",
+      "after": "cleared"
+    }
+  ],
+  "javascript_regressions": {
+    "passed": 70,
+    "total": 70,
+    "status": "PASS"
+  },
+  "python_chromium_test_files": {
+    "passed": 31,
+    "total": 31,
+    "status": "PASS individually/bounded batches"
+  },
+  "responsive_assertions": {
+    "passed": 176,
+    "total": 176,
+    "status": "PASS"
+  },
+  "new_chromium_reading_cases": 9,
+  "source_grammar": "PASS all ten JS subsystem files + bootstrap",
+  "index_schema": {
+    "structure": 57,
+    "equations": 29,
+    "changed": false
+  },
+  "changed_runtime_files": [
+    "js/00-core.js",
+    "js/50-references-search.js",
+    "js/60-notes-bookmarks-data.js"
+  ],
+  "unchanged": [
+    "OCR/model code",
+    "Structure/Results/Equation/Bibliography detectors",
+    "reading-data schema",
+    "reading experience layout"
+  ],
+  "limitations": [
+    "controlled PDF.js/text stubs in Chromium, not original PDF full browser loading",
+    "real OCR model inference not exercised",
+    "stale asynchronous pageText work is logically discarded but not forcibly canceled",
+    "Ahlfors equation margin OCR evidence reload limitation accepted"
+  ]
+}

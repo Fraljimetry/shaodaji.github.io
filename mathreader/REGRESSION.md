@@ -1,5 +1,11 @@
 # MathReader — Regression policy and recent history
 
+## v424 — Reading navigation and search cancellation (2026-11-10 UTC)
+
+- Independent audit of the reconstructed v423 source (70/70 baseline JS PASS) reproduced stale asynchronous Results/reference/text-search alignment that moved a viewport **after** a newer navigation request; a delayed search could also mix old/new query results or write stale results into another PDF. The document-switch reset retained visible search rows from the previous file.
+- Source-backed Chromium regression `tests/reading_navigation_races_v424.py` fails on v423 at delayed semantic alignment (`scrollTop` moves from 730 to 1300), and separately confirms outdated searches and previous-document hits. v424 guards semantic landing, search-result alignment, equation-bookmark/search alignment, reference lookup and visible search-list reset with document identity and request serials. Active navigation still works normally.
+- Regression: 70/70 JavaScript tests, 31/31 Python/Chromium test files, 176/176 responsive assertions. Source syntax and assembled runtime verified. No index format/OCR/detection changes. Real-user PDF/PDF.js integration and model inference remain unverified. [Release](docs/releases/V424_RELEASE.md) and [gate](regression/v424_release_gate.json).
+
 ## v423 — Structure heading navigation (2026-11-10 UTC)
 
 - Reproduced on unchanged v422 with a real Chromium DOM test and the production embedded bookmark resolver/Structure click handler: page-only `Fit` to a heading at 62.5% of the page navigated to ratio 0. Another `XYZ` bookmark with a `null` top was misinterpreted as PDF y=0.

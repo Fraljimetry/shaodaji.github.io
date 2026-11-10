@@ -67,7 +67,7 @@ check(merged.equationMarginEvidence.length===2,'repaired target replaces only st
 check(merged.equationMarginEvidence.some(x=>x.label==='(1.12)'&&x.ratio===vetted.ratio),'verified position survives merge');
 check(merge(oldPage,{page:28,lines:[],words:[],equationMarginEvidence:[]}).equationMarginEvidence.length===2,'failed-to-recover label never deletes prior evidence');
 check(merge(merged,rescanned).equationMarginEvidence.length===2,'repeated scans do not accumulate same-label targets');
-const navCtx = {goToLocation:async (...x)=>navCtx.locations.push(x),emphasizeSemanticDestination:async()=>{navCtx.semantic+=1;return true;},showNavigationLandingCue:(...x)=>navCtx.cues.push(x),locations:[],cues:[],semantic:0};
+const navCtx = {pdfDoc:{numPages:30},currentFileKey:'test-giusti',readingFlow:'single',readerNavigationSerial:0,goToLocation:async (...x)=>{navCtx.locations.push(x);navCtx.readerNavigationSerial+=1;},emphasizeSemanticDestination:async()=>{navCtx.semantic+=1;return true;},showNavigationLandingCue:(...x)=>navCtx.cues.push(x),locations:[],cues:[],semantic:0};
 const go = vm.runInNewContext(`(${extract(navigation,'goToMatchedLocation')})`,navCtx);
 (async()=>{
   await go(28,vetted.ratio,'(1.12)',{positionOnly:true});

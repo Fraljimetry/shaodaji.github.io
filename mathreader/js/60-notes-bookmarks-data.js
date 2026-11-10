@@ -325,12 +325,14 @@ function formatBookmarkTime(timestamp) {
   } catch (_) { return new Date(timestamp).toLocaleString(); }
 }
 
-async function positionTargetAtReadingLead(page, ratio) {
+async function positionTargetAtReadingLead(page, ratio, stillCurrent = () => true) {
+  if (!stillCurrent()) return false;
   let surface = null;
   if (readingFlow === 'continuous') surface = continuousPageNodes.get(Number(page))?.surface || null;
   else if (Number(page) === Number(currentPage)) surface = primaryPageSurface;
-  if (!surface) return;
+  if (!surface) return false;
   await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (!stillCurrent()) return false;
   const wrapRect = primaryCanvasWrap.getBoundingClientRect();
   const surfaceRect = surface.getBoundingClientRect();
   const targetY = surfaceRect.top + surfaceRect.height * Math.min(1, Math.max(0, Number(ratio) || 0));
@@ -338,6 +340,7 @@ async function positionTargetAtReadingLead(page, ratio) {
   primaryCanvasWrap.scrollTop = Math.max(0, primaryCanvasWrap.scrollTop + targetY - (wrapRect.top + desiredOffset));
   if (readingFlow === 'continuous') continuousSavedAnchor = captureContinuousAnchor() || continuousSavedAnchor;
   persistDocumentState();
+  return true;
 }
 
 function showNavigationLandingCue(page, ratio) {
@@ -374,13 +377,19 @@ function equationBookmarkRatio(bookmark) {
 }
 
 async function goToEquationBookmark(bookmark) {
-  const page = Math.min(Math.max(1, Number(bookmark?.page) || 1), pdfDoc?.numPages || 1);
+  if (!pdfDoc || !bookmark) return;
+  const sourceDoc = pdfDoc, sourceKey = currentFileKey, sourceFlow = readingFlow;
+  const expectedNavigation = readerNavigationSerial + 1;
+  const stillCurrent = () => pdfDoc === sourceDoc && currentFileKey === sourceKey
+    && readingFlow === sourceFlow && readerNavigationSerial === expectedNavigation;
+  const page = Math.min(Math.max(1, Number(bookmark.page) || 1), pdfDoc.numPages);
   const resolvedRatio = equationBookmarkRatio(bookmark);
   const ratio = resolvedRatio === null ? 0 : resolvedRatio;
   await goToLocation(page, ratio, { contextLead: false });
+  if (!stillCurrent()) return;
   if (resolvedRatio !== null) {
-    await positionTargetAtReadingLead(page, ratio);
-    showEquationBookmarkCue(page, ratio);
+    if (await positionTargetAtReadingLead(page, ratio, stillCurrent) && stillCurrent())
+      showEquationBookmarkCue(page, ratio);
   }
 }
 

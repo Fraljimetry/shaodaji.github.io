@@ -754,14 +754,28 @@ async function resolveReferenceTarget(query, originPage = null, originRatio = nu
   return findReferenceTextLocation(query, originPage);
 }
 
+// Resolving cross-references can traverse pages. Only the latest reference
+// request may start a navigation; a later direct jump invalidates it too.
+let referenceNavigationRequestSerial = 0;
 async function goToReferenceQuery(query, originPage = currentPage, originRatio = null) {
   if (!pdfDoc || !query) return;
+  const requestSerial = ++referenceNavigationRequestSerial;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const priorNavigation = readerNavigationSerial;
+  const beforeJump = () => requestSerial === referenceNavigationRequestSerial
+    && pdfDoc === sourceDoc && currentFileKey === sourceKey
+    && readerNavigationSerial === priorNavigation;
   const target = await resolveReferenceTarget(query, originPage, originRatio);
+  if (!beforeJump()) return;
   if (!target) { showError(t(`No target found for ${query}.`, `未找到 ${query} 的目标位置。`)); return; }
   await goToMatchedLocation(target.page, Number(target.ratio) || 0, target.matchText || query, {
     positionOnly: isEquationLabelQuery(query),
   });
-  updateBacklinksForTarget(target.matchText || query, target);
+  if (pdfDoc === sourceDoc && currentFileKey === sourceKey
+      && readerNavigationSerial === priorNavigation + 1) {
+    updateBacklinksForTarget(target.matchText || query, target);
+  }
 }
 
 async function resolveOutlineDestination(rawDest) {
@@ -1189,14 +1203,15 @@ function nearestTextRangeAtRatio(layer, surface, targetRatio) {
   } catch (_) { return null; }
 }
 
-async function emphasizeSemanticDestination(page, ratio, query) {
-  if (!pdfDoc || !query) return false;
+async function emphasizeSemanticDestination(page, ratio, query, stillCurrent = () => true) {
+  if (!pdfDoc || !query || !stillCurrent()) return false;
   let layer = null;
   let surface = null;
   if (readingFlow === 'continuous') {
     const record = continuousPageNodes.get(Number(page));
     if (record) {
       if (!record.rendered) await renderContinuousPage(Number(page), continuousGeneration);
+      if (!stillCurrent()) return false;
       layer = record.textLayer;
       surface = record.surface;
     }
@@ -1206,6 +1221,7 @@ async function emphasizeSemanticDestination(page, ratio, query) {
   }
   if (!layer || !surface) return false;
   await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (!stillCurrent()) return false;
   const range = semanticMatchRangeInLayer(layer, surface, query, ratio) || nearestTextRangeAtRatio(layer, surface, ratio);
   if (!range) return false;
   const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
@@ -1221,7 +1237,18 @@ async function emphasizeSemanticDestination(page, ratio, query) {
 }
 
 async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
+  if (!pdfDoc) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const sourceFlow = readingFlow;
+  // goToLocation owns the navigation serial. Capture its expected value
+  // before the awaited render so a superseding click cannot be rolled back
+  // by a delayed text highlight or even a stale landing cue.
+  const expectedNavigation = readerNavigationSerial + 1;
+  const stillCurrent = () => pdfDoc === sourceDoc && currentFileKey === sourceKey
+    && readingFlow === sourceFlow && readerNavigationSerial === expectedNavigation;
   await goToLocation(page, ratio, options);
+  if (!stillCurrent()) return;
   // Indexed equation targets are measured page coordinates. A scanned PDF's
   // searchable text may contain ONLY a later prose citation of (1.12); moving
   // to the nearest text-layer match would override the correct OCR geometry.
@@ -1229,8 +1256,8 @@ async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
     showNavigationLandingCue(page, ratio);
     return;
   }
-  const emphasized = await emphasizeSemanticDestination(page, ratio, query);
-  if (!emphasized) showNavigationLandingCue(page, ratio);
+  const emphasized = await emphasizeSemanticDestination(page, ratio, query, stillCurrent);
+  if (stillCurrent() && !emphasized) showNavigationLandingCue(page, ratio);
 }
 
 function searchMatchRangeInLayer(layer, query, ordinal = 0) {
@@ -1293,15 +1320,23 @@ function emphasizeSearchRange(surface, range) {
 
 async function goToSearchMatch(match, query) {
   if (!pdfDoc || !match) return;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const sourceFlow = readingFlow;
+  const expectedNavigation = readerNavigationSerial + 1;
+  const stillCurrent = () => pdfDoc === sourceDoc && currentFileKey === sourceKey
+    && readingFlow === sourceFlow && readerNavigationSerial === expectedNavigation;
   // First get the correct page rendered without relying on the generic semantic
   // lead. The exact text-layer range below becomes the authoritative position.
   await goToLocation(match.page, Math.min(1, Math.max(0, match.index / Math.max(1, match.text.length))), { contextLead: false });
+  if (!stillCurrent()) return;
   let layer = null;
   let surface = null;
   if (readingFlow === 'continuous') {
     const record = continuousPageNodes.get(match.page);
     if (record) {
       if (!record.rendered) await renderContinuousPage(match.page, continuousGeneration);
+      if (!stillCurrent()) return;
       layer = record.textLayer;
       surface = record.surface;
     }
@@ -1311,6 +1346,7 @@ async function goToSearchMatch(match, query) {
   }
   if (!layer || !surface) return;
   await new Promise((resolve) => requestAnimationFrame(resolve));
+  if (!stillCurrent()) return;
   const range = searchMatchRangeInLayer(layer, query, match.ordinal || 0);
   if (!range) return;
   const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
@@ -1326,9 +1362,17 @@ async function goToSearchMatch(match, query) {
   persistDocumentState();
 }
 
+// Search runs may outlive a new query or PDF switch. Results and status must
+// never mix documents or display out-of-order results from an older request.
+let readingSearchSerial = 0;
 async function searchPdf(query) {
+  const requestSerial = ++readingSearchSerial;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const stillCurrent = () => readingSearchSerial === requestSerial
+    && pdfDoc === sourceDoc && currentFileKey === sourceKey;
   searchResults.replaceChildren();
-  const q = query.trim();
+  const q = String(query || '').trim();
   if (!pdfDoc || !q) { searchStatus.textContent = ''; return; }
   if (!documentTextFeaturesAvailable() && !searchEquations?.checked) {
     searchStatus.textContent = t('Document text unavailable. Run full-document OCR from Contents to enable Search.', '文档文本不可用。请在“目录”中运行全文 OCR 后再使用搜索。');
@@ -1342,11 +1386,17 @@ async function searchPdf(query) {
       const label=document.createElement('strong'); label.textContent=t(`Page ${match.page} · ${match.source}`,`第 ${match.page} 页 · ${match.source}`);
       const code=document.createElement('code'); code.textContent=match.latex.length>280?`${match.latex.slice(0,280)}…`:match.latex; item.append(label,code);
       item.addEventListener('click', async () => {
+        if (!pdfDoc) return;
+        const sourceDoc = pdfDoc, sourceKey = currentFileKey, sourceFlow = readingFlow;
+        const expectedNavigation = readerNavigationSerial + 1;
+        const stillCurrent = () => pdfDoc === sourceDoc && currentFileKey === sourceKey
+          && readingFlow === sourceFlow && readerNavigationSerial === expectedNavigation;
         const ratio = Number.isFinite(Number(match.ratio)) ? Number(match.ratio) : 0;
         await goToLocation(match.page, ratio, { contextLead: false });
+        if (!stillCurrent()) return;
         if (Number.isFinite(Number(match.ratio))) {
-          await positionTargetAtReadingLead(match.page, ratio);
-          showEquationBookmarkCue(match.page, ratio);
+          if (await positionTargetAtReadingLead(match.page, ratio, stillCurrent) && stillCurrent())
+            showEquationBookmarkCue(match.page, ratio);
         }
       }); searchResults.append(item);
     }
@@ -1355,15 +1405,19 @@ async function searchPdf(query) {
   const fuzzy = Boolean(searchFuzzy?.checked);
   searchStatus.textContent = fuzzy ? t('Fuzzy searching…', '正在模糊搜索……') : t('Searching…', '正在搜索……');
   const matches = [];
-  for (let page = 1; page <= pdfDoc.numPages; page += 1) {
-    searchStatus.textContent = t(`Searching page ${page} of ${pdfDoc.numPages}…`, `正在搜索第 ${page} / ${pdfDoc.numPages} 页……`);
+  for (let page = 1; page <= sourceDoc.numPages; page += 1) {
+    if (!stillCurrent()) return;
+    searchStatus.textContent = t(`Searching page ${page} of ${sourceDoc.numPages}…`, `正在搜索第 ${page} / ${sourceDoc.numPages} 页……`);
     try {
       const text = await pageText(page);
+      if (!stillCurrent()) return;
       const hits = fuzzy ? fuzzySearchMatches(text, q) : exactSearchMatches(text, q);
       for (const [ordinal, hit] of hits.entries()) matches.push({ page, text, index: hit.index, score: hit.score, ordinal });
-    } catch (error) { console.error(error); }
+    } catch (error) { if (stillCurrent()) console.error(error); }
+    if (!stillCurrent()) return;
     if (page % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
+  if (!stillCurrent()) return;
   matches.sort((a,b) => fuzzy ? (b.score - a.score || a.page - b.page || a.index - b.index) : (a.page - b.page || a.index - b.index));
   searchStatus.textContent = t(`${matches.length} occurrence${matches.length === 1 ? '' : 's'}${fuzzy ? ' · fuzzy ranked' : ''}`, `${matches.length} 个出现位置${fuzzy ? ' · 按模糊匹配排序' : ''}`);
   for (const match of matches.slice(0, 200)) {

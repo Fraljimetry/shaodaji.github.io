@@ -829,6 +829,11 @@ function clearDocumentMapForIncomingPdf() {
   try { bibliographyIndex?.replaceChildren(); } catch (_) {}
   try { equationIndex?.replaceChildren(); } catch (_) {}
   try { backlinksList?.replaceChildren(); } catch (_) {}
+  // Search hits belong to the source document too. Otherwise old hits stay
+  // clickable while a newly opened PDF is being restored, even if a pending
+  // search's asynchronous completion is correctly discarded.
+  try { searchResults?.replaceChildren(); } catch (_) {}
+  try { if (searchStatus) searchStatus.textContent = ''; } catch (_) {}
   if (structureCount) structureCount.textContent = '0';
   if (bibliographyCount) bibliographyCount.textContent = '0';
   if (equationIndexCount) equationIndexCount.textContent = '0';
