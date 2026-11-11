@@ -1462,12 +1462,74 @@ function findRepeatedLatexSequence(latexValue) {
   return best;
 }
 
+// Quality diagnostics must not infer missing symbols. The severe patterns below
+// are decoded-layout failures observed in complex matrix/long-alignment crops;
+// ordinary dense tensors, true sparse matrices, and valid repeated terms remain.
+function formulaOcrLayoutAnomalies(value) {
+  const text = String(value || '').slice(0, 20000);
+  const severe = [];
+  const warnings = [];
+  const arrays = /\\begin\{array\}\{([^{}]{1,100})\}([\s\S]*?)\\end\{array\}/g;
+  for (const match of text.matchAll(arrays)) {
+    const format = match[1].replace(/\s+/g, '');
+    // The complete grammar also supports @{}, p{}, etc. Restrict inference
+    // to simple c/l/r arrays; unusual specifications are left untouched.
+    if (!/^[clr|]+$/.test(format)) continue;
+    const declared = (format.match(/[clr]/g) || []).length;
+    const rows = match[2].split(/\\\\(?:\[[^\]]{0,24}\])?/).map(row => row.trim()).filter(Boolean);
+    if (declared < 2 || rows.length < 3) continue;
+    let extraColumns = 0;
+    let blankCells = 0;
+    let totalCells = 0;
+    let emptyRows = 0;
+    for (const row of rows) {
+      const cells = splitTopLevelOcrAlignmentCells(row);
+      if (cells.length > declared) extraColumns += 1;
+      let occupied = 0;
+      for (const cell of cells) {
+        totalCells += 1;
+        if (cell.replace(/[{}\s]/g, '') === '') blankCells += 1;
+        else occupied += 1;
+      }
+      if (occupied === 0) emptyRows += 1;
+    }
+    if (extraColumns >= 2 && extraColumns >= rows.length * 0.3) {
+      severe.push(t('array rows exceed the declared number of columns', '数组行超过声明的列数'));
+    }
+    const emptiness = blankCells / Math.max(1, totalCells);
+    const repeatedEmptyWrappers = (match[2].match(/\{\{\}\}/g) || []).length;
+    if (rows.length >= 8 && emptiness >= 0.72 && emptyRows >= 3 && repeatedEmptyWrappers >= 8) {
+      severe.push(t('matrix contains many repeated empty cells and rows', '矩阵包含大量重复空单元格和空行'));
+    } else if (rows.length >= 6 && emptiness >= 0.65) {
+      warnings.push(t('sparse or fragmented matrix needs visual review', '稀疏或碎裂矩阵需要目视检查'));
+    }
+  }
+  const aligned = /\\begin\{(?:aligned|align\*?|gathered|split)\}([\s\S]*?)\\end\{(?:aligned|align\*?|gathered|split)\}/g;
+  for (const match of text.matchAll(aligned)) {
+    const rows = match[1].split(/\\\\(?:\[[^\]]{0,24}\])?/).map(row => row.trim()).filter(Boolean);
+    if (rows.length < 7) continue;
+    // OCR occasionally emits each component of a displayed relation as its
+    // own row: `grad \\ || \\ &\\leq \\ || ...`.
+    const tiny = rows.filter(row => row.replace(/\\(?:quad|qquad|,|;|!|\s)/g, '').replace(/[{}\s&]/g, '').length <= 7
+      && !/(?:[=<>]|\\(?:leq?|geq?|neq?|approx|sim|equiv|to)(?![A-Za-z]))/.test(row)).length;
+    const bareRelations = rows.filter(row => /^\s*&?\s*(?:[=<>]|\\(?:leq?|geq?|neq?|approx|sim|equiv|to))\s*$/.test(row)).length;
+    if (bareRelations >= 2 && tiny >= 5 && tiny / rows.length >= 0.55) {
+      severe.push(t('multi-line equation fragmented into isolated symbols', '多行公式被拆成孤立符号'));
+    }
+  }
+  return { severe: [...new Set(severe)], warnings: [...new Set(warnings)] };
+}
+
 function assessImageOcrResult(rawValue, latexValue) {
   const raw = String(rawValue || '').trim();
   const latex = String(latexValue || '').trim();
   const hardReasons = [];
   const warnings = [];
   const corruption = { commandLoop: null, repeatedFragment: null, repeatedSequence: null, runawayFraction: false };
+  const layout = formulaOcrLayoutAnomalies(raw);
+  hardReasons.push(...layout.severe);
+  warnings.push(...layout.warnings);
+
 
   if (!latex) hardReasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
   if (/\\includegraphics\b/i.test(raw) || /\\includegraphics\b/i.test(latex)) hardReasons.push(t('document-layout placeholders were produced', '生成了文档版面占位符'));

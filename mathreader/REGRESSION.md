@@ -1,3 +1,17 @@
+# v429 — Extreme Formula OCR quality and bounded retry (2026-11-10)
+
+Twenty user-supplied challenging OCR outputs and 20 original embedded formula screenshots expose previously missed catastrophic array-column and fragmented-equation failures; see [v429 release](docs/releases/V429_RELEASE.md). New severe quality classification is 5/20 vs 3/20 in v428, **not an OCR accuracy score**. A single *visible* bounded local retry is permitted only for first-pass severe errors, with no engine switching; unresolved results remain editable and explicitly for review. Tall-image short-output warnings do not hallucinate missing lines. Actual Texify inference was unavailable in the test environment; the 20 PNG crop checks use real Chromium canvases and the Texify coordinator tests use a mocked inference output. No mathematical correctness rate is claimed.
+
+---
+
+# v428 — Varied-format native PDF stability (2026-11-10)
+
+**Confirmed:** A true two-column page can join the tail of a left-column sentence with a right-column numbered Structure heading when its physical gutter is narrower than the native outline segment threshold. In a 15-page contemporary paper, sections `1 Introduction` and `2 Characterizing Multimodal Safety` were missing from the inferred Structure index. Reproduce with measured source spans in `tests/modern_gutter_outline_v428_regression.js`, which fails against unmodified v427 and passes with the two-pass gutter correction. Do not apply narrow-gap splitting to unproven multi-column pages: single-column equation margin tags must remain intact.
+
+**Verification:** 11 additional original PDFs (1,331 pages) and 30 previously available PDFs (708 pages) ran three production JavaScript detection stages successfully via a PyMuPDF-native-span proxy, total 41 documents / 2,039 pages. Only the two confirmed headings changed; prior 40 outputs remain stable. OCR, actual PDF.js browser text extraction, full-page search/copy/export order, and exhaustive detection accuracy were not certified. See [release](docs/releases/V428_RELEASE.md) and [evidence](regression/v428_varied_format_corpus.json).
+
+---
+
 # v427 — Other cross-column reading/navigation defects (2026-11-09)
 
 **Baseline:** v426. An actual PDF.js-native STOC source fixture reproduced a missed wrapped TOC destination, and independent-column synthetic rows reproduced false reference matches and backlinks (`Lemma` + `5` from different columns). The v426 Structure-panel fix did not cover these TOC and reference consumers.

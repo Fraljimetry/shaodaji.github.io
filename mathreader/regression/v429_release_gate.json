@@ -1,0 +1,74 @@
+{
+  "release": "429",
+  "baseline": "428",
+  "source": "v418 complete + v419-v428 overlay chain",
+  "artifactPolicy": "changed/new files only, root mathreader/",
+  "input": {
+    "name": "Formula OCR Extreme Cases 20261110.docx",
+    "sha256": "00460e9ca48ba126ee87ef570616ef762d84c8a5dda9fd0c6021562b0f0f95e9",
+    "pages": 16,
+    "embeddedImages": 20,
+    "ocrSamples": 20
+  },
+  "observations": {
+    "v428SevereOutputExamples": 3,
+    "v429SevereOutputExamples": 5,
+    "newDefectClasses": [
+      "array declared column count versus decoded cells",
+      "fragmented multiline inequality components"
+    ],
+    "falsePositiveControls": "valid sparse arrays, repeated relation lines, long tensor and hypergeometric formulas",
+    "note": "Detection of severe output corruption, not OCR precision, recall, or mathematical fidelity"
+  },
+  "qualityGate": {
+    "boundedRetries": 1,
+    "defaultInferenceCalls": 1,
+    "maximumInferenceCallsOnSevere": 2,
+    "statusVisible": true,
+    "rawMathematicalContentNeverGuessed": true,
+    "keepsEditableReviewOutputIfUnresolved": true,
+    "noImplicitEngineSwitch": true,
+    "noAutomaticRepeatedModelLoads": true
+  },
+  "verified": {
+    "javascriptTestFiles": 76,
+    "javascriptPassed": 76,
+    "pythonChromiumTestFiles": 33,
+    "pythonChromiumPassed": 33,
+    "responsiveAssertions": 176,
+    "sourceScreenshotImageCrops": 20,
+    "screenshotCanvasPreserved": 20,
+    "realTexifyInference": false,
+    "inferenceCoordinatorMockTests": true,
+    "browserCropTestUsesActualChromium": true,
+    "cropStressSha256": "a48c852f6b175e462aa6cb0d7baec28ec3c4d8ae7d3c3dc24b3023bb44e2e8f7"
+  },
+  "limitations": [
+    "Image model weights/browser inference unavailable: no real visual OCR accuracy measured",
+    "No independently verified LaTeX ground truth for the user samples",
+    "Text-only corruption checks cannot detect syntactically valid mathematical symbol mistakes",
+    "Complex diagrams still require manual interpretation; no diagram OCR was introduced",
+    "Longest formulas may exceed the stable 512 decoder budget; review/recrop remains necessary"
+  ],
+  "javascriptFailures": [],
+  "pythonFailures": [],
+  "changedFileCountExcludingGate": 16,
+  "changedFilesExcludingGate": [
+    "REGRESSION.md",
+    "docs/README.md",
+    "docs/releases/V429_RELEASE.md",
+    "index.html",
+    "js/10-formula-ocr.js",
+    "js/11-formula-vector.js",
+    "mathreader.js",
+    "regression/fixtures/extreme_formula_ocr_v429.json",
+    "regression/v429_crop_stress_audit.json",
+    "regression_tools/extreme_formula_crop_replay_v429.py",
+    "tests/equation_progress_regression.js",
+    "tests/export_preferences_v397_regression.js",
+    "tests/extreme_formula_ocr_v429_regression.js",
+    "tests/extreme_formula_retry_v429_regression.js",
+    "tests/formula_ocr_lazy_regression.js",
+    "tests/maintenance_integrity_regression.js"
+  ]
+}

@@ -865,6 +865,29 @@ function latexMathSignature(value) {
   };
 }
 
+// A visually tall crop can contain many independent formula lines even when
+// the decoder emits only a few. This is evidence for review, NOT permission to
+// invent missing LaTeX. Keep the projection conservative and bounded.
+function formulaVisualInkRowEstimate(crop) {
+  const width = Number(crop?.width || 0);
+  const height = Number(crop?.height || 0);
+  if (height < 230 || width < 120 || width / Math.max(1, height) > 3.5) return 0;
+  const profile = formulaInkProfiles(crop);
+  if (!profile) return 0;
+  const minInk = Math.max(3, Math.ceil(width * 0.012));
+  let count = 0;
+  let start = -1;
+  for (let y = 0; y <= height; y += 1) {
+    const active = y < height && profile.rowInk[y] >= minInk;
+    if (active && start < 0) start = y;
+    if (!active && start >= 0) {
+      if (y - start >= 3) count += 1;
+      start = -1;
+    }
+  }
+  return count >= 7 ? count : 0;
+}
+
 function analyzeFormulaSelection(crop, vectorCandidate = null) {
   const bands = formulaRowBands(crop);
   const aspect = crop?.width && crop?.height ? crop.width / Math.max(1, crop.height) : 1;
@@ -880,6 +903,7 @@ function analyzeFormulaSelection(crop, vectorCandidate = null) {
     tensorLike,
     fractionLike,
     expectedRows: bands.length >= 2 ? bands.length : 0,
+    visualInkRows: formulaVisualInkRowEstimate(crop),
     scriptLoad,
     operatorLoad
   };
@@ -1037,6 +1061,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
   };
   mathOcrLoading = true;
   const passTimings = [];
+  let inferenceCalls = 0;
   let profile;
   const analysisStart = ocrNow();
   try {
@@ -1077,6 +1102,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       repetition_penalty: 1.04
     };
     stageStart = ocrNow();
+    inferenceCalls += 1;
     const output = await pipe(inputImage, generation);
     timing.inferenceMs = ocrNow() - stageStart;
     stageStart = ocrNow();
@@ -1085,6 +1111,15 @@ async function runImageFormulaRecognition(crop, options = {}) {
     const latex = stabilizeOcrLatexSyntax(repairOcrLatex(rawLatex));
     const penalty = latexStructuralPenalty(rawLatex);
     const assessment = assessImageOcrResult(raw, latex);
+    // A multi-line screenshot yielding only a few rows can be a silently
+    // truncated OCR result. Flag the uncertainty without rewriting the math
+    // or automatically spending extra model calls on a structurally valid text.
+    const visualRows = Number(profile.visualInkRows || 0);
+    const decodedRows = 1 + (String(raw || '').match(/\\\\/g) || []).length;
+    if (visualRows >= 9 && decodedRows < Math.max(3, visualRows * 0.48)) {
+      assessment.warnings.push(t('tall formula image may have missing lines; compare with the crop',
+        '高公式图像可能漏识别多行；请对照裁图检查'));
+    }
     timing.inputWidth = Number(processed?.width || prepared?.width || sourceCanvas?.width || 0);
     timing.inputHeight = Number(processed?.height || prepared?.height || sourceCanvas?.height || 0);
     timing.inputAspect = timing.inputHeight ? timing.inputWidth / timing.inputHeight : null;
@@ -1108,7 +1143,35 @@ async function runImageFormulaRecognition(crop, options = {}) {
   setOcrStatus(mathOcrBackend?.device === 'wasm'
     ? t('Processing formula · WASM q8…', '正在处理公式 · WASM q8……')
     : t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  const result = await onePass(crop, 'tight', 'normal', false);
+  let result = await onePass(crop, 'tight', 'normal', false);
+  let retryReason = '';
+  let retryFailed = false;
+  let candidateDecision = t('single-pass result retained', '保留单次识别结果');
+  // Severe layout/decoder failures, not mere complexity warnings, justify at
+  // most ONE visible local retry. Never repeatedly infer or silently switch
+  // engines. If the retry fails, preserve the original for human correction.
+  if (result.assessment?.hardReject) {
+    retryReason = (result.assessment.reasons || []).join('; ');
+    setOcrStatus(t('OCR quality check failed · retrying once with a relaxed crop…',
+      'OCR 质量检查未通过 · 正以宽松裁图重试一次……'), true);
+    try {
+      const retry = await onePass(crop, 'relaxed', 'normal', true);
+      if (retry.latex && !retry.assessment?.hardReject) {
+        result = retry;
+        candidateDecision = t('retry passed structural checks', '重试结果通过结构检查');
+      } else if (retry.latex && imageOcrCorruptionScore(retry) + 15 < imageOcrCorruptionScore(result)) {
+        result = retry;
+        candidateDecision = t('retry retained for review (less corrupted)', '重试结果仍需核对（损坏程度较轻）');
+      } else {
+        candidateDecision = t('original retained for review after retry', '重试后保留原结果供核对');
+      }
+      retryFailed = Boolean(result.assessment?.hardReject);
+    } catch (error) {
+      retryFailed = true;
+      candidateDecision = t('retry failed; original retained for review', '重试失败；保留原结果供核对');
+      console.warn('MathReader bounded formula OCR retry failed', error);
+    }
+  }
 
   if (!result.latex) {
     throw new Error(t('The image model returned no LaTeX for this region.', '图像模型没有为该区域返回 LaTeX。'));
@@ -1117,7 +1180,11 @@ async function runImageFormulaRecognition(crop, options = {}) {
   // Keep image OCR single-pass; apply only a post-inference,
   // conservative tensor/vector reconciliation; it never triggers another model call.
   const fusionStart = ocrNow();
-  const fusion = fuseTensorOcrWithVector(result.latex, options.vectorCandidate?.latex || '', Boolean(profile.tensorLike));
+  // Never turn a decoder/layout hard rejection into a 'clean' OCR result
+  // by fusing a few PDF-vector leaves: the suspect image output stays visible.
+  const fusion = result.assessment?.hardReject
+    ? { applied: false, replacements: [], reason: 'OCR output failed the structural quality gate' }
+    : fuseTensorOcrWithVector(result.latex, options.vectorCandidate?.latex || '', Boolean(profile.tensorLike));
   let finalResult = fusion.applied
     ? {
         ...result,
@@ -1135,7 +1202,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       ...finalResult,
       assessment: {
         ...finalResult.assessment,
-        ok: true,
+        ok: false,
         retainedForReview: true,
         warnings: [
           t('OCR result needs review', 'OCR 结果需要检查'),
@@ -1149,16 +1216,16 @@ async function runImageFormulaRecognition(crop, options = {}) {
   return {
     ...finalResult,
     profile,
-    inferenceCount: 1,
+    inferenceCount: inferenceCalls,
     timing: {
       analysisMs,
-      firstPassPenalty: result.penalty,
-      retryReason: '',
-      retryProfile: '',
-      retryFailed: false,
+      firstPassPenalty: passTimings[0]?.penalty || 0,
+      retryReason,
+      retryProfile: retryReason ? 'relaxed/normal/beam2 (one bounded retry)' : '',
+      retryFailed,
       candidateDecision: fusion.applied
-        ? `${t('single-pass OCR + vector leaf fusion', '单次 OCR + 矢量叶节点融合')} · ${fusion.replacements.length} ${t('correction(s)', '处修正')}`
-        : t('single-pass result retained', '保留单次识别结果'),
+        ? `${candidateDecision} + ${t('vector leaf fusion', '矢量叶节点融合')} · ${fusion.replacements.length} ${t('correction(s)', '处修正')}`
+        : candidateDecision,
       fusionApplied: Boolean(fusion.applied),
       fusionCorrections: fusion.replacements?.length || 0,
       fusionChanges: (fusion.replacements || []).map((item) => `${item.from}→${item.to}`),
