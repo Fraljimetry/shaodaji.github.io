@@ -85,6 +85,8 @@
         <p class="lang zh">按 <kbd>C</kbd> 打开<strong>目录</strong>。<strong>结构</strong>用于查找章节，<strong>结果</strong>用于查找定理和证明，<strong>公式</strong>列出检测到的公式编号，<strong>参考文献</strong>列出引用文献。点击条目即可跳转。高亮和笔记会显示在<strong>批注</strong>中；新增批注时，该分组会自动展开。</p>
         <p class="muted lang en">Indexes are generated automatically and may miss entries, especially in scanned or low-quality PDFs. Check the original page when accuracy matters.</p>
         <p class="muted lang zh">索引由程序自动生成；扫描件或画质较差的 PDF 可能存在遗漏。重要内容请以原文为准。</p>
+        <p class="lang en"><strong>Current detection limits:</strong> Structure may misplace wrapped/multicolumn headings; Results can confuse declarations with references; Equations can omit special, repeated or image-only labels; Bibliography can miss continued entries or confuse mathematical square brackets with citations. These are separate indexes—not a guarantee that all printed content was detected. Manually added Structure entries remain editable; automatic Results/Bibliography still require checking against the PDF.</p>
+        <p class="lang zh"><strong>当前内容检测局限：</strong>多栏、换行标题可能导致结构定位错误；Results 可能混淆定理陈述与引用；特殊编号、重复编号或纯图片公式可能漏入 Equations；跨栏参考文献可能遗漏，数学方括号也可能误判为引用。四类索引均不保证覆盖全部印刷内容。手动新增的 Structure 项可编辑；自动 Results 与 Bibliography 仍须对照 PDF 核验。</p>
       </section>
 
       <section id="crossdoc">
@@ -129,6 +131,10 @@
         </ol>
         <p class="muted lang en">Always check the symbols against the original formula, even if the LaTeX renders correctly. If recognition fails, try another engine in <strong>Settings → Formula OCR</strong> or use <strong>Reset OCR</strong>.</p>
         <p class="muted lang zh">即使 LaTeX 能正常渲染，也请核对原公式的符号。识别失败时，可在<strong>设置 → 公式 OCR</strong>中切换引擎，或使用<strong>重置 OCR</strong>。</p>
+        <p class="lang en"><strong>What Formula OCR can and cannot do:</strong> Image OCR is best-effort transcription, not a proof of mathematical fidelity. Dense matrices and partition lines, long aligned derivations, stacked fractions, faint historical type, diagrams and fine letter distinctions (e.g., <code>z</code>/<code>s</code>) may be lost or altered. A correct-looking preview does not mean every symbol or line was recognized. The current image model does not reconstruct commutative-diagram arrows reliably.</p>
+        <p class="lang zh"><strong>Formula OCR 的能力与限制：</strong>图片识别是尽力转写，不能证明数学内容准确。复杂矩阵与分块线、长篇对齐推导、嵌套分式、褪色旧印刷体、交换图以及 <code>z</code>/<code>s</code> 等易混字符都可能漏掉或识错。预览渲染成功不意味着公式完整。当前图像模型无法可靠重建交换图的箭头结构。</p>
+        <p class="lang en"><strong>How quality checks work:</strong> MathReader flags some broken LaTeX environments, flattened matrix columns and missing lines for <em>review</em>, without inventing missing symbols. Only a severely corrupted decoder result may trigger one additional local inference (on a relaxed crop; with gentle contrast enhancement if the image has faint strokes). This can still fail; it is not a general accuracy guarantee. For long expressions, recrop smaller complete mathematical portions and compare them manually. If a preview cannot compile, the editable LaTeX is retained and an explanation is shown instead of a MathJax error.</p>
+        <p class="lang zh"><strong>质量检查与重试：</strong>MathReader 会对部分 LaTeX 环境错误、矩阵列结构破坏和疑似漏行给出<strong>需核对</strong>提示，不会编造缺失符号。只有严重的解码异常才可能自动进行一次额外的本地识别（扩大裁图边缘；若笔画偏灰则温和增强对比度），但不保证纠正数学错误。遇到过长公式，宜按完整数学片段缩小裁图并逐段核对。预览编译失败时保留可编辑 LaTeX 并显示说明，而非裸露 MathJax 错误。</p>
       </section>
 
       <section id="scans">
@@ -222,6 +228,7 @@
           <h3>My linked paper is not listed or cannot open.</h3><p>Open the exact target PDF once in MathReader and ensure its bytes are cached. If it was forgotten or browser storage was cleared, open it again and relink manually.</p>
           <h3>Why are some sections or equations missing?</h3><p>Check whether the PDF has a usable text layer. Use document OCR for scanned material where offered; mathematical detection is intentionally conservative and imperfect.</p>
           <h3>What if formula recognition fails?</h3><p>Wait for the first image-model initialization, check Settings → Formula OCR → Troubleshooting → Reset OCR, or try a CPU engine. Vector extraction may be used for comparison when PDF text exists.</p>
+          <h3>My formula preview is invalid or omits rows.</h3><p>The original OCR text is kept editable. Check the image crop and reduce an overlong or dense selection to smaller complete expressions; do not trust a successful render as an accuracy check. Diagrams and historical typography may need manual transcription.</p>
           <h3>How can I avoid losing my reading data?</h3><p>Browser-local data depends on that browser's storage. Maintain separate backups of original PDFs and exported reading data; Linked-reference mappings are not included in the export.</p>
         </div>
         <div class="faq lang zh">
@@ -230,6 +237,7 @@
           <h3>找不到关联目标，或目标无法打开。</h3><p>先在 MathReader 中打开确切的目标 PDF，确认已缓存。如曾忘记该文件或清理站点存储，请重新打开并手动关联。</p>
           <h3>为什么部分章节或公式没有出现在索引中？</h3><p>确认 PDF 是否存在可用文本层。扫描材料可按提示运行全文 OCR；数学索引采用保守检测，无法保证完全无误。</p>
           <h3>公式识别失败怎么办？</h3><p>首次使用可能需要初始化模型；可在 设置 → 公式 OCR → 故障处理 中重置 OCR，或改用 CPU 引擎。有文本层的 PDF 可以用矢量提取作对照。</p>
+          <h3>公式预览报错或漏掉若干行怎么办？</h3><p>OCR 原始文本会保留为可编辑状态。请对照图片，把过长或过密的裁图拆为较短但完整的数学片段逐一识别；渲染成功不等于识别正确。交换图和历史印刷体可能需要手工转录。</p>
           <h3>怎样避免丢失阅读数据？</h3><p>本地数据依赖浏览器存储。请独立备份原始 PDF 和导出的阅读数据；参考文献关联目前不包含在导出内容中。</p>
         </div>
       </section>

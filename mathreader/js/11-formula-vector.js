@@ -820,6 +820,32 @@ function formulaRowBands(canvas) {
   return merged.map((band) => ({ top: Math.max(0, band.top - 5), bottom: Math.min(height - 1, band.bottom + 5) }));
 }
 
+// A retry on a faded scan needs a meaningfully different input, not the
+// identical grayscale image with a slightly larger border. This inexpensive
+// sample only chooses the SECOND (already bounded) inference's preprocessing.
+// It never changes the normal first pass or guesses z/s and other glyphs.
+function formulaCropHasFaintStrokes(canvas) {
+  const ctx = canvas?.getContext?.('2d', { willReadFrequently: true });
+  const width = Number(canvas?.width || 0);
+  const height = Number(canvas?.height || 0);
+  if (!ctx || width < 32 || height < 20) return false;
+  let data;
+  try { data = ctx.getImageData(0, 0, width, height).data; }
+  catch (_) { return false; }
+  const stride = Math.max(1, Math.ceil(Math.sqrt(width * height / 90000)));
+  let dark = 0;
+  let gray = 0;
+  for (let y = 0; y < height; y += stride) {
+    for (let x = 0; x < width; x += stride) {
+      const i = (y * width + x) * 4;
+      const lum = 0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2];
+      if (lum < 90) dark += 1;
+      else if (lum < 228) gray += 1;
+    }
+  }
+  return (dark + gray >= 120) && gray >= 0.48 * (dark + gray);
+}
+
 function preprocessFormulaCanvas(sourceCanvas, mode = 'normal') {
   if (!sourceCanvas || mode === 'normal') return sourceCanvas;
   const out = document.createElement('canvas');
@@ -835,7 +861,11 @@ function preprocessFormulaCanvas(sourceCanvas, mode = 'normal') {
   for (let i = 0; i < data.length; i += 4) {
     const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
     let value = lum;
-    if (mode === 'contrast') {
+    if (mode === 'soft-contrast') {
+      // Gentle monotone darkening preserves gray strokes and antialiasing;
+      // unlike hard thresholding it does not erase faint fraction bars.
+      value = Math.max(0, Math.min(255, Math.round(255 * Math.pow(lum / 255, 1.16))));
+    } else if (mode === 'contrast') {
       if (lum <= 190) value = 0;
       else if (lum >= 248) value = 255;
       else value = Math.max(0, Math.min(255, Math.round(((lum - 190) / 58) * 255)));
@@ -1155,7 +1185,8 @@ async function runImageFormulaRecognition(crop, options = {}) {
     setOcrStatus(t('OCR quality check failed · retrying once with a relaxed crop…',
       'OCR 质量检查未通过 · 正以宽松裁图重试一次……'), true);
     try {
-      const retry = await onePass(crop, 'relaxed', 'normal', true);
+      const retryPreprocess = formulaCropHasFaintStrokes(crop) ? 'soft-contrast' : 'normal';
+      const retry = await onePass(crop, 'relaxed', retryPreprocess, true);
       if (retry.latex && !retry.assessment?.hardReject) {
         result = retry;
         candidateDecision = t('retry passed structural checks', '重试结果通过结构检查');
@@ -1221,7 +1252,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       analysisMs,
       firstPassPenalty: passTimings[0]?.penalty || 0,
       retryReason,
-      retryProfile: retryReason ? 'relaxed/normal/beam2 (one bounded retry)' : '',
+      retryProfile: retryReason ? `relaxed/${passTimings[1]?.preprocess || 'normal'}/beam2 (one bounded retry)` : '',
       retryFailed,
       candidateDecision: fusion.applied
         ? `${candidateDecision} + ${t('vector leaf fusion', '矢量叶节点融合')} · ${fusion.replacements.length} ${t('correction(s)', '处修正')}`
@@ -1297,7 +1328,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
       latex: result.latex,
       preview,
       created: Date.now(),
-      quality: result.penalty === 0 && !(result.assessment?.warnings?.length) ? 'clean' : 'review',
+      quality: imageOcrResultLooksClean(result) ? 'clean' : 'review',
       source: 'image',
       imageOriginalLatex: result.imageOriginalLatex || null,
       vectorFusionApplied: Boolean(result.vectorFusion?.applied),
@@ -1308,7 +1339,7 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     const commitStart = ocrNow();
     commitFormulaResult(item, result.assessment?.retainedForReview
       ? t('Image OCR returned uncertain LaTeX · kept for review instead of replacing it with PDF vector.', '图像 OCR 返回不确定的 LaTeX · 已保留供核对，不再自动替换为 PDF 矢量结果。')
-      : (result.penalty === 0 && !(result.assessment?.warnings?.length)
+      : (imageOcrResultLooksClean(result)
         ? t('Local image OCR complete · structure check passed.', '本地图像 OCR 完成 · 结构检查通过。')
         : t('Local image OCR complete · review the editable LaTeX before reuse.', '本地图像 OCR 完成 · 复用前请核对可编辑 LaTeX。')));
     const commitMs = ocrNow() - commitStart;
@@ -1408,13 +1439,13 @@ async function recognizeImageFallbackCrop(crop, page, kind, preview = null, vect
       latex: result.latex,
       preview: imagePreview,
       created: Date.now(),
-      quality: result.penalty === 0 ? 'clean' : 'review',
+      quality: imageOcrResultLooksClean(result) ? 'clean' : 'review',
       source: 'image',
       vectorAlternative,
       vectorAlternativeText
     };
     const commitStart = ocrNow();
-    commitFormulaResult(item, result.penalty === 0
+    commitFormulaResult(item, imageOcrResultLooksClean(result)
       ? t('Image OCR comparison complete.', '图像 OCR 对照完成。')
       : t('Image OCR comparison complete · review the editable LaTeX.', '图像 OCR 对照完成 · 请核对可编辑 LaTeX。'));
     const commitMs = ocrNow() - commitStart;

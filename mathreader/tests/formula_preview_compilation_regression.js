@@ -3,7 +3,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../js/10-formula-ocr.js'),'utf8');
-const start=source.indexOf('async function renderOcrRenderedPreview()');
+const start=source.indexOf('function showOcrUnrenderablePreview()');
 const end=source.indexOf('\nfunction refreshOcrUI()',start);
 assert.ok(start>=0&&end>start);
 const classes=new Set();
@@ -29,7 +29,8 @@ vm.runInContext(source.slice(start,end),ctx);
   errored=true;
   await vm.runInContext('renderOcrRenderedPreview()',ctx);
   assert(classes.has('has-error'));assert.equal(scroll,1);
-  assert(statuses.at(-1).includes('syntax needs review'));
+  assert(statuses.at(-1).includes('preview could not compile'));
+  assert(preview.textContent.includes('Unable to render this OCR LaTeX'), 'MathJax merror replaced with explanatory text');
   assert.equal(compilation,2);
   assert.equal(ctx.currentOcrResult.quality,'review');assert.equal(persist,1);
   errored=false;

@@ -71,6 +71,7 @@ function mkFormulaContext() {
     ocrNow:()=>3,setOcrMode:()=>{},setOcrProcessing:()=>{},setOcrStatus:()=>{},
     extractVectorFormulaFromLayer:()=>null,yieldForOcrProgressPaint:async()=>{},
     runImageFormulaRecognition:()=>deferred,updateOcrInteractionAvailability:()=>{},
+    imageOcrResultLooksClean:(x)=>Boolean(x?.latex) && x.penalty===0 && !x?.assessment?.hardReject && !(x?.assessment?.warnings?.length),
     disposeMathOcrPipeline:async()=>{},showError:()=>{},console,
     t:(en)=>en,ocrApproxTokenCount:()=>3,ocrRate:()=>1,logOcrTiming:()=>{},
     commitFormulaResult:(item)=>{c.commits.push(item)}, commits:[],

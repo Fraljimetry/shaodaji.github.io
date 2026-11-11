@@ -1,0 +1,107 @@
+{
+  "release": "430",
+  "baseline": "429",
+  "date": "2026-11-11",
+  "sourceDocument": {
+    "name": "Formula OCR 20261111.docx",
+    "sha256": "2246802920e00b80a9fda7f44d814439dcf733adab1dc21c4642b9b53503062a",
+    "ocrOutputsReviewed": 10,
+    "embeddedScreenshotsReviewed": 10,
+    "actualTexifyInference": false
+  },
+  "reproduced": [
+    "MathJax parser error in exact Nov11 case07: Missing begin aligned or extra end aligned",
+    "Image OCR comparison erroneously marked hard-rejected or warned output clean when penalty zero",
+    "Repeated bounds of a legitimate fourfold integral triggered an expensive severe-error retry",
+    "One-column OCR array with fake visual columns encoded as repeated qquad without true matrix cell boundaries"
+  ],
+  "changed": [
+    "Consistent post-repair quality state in both initial and comparison OCR handlers",
+    "Misnested TeX environment warning; fallback rendered preview text instead of MathJax merror; LaTeX source retained",
+    "Avoid repeat-integral false severe; keep as review warning without automatic retry",
+    "Warn on one-column matrices represented by fake spacing, no speculative matrix reconstruction",
+    "Use gentle soft-contrast on the single bounded severe-error retry only if input has faint strokes; normal first pass unchanged",
+    "English/Chinese user tutorial capabilities, limitations and recovery advice kept current"
+  ],
+  "verified": {
+    "javascript": {
+      "passed": 77,
+      "total": 77,
+      "individualTestFiles": true
+    },
+    "pythonChromium": {
+      "passed": 33,
+      "total": 33,
+      "individualTestFiles": true,
+      "batchTimeoutAfterFirst18": true,
+      "remaining15SeparatelyPassed": true
+    },
+    "mathjaxRealParser": {
+      "nov11VerbatimOutputs": 10,
+      "rawCompilable": 9,
+      "rawFailed": 1,
+      "failedCase": "nov11-07"
+    },
+    "canvas": {
+      "originalCrops": 10,
+      "processed": 10,
+      "retainedDimensions": 10,
+      "fadedEligible": 7,
+      "assertionFailures": 0
+    },
+    "tutorialResponsive": {
+      "widths": [
+        375,
+        768,
+        1440
+      ],
+      "languages": [
+        "en",
+        "zh"
+      ],
+      "horizontalOverflow": false
+    },
+    "realTexifyInference": false,
+    "modelCallsDefault": 1,
+    "modelCallsSevereAtMost": 2,
+    "modelWeightsPresent": false
+  },
+  "limitations": [
+    "Actual visual transcription accuracy, z versus s errors, and complete long/multi-row matrix reconstruction not independently measured or solved",
+    "No trained diagram parsing; recrop diagram/math text separately or transcribe arrows manually",
+    "512-token decoder limit remains; no secret increase or unlimited retry",
+    "Canvas processing in Chromium does not prove a second Texify pass is more mathematically accurate",
+    "Native PDF text and OCR results still require side-by-side visual verification"
+  ],
+  "delivery": {
+    "overlayOnly": true,
+    "root": "mathreader/",
+    "changedFileCount": 23,
+    "changedFiles": [
+      "REGRESSION.md",
+      "docs/README.md",
+      "docs/releases/V430_RELEASE.md",
+      "index.html",
+      "js/10-formula-ocr.js",
+      "js/11-formula-vector.js",
+      "js/README.md",
+      "mathreader.js",
+      "regression/fixtures/formula_ocr_feedback_20261111_v430.json",
+      "regression/v430_js_test_results.json",
+      "regression/v430_python_test_results.json",
+      "regression/v430_release_gate.json",
+      "tests/equation_progress_regression.js",
+      "tests/export_preferences_v397_regression.js",
+      "tests/extreme_formula_ocr_v429_regression.js",
+      "tests/extreme_formula_retry_v429_regression.js",
+      "tests/formula_latex_syntax_regression.js",
+      "tests/formula_ocr_lazy_regression.js",
+      "tests/formula_ocr_nov11_v430_regression.js",
+      "tests/formula_preview_compilation_regression.js",
+      "tests/maintenance_integrity_regression.js",
+      "tests/ocr_reliability_deep_regression.js",
+      "tutorial.html"
+    ],
+    "unchangedBaselineFilesPreserved": 294
+  }
+}

@@ -131,5 +131,5 @@ for (const x of bases) {
 }
 // MathJax parser signals errors via merror nodes rather than necessarily throwing.
 check(src.includes("querySelector?.('mjx-merror, merror, .mjx-merror')"), 'preview recognizes MathJax rendered syntax errors');
-check(src.includes('setOcrStatus(t(\'LaTeX syntax needs review'), 'preview warns instead of silently marking malformed output clean');
+check(src.includes('showOcrUnrenderablePreview();'), 'preview replaces rendered MathJax errors with a warning');
 console.log(`OK: ${checks} formula LaTeX checks${compiler ? `; ${compiled} MathJax compilations` : '; MathJax compilation UNVERIFIED (package absent)'}`);

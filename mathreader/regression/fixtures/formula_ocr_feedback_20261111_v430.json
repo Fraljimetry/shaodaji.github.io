@@ -1,0 +1,57 @@
+{
+  "source": "Formula OCR 20261111.docx",
+  "sourceSha256": "2246802920e00b80a9fda7f44d814439dcf733adab1dc21c4642b9b53503062a",
+  "note": "User-supplied Texify outputs, not ground-truth LaTeX; exact OCR strings for quality/preview regression. Original screenshots are not distributed.",
+  "cases": [
+    {
+      "id": "nov11-01",
+      "raw": "\\begin{array}{c}S\\setminus T\\qquad\\qquad S\\cap T\\qquad\\qquad T\\setminus S\\qquad\\qquad\\overline{S\\cup T}\\\\ S\\setminus T\\qquad\\qquad(\\alpha u_{1})\\cdot q_{2}^{T}\\qquad\\qquad u_{1}\\cdot v_{1}^{T}\\qquad\\qquad u_{1}\\cdot v_{2}^{T}\\\\ A=\\qquad S\\cap T\\left((\\beta u_{2})\\cdot q_{1}^{T}\\qquad\\qquad*\\qquad\\qquad u_{2}\\cdot v_{1}^{T}\\qquad\\qquad u_{2}\\cdot v_{2}^{T}\\right)\\\\ T\\setminus S\\qquad\\qquad p_{1}\\cdot q_{1}^{T}\\qquad\\qquad p_{1}\\cdot q_{2}^{T}\\qquad\\qquad*\\qquad p_{1}\\cdot(v_{2}^{T}/\\beta)\\\\ \\overline{S\\cup T}\\qquad\\qquad p_{2}\\cdot q_{1}^{T}\\qquad\\qquad p_{2}\\cdot q_{2}^{T}\\qquad p_{2}\\cdot(v_{1}^{T}/\\alpha)\\qquad\\qquad*\\end{array}",
+      "remark": "parentheses for the matrix too small"
+    },
+    {
+      "id": "nov11-02",
+      "raw": "\\begin{aligned}\n-A^{l}_{ik}A^{k}_{jl}&=-\\frac{1}{4}\\left(\\delta^{l}_{i}u_{k}+\\delta^{l}_{k}u_{i}-g_{ik}u^{l}\\right)\\left(\\delta^{k}_{j}u_{l}+\\delta^{k}_{l}u_{j}-g_{jl}u^{k}\\right) \\\\\n&=-\\frac{1}{4}\\left(\\delta^{l}_{i}\\delta^{k}_{j}u_{k}u_{l}+\\delta^{l}_{i}\\delta^{k}_{l}u_{k}u_{j}-\\delta^{l}_{i}g_{jl}u_{k}u^{k}\\right. \\\\\n\\left.+\\delta^{k}_{k}\\delta^{k}_{j}u_{i}u_{l}+\\delta^{l}_{k}\\delta^{k}_{l}u_{i}u_{j}-\\delta^{l}_{k}g_{jl}u_{i}u^{k}\\right. \\\\\n\\left.-g_{ik}\\delta^{k}_{j}u^{l}u_{l}-g_{ik}\\delta^{k}_{l}u^{l}u_{j}+g_{ik}g_{jl}u^{l}u^{k}\\right) \\\\\n&=-\\frac{1}{4}\\left(u_{i}u_{j}+u_{i}u_{j}-g_{ij}\\left|\\nabla u\\right|^{2}+u_{i}u_{j}+nu_{i}u_{j}-u_{i}u_{j}\\right.\n\\end{aligned}",
+      "remark": "exceeds threshold so only five lines remain"
+    },
+    {
+      "id": "nov11-03",
+      "raw": "V_{n-2,3}\\frac{\\pi^{\\sqrt{V}}}{i}\\to V_{n,4}",
+      "remark": "seems unable to identify the structure of diagrams"
+    },
+    {
+      "id": "nov11-04",
+      "raw": "\\frac{1}{\\gamma(p)}\\quad||\\quad\\Sigma\\quad\\mathbf{Y_{i}}\\quad\\frac{\\partial\\mathbf{f}}{\\partial\\mathbf{x_{i}}}(\\mathbf{x})\\quad||_{\\mathbf{D_{p}}}(\\gamma_{n}\\mathbf{\\times\\gamma_{n};B})\\quad.",
+      "remark": "Bad at old typeset formulae"
+    },
+    {
+      "id": "nov11-05",
+      "raw": "\\begin{aligned}\n-\\frac{1}{4}\\zeta_{3}\\ln(u_{1}u_{2})-\\frac{1}{192}\\ln^{4}\\frac{u_{1}}{u_{2}}-\\frac{5}{96}\\pi^{2}\\ln^{2}\\frac{u_{1}}{u_{2}}-\\frac{137\\pi^{4}}{2880} \\\\\n+\\frac{1}{4}\\int_{+1/3-i\\infty}^{+1/3+i\\infty}\\frac{\\mathrm{d}z_{1}}{2\\pi i}\\,z_{1}^{2}\\left(u_{1}^{*2}\\,u_{2}^{-*2}+u_{1}^{-*2}\\,u_{2}^{*2}\\right)\\,\\Gamma\\left(-z_{1}\\right)^{4}\\,\\Gamma\\left(z_{1}\\right)^{2}\\,\\Gamma\\left(2z_{1}\\right) \\\\\n-\\frac{1}{24}\\int_{-1/5-i\\infty}^{-1/5+i\\infty}\\frac{\\mathrm{d}z_{3}}{2\\pi i}\\,z_{3}\\,\\Gamma\\left(-z_{3}\\right)^{2}\\,\\Gamma\\left(z_{3}\\right)^{2}\\,\\left(6\\left(\\ln u_{1}+\\ln u_{2}+2\\gamma_{E}\\right)\\psi\\left(z_{3}\\right)+6\\gamma_{E}\\ln u_{2}\\right.\n\\end{aligned}",
+      "remark": "Missing information, wrong alignment but not irreparable"
+    },
+    {
+      "id": "nov11-06",
+      "raw": "\\begin{aligned}\n-\\frac{1}{4}\\int_{-i\\infty}^{+i\\infty}\\int_{-i\\infty}^{+i\\infty}\\int_{-i\\infty}^{+i\\infty}\\int_{-i\\infty}^{+i\\infty}\\frac{\\mathrm{d}z_{1}}{2\\pi i}\\frac{\\mathrm{d}z_{2}}{2\\pi i}\\frac{\\mathrm{d}z}{2\\pi i}\\ \\frac{\\mathrm{d}z}{2\\pi i}\\ (z_{2}z_{3}+z_{1}z_{2}+z_{1}z_{3})\\ \\lambda^{i_{1}+z_{2}+z_{3}}\\ u_{1}^{z_{1}}u_{2}^{z_{2}}\\ \\bar{u}_{3}^{z_{3}} \\\\\n\\times\\Gamma(-z)\\Gamma\\left(-z_{1}\\right)^{2}\\ \\Gamma\\left(-z_{2}\\right)^{2}\\ \\Gamma\\left(z_{1}+z_{2}\\right)\\ \\Gamma\\left(-z_{3}\\right)\\ \\Gamma\\left(-z_{3}\\right)\\ \\Gamma\\left(z_{1}+z_{3}\\right)\\ \\Gamma\\left(z_{2}+z_{3}\\right)\n\\end{aligned}",
+      "remark": "a retry is triggered, but futile against such complexity"
+    },
+    {
+      "id": "nov11-07",
+      "raw": "\\begin{aligned}\nF_{A}^{(n)}(\\alpha;\\beta_{1},\\ldots,\\beta_{n};\\gamma_{1},\\ldots,\\gamma_{n};\\tau_{1},\\ldots,\\tau_{n})&=\\sum_{m_{1},\\ldots,m_{n}=1}^{\\infty}\\frac{(\\alpha)_{m_{1}+\\cdots+m_{n}}(\\beta_{1})_{m_{1}+\\cdots+m_{n}}(\\beta_{1})_{m_{n}}\\tau_{1}^{m_{1}}\\cdots\\tau_{n}^{m_{n}},\\qquad(4.116) \\\\\nF_{H}^{(n)}(\\alpha;\\beta_{1},\\ldots,\\beta_{n};\\beta_{1},\\ldots,\\beta_{n};\\gamma;\\tau_{1},\\ldots,\\tau_{n})=\\sum_{m_{1},\\ldots,m_{n}=1}^{\\infty}\\frac{(\\alpha)_{m_{1}+\\cdots+m_{n}}(\\beta_{1})_{m_{1}+\\cdots+m_{n}}(\\beta_{n})_{m_{n}}\\tau_{1}^{m_{1}}\\cdots\\tau_{n}^{m_{n}},\n\\end{aligned}}}",
+      "remark": "Rendered Preview says “Missing \\begin{aligned} or extra \\end{aligned}”. Avoid such failed rendering even though detection fails"
+    },
+    {
+      "id": "nov11-08",
+      "raw": "\\begin{aligned}\nF_{1}(1,s,\\frac{1}{2},2-\\frac{2\\varepsilon}{3},w,y)&=\\frac{2}{s_{4}+1}+\\frac{2\\varepsilon}{3\\eta}\\left(\\frac{3}{s_{5}}\\left(-y-\\frac{s_{5}}{s_{12}}+1\\right)G\\left(\\frac{1}{s_{5}},s_{13}\\right)-4s_{23}G\\left(-1,s_{2}\\right)\\right.\\qquad(3.107) \\\\\n\\left.+4s_{23}G\\left(0,s_{3}\\right)+3\\left(\\frac{1}{s_{23}}-s_{23}\\right)G\\left(1,s_{13}\\right)+3\\left(s_{23}+\\frac{1}{s_{23}}\\right)G\\left(-\\frac{1}{s_{23}},s_{13}\\right)\\right. \\\\\n\\left.-3\\left(s_{23}+\\frac{1}{s_{13}}\\right)G\\left(-1,s_{23}\\right)+4s_{23}(\\log(2)-2)+8\\right)+\\mathcal{O}(\\varepsilon^{2}).\n\\end{aligned}",
+      "remark": "again alignment issue predominates"
+    },
+    {
+      "id": "nov11-09",
+      "raw": "\\tilde{\\mathbf{M}}=(\\begin{array}{cccc}\\frac{2(3s_{2}^{2}s_{13}^{2}-5s_{13}^{2}s_{2}+2)}{3s_{13}(s_{2}^{2}s_{13}^{2}-1)(s_{13}^{2}s_{2}^{2}-1)}&\\frac{22s_{2}^{2}s_{13}^{2}}{7(s_{2}^{2}s_{13}^{2}-1)(s_{2}^{2}s_{13}^{2}-1)}&-\\frac{11(3s_{2}^{2}s_{13}^{2}-7)}{21(s_{2}^{2}s_{13}^{2}-1)(s_{2}^{2}s_{13}^{2}-1)}\\\\ \\frac{33(s_{2}^{2}s_{13}^{2}-1)}{8s_{2}^{2}}&-\\frac{22s_{2}^{2}s_{13}}{7(s_{2}^{2}s_{13}^{2}-1)(s_{2}^{2}s_{13}^{2}-1)}&-\\frac{12(s_{2}^{2}s_{13}^{2}-1)(s_{2}^{2}s_{13}^{2}-1)}{21(s_{2}}\\end{array}",
+      "remark": "the fact that z is detected as s is unfathomable. Don’t let image sharpness be an issue. Missing information."
+    },
+    {
+      "id": "nov11-10",
+      "raw": "\\begin{aligned}\nF_{1}(\\alpha,\\beta_{1},\\beta_{2},\\gamma;x,y)&=\\sum_{m,n=0}^{\\infty}\\frac{(\\alpha)_{m+n}(\\beta_{1})_{m}(\\beta_{2})_{n}}{(\\gamma)_{m+n}m!n!}x^{m}y^{n},|x|<1,\\ |y|<1, \\\\\nF_{2}(\\alpha,\\beta_{1},\\beta_{2},\\gamma_{1},\\gamma_{2};x,y)&=\\sum_{m,n=0}^{\\infty}\\frac{(\\alpha)_{m+n}(\\beta_{1})_{m}(\\beta_{2})_{n}}{(\\gamma_{1})_{m}(\\gamma_{2})_{m}m!n!}x^{m}y^{n},|x|+|y|<1, \\\\\nF_{3}(\\alpha_{1},\\alpha_{2},\\beta_{1},\\beta_{2},\\gamma;x,y)&=\\sum_{m,n=0}^{\\infty}\\frac{(\\alpha_{1})_{m}(\\beta_{2})_{n}(\\beta_{1})_{m}(\\beta_{2})_{n}}{(\\gamma)_{m+n}m!n!}x^{m}y^{n},|x|<1,\\ |y|<1,\n\\end{aligned}",
+      "remark": "missing information. Alignment."
+    }
+  ]
+}

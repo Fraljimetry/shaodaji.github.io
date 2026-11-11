@@ -1,3 +1,9 @@
+# v430 — Formula OCR November 11 feedback (2026-11-11)
+
+Ten verbatim OCR outputs and ten image crops identified a reproducible MathJax environment-scope failure, flattened matrix columns, a repeated-integral **false hard reject**, and a quality-state bug in the alternative Image OCR path. Fixes preserve editable LaTeX, replace raw MathJax error previews with a clear warning, keep multiple-integral syntax for review without futile automatic retry, and allow gentle contrast only on a bounded severe-error retry for faded source pixels. Actual Texify model inference and mathematical transcription accuracy **remain unverified**, particularly symbols, long dense formulas and diagrams. The *user-facing bilingual Tutorial* now covers Content Detection and Formula OCR abilities, limits and remedies. Evidence: [release](docs/releases/V430_RELEASE.md), [gate](regression/v430_release_gate.json); JS 77/77, Python/Chromium 33/33, 10 source image pre-processing checks.
+
+---
+
 # v429 — Extreme Formula OCR quality and bounded retry (2026-11-10)
 
 Twenty user-supplied challenging OCR outputs and 20 original embedded formula screenshots expose previously missed catastrophic array-column and fragmented-equation failures; see [v429 release](docs/releases/V429_RELEASE.md). New severe quality classification is 5/20 vs 3/20 in v428, **not an OCR accuracy score**. A single *visible* bounded local retry is permitted only for first-pass severe errors, with no engine switching; unresolved results remain editable and explicitly for review. Tall-image short-output warnings do not hallucinate missing lines. Actual Texify inference was unavailable in the test environment; the 20 PNG crop checks use real Chromium canvases and the Texify coordinator tests use a mocked inference output. No mathematical correctness rate is claimed.

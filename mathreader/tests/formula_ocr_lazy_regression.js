@@ -19,7 +19,7 @@ check(!runtime.includes('scheduleMathOcrPreload'), 'settings/reset do not preloa
 check(runtime.includes('schedulePdfCorePreload();'), 'unrelated PDF.js startup warmup preserved');
 check(vector.includes('const pipe = await ensureMathOcrPipeline();'), 'OCR inference lazily acquires the engine');
 check(vector.includes("if (formulaExtractionMode === 'vector' && vector?.latex)"), 'usable vector formula bypasses image OCR');
-check(html.includes('mathreader.js?v=429') && html.includes('mathreader.css?v=429'), 'current v420 cache busting');
+check(html.includes('mathreader.js?v=430') && html.includes('mathreader.css?v=430'), 'current v420 cache busting');
 check(html.includes('The model loads on the next image formula extraction.'), 'reset hint describes lazy behavior');
 check(runtime.includes('OCR reset · loads on next image extraction'), 'reset says it will not preload');
 check(runtime.includes('OCR engine selected · loads on first image extraction'), 'engine settings say they will not preload');
@@ -79,6 +79,7 @@ const extract=vm.createContext({
   yieldForOcrProgressPaint:async()=>{},
   runImageFormulaRecognition:async()=>{imageRuns++;return {latex:'x+y',penalty:0,timing:{},inferenceCount:1};},
   ocrApproxTokenCount:()=>3,logOcrTiming(){},
+  imageOcrResultLooksClean:(x)=>Boolean(x?.latex) && x.penalty===0 && !x?.assessment?.hardReject && !(x?.assessment?.warnings?.length),
   updateOcrInteractionAvailability(){},disposeMathOcrPipeline:async()=>{},
   showError(err){throw new Error(err)},currentOcrResult:null,mathOcrInitializationFailed:false,
 });

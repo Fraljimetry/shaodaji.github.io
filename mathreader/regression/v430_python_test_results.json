@@ -1,0 +1,82 @@
+{
+  "first_18": "passed individually in first batch before batch timeout",
+  "remaining": [
+    {
+      "file": "tests/p1_browser_smoke.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/p1_real_gate_regression.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/reading_navigation_races_v424.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/reference_hover_lifecycle_v407.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/regression_runner_smoke.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/results_geometry_browser_v412.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/results_named_boundary_browser_v413.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/settings_heading_hierarchy_v400.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/settings_text_orphans_v399.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/seven_export_evidence_v401.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/structure_jump_position_v423.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/structure_manual_embedded_browser_v419.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/structure_multiline_math_navigation_v426.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/ui_copy_layout_v414.py",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "file": "tests/ui_responsive_regression.py",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "passed_total": 33,
+  "total": 33
+}

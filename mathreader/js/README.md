@@ -178,3 +178,8 @@ Header tutorial `?` uses a 15px glyph in the unchanged 34px button.
 ## v366 sidebar defaults
 
 Desktop shell and new document default to both sidebars visible. Contents sections expand by default except Annotations; all right-side sections continue collapsed. Per-document sidebar visibility and per-section collapse state persist when enabled. Newly created highlights and margin notes reveal the left Contents Annotations section without tab switch or document navigation; the existing right margin-note reveal is retained. See `../docs/regression/history/legacy-and-followups.md` and `../tests/sidebar_defaults_regression.js`.
+
+
+## v430 OCR quality contract
+
+Both initial and comparison Image OCR result paths must use the same hard-reject / warning / structural-penalty evaluator. A successful MathJax render cannot certify mathematical transcription. Environment-brace mismatches must produce a clear preview fallback with the source preserved; repeated integral operator chains should not be mistaken for decoder loops just because their limits match. Normal OCR is still single pass; only severe decoder failures may receive one alternative inference, now using conservative soft contrast if the source is faded. Keep the user-facing Tutorial updated with changes to **both content indexing and Formula OCR**. See `../docs/releases/V430_RELEASE.md`.

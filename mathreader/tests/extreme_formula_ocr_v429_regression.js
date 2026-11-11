@@ -6,7 +6,7 @@ const fs=require('node:fs');const vm=require('node:vm');const path=require('node
 const root=path.resolve(__dirname,'..');
 const src=fs.readFileSync(path.join(root,'js/10-formula-ocr.js'),'utf8');
 const fx=require(path.join(root,'regression/fixtures/extreme_formula_ocr_v429.json'));
-const names=['normalizeOcrLatex','splitTopLevelOcrAlignmentCells','formulaOcrLayoutAnomalies','repairOcrLatex','repairOcrMisplacedAlignmentTabs','repairLatexInnerTags','repairLatexSpecialCharacters','stabilizeOcrLatexSyntax','findRepeatedLatexSequence','assessImageOcrResult','imageOcrCorruptionScore'];
+const names=['normalizeOcrLatex','splitTopLevelOcrAlignmentCells','formulaOcrLayoutAnomalies','repairOcrLatex','repairOcrMisplacedAlignmentTabs','repairLatexInnerTags','repairLatexSpecialCharacters','stabilizeOcrLatexSyntax','findRepeatedLatexSequence','formulaOcrEnvironmentScopeWarnings','assessImageOcrResult','imageOcrCorruptionScore'];
 const chunks=names.map(n=>{
  const a=src.indexOf(`function ${n}(`);assert(a>=0,n);
  let b=src.indexOf('\nfunction ',a+1); if(b<0)b=src.length;

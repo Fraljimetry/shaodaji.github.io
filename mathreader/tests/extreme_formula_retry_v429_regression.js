@@ -8,10 +8,10 @@ const engine=fs.readFileSync(path.join(root,'js/10-formula-ocr.js'),'utf8');
 const vector=fs.readFileSync(path.join(root,'js/11-formula-vector.js'),'utf8');
 const f=require(path.join(root,'regression/fixtures/extreme_formula_ocr_v429.json')).cases;
 const severe=f.find(v=>v.id==='extreme-04').raw;
-const names=['normalizeOcrLatex','splitTopLevelOcrAlignmentCells','formulaOcrLayoutAnomalies','repairOcrLatex','repairOcrMisplacedAlignmentTabs','repairLatexInnerTags','repairLatexSpecialCharacters','stabilizeOcrLatexSyntax','findRepeatedLatexSequence','assessImageOcrResult','imageOcrCorruptionScore','latexStructuralPenalty'];
+const names=['normalizeOcrLatex','splitTopLevelOcrAlignmentCells','formulaOcrLayoutAnomalies','repairOcrLatex','repairOcrMisplacedAlignmentTabs','repairLatexInnerTags','repairLatexSpecialCharacters','stabilizeOcrLatexSyntax','findRepeatedLatexSequence','formulaOcrEnvironmentScopeWarnings','assessImageOcrResult','imageOcrCorruptionScore','latexStructuralPenalty'];
 function pick(src,n){const a=src.indexOf(`function ${n}(`);assert(a>=0,n);let b=src.indexOf('\nfunction ',a+1);if(b<0)b=src.length;return src.slice(a,b)}
 const source=vector.slice(vector.indexOf('async function runImageFormulaRecognition('), vector.indexOf('\nfunction commitFormulaResult('));
-async function run(outputs, visualInkRows=0){
+async function run(outputs, visualInkRows=0, faint=false){
  const statuses=[],calls=[];
  const c=vm.createContext({
   t:en=>en,console,ocrNow:()=>Date.now(),navigator:{hardwareConcurrency:4,deviceMemory:8},
@@ -24,7 +24,8 @@ async function run(outputs, visualInkRows=0){
   },
   analyzeFormulaSelection:()=>({tensorLike:false,expectedRows:0,aspect:1,visualInkRows}),
   normalizeFormulaCropForOcr:(canvas,variant)=>({width:variant==='tight'?900:760,height:100,variant}),
-  preprocessFormulaCanvas:(canvas)=>canvas,prepareMathOcrInput:async canvas=>canvas,
+  preprocessFormulaCanvas:(canvas,mode)=>({...canvas,preprocess:mode}),prepareMathOcrInput:async canvas=>canvas,
+  formulaCropHasFaintStrokes:()=>faint,
   ocrApproxTokenCount:s=>Math.max(1,Math.round(s.length/3)),ocrRate:()=>12,
   setOcrStatus:s=>statuses.push(s),fuseTensorOcrWithVector:()=>({applied:false,replacements:[],reason:'not needed'}),
  });
@@ -47,6 +48,10 @@ async function run(outputs, visualInkRows=0){
  assert.equal(recovered.calls[1].config.num_beams,2);
  assert.equal(recovered.result.latex,good,'non-corrupted second result selected');
  assert.equal(recovered.result.timing.retryFailed,false);
+ const enhanced=await run([severe,good],0,true);
+ assert.equal(enhanced.calls.length,2,'faded crop still has at most one retry');
+ assert.equal(enhanced.calls[1].input.preprocess,'soft-contrast','faded crop receives gentle contrast only on the second pass');
+ assert.equal(enhanced.result.timing.retryProfile,'relaxed/soft-contrast/beam2 (one bounded retry)');
  assert(recovered.statuses.some(s=>s.includes('retrying once')),'retry disclosed in status');
  const both=await run([severe,severe]);
  assert.equal(both.calls.length,2,'catastrophic output cannot loop forever');

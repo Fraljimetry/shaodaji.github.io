@@ -764,6 +764,24 @@ function scheduleOcrRenderedPreview() {
   ocrRenderedPreviewTimer = setTimeout(renderOcrRenderedPreview, 120);
 }
 
+function showOcrUnrenderablePreview() {
+  if (!ocrRenderedPreview) return;
+  // MathJax may inject an merror node *without throwing*. Never display that
+  // internal error as though it were a rendered formula. Leave the LaTeX
+  // editor and original crop intact for manual repair.
+  try { window.MathJax?.typesetClear?.([ocrRenderedPreview]); } catch (_) {}
+  ocrRenderedPreview.replaceChildren();
+  ocrRenderedPreview.textContent = t('Unable to render this OCR LaTeX. The source is preserved: edit the LaTeX or select a smaller formula crop.',
+    'OCR LaTeX 无法渲染。源码已保留：请修改 LaTeX，或缩小公式裁图重新识别。');
+  ocrRenderedPreview.classList.add('has-error');
+  if (currentOcrResult?.quality === 'clean') {
+    currentOcrResult.quality = 'review';
+    persistDocumentState();
+  }
+  setOcrStatus(t('Formula preview could not compile · source preserved for review',
+    '公式预览编译失败 · 已保留源码供核对'));
+}
+
 async function renderOcrRenderedPreview() {
   if (!ocrRenderedPreview) return;
   const value = String(ocrLatexPreview?.value || currentOcrResult?.latex || '').trim();
@@ -783,8 +801,7 @@ async function renderOcrRenderedPreview() {
     } catch (error) {
       if (token !== ocrRenderedPreviewToken) return;
       console.warn('MathReader OCR LaTeX preview failed', error);
-      ocrRenderedPreview.textContent = t('Preview unavailable for the current LaTeX. Edit the source and it will retry automatically.', '当前 LaTeX 无法渲染预览。编辑源码后将自动重试。');
-      ocrRenderedPreview.classList.add('has-error');
+      showOcrUnrenderablePreview();
       return;
     }
   }
@@ -794,13 +811,7 @@ async function renderOcrRenderedPreview() {
     const hasSyntaxError = Boolean(ocrRenderedPreview.querySelector?.('mjx-merror, merror, .mjx-merror'));
     ocrRenderedPreview.classList.toggle('has-error', hasSyntaxError);
     if (hasSyntaxError) {
-      // Compilation, not just OCR confidence, determines whether a saved
-      // extraction may be marked clean. Keep the source editable for review.
-      if (currentOcrResult?.quality === 'clean') {
-        currentOcrResult.quality = 'review';
-        persistDocumentState();
-      }
-      setOcrStatus(t('LaTeX syntax needs review · edit the source', 'LaTeX 语法需要检查 · 请编辑源码'));
+      showOcrUnrenderablePreview();
       return;
     }
     resetRenderedMathScroll(ocrRenderedPreview);
@@ -1504,6 +1515,20 @@ function formulaOcrLayoutAnomalies(value) {
       warnings.push(t('sparse or fragmented matrix needs visual review', '稀疏或碎裂矩阵需要目视检查'));
     }
   }
+  // A one-column array that encodes a visibly tabular block matrix with
+  // repeated \qquad spacing cannot faithfully express column alignment.
+  // Mark for review, but do not auto-rewrite entries or spend another model
+  // call on a likely unsupported layout.
+  const fakeMatrices = /\\begin\{array\}\{[clr]\}([\s\S]*?)\\end\{array\}/g;
+  for (const match of text.matchAll(fakeMatrices)) {
+    const body = match[1];
+    const rows = body.split(/\\\\(?:\[[^\]]{0,24}\])?/).filter(row => row.trim());
+    const spacing = (body.match(/\\qquad\b/g) || []).length;
+    if (rows.length >= 4 && spacing >= 8 && /\\(?:left|right)\b/.test(body)) {
+      warnings.push(t('matrix column structure may be flattened into spacing; compare delimiters and cells with the image',
+        '矩阵列结构可能被空格替代；请对照图片核对括号与单元格'));
+    }
+  }
   const aligned = /\\begin\{(?:aligned|align\*?|gathered|split)\}([\s\S]*?)\\end\{(?:aligned|align\*?|gathered|split)\}/g;
   for (const match of text.matchAll(aligned)) {
     const rows = match[1].split(/\\\\(?:\[[^\]]{0,24}\])?/).map(row => row.trim()).filter(Boolean);
@@ -1520,6 +1545,64 @@ function formulaOcrLayoutAnomalies(value) {
   return { severe: [...new Set(severe)], warnings: [...new Set(warnings)] };
 }
 
+// Decoder text can have *balanced total braces* while closing a TeX
+// environment inside an unclosed argument (the November 11 sample 7). The
+// MathJax error then mentions a missing begin although both tags are visible.
+// Keep this as an evidence warning, not an excuse to fill in OCR-missing math.
+function formulaOcrEnvironmentScopeWarnings(value) {
+  const text = String(value || '');
+  const warnings = [];
+  const braceDepthAtBegin = [];
+  const envStack = [];
+  let depth = 0;
+  let invalidScope = false;
+  for (let i = 0; i < text.length;) {
+    if (text[i] === '\\') {
+      const m = text.slice(i).match(/^\\(begin|end)\{([A-Za-z*]+)\}/);
+      if (m) {
+        if (m[1] === 'begin') {
+          envStack.push(m[2]);
+          braceDepthAtBegin.push(depth);
+        } else if (!envStack.length || envStack.at(-1) !== m[2]) {
+          invalidScope = true;
+        } else {
+          envStack.pop();
+          if (depth !== braceDepthAtBegin.pop()) invalidScope = true;
+        }
+        i += m[0].length;
+        continue;
+      }
+      // Escaped braces must not change TeX grouping depth.
+      if (i + 1 < text.length) {
+        const command = text.slice(i).match(/^\\[A-Za-z]+\*?/);
+        i += command ? command[0].length : 2;
+        continue;
+      }
+    }
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}') {
+      if (depth === 0) invalidScope = true;
+      else depth -= 1;
+    }
+    i += 1;
+  }
+  if (envStack.length || depth !== 0) invalidScope = true;
+  if (invalidScope) {
+    warnings.push(t('LaTeX environments or braces are misnested; preview and formula completeness need review',
+      'LaTeX 环境或花括号嵌套异常；请检查预览及公式完整性'));
+  }
+  return warnings;
+}
+
+// A structurally rejected or uncertain crop cannot be clean even when the
+// post-repair structural penalty is zero. Both initial and comparison OCR
+// actions must use exactly the same decision.
+function imageOcrResultLooksClean(result) {
+  return Boolean(result?.latex) && Number(result?.penalty) === 0 &&
+    !result?.assessment?.hardReject && !result?.assessment?.retainedForReview &&
+    !(result?.assessment?.warnings?.length);
+}
+
 function assessImageOcrResult(rawValue, latexValue) {
   const raw = String(rawValue || '').trim();
   const latex = String(latexValue || '').trim();
@@ -1529,6 +1612,7 @@ function assessImageOcrResult(rawValue, latexValue) {
   const layout = formulaOcrLayoutAnomalies(raw);
   hardReasons.push(...layout.severe);
   warnings.push(...layout.warnings);
+  warnings.push(...formulaOcrEnvironmentScopeWarnings(raw));
 
 
   if (!latex) hardReasons.push(t('no LaTeX was produced', '没有生成 LaTeX'));
@@ -1546,8 +1630,22 @@ function assessImageOcrResult(rawValue, latexValue) {
   const fragmentLoop = compact.match(/(.{18,90})(?:\s*\1){3,}/);
   if (fragmentLoop) {
     const fragment = String(fragmentLoop[1] || '').trim().slice(0, 120);
-    corruption.repeatedFragment = { sequence: fragment, occurrences: 4 };
-    hardReasons.push(`${t('decoder runaway: repeated fragment', '解码器失控：重复片段')} “${fragment}”`);
+    // Repeated integrals with common limits are mathematically legitimate:
+    // an n-fold Mellin/Barnes integral naturally starts with several identical
+    // integral operators. Never classify a bounded chain of these as a decoder
+    // runaway merely because its bounds are the same. Require review because
+    // their long expansions can still lose terms.
+    const integralCount = (raw.match(/\\(?:int|iint|iiint|oint)(?![A-Za-z])/g) || []).length;
+    const repeatedIntegralChain = /\\(?:int|iint|iiint|oint)(?![A-Za-z])/.test(fragment) &&
+      integralCount >= 3 && integralCount <= 6 &&
+      /\\(?:frac|mathrm|Gamma)\b|\\mathrm\{d\}/.test(raw);
+    if (repeatedIntegralChain) {
+      warnings.push(t('repeated integral limits are plausible; verify each differential and remaining lines',
+        '重复积分上下限可能是正常多重积分；请逐个核对微分及剩余各行'));
+    } else {
+      corruption.repeatedFragment = { sequence: fragment, occurrences: 4 };
+      hardReasons.push(`${t('decoder runaway: repeated fragment', '解码器失控：重复片段')} “${fragment}”`);
+    }
   }
 
   const fracCount = (latex.match(/\\(?:c?frac)\b/g) || []).length;
