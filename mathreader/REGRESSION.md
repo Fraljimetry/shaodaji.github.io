@@ -1,3 +1,9 @@
+# v431 — Comprehensive reading and cross-column search bug sweep (2026-11-11)
+
+Unchanged v430 baseline passed 77 JS and 33 Python/Chromium test files. Reproduction from actual PMESTOC25 PDF.js spans and adversarial independent columns exposed three Search faults: phantom cross-gutter phrases, missing exact navigation for fuzzy results (especially duplicate phrases), and false impression of complete search after page extraction failure. Fixed in search-only code without changing detector modules, data schemas, or OCR model inference; the user-facing English/Chinese Tutorial documents Search and its limitations alongside Content Detection and Formula OCR. Original-PDF detector proxy replay ran 41 PDFs / 2,039 pages / 123 stages with no exceptions; image OCR and mathematical accuracy remain unverified. See [v431 release](docs/releases/V431_RELEASE.md) and [gate](regression/v431_release_gate.json).
+
+---
+
 # v430 — Formula OCR November 11 feedback (2026-11-11)
 
 Ten verbatim OCR outputs and ten image crops identified a reproducible MathJax environment-scope failure, flattened matrix columns, a repeated-integral **false hard reject**, and a quality-state bug in the alternative Image OCR path. Fixes preserve editable LaTeX, replace raw MathJax error previews with a clear warning, keep multiple-integral syntax for review without futile automatic retry, and allow gentle contrast only on a bounded severe-error retry for faded source pixels. Actual Texify model inference and mathematical transcription accuracy **remain unverified**, particularly symbols, long dense formulas and diagrams. The *user-facing bilingual Tutorial* now covers Content Detection and Formula OCR abilities, limits and remedies. Evidence: [release](docs/releases/V430_RELEASE.md), [gate](regression/v430_release_gate.json); JS 77/77, Python/Chromium 33/33, 10 source image pre-processing checks.

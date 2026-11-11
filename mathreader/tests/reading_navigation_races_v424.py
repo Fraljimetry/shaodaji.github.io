@@ -23,6 +23,7 @@ bookmark_src = extract('function equationBookmarkRatio(', '\nfunction renderBook
 clear_map_src = extract('function clearDocumentMapForIncomingPdf()', '\nfunction activePanelId()', core)
 navigation_src = extract('async function emphasizeSemanticDestination(page, ratio, query, stillCurrent = () => true)', '\nfunction searchMatchRangeInLayer(')
 search_jump_src = extract('async function goToSearchMatch(match, query) {', '\n// Search runs may outlive')
+search_helpers_src = extract('async function searchPageRuns(', '\nfunction normalizeSearchValue(')
 search_src = extract('let readingSearchSerial = 0;', '\nfunction ') if '\nfunction ' in source[source.index('async function searchPdf(query) {'):] else source[source.index('let readingSearchSerial = 0;'):]
 
 # The search function is the final function in this module in the current version.
@@ -82,7 +83,7 @@ with sync_playwright() as p:
     try:
         page = browser.new_page()
         page.set_content(html)
-        page.add_script_tag(content=bootstrap+'\n'+position_src+'\n'+bookmark_src+'\n'+navigation_src+'\n'+search_jump_src+'\n'+search_src+'\n'+reference_src+'\n'+clear_map_src)
+        page.add_script_tag(content=bootstrap+'\n'+position_src+'\n'+bookmark_src+'\n'+navigation_src+'\n'+search_jump_src+'\n'+search_helpers_src+'\n'+search_src+'\n'+reference_src+'\n'+clear_map_src)
         # An older Results/Structure/ref jump is delayed inside semantic alignment.
         page.evaluate("() => {window._first=goToMatchedLocation(1,.78,'Destination alpha');}")
         page.wait_for_function('window._heldFrames.length>=1', polling=50)

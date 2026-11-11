@@ -1,0 +1,63 @@
+{
+  "schema": "mathreader.v431.release-gate@1",
+  "base_version": "v430",
+  "release_version": "v431",
+  "scope": "source-level bug sweep and change-only overlay",
+  "confirmed_reproduced_defects": [
+    "Cross-column phantom full-text search hits and missing same-column wrapped phrases",
+    "Fuzzy search click failed to find misspelled user query in real text, and duplicate hits could land in wrong column",
+    "Incomplete per-page PDF text extraction reported an apparently complete result count"
+  ],
+  "javascript": {
+    "test_files_passed": 79,
+    "test_files_total": 79,
+    "syntax_checked_files": 96,
+    "ten_module_assembled_syntax": "PASS"
+  },
+  "python_chromium": {
+    "test_files_passed": 34,
+    "test_files_total": 34,
+    "reported_aggregate_rerun": "PASS",
+    "responsive_layout_assertions": 176
+  },
+  "browser_shell": {
+    "status": "PASS",
+    "mode": "shell-only (no original user live PDF or Texify inference)"
+  },
+  "original_pdf_proxy_replay": {
+    "pdfs_completed": 41,
+    "pages": 2039,
+    "production_detector_stages": 123,
+    "stages_completed": 123,
+    "method": "PyMuPDF native span extraction into production JavaScript detector VM",
+    "independent_accuracy_ground_truth": false,
+    "counts": {
+      "inferred_outline": 709,
+      "results": 1172,
+      "bibliography": 643,
+      "equation_occurrences": 3097
+    }
+  },
+  "unchanged_source_modules": [
+    "00-core.js",
+    "10-formula-ocr.js",
+    "11-formula-vector.js",
+    "20-selection-annotations.js",
+    "30-rendering-navigation.js",
+    "40-outline-structure.js",
+    "41-equations-bibliography.js",
+    "60-notes-bookmarks-data.js",
+    "70-command-ui-runtime.js"
+  ],
+  "retained_limitations": [
+    "No live Texify inference or formula transcription accuracy improvement measured",
+    "PDF.js original-document live acceptance beyond controlled Chromium and saved text geometry is not certified",
+    "Unusual mixed-direction or uncertain multi-column reading order, text selection/copy, raw full-text export order, and scanned PDFs remain unresolved",
+    "Full content detection precision/recall cannot be inferred from execution counts"
+  ],
+  "tutorial_updated_en_zh": true,
+  "persistent_data_schema_changed": false,
+  "content_detector_cache_version_changed": false,
+  "delivery_format": "overlay changed/new files only",
+  "zip_structure": "single mathreader/ top-level directory"
+}

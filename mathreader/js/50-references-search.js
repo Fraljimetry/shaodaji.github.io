@@ -988,6 +988,45 @@ async function pageText(pageNum, sourceDoc = pdfDoc, cache = textCache) {
   return text;
 }
 
+// Search must not treat the tail of one text column and the start of the
+// other as one sentence. Keep same-column wrapping searchable, and carry
+// geometry to make repeated/approximate hits land at the correct occurrence.
+// Do not rewrite the document's underlying PDF.js text layer or stored text.
+async function searchPageRuns(pageNum) {
+  const fallback = async () => [{ text: await pageText(pageNum), spans: [], column: 'page' }];
+  if (typeof pageTextLines !== 'function' || typeof columnLocalReadingLines !== 'function') return fallback();
+  const raw = await pageTextLines(pageNum);
+  const ordered = columnLocalReadingLines(raw);
+  if (ordered === raw) return fallback();
+  const runs = [];
+  for (const line of ordered) {
+    const value = String(line.text || '').trim();
+    if (!value) continue;
+    const column = Number(line.xEndRatio) <= .50 ? 'left'
+      : Number(line.xStartRatio) >= .50 ? 'right' : 'wide';
+    let run = runs[runs.length - 1];
+    if (!run || run.column !== column) {
+      run = { column, text: '', spans: [] };
+      runs.push(run);
+    }
+    if (run.text) run.text += ' ';
+    const start = run.text.length;
+    run.text += value;
+    run.spans.push({ start, end: run.text.length, ratio: Number(line.ratio),
+      xStartRatio: Number(line.xStartRatio) });
+  }
+  return runs.length ? runs : fallback();
+}
+
+function searchHitGeometry(run, index) {
+  const spans = Array.isArray(run?.spans) ? run.spans : [];
+  const located = spans.find((span) => span.start <= index && index < span.end)
+    || [...spans].reverse().find((span) => span.start <= index);
+  return located && Number.isFinite(located.ratio)
+    ? { ratio: located.ratio, xStartRatio: Number.isFinite(located.xStartRatio) ? located.xStartRatio : null }
+    : {};
+}
+
 function normalizeSearchValue(value, matchCase = false) {
   let text = String(value || '').normalize('NFKC')
     .replace(/\u00ad/g, '')
@@ -1086,7 +1125,11 @@ function fuzzySearchMatches(text, query) {
     }
     if (!ok) continue;
     const score = Math.max(0, 1 - total / possible);
-    if (score >= 0.72) out.push({ index: words[i].index, score });
+    if (score >= 0.72) {
+      const last = words[i + span - 1];
+      out.push({ index: words[i].index, score,
+        matchText: normalizedText.slice(words[i].index, last.index + last.word.length) });
+    }
   }
   return out.slice(0, 80);
 }
@@ -1310,7 +1353,7 @@ async function goToMatchedLocation(page, ratio = 0, query = '', options = {}) {
   if (stillCurrent() && !emphasized) showNavigationLandingCue(page, ratio);
 }
 
-function searchMatchRangeInLayer(layer, query, ordinal = 0) {
+function searchMatchRangeInLayer(layer, query, ordinal = 0, locator = null) {
   if (!layer || !query) return null;
   const mapped = textLayerAggregate(layer);
   if (!mapped.text) return null;
@@ -1321,14 +1364,38 @@ function searchMatchRangeInLayer(layer, query, ordinal = 0) {
   try { pattern = new RegExp(escaped.join('\\s+'), searchMatchCase?.checked ? 'gu' : 'giu'); } catch (_) { return null; }
   let match = null;
   let index = 0;
+  let best = null;
+  let ordinalFallback = null;
+  const haveGeometry = locator && locator.ratio !== null && locator.ratio !== undefined
+    && Number.isFinite(Number(locator.ratio));
+  const layerRect = haveGeometry ? layer.getBoundingClientRect() : null;
   while ((match = pattern.exec(mapped.text))) {
-    if (index === Math.max(0, Number(ordinal) || 0)) {
-      return rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    const range = rangeForAggregateMatch(mapped.parts, match.index, match.index + match[0].length);
+    if (range) {
+      if (index === Math.max(0, Number(ordinal) || 0)) {
+        ordinalFallback = range;
+        if (!haveGeometry) return range;
+      }
+      if (haveGeometry) {
+        const rect = [...range.getClientRects()].find((item) => item.width > 0 && item.height > 0);
+        if (rect && layerRect?.height > 0 && layerRect?.width > 0) {
+          const measuredY = (rect.top + rect.height / 2 - layerRect.top) / layerRect.height;
+          const measuredX = (rect.left + rect.width / 2 - layerRect.left) / layerRect.width;
+          const intendedX = locator.xStartRatio === null || locator.xStartRatio === undefined
+            ? NaN : Number(locator.xStartRatio);
+          const distance = Math.abs(measuredY - Number(locator.ratio)) * 3
+            + (Number.isFinite(intendedX) ? Math.abs(measuredX - intendedX) * .6 : 0);
+          if (!best || distance < best.distance) best = {range, distance};
+        }
+      }
     }
     index += 1;
     if (!match[0].length) pattern.lastIndex += 1;
   }
-  return null;
+  if (best) return best.range;
+  // PDF.js may not have laid out the page yet. Preserve the old ordinal
+  // fallback rather than silently losing an otherwise valid search hit.
+  return ordinalFallback;
 }
 
 function clearSearchMatchEmphasis() {
@@ -1397,7 +1464,8 @@ async function goToSearchMatch(match, query) {
   if (!layer || !surface) return;
   await new Promise((resolve) => requestAnimationFrame(resolve));
   if (!stillCurrent()) return;
-  const range = searchMatchRangeInLayer(layer, query, match.ordinal || 0);
+  const matchText = match.matchText || query;
+  const range = searchMatchRangeInLayer(layer, matchText, match.ordinal || 0, match);
   if (!range) return;
   const rect = [...range.getClientRects()].find((item) => item.width >= 1 && item.height >= 1);
   if (!rect) return;
@@ -1455,27 +1523,33 @@ async function searchPdf(query) {
   const fuzzy = Boolean(searchFuzzy?.checked);
   searchStatus.textContent = fuzzy ? t('Fuzzy searching…', '正在模糊搜索……') : t('Searching…', '正在搜索……');
   const matches = [];
+  let failedPageCount = 0;
   for (let page = 1; page <= sourceDoc.numPages; page += 1) {
     if (!stillCurrent()) return;
     searchStatus.textContent = t(`Searching page ${page} of ${sourceDoc.numPages}…`, `正在搜索第 ${page} / ${sourceDoc.numPages} 页……`);
     try {
-      const text = await pageText(page);
+      const runs = await searchPageRuns(page);
       if (!stillCurrent()) return;
-      const hits = fuzzy ? fuzzySearchMatches(text, q) : exactSearchMatches(text, q);
-      for (const [ordinal, hit] of hits.entries()) matches.push({ page, text, index: hit.index, score: hit.score, ordinal });
-    } catch (error) { if (stillCurrent()) console.error(error); }
+      for (const run of runs) {
+        const hits = fuzzy ? fuzzySearchMatches(run.text, q) : exactSearchMatches(run.text, q);
+        for (const [ordinal, hit] of hits.entries()) {
+          matches.push({ page, text: run.text, index: hit.index, score: hit.score, ordinal,
+            matchText: hit.matchText || q, ...searchHitGeometry(run, hit.index) });
+        }
+      }
+    } catch (error) { if (stillCurrent()) { failedPageCount++; console.error(error); } }
     if (!stillCurrent()) return;
     if (page % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
   }
   if (!stillCurrent()) return;
   matches.sort((a,b) => fuzzy ? (b.score - a.score || a.page - b.page || a.index - b.index) : (a.page - b.page || a.index - b.index));
-  searchStatus.textContent = t(`${matches.length} occurrence${matches.length === 1 ? '' : 's'}${fuzzy ? ' · fuzzy ranked' : ''}`, `${matches.length} 个出现位置${fuzzy ? ' · 按模糊匹配排序' : ''}`);
+  searchStatus.textContent = t(`${matches.length} occurrence${matches.length === 1 ? '' : 's'}${fuzzy ? ' · fuzzy ranked' : ''}${failedPageCount ? ` · ${failedPageCount} page(s) unavailable` : ''}`, `${matches.length} 个出现位置${fuzzy ? ' · 按模糊匹配排序' : ''}${failedPageCount ? ` · ${failedPageCount} 页搜索失败` : ''}`);
   for (const match of matches.slice(0, 200)) {
     const item = document.createElement('button');
     item.type = 'button'; item.className = 'search-result';
     const label = document.createElement('strong');
     label.textContent = fuzzy && match.score < 0.999 ? t(`Page ${match.page} · ${Math.round(match.score*100)}%`, `第 ${match.page} 页 · ${Math.round(match.score*100)}%`) : t(`Page ${match.page}`, `第 ${match.page} 页`);
-    const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, q, match.index));
+    const snippet = document.createElement('p'); snippet.append(highlightedSnippet(match.text, match.matchText || q, match.index));
     item.append(label, snippet);
     item.addEventListener('click', () => goToSearchMatch(match, q));
     searchResults.append(item);
