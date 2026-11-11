@@ -1,0 +1,54 @@
+{
+  "release": "v433",
+  "date": "2026-11-11",
+  "baseline": "v432 plus v432 settings-copy overlay",
+  "focus": "reader-wide prose wrapping",
+  "baseline_reproduction": {
+    "test": "tests/prose_flow_v433_regression.py",
+    "v432": "FAIL - balance CSS yields prematurely shortened lines",
+    "v433": "PASS"
+  },
+  "validation": {
+    "javascript_files": {
+      "passed": 80,
+      "total": 80
+    },
+    "python_chromium_files": {
+      "passed": 37,
+      "total": 37,
+      "mode": "individually / reruns; combined concurrent batch timed out"
+    },
+    "tutorial_chromium_assertions": {
+      "passed": 130,
+      "total": 130
+    },
+    "settings_orphan_theme_width_combinations": {
+      "passed": 12,
+      "total": 12
+    },
+    "responsive_assertions": {
+      "passed": 176,
+      "total": 176
+    },
+    "html_css_sidebar_widths_px": [
+      204,
+      220,
+      240,
+      260,
+      270,
+      300,
+      330,
+      360
+    ],
+    "languages": [
+      "en",
+      "zh"
+    ],
+    "node_check": "PASS"
+  },
+  "known_limitations": [
+    "text-wrap:pretty is best-effort and cannot guarantee a non-short final line at every viewport/word length",
+    "actual PDF.js original PDF and real Texify inference not run (layout-only patch)",
+    "no changes to OCR/detection capabilities or schemas"
+  ]
+}

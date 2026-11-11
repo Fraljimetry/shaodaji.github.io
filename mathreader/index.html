@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=432">
+  <link rel="stylesheet" href="mathreader.css?v=433">
   <script>
     (() => {
       try {
@@ -512,7 +512,7 @@
             <label class="display-setting"><span class="display-label" data-en="Image OCR engine" data-zh="图像 OCR 引擎">Image OCR engine</span><select id="ocr-engine-mode"><option value="official" data-en="Default · Texify CPU" data-zh="默认 · Texify CPU">Default · Texify CPU</option><option value="wasm" data-en="WASM q8" data-zh="WASM q8">WASM q8</option><option value="webgpu" data-en="WebGPU q4f16" data-zh="WebGPU q4f16">WebGPU q4f16</option></select></label>
             <label class="display-setting"><span class="display-label" data-en="Initial crop padding" data-zh="首次裁图边距">Initial crop padding</span><select id="ocr-crop-padding"><option value="tight" data-en="Tight · standard" data-zh="紧凑 · 标准">Tight · standard</option><option value="relaxed" data-en="Relaxed · wider context" data-zh="宽松 · 保留更多上下文">Relaxed · wider context</option></select></label>
             <label class="toggle-setting"><input id="ocr-severe-retry" type="checkbox" checked><span data-en="Retry once after severe OCR corruption" data-zh="OCR 严重损坏时重试一次">Retry once after severe OCR corruption</span></label>
-            <p class="display-note" data-en="Wider crops may include nearby text. Each retry costs a local inference; quality warnings remain if retries are off." data-zh="宽裁图可能包含邻近文字。每次重试增加一次本地推理；关闭重试仍显示质量警告。">Wider crops may include nearby text. Each retry costs a local inference; quality warnings remain if retries are off.</p>
+            <p class="display-note" data-en="Wider crops risk nearby text. Retry costs inference; warnings remain if disabled." data-zh="宽裁图可能混入邻近文字。重试增加一次本地推理；关闭重试仍显示质量警告。">Wider crops risk nearby text. Retry costs inference; warnings remain if disabled.</p>
             <details class="ocr-troubleshooting"><summary data-en="Troubleshooting" data-zh="故障处理">Troubleshooting</summary><button class="text-button" type="button" id="ocr-retry" data-en="Reset OCR" data-zh="重置 OCR" data-en-title="Unload the current OCR engine. The model loads on the next image formula extraction." data-zh-title="卸载当前 OCR 引擎；下次图像公式提取时才会加载模型。">Reset OCR</button><div class="ocr-timing-panel"><div class="ocr-timing-title" data-en="OCR timing" data-zh="OCR 计时">OCR timing</div><pre id="ocr-timing-diagnostics" data-en-empty="No OCR run yet." data-zh-empty="尚无 OCR 运行记录。">No OCR run yet.</pre></div></details>
           </div>
         </details>
@@ -524,11 +524,11 @@
             <label class="display-setting"><span class="display-label" data-en="Results shown" data-zh="显示的数学结果">Results shown</span><select id="detection-results-filter"><option value="all" data-en="All declarations" data-zh="全部声明">All declarations</option><option value="numbered" data-en="Numbered only" data-zh="仅带编号">Numbered only</option></select></label>
             <label class="toggle-setting"><input id="detection-proof-relations" type="checkbox" checked><span data-en="Show proof and corollary relationships" data-zh="显示证明与推论关系">Show proof and corollary relationships</span></label>
             <label class="display-setting"><span class="display-label" data-en="Equation confidence" data-zh="公式编号置信度">Equation confidence</span><select id="detection-equation-confidence"><option value="all" data-en="All indexed equations" data-zh="全部已索引公式">All indexed equations</option><option value="high" data-en="High only" data-zh="仅高置信度">High only</option><option value="medium" data-en="Medium only" data-zh="仅中置信度">Medium only</option><option value="review" data-en="Needs review only" data-zh="仅需复核">Needs review only</option></select></label>
-            <p class="display-note" data-en="Filters only change what is shown. They never delete detected results or alter stored annotations." data-zh="筛选只改变显示，不会删除检测结果或修改已有批注。">Filters only change what is shown. They never delete detected results or alter stored annotations.</p>
+            <p class="display-note" data-en="Filters change display, not stored data." data-zh="筛选仅影响显示，不修改已保存的数据。">Filters change display, not stored data.</p>
             <div class="settings-group-heading"><span data-en="Detection actions" data-zh="检测操作">Detection actions</span></div>
             <button class="secondary-action settings-action" type="button" id="detection-rebuild-index" disabled data-en="Rebuild Results & Bibliography" data-zh="重新检测结果和参考文献">Rebuild Results & Bibliography</button>
             <button class="secondary-action settings-action" type="button" id="detection-scan-margins" disabled data-en="Scan equation margins" data-zh="扫描公式编号页边">Scan equation margins</button>
-            <p class="display-note" data-en="Rebuilding may take time. The optional margin OCR scans page images, uses local resources, and may still miss labels. Nothing runs from these buttons without a click." data-zh="重新检测可能耗时。可选页边 OCR 会扫描页面图像、占用本地资源，仍可能漏检。只有点击按钮才执行。">Rebuilding may take time. The optional margin OCR scans page images, uses local resources, and may still miss labels. Nothing runs from these buttons without a click.</p>
+            <p class="display-note" data-en="Rebuilding is local and may be slow. Margin OCR can miss labels; click to start." data-zh="重新检测在本地执行，可能耗时。页边 OCR 仍可能漏检；点击才会启动。">Rebuilding is local and may be slow. Margin OCR can miss labels; click to start.</p>
           </div>
         </details>
 
@@ -540,14 +540,14 @@
                 <input type="checkbox" id="export-include-detection" checked>
                 <span class="export-setting-copy">
                   <span class="export-setting-title" data-en="Include detection data" data-zh="包含检测数据">Include detection data</span>
-                  <span class="export-setting-description" data-en="Contents indexes and detection evidence" data-zh="目录索引及检测证据">Contents indexes and detection evidence</span>
+                  <span class="export-setting-description" data-en="Indexes and detection evidence" data-zh="索引与检测证据">Indexes and detection evidence</span>
                 </span>
               </label>
               <label class="export-setting-option">
                 <input type="checkbox" id="export-include-full-text">
                 <span class="export-setting-copy">
                   <span class="export-setting-title" data-en="Include full-document text" data-zh="包含全文文本">Include full-document text</span>
-                  <span class="export-setting-description" data-en="PDF text and stored OCR, if available" data-zh="PDF 文本和已保存的 OCR（如有）">PDF text and stored OCR, if available</span>
+                  <span class="export-setting-description" data-en="PDF text and stored OCR" data-zh="PDF 文本及已有 OCR">PDF text and stored OCR</span>
                 </span>
               </label>
             </div>
@@ -608,6 +608,6 @@
     <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>
   </div>
 
-  <script type="module" src="mathreader.js?v=432"></script>
+  <script type="module" src="mathreader.js?v=433"></script>
 </body>
 </html>

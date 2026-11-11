@@ -1,3 +1,11 @@
+# v433 — General sidebar and Tutorial prose wrapping (2026-11-11)
+
+Reproduced the v432 **`text-wrap: balance`** policy truncating otherwise usable intermediate lines in narrow Settings help text. The old one-sentence Formula OCR copy change did not solve the shared defect. v433 switches readable sidebar/help/tutorial prose to natural-width `text-wrap: pretty` (normal wrap fallback), with overflow protection and compact bilingual explanatory copy. This avoids artificial line balancing and minimizes very short final lines **where possible**; no browser CSS can guarantee both fully packed preceding lines and substantial final-line content at every width. Mathematical notation, user-selected PDF text, buttons, and preformatted data are untouched. No OCR or detector algorithms changed.
+
+**Red/green:** `tests/prose_flow_v433_regression.py` fails on the unchanged v432 stylesheet and passes on v433; real Chromium measured line widths at 204–360px, EN/ZH, Tutorial, and overflow. JS 80/80 PASS; 37/37 Python/Chromium files PASS individually (concurrent monolithic batch timed out); Tutorial 130/130, orphan-width/theme 12/12, responsive 176/176. [Release](docs/releases/V433_RELEASE.md); evidence `regression/v433_release_gate.json`.
+
+---
+
 # v432 — Content Detection and Formula OCR settings (2026-11-11)
 
 A separate Content Detection settings group now offers non-destructive Results/Equation visibility filters, proof-relationship visibility, and explicit rebuild/margin-scan actions. Display zoom-step and Formula OCR first-crop/retry preferences are browser-local. No detection thresholds, annotations, reading-data schemas, PDF.js version, or actual Texify model were changed. Regression: 80/80 JavaScript suites, 35/35 isolated Python/Chromium test files, 176/176 responsive assertions, P0 isolated browser shell PASS. The combined P0 command timed out and true model mathematical accuracy remains UNVERIFIED. See [v432 release](docs/releases/V432_RELEASE.md) and [gate](regression/v432_release_gate.json).

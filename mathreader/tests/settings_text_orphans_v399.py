@@ -10,7 +10,7 @@ root = Path(__file__).resolve().parents[1]
 html = (root / 'index.html').read_text(encoding='utf-8')
 css = (root / 'mathreader.css').read_text(encoding='utf-8')
 settings = html[html.index('<section class="workspace-section settings-section"'):html.index('<section class="workspace-section shortcuts"')]
-markup = '<!doctype html><html data-theme="dark" data-lang="en"><head><meta charset="utf-8"><style>' + css + '</style></head><body><aside class="sidebar-right" style="width:250px;max-width:100%;padding:12px 14px;background:var(--surface)">' + settings + '</aside></body></html>'
+markup = '<!doctype html><html data-theme="dark" data-lang="en"><head><meta charset="utf-8"><style>' + css + '</style></head><body><aside class="sidebar sidebar-right" style="width:250px;max-width:100%;padding:12px 14px;background:var(--surface)">' + settings + '</aside></body></html>'
 # Each text run is measured through DOM Ranges rather than line-height guesses:
 # this detects the original screenshot's second line containing only 'export.'.
 measure = '''()=>{
@@ -35,6 +35,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome'),headless=True,args=['--no-sandbox'])
     page = browser.new_page(viewport={'width':650,'height':900},device_scale_factor=1)
     page.set_content(markup)
+    page.add_style_tag(content=".sidebar{transition:none!important}")
     for group in page.locator('.settings-group').all():
         group.evaluate('(e)=>e.open=true')
     assert page.locator('.export-settings-note').count()==0, 'redundant export note must be absent'

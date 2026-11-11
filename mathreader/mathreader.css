@@ -655,12 +655,19 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
 .export-setting-title{font-size:10px;font-weight:500;color:var(--ink)}
 .export-setting-description{font-size:9px;line-height:1.4;color:var(--muted);overflow-wrap:break-word}
 
-/* v399: intentional short-copy wrapping, no single-word orphan at supported sidebar widths. */
-.sidebar-right .display-note,
-.sidebar-right .export-setting-description,
-.sidebar-right .note-latex-help,
-.sidebar-right .ocr-help,
-.sidebar-right .compact-help-body { text-wrap: balance; }
+/* v433: prose uses the available width before wrapping. Do not balance all
+   lines: that leaves unjustified empty space in narrow sidebars. Chromium's
+   "pretty" mode can improve the final line, without reflowing buttons,
+   headings, mathematical content, user input or preformatted text. */
+.sidebar :is(p, .display-note, .export-setting-description, .note-latex-help,
+             .ocr-help, .compact-help-body, .history-explainer,
+             .document-meta-summary, .bibliography-citation-item span),
+.welcome :is(p, .welcome-copy, .privacy-note) {
+  text-wrap: wrap; /* fallback for browsers without pretty */
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
 
 /* v400: Sidebar typography follows the actual parent->child hierarchy.
    The Settings heading belongs to the same 12px tier as every other panel;
