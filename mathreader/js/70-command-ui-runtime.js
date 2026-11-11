@@ -280,6 +280,37 @@ function closeCommandPalette() {
   if (active && commandPalette?.contains(active) && typeof active.blur === 'function') active.blur();
 }
 
+detectionResultsFilterSelect?.addEventListener('change', () => {
+  detectionResultsFilter = detectionResultsFilterSelect.value === 'numbered' ? 'numbered' : 'all';
+  persistDetectionViewPreferences(); renderStructureIndex();
+});
+detectionEquationConfidenceSelect?.addEventListener('change', () => {
+  equationConfidenceFilter = ['all','high','medium','review'].includes(detectionEquationConfidenceSelect.value)
+    ? detectionEquationConfidenceSelect.value : 'all';
+  persistDetectionViewPreferences();
+  if (equationLabelIndex instanceof Map) renderEquationIndex();
+});
+detectionProofRelationsToggle?.addEventListener('change', () => {
+  showProofRelations = Boolean(detectionProofRelationsToggle.checked);
+  persistDetectionViewPreferences(); renderStructureIndex();
+});
+resetDetectionDisplayButton?.addEventListener('click', resetDetectionViewPreferences);
+detectionRebuildIndexButton?.addEventListener('click', () => {
+  if (!pdfDoc || !documentTextFeaturesAvailable() || structureIndexBuilding) return;
+  void buildStructureIndex({ force: true });
+});
+detectionScanMarginsButton?.addEventListener('click', () => {
+  if (pdfDoc && documentTextFeaturesAvailable()) void forceEquationImageOcr();
+});
+ocrCropPaddingSelect?.addEventListener('change', () => {
+  formulaOcrCropPadding = ocrCropPaddingSelect.value === 'relaxed' ? 'relaxed' : 'tight';
+  persistFormulaOcrPreferences();
+});
+ocrSevereRetryToggle?.addEventListener('change', () => {
+  formulaOcrSevereRetryEnabled = Boolean(ocrSevereRetryToggle.checked);
+  persistFormulaOcrPreferences();
+});
+
 formulaExtractionSelect?.addEventListener('change', () => {
   formulaExtractionMode = formulaExtractionSelect.value === 'vector' ? 'vector' : 'image';
   safeSet('mathreader-formula-method-v1', formulaExtractionMode);
@@ -773,6 +804,8 @@ document.addEventListener('visibilitychange', () => {
 });
 
 loadDisplayPreferences();
+loadDetectionViewPreferences();
+loadFormulaOcrPreferences();
 loadExportPreferences();
 loadSearchPreferences();
 setupWorkspaceCollapsibles();

@@ -11,12 +11,13 @@ const severe=f.find(v=>v.id==='extreme-04').raw;
 const names=['normalizeOcrLatex','splitTopLevelOcrAlignmentCells','formulaOcrLayoutAnomalies','repairOcrLatex','repairOcrMisplacedAlignmentTabs','repairLatexInnerTags','repairLatexSpecialCharacters','stabilizeOcrLatexSyntax','findRepeatedLatexSequence','formulaOcrEnvironmentScopeWarnings','assessImageOcrResult','imageOcrCorruptionScore','latexStructuralPenalty'];
 function pick(src,n){const a=src.indexOf(`function ${n}(`);assert(a>=0,n);let b=src.indexOf('\nfunction ',a+1);if(b<0)b=src.length;return src.slice(a,b)}
 const source=vector.slice(vector.indexOf('async function runImageFormulaRecognition('), vector.indexOf('\nfunction commitFormulaResult('));
-async function run(outputs, visualInkRows=0, faint=false){
+async function run(outputs, visualInkRows=0, faint=false, prefs={}){
  const statuses=[],calls=[];
  const c=vm.createContext({
   t:en=>en,console,ocrNow:()=>Date.now(),navigator:{hardwareConcurrency:4,deviceMemory:8},
   document:{visibilityState:'visible'},mathOcrBackend:{device:'wasm'},
   mathOcrReadyAt:Date.now()-1000,mathOcrInferenceRuns:0,mathOcrLoading:false,
+  formulaOcrCropPadding:prefs.cropPadding||'tight',formulaOcrSevereRetryEnabled:prefs.retry!==false,
   ensureMathOcrPipeline:async()=>async(input,config)=>{
     calls.push({input,config});const next=outputs.shift();
     if(next instanceof Error)throw next;
@@ -63,6 +64,12 @@ async function run(outputs, visualInkRows=0, faint=false){
  assert.equal(failed.result.inferenceCount,2,'failed retry still counts the attempted inference');
  assert.equal(failed.result.assessment.retainedForReview,true,'failed retry preserves editable first result');
  assert.equal(failed.result.timing.retryFailed,true);
+ const notRetried=await run([severe,good],0,false,{retry:false});
+ assert.equal(notRetried.calls.length,1,'user-disabled retry never triggers a second inference');
+ assert(notRetried.result.assessment.hardReject && notRetried.result.assessment.retainedForReview,'no retry must still report severe corruption');
+ const relaxed=await run([severe,good],0,false,{cropPadding:'relaxed'});
+ assert.equal(relaxed.calls[0].input.variant,'relaxed','selected wider first crop used');
+ assert.equal(relaxed.calls[1].input.variant,'tight','different bounded retry crop used');
  const dense=String.raw`\begin{aligned}\nabla_m F^{i_1\cdots i_r}_{j_1\cdots j_s}&=\partial_m F^{i_1\cdots i_r}_{j_1\cdots j_s}\\&+\sum_{n=1}^r\Gamma_{mk}^{i_n}F^{i_1\cdots k\cdots i_r}_{j_1\cdots j_s}\end{aligned}`;
  const valid=await run([dense]);
  assert.equal(valid.calls.length,1,'legitimate complex tensor needs no extra model call');

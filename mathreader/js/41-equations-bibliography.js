@@ -3909,7 +3909,8 @@ function renderEquationIndex() {
   ];
   for (const [value, text] of filterOptions) { const option = document.createElement('option'); option.value = value; option.textContent = text; filterSelect.append(option); }
   filterSelect.value = equationConfidenceFilter;
-  filterSelect.addEventListener('change', () => { equationConfidenceFilter = filterSelect.value || 'all'; renderEquationIndex(); });
+  if (detectionEquationConfidenceSelect) detectionEquationConfidenceSelect.value = equationConfidenceFilter;
+  filterSelect.addEventListener('change', () => { equationConfidenceFilter = filterSelect.value || 'all'; persistDetectionViewPreferences(); renderEquationIndex(); });
   filterLabel.append(filterSelect); filterBar.append(filterLabel); equationIndex.append(filterBar);
   const visibleRows = equationConfidenceFilter === 'all' ? rows : rows.filter((row) => (row.score >= 20 ? 'high' : row.score >= 12 ? 'medium' : 'review') === equationConfidenceFilter);
   equationIndexEmpty.classList.toggle('is-hidden', visibleRows.length > 0);
@@ -5494,7 +5495,14 @@ function renderStructureIndex() {
         : t('No results indexed.', '尚无结果索引。');
     return;
   }
-  for (const entry of structureEntries) {
+  const shownStructureEntries = detectionResultsFilter === 'numbered'
+    ? structureEntries.filter((entry) => !entry.unnumberedResult && !/\s·\s*p\.\d+/i.test(entry.label || ''))
+    : structureEntries;
+  if (!shownStructureEntries.length) {
+    structureEmpty.classList.remove('is-hidden');
+    structureEmpty.textContent = t('No Results match this display filter.', '没有符合筛选条件的数学结果。');
+  }
+  for (const entry of shownStructureEntries) {
     const row = document.createElement('div'); row.className = 'structure-entry proof-graph-card'; row.dataset.page=String(entry.page);
     const button = document.createElement('button'); button.type = 'button'; button.className = 'structure-item proof-graph-root'; button.dataset.page=String(entry.page);
     const strong = document.createElement('strong'); strong.textContent = entry.displayLabel || entry.label || entry.title.replace(/([.:)].*)$/, '$1').slice(0, 80);
@@ -5521,7 +5529,7 @@ function renderStructureIndex() {
     if (Array.isArray(entry.usedByProofs) && entry.usedByProofs.length) relations.push({ prefix: t('Used in proofs', '用于证明'), type:'used-in', items: entry.usedByProofs });
     if (Array.isArray(entry.corollaries) && entry.corollaries.length) relations.push({ prefix: t('Corollaries', '推论'), type:'corollary', items: entry.corollaries });
     if (Array.isArray(entry.derivedFrom) && entry.derivedFrom.length) relations.push({ prefix: t('Derived from', '源自'), type:'derived', items: entry.derivedFrom });
-    if (relations.length) {
+    if (showProofRelations && relations.length) {
       const graphWrap=document.createElement('div'); graphWrap.className='proof-graph-relations';
       for (const relation of relations) {
         const graph = document.createElement('div'); graph.className = `structure-relations relation-${relation.type}`;

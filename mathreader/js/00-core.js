@@ -202,6 +202,15 @@ const contrastValue = el('contrast-value');
 const gapRange = el('gap-range');
 const gapValue = el('gap-value');
 const pageShadow = el('page-shadow');
+const displayZoomStepSelect = el('display-zoom-step');
+const ocrCropPaddingSelect = el('ocr-crop-padding');
+const ocrSevereRetryToggle = el('ocr-severe-retry');
+const detectionResultsFilterSelect = el('detection-results-filter');
+const detectionEquationConfidenceSelect = el('detection-equation-confidence');
+const detectionProofRelationsToggle = el('detection-proof-relations');
+const resetDetectionDisplayButton = el('reset-detection-display');
+const detectionRebuildIndexButton = el('detection-rebuild-index');
+const detectionScanMarginsButton = el('detection-scan-margins');
 
 let pdfjsLib = null;
 let pdfDoc = null;
@@ -303,6 +312,8 @@ let mathOcrLoading = false;
 let mathOcrBackend = null;
 let mathOcrEngineMode = 'official';
 let formulaExtractionMode = 'image';
+let formulaOcrCropPadding = 'tight';
+let formulaOcrSevereRetryEnabled = true;
 let readerWidthObserver = null;
 let readerWidthTimer = null;
 let lastObservedReaderWidth = 0;
@@ -335,6 +346,9 @@ let displayBrightness = 100;
 let displayContrast = 100;
 let displayGap = 20;
 let displayShadow = true;
+let zoomStep = 0.15;
+let detectionResultsFilter = 'all';
+let showProofRelations = true;
 let inferredOutline = [];
 let inferredOutlineDetectionDone = false;
 let inferredOutlineBuildPromise = null;
@@ -379,11 +393,13 @@ formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 've
 const EXPORT_PREFS_KEY = 'mathreader-export-v1';
 let exportPreferences = { includeDetection: true, includeFullDocumentText: false };
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
+const DETECTION_VIEW_PREFS_KEY = 'mathreader-detection-view-v1';
+const FORMULA_OCR_PREFS_KEY = 'mathreader-formula-advanced-v1';
 const LEGACY_DISPLAY_PREFS_KEYS = ['mathreader-display-v2','mathreader-display-v1'];
 const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
-const STRUCTURE_INDEX_VERSION = 57;
+const STRUCTURE_INDEX_VERSION = 58;
 const EQUATION_INDEX_SUMMARY_VERSION = 29;
 // Bounded, shared limit: detection, restoration, manual edits and Undo agree.
 const MAX_INFERRED_OUTLINE_ENTRIES = 1200;
@@ -482,6 +498,50 @@ function pushUndo(type, label, payload) {
 
 // Global, local-only export preferences. Never attach these to a PDF session:
 // importing another reader's data must not silently change this user's choices.
+// Display-only controls never affect the detection algorithm or saved indexes.
+function loadDetectionViewPreferences() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(DETECTION_VIEW_PREFS_KEY, 'null')); } catch (_) {}
+  detectionResultsFilter = saved?.results === 'numbered' ? 'numbered' : 'all';
+  equationConfidenceFilter = ['all','high','medium','review'].includes(saved?.confidence) ? saved.confidence : 'all';
+  showProofRelations = saved?.proofRelations !== false;
+  updateDetectionViewControls();
+}
+function updateDetectionViewControls() {
+  if (detectionResultsFilterSelect) detectionResultsFilterSelect.value = detectionResultsFilter;
+  if (detectionEquationConfidenceSelect) detectionEquationConfidenceSelect.value = equationConfidenceFilter;
+  if (detectionProofRelationsToggle) detectionProofRelationsToggle.checked = showProofRelations;
+}
+function persistDetectionViewPreferences() {
+  safeSet(DETECTION_VIEW_PREFS_KEY, JSON.stringify({
+    results: detectionResultsFilter, confidence: equationConfidenceFilter,
+    proofRelations: showProofRelations
+  }));
+  updateDetectionViewControls();
+}
+function resetDetectionViewPreferences() {
+  detectionResultsFilter = 'all';
+  equationConfidenceFilter = 'all';
+  showProofRelations = true;
+  persistDetectionViewPreferences();
+  renderStructureIndex();
+  if (equationLabelIndex instanceof Map) renderEquationIndex();
+}
+// Advanced Formula OCR preferences: no hidden engine switching or unlimited retries.
+function loadFormulaOcrPreferences() {
+  let saved = null;
+  try { saved = JSON.parse(safeGet(FORMULA_OCR_PREFS_KEY, 'null')); } catch (_) {}
+  formulaOcrCropPadding = saved?.cropPadding === 'relaxed' ? 'relaxed' : 'tight';
+  formulaOcrSevereRetryEnabled = saved?.severeRetry !== false;
+  if (ocrCropPaddingSelect) ocrCropPaddingSelect.value = formulaOcrCropPadding;
+  if (ocrSevereRetryToggle) ocrSevereRetryToggle.checked = formulaOcrSevereRetryEnabled;
+}
+function persistFormulaOcrPreferences() {
+  safeSet(FORMULA_OCR_PREFS_KEY, JSON.stringify({
+    cropPadding: formulaOcrCropPadding, severeRetry: formulaOcrSevereRetryEnabled
+  }));
+}
+
 function loadExportPreferences() {
   let saved = null;
   try { saved = JSON.parse(safeGet(EXPORT_PREFS_KEY, 'null')); } catch (_) { saved = null; }
@@ -519,10 +579,12 @@ function loadDisplayPreferences() {
     displayContrast = oldContrastDefault ? 100 : clamp(saved.contrast, 80, 120, 100);
     displayGap = clamp(saved.gap, 8, 44, 20);
     displayShadow = saved.shadow !== false;
+    zoomStep = [0.10, 0.15, 0.20].includes(Number(saved.zoomStep)) ? Number(saved.zoomStep) : 0.15;
   } else {
     readingFlow = 'continuous';
     displayBrightness = 100;
     displayContrast = 100;
+    zoomStep = 0.15;
   }
   if (migratedFrom) persistDisplayPreferences();
 }
@@ -533,7 +595,8 @@ function persistDisplayPreferences() {
     brightness: displayBrightness,
     contrast: displayContrast,
     gap: displayGap,
-    shadow: displayShadow
+    shadow: displayShadow,
+    zoomStep
   }));
 }
 
@@ -550,6 +613,7 @@ function updateDisplayControls() {
   if (contrastRange) contrastRange.value = String(displayContrast);
   if (gapRange) gapRange.value = String(displayGap);
   if (pageShadow) pageShadow.checked = displayShadow;
+  if (displayZoomStepSelect) displayZoomStepSelect.value = zoomStep.toFixed(2);
   if (brightnessValue) brightnessValue.textContent = `${displayBrightness}%`;
   if (contrastValue) contrastValue.textContent = `${displayContrast}%`;
   if (gapValue) gapValue.textContent = `${displayGap} px`;
@@ -633,6 +697,7 @@ function resetDisplayPreferences() {
   displayContrast = 100;
   displayGap = 20;
   displayShadow = true;
+  zoomStep = 0.15;
   applyPageDisplay();
   setReadingFlow('continuous', { persist: true, render: true });
 }
@@ -3452,7 +3517,7 @@ async function touchCachedPdf(record) {
 }
 
 function enableReaderControls(enabled) {
-  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,exportReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
+  [prevPage,nextPage,pageNumberInput,zoomIn,zoomOut,zoomLabel,flowButton,mathOcrButton,pinPageButton,pinFromSidebar,addBookmark,buildStructureIndexButton,detectionRebuildIndexButton,detectionScanMarginsButton,exportReadingDataButton].forEach((node) => { if (node) node.disabled = !enabled; });
   // Import belongs to the local library, not to the currently open PDF. Keep it
   // available on the empty first screen so a reading-data export can restore a
   // library/session record before the matching PDF is reopened.

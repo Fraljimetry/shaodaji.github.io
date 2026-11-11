@@ -675,3 +675,7 @@ html[data-theme="dark"] .sidebar-right textarea::placeholder{color:#8797a4;opaci
   font-size: 10px;
   font-weight: 650;
 }
+
+/* v432 · settings actions stay compact within the right workspace. */
+.settings-section .settings-action{min-height:29px;margin:5px 0 3px;font-size:10px;text-align:center}
+.settings-section .settings-group-heading:not(:first-child){margin-top:13px}

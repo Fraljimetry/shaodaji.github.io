@@ -1,3 +1,9 @@
+# v432 — Content Detection and Formula OCR settings (2026-11-11)
+
+A separate Content Detection settings group now offers non-destructive Results/Equation visibility filters, proof-relationship visibility, and explicit rebuild/margin-scan actions. Display zoom-step and Formula OCR first-crop/retry preferences are browser-local. No detection thresholds, annotations, reading-data schemas, PDF.js version, or actual Texify model were changed. Regression: 80/80 JavaScript suites, 35/35 isolated Python/Chromium test files, 176/176 responsive assertions, P0 isolated browser shell PASS. The combined P0 command timed out and true model mathematical accuracy remains UNVERIFIED. See [v432 release](docs/releases/V432_RELEASE.md) and [gate](regression/v432_release_gate.json).
+
+---
+
 # v431 — Comprehensive reading and cross-column search bug sweep (2026-11-11)
 
 Unchanged v430 baseline passed 77 JS and 33 Python/Chromium test files. Reproduction from actual PMESTOC25 PDF.js spans and adversarial independent columns exposed three Search faults: phantom cross-gutter phrases, missing exact navigation for fuzzy results (especially duplicate phrases), and false impression of complete search after page extraction failure. Fixed in search-only code without changing detector modules, data schemas, or OCR model inference; the user-facing English/Chinese Tutorial documents Search and its limitations alongside Content Detection and Formula OCR. Original-PDF detector proxy replay ran 41 PDFs / 2,039 pages / 123 stages with no exceptions; image OCR and mathematical accuracy remain unverified. See [v431 release](docs/releases/V431_RELEASE.md) and [gate](regression/v431_release_gate.json).

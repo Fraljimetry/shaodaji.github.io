@@ -844,8 +844,8 @@ fileInput.addEventListener('change', () => { const recoveryId = pendingRecoveryR
 prevPage.addEventListener('click', () => goToPage(currentPage - 1));
 nextPage.addEventListener('click', () => goToPage(currentPage + 1));
 pageNumberInput.addEventListener('change', () => goToPage(pageNumberInput.value));
-zoomIn.addEventListener('click', () => changeZoom(.15));
-zoomOut.addEventListener('click', () => changeZoom(-.15));
+zoomIn.addEventListener('click', () => changeZoom(zoomStep));
+zoomOut.addEventListener('click', () => changeZoom(-zoomStep));
 zoomLabel.addEventListener('click', () => setFitMode(zoomMode === 'fit-width' ? 'fit-page' : 'fit-width'));
 ocrHistoryToggle?.addEventListener('click', () => { ocrHistoryExpanded = !ocrHistoryExpanded; refreshOcrUI(); });
 flowButton?.addEventListener('click', () => setReadingFlow(readingFlow === 'continuous' ? 'single' : 'continuous'));
@@ -858,6 +858,10 @@ contrastRange?.addEventListener('input', () => { displayContrast = clamp(contras
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
 gapRange?.addEventListener('change', () => { runDisplayTransition(() => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); persistDisplayPreferences(); }, { renderReference: false }); });
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
+displayZoomStepSelect?.addEventListener('change', () => {
+  zoomStep = [0.10,0.15,0.20].includes(Number(displayZoomStepSelect.value)) ? Number(displayZoomStepSelect.value) : 0.15;
+  persistDisplayPreferences();
+});
 
 function formatCompactDate(timestamp) {
   try {

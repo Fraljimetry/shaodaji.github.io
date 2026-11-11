@@ -1,0 +1,64 @@
+{
+  "schema": "mathreader.v432.release-gate@1",
+  "base_version": "v431",
+  "release_version": "v432",
+  "scope": "Settings: Display, Formula OCR, new Content Detection group",
+  "javascript": {
+    "test_files_passed": 80,
+    "test_files_total": 80,
+    "all_source_syntax": "PASS",
+    "bootstrap_syntax": "PASS"
+  },
+  "python_chromium": {
+    "test_files_passed": 35,
+    "test_files_total": 35,
+    "mode": "individual/batched files, not a single monolithic gate",
+    "responsive_assertions_passed": 176,
+    "responsive_assertions_total": 176,
+    "offline_settings_interaction": "PASS"
+  },
+  "browser_shell": {
+    "status": "PASS",
+    "mode": "isolated shell only, no original live PDF.js or Texify inference"
+  },
+  "documented_monolithic_p0_gate": {
+    "status": "INCOMPLETE",
+    "reason": "execution timed out before gate result",
+    "do_not_count_as_pass": true
+  },
+  "full_original_pdf_p0_accuracy": "UNVERIFIED",
+  "actual_texify_ocr_accuracy": "UNVERIFIED",
+  "content_detection_automated_algorithm_changed": false,
+  "index_cache_version_changed": false,
+  "reading_data_schema_changed": false,
+  "manual_structure_edits_preserved": true,
+  "export_preferences_preserved": true,
+  "new_controls": [
+    "Content Detection Results visibility",
+    "Content Detection proof relations",
+    "Equation confidence view",
+    "Results/Bibliography rebuild",
+    "Explicit equation-margin OCR",
+    "Display zoom-step",
+    "Formula OCR initial crop padding",
+    "Formula OCR one retry toggle"
+  ],
+  "new_tests": [
+    "tests/settings_content_detection_v432_regression.js",
+    "tests/settings_live_v432.py"
+  ],
+  "notes": [
+    "Older isolated appendix sidebar test harness updated to include the new Settings reference; rerun PASS",
+    "All preference changes are explicit, browser-local and preserve existing defaults",
+    "No claim of real model recognition accuracy, source-level candidate counts are not human-certified"
+  ],
+  "overlay": {
+    "file_count": 22,
+    "new_files": 4,
+    "modified_files": 18,
+    "baseline_file_count": 322,
+    "unchanged_file_count": 304,
+    "top_level": "mathreader/",
+    "only_changed_or_new_files": true
+  }
+}

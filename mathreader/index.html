@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#fbfaf7">
   <title>MathReader | Shaoda Ji</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="mathreader.css?v=431">
+  <link rel="stylesheet" href="mathreader.css?v=432">
   <script>
     (() => {
       try {
@@ -474,7 +474,7 @@
 
       <section class="workspace-section settings-section" id="settings-section">
         <div class="panel-heading">
-          <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Display, OCR, and export preferences are saved in this browser." data-zh="显示、OCR 与导出偏好保存在当前浏览器。">Display, OCR, and export preferences are saved in this browser.</div></details></span>
+          <span class="panel-heading-title"><span data-en="Settings" data-zh="设置">Settings</span><details class="compact-help compact-help-heading"><summary data-en-title="Settings help" data-zh-title="设置帮助" aria-label="Settings help">?</summary><div class="compact-help-body" data-en="Display, content detection, OCR, and export preferences are saved in this browser." data-zh="显示、内容检测、公式 OCR 与导出偏好保存在当前浏览器。">Display, content detection, OCR, and export preferences are saved in this browser.</div></details></span>
         </div>
 
         <details class="settings-group" id="settings-display-group">
@@ -487,6 +487,7 @@
                 <button type="button" id="flow-single" data-en="Single page" data-zh="单页">Single page</button>
               </div>
             </div>
+            <label class="display-setting"><span class="display-label" data-en="Zoom button step" data-zh="缩放按钮步长">Zoom button step</span><select id="display-zoom-step"><option value="0.10" data-en="10% · fine" data-zh="10% · 精细">10% · fine</option><option value="0.15" data-en="15% · standard" data-zh="15% · 标准">15% · standard</option><option value="0.20" data-en="20% · fast" data-zh="20% · 快速">20% · fast</option></select></label>
             <label class="display-setting">
               <span class="display-label" data-en="Page appearance" data-zh="页面外观">Page appearance</span>
               <select id="page-tone">
@@ -509,7 +510,25 @@
           <div class="settings-group-body">
             <label class="display-setting"><span class="display-label" data-en="Default extraction" data-zh="默认提取方式">Default extraction</span><select id="formula-extraction-mode"><option value="image" data-en="Image OCR · recommended" data-zh="图像 OCR · 推荐">Image OCR · recommended</option><option value="vector" data-en="PDF vector · fast" data-zh="PDF 矢量 · 快速">PDF vector · fast</option></select></label>
             <label class="display-setting"><span class="display-label" data-en="Image OCR engine" data-zh="图像 OCR 引擎">Image OCR engine</span><select id="ocr-engine-mode"><option value="official" data-en="Default · Texify CPU" data-zh="默认 · Texify CPU">Default · Texify CPU</option><option value="wasm" data-en="WASM q8" data-zh="WASM q8">WASM q8</option><option value="webgpu" data-en="WebGPU q4f16" data-zh="WebGPU q4f16">WebGPU q4f16</option></select></label>
+            <label class="display-setting"><span class="display-label" data-en="Initial crop padding" data-zh="首次裁图边距">Initial crop padding</span><select id="ocr-crop-padding"><option value="tight" data-en="Tight · standard" data-zh="紧凑 · 标准">Tight · standard</option><option value="relaxed" data-en="Relaxed · wider context" data-zh="宽松 · 保留更多上下文">Relaxed · wider context</option></select></label>
+            <label class="toggle-setting"><input id="ocr-severe-retry" type="checkbox" checked><span data-en="Retry once after severe OCR corruption" data-zh="OCR 严重损坏时重试一次">Retry once after severe OCR corruption</span></label>
+            <p class="display-note" data-en="A wider crop may include nearby text. A retry consumes another local inference; disabling it never hides quality warnings." data-zh="较宽裁图可能混入邻近文字。重试会增加一次本地推理；关闭重试仍保留质量警告。">A wider crop may include nearby text. A retry consumes another local inference; disabling it never hides quality warnings.</p>
             <details class="ocr-troubleshooting"><summary data-en="Troubleshooting" data-zh="故障处理">Troubleshooting</summary><button class="text-button" type="button" id="ocr-retry" data-en="Reset OCR" data-zh="重置 OCR" data-en-title="Unload the current OCR engine. The model loads on the next image formula extraction." data-zh-title="卸载当前 OCR 引擎；下次图像公式提取时才会加载模型。">Reset OCR</button><div class="ocr-timing-panel"><div class="ocr-timing-title" data-en="OCR timing" data-zh="OCR 计时">OCR timing</div><pre id="ocr-timing-diagnostics" data-en-empty="No OCR run yet." data-zh-empty="尚无 OCR 运行记录。">No OCR run yet.</pre></div></details>
+          </div>
+        </details>
+
+        <details class="settings-group" id="settings-content-detection-group">
+          <summary><span data-en="Content Detection" data-zh="内容检测">Content Detection</span></summary>
+          <div class="settings-group-body">
+            <div class="settings-group-heading"><span data-en="Index view" data-zh="索引显示">Index view</span><button class="text-button" type="button" id="reset-detection-display" data-en="Reset filters" data-zh="重置筛选">Reset filters</button></div>
+            <label class="display-setting"><span class="display-label" data-en="Results shown" data-zh="显示的数学结果">Results shown</span><select id="detection-results-filter"><option value="all" data-en="All declarations" data-zh="全部声明">All declarations</option><option value="numbered" data-en="Numbered only" data-zh="仅带编号">Numbered only</option></select></label>
+            <label class="toggle-setting"><input id="detection-proof-relations" type="checkbox" checked><span data-en="Show proof and corollary relationships" data-zh="显示证明与推论关系">Show proof and corollary relationships</span></label>
+            <label class="display-setting"><span class="display-label" data-en="Equation confidence" data-zh="公式编号置信度">Equation confidence</span><select id="detection-equation-confidence"><option value="all" data-en="All indexed equations" data-zh="全部已索引公式">All indexed equations</option><option value="high" data-en="High only" data-zh="仅高置信度">High only</option><option value="medium" data-en="Medium only" data-zh="仅中置信度">Medium only</option><option value="review" data-en="Needs review only" data-zh="仅需复核">Needs review only</option></select></label>
+            <p class="display-note" data-en="Filters only change what is shown. They never delete detected results or alter stored annotations." data-zh="筛选只改变显示，不会删除检测结果或修改已有批注。">Filters only change what is shown. They never delete detected results or alter stored annotations.</p>
+            <div class="settings-group-heading"><span data-en="Detection actions" data-zh="检测操作">Detection actions</span></div>
+            <button class="secondary-action settings-action" type="button" id="detection-rebuild-index" disabled data-en="Rebuild Results & Bibliography" data-zh="重新检测结果和参考文献">Rebuild Results & Bibliography</button>
+            <button class="secondary-action settings-action" type="button" id="detection-scan-margins" disabled data-en="Scan equation margins" data-zh="扫描公式编号页边">Scan equation margins</button>
+            <p class="display-note" data-en="Rebuilding may take time. The optional margin OCR scans page images, uses local resources, and may still miss labels. Nothing runs from these buttons without a click." data-zh="重新检测可能耗时。可选页边 OCR 会扫描页面图像、占用本地资源，仍可能漏检。只有点击按钮才执行。">Rebuilding may take time. The optional margin OCR scans page images, uses local resources, and may still miss labels. Nothing runs from these buttons without a click.</p>
           </div>
         </details>
 
@@ -589,6 +608,6 @@
     <div><strong data-en="Drop PDF to open" data-zh="松开以打开 PDF">Drop PDF to open</strong><span data-en="The file will stay on this device." data-zh="文件仅保留在本设备。">The file will stay on this device.</span></div>
   </div>
 
-  <script type="module" src="mathreader.js?v=431"></script>
+  <script type="module" src="mathreader.js?v=432"></script>
 </body>
 </html>

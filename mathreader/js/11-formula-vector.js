@@ -1173,20 +1173,23 @@ async function runImageFormulaRecognition(crop, options = {}) {
   setOcrStatus(mathOcrBackend?.device === 'wasm'
     ? t('Processing formula · WASM q8…', '正在处理公式 · WASM q8……')
     : t('Recognizing formula locally with Texify…', '正在使用 Texify 本地识别公式……'), true);
-  let result = await onePass(crop, 'tight', 'normal', false);
+  // Snapshot user preference for the whole run; edits during inference apply next time.
+  const firstCropPadding = formulaOcrCropPadding === 'relaxed' ? 'relaxed' : 'tight';
+  const allowSevereRetry = formulaOcrSevereRetryEnabled;
+  let result = await onePass(crop, firstCropPadding, 'normal', false);
   let retryReason = '';
   let retryFailed = false;
   let candidateDecision = t('single-pass result retained', '保留单次识别结果');
   // Severe layout/decoder failures, not mere complexity warnings, justify at
   // most ONE visible local retry. Never repeatedly infer or silently switch
   // engines. If the retry fails, preserve the original for human correction.
-  if (result.assessment?.hardReject) {
+  if (allowSevereRetry && result.assessment?.hardReject) {
     retryReason = (result.assessment.reasons || []).join('; ');
     setOcrStatus(t('OCR quality check failed · retrying once with a relaxed crop…',
       'OCR 质量检查未通过 · 正以宽松裁图重试一次……'), true);
     try {
       const retryPreprocess = formulaCropHasFaintStrokes(crop) ? 'soft-contrast' : 'normal';
-      const retry = await onePass(crop, 'relaxed', retryPreprocess, true);
+      const retry = await onePass(crop, firstCropPadding === 'tight' ? 'relaxed' : 'tight', retryPreprocess, true);
       if (retry.latex && !retry.assessment?.hardReject) {
         result = retry;
         candidateDecision = t('retry passed structural checks', '重试结果通过结构检查');
@@ -1202,6 +1205,10 @@ async function runImageFormulaRecognition(crop, options = {}) {
       candidateDecision = t('retry failed; original retained for review', '重试失败；保留原结果供核对');
       console.warn('MathReader bounded formula OCR retry failed', error);
     }
+  }
+
+  if (!allowSevereRetry && result.assessment?.hardReject) {
+    candidateDecision = t('corrupted result retained for review · automatic retry disabled', '损坏结果保留待核对 · 已关闭自动重试');
   }
 
   if (!result.latex) {
@@ -1252,7 +1259,7 @@ async function runImageFormulaRecognition(crop, options = {}) {
       analysisMs,
       firstPassPenalty: passTimings[0]?.penalty || 0,
       retryReason,
-      retryProfile: retryReason ? `relaxed/${passTimings[1]?.preprocess || 'normal'}/beam2 (one bounded retry)` : '',
+      retryProfile: retryReason ? `${passTimings[1]?.variant || 'relaxed'}/${passTimings[1]?.preprocess || 'normal'}/beam2 (one bounded retry)` : '',
       retryFailed,
       candidateDecision: fusion.applied
         ? `${candidateDecision} + ${t('vector leaf fusion', '矢量叶节点融合')} · ${fusion.replacements.length} ${t('correction(s)', '处修正')}`

@@ -39,10 +39,10 @@ with sync_playwright() as p:
               };
             }''')
             assert font['heading'] >= 12, (theme, width, font)
-            assert len(font['summary']) == 3 and all(0 < n < font['heading'] for n in font['summary']), (theme,width,font)
+            assert len(font['summary']) == 4 and all(0 < n < font['heading'] for n in font['summary']), (theme,width,font)
             assert font['inner'] and all(0 < n <= max(font['summary']) for n in font['inner']), (theme,width,font)
             assert all(n > 0 for n in font['boxes']), (theme,width,font)
             assert page.locator('.sidebar-right').evaluate('(e)=>e.scrollWidth<=e.clientWidth+1'), (theme,width,'overflow')
             checks += 1
     browser.close()
-print(f'PASS | v400 Settings font hierarchy | {checks} width/theme pairs, all three groups and nested labels')
+print(f'PASS | v400 Settings font hierarchy | {checks} width/theme pairs, all four groups and nested labels')

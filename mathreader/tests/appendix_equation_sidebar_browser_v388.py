@@ -31,6 +31,7 @@ with sync_playwright() as p:
       window.equationIndexEmpty=el('equation-index-empty');
       window.equationDetectionProgress={phase:'saved'};
       window.equationConfidenceFilter='all';window.equationEdits=[];
+      window.detectionEquationConfidenceSelect=null;window.persistDetectionViewPreferences=()=>{};
       window.equationIndexKnownCount=null;window.equationAutomaticLabelIndex=null;
       window.equationSourceLabelForDisplayed=s=>s;
       window.t=(en,zh)=>en;
