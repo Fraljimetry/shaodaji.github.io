@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "release": "0.1.0",
+  "updated": "2026-11-12",
+  "status_vocabulary": ["implemented", "partial", "planned", "unsupported"],
+  "features": [
+    {"id": "UI-TRIPANEL", "name": "3-panel editor with GeoGebra-style tool tiles", "status": "implemented", "component": "index.html"},
+    {"id": "CORE-GRAPH", "name": "Semantic live dependency references and midpoint", "status": "partial", "limitation": "No constraint solver, only references and midpoint", "component": "src/model.mjs"},
+    {"id": "DRAW-2D", "name": "2D cursor drawing primitives", "status": "implemented", "limitation": "Only points, segments, arrows, circles, polygons, polylines, freehand, text and rectangle-as-polygon"},
+    {"id": "DRAW-EXPRESSION", "name": "Programmatic objects and explicit f(x) graphs", "status": "partial", "limitation": "Small safe grammar, no arbitrary scripts or implicit equation solver"},
+    {"id": "DRAW-CORRECTION", "name": "Configurable immediate path correction", "status": "partial", "limitation": "Freehand smoothing only; no circle/line recognition or constraint inference"},
+    {"id": "DRAW-SNAP", "name": "A priori snap customization", "status": "partial", "limitation": "Grid step and nearby existing points only"},
+    {"id": "SETTINGS-PRESETS", "name": "5 preset workspaces and editable settings", "status": "partial", "limitation": "No user-created profiles or fully purpose-specific tool visibility"},
+    {"id": "CORE-UNDO", "name": "Document undo/redo and local autosave", "status": "implemented", "limitation": "Session-only history; view changes excluded"},
+    {"id": "CANVAS-PAGE", "name": "Infinite mathematical canvas and A4/Letter guide", "status": "partial", "limitation": "Visual frame only; not print-exact or page cropping"},
+    {"id": "EXPORT-SVG", "name": "SVG viewport export", "status": "implemented"},
+    {"id": "EXPORT-RASTER", "name": "PNG/JPEG/WebP via SVG→Canvas", "status": "partial", "limitation": "Browser support and practical output fidelity need verification"},
+    {"id": "EXPORT-JSON", "name": "Native editable JSON import/export", "status": "implemented"},
+    {"id": "EXPORT-TIKZ", "name": "TikZ export of basic geometry", "status": "partial", "limitation": "Coordinate-only, not semantic, disabled when unsupported objects exist"},
+    {"id": "IMPORT-TIKZ", "name": "Semantic TikZ import", "status": "planned"},
+    {"id": "DIAGRAM-COMMUTATIVE", "name": "Semantic topology/category/diagram chase system and tikz-cd", "status": "planned"},
+    {"id": "GEOMETRY-ADVANCED", "name": "IMO/Olympiad construction constraints and angle markers", "status": "planned"},
+    {"id": "COMPLEX-MOBIUS", "name": "Complex plane and Möbius transformation visualization", "status": "planned"},
+    {"id": "GEOMETRY-3D", "name": "Native 3D surfaces and differential-geometric visualization", "status": "planned"},
+    {"id": "RICCI-MODEL", "name": "3D Ricci-flow blow-up model illustration", "status": "planned"},
+    {"id": "ANIMATION", "name": "Sliders, timeline, GIF/video", "status": "planned"},
+    {"id": "EXPORT-PDF", "name": "Vector PDF", "status": "planned"},
+    {"id": "EXPORT-ASYMPTOTE", "name": "Asymptote generation", "status": "planned"},
+    {"id": "IMPORT-EXTERNAL", "name": "GeoGebra/Desmos or SVG native semantic import", "status": "planned"},
+    {"id": "SCRIPTS-PYTHON", "name": "Complex programmatic scripting engine", "status": "planned"},
+    {"id": "ODE-IMPLICIT", "name": "General implicit ODE/PDE solving", "status": "unsupported", "limitation": "Explicitly outside core requirement"}
+  ]
+}

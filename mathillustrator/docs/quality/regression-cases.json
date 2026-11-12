@@ -1,0 +1,31 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.1.0",
+  "run_date": "2026-11-12",
+  "provenance": "Node.js node:test; browser smoke attempted but blocked by administrator policy",
+  "automation": "node --test tests/model.test.mjs",
+  "cases": [
+    {"id":"CORE-001","topic":"JSON roundtrip","risk":"lossy persistence","test":"creates and roundtrips a valid empty document","result":"pass"},
+    {"id":"CORE-002","topic":"live dependencies","risk":"stale midpoint after vertex move","test":"names/commands and live midpoint dependencies","result":"pass"},
+    {"id":"CORE-003","topic":"shared point IDs","risk":"geometric objects detach","test":"live segment and circle refs stay linked to moved points","result":"pass"},
+    {"id":"CORE-004","topic":"command failure","risk":"partial objects or invalid graph","test":"invalid command does not create a partial object","result":"pass"},
+    {"id":"PARSER-005","topic":"expression precedence","risk":"wrong plot","test":"parser supports standard math and right associativity","result":"pass"},
+    {"id":"PARSER-006","topic":"expression injection","risk":"untrusted code execution","test":"parser refuses scripts/unknown syntax","result":"pass"},
+    {"id":"INPUT-007","topic":"snap configuration","risk":"coordinates changed despite off","test":"snap is tunable / off preserves precision","result":"pass"},
+    {"id":"CORE-008","topic":"transitive delete","risk":"dangling refs","test":"deletion removes transitive dependents without dangling refs","result":"pass"},
+    {"id":"IMPORT-009","topic":"import graph cycles","risk":"stack overflow and misleading success","test":"import rejects cycles and dangling refs","result":"pass"},
+    {"id":"IMPORT-010","topic":"malformed fields/injection","risk":"unsafe SVG attribute, duplicate identity","test":"import rejects injected colors, malformed file and duplicate object names","result":"pass"},
+    {"id":"PARSER-011","topic":"function grammar","risk":"invalid sampling","test":"function grammar and invalid coordinate protections","result":"pass"},
+    {"id":"CORE-012","topic":"auto-generated name","risk":"new point silently fails validation","test":"object count/ids stay stable after explicit cloning","result":"pass","history":"failed initially; corrected append ordering; green rerun"}
+  ],
+  "browser_cases": [
+    {"id":"UI-001","topic":"load editor, tool icons, panel collapse","result":"blocked"},
+    {"id":"UI-002","topic":"cursor create/select/drag and live shape update","result":"blocked"},
+    {"id":"UI-003","topic":"undo after drag, import and new project","result":"blocked"},
+    {"id":"UI-004","topic":"polygon double-click and interrupted pointer","result":"blocked"},
+    {"id":"EXPORT-001","topic":"SVG and raster export media fidelity","result":"blocked"},
+    {"id":"EXPORT-002","topic":"disabled PDF, Asymptote, tikz-cd, animation; conditionally disabled TikZ","result":"blocked"},
+    {"id":"UI-005","topic":"small/large viewport and keyboard focus","result":"blocked"}
+  ],
+  "next_required": ["Chrome/Edge Windows UI smoke", "Cross-browser export verification", "Undo/import/storage fault paths", "Long-scene performance and cancellation", "Full published tutorial screenshot parity"]
+}

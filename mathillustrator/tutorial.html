@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MathIllustrator Tutorial · v0.1</title><link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><style>body{overflow:auto;background:var(--subtle)}main{max-width:880px;margin:35px auto;padding:34px;background:var(--surface);border:1px solid var(--border);border-radius:12px;line-height:1.7}h1{font-size:30px;margin:0}h2{font-size:21px;margin-top:40px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{font-size:16px;margin-top:20px}p,li{font-size:14px}li{margin:8px 0}code,pre{font-family:Consolas,Monaco,monospace;background:var(--subtle);border-radius:4px;padding:2px 5px}pre{padding:12px;overflow:auto}a{color:var(--accent)}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid var(--border);padding:8px;text-align:left;vertical-align:top}th{background:var(--subtle)}.warning{border-left:3px solid var(--accent);padding-left:12px;color:var(--muted)}.back{font-size:13px;text-decoration:none}@media(max-width:620px){main{margin:0;border-radius:0;padding:18px}}</style></head>
+<body><main>
+<a class="back" href="./">← Back to editor</a><h1>MathIllustrator · User tutorial</h1>
+<p><strong>Release v0.1 — initial working editor.</strong> This tutorial documents behavior implemented in this exact release. MathIllustrator is an independent, local-first mathematical illustration project. It does not communicate with MathReader.</p>
+<p class="warning">The long-term ambition covers geometry, analysis, topology, differential geometry, diagram chasing, Möbius transformations, real 3D, interactive mathematics, and publication-quality LaTeX. Those advanced features are <strong>not</strong> implied to exist in v0.1. Unsupported operations are described below.</p>
+<h2 id="layout">1. Workspace layout</h2>
+<p>The <strong>left panel</strong> shows objects in reverse drawing order, a textual construction input, and the editable properties of the selected object. The <strong>center</strong> is a Cartesian drawing canvas. The <strong>right panel</strong> contains categorized icon-and-caption tools, workspace presets, a priori correction and snapping controls, new-object style, and canvas preferences. Click the chevrons beside either panel heading to collapse that panel.</p>
+<p>The geometric convention is standard: positive <em>x</em> points right; positive <em>y</em> points up. SVG drawing uses a transformed screen coordinate system internally. The displayed viewport, zoom, grid, and selection are editor UI state; the project stores mathematical coordinates.</p>
+<h2 id="drawing">2. Draw with the cursor</h2>
+<table><thead><tr><th>Tool</th><th>Operation</th><th>What is created</th></tr></thead><tbody>
+<tr><td>Move</td><td>Click a figure to select it; drag a free point to move it.</td><td>Live updates to referenced figures.</td></tr>
+<tr><td>Pan</td><td>Drag the canvas.</td><td>Changes view only, not the figure.</td></tr>
+<tr><td>Point</td><td>Click once.</td><td>A named Cartesian point (auto-named until edited).</td></tr>
+<tr><td>Segment / Arrow</td><td>Click start and end.</td><td>Line segment or directed segment referencing points.</td></tr>
+<tr><td>Circle</td><td>Click center, then a point on the circle.</td><td>Exact circle with live center and radius references.</td></tr>
+<tr><td>Rectangle</td><td>Click opposite corners.</td><td>Four vertices and a polygon; does not constrain future edits to a rectangle.</td></tr>
+<tr><td>Polygon / Polyline</td><td>Click each vertex, then press Enter or double-click.</td><td>Closed or open vertex-linked path.</td></tr>
+<tr><td>Free curve</td><td>Draw while holding the pointer, release to finish.</td><td>A freehand vector path, optionally smoothed.</td></tr>
+<tr><td>Text</td><td>Click a location and enter plain text.</td><td>A label anchored at a coordinate.</td></tr>
+</tbody></table>
+<p>The endpoint snap check occurs before each segment/circle/polygon point is created. When sufficiently close to an existing point, the object references it, so movement of that point updates the construction. Auto-created endpoints are real point objects visible in the left list.</p>
+<p><strong>Selection:</strong> To move an existing point, switch to <em>Move</em>, then drag it on the canvas. Derived midpoints cannot be dragged independently; move their defining endpoints. Hold Shift while dragging blank space with Move to pan. Mouse wheel zooms around the cursor; the stage buttons zoom, reset the viewport, or fit visible points. Delete removes a selected object <em>and every transitively dependent object</em> to prevent dangling references.</p>
+<h2 id="commands">3. Programmatic construction</h2>
+<p>Type a construction in the upper-left input and press Enter. Syntax is case-sensitive for names, except for geometric command keywords:</p>
+<pre>A = (0, 0)
+B = (4, 2)
+C = (-1, 3)
+Segment(A, B)
+Arrow(A, C)
+Line(A, C)
+Circle(A, B)
+Polygon(A, B, C)
+Polyline(A, B, C)
+Midpoint(A, B)
+f(x) = sin(x) + x^2/4</pre>
+<p>Point names must be unique. Construction commands accept named points and previously defined midpoint objects. <code>Midpoint(A,B)</code> is derived dynamically. Geometric objects reference point IDs rather than copying coordinates, so changes propagate immediately. Geometric tools and textual commands share one object model.</p>
+<h3>Supported function syntax</h3>
+<p>Functions graph <code>y=f(x)</code> in the current view. The deterministic parser supports numbers, <code>x</code>, <code>pi</code>, <code>e</code>, parentheses, <code>+ - * / ^</code>, and the one-argument functions <code>sin cos tan asin acos atan sqrt abs log ln exp floor ceil</code>. Explicit multiplication is required: write <code>2*x</code>, not <code>2x</code>. Angles are in radians. Powers are right-associative. Functions are sampled (not algebraically solved), and discontinuities may be imperfectly rendered. Code evaluation, assignments inside formulas, arbitrary JavaScript, differential equations, implicit curves, inequalities, parametrized 3D curves, sliders, and solving systems of equations are <strong>not supported</strong>.</p>
+<h2 id="editing">4. Object editing and dependency behavior</h2>
+<p>Select an object in the left panel or canvas. The properties editor lets you rename it, change color, stroke width and opacity, and edit point coordinates; text and function objects expose their content. Visibility and locking controls appear beside every object. The list is in z-order with most recent objects first; selected objects can move one step forward in drawing order. If a referenced point is moved, its dependent segment, circle, polygon, arrow, line, or midpoint updates on the next draw.</p>
+<p>Currently <strong>individual objects are not all draggable</strong>: only free points can be directly moved. Grouping/layers, object reparenting, advanced constraints, arbitrary mathematical definitions, 3D selection and custom object templates are planned, not present. If you delete an anchor point, dependent constructions are deleted with it after their IDs are found; JSON Save beforehand if uncertain.</p>
+<h2 id="settings">5. Presets, snapping, correction, pages</h2>
+<p>Choose a preset in the right panel: General, Olympiad geometry, Research diagram, Analysis / plots, or Free illustration. A preset changes future drawing defaults and canvas settings but does not restyle existing objects. Adjust these individually afterward:</p>
+<ul><li><strong>Snap to grid:</strong> applies before creating/cursor-moving point objects. Snap interval is expressed in mathematical coordinate units, not CSS pixels. Reference snapping occurs within about 10 screen pixels of existing points.</li>
+<li><strong>Correction:</strong> Off preserves sampled pointer path; Gentle performs light smoothing, Medium stronger smoothing/simplification, Strong still more smoothing. It is applied immediately on finishing a freehand stroke. It does <strong>not</strong> yet recognize circles, straight lines, symmetry, tangency, handwriting, or arbitrary shapes. Existing paths are not automatically recomputed after the setting changes.</li>
+<li><strong>Grid / axes:</strong> show or hide drawing guides. Grid density adapts to zoom; this can differ visually from the snap interval.</li>
+<li><strong>Page:</strong> Infinite canvas or a centered A4/Letter landscape <em>visual guide</em>. The current page frames are visual guides only; no print-accurate dimensions or crop-to-page functionality exists yet.</li>
+<li><strong>Appearance:</strong> background, future object stroke/fill/line width and app light/dark theme. Appearance settings are distinct from existing object styles.</li></ul>
+<h2 id="files">6. Save, open, undo, and persistence</h2>
+<p><strong>Save</strong> downloads an editable <code>mathillustrator.json</code> project. <strong>Open</strong> imports that file after schema and dependency checks. Project metadata, objects, references and settings are retained. The browser also attempts debounced local autosave. Browser storage can be denied, cleared, or unavailable; local persistence is not a substitute for regularly downloading JSON. The native project schema is versioned: <code>version: 1</code>. Unsupported versions are rejected rather than silently downgraded.</p>
+<p><strong>Undo / Redo</strong> preserve up to 80 document-state snapshots per session. Dragging a point creates one undo entry for the entire completed gesture, not one per pointer event. View pan/zoom, UI themes, and current tool are not undoable. Importing or starting a new project is undoable within the current session, but not after reload. Do not edit JSON by hand without validating coordinates, object IDs and references.</p>
+<h2 id="export">7. Export formats and important limitations</h2>
+<table><thead><tr><th>Format</th><th>Status</th><th>Notes</th></tr></thead><tbody>
+<tr><td>SVG</td><td>Enabled</td><td>Scalable image of the current viewport. Mathematical dependency semantics are not embedded.</td></tr>
+<tr><td>PNG, JPEG, WebP</td><td>Enabled</td><td>Rendered in-browser at 2× viewport resolution. If the browser rejects a format, conversion fails visibly rather than disguising the output.</td></tr>
+<tr><td>JSON</td><td>Enabled</td><td>Only format preserving editable MathIllustrator object IDs, coordinates and dependencies.</td></tr>
+<tr><td>TikZ / PGF</td><td>Conditional</td><td>Simple points, lines, circles, polylines, polygons, free curves, text; disabled for function plots. Output uses literal coordinates, not preserved symbolic dependencies. Requires TikZ loaded by LaTeX.</td></tr>
+<tr><td>PDF, Asymptote, tikz-cd, GIF, video</td><td>Disabled</td><td>Not implemented. Disabled choices cannot be clicked or silently substituted.</td></tr>
+</tbody></table>
+<p class="warning">TikZ import, native semantic LaTeX roundtrip, and <code>tikz-cd</code> are <strong>future requirements</strong>, not working features in this release. LaTeX labels are currently plain text in the editor; entering TeX text does not typeset it. Raster export flattens all math semantics. The SVG export can include the currently visible grid and axes, matching the viewport.</p>
+<h2 id="limitations">8. Current limitations and troubleshooting</h2>
+<ul><li><strong>Browser rendering:</strong> SVG is the first renderer and has not been performance-validated on 1,000+ complex objects. Large freehand strokes can create many path points. Performance figures have no fixed guarantees yet.</li>
+<li><strong>Geometry:</strong> No general geometric solver, intersection, perpendicularity, equal-length constraints, auto-label placement, angle markers, circumcircle construction, custom Bézier editing, curved arrows or shape recognition.</li>
+<li><strong>Advanced math:</strong> No 3D scene, Ricci flow engine, complex-plane Möbius transformation grid, ODE solver, animation or dynamic timeline, algebraic topology diagram semantics, or data charts.</li>
+<li><strong>Viewport:</strong> Zoom can be reset; Fit uses visible free points and freehand paths but not full extents of circles, curves or long lines. The A4/Letter page guide is not physical page sizing.</li>
+<li><strong>Invalid projects:</strong> If Open refuses a JSON file, examine the error toast and preserve the original rather than overwriting it. Cyclic/dangling dependencies and unsupported format versions are rejected.</li>
+<li><strong>Import/export fidelity:</strong> SVG and raster are graphic representations. TikZ export represents object geometry without construction relations; text escaping is basic. Preview the LaTeX result in your own TeX environment before submitting a publication.</li>
+<li><strong>Accessibility / touch:</strong> Keyboard operations cover command input, undo/redo, delete, polyline finish, and tools. Full keyboard-only drawing and multi-touch gestures have not been implemented/tested.</li></ul>
+<h2 id="next">9. What comes next</h2>
+<p>The development plan separates a semantic editor core, advanced geometric constructions, diagram nodes/morphisms and LaTeX round-trip, numerical/complex plotting, 3D visualization, animation, and export infrastructure. See <code>docs/</code> in the project overlay for JSON feature records, schemas, architectural decisions, exact regression status and unresolved issues. The tutorial must be updated whenever implemented behavior changes.</p>
+</main></body></html>

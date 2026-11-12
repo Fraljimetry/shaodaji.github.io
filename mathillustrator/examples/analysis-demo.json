@@ -1,0 +1,69 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Analysis plot demo"
+  },
+  "settings": {
+    "grid": true,
+    "snap": true,
+    "snapStep": 0.5,
+    "correction": "medium",
+    "showAxes": true,
+    "stroke": "#3657ad",
+    "fill": "#b6c9f9",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "page": "infinite",
+    "background": "#ffffff"
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "point",
+      "name": "O",
+      "xy": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "name": "f",
+      "expr": "sin(x)"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "name": "g",
+      "expr": "cos(x/2)+0.5"
+    }
+  ],
+  "nextId": 4
+}

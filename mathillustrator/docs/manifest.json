@@ -1,0 +1,19 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.1.0",
+  "cut": "00",
+  "date": "2026-11-12",
+  "site_path": "mathillustrator/",
+  "independent_from": ["mathreader/"],
+  "deployment": "static GitHub Pages directory; ES modules; no runtime external dependencies",
+  "delivery_contract": {"format": "ZIP overlay", "root_prefix": "mathillustrator/", "only_changed_files": true, "preserve_unrelated": true},
+  "entry_points": {"editor": "index.html", "tutorial": "tutorial.html", "controller": "src/app.mjs", "model": "src/model.mjs", "styles": "style.css"},
+  "data_contract": {"name": "mathillustrator-project", "current_version": 1, "schema_path": "docs/schemas/project-v1.schema.json", "migration_policy": "reject unknown versions until migration explicitly implemented"},
+  "documentation_index": "docs/INDEX.md",
+  "features": "docs/planning/features.json",
+  "regression_catalog": "docs/quality/regression-cases.json",
+  "verification": "docs/quality/TEST_REPORT_20261112.md",
+  "known_issues": "docs/quality/KNOWN_ISSUES.md",
+  "browser_smoke": "blocked by environment policy; UI not manually verified in this runtime",
+  "quality_rules": ["never hide fallback", "document limitations precisely", "test transitive and second-order behavior", "update tutorial and documentation on every cut", "do not modify MathReader", "no silent remote computation"]
+}

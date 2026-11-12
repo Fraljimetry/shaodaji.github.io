@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shaodaji.cc/mathillustrator/docs/schemas/project-v1.schema.json",
+  "title": "MathIllustrator native project v1 (documentary contract)",
+  "type": "object",
+  "required": ["format", "version", "meta", "settings", "objects", "nextId"],
+  "properties": {
+    "format": {"const": "mathillustrator-project"},
+    "version": {"const": 1},
+    "meta": {"type": "object", "required": ["title"], "properties": {"title": {"type": "string"}}},
+    "nextId": {"type": "integer", "minimum": 1},
+    "settings": {"type": "object", "required": ["grid", "snap", "snapStep", "correction", "showAxes", "stroke", "fill", "opacity", "width", "pointSize", "page", "background"],
+      "properties": {"grid": {"type": "boolean"}, "snap": {"type": "boolean"}, "snapStep": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000}, "correction": {"enum": ["off", "gentle", "medium", "strong"]}, "showAxes": {"type": "boolean"}, "stroke": {"$ref": "#/$defs/color"}, "fill": {"$ref": "#/$defs/color"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}, "width": {"type": "number", "minimum": 0, "maximum": 100}, "pointSize": {"type": "number", "minimum": 1, "maximum": 100}, "page": {"enum": ["infinite", "a4", "letter"]}, "background": {"$ref": "#/$defs/color"}}},
+    "objects": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/object"}}
+  },
+  "$defs": {
+    "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+    "point2": {"type": "array", "prefixItems": [{"type": "number"}, {"type": "number"}], "minItems": 2, "maxItems": 2},
+    "style": {"type": "object", "required": ["stroke", "fill", "opacity", "width"], "properties": {"stroke": {"$ref": "#/$defs/color"}, "fill": {"$ref": "#/$defs/color"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}, "width": {"type": "number", "minimum": 0, "maximum": 100}}},
+    "object": {"type": "object", "required": ["id", "name", "type", "style"],
+      "properties": {"id": {"type": "string", "pattern": "^o[1-9][0-9]*$"}, "name": {"type": "string", "maxLength": 180}, "hidden": {"type": "boolean"}, "locked": {"type": "boolean"}, "style": {"$ref": "#/$defs/style"}, "type": {"enum": ["point", "midpoint", "segment", "arrow", "line", "circle", "polygon", "polyline", "freehand", "text", "function"]}, "xy": {"$ref": "#/$defs/point2"}, "refs": {"type": "array", "items": {"type": "string", "pattern": "^o[1-9][0-9]*$"}}, "path": {"type": "array", "maxItems": 20000, "items": {"$ref": "#/$defs/point2"}}, "text": {"type": "string", "maxLength": 2000}, "fontSize": {"type": "number", "minimum": 5, "maximum": 200}, "expr": {"type": "string", "maxLength": 400}},
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "point"}}}, "then": {"required": ["xy"]}},
+        {"if": {"properties": {"type": {"const": "midpoint"}}}, "then": {"required": ["refs"]}},
+        {"if": {"properties": {"type": {"enum": ["segment", "arrow", "line", "circle", "polygon", "polyline"]}}}, "then": {"required": ["refs"]}},
+        {"if": {"properties": {"type": {"const": "freehand"}}}, "then": {"required": ["path"]}},
+        {"if": {"properties": {"type": {"const": "text"}}}, "then": {"required": ["xy", "text"]}},
+        {"if": {"properties": {"type": {"const": "function"}}}, "then": {"required": ["expr"]}}
+      ]
+    }
+  },
+  "$comment": "Acyclic references, uniqueness of ids and names, nextId monotonicity, safe expression grammar and point-like reference validation are cross-object constraints enforced by src/model.mjs, not expressible in standard JSON Schema alone."
+}

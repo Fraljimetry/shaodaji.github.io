@@ -1,0 +1,14 @@
+{
+  "release": "0.1.0",
+  "date": "2026-11-12",
+  "profiling": {"browser":"unavailable", "reason":"Headless browser navigation blocked by administrator policy", "measured_scene_ms": null, "measured_fps": null, "memory_bytes": null},
+  "current_design": ["SVG DOM objects recreated on paint", "requestAnimationFrame coalescing of pointer events", "Debounced browser storage writes (350ms)", "Renderer text status displays last draw elapsed ms in a browser", "World coordinates maintained independent of viewport", "Hard cap: 10000 objects per imported project", "Hard cap: 20000 points per imported freehand path"],
+  "benchmark_protocol": {
+    "scene_sizes": [100,1000,5000,10000],
+    "scene_types": ["points+segments", "polygons", "dense freehand", "live dependent graphs", "functions"],
+    "metrics": ["median frame ms", "p95 frame ms", "drag-to-paint latency", "heap memory", "open/save latency", "export latency", "import validation latency"],
+    "platforms": ["Windows Chromium/Edge", "Firefox", "Safari", "mobile browser"],
+    "requirements": "Warmup, record hardware and display density, profile CPU/heap, check accuracy, do not assume a machine-independent FPS guarantee"
+  },
+  "optimizations_to_measure": ["indexed immutable scene versions", "geometry and expression caching", "partial SVG diff", "viewport culling", "spatial hit-testing", "path simplification and LOD", "GPU/WebGL for 3D and dense curves", "worker-based expensive operations with cancellation"]
+}

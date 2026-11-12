@@ -1,0 +1,108 @@
+{
+  "release": "0.1.0",
+  "cut": "00",
+  "base": "provided shaodaji.github.io.zip; no existing mathillustrator/ directory",
+  "overlay_root": "mathillustrator/",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "a251e6083dc6efcf00eb8fd7f158e51a6d88d10c3d92a8a9ba6ec4dc02a6583f",
+      "bytes": 2323
+    },
+    {
+      "path": "docs/INDEX.md",
+      "sha256": "9c5a3030fcec4cfca68e9093454e39998b0d038686ce62f9b0e874e3b0edffc0",
+      "bytes": 2813
+    },
+    {
+      "path": "docs/architecture/OBJECT_MODEL.md",
+      "sha256": "d58f726fb81ff556bc87ba5c0fbbbb4782a5171442083a7d0a27949ff5fdcee4",
+      "bytes": 3693
+    },
+    {
+      "path": "docs/decisions/ADR-0001-browser-first-semantic-editor.md",
+      "sha256": "69f4074788a558e4165fd8e018678eac3f756dcce519a67816e756b10c64854c",
+      "bytes": 2153
+    },
+    {
+      "path": "docs/manifest.json",
+      "sha256": "91f04c72a711dce794c60118ed386a1c930a10960dd8cc45c1c531eb86fa3bb5",
+      "bytes": 1359
+    },
+    {
+      "path": "docs/planning/ROADMAP.md",
+      "sha256": "c30e26a40a0a180e33e670fbb9f881f4078fe2cf25e80a2de7d3509cd0cf9099",
+      "bytes": 2980
+    },
+    {
+      "path": "docs/planning/features.json",
+      "sha256": "c137defd3a70d1df87756f97655fef4169c4ce66929c12b238fd805fcb86636e",
+      "bytes": 3573
+    },
+    {
+      "path": "docs/quality/KNOWN_ISSUES.md",
+      "sha256": "aaf1e9d860b93a08183aed638a39870c76259bac5c923cef0dcdc043a84c5988",
+      "bytes": 3223
+    },
+    {
+      "path": "docs/quality/TEST_REPORT_20261112.md",
+      "sha256": "7f295d6ed33a005c9aca96aaf300778756e33085550182e64ae1bcae4a7362a5",
+      "bytes": 2017
+    },
+    {
+      "path": "docs/quality/performance.json",
+      "sha256": "08f7e19e373fe046f0df9674d22cff38aa7532751195c3f9fabebb608aed22f8",
+      "bytes": 1480
+    },
+    {
+      "path": "docs/quality/regression-cases.json",
+      "sha256": "13830e6b66a0530924712468ede42001f636f25266074f456983b6c5e8a4134a",
+      "bytes": 3219
+    },
+    {
+      "path": "docs/schemas/project-v1.schema.json",
+      "sha256": "c94b5c96e16ccf9c54fa3b610c7f0762f23217613093a44299f7763dcba096c2",
+      "bytes": 3619
+    },
+    {
+      "path": "examples/analysis-demo.json",
+      "sha256": "c200a222c934bd976ad614a692d85522638975470aa8d84a3c87801336274a62",
+      "bytes": 1252
+    },
+    {
+      "path": "examples/geometry-demo.json",
+      "sha256": "4cdfb1c886e4926f7107265dda4643e0cd3d4e9170dd0963ff411220d7662987",
+      "bytes": 3194
+    },
+    {
+      "path": "index.html",
+      "sha256": "b2022e24f948e50689807be543052226bc2d2c2522eb9ac296fa12d4ac2cc172",
+      "bytes": 6334
+    },
+    {
+      "path": "src/app.mjs",
+      "sha256": "6a710091b1f67bdb88dae85243f90238c97ed2c08339500a4574f25ed2169542",
+      "bytes": 30289
+    },
+    {
+      "path": "src/model.mjs",
+      "sha256": "bf9afd2402e7314afc35c0195e4de1f765b4598badc4627f7d6bfab38ef3e2cf",
+      "bytes": 10773
+    },
+    {
+      "path": "style.css",
+      "sha256": "f73a2952fbcc1058baa02989d349f2d11f00c4884adb31a9fa48611c3519dc28",
+      "bytes": 8622
+    },
+    {
+      "path": "tests/model.test.mjs",
+      "sha256": "83d022705483c48064a923d62f0b095916f800a038d65d1f4cd6300509616784",
+      "bytes": 3698
+    },
+    {
+      "path": "tutorial.html",
+      "sha256": "124f27c3a866862c57cc856cd8fb0d4e4f354d4ccc6fa4d00ba7e2b22d93ecd8",
+      "bytes": 13496
+    }
+  ]
+}
