@@ -974,12 +974,9 @@ function normalizedOcrEngineMode(value) {
 function currentOcrPlan() {
   const mode = normalizedOcrEngineMode(mathOcrEngineMode);
   if (mode === 'webgpu') {
-    // Optional GPU accelerator. If it cannot initialize, fall back automatically
-    // to the model-card CPU path instead of failing OCR.
-    return [
-      { device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false },
-      { device: null, dtype: null, label: 'Texify · CPU fallback', official: true }
-    ];
+    // Respect the selected engine: failed WebGPU initialization must be
+    // reported, not silently rerouted through another backend.
+    return [{ device: 'webgpu', dtype: 'q4f16', label: 'Texify · WebGPU q4f16', official: false }];
   }
   if (mode === 'wasm') {
     return [{ device: 'wasm', dtype: 'q8', label: 'Texify · CPU/WASM q8', official: false }];
@@ -1012,8 +1009,8 @@ async function disposeMathOcrPipeline() {
 function friendlyOcrError(error, backend = null) {
   const raw = String(error?.message || error || '').trim();
   const lower = raw.toLowerCase();
-  if (/out of memory|allocation|memory/.test(lower)) return t('The OCR model ran out of browser memory. Close other heavy tabs or switch OCR Engine to Compatibility · CPU.', '公式 OCR 模型的浏览器内存不足。请关闭其他占用较大的标签页，或将识别引擎切换到“兼容模式 · CPU”。');
-  if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Switch OCR Engine to Compatibility · CPU and retry.', '此浏览器无法初始化 WebGPU。请将识别引擎切换到“兼容模式 · CPU”后重试。');
+  if (/out of memory|allocation|memory/.test(lower)) return t('The OCR model ran out of browser memory. Close other heavy tabs or select Default · Texify CPU in Settings → Formula OCR.', '公式 OCR 模型的浏览器内存不足。请关闭其他占用较大的标签页，或在“设置 → 公式 OCR”中选择“默认 · Texify CPU”。');
+  if (/webgpu|gpu|adapter|device lost/.test(lower)) return t('WebGPU could not initialize on this browser. Select Default · Texify CPU in Settings → Formula OCR and retry.', '此浏览器无法初始化 WebGPU。请在“设置 → 公式 OCR”中选择“默认 · Texify CPU”后重试。');
   if (/could not locate file|model_file_not_found|404/.test(lower)) return t('The formula-image model repository is missing a file required by this runtime. MathReader uses Xenova/texify, which is packaged specifically for Transformers.js with merged decoder weights.', '公式图像模型仓库缺少当前运行时所需文件。MathReader 使用专为 Transformers.js 打包并提供 merged decoder 权重的 Xenova/texify。');
   if (/fetch|network|failed to load|404|403|cors/.test(lower)) return t('The OCR engine could not download its model files. Check access to Hugging Face/jsDelivr, then press Reload engine. MathReader uses the browser-compatible Texify formula model.', '公式 OCR 无法下载模型文件。请检查是否可以访问 Hugging Face/jsDelivr，然后点击“重新加载引擎”。MathReader 使用兼容浏览器的 Texify 公式识别模型。');
   if (/image_mean|image_std|number of channels|channels in the image|channel mismatch/.test(lower)) return t('The image-OCR preprocessor rejected the selected region. Reload the page; if this persists, report the exact message.', '图像 OCR 预处理拒绝了框选区域。请重新载入页面；若仍出现此问题，请报告完整错误信息。');
@@ -1148,7 +1145,7 @@ async function initializeMathOcrPipeline() {
         }
       }
     }
-    throw lastError || new Error('Image OCR fallback unavailable');
+    throw lastError || new Error('Selected image OCR engine unavailable');
   } catch (error) {
     mathOcrPipeline = null;
     mathOcrBackend = null;

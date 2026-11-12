@@ -2529,9 +2529,16 @@ function equationDetectionSummary(state) {
   return [shortParts.join(' · '), `${parts.filter(Boolean).join(' · ')}\n${detailed.join(' · ')}`];
 }
 function refreshEquationForceOcrButton() {
-  if (typeof equationForceOcrButton === 'undefined' || !equationForceOcrButton) return;
+  // Isolated equation-status probes may omit both button references.
+  const settingsAction = typeof detectionScanMarginsButton !== 'undefined' && detectionScanMarginsButton;
+  const equationAction = typeof equationForceOcrButton !== 'undefined' && equationForceOcrButton;
+  if (!settingsAction && !equationAction) return;
   const active = Boolean(pdfDoc && documentTextFeaturesAvailable());
   const busy = Boolean(equationIndexBuildPromise || equationImageAssistPromise || documentOcrActive || documentOcrBusy);
+  // The same scan is exposed in both Equations and Settings. Keep both actions
+  // disabled while a scan is running, instead of accepting no-op clicks.
+  if (settingsAction) settingsAction.disabled = !active || busy;
+  if (!equationAction) return;
   equationForceOcrButton.disabled = !active || busy;
   equationForceOcrButton.title = t('Manually recheck equation labels across all pages (may take a while)', '手动重新检查全部页面的公式编号（可能需要较长时间）');
   equationForceOcrButton.setAttribute('aria-label', t('Force equation-label image OCR', '强制进行公式编号图像 OCR'));
@@ -4892,6 +4899,7 @@ async function buildStructureIndex({ force = false } = {}) {
   const token = ++structureIndexBuildToken;
   structureIndexBuilding = true;
   buildStructureIndexButton.disabled = true;
+  if (typeof detectionRebuildIndexButton !== 'undefined' && detectionRebuildIndexButton) detectionRebuildIndexButton.disabled = true;
   structureEmpty.classList.remove('is-hidden');
   structureEmpty.textContent = t('Building mathematical structure in the background…', '正在后台生成数学结构索引……');
   if (bibliographyEmpty) { bibliographyEmpty.classList.remove('is-hidden'); bibliographyEmpty.textContent = t('Detecting bibliography entries…', '正在检测参考文献条目……'); }
@@ -5434,6 +5442,7 @@ async function buildStructureIndex({ force = false } = {}) {
     if (token === structureIndexBuildToken) {
       structureIndexBuilding = false;
       buildStructureIndexButton.disabled = !pdfDoc;
+      if (typeof detectionRebuildIndexButton !== 'undefined' && detectionRebuildIndexButton) detectionRebuildIndexButton.disabled = !pdfDoc || !documentTextFeaturesAvailable();
     }
   }
 }

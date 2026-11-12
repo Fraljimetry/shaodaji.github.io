@@ -82,12 +82,26 @@ async function tests() {
   check(await f.call()===newPipe && retried===1, 'user-requested retry may recover from offline load');
   check(f.evalJs('mathOcrInitializationFailed')===false, 'successful retry clears latch');
 
-  const fall=harness({plan:[{label:'WebGPU',official:false,device:'webgpu',dtype:'q4f16'},{label:'CPU fallback',official:true}]});
+  // Use the real selected-engine plan, not a synthetic two-engine plan.
+  // Choosing WebGPU must never silently reroute an initialization failure to CPU.
+  const planStart=src.indexOf('function normalizedOcrEngineMode(');
+  const planEnd=src.indexOf('\nfunction updateOcrCapability(', planStart);
+  check(planStart>0 && planEnd>planStart, 'production engine-plan functions found');
+  const selectedPlan=(mode)=>{
+    const context=vm.createContext({mathOcrEngineMode:mode});
+    vm.runInContext(src.slice(planStart,planEnd),context);
+    return vm.runInContext('currentOcrPlan()',context);
+  };
+  const gpuPlan=selectedPlan('webgpu');
+  check(gpuPlan.length===1 && gpuPlan[0].device==='webgpu', 'WebGPU is the only backend in the selected plan');
+  check(selectedPlan('wasm').length===1 && selectedPlan('wasm')[0].dtype==='q8', 'WASM engine remains explicit');
+  check(selectedPlan('official').length===1 && selectedPlan('official')[0].official, 'default CPU engine remains explicit');
+  const gpu=harness({plan:gpuPlan});
   let attempts=0;
-  const fallbackPipe={};
-  fall.mockPipeline(async()=>{attempts++;if(attempts===1)throw new Error('WebGPU init failed');return fallbackPipe;});
-  check(await fall.call()===fallbackPipe && attempts===2, 'explicit WebGPU to CPU backend plan preserved');
-  check(!fall.reader.inert && !fall.header.inert, 'fallback does not block reading');
+  gpu.mockPipeline(async()=>{attempts++;throw new Error('WebGPU init failed');});
+  await assert.rejects(gpu.call(),/WebGPU init failed/);checks++;
+  check(attempts===1 && gpu.evalJs('mathOcrInitializationFailed')===true, 'WebGPU failure is surfaced after one attempt with no CPU fallback');
+  check(!gpu.reader.inert && !gpu.header.inert, 'failed engine cannot block PDF reading');
 
   const pending=deferred(),late=harness({limit:35});
   let disposed=0;

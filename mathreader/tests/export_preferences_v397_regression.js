@@ -98,7 +98,7 @@ async function run(){
     const storage={'mathreader-export-v1':stored};
     const c={EXPORT_PREFS_KEY:'mathreader-export-v1',exportPreferences:{},
       exportDetectionOption:{checked:false},exportFullTextOption:{checked:false},
-      safeGet:(key,fallback)=>storage[key]??fallback,safeSet:(key,value)=>{storage[key]=value;},JSON};
+      safeGet:(key,fallback)=>storage[key]??fallback,safeSet:(key,value)=>{storage[key]=value;},saveSettingsPreference:(key,value)=>{storage[key]=value;},JSON};
     f('loadExportPreferences',c,core)();
     const p=vm.runInNewContext('exportPreferences',c); // reflects assignment in the realm
     check(p.includeDetection===(stored===null||stored==='{broken}'),'default detection or saved setting');
@@ -153,7 +153,7 @@ async function run(){
     const fragment=html.slice(htmlStart,htmlStop);
     check(fragment.includes('id="settings-export-group"')&&fragment.includes('id="export-include-detection"')&&fragment.includes('id="export-include-full-text"'),'both checkboxes inside Settings');
     check(ui.includes("exportDetectionOption?.addEventListener('change', persistExportPreferences)")&&ui.includes("loadExportPreferences();"),'checkbox events and startup restoration wired');
-    check(html.includes('mathreader.js?v=433')&&html.includes('mathreader.css?v=433'),'v433 browser caches invalidated');
+    check(html.includes('mathreader.js?v=434')&&html.includes('mathreader.css?v=433'),'v433 browser caches invalidated');
     check(!extract(src,'importReadingDataFile').includes('payload.fullDocumentText'),'diagnostic full text does not alter reading state during import');
   }
   console.log(`PASS | v397 independent export options | assertions=${checks}`);

@@ -1,0 +1,28 @@
+{
+  "version": "434",
+  "date": "2026-11-11",
+  "baseline": "user-supplied mathreader(20261111-223505).zip; MathReader v433",
+  "scope": "Settings controls, reset, browser-local preference storage, detection action lifecycle, OCR engine transparency",
+  "verified": {
+    "javascript_test_files": {"passed": 79, "total": 79, "failed": 0, "timeout": 0},
+    "python_chromium_test_files": {"passed": 38, "total": 38, "failed": 0, "timeout": 0},
+    "new_settings_chromium_assertions": {"passed": 64, "total": 64, "runner": "tests/settings_full_sweep_v434.py", "type": "offline Chromium DOM + actual production CSS/preferences/event handlers; mocked PDF/model"},
+    "javascript_syntax": {"modules": 10, "modules_pass": 10, "bootstrap_pass": true, "joined_runtime_parse_pass": true},
+    "legacy_javascript_baseline": {"passed": 77, "total": 79, "failed": 2, "cause": "obsolete strict STRUCTURE_INDEX_VERSION 57 checks against existing v433 value 58", "test_assertions_updated": true},
+    "settings_groups": ["Display", "Formula OCR", "Content Detection", "Export data"],
+    "settings_controls_actions": 22,
+    "settings_chromium_widths_px": [204, 240, 270, 330],
+    "settings_test_languages": ["en", "zh"],
+    "webgpu_failure_behavior": "selected engine only; no CPU fallback; mocked initialization error explicitly reported",
+    "storage_failure_behavior": "visible warning once per outage; no silent success"
+  },
+  "not_verified": [
+    "Live PDF.js interaction on an original PDF in a deployed browser",
+    "Native PDF text-layer navigation precision against complete 41-document original-PDF corpus",
+    "True local Texify CPU/WASM/WebGPU model inference and mathematical transcription accuracy",
+    "Live network/download/CDN/host deployment behavior",
+    "Unsupported/browser-private modes across every device/browser implementation"
+  ],
+  "no_changes": ["reading-data schema", "PDF detector thresholds", "formula OCR quality heuristics", "user annotation schema", "automatic full-document OCR workload"],
+  "test_timeout_counted_as_pass": false
+}

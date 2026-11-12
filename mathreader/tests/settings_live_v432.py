@@ -17,7 +17,7 @@ def fn(source,name):
  start=source.index('function '+name+'(')
  end=source.index('\n}',start)+2
  return source[start:end]
-methods='\n'.join(fn(core,n) for n in ['loadDetectionViewPreferences','updateDetectionViewControls',
+methods='\n'.join(fn(core,n) for n in ['saveSettingsPreference','loadDetectionViewPreferences','updateDetectionViewControls',
  'persistDetectionViewPreferences','resetDetectionViewPreferences','loadFormulaOcrPreferences',
  'persistFormulaOcrPreferences'])
 start=ui.index("detectionResultsFilterSelect?.addEventListener('change'")
@@ -31,6 +31,8 @@ const DETECTION_VIEW_PREFS_KEY='mathreader-detection-view-v1';
 const FORMULA_OCR_PREFS_KEY='mathreader-formula-advanced-v1';
 const safeGet=(k,def=null)=>localStorage.getItem(k)??def;
 const safeSet=(k,v)=>localStorage.setItem(k,v);
+let settingsStorageWarningShown=false;
+const showNotice=()=>{};
 const detectionResultsFilterSelect=document.getElementById('detection-results-filter');
 const detectionEquationConfidenceSelect=document.getElementById('detection-equation-confidence');
 const detectionProofRelationsToggle=document.getElementById('detection-proof-relations');

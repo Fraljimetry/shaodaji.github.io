@@ -13,7 +13,7 @@ ui=(root/'js/70-command-ui-runtime.js').read_text(encoding='utf-8')
 setting=html[html.index('<section class="workspace-section settings-section"'):html.index('<section class="workspace-section shortcuts"')]
 # Use the real Settings HTML, real CSS, real settings functions and event hooks.
 functions=[]
-for name in ('loadExportPreferences','persistExportPreferences'):
+for name in ('saveSettingsPreference','loadExportPreferences','persistExportPreferences'):
     match=re.search(r'function '+name+r'\([\s\S]*?\n\}(?=\n)',core)
     assert match,name
     functions.append(match.group(0))
@@ -28,6 +28,7 @@ const EXPORT_PREFS_KEY='mathreader-export-v1';
 let exportPreferences={includeDetection:true,includeFullDocumentText:false};
 const safeGet=(key,fallback=null)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback}};
 const safeSet=(key,value)=>{try{localStorage.setItem(key,value)}catch{}};
+const t=(en)=>en;const showNotice=()=>{};let settingsStorageWarningShown=false;
 '''+ '\n'.join(functions)+'''
 exportDetectionOption?.addEventListener('change',persistExportPreferences);
 exportFullTextOption?.addEventListener('change',persistExportPreferences);

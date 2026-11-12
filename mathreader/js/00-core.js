@@ -390,6 +390,26 @@ const safeSet = (key, value) => { try { localStorage.setItem(key, value); } catc
 mathOcrEngineMode = safeGet('mathreader-ocr-engine-v8', 'official');
 formulaExtractionMode = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
 
+// Settings are browser-local. Unlike best-effort document caches, a failed
+// preferences write must be visible: otherwise the UI appears to save changes
+// that will silently disappear on reload. Limit the warning to one per outage.
+let settingsStorageWarningShown = false;
+function saveSettingsPreference(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    settingsStorageWarningShown = false;
+    return true;
+  } catch (error) {
+    if (!settingsStorageWarningShown) {
+      settingsStorageWarningShown = true;
+      console.warn('MathReader could not save Settings', error);
+      showNotice(t('Settings cannot be saved in this browser. Changes may be lost on reload.',
+        '无法在此浏览器保存设置。刷新后可能丢失本次修改。'));
+    }
+    return false;
+  }
+}
+
 const EXPORT_PREFS_KEY = 'mathreader-export-v1';
 let exportPreferences = { includeDetection: true, includeFullDocumentText: false };
 const DISPLAY_PREFS_KEY = 'mathreader-display-v3';
@@ -513,7 +533,7 @@ function updateDetectionViewControls() {
   if (detectionProofRelationsToggle) detectionProofRelationsToggle.checked = showProofRelations;
 }
 function persistDetectionViewPreferences() {
-  safeSet(DETECTION_VIEW_PREFS_KEY, JSON.stringify({
+  saveSettingsPreference(DETECTION_VIEW_PREFS_KEY, JSON.stringify({
     results: detectionResultsFilter, confidence: equationConfidenceFilter,
     proofRelations: showProofRelations
   }));
@@ -537,7 +557,7 @@ function loadFormulaOcrPreferences() {
   if (ocrSevereRetryToggle) ocrSevereRetryToggle.checked = formulaOcrSevereRetryEnabled;
 }
 function persistFormulaOcrPreferences() {
-  safeSet(FORMULA_OCR_PREFS_KEY, JSON.stringify({
+  saveSettingsPreference(FORMULA_OCR_PREFS_KEY, JSON.stringify({
     cropPadding: formulaOcrCropPadding, severeRetry: formulaOcrSevereRetryEnabled
   }));
 }
@@ -557,7 +577,7 @@ function persistExportPreferences() {
     includeDetection: exportDetectionOption ? Boolean(exportDetectionOption.checked) : exportPreferences.includeDetection,
     includeFullDocumentText: exportFullTextOption ? Boolean(exportFullTextOption.checked) : exportPreferences.includeFullDocumentText,
   };
-  safeSet(EXPORT_PREFS_KEY, JSON.stringify(exportPreferences));
+  saveSettingsPreference(EXPORT_PREFS_KEY, JSON.stringify(exportPreferences));
 }
 
 function loadDisplayPreferences() {
@@ -589,7 +609,7 @@ function loadDisplayPreferences() {
   if (migratedFrom) persistDisplayPreferences();
 }
 function persistDisplayPreferences() {
-  safeSet(DISPLAY_PREFS_KEY, JSON.stringify({
+  saveSettingsPreference(DISPLAY_PREFS_KEY, JSON.stringify({
     flow: readingFlow,
     tone: pageTone,
     brightness: displayBrightness,
@@ -690,8 +710,10 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
   }
 }
 
-function resetDisplayPreferences() {
-  readingFlow = 'continuous';
+async function resetDisplayPreferences() {
+  // Preserve the old readingFlow until setReadingFlow captures the departure
+  // position and prepares the continuous surface. Updating it first bypasses
+  // the transition when resetting from single-page mode.
   pageTone = 'auto';
   displayBrightness = 100;
   displayContrast = 100;
@@ -699,7 +721,7 @@ function resetDisplayPreferences() {
   displayShadow = true;
   zoomStep = 0.15;
   applyPageDisplay();
-  setReadingFlow('continuous', { persist: true, render: true });
+  await setReadingFlow('continuous', { persist: true, render: true });
 }
 
 
@@ -3522,6 +3544,10 @@ function enableReaderControls(enabled) {
   // available on the empty first screen so a reading-data export can restore a
   // library/session record before the matching PDF is reopened.
   if (importReadingDataButton) importReadingDataButton.disabled = false;
+  // Detection actions need usable text and must not look clickable while busy.
+  const canDetect = Boolean(enabled && pdfDoc && documentTextFeaturesAvailable());
+  if (detectionRebuildIndexButton) detectionRebuildIndexButton.disabled = !canDetect || structureIndexBuilding;
+  if (detectionScanMarginsButton) detectionScanMarginsButton.disabled = !canDetect || Boolean(equationIndexBuildPromise || equationImageAssistPromise || documentOcrActive || documentOcrBusy);
   updateOcrInteractionAvailability();
 }
 

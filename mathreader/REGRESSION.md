@@ -1,3 +1,9 @@
+# v434 — Comprehensive Settings controls and lifecycle sweep (2026-11-11)
+
+Audited all 22 Settings controls/actions in v433 against production preferences and handlers. Fixed Reset display's single-to-continuous transition bypass, silent WebGPU-to-CPU model fallback, busy-state availability for Content Detection rebuild/scan actions, and silent Settings persistence failures when localStorage writes are blocked. New bilingual Tutorial text explains explicit engines and storage limits. No detector/OCR accuracy thresholds changed. **64/64** production-source offline Chromium Settings assertions and **79/79** JavaScript test files passed. Python/Chromium summary and precise test boundaries: [v434 release](docs/releases/V434_RELEASE.md) and [gate](regression/v434_release_gate.json). No complete real-PDF/browser-host/Texify model inference validation is claimed.
+
+---
+
 # v433 — General sidebar and Tutorial prose wrapping (2026-11-11)
 
 Reproduced the v432 **`text-wrap: balance`** policy truncating otherwise usable intermediate lines in narrow Settings help text. The old one-sentence Formula OCR copy change did not solve the shared defect. v433 switches readable sidebar/help/tutorial prose to natural-width `text-wrap: pretty` (normal wrap fallback), with overflow protection and compact bilingual explanatory copy. This avoids artificial line balancing and minimizes very short final lines **where possible**; no browser CSS can guarantee both fully packed preceding lines and substantial final-line content at every width. Mathematical notation, user-selected PDF text, buttons, and preformatted data are untouched. No OCR or detector algorithms changed.
