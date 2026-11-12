@@ -914,12 +914,12 @@ function applyOcrModeToSurfaces() {
 // initialized only when the user actually submits an image formula crop.
 function updateOcrInteractionAvailability() {
   // PDF-vector extraction can still work if the image model failed to load.
-  const available = Boolean(pdfDoc && !mathOcrLoading &&
-    (!mathOcrInitializationFailed || formulaExtractionMode === 'vector'));
+  const available = Boolean(pdfDoc && !mathOcrLoading && !mathOcrDisposing &&
+    (formulaExtractionMode === 'vector' || (!mathOcrInitializationFailed && !mathOcrDisposalFailed)));
   // Prevent replacing or resetting the model while a queued crop is waiting
   // for it; only OCR-specific controls are busy. PDF reading stays enabled.
-  if (typeof ocrEngineSelect !== 'undefined' && ocrEngineSelect) ocrEngineSelect.disabled = mathOcrLoading;
-  if (typeof ocrRetryButton !== 'undefined' && ocrRetryButton) ocrRetryButton.disabled = mathOcrLoading;
+  if (typeof ocrEngineSelect !== 'undefined' && ocrEngineSelect) ocrEngineSelect.disabled = mathOcrLoading || mathOcrDisposing || mathOcrDisposalFailed;
+  if (typeof ocrRetryButton !== 'undefined' && ocrRetryButton) ocrRetryButton.disabled = mathOcrLoading || mathOcrDisposing || mathOcrDisposalFailed;
   if (mathOcrButton) {
     mathOcrButton.disabled = !available;
     mathOcrButton.setAttribute('aria-disabled', mathOcrButton.disabled ? 'true' : 'false');
@@ -935,11 +935,13 @@ function updateOcrInteractionAvailability() {
 }
 
 function setOcrMode(active) {
-  if (active && (!pdfDoc || mathOcrLoading ||
-      (mathOcrInitializationFailed && formulaExtractionMode !== 'vector'))) {
+  if (active && (!pdfDoc || mathOcrLoading || mathOcrDisposing ||
+      ((mathOcrInitializationFailed || mathOcrDisposalFailed) && formulaExtractionMode !== 'vector'))) {
     ocrMode = false;
     updateOcrInteractionAvailability();
-    if (mathOcrInitializationFailed) setOcrStatus(t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试'));
+    if (mathOcrDisposalFailed) setOcrStatus(t('Image OCR unavailable · reload the page after an engine-unload failure',
+      '图像 OCR 不可用 · 引擎卸载失败后请刷新页面'));
+    else if (mathOcrInitializationFailed) setOcrStatus(t('Formula OCR unavailable · Reset OCR to retry', '公式 OCR 不可用 · 可重置后重试'));
     return;
   }
   ocrMode = Boolean(active && pdfDoc);
@@ -1003,7 +1005,21 @@ async function disposeMathOcrPipeline() {
   mathOcrInferenceRuns = 0;
   mathOcrModulePromise = null;
   updateOcrCapability();
-  try { await pipe?.dispose?.(); } catch (_) {}
+  try {
+    await pipe?.dispose?.();
+    return true;
+  } catch (error) {
+    // A reset/engine switch cannot truthfully report success if the previous
+    // model failed to unload. Block another image engine until a page reload;
+    // PDF reading and explicit PDF-vector extraction remain available.
+    mathOcrDisposalFailed = true;
+    console.warn('MathReader Formula OCR engine disposal failed.', error);
+    const message = t('OCR engine could not be unloaded safely. Reload MathReader before using image OCR again.',
+      '无法安全卸载 OCR 引擎。请刷新 MathReader 后再使用图像 OCR。');
+    setOcrStatus(message);
+    showNotice(message);
+    return false;
+  }
 }
 
 function friendlyOcrError(error, backend = null) {

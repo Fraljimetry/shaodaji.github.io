@@ -320,8 +320,35 @@ formulaExtractionSelect?.addEventListener('change', () => {
     ? t('Image OCR selected', '已选图像 OCR')
     : t('PDF vector selected', '已选 PDF 矢量'));
 });
-ocrEngineSelect?.addEventListener('change', async () => { if (mathOcrLoading) { ocrEngineSelect.value = mathOcrEngineMode; return; } mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value); saveSettingsPreference('mathreader-ocr-engine-v8', mathOcrEngineMode); setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR engine selected · loads on first image extraction', '已选择 OCR 引擎 · 首次图像公式提取时加载'));  });
-ocrRetryButton?.addEventListener('click', async () => { if (mathOcrLoading) return; setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline(); updateOcrInteractionAvailability(); setOcrStatus(t('OCR reset · loads on next image extraction', 'OCR 已重置 · 下次图像公式提取时加载'));  });
+async function resetFormulaOcrFromSettings(successMessage) {
+  if (mathOcrLoading || mathOcrDisposing || mathOcrDisposalFailed) return false;
+  mathOcrDisposing = true;
+  setOcrMode(false);
+  updateOcrInteractionAvailability();
+  try {
+    if (!await disposeMathOcrPipeline()) return false;
+    mathOcrInitializationFailed = false;
+    setOcrStatus(successMessage);
+    return true;
+  } finally {
+    mathOcrDisposing = false;
+    updateOcrInteractionAvailability();
+  }
+}
+ocrEngineSelect?.addEventListener('change', async () => {
+  if (mathOcrLoading || mathOcrDisposing || mathOcrDisposalFailed) {
+    ocrEngineSelect.value = mathOcrEngineMode;
+    return;
+  }
+  mathOcrEngineMode = normalizedOcrEngineMode(ocrEngineSelect.value);
+  saveSettingsPreference('mathreader-ocr-engine-v8', mathOcrEngineMode);
+  await resetFormulaOcrFromSettings(t('OCR engine selected · loads on first image extraction',
+    '已选择 OCR 引擎 · 首次图像公式提取时加载'));
+});
+ocrRetryButton?.addEventListener('click', async () => {
+  await resetFormulaOcrFromSettings(t('OCR reset · loads on next image extraction',
+    'OCR 已重置 · 下次图像公式提取时加载'));
+});
 mathOcrButton?.addEventListener('click', () => setOcrMode(!ocrMode));
 contentsRunDocumentOcr?.addEventListener('click', () => { enableDocumentOcrFromReader().catch((error) => { console.warn('Document OCR could not be started from Contents.', error); }); });
 equationForceOcrButton?.addEventListener('click', () => { void forceEquationImageOcr(); });

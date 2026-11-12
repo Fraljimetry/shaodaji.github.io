@@ -19,7 +19,7 @@ check(!runtime.includes('scheduleMathOcrPreload'), 'settings/reset do not preloa
 check(runtime.includes('schedulePdfCorePreload();'), 'unrelated PDF.js startup warmup preserved');
 check(vector.includes('const pipe = await ensureMathOcrPipeline();'), 'OCR inference lazily acquires the engine');
 check(vector.includes("if (formulaExtractionMode === 'vector' && vector?.latex)"), 'usable vector formula bypasses image OCR');
-check(html.includes('mathreader.js?v=434') && html.includes('mathreader.css?v=433'), 'current v434 JS cache busting');
+check(html.includes('mathreader.js?v=435') && html.includes('mathreader.css?v=433'), 'current v434 JS cache busting');
 check(html.includes('The model loads on the next image formula extraction.'), 'reset hint describes lazy behavior');
 check(runtime.includes('OCR reset · loads on next image extraction'), 'reset says it will not preload');
 check(runtime.includes('OCR engine selected · loads on first image extraction'), 'engine settings say they will not preload');
@@ -32,7 +32,7 @@ const ocrEngineSelect={disabled:false};
 const ocrRetryButton={disabled:false};
 const button={disabled:true,attrs:{},classList:{add(){},remove(){},toggle(){}},setAttribute(k,v){this.attrs[k]=v;}};
 const ctx = vm.createContext({
-  pdfDoc:{},ocrMode:false,mathOcrLoading:false,mathOcrInitializationFailed:false,ocrEngineSelect,ocrRetryButton,
+  pdfDoc:{},ocrMode:false,mathOcrLoading:false,mathOcrInitializationFailed:false,mathOcrDisposing:false,mathOcrDisposalFailed:false,ocrEngineSelect,ocrRetryButton,
   mathOcrPipeline:null,mathOcrBackend:null,mathOcrButton:button,ocrDrag:null,
   applyOcrModeToSurfaces(){},resetOcrBoxes(){},hideSelectionToolbar(){},
   window:{getSelection:()=>({removeAllRanges(){}})},
@@ -95,8 +95,11 @@ extract.crop=crop;
   extract.formulaExtractionMode='vector';
   await vm.runInContext("recognizeMathCrop(crop, 1, 'primary', ocrLayer, selectionRect)",extract);
   check(imageRuns===1 && vectorResults===2, 'valid vector extraction remains model-free');
-  extract.mathOcrInitializationFailed=true;
   extract.extractVectorFormulaFromLayer=()=>null;
+  const imagesBeforeMissingVector = imageRuns;
+  await vm.runInContext("recognizeMathCrop(crop, 1, 'primary', ocrLayer, selectionRect)",extract);
+  check(imageRuns===imagesBeforeMissingVector, 'selected PDF vector never silently initializes image OCR when vector extraction is unavailable');
+  extract.mathOcrInitializationFailed=true;
   await vm.runInContext("recognizeMathCrop(crop, 1, 'primary', ocrLayer, selectionRect)",extract);
   check(imageRuns===1, 'failed model with unavailable PDF vector does not silently retry');
   extract.mathOcrInitializationFailed=false;

@@ -21,7 +21,7 @@ check(!src.slice(start, end).includes('stopImmediatePropagation'), 'loading neve
 check(!src.includes('scheduleMathOcrPreload'), 'model not loaded before first crop');
 check(src.includes('mathOcrInitializationFailed = true;'), 'failed initialization remains latched until reset');
 const runtime = fs.readFileSync(path.join(dir,'js/70-command-ui-runtime.js'),'utf8');
-check(runtime.includes('setOcrMode(false); mathOcrInitializationFailed = false; await disposeMathOcrPipeline();'), 'deliberate user reset remains explicit');
+check(runtime.includes('async function resetFormulaOcrFromSettings(') && runtime.includes('if (!await disposeMathOcrPipeline()) return false;'), 'deliberate user reset remains explicit and refuses false success');
 check(!runtime.includes('scheduleMathOcrPreload()'), 'settings/reset do not auto-initialize');
 
 function deferred() {

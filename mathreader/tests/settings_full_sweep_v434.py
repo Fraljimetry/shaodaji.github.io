@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Settings v434: Chromium integration with exact production preference functions and event handlers.
+"""Settings v434/v435: Chromium integration with exact production preference functions and event handlers.
 Offline harness: real source functions, real HTML/CSS and real DOM events, mocked PDF/model only.
 Not a real PDF.js navigation or Texify accuracy certification.
 """
@@ -15,6 +15,7 @@ ui = (ROOT/'js/70-command-ui-runtime.js').read_text(encoding='utf-8')
 events = (ROOT/'js/60-notes-bookmarks-data.js').read_text(encoding='utf-8')
 ocr = (ROOT/'js/10-formula-ocr.js').read_text(encoding='utf-8')
 detector = (ROOT/'js/41-equations-bibliography.js').read_text(encoding='utf-8')
+rendering = (ROOT/'js/30-rendering-navigation.js').read_text(encoding='utf-8')
 tutorial = (ROOT/'tutorial.html').read_text(encoding='utf-8')
 
 def function(source, name):
@@ -26,9 +27,11 @@ def function(source, name):
 methods = '\n'.join(function(core, name) for name in (
     'loadDetectionViewPreferences', 'updateDetectionViewControls', 'persistDetectionViewPreferences',
     'resetDetectionViewPreferences', 'loadFormulaOcrPreferences', 'persistFormulaOcrPreferences',
-    'loadExportPreferences','persistExportPreferences', 'loadDisplayPreferences',
+    'loadExportPreferences','persistExportPreferences', 'savedDisplayNumber','loadDisplayPreferences',
     'persistDisplayPreferences', 'resolvedPageTone', 'updateDisplayControls',
     'applyPageDisplay', 'setReadingFlow', 'resetDisplayPreferences', 'saveSettingsPreference'))
+methods += '\n' + function(rendering, 'runDisplayTransition')
+methods += '\n' + function(ocr, 'updateOcrInteractionAvailability')
 methods += '\n' + function(ocr, 'normalizedOcrEngineMode') + '\n' + function(ocr, 'currentOcrPlan')
 methods += '\n' + function(detector, 'refreshEquationForceOcrButton')
 settings_events = ui[ui.index("detectionResultsFilterSelect?.addEventListener('change'"):ui.index("mathOcrButton?.addEventListener('click'")]
@@ -46,7 +49,7 @@ Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=
 const safeGet=(key,fallback=null)=>localStorage.getItem(key)??fallback;
 const safeSet=(key,value)=>localStorage.setItem(key,value);
 let settingsStorageWarningShown=false;
-const notices=[];const showNotice=message=>notices.push(message);
+const notices=[];const showNotice=message=>notices.push(message);const showError=message=>notices.push('ERROR: '+message);
 const clamp=(value,min,max,fallback)=>{const n=Number(value);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback;};
 const DISPLAY_PREFS_KEY='mathreader-display-v3', DETECTION_VIEW_PREFS_KEY='mathreader-detection-view-v1';
 const FORMULA_OCR_PREFS_KEY='mathreader-formula-advanced-v1',EXPORT_PREFS_KEY='mathreader-export-v1';
@@ -60,13 +63,15 @@ const mathOcrButton=el('math-ocr');
 const primaryCanvasWrap=el('primary-canvas-wrap'),primaryPageSurface=el('primary-page-surface'),continuousStack=el('continuous-stack');
 const canvas={};
 const zoomIn=el('zoom-in'),zoomOut=el('zoom-out');
+let displayTransitionSerial=0,displayFlowTransitionActive=false,displayDeferredReflowDocument=null,currentFileKey=null,continuousRebuilding=false,failNextPageRender=false;
 let readingFlow='continuous',pageTone='auto',displayBrightness=100,displayContrast=100,displayGap=20,displayShadow=true,zoomStep=.15;
 let detectionResultsFilter='all',equationConfidenceFilter='all',showProofRelations=true,formulaOcrCropPadding='tight',formulaOcrSevereRetryEnabled=true;
 let exportPreferences={includeDetection:true,includeFullDocumentText:false};
-let formulaExtractionMode='image',mathOcrEngineMode='official',mathOcrLoading=false,mathOcrInitializationFailed=false;
+let formulaExtractionMode='image',mathOcrEngineMode='official',mathOcrLoading=false,mathOcrInitializationFailed=false,mathOcrDisposing=false,mathOcrDisposalFailed=false;
 let pdfDoc=null,currentPage=4,continuousScrollTop=0,continuousSavedAnchor=null,displayTransitionActive=false,zoomMode='fit-width';
 let equationLabelIndex=new Map(),structureIndexBuilding=false,equationIndexBuildPromise=null,equationImageAssistPromise=null,documentOcrActive=false,documentOcrBusy=false;
 let indexBuilds=0,scanCount=0,structureDraws=0,equationDraws=0,continuousBuilds=0,primaryRenders=0,currentRenders=0,disposals=0,ocrMode=false;
+let disposeMode='ok',resolveDisposal=null;const ocrStatuses=[];
 const renderStructureIndex=()=>structureDraws++;
 const renderEquationIndex=()=>equationDraws++;
 const buildStructureIndex=async()=>{indexBuilds++;};
@@ -75,17 +80,23 @@ const documentTextFeaturesAvailable=()=>true;
 const captureContinuousAnchor=()=>({page:currentPage,ratio:.35});
 const clearContinuousObserver=()=>{};
 const applyOcrModeToSurfaces=()=>{};
-const renderCurrentPage=async()=>{currentRenders++;};
-let buildResolve=null;
-const buildContinuousDocument=async()=>{continuousBuilds++;await new Promise(resolve=>{buildResolve=resolve;});};
+const renderCurrentPage=async()=>{currentRenders++;if(failNextPageRender){failNextPageRender=false;throw new Error('synthetic page reflow failure');}};
+const renderReferencePage=async()=>{};
+const snapshotDisplayAnchor=()=>null;
+let buildResolve=null,buildReject=null;
+const buildContinuousDocument=async()=>{continuousBuilds++;await new Promise((resolve,reject)=>{buildResolve=resolve;buildReject=reject;});};
 const renderPage=async()=>{primaryRenders++;};
 const persistDocumentState=()=>{};
-const setOcrStatus=()=>{};
+const setOcrStatus=(msg)=>ocrStatuses.push(msg);
 const updateOcrCapability=()=>{};
-const updateOcrInteractionAvailability=()=>{};
+const resetOcrBoxes=()=>{};
 const setOcrMode=(value)=>{ocrMode=value;};
-const disposeMathOcrPipeline=async()=>{disposals++;};
-const runDisplayTransition=async(mutator)=>mutator();
+const disposeMathOcrPipeline=async()=>{
+ disposals++;
+ if(disposeMode==='defer') {await new Promise(resolve=>{resolveDisposal=resolve;});disposeMode='ok';}
+ if(disposeMode==='fail') {mathOcrDisposalFailed=true;setOcrStatus('OCR engine could not be unloaded safely. Reload MathReader.');showNotice('OCR engine could not be unloaded safely.');return false;}
+ return true;
+};
 const changeZoom=async(delta)=>{window.lastZoomDelta=delta;};
 const equationForceOcrButton=el('equation-force');
 window.storage=storage;window.notices=notices;
@@ -100,7 +111,8 @@ window.snapshot=()=>({readingFlow,pageTone,displayBrightness,displayContrast,dis
  indexBuilds,scanCount,structureDraws,equationDraws,continuousBuilds,primaryRenders,currentRenders,disposals,
  pageToneDOM:root.dataset.pageTone,shadowDOM:root.dataset.pageShadow,brightnessCSS:root.style.getPropertyValue('--pdf-brightness'),gapCSS:root.style.getPropertyValue('--continuous-gap')});
 window.testResetFromSingle=()=>{continuousBuilds=0;readingFlow='single';pdfDoc={numPages:8};currentPage=4;primaryPageSurface.classList.remove('is-hidden');continuousStack.classList.add('is-hidden');buildResolve=null;};
-window.resolveBuild=()=>{if(buildResolve){buildResolve();buildResolve=null;}};
+window.resolveBuild=()=>{if(buildResolve){buildResolve();buildResolve=null;buildReject=null;}};
+window.rejectBuild=()=>{if(buildReject){buildReject(new Error('synthetic render failure'));buildResolve=null;buildReject=null;}};
 window.reloadPrefs=()=>{readingFlow='single';pageTone='original';displayBrightness=70;displayContrast=80;displayGap=8;displayShadow=false;zoomStep=.10;
  detectionResultsFilter='all';equationConfidenceFilter='all';showProofRelations=true;
  formulaOcrCropPadding='tight';formulaOcrSevereRetryEnabled=true;
@@ -109,6 +121,11 @@ window.reloadPrefs=()=>{readingFlow='single';pageTone='original';displayBrightne
 window.ocrPlan=mode=>{mathOcrEngineMode=mode;return currentOcrPlan().map(b=>({device:b.device,dtype:b.dtype,label:b.label}));};
 window.busyScan=active=>{equationIndexBuildPromise=active?Promise.resolve():null;refreshEquationForceOcrButton();};
 window.withPDF=()=>{pdfDoc={numPages:8};};
+window.failDisplayReflow=()=>{failNextPageRender=true;};
+window.startSlowDisposal=()=>{disposeMode='defer';};
+window.finishSlowDisposal=()=>{if(resolveDisposal){resolveDisposal();resolveDisposal=null;}};
+window.failDisposal=()=>{disposeMode='fail';};
+window.ocrStatuses=ocrStatuses;
 '''
 markup = f'''<html lang="en" data-lang="en" data-theme="light"><head><meta charset="utf-8"><style>{css}</style></head>
 <body><button id="zoom-in"></button><button id="zoom-out"></button><button id="flow-button"></button><button id="math-ocr"></button><button id="equation-force"></button>
@@ -133,6 +150,8 @@ with sync_playwright() as p:
     verify(not errors, f'initial script errors: {errors}')
     for group in page.locator('.settings-group').all():group.evaluate('(e)=>e.open=true')
     verify(page.locator('.settings-group').count()==4,'four settings sections present')
+    verify(page.locator('#flow-button').is_disabled(), 'toolbar reading-flow toggle remains disabled without a PDF')
+    verify(not page.locator('#flow-single').is_disabled() and not page.locator('#flow-continuous').is_disabled(), 'Settings can choose future reading-flow default without an open PDF')
     verify(page.evaluate('snapshot().exportPreferences')=={'includeDetection':True,'includeFullDocumentText':False},'export defaults')
     verify(page.evaluate('ocrPlan("official")')[0]['label']=='Texify · CPU','default CPU is explicit')
     verify(len(page.evaluate('ocrPlan("webgpu")'))==1,'WebGPU cannot silently fall back to CPU')
@@ -204,19 +223,56 @@ with sync_playwright() as p:
     page.locator('.ocr-troubleshooting').evaluate('(e)=>e.open=true')
     page.locator('#ocr-retry').click()
     verify(page.evaluate('snapshot().disposals')==3,'reset OCR disposes engine without inference')
+    # An asynchronous engine-unload can outlive the change event. Settings
+    # must lock OCR controls, reject overlapping requests and avoid loading a
+    # second engine before the first pipeline is fully disposed.
+    page.evaluate('startSlowDisposal()')
+    page.locator('#ocr-engine-mode').select_option('official')
+    verify(page.locator('#ocr-engine-mode').is_disabled() and page.locator('#ocr-retry').is_disabled(),'slow engine disposal locks OCR Settings controls')
+    previousDisposals=page.evaluate('snapshot().disposals')
+    page.evaluate('() => {const e=document.getElementById("ocr-engine-mode");e.value="webgpu";e.dispatchEvent(new Event("change",{bubbles:true}));}')
+    verify(page.evaluate('snapshot().disposals')==previousDisposals and page.locator('#ocr-engine-mode').input_value()=='official','overlapping engine changes cannot race or silently replace selection')
+    page.evaluate('finishSlowDisposal()')
+    page.wait_for_timeout(80)
+    verify(not page.locator('#ocr-engine-mode').is_disabled() and not page.locator('#ocr-retry').is_disabled(),'successful disposal unlocks engine controls')
+    # An unload error must not be reported as a successful reset.
+    page.evaluate('failDisposal()')
+    page.locator('#ocr-retry').click()
+    page.wait_for_timeout(50)
+    verify(page.evaluate('mathOcrDisposalFailed') and page.locator('#ocr-engine-mode').is_disabled(),'failed engine unload locks unsafe image-engine reuse')
+    verify(not any('OCR reset · loads' in s for s in page.evaluate('ocrStatuses.slice(-1)')),'failed unload does not display a success message')
     # Reset display from single page must call the transition builder and not
     # reveal the empty continuous surface until it has completed.
     page.evaluate('testResetFromSingle()')
     page.locator('#reset-display').click()
     a=page.evaluate('snapshot()')
     verify(a['continuousBuilds']==1,'display reset invokes safe single-to-continuous rebuild')
+    verify(page.locator('#reset-display').is_disabled() and page.locator('#flow-single').is_disabled() and page.locator('#flow-continuous').is_disabled() and page.locator('#flow-button').is_disabled(), 'flow and reset controls lock while transition destination is unready')
+    verify(page.evaluate('setReadingFlow("single")') is False,'overlapping mode transition refused rather than replacing pending render')
+    verify(page.evaluate('snapshot().readingFlow')=='continuous','second mode request cannot overwrite in-flight destination')
     verify(not page.locator('#primary-page-surface').evaluate('(e)=>e.classList.contains("is-hidden")'),'old reading surface retained while rebuilding')
     verify(page.locator('#continuous-stack').evaluate('(e)=>e.classList.contains("is-hidden")'),'continuous stack not exposed prematurely')
     page.evaluate('resolveBuild()')
     page.wait_for_timeout(100)
     a=page.evaluate('snapshot()')
     verify(a['readingFlow']=='continuous' and page.locator('#primary-page-surface').evaluate('(e)=>e.classList.contains("is-hidden")'),'reset finishes in continuous reading')
+    verify(not page.locator('#flow-single').is_disabled() and not page.locator('#reset-display').is_disabled(),'flow controls unlock after completed transition')
     verify((a['zoomStep'],a['pageTone'],a['displayBrightness'],a['displayContrast'],a['displayGap'],a['displayShadow'])==(.15,'auto',100,100,20,True),'display reset restores six defaults')
+    # Sidebar/page-width reflows can arrive while the opposite reading-mode
+    # surface is still being prepared. Never let a second serial invalidate the
+    # destination switch; apply the mutation then rerender once after commit.
+    page.evaluate('testResetFromSingle()')
+    page.locator('#reset-display').click()
+    page.evaluate('runDisplayTransition(() => {displayGap=34;applyPageDisplay();})')
+    verify(page.evaluate('snapshot().displayGap')==34 and page.evaluate('snapshot().continuousBuilds')==1,'concurrent display change updates settings without canceling active mode render')
+    verify(page.locator('#continuous-stack').evaluate('(e)=>e.classList.contains("is-hidden")'),'in-flight mode destination remains hidden after concurrent display edit')
+    page.evaluate('resolveBuild()')
+    page.wait_for_timeout(100)
+    verify(page.evaluate('snapshot().readingFlow')=='continuous' and page.locator('#primary-page-surface').evaluate('(e)=>e.classList.contains("is-hidden")'),'mode transition commits correctly after deferred display mutation')
+    verify(page.evaluate('snapshot().continuousBuilds')==2,'concurrent layout changes coalesce into one follow-up reflow')
+    page.evaluate('resolveBuild()')
+    page.wait_for_timeout(100)
+    verify(not page.locator('#reset-display').is_disabled() and page.evaluate('snapshot().displayGap')==34,'deferred reflow finishes and releases display controls')
     for lang in ('en','zh'):
         page.evaluate('''lang=>{document.documentElement.dataset.lang=lang;document.querySelectorAll('[data-en][data-zh]').forEach(e=>{if(e.children.length===0)e.textContent=e.getAttribute('data-'+lang)})}''',lang)
         verify(('显示' in page.locator('#settings-display-group').inner_text()) if lang=='zh' else ('Display' in page.locator('#settings-display-group').inner_text()), f'{lang} settings titles translated')
@@ -224,12 +280,47 @@ with sync_playwright() as p:
             page.locator('.sidebar-right').evaluate('(e,w)=>e.style.width=w+"px"',width)
             verify(page.locator('.sidebar-right').evaluate('(e)=>e.scrollWidth<=e.clientWidth+2'),f'no horizontal overflow at {lang} {width}px')
             verify(all(e.evaluate('(el)=>el.scrollWidth<=el.clientWidth+3') for e in page.locator('.settings-group-body').all()),f'all group content fits at {lang} {width}px')
+    # Reject malformed/migrated numeric fields rather than interpreting null,
+    # empty strings or booleans as zero and clamping them to minima.
+    page.evaluate('storage["mathreader-display-v3"]=JSON.stringify({flow:"single", brightness:null,contrast:"",gap:false,zoomStep:.15});loadDisplayPreferences()')
+    verify(page.evaluate('snapshot().displayBrightness')==100 and page.evaluate('snapshot().displayContrast')==100 and page.evaluate('snapshot().displayGap')==20,'null/empty/boolean display fields recover standard defaults')
+    page.evaluate('storage["mathreader-display-v3"]=JSON.stringify({brightness:"112",contrast:"117",gap:"40"});loadDisplayPreferences()')
+    verify(page.evaluate('snapshot().displayBrightness')==112 and page.evaluate('snapshot().displayContrast')==117 and page.evaluate('snapshot().displayGap')==40,'valid numeric-string migrated display fields remain accepted')
+    # A failed destination render must restore the old surface, display state
+    # and persisted flow instead of leaving the user in a ghost state.
+    page.evaluate('testResetFromSingle()')
+    page.locator('#reset-display').click()
+    verify(page.evaluate('snapshot().continuousBuilds')==1,'failure case is exercising a real pending destination build')
+    page.evaluate('rejectBuild()')
+    page.wait_for_timeout(100)
+    verify(page.evaluate('snapshot().readingFlow')=='single' and not page.locator('#primary-page-surface').evaluate('(e)=>e.classList.contains("is-hidden")'),'render rejection restores the original single-page surface')
+    verify(not page.locator('#reset-display').is_disabled() and page.evaluate('JSON.parse(storage["mathreader-display-v3"]).flow')=='single','failed reset unlocks Settings and saves truthful flow with restored appearance')
+    verify(any('Could not switch reading mode' in msg or '无法切换阅读方式' in msg for msg in page.evaluate('notices')),'failed transition reports a visible error')
+    # Completion of an old PDF's build must never change the new document's
+    # mode or replace its visible surface.
+    page.evaluate('testResetFromSingle()')
+    page.locator('#reset-display').click()
+    page.evaluate('() => {pdfDoc={numPages:9};currentFileKey="new-pdf";readingFlow="single";}')
+    page.evaluate('resolveBuild()')
+    page.wait_for_timeout(100)
+    verify(page.evaluate('snapshot().readingFlow')=='single' and not page.locator('#primary-page-surface').evaluate('(e)=>e.classList.contains("is-hidden")'),'stale previous-PDF transition cannot flip newly opened PDF')
+    verify(not page.locator('#reset-display').is_disabled(),'stale transition eventually releases its busy lock')
+    # A failed page-spacing reflow must show an error and release the same
+    # Settings controls. This exercises the production helper, not a mock.
+    page.evaluate('failDisplayReflow()')
+    page.locator('#flow-single').click()
+    page.wait_for_timeout(100)
+    page.evaluate('() => {const x=document.getElementById("gap-range");x.value="36";x.dispatchEvent(new Event("input",{bubbles:true}));x.dispatchEvent(new Event("change",{bubbles:true}));}')
+    page.wait_for_timeout(100)
+    verify(not page.locator('#reset-display').is_disabled() and not page.locator('#flow-continuous').is_disabled(),'reflow failure releases Settings controls')
+    verify(any('Could not refresh the PDF' in msg or '无法刷新 PDF' in msg for msg in page.evaluate('notices')),'reflow failure is visibly reported')
     # Malformed preferences should restore documented defaults, not leak stale values.
     page.evaluate('storage["mathreader-detection-view-v1"]="{bad json"; loadDetectionViewPreferences()')
     verify(page.evaluate('snapshot().detectionResultsFilter')=='all' and page.evaluate('snapshot().equationConfidenceFilter')=='all', 'corrupt detection settings use safe defaults')
     page.evaluate('storage["mathreader-display-v3"]=JSON.stringify({flow:"weird",tone:"unknown",brightness:1000,contrast:-5,gap:100,zoomStep:.33});loadDisplayPreferences()')
     verify(page.evaluate('snapshot().displayBrightness')==115 and page.evaluate('snapshot().displayContrast')==80 and page.evaluate('snapshot().displayGap')==44 and page.evaluate('snapshot().zoomStep')==.15, 'out-of-range numeric preferences are validated and clamped')
     # Storage failure must be visibly disclosed, not silently swallowed.
+    page.evaluate('notices.length=0')
     page.evaluate('() => {localStorage.setItem = () => {throw new Error("storage quota")}; return true;}')
     page.locator('#display-zoom-step').select_option('0.10')
     verify(page.evaluate('notices.length')==1 and ('cannot be saved' in page.evaluate('notices[0]') or '无法在此浏览器保存设置' in page.evaluate('notices[0]')), 'blocked browser storage produces a user-visible warning')
@@ -238,4 +329,4 @@ with sync_playwright() as p:
     verify('WebGPU q4f16' in tutorial and 'Default · Texify CPU' in tutorial and '识别引擎不会暗中切换' in tutorial,'tutorial documents engine selection EN/ZH')
     verify(not errors, f'page errors: {errors}')
     browser.close()
-print(f'PASS | v434 comprehensive Settings Chromium harness | {checks} checks; 4 sections, 22 controls/actions, 8 EN/ZH widths; mocked PDF/model explicitly')
+print(f'PASS | v435 Settings Chromium + lifecycle edge cases | {checks} checks; 4 sections, 22 controls/actions, 8 EN/ZH widths; mocked PDF/model explicitly')

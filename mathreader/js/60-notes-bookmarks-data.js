@@ -856,7 +856,10 @@ pageToneSelect?.addEventListener('change', () => { pageTone = pageToneSelect.val
 brightnessRange?.addEventListener('input', () => { displayBrightness = clamp(brightnessRange.value, 70, 115, 100); applyPageDisplay(); });
 contrastRange?.addEventListener('input', () => { displayContrast = clamp(contrastRange.value, 80, 120, 100); applyPageDisplay(); });
 gapRange?.addEventListener('input', () => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); });
-gapRange?.addEventListener('change', () => { runDisplayTransition(() => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); persistDisplayPreferences(); }, { renderReference: false }); });
+gapRange?.addEventListener('change', () => {
+  if (displayTransitionActive) return; // in-flight flow build already uses the updated gap
+  void runDisplayTransition(() => { displayGap = clamp(gapRange.value, 8, 44, 20); applyPageDisplay(); }, { renderReference: false });
+});
 pageShadow?.addEventListener('change', () => { displayShadow = pageShadow.checked; applyPageDisplay(); });
 displayZoomStepSelect?.addEventListener('change', () => {
   zoomStep = [0.10,0.15,0.20].includes(Number(displayZoomStepSelect.value)) ? Number(displayZoomStepSelect.value) : 0.15;

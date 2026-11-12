@@ -1310,10 +1310,12 @@ async function recognizeMathCrop(crop, page, kind, ocrLayer = null, selectionRec
     );
     return;
   }
-  // Do not implicitly retry an OCR model that already failed when the user
-  // requested PDF vector. They may reset OCR explicitly to enable fallback.
-  if (formulaExtractionMode === 'vector' && mathOcrInitializationFailed) {
-    setOcrStatus(t('PDF vector unavailable · Reset OCR for image fallback', 'PDF 矢量不可用 · 重置 OCR 后可使用图像识别'));
+  // A PDF-vector choice must remain a vector-only operation even if its text
+  // layer is missing or cannot reconstruct a formula. Never silently load the
+  // selected image OCR model (which may require a large network download).
+  if (formulaExtractionMode === 'vector') {
+    setOcrStatus(t('PDF vector could not extract this formula. Choose Image OCR in Settings → Formula OCR to try image recognition.',
+      'PDF 矢量无法提取此公式。若需尝试图像识别，请在“设置 → 公式 OCR”中选择“图像 OCR”。'));
     return;
   }
 

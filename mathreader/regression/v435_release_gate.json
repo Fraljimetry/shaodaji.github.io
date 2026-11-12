@@ -1,0 +1,77 @@
+{
+  "version": "435",
+  "date": "2026-11-11",
+  "baseline": "User source v433 plus installed v434 Settings overlay",
+  "scope": "Subtle Settings lifecycle faults, persistence validation, explicit OCR extraction mode, concurrent layout and disposal",
+  "verified": {
+    "javascript_test_files": {
+      "passed": 80,
+      "total": 80,
+      "failed": 0,
+      "timeout": 0
+    },
+    "python_chromium_test_files": {
+      "passed": 38,
+      "total": 38,
+      "failed": 0,
+      "timeout": 0
+    },
+    "new_settings_chromium_assertions": {
+      "passed": 90,
+      "total": 90,
+      "runner": "tests/settings_full_sweep_v434.py",
+      "type": "real Chromium source/DOM/CSS and production preferences/handlers, mocked PDF/model"
+    },
+    "responsive_chromium_assertions": {
+      "passed": 176,
+      "total": 176
+    },
+    "ui_copy_layout_assertions": {
+      "passed": 80,
+      "total": 80
+    },
+    "offline_corpus_runner_smoke_assertions": {
+      "passed": 19,
+      "total": 19
+    },
+    "javascript_syntax": {
+      "modules": 10,
+      "modules_pass": 10,
+      "bootstrap_pass": true,
+      "joined_runtime_parse_pass": true
+    },
+    "settings_groups": [
+      "Display",
+      "Formula OCR",
+      "Content Detection",
+      "Export data"
+    ],
+    "settings_controls_actions": 22,
+    "bilingual_settings_widths_px": [
+      204,
+      240,
+      270,
+      330
+    ],
+    "font_wrap_test": "prose_flow_v433_regression.py PASS",
+    "explicit_vector_to_image_fallback_blocked": true,
+    "reading_mode_and_reflow_concurrency": "tested deferred coalesced reflow and stale PDF/failed render",
+    "ocr_disposal_failure_and_race": "tested with mock pipeline, production disposal code executed in VM"
+  },
+  "test_execution_note": "An initial all-in-one Python wrapper timed out while nested regression runner was pending; 35 tests passed in bounded concurrent rerun and the 3 longer tests passed independently. Individual test results recorded. The original timed-out wrapper is not counted as PASS.",
+  "not_verified": [
+    "Live PDF.js interaction and original-PDF acceptance on deployed host; browser URL navigation blocked by test environment",
+    "Full 41 original-PDF detector corpus replay in this revision",
+    "Actual Texify CPU/WASM/WebGPU model inference and mathematical OCR accuracy",
+    "Cross-tab preference synchronization and every storage-denial mode",
+    "CDN/deployment cache and external browser engine compatibility"
+  ],
+  "no_changes": [
+    "reading-data schema",
+    "PDF detector thresholds",
+    "Texify model",
+    "annotation schemas",
+    "core OCR quality heuristics"
+  ],
+  "test_timeout_counted_as_pass": false
+}

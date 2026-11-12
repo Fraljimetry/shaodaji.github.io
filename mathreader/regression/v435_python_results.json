@@ -1,0 +1,275 @@
+{
+  "total": 38,
+  "passed": 38,
+  "failed": 0,
+  "timeout": 0,
+  "strategy": "35 fast tests with three workers, 3 longer tests executed separately; original combined wrapper timed out and is excluded",
+  "results": [
+    {
+      "test": "appendix_equation_sidebar_browser_v388.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.81,
+      "output": "PASS: Chromium rendered 500 initial rows, incrementally loaded all 622, and found all 12 appendix equations using filter\n"
+    },
+    {
+      "test": "continuous_initial_repaint_v410.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.1,
+      "output": "ady': True, 'error': None, 'firstRendered': True, 'firstCanvasConnected': True, 'content': True, 'tries': 1, 'fallback': 0, 'observed': True, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\nstale-generation: {'accepted': False, 'sameCanvas': True, 'connected': True}\nPASS | v410 initial continuous paint lifecycle | 25 Chromium assertions\n"
+    },
+    {
+      "test": "corpus_integrity_v405_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.41,
+      "output": "PASS | corpus integrity: valid source, mismatched SHA fail-closed, navigation bounds, dangling proof links\n"
+    },
+    {
+      "test": "docs_layout_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.36,
+      "output": "OK: docs layout; 41 moved docs; 7 regression partitions; original SHA-256 intact\n"
+    },
+    {
+      "test": "equation_margin_export_browser_v402.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.34,
+      "output": "PASS | Chromium v403 page-journal export/reopen simulation | 7 assertions\nLIMIT | in-memory IndexedDB mock, PDF.js mock, no live OCR or production navigation\n"
+    },
+    {
+      "test": "equation_navigation_browser_geometry_v386.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.96,
+      "output": "PASS: 19 Chromium equation landing / hOCR frame checks (simulated pages, real DOM geometry)\n"
+    },
+    {
+      "test": "export_settings_browser_v397.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.45,
+      "output": "PASS | Chromium v397 export settings | defaults, four states, preference restore, dark/light, mobile, localization markup\n"
+    },
+    {
+      "test": "export_settings_layout_v398.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.26,
+      "output": "PASS | Chromium v398 compact export settings | aligned text, close descriptions, two themes, narrow widths\n"
+    },
+    {
+      "test": "full_text_exports_v400.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.0,
+      "output": "PASS | v400 fixed source manifest; original seven-export replay SKIPPED (set MATHREADER_EXPORT_CORPUS_DIR)\n"
+    },
+    {
+      "test": "help_tutorial_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 7.83,
+      "output": "{\n  \"assertions\": 130,\n  \"passed\": 130,\n  \"failures\": []\n}\n"
+    },
+    {
+      "test": "manual_equation_click_browser_v411.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.84,
+      "output": "PASS: 5 production DOM click scenarios, single-page and continuous, original 1.2 preserved\n"
+    },
+    {
+      "test": "meticulous_ocr_menu_browser_v390.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.37,
+      "output": "PASS: Meticulous OCR menu position, edge clamp, real click, Escape, disabled, light/dark, absolute status, scroll/layout conservation (20+ assertions)\n"
+    },
+    {
+      "test": "meticulous_viewport_browser_v387.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.96,
+      "output": "before {'reader': 700, 'side': 50, 'eq': 702, 'key': '(17.27)', 'offset': 1} after {'reader': 700, 'side': 50, 'eq': 756, 'key': '(17.27)', 'offset': 1}\nPASS: real Chromium scroll anchor survives 2 inserted equation rows; newer navigation is not undone\n"
+    },
+    {
+      "test": "multicolumn_toc_browser_v427.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.07,
+      "output": "PASS: Chromium production TOC resolver and physical scroll, section 3 and 2.1\n"
+    },
+    {
+      "test": "ocr_browser_geometry_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.98,
+      "output": "{\"status\": \"PASS\", \"assertions\": 13, \"scope\": \"real Chromium DOMParser/canvas; OCR worker mocked, not Texify or PDF.js\"}\n"
+    },
+    {
+      "test": "p0_acceptance_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.47,
+      "output": ""
+    },
+    {
+      "test": "p0_gate_isolation_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.41,
+      "output": "ent_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"INCOMPLETE\",\n  \"report\": \"/tmp/tmpoi3da09e/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"NOT_REQUESTED\",\n  \"report\": \"/tmp/tmp0_mq0kvo/report/p0_gate.json\"\n}\n"
+    },
+    {
+      "test": "p0_p1_gap_closure_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.2,
+      "output": ""
+    },
+    {
+      "test": "p1_browser_smoke.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.72,
+      "output": "    \"target exact identity\",\n    \"return control visible\",\n    \"source flushed\",\n    \"returns to source\",\n    \"exact ratio restored\",\n    \"transient button hidden\",\n    \"no eager formula OCR\",\n    \"manual opening invalidates transient return stack\",\n    \"obsolete Return remains hidden\",\n    \"evicted target not openable\",\n    \"relink instead\"\n  ]\n}\n"
+    },
+    {
+      "test": "p1_real_gate_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.26,
+      "output": ""
+    },
+    {
+      "test": "prose_flow_v433_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.23,
+      "output": "PASS | v433 prose wrapping | Settings EN/ZH 204-360px; Tutorial; no artificial balancing/overflow\n"
+    },
+    {
+      "test": "reading_navigation_races_v424.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.2,
+      "output": "the old search session\nPASS: old equation bookmark alignment canceled after newer jump\nPASS: old equation-search alignment canceled after newer jump\nPASS: old reference lookup discarded after document switch\nPASS: active equation bookmark still aligns and renders its landing cue\nPASS: switching PDFs clears stale visible text-search rows and status\n"
+    },
+    {
+      "test": "reference_hover_lifecycle_v407.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.57,
+      "output": "PASS: 13 production hover-preview lifecycle checks in Chromium (mock PDF lookup)\n"
+    },
+    {
+      "test": "regression_runner_smoke.py",
+      "status": "PASS",
+      "seconds": null,
+      "output": "OK: 19 cached regression runner smoke assertions",
+      "execution": "isolated standalone execution on final source"
+    },
+    {
+      "test": "results_geometry_browser_v412.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.04,
+      "output": "PASS | Chromium Results geometry v412: 9 assertions\n"
+    },
+    {
+      "test": "results_named_boundary_browser_v413.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.79,
+      "output": "PASS | v413 real Chromium named-heading classifier: 14 assertions\n"
+    },
+    {
+      "test": "search_fuzzy_geometry_v431.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.75,
+      "output": "PASS: real Chromium repeated search hits use page/column geometry, not ordinal\n"
+    },
+    {
+      "test": "settings_formula_note_wrap_v432_regression.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.26,
+      "output": "PASS | bilingual Formula OCR note | normal prose wrapping, no overflow\n"
+    },
+    {
+      "test": "settings_full_sweep_v434.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 6.25,
+      "output": "PASS | v435 Settings Chromium + lifecycle edge cases | 90 checks; 4 sections, 22 controls/actions, 8 EN/ZH widths; mocked PDF/model explicitly\n"
+    },
+    {
+      "test": "settings_heading_hierarchy_v400.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.69,
+      "output": "PASS | v400 Settings font hierarchy | 12 width/theme pairs, all four groups and nested labels\n"
+    },
+    {
+      "test": "settings_live_v432.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.78,
+      "output": "PASS | v432 offline Chromium Settings | production markup/functions/events, 4 groups, persistence, reset, detection actions, narrow widths\n"
+    },
+    {
+      "test": "settings_text_orphans_v399.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.95,
+      "output": "PASS | 12 widths/themes, no orphan line, redundant note absent, clickability and Chinese fallback\n"
+    },
+    {
+      "test": "seven_export_evidence_v401.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.98,
+      "output": "PASS manifest integrity; FULL original seven-export source replay SKIPPED (set MATHREADER_EXPORT_CORPUS_DIR)\n"
+    },
+    {
+      "test": "structure_jump_position_v423.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.32,
+      "output": "PASS: two-column Structure 2.1/2.5 clicks reach the true Y in Chromium\nPASS: real Chromium scroll reaches the Structure heading, not the page top\nPASS: Chromium Structure click placement (page-only, explicit, null, unknown, manual and inferred)\n"
+    },
+    {
+      "test": "structure_manual_embedded_browser_v419.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.07,
+      "output": "PASS: actual Chromium DOM manual Structure Add/Indent/Reselect/Navigation/Remove and embedded bookmark isolation\n"
+    },
+    {
+      "test": "structure_multiline_math_navigation_v426.py",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 2.49,
+      "output": "PASS: v426 real native PDF text + embedded Structure clicks + physical Chromium scroll for 2.1, 2.5, 3, 5.1\n"
+    },
+    {
+      "test": "ui_copy_layout_v414.py",
+      "status": "PASS",
+      "seconds": null,
+      "output": "PASS v414 bilingual UI copy and layout: 80 assertions",
+      "execution": "isolated standalone execution on final source"
+    },
+    {
+      "test": "ui_responsive_regression.py",
+      "status": "PASS",
+      "seconds": null,
+      "output": "176/176 responsive layout assertions",
+      "execution": "isolated standalone execution on final source"
+    }
+  ]
+}

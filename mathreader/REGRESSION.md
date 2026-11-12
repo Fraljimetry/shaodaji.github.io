@@ -1,3 +1,9 @@
+# v435 — Subtle Settings races, corrupted preferences and explicit OCR mode boundaries (2026-11-11)
+
+Starting from v434, addressed reading-flow/reflow collisions, safe mode rollback on render failure, stale PDF completion, malformed numeric preferences, PDF-vector fallback to image inference, OCR engine unload errors/overlap, and busy-control release. Existing Settings, Content Detection, Formula OCR and bilingual Tutorial behavior remain covered. **90/90** Settings Chromium assertions, **80/80** JavaScript test files and **38/38** Python test files PASS in bounded/isolated runs; the original combined Python runner stalled and was not counted as a pass. JavaScript modules/bootstrap/concatenated runtime syntax PASS. Real original-PDF page geometry and genuine Texify inference **not verified**. [Full report](docs/releases/V435_RELEASE.md); [gate](regression/v435_release_gate.json).
+
+---
+
 # v434 — Comprehensive Settings controls and lifecycle sweep (2026-11-11)
 
 Audited all 22 Settings controls/actions in v433 against production preferences and handlers. Fixed Reset display's single-to-continuous transition bypass, silent WebGPU-to-CPU model fallback, busy-state availability for Content Detection rebuild/scan actions, and silent Settings persistence failures when localStorage writes are blocked. New bilingual Tutorial text explains explicit engines and storage limits. No detector/OCR accuracy thresholds changed. **64/64** production-source offline Chromium Settings assertions and **79/79** JavaScript test files passed. Python/Chromium summary and precise test boundaries: [v434 release](docs/releases/V434_RELEASE.md) and [gate](regression/v434_release_gate.json). No complete real-PDF/browser-host/Texify model inference validation is claimed.

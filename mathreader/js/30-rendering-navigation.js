@@ -799,9 +799,23 @@ function snapshotDisplayAnchor() {
 
 async function runDisplayTransition(mutator, { delay = 0, renderReference = true } = {}) {
   if (!pdfDoc) { mutator?.(); return; }
+  if (displayFlowTransitionActive) {
+    // A sidebar toggle/page-gap adjustment can occur during the async mode
+    // switch. Apply the UI preference now, then coalesce a reflow after the
+    // switch; incrementing displayTransitionSerial here would abandon the
+    // destination render and leave logical flow at odds with visible surfaces.
+    try { mutator?.(); } catch (error) {
+      console.warn('MathReader deferred display change failed.', error);
+      showError(t('Could not apply the display change.', '无法应用显示更改。'));
+      return;
+    }
+    displayDeferredReflowDocument = pdfDoc;
+    return;
+  }
   const serial = ++displayTransitionSerial;
   const anchor = snapshotDisplayAnchor();
   displayTransitionActive = true;
+  updateDisplayControls();
   continuousRebuilding = readingFlow === 'continuous';
   if (anchor) continuousSavedAnchor = { ...anchor };
   try {
@@ -811,11 +825,18 @@ async function runDisplayTransition(mutator, { delay = 0, renderReference = true
     if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
     else await renderCurrentPage();
     if (renderReference) await renderReferencePage();
+  } catch (error) {
+    console.warn('MathReader display reflow failed.', error);
+    if (serial === displayTransitionSerial && pdfDoc) {
+      showError(t('Could not refresh the PDF display. The current page remains available; retry the display action.',
+        '无法刷新 PDF 显示。当前页面仍可使用，请重试显示操作。'));
+    }
   } finally {
     if (serial === displayTransitionSerial) {
       requestAnimationFrame(() => {
         if (serial !== displayTransitionSerial) return;
         displayTransitionActive = false;
+        updateDisplayControls();
         continuousRebuilding = false;
         if (readingFlow === 'continuous') {
           continuousSavedAnchor = captureContinuousAnchor() || anchor || continuousSavedAnchor;

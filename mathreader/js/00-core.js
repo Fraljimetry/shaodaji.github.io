@@ -309,6 +309,8 @@ let mathOcrModulePromise = null;
 let mathOcrInitPromise = null;
 let mathOcrInitializationFailed = false;
 let mathOcrLoading = false;
+let mathOcrDisposing = false;
+let mathOcrDisposalFailed = false;
 let mathOcrBackend = null;
 let mathOcrEngineMode = 'official';
 let formulaExtractionMode = 'image';
@@ -337,6 +339,8 @@ let continuousGeneration = 0;
 let continuousRebuilding = false;
 let displayTransitionActive = false;
 let displayTransitionSerial = 0;
+let displayFlowTransitionActive = false;
+let displayDeferredReflowDocument = null;
 let initialContinuousReady = false;
 let continuousPageNodes = new Map();
 let continuousScrollTimer = null;
@@ -580,6 +584,16 @@ function persistExportPreferences() {
   saveSettingsPreference(EXPORT_PREFS_KEY, JSON.stringify(exportPreferences));
 }
 
+// Stored values can be null/empty after partial migrations or manual edits.
+// Number(null) and Number('') are 0, which would wrongly clamp to a minimum
+// instead of applying the documented default. This is specific to saved prefs;
+// live range inputs continue to use the ordinary clamp helper.
+function savedDisplayNumber(value, min, max, fallback) {
+  if (value == null || typeof value === 'boolean' || typeof value === 'object' ||
+      (typeof value === 'string' && !value.trim())) return fallback;
+  return clamp(value, min, max, fallback);
+}
+
 function loadDisplayPreferences() {
   let saved = null;
   let migratedFrom = null;
@@ -595,9 +609,9 @@ function loadDisplayPreferences() {
     pageTone = ['auto','original','soft-dark','warm'].includes(saved.tone) ? saved.tone : 'auto';
     const oldDefault = migratedFrom && Number(saved.brightness) === 96;
     const oldContrastDefault = migratedFrom && Number(saved.contrast) === 96;
-    displayBrightness = oldDefault ? 100 : clamp(saved.brightness, 70, 115, 100);
-    displayContrast = oldContrastDefault ? 100 : clamp(saved.contrast, 80, 120, 100);
-    displayGap = clamp(saved.gap, 8, 44, 20);
+    displayBrightness = oldDefault ? 100 : savedDisplayNumber(saved.brightness, 70, 115, 100);
+    displayContrast = oldContrastDefault ? 100 : savedDisplayNumber(saved.contrast, 80, 120, 100);
+    displayGap = savedDisplayNumber(saved.gap, 8, 44, 20);
     displayShadow = saved.shadow !== false;
     zoomStep = [0.10, 0.15, 0.20].includes(Number(saved.zoomStep)) ? Number(saved.zoomStep) : 0.15;
   } else {
@@ -626,6 +640,15 @@ function resolvedPageTone() {
 }
 
 function updateDisplayControls() {
+  // Reader mode controls are serialized while the destination is rendered.
+  // This includes the toolbar toggle and Reset; otherwise a rapid second click
+  // can reveal the opposite surface before the first transition finishes.
+  for (const button of [flowSingle, flowContinuous, resetDisplay]) {
+    if (button) button.disabled = displayTransitionActive;
+  }
+  // The toolbar flow button requires an open PDF; the Settings defaults can
+  // still be configured on the welcome screen before any document is loaded.
+  if (flowButton) flowButton.disabled = displayTransitionActive || !pdfDoc;
   flowSingle?.classList.toggle('is-active', readingFlow === 'single');
   flowContinuous?.classList.toggle('is-active', readingFlow === 'continuous');
   if (pageToneSelect) pageToneSelect.value = pageTone;
@@ -657,12 +680,13 @@ function applyPageDisplay({ persist = true } = {}) {
 }
 
 async function setReadingFlow(flow, { persist = true, render = true } = {}) {
+  // Do not overlap a user-visible mode switch with another display transition.
+  // Non-rendering session restoration is allowed to supersede an old document.
+  if (displayTransitionActive && render) return false;
   const next = flow === 'continuous' ? 'continuous' : 'single';
   const changed = readingFlow !== next;
   if (!changed) {
-    // Even when the logical flow value is unchanged, the DOM may still be in
-    // its initial single-page visibility state (notably after restoring a saved
-    // continuous session). Always synchronize the reading surfaces.
+    // A restored continuous session may still have the initial single-page DOM.
     primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
     primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
     continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
@@ -672,31 +696,35 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
     if (persist) persistDisplayPreferences();
     if (pdfDoc && render && next === 'continuous') await renderCurrentPage();
     if (pdfDoc) persistDocumentState();
-    return;
+    return true;
   }
 
-  const departureAnchor = readingFlow === 'continuous'
+  const previous = readingFlow;
+  const sourceDoc = pdfDoc;
+  const sourceKey = currentFileKey;
+  const serial = ++displayTransitionSerial;
+  const departureAnchor = previous === 'continuous'
     ? (captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
     : { page: currentPage, ratio: 0 };
   if (departureAnchor?.page) currentPage = Math.max(1, Math.min(pdfDoc?.numPages || currentPage, Number(departureAnchor.page) || currentPage));
-  if (readingFlow === 'continuous') {
+  if (previous === 'continuous') {
     continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;
     continuousSavedAnchor = departureAnchor ? { ...departureAnchor } : continuousSavedAnchor;
   }
 
-  // Prepare the destination surface while the current one remains visible.
-  // Only swap visibility after the destination geometry/render is ready, so a
-  // mode change can never expose a stale/default page-1 surface.
   displayTransitionActive = true;
+  displayFlowTransitionActive = true;
+  updateDisplayControls();
   try {
     readingFlow = next;
+    // Prepare the new surface while the departure surface stays visible.
     if (pdfDoc && render) {
-      if (next === 'continuous') {
-        await buildContinuousDocument({ restore: true, anchor: departureAnchor });
-      } else {
-        await renderPage(currentPage, canvas, primaryCanvasWrap, 'primary');
-      }
+      if (next === 'continuous') await buildContinuousDocument({ restore: true, anchor: departureAnchor });
+      else await renderPage(currentPage, canvas, primaryCanvasWrap, 'primary');
     }
+    // A PDF change/session restore may supersede a long render. Never apply a
+    // stale transition or save its preference into a different document.
+    if (serial !== displayTransitionSerial || pdfDoc !== sourceDoc || currentFileKey !== sourceKey) return false;
     primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
     primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
     continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
@@ -705,22 +733,52 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
     updateDisplayControls();
     if (persist) persistDisplayPreferences();
     if (pdfDoc) persistDocumentState();
+    return true;
+  } catch (error) {
+    console.warn('MathReader reading-flow transition failed.', error);
+    if (serial === displayTransitionSerial && pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+      readingFlow = previous;
+      primaryCanvasWrap?.classList.toggle('continuous-mode', previous === 'continuous');
+      primaryPageSurface?.classList.toggle('is-hidden', previous === 'continuous');
+      continuousStack?.classList.toggle('is-hidden', previous !== 'continuous');
+      applyOcrModeToSurfaces();
+      updateDisplayControls();
+      // Reset display may already have changed appearance: persist the defaults
+      // with the still-active reading mode instead of a half-finished switch.
+      if (persist) persistDisplayPreferences();
+      showError(t('Could not switch reading mode. The previous reading view was restored.',
+        '无法切换阅读方式，已恢复原来的阅读视图。'));
+    }
+    return false;
   } finally {
-    requestAnimationFrame(() => { displayTransitionActive = false; });
+    if (serial === displayTransitionSerial) {
+      requestAnimationFrame(() => {
+        if (serial !== displayTransitionSerial) return;
+        displayTransitionActive = false;
+        displayFlowTransitionActive = false;
+        updateDisplayControls();
+        // Sidebar width/collapse or page-gap edits made while the destination
+        // was being prepared must be laid out once after the mode switch.
+        // They must not supersede the pending mode change's serial number.
+        const pendingDoc = displayDeferredReflowDocument;
+        displayDeferredReflowDocument = null;
+        if (pendingDoc && pendingDoc === pdfDoc) void runDisplayTransition(() => {});
+      });
+    }
   }
 }
 
 async function resetDisplayPreferences() {
-  // Preserve the old readingFlow until setReadingFlow captures the departure
-  // position and prepares the continuous surface. Updating it first bypasses
-  // the transition when resetting from single-page mode.
+  if (displayTransitionActive) return;
+  // Do not persist the old reading mode together with the new appearance
+  // while the continuous surface is still being prepared.
   pageTone = 'auto';
   displayBrightness = 100;
   displayContrast = 100;
   displayGap = 20;
   displayShadow = true;
   zoomStep = 0.15;
-  applyPageDisplay();
+  applyPageDisplay({ persist: false });
   await setReadingFlow('continuous', { persist: true, render: true });
 }
 
