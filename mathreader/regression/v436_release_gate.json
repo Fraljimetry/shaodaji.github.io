@@ -1,0 +1,53 @@
+{
+  "version": "436",
+  "date": "2026-11-11",
+  "baseline": "Original v433 plus v434 and v435 overlays",
+  "scope": "Cross-tab Settings state, stale-write/render race, same-mode Reset and invalid preference defaults",
+  "verified": {
+    "javascript_test_files": {
+      "passed": 80,
+      "total": 80,
+      "failed": 0,
+      "timeout": 0
+    },
+    "python_chromium_test_files": {
+      "passed": 39,
+      "total": 39,
+      "failed": 0,
+      "timeout": 0,
+      "execution": "36 bounded batch, 3 slower tests individually"
+    },
+    "settings_chromium_assertions": {
+      "passed": 96,
+      "total": 96,
+      "pdf_model": "mocked"
+    },
+    "cross_tab_chromium_assertions": {
+      "passed": 19,
+      "total": 19,
+      "storage_event_transport": "manually simulated across two Chromium pages; real shared-origin navigation blocked"
+    },
+    "ui_copy_assertions": 80,
+    "responsive_assertions": 176,
+    "runner_smoke_assertions": 19,
+    "syntax": {
+      "source_modules": 10,
+      "bootstrap": "PASS",
+      "assembled_runtime": "PASS"
+    }
+  },
+  "not_verified": [
+    "Actual same-origin storage event delivery between two tabs in this environment",
+    "Simultaneous localStorage writes before event propagation",
+    "Original 41-PDF corpus and live PDF.js PDF acceptance",
+    "Real Texify CPU/WASM/WebGPU inference",
+    "Other browser engines and CDN deployment"
+  ],
+  "code_changes": [
+    "js/00-core.js",
+    "js/30-rendering-navigation.js",
+    "js/70-command-ui-runtime.js"
+  ],
+  "no_git_commit": true,
+  "batch_timeout_counted_as_pass": false
+}

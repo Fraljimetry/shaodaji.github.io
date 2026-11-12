@@ -838,6 +838,7 @@ async function runDisplayTransition(mutator, { delay = 0, renderReference = true
         displayTransitionActive = false;
         updateDisplayControls();
         continuousRebuilding = false;
+        flushExternalDisplayPreferences();
         if (readingFlow === 'continuous') {
           continuousSavedAnchor = captureContinuousAnchor() || anchor || continuousSavedAnchor;
           continuousScrollTop = primaryCanvasWrap?.scrollTop || continuousScrollTop;

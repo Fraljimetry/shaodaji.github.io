@@ -834,6 +834,7 @@ loadDisplayPreferences();
 loadDetectionViewPreferences();
 loadFormulaOcrPreferences();
 loadExportPreferences();
+window.addEventListener('storage', onExternalSettingsStorage);
 loadSearchPreferences();
 setupWorkspaceCollapsibles();
 scheduleNotePreview();

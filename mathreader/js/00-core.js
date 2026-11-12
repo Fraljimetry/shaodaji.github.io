@@ -615,9 +615,14 @@ function loadDisplayPreferences() {
     displayShadow = saved.shadow !== false;
     zoomStep = [0.10, 0.15, 0.20].includes(Number(saved.zoomStep)) ? Number(saved.zoomStep) : 0.15;
   } else {
+    // Loading an absent/invalid record must restore *all* defaults, including
+    // fields that another tab or earlier session may have changed in memory.
     readingFlow = 'continuous';
+    pageTone = 'auto';
     displayBrightness = 100;
     displayContrast = 100;
+    displayGap = 20;
+    displayShadow = true;
     zoomStep = 0.15;
   }
   if (migratedFrom) persistDisplayPreferences();
@@ -679,6 +684,68 @@ function applyPageDisplay({ persist = true } = {}) {
   if (persist) persistDisplayPreferences();
 }
 
+// localStorage is shared across same-origin tabs. Update browser-global
+// preferences when another MathReader tab changes them; do not persist again
+// in response to a storage event (which would create a write loop).
+let externalDisplayRefreshPending = false;
+function flushExternalDisplayPreferences() {
+  if (!externalDisplayRefreshPending || displayTransitionActive) return;
+  externalDisplayRefreshPending = false;
+  void applyExternalDisplayPreferences();
+}
+async function applyExternalDisplayPreferences() {
+  if (displayTransitionActive) {
+    // Important: merely waiting until the render completes is unsafe. The
+    // transition may persist its old brightness/gap and overwrite a newer
+    // change made by another tab. Adopt the remote appearance immediately,
+    // while preserving the mode currently being built; reconcile any deferred
+    // reflow/mode disagreement once that build finishes.
+    const activeFlow = readingFlow;
+    loadDisplayPreferences();
+    readingFlow = activeFlow;
+    applyPageDisplay({ persist: false });
+    externalDisplayRefreshPending = true;
+    return;
+  }
+  const oldFlow = readingFlow;
+  const oldGap = displayGap;
+  loadDisplayPreferences();
+  const requestedFlow = readingFlow;
+  readingFlow = oldFlow; // Let setReadingFlow prepare the destination safely.
+  applyPageDisplay({ persist: false });
+  if (requestedFlow !== oldFlow) {
+    await setReadingFlow(requestedFlow, { persist: false });
+  } else if (pdfDoc && oldGap !== displayGap) {
+    await runDisplayTransition(() => {}, { renderReference: false });
+  }
+}
+function onExternalSettingsStorage(event) {
+  // Browser storage can fail in privacy modes. A null key means clear(), so
+  // resynchronize every global preference, not only one field.
+  if (event.key === null || event.key === DISPLAY_PREFS_KEY) {
+    void applyExternalDisplayPreferences();
+  }
+  if (event.key === null || event.key === DETECTION_VIEW_PREFS_KEY) {
+    loadDetectionViewPreferences();
+    renderStructureIndex();
+    if (equationLabelIndex instanceof Map) renderEquationIndex();
+  }
+  if (event.key === null || event.key === FORMULA_OCR_PREFS_KEY) loadFormulaOcrPreferences();
+  if (event.key === null || event.key === EXPORT_PREFS_KEY) loadExportPreferences();
+  if (event.key === null || event.key === 'mathreader-formula-method-v1' || event.key === 'mathreader-ocr-engine-v8') {
+    // Switching a live model or extraction method in a *different* tab must
+    // not replace a pipeline or interrupt a crop already in progress. Keep
+    // current OCR state intact and explain how to adopt the remote selection.
+    const method = safeGet('mathreader-formula-method-v1', 'image') === 'vector' ? 'vector' : 'image';
+    const engine = ['official','webgpu','wasm'].includes(safeGet('mathreader-ocr-engine-v8', 'official'))
+      ? safeGet('mathreader-ocr-engine-v8', 'official') : 'official';
+    if (method !== formulaExtractionMode || engine !== mathOcrEngineMode) {
+      showNotice(t('Formula OCR selection changed in another tab. Reload this tab to apply it safely.',
+        '其他标签页修改了公式 OCR 选项。请刷新本标签页以安全应用。'));
+    }
+  }
+}
+
 async function setReadingFlow(flow, { persist = true, render = true } = {}) {
   // Do not overlap a user-visible mode switch with another display transition.
   // Non-rendering session restoration is allowed to supersede an old document.
@@ -686,17 +753,49 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
   const next = flow === 'continuous' ? 'continuous' : 'single';
   const changed = readingFlow !== next;
   if (!changed) {
-    // A restored continuous session may still have the initial single-page DOM.
-    primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
-    primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
-    continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
-    if (next === 'single') clearContinuousObserver();
-    applyOcrModeToSurfaces();
-    updateDisplayControls();
-    if (persist) persistDisplayPreferences();
-    if (pdfDoc && render && next === 'continuous') await renderCurrentPage();
-    if (pdfDoc) persistDocumentState();
-    return true;
+    // The same-mode path is also asynchronous: Reset Display may request a
+    // fresh continuous render. Keep controls locked and report a real render
+    // failure instead of throwing an unhandled rejection or claiming success.
+    const sourceDoc = pdfDoc;
+    const sourceKey = currentFileKey;
+    const serial = render && pdfDoc ? ++displayTransitionSerial : displayTransitionSerial;
+    if (render && pdfDoc) {
+      displayTransitionActive = true;
+      updateDisplayControls();
+    }
+    try {
+      if (sourceDoc && render && next === 'continuous') await renderCurrentPage();
+      if (serial !== displayTransitionSerial || sourceDoc !== pdfDoc || sourceKey !== currentFileKey) return false;
+      // A restored continuous session may still have the initial single-page DOM.
+      primaryCanvasWrap?.classList.toggle('continuous-mode', next === 'continuous');
+      primaryPageSurface?.classList.toggle('is-hidden', next === 'continuous');
+      continuousStack?.classList.toggle('is-hidden', next !== 'continuous');
+      if (next === 'single') clearContinuousObserver();
+      applyOcrModeToSurfaces();
+      updateDisplayControls();
+      if (persist) persistDisplayPreferences();
+      if (pdfDoc) persistDocumentState();
+      return true;
+    } catch (error) {
+      console.warn('MathReader same-mode refresh failed.', error);
+      if (serial === displayTransitionSerial && pdfDoc === sourceDoc && currentFileKey === sourceKey) {
+        showError(t('Could not refresh the PDF in this reading mode. Retry Reset display.',
+          '无法在当前阅读模式下刷新 PDF，请重试“重置显示”。'));
+        // Reset may have updated appearance controls; persist their actual
+        // values rather than reporting an unhandled failed reset.
+        if (persist) persistDisplayPreferences();
+      }
+      return false;
+    } finally {
+      if (sourceDoc && render && serial === displayTransitionSerial) {
+        requestAnimationFrame(() => {
+          if (serial !== displayTransitionSerial) return;
+          displayTransitionActive = false;
+          updateDisplayControls();
+          flushExternalDisplayPreferences();
+        });
+      }
+    }
   }
 
   const previous = readingFlow;
@@ -757,6 +856,7 @@ async function setReadingFlow(flow, { persist = true, render = true } = {}) {
         displayTransitionActive = false;
         displayFlowTransitionActive = false;
         updateDisplayControls();
+        flushExternalDisplayPreferences();
         // Sidebar width/collapse or page-gap edits made while the destination
         // was being prepared must be laid out once after the mode switch.
         // They must not supersede the pending mode change's serial number.

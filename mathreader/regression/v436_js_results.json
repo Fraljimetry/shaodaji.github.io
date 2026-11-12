@@ -1,0 +1,485 @@
+{
+  "files": [
+    {
+      "file": "tests/appendix_equations_v388_regression.js",
+      "status": "PASS",
+      "output": "PASS: 71 appendix equation OCR / numbering / navigation / pagination assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/appendix_leading_equation_v402_regression.js",
+      "status": "PASS",
+      "output": "PASS | v402 Giusti leading appendix equation + meticulous OCR persistence | 15 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/bibliography_boundary_regression.js",
+      "status": "PASS",
+      "output": "OK: 25 boundary-bibliography class assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/bibliography_no_space_key_v409_regression.js",
+      "status": "PASS",
+      "output": "PASS 18 no-whitespace bibliography key and false-positive controls\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/cross_document_regression.js",
+      "status": "PASS",
+      "output": "OK: 74 MathReader v358 cross-document and persistence assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/cross_journal_native_content_v421_regression.js",
+      "status": "PASS",
+      "output": "PASS v421 genuine PDF.js corpus: Structure 14 ordered, Results 29, Bibliography 41, matrix-index reference exclusion\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/embedded_outline_title_regression.js",
+      "status": "PASS",
+      "output": "OK: 25 embedded-outline malformed-tail class-level assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_cache_v415_regression.js",
+      "status": "PASS",
+      "output": "PASS v420 local equation cache invalidation, portable import and repeated locations\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_force_ocr_regression.js",
+      "status": "PASS",
+      "output": "OK: 13 forced equation-image OCR checks\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_margin_navigation_regression.js",
+      "status": "PASS",
+      "output": "PASS: equation-margin OCR geometry and cached-navigation repair\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_margin_page_journal_v403_regression.js",
+      "status": "PASS",
+      "output": "PASS | v403 per-page OCR journal + import recovery | 40 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_margin_persistence_v401_regression.js",
+      "status": "PASS",
+      "output": "PASS | v401/v402 bulk OCR cache compatibility | 17 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_margin_restore_order_v404_regression.js",
+      "status": "PASS",
+      "output": "PASS | v404 OCR restore ordering | 11 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_meticulous_navigation_v386_regression.js",
+      "status": "PASS",
+      "output": "PASS: 17 v386 meticulous OCR equation-navigation regression assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_notation_families_v418_regression.js",
+      "status": "PASS",
+      "output": "PASS: nonstandard numbering grammar, suffix family, roman chapter and prose-reference controls\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_numbering_scope_v418_regression.js",
+      "status": "PASS",
+      "output": "{\n  \"document\": \"Lectures on PDE_Leon Simon.pdf\",\n  \"pages\": 224,\n  \"labels\": 19,\n  \"occurrences\": 32,\n  \"colonOccurrences\": 0,\n  \"example1_1\": [],\n  \"page7_singleDigits\": [],\n  \"samePageDuplicateLabels\": []\n}\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_order_ocr_regression.js",
+      "status": "PASS",
+      "output": "PASS: additive OCR numerical ordering, stale-order bypass, explicit manual drag persistence\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_progress_regression.js",
+      "status": "PASS",
+      "output": "OK: 36 equation progress / timing regression assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/equation_reference_ocr_target_regression.js",
+      "status": "PASS",
+      "output": "PASS: 25 equation-reference OCR / navigation assertions (Giusti PDF p28 geometry)\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/export_preferences_v397_regression.js",
+      "status": "PASS",
+      "output": "PASS | v397 independent export options | assertions=112\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/extreme_formula_ocr_v429_regression.js",
+      "status": "PASS",
+      "output": "PASS: 58 extreme formula output-quality assertions over 20 user examples + negative controls\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/extreme_formula_retry_v429_regression.js",
+      "status": "PASS",
+      "output": "PASS: 21 bounded-retry, candidate selection and no-uncontrolled-call assertions\nMathReader bounded formula OCR retry failed Error: model inference failed\n    at /mnt/data/mr_audit_v436/mathreader/tests/extreme_formula_retry_v429_regression.js:62:33\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/formula_latex_syntax_regression.js",
+      "status": "PASS",
+      "output": "OK: 879 formula LaTeX checks; 228 MathJax compilations\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/formula_ocr_initialization_regression.js",
+      "status": "PASS",
+      "output": " tests (/mnt/data/mr_audit_v436/mathreader/tests/formula_ocr_initialization_regression.js:102:3)\nMathReader OCR backend failed { label: 'CPU', official: true } Error: Formula OCR initialization exceeded its 120-second safety limit.\n    at formulaOcrTimeoutError (evalmachine.<anonymous>:11:17)\n    at Timeout._onTimeout (evalmachine.<anonymous>:23:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7) {\n  code: 'FORMULA_OCR_INIT_TIMEOUT'\n}\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/formula_ocr_lazy_regression.js",
+      "status": "PASS",
+      "output": "OK: 36 formula OCR lazy-initialization assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/formula_ocr_nov11_v430_regression.js",
+      "status": "PASS",
+      "output": "PASS: 10 verbatim November-11 OCR outputs, quality consistency, 2 real MathJax checks\nPASS: both real OCR completion handlers preserve uncertainty and accept clean controls\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/formula_ocr_pending_crop_race_v417_regression.js",
+      "status": "PASS",
+      "output": "PASS: first-crop OCR remains exclusive through inference and ignores stale documents\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/formula_preview_compilation_regression.js",
+      "status": "PASS",
+      "output": "OK: 12 formula MathJax preview lifecycle assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/full_exports_outline_v399_regression.js",
+      "status": "PASS",
+      "output": "INFO | pass MATHREADER_EXPORT_CORPUS_DIR to replay all 595 pages\nPASS | 3 Ahlfors TOC and multi-export Structure assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/full_exports_proof_precision_v399_regression.js",
+      "status": "PASS",
+      "output": "INFO | original large JSONs not bundled; pass MATHREADER_EXPORT_CORPUS_DIR to replay them\nPASS | 27 proof-reference precision assertions; full-document OCR accuracy not claimed\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/full_text_coverage_v400_regression.js",
+      "status": "PASS",
+      "output": "PASS | v400 real export coverage regression | 13 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/historical_appendix_results_v395_regression.js",
+      "status": "PASS",
+      "output": "PASS 163 Giusti appendix + Yau historical Results assertions; Giusti 13, Yau 12\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/historical_appendix_separator_v389_regression.js",
+      "status": "PASS",
+      "output": "PASS: 10 original-scan appendix numbering family assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/historical_bibliography_v394_regression.js",
+      "status": "PASS",
+      "output": "PASS 27 real original-PDF bibliography assertions; Giusti 75 keyed references, Yau 15 numeric references\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/historical_equation_positions_v394_regression.js",
+      "status": "PASS",
+      "output": "PASS 33 source-page equation assertions: 22/23 independently visually inspected printed labels recorded; no false positives on these four pages; missing giusti p.231 (A.1)\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/historical_native_pdf_detection_v394_regression.js",
+      "status": "PASS",
+      "output": "PASS giusti: 24 printed headings, 43 sampled real PDF pages\nPASS yau: 13 printed headings, 18 sampled real PDF pages\nPASS 88 original native-PDF-layer regression assertions; no live OCR claim\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/initial_equation_ocr_regression.js",
+      "status": "PASS",
+      "output": "OK: 9 initial equation OCR / button checks\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/journal_corpus_manifest_v421_regression.js",
+      "status": "PASS",
+      "output": "PASS v421 journal corpus: 10 journals, 30 real publisher-selected papers, all correctly marked not executed\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/long_book_outline_v392_regression.js",
+      "status": "PASS",
+      "output": "PASS: 15 integrated long-book Structure/Contents/Results class assertions (synthetic native pages)\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/maintenance_integrity_regression.js",
+      "status": "PASS",
+      "output": "OK: 26 MathReader v397 maintenance integrity assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/manual_appendix_equation_v405_regression.js",
+      "status": "PASS",
+      "output": "PASS: 38 manual appendix equation add/reselect/guard assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/manual_equation_click_precision_v411_regression.js",
+      "status": "PASS",
+      "output": "PASS: 23 precise manual equation click/add assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/manual_version_regression.js",
+      "status": "PASS",
+      "output": "OK: 8 natural-language manual assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/meticulous_additive_ocr_regression.js",
+      "status": "PASS",
+      "output": "PASS: 10 additive meticulous OCR regression assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/meticulous_equation_margin_regression.js",
+      "status": "PASS",
+      "output": "OK: 9 meticulous equation margin assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/meticulous_position_preservation_v387_regression.js",
+      "status": "PASS",
+      "output": "PASS: 25 v387 meticulous OCR reading-position regression checks\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/multi_pdf_open_guard_regression.js",
+      "status": "PASS",
+      "output": "OK: 11 concurrent-open and failure-return assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/multi_pdf_tabs_regression.js",
+      "status": "PASS",
+      "output": "openPdfFile (/mnt/data/mr_audit_v436/mathreader/tests/multi_pdf_tabs_regression.js:34:40)\n    at activatePendingPdf (evalmachine.<anonymous>:39:18)\n    at queueOpenedPdfFiles (evalmachine.<anonymous>:29:23)\n    at evalmachine.<anonymous>:1:1\n    at Script.runInContext (node:vm:149:12)\n    at Object.runInContext (node:vm:301:6)\n    at run (/mnt/data/mr_audit_v436/mathreader/tests/multi_pdf_tabs_regression.js:41:26)\n    at /mnt/data/mr_audit_v436/mathreader/tests/multi_pdf_tabs_regression.js:60:3\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/multicolumn_reading_links_v427_regression.js",
+      "status": "PASS",
+      "output": "Multicolumn reading-links v427 regression PASS\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/new30_result_headings_v422_regression.js",
+      "status": "PASS",
+      "output": "PASS: 6 original-PDF mathematical result headings, 4 original-PDF prose references, 4 synthetic guards\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/ocr_cache_identity_v391_regression.js",
+      "status": "PASS",
+      "output": "PASS: 10 full-document and meticulous OCR cache-integrity assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/ocr_reliability_deep_regression.js",
+      "status": "PASS",
+      "output": "PASS: 37 executable OCR reliability assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/p0_probe_evidence_regression.js",
+      "status": "PASS",
+      "output": "OK: 5 test-only P0 probe evidence checks\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/page_context_ocr_regression.js",
+      "status": "PASS",
+      "output": "OK: 10 page-specific OCR source assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/page_ocr_status_regression.js",
+      "status": "PASS",
+      "output": "OK: page OCR status auto-dismiss and timer replacement\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/parenthesized_results_v409_regression.js",
+      "status": "PASS",
+      "output": "PASS 12 named heading and repeated chapter-local Results assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/performance_safe_regression.js",
+      "status": "PASS",
+      "output": "OK: 1204 scroll/layout/CSS parity assertions; rect reads 30k pages: 30000 -> 10\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/precision_context_regression.js",
+      "status": "PASS",
+      "output": "OK: 33 MathReader v348 precision class assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/raw_detection_export_v393_regression.js",
+      "status": "PASS",
+      "output": "PASS: 38 v393 original export evidence assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/real_export_index_precision_v392_regression.js",
+      "status": "PASS",
+      "output": "PASS: 63 real-export-derived outline/equation precision and persistence assertions (not original-PDF OCR accuracy)\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_chinese_numbered_v414_regression.js",
+      "status": "PASS",
+      "output": "PASS v414 conservative Chinese numbered Results: 16 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_declaration_reference_v408_regression.js",
+      "status": "PASS",
+      "output": "PASS: 23 Results declaration/reference class assertions (optional full export replay not set)\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_example_imperative_v414_regression.js",
+      "status": "PASS",
+      "output": "PASS v414 imperative examples: 20 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_joined_heading_v412_regression.js",
+      "status": "PASS",
+      "output": "Results joined-heading v412: 19 assertions passed\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_named_boundary_v413_regression.js",
+      "status": "PASS",
+      "output": "PASS results named-heading v413: 37 assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_split_baseline_v412_regression.js",
+      "status": "PASS",
+      "output": "Results baseline-split v412: 11 assertions passed\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_toc_regression.js",
+      "status": "PASS",
+      "output": "OK: 23 MathReader TOC/Results class-level assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/results_wrapped_references_v409_regression.js",
+      "status": "PASS",
+      "output": "PASS 37 wrapped-reference historical Results assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/search_multicolumn_fuzzy_v431_regression.js",
+      "status": "PASS",
+      "output": "PASS: cross-column phantom suppressed, same-column phrase retained, fuzzy match target preserved\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/search_stoc_native_v431_regression.js",
+      "status": "PASS",
+      "output": "PASS: exact PMESTOC25 original PDF.js source spans split into searchable columns\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/settings_content_detection_v432_regression.js",
+      "status": "PASS",
+      "output": "Settings v432 regression PASS\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/settings_ocr_disposal_v435_regression.js",
+      "status": "PASS",
+      "output": " at Object.dispose (/mnt/data/mr_audit_v436/mathreader/tests/settings_ocr_disposal_v435_regression.js:37:49)\n    at disposeMathOcrPipeline (evalmachine.<anonymous>:10:26)\n    at evalmachine.<anonymous>:1:1\n    at Script.runInContext (node:vm:149:12)\n    at Object.runInContext (node:vm:301:6)\n    at Object.dispose (/mnt/data/mr_audit_v436/mathreader/tests/settings_ocr_disposal_v435_regression.js:27:47)\n    at /mnt/data/mr_audit_v436/mathreader/tests/settings_ocr_disposal_v435_regression.js:38:22\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/shortcut_layout_regression.js",
+      "status": "PASS",
+      "output": "OK: 14 grouped shortcuts UI checks\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/sidebar_defaults_regression.js",
+      "status": "PASS",
+      "output": "OK: 27 sidebar default and annotation behavior checks\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/simon_colon_font_v415_regression.js",
+      "status": "PASS",
+      "output": "MathReader equation indexing (local timing) {\n  document: 'simon-test',\n  nativePages: 0,\n  plannedImagePages: 0,\n  processedImagePages: 0,\n  retries: 0,\n  failedPages: 0,\n  recoveredLabels: 0,\n  elapsedMs: 0,\n  nativeMs: 0,\n  pdfRenderMs: 0,\n  ocrRecognitionMs: 0,\n  ocrSetupMs: 0,\n  numericRetryMs: 0,\n  uiUpdateMs: 0,\n  validationMs: 0\n}\nPASS: Simon native-font colon normalization, repeated numbering, conditions vs equations, navigation and order\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/structure_manual_background_v419_regression.js",
+      "status": "PASS",
+      "output": "OK: 18 Structure augmentation, no-text bookmarks, and export assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/structure_manual_embedded_v419_regression.js",
+      "status": "PASS",
+      "output": "OK: 20 manually edited embedded-outline regression assertions\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/structure_multiline_math_navigation_v426_regression.js",
+      "status": "PASS",
+      "output": "Structure multiline/math navigation v426 regression PASS\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/structure_two_column_navigation_v425_regression.js",
+      "status": "PASS",
+      "output": "Structure two-column navigation regression PASS\n",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/two_column_native_equations_v420_regression.js",
+      "status": "PASS",
+      "output": "PASS v420 STOC 2025 native PDF two-column equation ground truth (21/21, 0 spurious)\n",
+      "exit_code": 0
+    }
+  ],
+  "all_pass": true
+}

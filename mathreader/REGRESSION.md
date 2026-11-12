@@ -1,3 +1,9 @@
+# v436 — Cross-tab Settings consistency and same-mode Reset failures (2026-11-11)
+
+Starting from v435, fixed stale Settings state in multiple tabs and a race where a pending reading-mode transition could overwrite another tab's newer appearance changes. The previously unguarded same-mode Reset Display PDF refresh now reports failures, releases controls, and rejects stale completions. Invalid/missing Display preferences reset every field. OCR engine/extraction method changes from another tab require an explicit reload instead of an unsafe live model switch. **96/96** Settings Chromium assertions, **19/19** two-page simulated storage-event assertions, **80/80** JavaScript test files and **39/39** Python test files PASS (36 bounded + 3 isolated). Syntax/assembly gates pass; actual shared-origin browser storage transport, original-PDF acceptance and real Texify inference are **not verified**. [Full v436 report](docs/releases/V436_RELEASE.md).
+
+---
+
 # v435 — Subtle Settings races, corrupted preferences and explicit OCR mode boundaries (2026-11-11)
 
 Starting from v434, addressed reading-flow/reflow collisions, safe mode rollback on render failure, stale PDF completion, malformed numeric preferences, PDF-vector fallback to image inference, OCR engine unload errors/overlap, and busy-control release. Existing Settings, Content Detection, Formula OCR and bilingual Tutorial behavior remain covered. **90/90** Settings Chromium assertions, **80/80** JavaScript test files and **38/38** Python test files PASS in bounded/isolated runs; the original combined Python runner stalled and was not counted as a pass. JavaScript modules/bootstrap/concatenated runtime syntax PASS. Real original-PDF page geometry and genuine Texify inference **not verified**. [Full report](docs/releases/V435_RELEASE.md); [gate](regression/v435_release_gate.json).

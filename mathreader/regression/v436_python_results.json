@@ -1,0 +1,280 @@
+{
+  "files": [
+    {
+      "file": "tests/appendix_equation_sidebar_browser_v388.py",
+      "status": "PASS",
+      "output": "PASS: Chromium rendered 500 initial rows, incrementally loaded all 622, and found all 12 appendix equations using filter\n",
+      "code": 0,
+      "seconds": 4.2
+    },
+    {
+      "file": "tests/continuous_initial_repaint_v410.py",
+      "status": "PASS",
+      "output": "first_blank_then_good: {'ready': True, 'error': None, 'firstRendered': True, 'firstCanvasConnected': True, 'content': True, 'tries': 2, 'fallback': 1, 'observed': True, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\nalways_white: {'ready': True, 'error': None, 'firstRendered': True, 'firstCanvasConnected': True, 'content': False, 'tries': 2, 'fallback': 1, 'observed': True, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\ninitial_reject: {'ready': True, 'error': None, 'firstRendered': True, 'firstCanvasConnected': True, 'content': True, 'tries': 3, 'fallback': 0, 'observed': True, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\ncontinuous_reject_primary_ok: {'ready': True, 'error': None, 'firstRendered': True, 'firstCanvasConnected': True, 'content': True, 'tries': 4, 'fallback': 1, 'observed': True, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\nalways_reject: {'ready': False, 'error': 'Continuous reading could not render the current page.', 'firstRendered': False, 'firstCanvasConnected': True, 'content': False, 'tries': 4, 'fallback': 1, 'observed': False, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\nnormal: {'ready': True, 'error': None, 'firstRendered': True, 'firstCanvasConnected': True, 'content': True, 'tries': 1, 'fallback': 0, 'observed': True, 'zoomMode': 'fit-width', 'currentPage': 1, 'scrollTop': 0}\nstale-generation: {'accepted': False, 'sameCanvas': True, 'connected': True}\nPASS | v410 initial continuous paint lifecycle | 25 Chromium assertions\n",
+      "code": 0,
+      "seconds": 5.92
+    },
+    {
+      "file": "tests/corpus_integrity_v405_regression.py",
+      "status": "PASS",
+      "output": "PASS | corpus integrity: valid source, mismatched SHA fail-closed, navigation bounds, dangling proof links\n",
+      "code": 0,
+      "seconds": 1.91
+    },
+    {
+      "file": "tests/docs_layout_regression.py",
+      "status": "PASS",
+      "output": "OK: docs layout; 41 moved docs; 7 regression partitions; original SHA-256 intact\n",
+      "code": 0,
+      "seconds": 1.52
+    },
+    {
+      "file": "tests/equation_margin_export_browser_v402.py",
+      "status": "PASS",
+      "output": "PASS | Chromium v403 page-journal export/reopen simulation | 7 assertions\nLIMIT | in-memory IndexedDB mock, PDF.js mock, no live OCR or production navigation\n",
+      "code": 0,
+      "seconds": 4.47
+    },
+    {
+      "file": "tests/equation_navigation_browser_geometry_v386.py",
+      "status": "PASS",
+      "output": "PASS: 19 Chromium equation landing / hOCR frame checks (simulated pages, real DOM geometry)\n",
+      "code": 0,
+      "seconds": 3.83
+    },
+    {
+      "file": "tests/export_settings_browser_v397.py",
+      "status": "PASS",
+      "output": "PASS | Chromium v397 export settings | defaults, four states, preference restore, dark/light, mobile, localization markup\n",
+      "code": 0,
+      "seconds": 4.28
+    },
+    {
+      "file": "tests/export_settings_layout_v398.py",
+      "status": "PASS",
+      "output": "PASS | Chromium v398 compact export settings | aligned text, close descriptions, two themes, narrow widths\n",
+      "code": 0,
+      "seconds": 4.52
+    },
+    {
+      "file": "tests/full_text_exports_v400.py",
+      "status": "PASS",
+      "output": "PASS | v400 fixed source manifest; original seven-export replay SKIPPED (set MATHREADER_EXPORT_CORPUS_DIR)\n",
+      "code": 0,
+      "seconds": 1.48
+    },
+    {
+      "file": "tests/help_tutorial_regression.py",
+      "status": "PASS",
+      "output": "{\n  \"assertions\": 130,\n  \"passed\": 130,\n  \"failures\": []\n}\n",
+      "code": 0,
+      "seconds": 12.54
+    },
+    {
+      "file": "tests/manual_equation_click_browser_v411.py",
+      "status": "PASS",
+      "output": "PASS: 5 production DOM click scenarios, single-page and continuous, original 1.2 preserved\n",
+      "code": 0,
+      "seconds": 2.91
+    },
+    {
+      "file": "tests/meticulous_ocr_menu_browser_v390.py",
+      "status": "PASS",
+      "output": "PASS: Meticulous OCR menu position, edge clamp, real click, Escape, disabled, light/dark, absolute status, scroll/layout conservation (20+ assertions)\n",
+      "code": 0,
+      "seconds": 3.78
+    },
+    {
+      "file": "tests/meticulous_viewport_browser_v387.py",
+      "status": "PASS",
+      "output": "before {'reader': 700, 'side': 50, 'eq': 702, 'key': '(17.27)', 'offset': 1} after {'reader': 700, 'side': 50, 'eq': 756, 'key': '(17.27)', 'offset': 1}\nPASS: real Chromium scroll anchor survives 2 inserted equation rows; newer navigation is not undone\n",
+      "code": 0,
+      "seconds": 3.22
+    },
+    {
+      "file": "tests/multicolumn_toc_browser_v427.py",
+      "status": "PASS",
+      "output": "PASS: Chromium production TOC resolver and physical scroll, section 3 and 2.1\n",
+      "code": 0,
+      "seconds": 3.2
+    },
+    {
+      "file": "tests/ocr_browser_geometry_regression.py",
+      "status": "PASS",
+      "output": "{\"status\": \"PASS\", \"assertions\": 13, \"scope\": \"real Chromium DOMParser/canvas; OCR worker mocked, not Texify or PDF.js\"}\n",
+      "code": 0,
+      "seconds": 3.06
+    },
+    {
+      "file": "tests/p0_acceptance_regression.py",
+      "status": "PASS",
+      "output": "mparisonTests.test_null_navigation_is_unverified_not_crash) ... ok\ntest_null_performance_metrics_with_threshold_is_unverified (__main__.P0ComparisonTests.test_null_performance_metrics_with_threshold_is_unverified) ... ok\ntest_null_stages_are_unverified_not_crash (__main__.P0ComparisonTests.test_null_stages_are_unverified_not_crash) ... ok\ntest_out_of_range_index_page_cannot_pass_even_if_truth_matches (__main__.P0ComparisonTests.test_out_of_range_index_page_cannot_pass_even_if_truth_matches) ... ok\ntest_page_count_disagrees_with_pdf (__main__.P0ComparisonTests.test_page_count_disagrees_with_pdf) ... ok\ntest_partial_illegibility_is_not_whole_document_exception (__main__.P0ComparisonTests.test_partial_illegibility_is_not_whole_document_exception) ... ok\ntest_persistence_missing_is_unverified (__main__.P0ComparisonTests.test_persistence_missing_is_unverified) ... ok\ntest_proxy_capture_never_passes (__main__.P0ComparisonTests.test_proxy_capture_never_passes) ... ok\ntest_scalar_known_open_defects_is_unverified_not_crash (__main__.P0ComparisonTests.test_scalar_known_open_defects_is_unverified_not_crash) ... ok\ntest_tampered_formula_source_png_is_unverified (__main__.P0ComparisonTests.test_tampered_formula_source_png_is_unverified) ... ok\ntest_whole_source_illegibility_requires_human_evidence (__main__.P0ComparisonTests.test_whole_source_illegibility_requires_human_evidence) ... ok\ntest_wrong_engine_never_passes (__main__.P0ComparisonTests.test_wrong_engine_never_passes) ... ok\ntest_wrong_source_sha_never_passes (__main__.P0ComparisonTests.test_wrong_source_sha_never_passes) ... ok\n\n----------------------------------------------------------------------\nRan 54 tests in 0.917s\n\nOK\n",
+      "code": 0,
+      "seconds": 2.31
+    },
+    {
+      "file": "tests/p0_gate_isolation_regression.py",
+      "status": "PASS",
+      "output": "urce_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"FAIL\",\n  \"p1_real_document_navigation\": \"NOT_REQUESTED\",\n  \"report\": \"/tmp/tmppzkcl_dq/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"BLOCKED\",\n  \"report\": \"/tmp/tmpk5je347b/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"INCOMPLETE\",\n  \"report\": \"/tmp/tmpwza336ms/report/p0_gate.json\"\n}\n{\n  \"source_gates\": \"PASS\",\n  \"count\": 1,\n  \"browser_shell\": \"PASS\",\n  \"p0_full_document_acceptance\": \"INCOMPLETE\",\n  \"p1_real_document_navigation\": \"NOT_REQUESTED\",\n  \"report\": \"/tmp/tmpv8ejxbp1/report/p0_gate.json\"\n}\ntest_blocked_new_browser_run_never_uses_old_success (__main__.P0GateIsolation.test_blocked_new_browser_run_never_uses_old_success) ... ok\ntest_fresh_partial_browser_errors_are_reported_as_fail (__main__.P0GateIsolation.test_fresh_partial_browser_errors_are_reported_as_fail) ... ok\ntest_real_p1_blocked_detail_is_not_hidden_by_generic_exit_status (__main__.P0GateIsolation.test_real_p1_blocked_detail_is_not_hidden_by_generic_exit_status) ... ok\ntest_required_real_p1_cannot_pass_with_missing_pinned_pdfjs (__main__.P0GateIsolation.test_required_real_p1_cannot_pass_with_missing_pinned_pdfjs) ... ok\ntest_successful_browser_still_requires_actual_comparator (__main__.P0GateIsolation.test_successful_browser_still_requires_actual_comparator) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 1.799s\n\nOK\n",
+      "code": 0,
+      "seconds": 3.3
+    },
+    {
+      "file": "tests/p0_p1_gap_closure_regression.py",
+      "status": "PASS",
+      "output": "...............\n----------------------------------------------------------------------\nRan 15 tests in 0.003s\n\nOK\n",
+      "code": 0,
+      "seconds": 1.72
+    },
+    {
+      "file": "tests/p1_browser_smoke.py",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"scope\": \"isolated Chromium UI; simulated PDF backend\",\n  \"assertions\": 36,\n  \"checks\": [\n    \"no inline P1 buttons\",\n    \"no context menu on initial render\",\n    \"ordinary click expands citations\",\n    \"ordinary click leaves no context menu\",\n    \"ordinary click collapses citations\",\n    \"Shift+F10 opens context menu\",\n    \"Escape closes context menu\",\n    \"Escape restores reference focus\",\n    \"ContextMenu key opens actions\",\n    \"outside click closes menu\",\n    \"20 context-menu cycles leave no orphan DOM\",\n    \"context menu stays inside viewport at extreme coordinates\",\n    \"long-press opens context menu\",\n    \"right click does not expand citations\",\n    \"local link offered in context menu\",\n    \"no automatic linked paper\",\n    \"local chooser appears\",\n    \"only exact target offered\",\n    \"confirm disabled until choice\",\n    \"confirmed link durable\",\n    \"open enabled after confirmation\",\n    \"linked menu offers relink and unlink\",\n    \"relink opens chooser\",\n    \"cancel relink preserves association\",\n    \"explicit unlink persists\",\n    \"target exact identity\",\n    \"return control visible\",\n    \"source flushed\",\n    \"returns to source\",\n    \"exact ratio restored\",\n    \"transient button hidden\",\n    \"no eager formula OCR\",\n    \"manual opening invalidates transient return stack\",\n    \"obsolete Return remains hidden\",\n    \"evicted target not openable\",\n    \"relink instead\"\n  ]\n}\n",
+      "code": 0,
+      "seconds": 6.39
+    },
+    {
+      "file": "tests/p1_real_gate_regression.py",
+      "status": "PASS",
+      "output": "test_exact_duplicate_pdf_never_counts_as_two_papers (__main__.P1RealGate.test_exact_duplicate_pdf_never_counts_as_two_papers) ... ok\ntest_missing_pinned_browser_assets_cannot_pass (__main__.P1RealGate.test_missing_pinned_browser_assets_cannot_pass) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.014s\n\nOK\n",
+      "code": 0,
+      "seconds": 2.01
+    },
+    {
+      "file": "tests/prose_flow_v433_regression.py",
+      "status": "PASS",
+      "output": "PASS | v433 prose wrapping | Settings EN/ZH 204-360px; Tutorial; no artificial balancing/overflow\n",
+      "code": 0,
+      "seconds": 5.83
+    },
+    {
+      "file": "tests/reading_navigation_races_v424.py",
+      "status": "PASS",
+      "output": "PASS: stale Results/Structure semantic alignment does not override a newer jump\nPASS: stale search-result alignment does not override a newer jump\nPASS: latest text search wins when earlier PDF text resolves late\nPASS: document switches invalidate the old search session\nPASS: old equation bookmark alignment canceled after newer jump\nPASS: old equation-search alignment canceled after newer jump\nPASS: old reference lookup discarded after document switch\nPASS: active equation bookmark still aligns and renders its landing cue\nPASS: switching PDFs clears stale visible text-search rows and status\n",
+      "code": 0,
+      "seconds": 3.52
+    },
+    {
+      "file": "tests/reference_hover_lifecycle_v407.py",
+      "status": "PASS",
+      "output": "PASS: 13 production hover-preview lifecycle checks in Chromium (mock PDF lookup)\n",
+      "code": 0,
+      "seconds": 6.18
+    },
+    {
+      "file": "tests/regression_runner_smoke.py",
+      "status": "PASS",
+      "output": "PASS independently, 19 assertions",
+      "isolation": true
+    },
+    {
+      "file": "tests/results_geometry_browser_v412.py",
+      "status": "PASS",
+      "output": "PASS | Chromium Results geometry v412: 9 assertions\n",
+      "code": 0,
+      "seconds": 3.06
+    },
+    {
+      "file": "tests/results_named_boundary_browser_v413.py",
+      "status": "PASS",
+      "output": "PASS | v413 real Chromium named-heading classifier: 14 assertions\n",
+      "code": 0,
+      "seconds": 2.65
+    },
+    {
+      "file": "tests/search_fuzzy_geometry_v431.py",
+      "status": "PASS",
+      "output": "PASS: real Chromium repeated search hits use page/column geometry, not ordinal\n",
+      "code": 0,
+      "seconds": 3.53
+    },
+    {
+      "file": "tests/settings_cross_tab_v436.py",
+      "status": "PASS",
+      "output": "step export\nstep detection\nstep OCR\nstep display\nstep mode\nstep race\nrace state {'active': False, 'flow': 'continuous', 'br': 92, 'pending': False, 'build': 1, 'errors': [], 'store': '{\"flow\":\"continuous\",\"tone\":\"warm\",\"brightness\":92,\"contrast\":100,\"gap\":30,\"shadow\":true,\"zoomStep\":0.15}'} []\nstep engine\nstep invalid\nPASS | v436 two-page simulated storage events | 19 assertions; storage transport/PDF/model mocked\n",
+      "code": 0,
+      "seconds": 9.84
+    },
+    {
+      "file": "tests/settings_formula_note_wrap_v432_regression.py",
+      "status": "PASS",
+      "output": "PASS | bilingual Formula OCR note | normal prose wrapping, no overflow\n",
+      "code": 0,
+      "seconds": 3.32
+    },
+    {
+      "file": "tests/settings_full_sweep_v434.py",
+      "status": "PASS",
+      "output": "PASS | v435 Settings Chromium + lifecycle edge cases | 93 checks; 4 sections, 22 controls/actions, 8 EN/ZH widths; mocked PDF/model explicitly\n",
+      "code": 0,
+      "seconds": 7.91
+    },
+    {
+      "file": "tests/settings_heading_hierarchy_v400.py",
+      "status": "PASS",
+      "output": "PASS | v400 Settings font hierarchy | 12 width/theme pairs, all four groups and nested labels\n",
+      "code": 0,
+      "seconds": 2.99
+    },
+    {
+      "file": "tests/settings_live_v432.py",
+      "status": "PASS",
+      "output": "PASS | v432 offline Chromium Settings | production markup/functions/events, 4 groups, persistence, reset, detection actions, narrow widths\n",
+      "code": 0,
+      "seconds": 3.37
+    },
+    {
+      "file": "tests/settings_text_orphans_v399.py",
+      "status": "PASS",
+      "output": "PASS | 12 widths/themes, no orphan line, redundant note absent, clickability and Chinese fallback\n",
+      "code": 0,
+      "seconds": 6.25
+    },
+    {
+      "file": "tests/seven_export_evidence_v401.py",
+      "status": "PASS",
+      "output": "PASS manifest integrity; FULL original seven-export source replay SKIPPED (set MATHREADER_EXPORT_CORPUS_DIR)\n",
+      "code": 0,
+      "seconds": 0.94
+    },
+    {
+      "file": "tests/structure_jump_position_v423.py",
+      "status": "PASS",
+      "output": "PASS: two-column Structure 2.1/2.5 clicks reach the true Y in Chromium\nPASS: real Chromium scroll reaches the Structure heading, not the page top\nPASS: Chromium Structure click placement (page-only, explicit, null, unknown, manual and inferred)\n",
+      "code": 0,
+      "seconds": 4.24
+    },
+    {
+      "file": "tests/structure_manual_embedded_browser_v419.py",
+      "status": "PASS",
+      "output": "PASS: actual Chromium DOM manual Structure Add/Indent/Reselect/Navigation/Remove and embedded bookmark isolation\n",
+      "code": 0,
+      "seconds": 2.9
+    },
+    {
+      "file": "tests/structure_multiline_math_navigation_v426.py",
+      "status": "PASS",
+      "output": "PASS: v426 real native PDF text + embedded Structure clicks + physical Chromium scroll for 2.1, 2.5, 3, 5.1\n",
+      "code": 0,
+      "seconds": 3.34
+    },
+    {
+      "file": "tests/ui_copy_layout_v414.py",
+      "status": "PASS",
+      "output": "PASS independently, 80 assertions",
+      "isolation": true
+    },
+    {
+      "file": "tests/ui_responsive_regression.py",
+      "status": "PASS",
+      "output": "PASS independently, 176 assertions",
+      "isolation": true
+    }
+  ],
+  "completed": 39,
+  "total": 39,
+  "passed": 39,
+  "failed": 0,
+  "timeout": 0,
+  "notes": "36 files passed in bounded batch; last 3 executed individually and passed. Prior timed-out combined wrappers are not counted as passes."
+}

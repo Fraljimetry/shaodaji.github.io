@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Settings v434/v435: Chromium integration with exact production preference functions and event handlers.
+"""Settings v434–v436: Chromium integration with exact production preference functions and event handlers.
 Offline harness: real source functions, real HTML/CSS and real DOM events, mocked PDF/model only.
 Not a real PDF.js navigation or Texify accuracy certification.
 """
@@ -29,7 +29,7 @@ methods = '\n'.join(function(core, name) for name in (
     'resetDetectionViewPreferences', 'loadFormulaOcrPreferences', 'persistFormulaOcrPreferences',
     'loadExportPreferences','persistExportPreferences', 'savedDisplayNumber','loadDisplayPreferences',
     'persistDisplayPreferences', 'resolvedPageTone', 'updateDisplayControls',
-    'applyPageDisplay', 'setReadingFlow', 'resetDisplayPreferences', 'saveSettingsPreference'))
+    'applyPageDisplay', 'flushExternalDisplayPreferences', 'applyExternalDisplayPreferences', 'onExternalSettingsStorage', 'setReadingFlow', 'resetDisplayPreferences', 'saveSettingsPreference'))
 methods += '\n' + function(rendering, 'runDisplayTransition')
 methods += '\n' + function(ocr, 'updateOcrInteractionAvailability')
 methods += '\n' + function(ocr, 'normalizedOcrEngineMode') + '\n' + function(ocr, 'currentOcrPlan')
@@ -49,6 +49,7 @@ Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=
 const safeGet=(key,fallback=null)=>localStorage.getItem(key)??fallback;
 const safeSet=(key,value)=>localStorage.setItem(key,value);
 let settingsStorageWarningShown=false;
+let externalDisplayRefreshPending=false;
 const notices=[];const showNotice=message=>notices.push(message);const showError=message=>notices.push('ERROR: '+message);
 const clamp=(value,min,max,fallback)=>{const n=Number(value);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback;};
 const DISPLAY_PREFS_KEY='mathreader-display-v3', DETECTION_VIEW_PREFS_KEY='mathreader-detection-view-v1';
@@ -64,6 +65,7 @@ const primaryCanvasWrap=el('primary-canvas-wrap'),primaryPageSurface=el('primary
 const canvas={};
 const zoomIn=el('zoom-in'),zoomOut=el('zoom-out');
 let displayTransitionSerial=0,displayFlowTransitionActive=false,displayDeferredReflowDocument=null,currentFileKey=null,continuousRebuilding=false,failNextPageRender=false;
+let holdSameModeRender=false,releaseSameModeRender=null;
 let readingFlow='continuous',pageTone='auto',displayBrightness=100,displayContrast=100,displayGap=20,displayShadow=true,zoomStep=.15;
 let detectionResultsFilter='all',equationConfidenceFilter='all',showProofRelations=true,formulaOcrCropPadding='tight',formulaOcrSevereRetryEnabled=true;
 let exportPreferences={includeDetection:true,includeFullDocumentText:false};
@@ -80,7 +82,7 @@ const documentTextFeaturesAvailable=()=>true;
 const captureContinuousAnchor=()=>({page:currentPage,ratio:.35});
 const clearContinuousObserver=()=>{};
 const applyOcrModeToSurfaces=()=>{};
-const renderCurrentPage=async()=>{currentRenders++;if(failNextPageRender){failNextPageRender=false;throw new Error('synthetic page reflow failure');}};
+const renderCurrentPage=async()=>{currentRenders++;if(failNextPageRender){failNextPageRender=false;throw new Error('synthetic page reflow failure');}if(holdSameModeRender){await new Promise(resolve=>{releaseSameModeRender=resolve});holdSameModeRender=false;}};
 const renderReferencePage=async()=>{};
 const snapshotDisplayAnchor=()=>null;
 let buildResolve=null,buildReject=null;
@@ -122,6 +124,8 @@ window.ocrPlan=mode=>{mathOcrEngineMode=mode;return currentOcrPlan().map(b=>({de
 window.busyScan=active=>{equationIndexBuildPromise=active?Promise.resolve():null;refreshEquationForceOcrButton();};
 window.withPDF=()=>{pdfDoc={numPages:8};};
 window.failDisplayReflow=()=>{failNextPageRender=true;};
+window.holdSameMode=()=>{holdSameModeRender=true;};
+window.finishSameMode=()=>{releaseSameModeRender?.();releaseSameModeRender=null;};
 window.startSlowDisposal=()=>{disposeMode='defer';};
 window.finishSlowDisposal=()=>{if(resolveDisposal){resolveDisposal();resolveDisposal=null;}};
 window.failDisposal=()=>{disposeMode='fail';};
@@ -223,6 +227,28 @@ with sync_playwright() as p:
     page.locator('.ocr-troubleshooting').evaluate('(e)=>e.open=true')
     page.locator('#ocr-retry').click()
     verify(page.evaluate('snapshot().disposals')==3,'reset OCR disposes engine without inference')
+    # A same-mode Reset can still render, reject or go stale; it must never
+    # become an unhandled promise rejection or announce a successful reset.
+    page.evaluate("readingFlow='continuous';pdfDoc={numPages:8};currentFileKey='reset-doc';")
+    page.evaluate('failDisplayReflow()')
+    page.locator('#reset-display').click()
+    page.wait_for_timeout(80)
+    verify(any('Could not refresh the PDF' in message for message in page.evaluate('notices')),
+           'same-mode Reset reports failed PDF re-render')
+    verify(not page.evaluate('displayTransitionActive'), 'same-mode failed Reset releases controls')
+    verify(not errors, f'same-mode Reset creates no unhandled page errors: {errors}')
+
+    # A reset running against an old PDF must not commit to the newly opened
+    # document after its delayed same-mode refresh finishes.
+    page.evaluate("pdfDoc={numPages:8};currentFileKey='old-document';readingFlow='continuous';holdSameMode()")
+    page.locator('#reset-display').click()
+    page.wait_for_function('displayTransitionActive === true && !!releaseSameModeRender')
+    verify(page.locator('#reset-display').is_disabled(),'same-mode Reset locks controls during slow PDF refresh')
+    page.evaluate("pdfDoc={numPages:12};currentFileKey='new-document';finishSameMode()")
+    page.wait_for_timeout(90)
+    verify(not page.evaluate('displayTransitionActive'), 'same-mode stale PDF completion releases controls')
+    verify(not errors, f'no stale same-mode PDF errors: {errors}')
+
     # An asynchronous engine-unload can outlive the change event. Settings
     # must lock OCR controls, reject overlapping requests and avoid loading a
     # second engine before the first pipeline is fully disposed.
@@ -329,4 +355,4 @@ with sync_playwright() as p:
     verify('WebGPU q4f16' in tutorial and 'Default · Texify CPU' in tutorial and '识别引擎不会暗中切换' in tutorial,'tutorial documents engine selection EN/ZH')
     verify(not errors, f'page errors: {errors}')
     browser.close()
-print(f'PASS | v435 Settings Chromium + lifecycle edge cases | {checks} checks; 4 sections, 22 controls/actions, 8 EN/ZH widths; mocked PDF/model explicitly')
+print(f'PASS | v436 Settings Chromium + lifecycle edge cases | {checks} checks; 4 sections, 22 controls/actions, 8 EN/ZH widths; mocked PDF/model explicitly')
