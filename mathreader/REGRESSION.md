@@ -1,3 +1,29 @@
+# Standing rule — look for subtle defects in every bug fix and regression
+
+**Mandatory for every MathReader code change, bug fix, and regression sweep.** Do not stop when the reported symptom disappears or the happy-path test passes. Deliberately search for **subtle, second-order, easily missed failures** in the *affected code paths and their neighbors*, including defects introduced by the proposed fix. Apply this requirement to UI, Settings, PDF reading, Content Detection, Formula OCR, storage, and import/export alike. It is a **permanent development and release gate**, not an optional audit performed only when requested.
+
+### Required adversarial review (risk-based, not a claim to test every possible input)
+
+Before declaring the change complete, explicitly consider the applicable cases below:
+
+- **Transitions and time:** rapid/repeated clicks, reentrancy, overlapping renders/jobs, cancellation, out-of-order Promise completion, stale work after PDF switch, import, reset, navigation or unmount, and controls left busy/active.
+- **State and persistence:** defaults, missing/`null`/corrupted/out-of-range saved values, failed or partial storage writes, multiple tabs, lost updates, cache/index invalidation, reload/reopen, and preservation of user edits.
+- **Failure and rollback:** exceptions, rejection/timeout, model or PDF extraction failure, partial results, disposal errors, interrupted cleanup, error visibility, and restoration of a usable consistent UI. Never present fallback, skipped work, or stale results as success.
+- **Interactions and boundaries:** neighboring settings or features, mode changes during layout updates, responsive widths and both languages, zero/large/malformed inputs, single-/multi-column geometries, equation positions, text selection, and import/export schema compatibility.
+- **Evidence integrity:** distinguish source-level assertions, mocks, simulated events, original-PDF text replay, real PDF.js/Chromium navigation, and genuine model inference. A passing test is evidence only for the path actually exercised; a timeout, skipped case, or absent dependency is **not PASS**.
+
+### Required fix-and-regression workflow
+
+1. **Inspect the current real source and latest applied overlay**; name the failed invariant, not only the visible symptom. Identify which subtle-case categories above apply and why.
+2. **Attempt to break the proposed fix:** exercise at least one relevant adversarial or negative path whenever a stateful/runtime path is affected, especially delayed completions and failure cleanup. Check that the fix cannot overwrite newer state or regress a neighboring feature.
+3. **Reproduce confirmed defects first** using the closest faithful test available. Add a targeted regression that fails on the unmodified baseline and passes after the fix whenever feasible. Include success, failure, and cleanup/rollback assertions where applicable.
+4. **Keep corrections general and small.** No document-specific exceptions, silent fallbacks, swallowed errors, or misleading quality/success states. Re-run affected tests, broad regressions, syntax checks, and clean-overlay verification; retain genuine failures/timeouts in the report.
+5. **Report explicitly:** (a) the reported symptom and root cause, (b) subtle cases actively checked and any additional defects found, (c) exact passing/failing/skipped test counts and test provenance, (d) known unverified or accepted risks, and (e) changed files. If a high-risk category could not be tested, mark it **UNVERIFIED**, never implicitly covered.
+
+A documentation-only edit needs documentation/overlay integrity checks rather than fictitious runtime acceptance. This rule remains in force for every future release; do not delete it when older version-specific records are archived.
+
+---
+
 # v436 — Cross-tab Settings consistency and same-mode Reset failures (2026-11-11)
 
 Starting from v435, fixed stale Settings state in multiple tabs and a race where a pending reading-mode transition could overwrite another tab's newer appearance changes. The previously unguarded same-mode Reset Display PDF refresh now reports failures, releases controls, and rejects stale completions. Invalid/missing Display preferences reset every field. OCR engine/extraction method changes from another tab require an explicit reload instead of an unsafe live model switch. **96/96** Settings Chromium assertions, **19/19** two-page simulated storage-event assertions, **80/80** JavaScript test files and **39/39** Python test files PASS (36 bounded + 3 isolated). Syntax/assembly gates pass; actual shared-origin browser storage transport, original-PDF acceptance and real Texify inference are **not verified**. [Full v436 report](docs/releases/V436_RELEASE.md).
