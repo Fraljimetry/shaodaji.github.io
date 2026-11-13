@@ -4,9 +4,9 @@ import {newDoc,append,validateDoc} from '../src/model.mjs';
 import {smoothCurveSvg,smoothPath} from '../src/geometry.mjs';
 import {canExportTikzCd} from '../src/diagram.mjs';
 
-test('default project enables general toolkit and open free curves',()=>{
+test('default project enables general toolkit and nearby-endpoint joining',()=>{
  const doc=newDoc();assert.deepEqual(doc.settings.modules,{basic:true,construction:true,illustration:true,diagram:true});
- assert.equal(doc.settings.freehandClose,'open');assert.deepEqual(validateDoc(doc),doc);
+ assert.equal(doc.settings.freehandClose,'near');assert.deepEqual(validateDoc(doc),doc);
 });
 test('freehand cubic representation is deterministic and preserves boundaries',()=>{
  const input=[[0,0],[1,2],[2,1],[3,0]];

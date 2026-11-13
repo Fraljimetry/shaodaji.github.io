@@ -11,7 +11,7 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | ID | Requirement (user wording) | Status |
 |---:|---|---|
 | R01 | Don's show my software in the main page of my homepage. | Done — homepage hero software links and full showcase section removed, while global Tools navigation is preserved. |
-| R02 | The cover image in the tool page for math illustrator should have similar style with that for math reader, being a tilted pencil. | Done — the Tools-page feature now displays the local tilted-pencil SVG prepared in Round 5. |
+| R02 | The cover image in the tool page for math illustrator should have similar style with that for math reader, being a tilted pencil. | Done (corrected after Round 16) — revised the already-linked cover asset to match MathReader’s dark navy, pale-blue-and-white, flat mathematical illustration style, while preserving the same URL and a tilted pencil. |
 | R03 | Find objects input should not be so big outshining the main input above it. | Done — this pass |
 | R04 | Items drawn should support multiple selection and dragging for reordering. | Pending |
 | R05 | Support parametric and implicit curves as well like in Desmos. | Pending |
@@ -54,7 +54,7 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | R42 | The current message box should not take up space in the canvas but should be displayed above the canvas. | Pending |
 | R43 | There should be another Select item in Basic that allows us to select all items in a rectangle and change properties at the same time. | Pending |
 | R44 | This may have many bugs so only allow supported simultaneously alterable properties in a floating window. | Pending |
-| R45 | Left and right panels should support dragging to change size like math reader. | Done — Round 15: draggable desktop splitters, keyboard adjustment, per-panel double-click reset, bounded center canvas, widths stored in browser-local layout preferences. Mobile retains rails/drawers. Round 16 additionally delivers adjustable docked Properties height and a detachable/movable/resizable Properties inspector with keyboard controls and browser-local position persistence. Moving/docking full Objects and Tools panels remains pending. |
+| R45 | Left and right panels should support dragging to change size like math reader. | Partial — Round 15: draggable desktop splitters, keyboard adjustment, per-panel double-click reset, bounded center canvas, widths stored in browser-local layout preferences. Mobile retains rails/drawers. Round 16 additionally delivers adjustable docked Properties height and a detachable/movable/resizable Properties inspector with keyboard controls and browser-local position persistence. Moving/docking full Objects and Tools panels remains pending. |
 
 ## Additional submitted requests (16)
 
@@ -76,6 +76,8 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | R59 | Think of a more revealing name for Freehand and Text than "Others". | Pending |
 | R60 | There should be some common colors provided not letting user select RGB every time which is too demanding and not stable. | Done — Round 9: 11 keyboard-accessible common colors for new stroke/fill defaults and eligible selected-object properties, with the native custom picker retained. |
 | R61 | Gradually add vector fields, contours, domain coloring, and 3D complex plotting capabilities. | Design |
+| R62 | The MathIllustrator website must initialize completely; do not ship when the tools appear blank because an ES-module dependency fails. | Done — restored the missing geometry export and added a boot-sensitive Chromium regression. The current archive’s startup failure was reproduced before the fix and the repaired module graph passed the isolated browser smoke test; real hosted deployment is not verified. |
+| R63 | The pencil cover must genuinely share MathReader's visual design language, not merely depict a pencil. | Done for the already-linked Tools-page asset — dark navy field, white/pale-blue flat pencil, subtle geometric construction. Header pencil recolored to the same palette. Live-site cache propagation remains unverified. |
 
 ## New request — drawing polish (Round 5)
 
@@ -214,3 +216,14 @@ The user also requested, in prior rounds: a short nontechnical bilingual public 
 **Acceptance and evidence:** Test dock splitter, floating movement/sizing, keyboard adjustment, reset, hidden/collapsed Properties, opening Objects rail while floating, viewport resize crossing the mobile threshold, browser preference mock-reload, malformed stored values, undo and saved project JSON invariance; test a focused Chromium scenario plus Node geometry unit tests and existing current interaction regressions. Any unrun browser tests or actual hosted-site/origin preference persistence must be explicitly marked **not verified**.
 
 **Still pending:** R04/R43 multi-selection and group bulk Properties (R44), docking/rearranging the entire Objects or Tools sidebars, multiple simultaneous independent inspectors, window-to-window transfer, and complete assistive-technology/device/browser matrix. A floating single-object inspector does not imply that bulk editing or all-purpose MathReader-style docking is complete.
+
+
+## Post-Round-16 urgent repair — startup and cohesive cover (2026-11-13)
+
+**Reproduced failure:** The uploaded `src/app.mjs` imports `closeFreehandStroke` from `src/geometry.mjs`, which did not export it. Chromium rejected module linking before initializing the tool palette, leaving the entire drawing UI apparently loaded but nonfunctional. This is more severe than a collapsed section preference. The prior 173/173 claim cannot be treated as proof of this ZIP: our first independent run gave 169/170 Node and browser startup failed.
+
+**Repair scope:** Implemented the missing validated helper with open / near / always closure modes, preservation of original samples, pixel-bounded endpoint proximity and corner-versus-tangent classification. Rendering now respects `joinStyle` instead of smoothing corners away; exported SVG and the drawing preview use the same geometry. Corrected the contradictory old default-setting assertion to the current `near` default. The app entry and direct geometry import receive a one-time URL cache discriminator so a mixed cached/stale JavaScript pair does not silently persist. The already-referenced cover `assets/pencil-cover.svg` now contains a self-contained image illustration in MathReader's navy/blue/white palette (no external network request), and the small editor pencil uses corresponding colors. No site-root homepage or Tools HTML, MathReader files, scene storage key, object IDs or project schema changed.
+
+**Verification (actual, extracted ZIP working copy):** `node --test tests/*.test.mjs` PASS **173/173**, including three new red/green geometry checks; `node --check` on `src/geometry.mjs` and `src/app.mjs` PASS. 16 applicable isolated Chromium scripts PASS: smoke, edges, mobile, object menu, naming, pencil/ultra smoothing, style grid, tool palette, numeric compact, palette sections, Geometry subgroups, LaTeX/localization, sidebars, floating Properties, touch and storage. XML-parsed SVGs and a Chromium data-URL image preview show the cover renders. The only two root-site scripts were not run because this ZIP does not include the authoritative root pages and shared site assets; localhost origin navigation is administrator-blocked here. Live deployment, CDN cache, Safari, Firefox, Edge and physical input remain unverified.
+
+**Regression prevention:** A release that imports an unavailable named module export must fail the browser-startup gate; checking `node --check` or clicking visually in static HTML is insufficient. Do not continue R45 full Objects/Tools floating until the repaired overlay is deployed and the working tool palette confirmed.

@@ -2,18 +2,18 @@
   <title id="title">MathIllustrator pencil</title>
   <defs>
     <linearGradient id="body" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#a59afe"/>
-      <stop offset="0.58" stop-color="#6658d9"/>
-      <stop offset="1" stop-color="#4537a1"/>
+      <stop offset="0" stop-color="#c4e2f3"/>
+      <stop offset="0.58" stop-color="#8cb7d4"/>
+      <stop offset="1" stop-color="#527b9c"/>
     </linearGradient>
   </defs>
   <g transform="rotate(45 64 64)" stroke-linejoin="round" stroke-linecap="round">
-    <rect x="51.5" y="26" width="25" height="68" rx="2" fill="url(#body)" stroke="#34266c" stroke-width="2"/>
-    <path d="M51.5 38h25" stroke="#d8d2ff" stroke-width="2"/>
-    <path d="M60 39v53" stroke="#d9d3ff" stroke-opacity=".83" stroke-width="2"/>
-    <path d="M51.5 94 64 114 76.5 94Z" fill="#f1c991" stroke="#34266c" stroke-width="2"/>
-    <path d="M58.7 105 64 114l5.3-9Z" fill="#34266c"/>
-    <path d="M51.5 25v-3a5 5 0 0 1 5-5h15a5 5 0 0 1 5 5v4Z" fill="#e8b6bd" stroke="#34266c" stroke-width="2"/>
-    <path d="M51.5 27h25" stroke="#34266c" stroke-width="3"/>
+    <rect x="51.5" y="26" width="25" height="68" rx="2" fill="url(#body)" stroke="#28516b" stroke-width="2"/>
+    <path d="M51.5 38h25" stroke="#f0faff" stroke-width="2"/>
+    <path d="M60 39v53" stroke="#e4f3fb" stroke-opacity=".83" stroke-width="2"/>
+    <path d="M51.5 94 64 114 76.5 94Z" fill="#f4f9ff" stroke="#28516b" stroke-width="2"/>
+    <path d="M58.7 105 64 114l5.3-9Z" fill="#28516b"/>
+    <path d="M51.5 25v-3a5 5 0 0 1 5-5h15a5 5 0 0 1 5 5v4Z" fill="#d5ecf8" stroke="#28516b" stroke-width="2"/>
+    <path d="M51.5 27h25" stroke="#28516b" stroke-width="3"/>
   </g>
 </svg>

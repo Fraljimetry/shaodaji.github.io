@@ -212,15 +212,52 @@ export function circleOutsideViewport(center,radius,width,height,margin=0){
  return center[0]+radius < -margin || center[0]-radius > width+margin || center[1]+radius < -margin || center[1]-radius > height+margin;
 }
 
+/** Decide free-stroke closure in screen pixels without mutating pen samples.
+ * A near-endpoint loop becomes a corner unless its entering/leaving tangents
+ * are almost parallel.  Invalid / abbreviated strokes always remain open.
+ * Rendering and export must honor the same joinStyle.
+ */
+export function closeFreehandStroke(path,mode='near',scale=50){
+ const open={path,closed:false};
+ if(!Array.isArray(path)||path.length<3||!path.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)))return open;
+ if(mode!=='near'&&mode!=='always')return open;
+ if(!Number.isFinite(scale)||scale<=0)return open;
+ const a=path[0],b=path.at(-1),gap=Math.hypot(a[0]-b[0],a[1]-b[1])*scale;
+ if(mode==='near'&&gap>18)return open;
+ // Estimate tangents over a meaningful screen distance rather than a single
+ // noisy sample.  Each tangent uses points in the original stroke direction.
+ const direction=(fromStart)=>{
+  const base=fromStart?path[0]:path.at(-1);let chosen=null;
+  for(let k=1;k<path.length;k++){
+   const p=fromStart?path[k]:path[path.length-1-k];
+   const dx=fromStart?p[0]-base[0]:base[0]-p[0];
+   const dy=fromStart?p[1]-base[1]:base[1]-p[1];
+   const length=Math.hypot(dx,dy);
+   if(length*scale>=8){chosen=[dx/length,dy/length];break;}
+   if(length>1e-9)chosen=[dx/length,dy/length];
+  }
+  return chosen;
+ };
+ const start=direction(true),end=direction(false);
+ const tangent=gap<=18&&start&&end&&start[0]*end[0]+start[1]*end[1]>=Math.cos(Math.PI/9);
+ return {path,closed:true,joinStyle:tangent?'smooth':'corner'};
+}
+
 /** Convert vertices to smooth, bounded cubic Béziers (Catmull–Rom interpolation).
  * Endpoints are preserved, including for closed paths, and no external libraries are used. */
-export function smoothCurveSvg(points,closed=false){
+export function smoothCurveSvg(points,closed=false,joinStyle='smooth'){
  if(!Array.isArray(points)||points.length<2)return '';
  const p=points.filter(v=>Array.isArray(v)&&v.length===2&&v.every(Number.isFinite));
  if(p.length<2)return '';
  const fmt=v=>Number(v.toFixed(3));
  const xy=v=>`${fmt(v[0])} ${fmt(v[1])}`;
  if(p.length===2)return `M${xy(p[0])} L${xy(p[1])}${closed?' Z':''}`;
+ // A corner join must not apply cross-seam Catmull–Rom tangents.
+ // Keep the final stroke point exactly where the user released the pen.
+ if(closed&&joinStyle==='corner')return smoothCurveSvg(p,false)+` L${xy(p[0])} Z`;
+ // A duplicated final vertex is common in natural closed pen strokes. Its
+ // zero-length final segment otherwise forms an artificial flat spot.
+ if(closed&&p.length>3&&Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-8)p.pop();
  const n=p.length,steps=closed?n:n-1;let d=`M${xy(p[0])}`;
  for(let i=0;i<steps;i++){
   const a=p[(i+n-1)%n],b=p[i],c=p[(i+1)%n],e=p[(i+2)%n];

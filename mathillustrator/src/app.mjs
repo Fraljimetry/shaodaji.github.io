@@ -1,5 +1,5 @@
 import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs';
-import {smoothCurveSvg,smoothPath,closeFreehandStroke,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs';
+import {smoothCurveSvg,smoothPath,closeFreehandStroke,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?repair=boot-20261113';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';

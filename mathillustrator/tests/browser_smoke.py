@@ -34,10 +34,11 @@ def inline_html(*,legacy_search_expanded=True):
     app=app.replace("from './i18n.mjs'",f"from '{js((ROOT/'src/i18n.mjs').read_text())}'")
     app=app.replace("from './panel_sizes.mjs'",f"from '{panel_sizes}'")
     app=app.replace("from './properties_layout.mjs'",f"from '{properties_layout}'")
+    app=app.replace("from './geometry.mjs?repair=boot-20261113'",f"from '{geometry}'")
     html=(ROOT/'index.html').read_text()
     html=html.replace('<link rel="stylesheet" href="./style.css">','<style>'+(ROOT/'style.css').read_text()+'</style>')
     html=html.replace('<script defer src="./vendor/mathjax-tex-svg.js"></script>', '<script>'+(ROOT/'vendor/mathjax-tex-svg.js').read_text()+'</script>')
-    html=html.replace('<script type="module" src="./src/app.mjs"></script>','<script type="module">'+app+'</script>')
+    html=html.replace('<script type="module" src="./src/app.mjs?repair=boot-20261113"></script>','<script type="module">'+app+'</script>')
     if legacy_search_expanded:
         # Archived scripts are SHA-locked and describe the old always-on search,
         # eye/lock inline controls and Delete button. Translate these *test-only*
