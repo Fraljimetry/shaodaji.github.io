@@ -248,3 +248,37 @@ html[data-theme="dark"] .object-action-menu button[data-action="delete"]:not(:di
  body.panels-resizing{user-select:none;cursor:col-resize}
 }
 @media(max-width:700px){.panel-resizer{display:none!important}}
+
+
+/* Round 16 / R45: independent Properties splitter and detachable inspector.
+   Project data is never changed when the panel moves or resizes. */
+.properties-dock{display:flex;flex:0 1 var(--mi-properties-height,230px);flex-direction:column;min-height:38px;min-width:0;position:relative;background:var(--surface);border-top:1px solid var(--border)}
+.properties-dock .properties-head{flex:none;border-top:0;min-height:37px;gap:8px}
+.properties-head-actions{display:flex;gap:5px;align-items:center}
+.properties-head-actions button{font-size:11px;min-height:27px;padding:3px 7px}
+.properties-dock .properties{flex:1;max-height:none;min-height:0;overflow:auto;overscroll-behavior:contain}
+.properties-dock .properties[hidden]{display:none!important}
+.properties-dock.is-folded{flex:0 0 auto!important;height:auto!important}
+.properties-dock.is-folded .properties-splitter{display:none!important}
+.properties-splitter{position:absolute;top:-6px;left:0;right:0;height:12px;z-index:9;cursor:row-resize;touch-action:none}
+.properties-splitter::after{content:"";position:absolute;left:0;right:0;top:5px;height:2px;background:transparent}
+.properties-splitter:hover::after,.properties-splitter:focus-visible::after{background:var(--accent)}
+.properties-corner{display:none}
+@media(min-width:701px){
+ body.properties-floating>.properties-dock{position:fixed;z-index:18;flex:none;min-height:0;min-width:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 14px 44px #0005}
+ body.properties-floating>.properties-dock .properties-head{cursor:move;touch-action:none;user-select:none;background:var(--subtle)}
+ body.properties-floating>.properties-dock .properties-head:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+ body.properties-floating>.properties-dock .properties-corner{display:block;position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;z-index:20;background:linear-gradient(135deg,transparent 56%,var(--muted) 58%,var(--muted) 62%,transparent 64%,transparent 73%,var(--muted) 75%,var(--muted) 79%,transparent 81%);background-size:14px 14px;background-repeat:no-repeat;background-position:bottom 4px right 4px}
+ body.properties-floating>.properties-dock.is-folded .properties-corner{display:none}
+ body.properties-floating>.properties-dock.is-folded{height:auto!important}
+ body.properties-moving{cursor:move;user-select:none}
+ body.properties-resizing{cursor:nwse-resize;user-select:none}
+}
+@media(max-width:700px){
+ .properties-dock{flex:0 1 220px;max-height:45%;height:auto!important;width:auto!important;position:relative!important;top:auto!important;left:auto!important;border-radius:0;box-shadow:none}
+ body.mobile-left-open .leftpanel>.properties-dock{display:flex}
+ .properties-splitter,.properties-corner{display:none!important}
+ .properties-head-actions #properties-undock{display:none}
+ .properties-dock .properties{max-height:none!important}
+}
+@media (pointer:coarse){.properties-head-actions button{min-width:40px;min-height:40px}}

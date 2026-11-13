@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "resizable-desktop-panels-round-15",
+  "release": "properties-inspector-layout-round-16",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "desktop-sidebar-splitters-local-preferences",
+  "revision": "resizable-docked-and-floating-properties-inspector",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -43,12 +43,15 @@
     "section_disclosure_browser_regression": "tests/browser_palette_sections_current.py",
     "panel_sizing": "src/panel_sizes.mjs",
     "panel_resize_browser_regression": "tests/browser_panel_resize_current.py",
-    "panel_resize_node_regression": "tests/panel_sizes.test.mjs"
+    "panel_resize_node_regression": "tests/panel_sizes.test.mjs",
+    "properties_layout": "src/properties_layout.mjs",
+    "properties_layout_browser_regression": "tests/browser_properties_layout_current.py",
+    "properties_layout_node_regression": "tests/properties_layout.test.mjs"
   },
   "data_contract": {
     "name": "mathillustrator-project",
     "current_version": 1,
-    "migration_policy": "JSON v1 unchanged; imported legacy modules flags retained and validated but no longer gate tool availability. Section collapse/order are independent local layout-v1 preferences, including old plotting- key migration. Desktop sidebar widths are optional browser-local layout-v1 properties and do not modify JSON v1."
+    "migration_policy": "JSON v1 unchanged; imported legacy modules flags retained and validated but no longer gate tool availability. Section collapse/order are independent local layout-v1 preferences, including old plotting- key migration. Desktop sidebar widths are optional browser-local layout-v1 properties and do not modify JSON v1. Round 16 floating inspector position, dimension, docking and collapse are stored in browser-local propertiesPanel only; project JSON v1 remains identical."
   },
   "delivery_contract": {
     "format": "ZIP overlay rooted at website repository",

@@ -14,7 +14,7 @@
       "name": "3-panel editor with GeoGebra-style tool tiles",
       "status": "implemented",
       "component": "index.html",
-      "limitation": "Desktop triple panel, mobile drawers, now keyboard virtual-list navigation and trapped import/export Tab loops; real screen-reader/touch behavior remains unverified. Cut19 adds multiline textarea editing for text, diagram nodes and morphisms, with focus-safe commit-on-change semantics. Round 15 adds keyboard/pointer-resizable browser-local desktop sidebar widths with canvas-size clamps and mobile drawer safeguards; freely movable/dockable panels are not available."
+      "limitation": "Desktop triple panel, mobile drawers, now keyboard virtual-list navigation and trapped import/export Tab loops; real screen-reader/touch behavior remains unverified. Cut19 adds multiline textarea editing for text, diagram nodes and morphisms, with focus-safe commit-on-change semantics. Round 15 adds keyboard/pointer-resizable browser-local desktop sidebar widths with canvas-size clamps and mobile drawer safeguards; Round 16 adds a detachable, draggable, resizable Properties inspector (with dock-height splitter, keyboard actions, guarded browser-local preferences, mobile drawer fallback); full Objects/Tools panel docking and real-site behavior remain unverified."
     },
     {
       "id": "CORE-GRAPH",

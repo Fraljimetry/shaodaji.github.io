@@ -1,3 +1,7 @@
+# MathIllustrator current limitations and audit queue
+
+**Round 16 remaining limitations:** Only the Properties inspector can float; whole Objects/Tools panels cannot detach, and mobile uses the original Objects drawer. Layout preferences are local to this browser and are not included in exported JSON. Floating positions are clipped to the visible window; actual hosted-site storage, physical touch/stylus, keyboard screen readers, browser zoom extremes and non-Chromium engines have not been validated.
+
 # Cut 16 current status (v0.17.0)
 
 > **Historical evidence locations (v0.26.1 maintenance):** Older `cutNN-*.json` files and per-cut test reports are archived unchanged in `docs/history/release-history.zip`. The living files in this directory retain current known issues and regression obligations. Restore archived paths safely with `python mathillustrator/tests/manage_history.py restore --apply`; no runtime sources changed.

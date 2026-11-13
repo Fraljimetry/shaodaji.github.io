@@ -14,6 +14,7 @@ import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
 import {createPlotCache} from './plot_cache.mjs';
 import {layoutMorphismLabels} from './morphism_label_layout.mjs';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs';
+import {PROPERTY_DOCK_DEFAULT, PROPERTY_DOCK_MIN, normalizePropertiesLayout, fitFloatingProperties, fitDockPropertiesHeight} from './properties_layout.mjs';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
@@ -1355,6 +1356,171 @@ function setupPanelResizing(mobile){
  return applyWidths;
 }
 
+
+/** R45: independent docked-height split and floating Properties inspector.
+ * Layout lives only in local UI preferences, never in project JSON/history. */
+function setupPropertiesLayout(mobile){
+ const pane=$('properties-dock'),left=document.querySelector('.leftpanel'),head=$('properties-head');
+ const toggle=$('properties-toggle'),dockButton=$('properties-undock'),split=$('properties-splitter'),corner=$('properties-corner');
+ let preferred=normalizePropertiesLayout(uiPrefs.propertiesPanel),active=null;
+ $('properties').hidden=preferred.collapsed;toggle.textContent=preferred.collapsed?'+':'−';
+ const desktop=()=>!mobile.matches;
+ const copy=o=>({...o});
+ const barHeight=()=>document.querySelector('.appbar').getBoundingClientRect().height;
+ function maxDock(){
+  const fixed=[...left.children].filter(el=>el!==pane&&el.id!=='objects'&&!el.classList.contains('panel-resizer')).reduce((total,el)=>total+el.getBoundingClientRect().height,0);
+  return fitDockPropertiesHeight(preferred.dockHeight,left.clientHeight,fixed);
+ }
+ function floatingGeometry(from=preferred){
+  return fitFloatingProperties(from,window.innerWidth,window.innerHeight,barHeight());
+ }
+ function updateAria(){
+  const language=uiPrefs.language;
+  const h=maxDock();
+  split.setAttribute('aria-valuemin',String(h.min));
+  split.setAttribute('aria-valuemax',String(h.max));
+  split.setAttribute('aria-valuenow',String(Math.min(h.height,Math.round(pane.getBoundingClientRect().height)||h.height)));
+  split.setAttribute('aria-valuetext',`${Math.round(pane.getBoundingClientRect().height)} ${translated('pixels',language)}`);
+  split.setAttribute('aria-label',translated('Resize Properties height',language));
+  corner.setAttribute('aria-label',translated('Resize floating Properties panel',language));
+  head.setAttribute('aria-label',translated('Move Properties panel',language));
+  const floating=preferred.mode==='floating';
+  dockButton.textContent=translated(floating?'Dock':'Float',language);
+  dockButton.title=translated(floating?'Dock Properties panel':'Float Properties panel',language);
+  dockButton.setAttribute('aria-label',dockButton.title);
+  toggle.title=translated($('properties').hidden?'Expand Properties':'Collapse Properties',language);
+  toggle.setAttribute('aria-label',toggle.title);
+  toggle.setAttribute('aria-expanded',String(!$('properties').hidden));
+  corner.setAttribute('aria-valuetext',`${Math.round(pane.getBoundingClientRect().width)} × ${Math.round(pane.getBoundingClientRect().height)} ${translated('pixels',language)}`);
+ }
+ function apply(next=preferred){
+  const floating=desktop()&&next.mode==='floating';
+  document.body.classList.toggle('properties-floating',floating);
+  // Reparent only for actual floating mode. The left sidebar is a z-indexed
+  // stacking context and could otherwise hide the inspector behind Tools.
+  const parent=floating?document.body:left;
+  if(pane.parentElement!==parent)parent.append(pane);
+  pane.classList.toggle('is-folded',$('properties').hidden);
+  head.tabIndex=floating?0:-1;corner.tabIndex=floating&&!$('properties').hidden?0:-1;
+  if(floating){
+   const g=floatingGeometry(next);
+   pane.style.left=`${g.x}px`;pane.style.top=`${g.y}px`;
+   pane.style.width=`${g.width}px`;pane.style.height=`${g.height}px`;
+   pane.style.removeProperty('--mi-properties-height');
+   split.tabIndex=-1;
+  }else{
+   pane.style.removeProperty('left');pane.style.removeProperty('top');pane.style.removeProperty('width');pane.style.removeProperty('height');
+   pane.style.setProperty('--mi-properties-height',`${maxDock().height}px`);
+   split.tabIndex=desktop()&&!$('properties').hidden&&!document.body.classList.contains('left-collapsed')?0:-1;
+  }
+  // Mobile uses the native drawer and cannot expose a floating canvas overlay.
+  if(mobile.matches){split.tabIndex=-1;corner.tabIndex=-1;head.tabIndex=-1;}
+  updateAria();
+ }
+ function commit(next){
+  preferred=normalizePropertiesLayout(next);
+  uiPrefs.propertiesPanel=copy(preferred);savePrefs();apply();
+ }
+ function stop(save=false){
+  if(!active)return;
+  const {id,handle,preview}=active;
+  active=null;document.body.classList.remove('properties-moving','properties-resizing');
+  if(save&&preview)commit(preview);else apply();
+  if(handle.hasPointerCapture?.(id))handle.releasePointerCapture(id);
+ }
+ function gesture(handle,kind,event){
+  if(!desktop()||active||!event.isPrimary||event.button!==0)return;
+  if(kind==='move'&&(preferred.mode!=='floating'||event.target.closest('button,input,select,textarea,a')))return;
+  if(kind==='resize'&&(preferred.mode!=='floating'||$('properties').hidden))return;
+  if(kind==='split'&&(preferred.mode!=='docked'||$('properties').hidden||document.body.classList.contains('left-collapsed')))return;
+  event.preventDefault();event.stopPropagation();
+  const rect=pane.getBoundingClientRect();
+  active={kind,handle,id:event.pointerId,x:event.clientX,y:event.clientY,rect,
+   before:copy(preferred),preview:null};
+  handle.setPointerCapture(event.pointerId);
+  document.body.classList.add(kind==='move'?'properties-moving':'properties-resizing');
+ }
+ function track(event){
+  if(!active||event.pointerId!==active.id)return;
+  const g=active,dx=event.clientX-g.x,dy=event.clientY-g.y;
+  let next={...g.before};
+  if(g.kind==='move'){
+   next.x=g.rect.left+dx;next.y=g.rect.top+dy;
+   // Clamp previews to the viewport without rewriting historical saved size.
+   const bounded=fitFloatingProperties(next,window.innerWidth,window.innerHeight,barHeight());
+   next.x=bounded.x;next.y=bounded.y;
+  }else if(g.kind==='resize'){
+   next.width=Math.max(260,Math.min(600,Math.round(g.rect.width+dx)));
+   next.height=Math.max(180,Math.min(720,Math.round(g.rect.height+dy)));
+  }else if(g.kind==='split'){
+   const h=maxDock();next.dockHeight=Math.max(h.min,Math.min(h.max,Math.round(g.rect.height-dy)));
+  }
+  g.preview=next;
+  // A dragged docked pane must not save until pointerup.
+  applyPreview(next);
+ }
+ function applyPreview(next){
+  if(active?.kind==='split'){
+   pane.style.setProperty('--mi-properties-height',`${next.dockHeight}px`);
+   updateAria();
+  }else if(active){
+   const rect=fitFloatingProperties(next,window.innerWidth,window.innerHeight,barHeight());
+   for(const [key,value] of Object.entries({left:rect.x,top:rect.y,width:rect.width,height:rect.height}))pane.style[key]=`${value}px`;
+   updateAria();
+  }
+ }
+ for(const [handle,kind] of [[head,'move'],[corner,'resize'],[split,'split']]){
+  handle.addEventListener('pointerdown',event=>gesture(handle,kind,event));
+  handle.addEventListener('pointermove',track);
+  handle.addEventListener('pointerup',event=>{if(active?.handle===handle&&active.id===event.pointerId){event.preventDefault();stop(true);}});
+  handle.addEventListener('pointercancel',event=>{if(active?.id===event.pointerId)stop();});
+  handle.addEventListener('lostpointercapture',event=>{if(active?.id===event.pointerId)stop();});
+ }
+ split.addEventListener('keydown',event=>{
+  if(!desktop()||active||preferred.mode!=='docked'||$('properties').hidden)return;
+  if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+  event.preventDefault();event.stopPropagation();
+  const h=maxDock(),step=event.shiftKey?24:8;
+  const target=event.key==='Home'?h.min:event.key==='End'?h.max:h.height+(event.key==='ArrowUp'?step:-step);
+  commit({...preferred,dockHeight:Math.max(h.min,Math.min(h.max,target))});
+ });
+ split.addEventListener('dblclick',event=>{if(desktop()&&preferred.mode==='docked'&&!$('properties').hidden){event.preventDefault();commit({...preferred,dockHeight:PROPERTY_DOCK_DEFAULT});}});
+ head.addEventListener('keydown',event=>{
+  if(!desktop()||preferred.mode!=='floating'||active||!event.altKey)return;
+  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
+  event.preventDefault();event.stopPropagation();
+  const step=event.shiftKey?24:8,g=floatingGeometry();
+  const candidate={...preferred,x:event.key==='Home'?360:g.x+(event.key==='ArrowRight'?step:event.key==='ArrowLeft'?-step:0),
+   y:event.key==='Home'?Math.max(110,barHeight()+5):g.y+(event.key==='ArrowDown'?step:event.key==='ArrowUp'?-step:0)};
+  const fitted=fitFloatingProperties(candidate,window.innerWidth,window.innerHeight,barHeight());
+  commit({...candidate,x:fitted.x,y:fitted.y});
+ });
+ corner.addEventListener('keydown',event=>{
+  if(!desktop()||preferred.mode!=='floating'||$('properties').hidden||active)return;
+  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
+  event.preventDefault();event.stopPropagation();
+  const step=event.shiftKey?24:8,g=floatingGeometry();
+  const candidate={...preferred,width:event.key==='Home'?330:g.width+(event.key==='ArrowRight'?step:event.key==='ArrowLeft'?-step:0),
+   height:event.key==='Home'?420:g.height+(event.key==='ArrowDown'?step:event.key==='ArrowUp'?-step:0)};
+  commit({...candidate,width:Math.max(260,Math.min(600,candidate.width)),height:Math.max(180,Math.min(720,candidate.height))});
+ });
+ dockButton.addEventListener('click',()=>{
+  if(active)stop();
+  const mode=preferred.mode==='floating'?'docked':'floating';
+  commit({...preferred,mode});
+  dockButton.focus({preventScroll:true});
+ });
+ toggle.addEventListener('click',()=>{commit({...preferred,collapsed:$('properties').hidden});});
+ window.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();stop();}},true);
+ window.addEventListener('blur',()=>stop());
+ window.addEventListener('resize',()=>{if(active)stop();apply();});
+ mobile.addEventListener('change',()=>{if(active)stop();apply();});
+ $('ui-language').addEventListener('change',()=>apply());
+ $('left-collapse').addEventListener('click',()=>queueMicrotask(()=>apply()));
+ apply();
+ return {apply};
+}
+
 function initialise(){
  populateTools();setupSettings();setupInterface();$('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow();},{passive:true});
  const searchToggle=$('object-search-toggle'),search=$('object-search');
@@ -1461,6 +1627,7 @@ function initialise(){
  $('zoom-out').onclick=()=>{if(drag)cancelDrag();view.scale=Math.max(5,view.scale/1.3);render();};$('zoom-in').onclick=()=>{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();};$('zoom-reset').onclick=()=>{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();};$('fit').onclick=fit;
  const mobile=window.matchMedia('(max-width:700px)');
  const refreshPanelWidths=setupPanelResizing(mobile);
+ const propertyLayout=setupPropertiesLayout(mobile);
  function syncPanelButtons(){
   $('left-collapse').textContent=mobile.matches?(document.body.classList.contains('mobile-left-open')?'×':'›'):(document.body.classList.contains('left-collapsed')?'›':'‹');
   $('right-collapse').textContent=mobile.matches?(document.body.classList.contains('mobile-right-open')?'×':'‹'):(document.body.classList.contains('right-collapsed')?'‹':'›');
@@ -1475,7 +1642,7 @@ function initialise(){
  const resize=new ResizeObserver(()=>{const b=svg.getBoundingClientRect();size={w:Math.max(1,Math.round(b.width)),h:Math.max(1,Math.round(b.height))};scheduleRender();});resize.observe(svg);
  // Toolbar height varies with font metrics, window width and localized labels.
  // Avoid hard-coded mobile drawer offsets that overlap the toolbar after wrapping.
- const bar=document.querySelector('.appbar'),barResize=new ResizeObserver(()=>document.documentElement.style.setProperty('--appbar-height',`${bar.getBoundingClientRect().height}px`));barResize.observe(bar);
+ const bar=document.querySelector('.appbar'),barResize=new ResizeObserver(()=>{document.documentElement.style.setProperty('--appbar-height',`${bar.getBoundingClientRect().height}px`);propertyLayout.apply();});barResize.observe(bar);
  document.documentElement.style.setProperty('--appbar-height',`${bar.getBoundingClientRect().height}px`);renderAll();
 }
 initialise();

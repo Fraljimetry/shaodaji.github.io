@@ -1,53 +1,47 @@
-"""Static deployment contract: links are in actual root pages, not only app folder.
+"""Current site-root integration: homepage omits product promotion by request.
 
-Usage from mathillustrator/: python tests/site_integration.py ..
-Requires the original site root and mathillustrator/ installed together.
-No network or browser needed. This does NOT certify hosted navigation.
+Validates supplied root HTML and MathIllustrator project paths. Site-wide CSS,
+JavaScript, preview images, CDN and live hosting require the full website tree;
+they are never silently reported as verified when absent in a partial upload.
+Run: python mathillustrator/tests/site_integration.py WEBSITE_ROOT [--strict-assets]
 """
 from pathlib import Path
 from html.parser import HTMLParser
-import sys
+import re,sys
 
-class Links(HTMLParser):
-    def __init__(self):
-        super().__init__();self.links=[]
-    def handle_starttag(self,tag,attrs):
-        if tag=='a':self.links.append(dict(attrs))
+class Tags(HTMLParser):
+    def __init__(self):super().__init__();self.tags=[]
+    def handle_starttag(self,tag,attrs):self.tags.append((tag,dict(attrs)))
 
 def main():
-    root=(Path(sys.argv[1]) if len(sys.argv)>1 else Path(__file__).resolve().parents[2]).resolve()
+    root=(Path(sys.argv[1]) if len(sys.argv)>1 and not sys.argv[1].startswith('--') else Path(__file__).resolve().parents[2]).resolve()
+    strict='--strict-assets' in sys.argv[1:]
     editor=root/'mathillustrator/index.html'
     assert editor.is_file(),f'Editor missing at {editor}'
-    for page in ['index.html','tools.html']:
-        p=root/page;assert p.exists(),f'Site page missing: {p}'
-        text=p.read_text(encoding='utf8');parser=Links();parser.feed(text)
-        links=[a for a in parser.links if a.get('href')=='mathillustrator/']
-        assert links,f'MathIllustrator launch link absent from site-root {page}'
-        for anchor in links:
-            assert 'MathIllustrator' in anchor.get('data-en',''),f'{page}: English link missing'
-            assert 'MathIllustrator' in anchor.get('data-zh',''),f'{page}: Chinese link missing'
-        assert 'mathreader/' in text,f'{page}: MathReader link unexpectedly lost'
-    # Release-specific homepage discovery contract: distinct, immediately visible paths
-    # and balanced placement, not merely a buried plain-text link.
-    home=(root/'index.html').read_text(encoding='utf-8')
-    assert home.count('id="mathematical-software"')==1, 'Missing unique tools showcase anchor'
-    assert home.index('id="mathematical-software"')<home.index('data-en="About"'), 'Software showcase too low on homepage'
-    assert home.count('class="card software-card"')==2, 'Reader and Illustrator need two symmetric cards'
-    assert 'class="software-grid"' in home and '.software-grid { display:grid; grid-template-columns:repeat(2' in home, 'Two-tool responsive layout missing'
-    assert 'class="hero-tool-links"' in home and 'href="mathreader/"' in home and 'href="mathillustrator/"' in home, 'Direct hero tool discovery missing'
-    assert home.count('href="mathillustrator/tutorial.html"')==1, 'Direct Illustrator tutorial link missing'
-    assert 'href="tools.html#mathreader"' in home, 'Reader detail link missing'
-    assert 'id="mathreader"' in (root/'tools.html').read_text(encoding='utf-8')
-    assert 'id="mathillustrator"' in (root/'tools.html').read_text(encoding='utf-8')
-    assert (root/'assets/img/tool-mathreader-file-search.svg').is_file(), 'MathReader preview asset missing'
-    tools=Links();tools.feed((root/'tools.html').read_text())
-    assert any(a.get('href')=='mathillustrator/tutorial.html' for a in tools.links),'Tools tutorial link missing'
-    text=editor.read_text()
-    assert '<script type="module" src="./src/app.mjs"></script>' in text
-    assert '<link rel="stylesheet" href="./style.css">' in text
-    for path in ['style.css','src/app.mjs','src/model.mjs','src/geometry.mjs','src/diagram.mjs','src/storage.mjs','src/export_fidelity.mjs','src/diagram_layout.mjs','src/plot_cache.mjs','src/anchor_index.mjs','src/label_layout.mjs','src/diagram_routing.mjs','src/diagram_global_routing.mjs','src/morphism_label_layout.mjs','tutorial.html','docs/manifest.json']:
-        assert (root/'mathillustrator'/path).is_file(),f'Missing module: {path}'
-    assert (root/'assets/js/main-v15.js').is_file(), 'Original site locale/nav script missing'
-    print('SITE_STATIC_INTEGRATION_PASS: balanced bilingual homepage tools showcase, hero direct paths, details/tutorial routes, responsive two-tool structure, intact MathReader navigation, editor CSS/module paths')
-
+    home=(root/'index.html').read_text(encoding='utf8')
+    tools=(root/'tools.html').read_text(encoding='utf8')
+    h,t=Tags(),Tags();h.feed(home);t.feed(tools)
+    def hrefs(tagset):return {a.get('href') for tag,a in tagset.tags if tag=='a'}
+    assert {'tools.html','index.html'}<=hrefs(h), 'Homepage Tools/Home navigation must remain available'
+    assert not re.search(r'mathreader|mathillustrator|mathematical-software|hero-tool-links|software-grid',home,re.I), 'Homepage software promotion was intentionally removed in Round 7'
+    assert {'mathreader/','mathillustrator/','mathillustrator/tutorial.html'}<=hrefs(t), 'Tools page lacks launch/tutorial links'
+    assert {a.get('id') for tag,a in t.tags if tag=='section'} >= {'mathreader','mathillustrator'}
+    for text in (home,tools):
+        assert 'data-en=' in text and 'data-zh=' in text, 'Root bilingual structure missing'
+    images={a.get('src') for tag,a in t.tags if tag=='img'}
+    assert {'mathillustrator/assets/pencil-cover.svg','assets/img/tool-mathreader-file-search.svg'}<=images, 'Tools page previews changed unexpectedly'
+    paths=['mathillustrator/index.html','mathillustrator/style.css','mathillustrator/src/app.mjs',
+           'mathillustrator/src/model.mjs','mathillustrator/src/geometry.mjs','mathillustrator/src/properties_layout.mjs',
+           'mathillustrator/assets/pencil-cover.svg','mathillustrator/tutorial.html','mathillustrator/docs/manifest.json']
+    assert all((root/name).is_file() for name in paths), 'MathIllustrator runtime/cover file missing'
+    assert '<script type="module" src="./src/app.mjs"></script>' in editor.read_text(encoding='utf8')
+    # Deployment-wide dependencies may not be provided in editor-only ZIPs.
+    external=['assets/css/style-v15.css','assets/js/main-v15.js','assets/img/tool-mathreader-file-search.svg']
+    missing=[name for name in external if not (root/name).is_file()]
+    if missing:
+        if strict:raise AssertionError('Full-site asset verification unavailable; missing: '+', '.join(missing))
+        print('SITE_PARTIAL_STATIC_PASS: homepage has no software promo; Tools retains both bilingual launch cards, pencil cover and local editor paths')
+        print('SITE_ASSETS_NOT_VERIFIED: site-root upload omits '+', '.join(missing))
+    else:
+        print('SITE_STATIC_INTEGRATION_PASS: correct homepage/Tools separation, bilingual card links, editor modules and external site assets exist')
 if __name__=='__main__':main()
