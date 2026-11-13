@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "object-menus-and-collapsible-search-round-4",
+  "release": "ultra-smooth-and-pencil-artwork-round-5",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "object-actions-search-round-4",
+  "revision": "arc-length-ultra-smooth-pencil-art",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -73,5 +73,10 @@
     "explicit unsupported outputs",
     "immutable historical provenance",
     "no speculative source changes"
-  ]
+  ],
+  "pencil_assets": {
+    "editor_mark": "assets/pencil-mark.svg",
+    "tools_cover_ready_not_connected": "assets/pencil-cover.svg"
+  },
+  "root_homepage_available": false
 }

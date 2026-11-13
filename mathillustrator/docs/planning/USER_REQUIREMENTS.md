@@ -11,7 +11,7 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | ID | Requirement (user wording) | Status |
 |---:|---|---|
 | R01 | Don's show my software in the main page of my homepage. | Pending |
-| R02 | The cover image in the tool page for math illustrator should have similar style with that for math reader, being a tilted pencil. | Pending |
+| R02 | The cover image in the tool page for math illustrator should have similar style with that for math reader, being a tilted pencil. | Partial — pencil-cover.svg created; **tools.html not supplied**, so the card still needs wiring |
 | R03 | Find objects input should not be so big outshining the main input above it. | Done — this pass |
 | R04 | Items drawn should support multiple selection and dragging for reordering. | Pending |
 | R05 | Support parametric and implicit curves as well like in Desmos. | Pending |
@@ -70,12 +70,20 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | R53 | Arrow should be renamed Vector. | Partial |
 | R54 | Again I request general LaTeX input capability for whatever is to be displayed on the canvas aside from regular text input. | Partial |
 | R55 | From Undo to Export, the buttons on the upper right corner is takes too much space. Use icon if necessary and words appearing by hover. | Done — this pass |
-| R56 | The icon for Math Illustrator on the upper left corner should be the same abstract pencil not sigma. | Pending |
+| R56 | The icon for Math Illustrator on the upper left corner should be the same abstract pencil not sigma. | Done — editor brand uses local pencil SVG |
 | R57 | The find object input could collapse to a magnifier icon conveniently placed and displays upon clicking, disappearing after reclicking the same icon. | Done — magnifier toggles search; closing clears its filter |
 | R58 | Parallelograms etc. should be supported. You can classify by type, like points, triangles, quadrilaterals, circles, others as subsections. | Pending |
 | R59 | Think of a more revealing name for Freehand and Text than "Others". | Pending |
 | R60 | There should be some common colors provided not letting user select RGB every time which is too demanding and not stable. | Pending |
 | R61 | Gradually add vector fields, contours, domain coloring, and 3D complex plotting capabilities. | Design |
+
+## New request — drawing polish (Round 5)
+
+| ID | Requirement (user wording) | Status |
+|---:|---|---|
+| R62 | Ultra smooth is not smooth enough. | Done — arc-length resampling and symmetric Gaussian filtering replace the Ultra-only Chaikin treatment; committed freehand preview now uses the same cubic rendering | 
+
+The root website update remains open: **R01 (remove software suggestion from the homepage)** is pending because the latest upload includes neither the website root `index.html` nor `tools.html`. `R02` has a newly prepared SVG image but **is not displayed in the Tools listing yet**. Do not overwrite the homepage with a guessed or older version.
 
 ## Preserved earlier product-level requirements
 
@@ -102,6 +110,13 @@ The user also requested, in prior rounds: a short nontechnical bilingual public 
 - The global Delete selected toolbar button is removed. The existing explicit Properties delete and guarded Delete/Backspace keyboard shortcut remain; neither is a substitute for the object menu.
 - Search begins collapsed behind a labeled magnifier. Opening focuses the search box; closing (including Escape) clears the filter to avoid a secretly filtered list; search contents are UI state, not project schema.
 - Acceptance: test menu keyboard and focus dismissal, locked dependents, cascade removal, Recently Deleted restoration, stale callbacks, undo/redo, local persistence and JSON export, filtering and hidden rows, locale changes, virtual scrolling, mobile widths and maliciously malformed imports. These are regression targets, not automatic pass claims.
+
+## Current incremental delivery: stronger Ultra Smooth and pencil artwork (Round 5)
+
+- Ultra Smooth now stabilizes stroke geometry in arc length with a bounded Gaussian low-pass filter in screen units. This suppresses short alternating pointer tremor; it is substantially more than extra cubic subdivisions. Only newly drawn Ultra strokes change; existing saved paths and Gentle/Medium/Strong/Off behavior are unchanged. Raw capture is never modified. Open-stroke endpoints are fixed and output is capped at 4,096 points.
+- Freehand preview now uses the same cubic SVG path renderer as a committed stroke; a released mouse position can still add a final sample and legitimately alter the endpoint. No freehand-to-circle/line recognition is claimed.
+- The editor title bar uses an abstract tilted pencil asset, and a matching landscape pencil-cover.svg is staged for the Tools-page card. **Homepage removal and the actual Tools-page tile edit were NOT performed**, because neither current root page exists in the uploaded source. Applying the asset alone does not change those pages.
+- Acceptance: screen-space tremor attenuation, exact endpoints, finite bounded output with degenerate/malformed data, unchanged legacy modes, undo/redo and SVG/JSON export/import, storage, browser input, mobile/pointer, asset parsing, no external image dependencies. Non-Chromium/hosted screenshots and root website integration remain unverified.
 
 ## Architectural design gates for the next rounds (NOT implemented)
 

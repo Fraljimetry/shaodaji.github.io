@@ -9,6 +9,7 @@ export function regularPolygonVertices(center,vertex,sides){
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
+ if(mode==='ultra')return ultraSmoothPath(raw,scale);
  const tolerance={gentle:0.65,medium:1.6,strong:3,ultra:4.5}[mode]||0;
  if(!tolerance)return raw;
  const gap=tolerance/Math.max(scale,1),kept=[raw[0]];
@@ -25,6 +26,55 @@ export function smoothPath(raw,mode,scale=50){
  if(pts.length>20000){const stride=Math.ceil(pts.length/19999);pts=pts.filter((_,i)=>i%stride===0||i===pts.length-1);}
  return pts;
 }
+/** Ultra-smooth is a geometric low-pass filter, not more Chaikin subdivision.
+ * Chaikin alone makes a polyline look round but preserves the original high-frequency
+ * hand jitter. Uniform arc-length sampling + symmetric Gaussian filtering removes it,
+ * independently of pointer sampling rate. All distances below are SCREEN pixels.
+ * Preserve the exact pen-down and pen-up positions for reliable closure, undo,
+ * export and round trips. Work is bounded for long/stale imported strokes.
+ */
+function ultraSmoothPath(raw,scale){
+ if(raw.length<3||!raw.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)))return raw;
+ const zoom=Number.isFinite(scale)&&scale>0?Math.max(1,scale):50;
+ const cumulative=[0];
+ for(let i=1;i<raw.length;i++){
+  const distance=Math.hypot(raw[i][0]-raw[i-1][0],raw[i][1]-raw[i-1][1])*zoom;
+  if(!Number.isFinite(distance))return raw;
+  cumulative.push(cumulative.at(-1)+distance);
+ }
+ const length=cumulative.at(-1);
+ if(!Number.isFinite(length)||length<3)return raw;
+ // Never amplify tiny paths or accumulate more than 4096 output points.
+ const count=Math.min(4096,Math.max(3,Math.ceil(length/2.5)+1));
+ const step=length/(count-1),sampled=[];
+ let segment=1;
+ for(let i=0;i<count;i++){
+  const distance=i===count-1?length:i*step;
+  while(segment<cumulative.length-1&&cumulative[segment]<distance)segment++;
+  const span=cumulative[segment]-cumulative[segment-1];
+  const ratio=span>0?Math.max(0,Math.min(1,(distance-cumulative[segment-1])/span)):0;
+  const a=raw[segment-1],b=raw[segment];
+  sampled.push([a[0]+(b[0]-a[0])*ratio,a[1]+(b[1]-a[1])*ratio]);
+ }
+ // A wide, zero-phase filter suppresses hand tremor instead of merely rounding
+ // the corners of each tremor. Adapt to short strokes to avoid shrinking them away.
+ const sigma=Math.min(9,Math.max(1.5,length/12));
+ const radius=Math.min(count-1,Math.ceil(3*sigma/step));
+ const weights=Array.from({length:radius+1},(_,k)=>Math.exp(-.5*(k*step/sigma)**2));
+ const result=sampled.map((p,i)=>{
+  if(i===0)return [...raw[0]];
+  if(i===count-1)return [...raw.at(-1)];
+  let x=0,y=0,total=0;
+  for(let k=-radius;k<=radius;k++){
+   const j=Math.max(0,Math.min(count-1,i+k));
+   const w=weights[Math.abs(k)];
+   x+=sampled[j][0]*w;y+=sampled[j][1]*w;total+=w;
+  }
+  return [x/total,y/total];
+ });
+ return result;
+}
+
 export function worldBounds(doc,resolver){
  const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
  function put(p){if(!p||!p.every(Number.isFinite))return;bounds.minX=Math.min(bounds.minX,p[0]);bounds.maxX=Math.max(bounds.maxX,p[0]);bounds.minY=Math.min(bounds.minY,p[1]);bounds.maxY=Math.max(bounds.maxY,p[1]);}

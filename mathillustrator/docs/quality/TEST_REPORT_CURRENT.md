@@ -99,3 +99,19 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Unverified:** live GitHub Pages deployment/cache, Firefox/Safari/Edge, actual mobile assistive technology, true multi-tab writes and physical touch. The current source ZIP includes only `mathillustrator/`, not the root-site homepage/navigation assets, so root-site link assertions cannot be rerun against this upload. No MathReader sources are modified.
 
 **Additional verification:** `node --test tests/*.test.mjs` passed 152/152 tests; active-file and immutable-archive digests checked against the single package inventory (64 active paths). The original `manage_history.py verify` checks also reach the root-website requirement, but necessarily stop there on this mathillustrator-only upload. Archive SHA inventory was not rewritten. No historical archived test was changed.
+
+
+## Round 5 — Ultra Smooth and pencil artwork (2026-11-13)
+
+**Source:** extracted user-uploaded `mathillustrator.zip` with prior `mathillustrator_round4_overlay.zip` applied. Before editing, all 13 Round 4 overlay files matched the extracted working tree byte-for-byte. The upload contains only `mathillustrator/`, not root-site `index.html` or `tools.html`.
+
+**Implementation:** Ultra Smooth no longer just inserts Chaikin corner points. It resamples the path in arc-length at up to 4096 points and applies a zero-phase, screen-space Gaussian position filter to suppress small hand tremor. Original stroke endpoints and invalid-data fail-closed behavior are preserved. Other correction modes, existing saved curves, and project schema are unchanged. Live freehand preview now renders the same cubic curve primitive as the committed stroke. The editor ∑ mark is replaced with a local tilted-pencil SVG; a matching self-contained landscape SVG cover is staged for `tools.html`.
+
+**Checks actually performed in isolated current source:**
+- `node --test tests/*.test.mjs`: **154/154 PASS** (previous 152 plus two new smoothing invariance/robustness assertions).
+- Headless Chromium scripts: **12 PASS**: `browser_pencil_ultra_current.py`, `browser_object_menu_current.py`, `browser_compact_ui_current.py`, `browser_smoke.py`, `browser_edges.py`, `browser_touch_current.py`, `browser_latex_i18n.py`, `browser_mobile_current.py`, `browser_storage.py`, `browser_cut04_pointer.py`, `browser_cut09.py`, `browser_cut14.py`. The separate `browser_cut24_sweep.py` batch exceeded the available execution budget and is **not counted as passed**.
+- New focused browser exercises 114 alternating pointer moves, cubic live preview, committed freehand shape, JSON/SVG export, undo/redo, and correct editor brand element; both SVG assets parse as valid XML.
+- Synthetic high-frequency jitter RMS under new Ultra = ~14.6% of input RMS for the tested example, not a perceptual guarantee on arbitrary drawings. A single Node run on a 9,900-sample path took ~30ms for smoothing and yielded the capped 4,096 points; not a browser FPS benchmark.
+- Project schema and historical runtime API are unchanged; no MathReader files touched. Archive assets are not rewritten. Active digest inventory is refreshed for this extracted tree.
+
+**Deferred / cannot verify:** homepage software suggestion removal (requires latest website-root `index.html`), Tools-page cover hookup (requires latest website-root `tools.html`), HTTP origin/module cache, Safari/Firefox/Edge, physical stylus, deployed visual comparison to MathReader tile. Root-site integration tests cannot validate the missing two pages. Do not claim the SVG cover alone changes the Tools listing.

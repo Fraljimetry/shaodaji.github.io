@@ -389,7 +389,7 @@ function draw(svg,{exporting=false}={}){
   // Drafts are never added to the document or the export SVG.
   if(drag?.kind==='freehand'&&drag.path.length>1){
    const pts=correctedPath(drag.path).map(project);
-   svg.append(el('polyline',{class:'draft-freehand',points:pts.map(p=>p.join(',')).join(' '),stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':'round','stroke-linecap':'round','pointer-events':'none'}));
+   svg.append(el('path',{class:'draft-freehand',d:smoothCurveSvg(pts,false),stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':'round','stroke-linecap':'round','pointer-events':'none'}));
   }
  }
 }
