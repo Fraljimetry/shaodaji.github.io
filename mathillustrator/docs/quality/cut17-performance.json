@@ -1,0 +1,65 @@
+{
+  "cut": "17",
+  "release": "0.18.0",
+  "test_environment": "isolated headless Chromium, desktop 1440x900, no hosted navigation; 12 synchronous SVG rebuild observations after 3 warmups per version",
+  "scene": "3840 total model objects, 1100 far-offscreen segments, 180 on-viewport segments, supporting 2560 point anchors, labels/grid/axes off",
+  "baseline_cut16": {
+    "scene_objects": 3840,
+    "offscreen_segments": 1100,
+    "visible_segments": 180,
+    "svg_data_id_nodes": 2920,
+    "median_ms": 20.45,
+    "range_ms": [
+      17.9,
+      37.9
+    ],
+    "all_ms": [
+      23.1,
+      21.1,
+      20,
+      20.9,
+      20,
+      19.6,
+      25.8,
+      37.9,
+      19.1,
+      25.4,
+      17.9,
+      19.4
+    ]
+  },
+  "candidate_cut17": {
+    "scene_objects": 3840,
+    "offscreen_segments": 1100,
+    "visible_segments": 180,
+    "svg_data_id_nodes": 720,
+    "median_ms": 6.3,
+    "range_ms": [
+      4.9,
+      13.6
+    ],
+    "all_ms": [
+      6.4,
+      6.1,
+      6.2,
+      9.5,
+      9.9,
+      11.5,
+      13.6,
+      5.3,
+      5.8,
+      5.5,
+      6.9,
+      4.9
+    ]
+  },
+  "conclusion": "Median isolated SVG rebuild reduced from 20.45 ms to 6.30 ms (about 69% lower) with fewer offscreen DOM nodes. No global FPS guarantee. Changes in DOM counts include hit targets.",
+  "reproducibility": "Run python tests/browser_cut17_performance.py against extracted Cut16 and Cut17 roots using optional root argument; the test source is included in Cut17 ZIP.",
+  "limits": [
+    "single Chromium binary",
+    "JS module inlined due to sandbox HTTP navigation restriction",
+    "synthetic geometry, not an actual mixed paper diagram",
+    "no p95 reliability across hardware",
+    "font and bitmap export latency not included"
+  ]
+}

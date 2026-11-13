@@ -1,0 +1,71 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.7.0",
+  "cut": "06",
+  "source_cut": "05",
+  "date": "2026-11-12",
+  "new_cases": [
+    {
+      "id": "MI-SNAP-061",
+      "red_or_risk": "A short segment aliases two newly created nearby anchors",
+      "green": "Plan all anchor reuse before inserting any new point; reject collapsed resolved geometry",
+      "test": "browser_cut06.py"
+    },
+    {
+      "id": "MI-SNAP-062",
+      "red_or_risk": "Fully transparent anchor captures nearest cursor snap",
+      "green": "No automatic snap to opacity=0 or hidden point",
+      "test": "browser_cut06.py"
+    },
+    {
+      "id": "MI-TEX-063",
+      "red_or_risk": "Hidden function blocks representable TikZ export",
+      "green": "Ignore hidden unsupported objects in conditional export",
+      "test": "browser_cut06.py"
+    },
+    {
+      "id": "MI-TEX-064",
+      "red_or_risk": "TikZ stroke and angle geometry change with editor zoom",
+      "green": "Zoom-invariant SVG-pixel-to-TeX stroke mapping and fixed world radius",
+      "test": "browser_cut06.py, tikz_compile.py"
+    },
+    {
+      "id": "MI-UI-065",
+      "red_or_risk": "Basic-module OFF hides essential pan and selection controls",
+      "green": "Keep Move/Pan reachable and hide only Point",
+      "test": "browser_cut06.py"
+    },
+    {
+      "id": "MI-SET-066",
+      "red_or_risk": "Infinite canvas accepts page-only export in forged JSON",
+      "green": "Enforce runtime/schema cross-setting invariant",
+      "test": "cut06.test.mjs, JSON fixtures"
+    },
+    {
+      "id": "MI-SAVE-067",
+      "red_or_risk": "Two stale tabs can overwrite each other without serialized writers",
+      "green": "Web Locks exclusive serialize normal saves where available; fallback explicitly non-atomic",
+      "test": "cut06.test.mjs; real-tab not verified"
+    },
+    {
+      "id": "MI-REL-068",
+      "red_or_risk": "Cut05 cumulative archive omits four original Cut00 docs/examples, causing incomplete fresh standalone installs",
+      "green": "Restore the four original files with exact bytes and add extracted-package manifest coverage gate",
+      "test": "tests/package_integrity.py and comparison of Cut00–05 archived path union"
+    }
+  ],
+  "test_provenance": {
+    "node": "52/52",
+    "browser": "13/13 isolated Chromium interaction/storage scripts",
+    "latex": "2/2 real pdflatex compilations",
+    "performance": "one isolated 3000-point renderer-only 20.4ms; not an FPS guarantee"
+  },
+  "not_verified": [
+    "hosted URL navigation",
+    "Firefox and Safari",
+    "real multi-tab Web Locks with unload contention",
+    "mobile touch hardware",
+    "screenreader navigation",
+    "60 FPS dense scenes"
+  ]
+}

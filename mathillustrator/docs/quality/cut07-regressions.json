@@ -1,0 +1,120 @@
+{
+  "release": "0.8.0",
+  "cut": "07",
+  "date": "2026-11-12",
+  "cases": [
+    {
+      "id": "MI-RECT-071",
+      "area": "Rectangle(A,B) command and cursor tool",
+      "prior_failure": "Cut06 rejected semantic rectangle command / made four-point polygon",
+      "corrected_behavior": "New two-point rectangle remains rectangular after anchor edits",
+      "tests": "cut07.test.mjs; browser_cut07_inventory.py; browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-RECT-072",
+      "area": "Degenerate new rectangle",
+      "prior_failure": "New equal-axis anchors must not create invisible rectangle",
+      "corrected_behavior": "Strict zero-width/height rejection and no mutation",
+      "tests": "cut07.test.mjs",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-RECT-073",
+      "area": "Legacy polygon compatibility",
+      "prior_failure": "Cut00–06 rectangles stored as ordinary polygons",
+      "corrected_behavior": "No reinterpretation of historic four-anchor polygon objects",
+      "tests": "cut07.test.mjs; JSON schema fixtures",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-INPUT-074",
+      "area": "Prompted labels over limit or 1000 characters",
+      "prior_failure": "Text allowed 2000 but cursor prompt silently truncated at 1000",
+      "corrected_behavior": "Preserve up to 2000 Text, explicitly reject oversize Text/node/morphism",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-IMPORT-075",
+      "area": "Delayed JSON file read completion after new edit",
+      "prior_failure": "Async file.text could replace a newer document when resolved",
+      "corrected_behavior": "Document revision guard rejects stale completion; no lost intervening edit",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-UI-076",
+      "area": "Open dialog keyboard context",
+      "prior_failure": "Escape failed to close; drawing shortcuts remained active behind overlays",
+      "corrected_behavior": "Escape closes and restores launcher focus; global drawing shortcuts ignored",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-TEX-077",
+      "area": "Unsafe plain-Unicode pdfLaTeX labels",
+      "prior_failure": "TikZ available despite unsupported Unicode/control labels",
+      "corrected_behavior": "Disable TikZ while retaining SVG/JSON",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-PROP-078",
+      "area": "Rapid property changes across render frames",
+      "prior_failure": "Deferred property redraw could replace a focused next field; changes intermittently lost",
+      "corrected_behavior": "Preserve focused editor on successful changes; force correct reset on validation failure",
+      "tests": "browser_cut07_properties.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-AUDIT-079",
+      "area": "Full current control inventory",
+      "prior_failure": "Historical smoke coverage did not enumerate every tool/settings field",
+      "corrected_behavior": "Executable UI-control matrix with explicit limits and provenance",
+      "tests": "browser_cut07_inventory.py; browser_cut07_properties.py; cut07-control-matrix.json",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-SITE-080",
+      "area": "Homepage two-tool discoverability",
+      "prior_failure": "Links were below About and cards inherited a three-column grid",
+      "corrected_behavior": "Place an equal two-column pair before About; on mobile stack cleanly",
+      "tests": "site_integration.py; browser_site_home.py",
+      "status": "verified with stated static/isolated browser provenance; live-hosted unverified"
+    },
+    {
+      "id": "MI-SITE-081",
+      "area": "Direct bilingual paths and tutorial",
+      "prior_failure": "Hero lacked immediate access and reader/illustrator detail anchors were absent",
+      "corrected_behavior": "Direct launch links in hero; Details/Tutorial; deep-linkable Tools sections in both languages",
+      "tests": "site_integration.py; browser_site_home.py",
+      "status": "verified with stated static/isolated browser provenance; live-hosted unverified"
+    },
+    {
+      "id": "MI-SITE-082",
+      "area": "Responsive/dark-mode integration",
+      "prior_failure": "New homepage layout untested across locale, viewport and theme changes",
+      "corrected_behavior": "No horizontal overflow; both tools visible at 390/1366 widths in EN/ZH, dark mode controls work",
+      "tests": "browser_site_home.py",
+      "status": "verified with stated static/isolated browser provenance; live-hosted unverified"
+    },
+    {
+      "id": "MI-TEST-083",
+      "area": "Isolated browser test harness repeated Save download timeout",
+      "prior_failure": "One property test emitted more than ten browser downloads merely to inspect state and intermittently timed out",
+      "corrected_behavior": "Test-only capture and parsing of the actual generated JSON blob; real-download flows remain in dedicated smoke/inventory checks",
+      "tests": "browser_cut07_properties.py (two consecutive passes); browser_smoke.py; browser_cut07_inventory.py",
+      "status": "test harness regression mitigated; Chromium automatic-download throttling cause not independently proven"
+    },
+    {
+      "id": "MI-PROP-084",
+      "area": "Last-accepted property rollback and delayed stale-editor race",
+      "prior_failure": "After an invalid edit, old element values reverted to initial rather than last valid values; rapid next field edit could fail after rollback replaced doc object identities",
+      "corrected_behavior": "Field tracks accepted value; property edit generation invalidated only for new logical document; no synchronous reentrant property DOM replacement",
+      "tests": "browser_cut07_properties.py (four consecutive isolated Chromium passes), browser_cut04_stale.py (old document reused-ID guards), extracted-package repeat",
+      "status": "reproduced red on extracted Cut07; verified green in stated environment; cross-browser unverified"
+    }
+  ],
+  "verification_boundary": "Node, isolated headless Chromium; not deployed-site/Safari/physical touch; homepage checks use isolated Chromium original CSS/JS, 8 page/viewport/locale cases, not hosted HTTPS"
+}

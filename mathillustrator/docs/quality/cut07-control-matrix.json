@@ -1,0 +1,1231 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.8.0",
+  "cut": "07",
+  "method": "Per-control static inventory grounded in index.html/src/app.mjs, mapped to executable tests; status means at least one representative exercised behavior, NOT all combinations.",
+  "status_vocab": [
+    "isolated_browser_verified",
+    "disabled_as_unsupported",
+    "disabled_for_unsupported_scene",
+    "not_verified"
+  ],
+  "total_controls": 152,
+  "controls": [
+    {
+      "id": "tool.Move",
+      "group": "tool",
+      "control": "Move",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Pan",
+      "group": "tool",
+      "control": "Pan",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Point",
+      "group": "tool",
+      "control": "Point",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Segment",
+      "group": "tool",
+      "control": "Segment",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Arrow",
+      "group": "tool",
+      "control": "Arrow",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Infinite-line",
+      "group": "tool",
+      "control": "Infinite line",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Circle",
+      "group": "tool",
+      "control": "Circle",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Ellipse",
+      "group": "tool",
+      "control": "Ellipse",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Rectangle",
+      "group": "tool",
+      "control": "Rectangle",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Regular-polygon",
+      "group": "tool",
+      "control": "Regular polygon",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Polygon",
+      "group": "tool",
+      "control": "Polygon",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Polyline",
+      "group": "tool",
+      "control": "Polyline",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Bézier",
+      "group": "tool",
+      "control": "Bézier",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Angle",
+      "group": "tool",
+      "control": "Angle",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Free-curve",
+      "group": "tool",
+      "control": "Free curve",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Text",
+      "group": "tool",
+      "control": "Text",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Diagram-node",
+      "group": "tool",
+      "control": "Diagram node",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "tool.Morphism",
+      "group": "tool",
+      "control": "Morphism",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_properties.py; browser_cut07_adversarial.py; browser_smoke.py",
+      "notes": "Every tile was invoked directly or via command and related gesture; no physical touch verification."
+    },
+    {
+      "id": "input.Named-point-command",
+      "group": "input",
+      "control": "Named point command",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Named-node-command",
+      "group": "input",
+      "control": "Named node command",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Named-morphism-command",
+      "group": "input",
+      "control": "Named morphism command",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Explicit-f(x)",
+      "group": "input",
+      "control": "Explicit f(x)",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Segment()",
+      "group": "input",
+      "control": "Segment()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Arrow()",
+      "group": "input",
+      "control": "Arrow()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Line()",
+      "group": "input",
+      "control": "Line()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Circle()",
+      "group": "input",
+      "control": "Circle()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Ellipse()",
+      "group": "input",
+      "control": "Ellipse()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Rectangle()",
+      "group": "input",
+      "control": "Rectangle()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Polygon()",
+      "group": "input",
+      "control": "Polygon()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Polyline()",
+      "group": "input",
+      "control": "Polyline()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Bezier()",
+      "group": "input",
+      "control": "Bezier()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Angle()",
+      "group": "input",
+      "control": "Angle()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.RegularPolygon()",
+      "group": "input",
+      "control": "RegularPolygon()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Midpoint()",
+      "group": "input",
+      "control": "Midpoint()",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "input.Invalid-command-rollback",
+      "group": "input",
+      "control": "Invalid command rollback",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; cut07.test.mjs",
+      "notes": ""
+    },
+    {
+      "id": "workspace.General",
+      "group": "workspace",
+      "control": "General",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Olympiad-geometry",
+      "group": "workspace",
+      "control": "Olympiad geometry",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Research-diagram",
+      "group": "workspace",
+      "control": "Research diagram",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Analysis-/-plots",
+      "group": "workspace",
+      "control": "Analysis / plots",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Free-illustration",
+      "group": "workspace",
+      "control": "Free illustration",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Commutative-diagrams",
+      "group": "workspace",
+      "control": "Commutative diagrams",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Basic-toolkit-visibility",
+      "group": "workspace",
+      "control": "Basic toolkit visibility",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Geometry-toolkit-visibility",
+      "group": "workspace",
+      "control": "Geometry toolkit visibility",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Illustration-toolkit-visibility",
+      "group": "workspace",
+      "control": "Illustration toolkit visibility",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "workspace.Diagrams-toolkit-visibility",
+      "group": "workspace",
+      "control": "Diagrams toolkit visibility",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut06.py",
+      "notes": ""
+    },
+    {
+      "id": "setting.Correction-(off/gentle/medium/strong)",
+      "group": "setting",
+      "control": "Correction (off/gentle/medium/strong)",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Regular-polygon-sides",
+      "group": "setting",
+      "control": "Regular polygon sides",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Snap-interval",
+      "group": "setting",
+      "control": "Snap interval",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Snap-to-grid",
+      "group": "setting",
+      "control": "Snap to grid",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Snap-to-anchors",
+      "group": "setting",
+      "control": "Snap to anchors",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Show-grid",
+      "group": "setting",
+      "control": "Show grid",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Show-axes",
+      "group": "setting",
+      "control": "Show axes",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Show-point-labels",
+      "group": "setting",
+      "control": "Show point labels",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Default-stroke",
+      "group": "setting",
+      "control": "Default stroke",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Default-fill",
+      "group": "setting",
+      "control": "Default fill",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Default-line-width",
+      "group": "setting",
+      "control": "Default line width",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Default-point-size",
+      "group": "setting",
+      "control": "Default point size",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Default-opacity",
+      "group": "setting",
+      "control": "Default opacity",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Canvas-infinite",
+      "group": "setting",
+      "control": "Canvas infinite",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Canvas-A4",
+      "group": "setting",
+      "control": "Canvas A4",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Canvas-Letter",
+      "group": "setting",
+      "control": "Canvas Letter",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Export-current-viewport",
+      "group": "setting",
+      "control": "Export current viewport",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Export-page-frame",
+      "group": "setting",
+      "control": "Export page frame",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Include-guides",
+      "group": "setting",
+      "control": "Include guides",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Raster-scale-1–4",
+      "group": "setting",
+      "control": "Raster scale 1–4",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Background",
+      "group": "setting",
+      "control": "Background",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "setting.Theme-light/dark",
+      "group": "setting",
+      "control": "Theme light/dark",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut03.py; browser_cut04.py",
+      "notes": "Individual controls exercised; not every Cartesian product of all settings combinations."
+    },
+    {
+      "id": "object.Search/filter",
+      "group": "object",
+      "control": "Search/filter",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Show-hidden",
+      "group": "object",
+      "control": "Show hidden",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Select",
+      "group": "object",
+      "control": "Select",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Hide/show",
+      "group": "object",
+      "control": "Hide/show",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Lock/unlock",
+      "group": "object",
+      "control": "Lock/unlock",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Delete-selected",
+      "group": "object",
+      "control": "Delete selected",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Transitive-delete",
+      "group": "object",
+      "control": "Transitive delete",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Bring-forward",
+      "group": "object",
+      "control": "Bring forward",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Send-backward",
+      "group": "object",
+      "control": "Send backward",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Center-view",
+      "group": "object",
+      "control": "Center view",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Name",
+      "group": "object",
+      "control": "Name",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Point-XY",
+      "group": "object",
+      "control": "Point XY",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Node-XY",
+      "group": "object",
+      "control": "Node XY",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Text-XY",
+      "group": "object",
+      "control": "Text XY",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Point-radius",
+      "group": "object",
+      "control": "Point radius",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Stroke",
+      "group": "object",
+      "control": "Stroke",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Fill",
+      "group": "object",
+      "control": "Fill",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Line-width",
+      "group": "object",
+      "control": "Line width",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Opacity",
+      "group": "object",
+      "control": "Opacity",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Font-size",
+      "group": "object",
+      "control": "Font size",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Text/label",
+      "group": "object",
+      "control": "Text/label",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Function-expression",
+      "group": "object",
+      "control": "Function expression",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Regular-polygon-side-count",
+      "group": "object",
+      "control": "Regular polygon side count",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Morphism-bend",
+      "group": "object",
+      "control": "Morphism bend",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Morphism-swap-side",
+      "group": "object",
+      "control": "Morphism swap side",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Undo",
+      "group": "object",
+      "control": "Undo",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "object.Redo",
+      "group": "object",
+      "control": "Redo",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_cut07_inventory.py; browser_edges.py; browser_cut04_stale.py",
+      "notes": "Some property editors are type-conditional. Invalid-value rollback exercised in representative numeric and expression fields."
+    },
+    {
+      "id": "viewport.Zoom-+",
+      "group": "viewport",
+      "control": "Zoom +",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Zoom-−",
+      "group": "viewport",
+      "control": "Zoom −",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Reset-view",
+      "group": "viewport",
+      "control": "Reset view",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Fit",
+      "group": "viewport",
+      "control": "Fit",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Wheel-zoom",
+      "group": "viewport",
+      "control": "Wheel zoom",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Pan-drag",
+      "group": "viewport",
+      "control": "Pan drag",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Drag-point",
+      "group": "viewport",
+      "control": "Drag point",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Pointercancel-rollback",
+      "group": "viewport",
+      "control": "Pointercancel rollback",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Double-click-finish",
+      "group": "viewport",
+      "control": "Double-click finish",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Esc-draft-cancel",
+      "group": "viewport",
+      "control": "Esc draft cancel",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Responsive-panel-opening",
+      "group": "viewport",
+      "control": "Responsive panel opening",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "viewport.Virtualized-large-object-list",
+      "group": "viewport",
+      "control": "Virtualized large-object list",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_properties.py; browser_edges.py; browser_cut02.py; browser_cut05_list.py",
+      "notes": ""
+    },
+    {
+      "id": "file.New-project",
+      "group": "file",
+      "control": "New project",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Open-JSON-valid",
+      "group": "file",
+      "control": "Open JSON valid",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Open-JSON-invalid",
+      "group": "file",
+      "control": "Open JSON invalid",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Stale-asynchronous-Open",
+      "group": "file",
+      "control": "Stale asynchronous Open",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Save-JSON",
+      "group": "file",
+      "control": "Save JSON",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Corrupt-local-autosave",
+      "group": "file",
+      "control": "Corrupt local autosave",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Cross-tab-conflict-warning",
+      "group": "file",
+      "control": "Cross-tab conflict warning",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Conflict-load-other",
+      "group": "file",
+      "control": "Conflict load other",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "file.Conflict-keep-current",
+      "group": "file",
+      "control": "Conflict keep current",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_adversarial.py; browser_cut05.py; browser_cut03_storage.py; browser_storage.py",
+      "notes": "Storage and file-read checks use simulated events in isolated Chromium, not real two-browser-tab coordination."
+    },
+    {
+      "id": "dialog.Import-tikz-cd",
+      "group": "dialog",
+      "control": "Import tikz-cd",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Close-import",
+      "group": "dialog",
+      "control": "Close import",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Escape-import",
+      "group": "dialog",
+      "control": "Escape import",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Export-menu",
+      "group": "dialog",
+      "control": "Export menu",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Close-export",
+      "group": "dialog",
+      "control": "Close export",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Escape-export",
+      "group": "dialog",
+      "control": "Escape export",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Prevent-shortcuts-behind-overlay",
+      "group": "dialog",
+      "control": "Prevent shortcuts behind overlay",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "dialog.Tutorial-help-link",
+      "group": "dialog",
+      "control": "Tutorial help link",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_smoke.py; browser_cut07_adversarial.py; site_integration.py",
+      "notes": "Tutorial link resolves statically; opening a new browser tab across deployed HTTPS remains unverified."
+    },
+    {
+      "id": "export.SVG",
+      "group": "export",
+      "control": "SVG",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.PNG",
+      "group": "export",
+      "control": "PNG",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.JPEG",
+      "group": "export",
+      "control": "JPEG",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.WebP",
+      "group": "export",
+      "control": "WebP",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.Native-JSON",
+      "group": "export",
+      "control": "Native JSON",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.TikZ-basic-ASCII",
+      "group": "export",
+      "control": "TikZ basic ASCII",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.tikz-cd-supported-semantic",
+      "group": "export",
+      "control": "tikz-cd supported semantic",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_cut07_inventory.py; browser_cut07_adversarial.py; browser_smoke.py; tikz_compile.py",
+      "notes": "Browser downloads and format signatures tested; publishing-level glyph fidelity not certified."
+    },
+    {
+      "id": "export.PDF",
+      "group": "export",
+      "control": "PDF",
+      "status": "disabled_as_unsupported",
+      "evidence": "browser_cut07_inventory.py",
+      "notes": "Option is intentionally disabled; no implementation or success claim."
+    },
+    {
+      "id": "export.Asymptote",
+      "group": "export",
+      "control": "Asymptote",
+      "status": "disabled_as_unsupported",
+      "evidence": "browser_cut07_inventory.py",
+      "notes": "Option is intentionally disabled; no implementation or success claim."
+    },
+    {
+      "id": "export.GIF-/-video",
+      "group": "export",
+      "control": "GIF / video",
+      "status": "disabled_as_unsupported",
+      "evidence": "browser_cut07_inventory.py",
+      "notes": "Option is intentionally disabled; no implementation or success claim."
+    },
+    {
+      "id": "special.Unicode-TikZ-labels",
+      "group": "special",
+      "control": "Unicode TikZ labels",
+      "status": "disabled_for_unsupported_scene",
+      "evidence": "browser_cut07_adversarial.py; browser_smoke.py; browser_cut06.py",
+      "notes": "Capability gating tested on representative scenes only."
+    },
+    {
+      "id": "special.Visible-function-TikZ",
+      "group": "special",
+      "control": "Visible function TikZ",
+      "status": "disabled_for_unsupported_scene",
+      "evidence": "browser_cut07_adversarial.py; browser_smoke.py; browser_cut06.py",
+      "notes": "Capability gating tested on representative scenes only."
+    },
+    {
+      "id": "special.Bent-morphism-tikz-cd",
+      "group": "special",
+      "control": "Bent morphism tikz-cd",
+      "status": "disabled_for_unsupported_scene",
+      "evidence": "browser_cut07_adversarial.py; browser_smoke.py; browser_cut06.py",
+      "notes": "Capability gating tested on representative scenes only."
+    },
+    {
+      "id": "special.Mixed-geometry-tikz-cd",
+      "group": "special",
+      "control": "Mixed geometry tikz-cd",
+      "status": "disabled_for_unsupported_scene",
+      "evidence": "browser_cut07_adversarial.py; browser_smoke.py; browser_cut06.py",
+      "notes": "Capability gating tested on representative scenes only."
+    },
+    {
+      "id": "environment.Real-GitHub-Pages-deployment",
+      "group": "environment",
+      "control": "Real GitHub Pages deployment",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "environment.Firefox",
+      "group": "environment",
+      "control": "Firefox",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "environment.Safari",
+      "group": "environment",
+      "control": "Safari",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "environment.Physical-touch-screen",
+      "group": "environment",
+      "control": "Physical touch screen",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "environment.Full-screenreader-traversal",
+      "group": "environment",
+      "control": "Full screenreader traversal",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "environment.Real-simultaneous-cross-tab-Web-Locks",
+      "group": "environment",
+      "control": "Real simultaneous cross-tab Web Locks",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "environment.Print-color-and-multi-engine-LaTeX-visual-parity",
+      "group": "environment",
+      "control": "Print-color and multi-engine LaTeX visual parity",
+      "status": "not_verified",
+      "evidence": "No matching current-turn host/browser evidence",
+      "notes": "Do not infer a pass from isolated Chromium."
+    },
+    {
+      "id": "site.hero.mathreader",
+      "group": "site",
+      "control": "Homepage hero MathReader launch",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.hero.mathillustrator",
+      "group": "site",
+      "control": "Homepage hero MathIllustrator launch",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.card.mathreader",
+      "group": "site",
+      "control": "Homepage MathReader card launch",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.card.mathillustrator",
+      "group": "site",
+      "control": "Homepage MathIllustrator card launch",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.card.reader-details",
+      "group": "site",
+      "control": "Tools page MathReader anchor",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.card.illustrator-tutorial",
+      "group": "site",
+      "control": "MathIllustrator tutorial link",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.locale-theme",
+      "group": "site",
+      "control": "Homepage bilingual/dark mode",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    },
+    {
+      "id": "site.responsive",
+      "group": "site",
+      "control": "Two tool cards responsive layout",
+      "status": "isolated_browser_verified",
+      "evidence": "browser_site_home.py; site_integration.py",
+      "notes": "Desktop/mobile + EN/ZH isolated; hosted and cross-browser navigation unverified."
+    }
+  ]
+}

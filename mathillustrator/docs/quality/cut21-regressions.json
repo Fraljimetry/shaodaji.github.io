@@ -1,0 +1,58 @@
+{
+  "project": "MathIllustrator",
+  "cut": "21",
+  "release": "0.22.0",
+  "baseline": "Cut20 exact cumulative ZIP",
+  "cases": [
+    {
+      "id": "MI21-001",
+      "risk": "A direct semantic arrow can pass through a separate diagram node",
+      "test": "Node segmentHitsBox/routeDiagramEdge + browser_cut21.py",
+      "fix": "Opt-in two-turn route avoids visible rectangular nodes; legacy direct preserved"
+    },
+    {
+      "id": "MI21-002",
+      "risk": "An attempted automatic route could silently intersect an obstacle when no valid two-turn corridor exists",
+      "test": "Blocked-maze Node test",
+      "fix": "Explicit blocked status and dashed amber SVG + title; no success claim"
+    },
+    {
+      "id": "MI21-003",
+      "risk": "Fixed morphism label offset cannot be adjusted in crowded diagrams",
+      "test": "Quadratic/polyline label Node test and Chromium property-edit test",
+      "fix": "Editable labelT, labelDistance, labelDx, labelDy and existing Swap side"
+    },
+    {
+      "id": "MI21-004",
+      "risk": "TikZ publication output silently replaces an SVG routed path or offset with unrelated default positions",
+      "test": "Cut21 Chromium TikZ disabled and native SVG/JSON exports",
+      "fix": "TikZ preflight denies unsupported visual position; semantic tikz-cd retains graph-only contract"
+    },
+    {
+      "id": "MI21-005",
+      "risk": "New optional JSON fields break old v1 documents or allow nonfinite/misplaced values",
+      "test": "Cut21 schema/runtime checks and historical examples",
+      "fix": "Strict field ranges and morphism-only constraints; optional defaults preserve old style"
+    },
+    {
+      "id": "MI21-006",
+      "risk": "Moved or hidden nodes fail to update routing or Undo keeps stale geometry",
+      "test": "Cut21 browser hide/Undo and direct/Undo cycles",
+      "fix": "Recompute screen-space route from current resolver and current visible obstacle boxes each redraw"
+    },
+    {
+      "id": "MI21-007",
+      "risk": "Opt-in auto-routing can add significant on-screen repaint cost",
+      "test": "browser_cut21_performance.py, 320 nodes + 80 morphisms, 11 samples per mode",
+      "fix": "Compute obstacle rectangles only when at least one visible auto-route morphism; document measured overhead"
+    }
+  ],
+  "unverified": [
+    "Mathematically optimal routing",
+    "font-exact label avoidance",
+    "global arrow crossing optimization",
+    "physical browsers and devices",
+    "hosted site",
+    "multi-tab atomicity"
+  ]
+}

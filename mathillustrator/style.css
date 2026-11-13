@@ -1,1 +1,102 @@
 :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color-scheme:light;--ink:#243247;--muted:#6d7d91;--border:#dee5ed;--surface:#fff;--subtle:#f4f7fb;--stage:#eff3f7;--accent:#6558d6;--hover:#f0efff;--shadow:0 7px 25px #222f4b12}html[data-theme="dark"]{color-scheme:dark;--ink:#e4ebf6;--muted:#a0adc0;--border:#39485d;--surface:#202a38;--subtle:#293648;--stage:#151e2a;--accent:#a79dfb;--hover:#373453;--shadow:0 7px 25px #0005}*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--surface);color:var(--ink)}button,input,select,textarea{font:inherit}button{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:7px;padding:7px 10px;cursor:pointer;white-space:nowrap}button:hover:not(:disabled){background:var(--hover)}button:disabled{opacity:.35;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}input,select{min-width:0;color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:7px;background:var(--surface)}input[type=color]{padding:1px;width:36px;height:30px}input[type=checkbox]{accent-color:var(--accent)}.appbar{height:58px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 15px;gap:10px;background:var(--surface)}.brand{color:var(--ink);font-weight:700;text-decoration:none;white-space:nowrap}.brandmark{color:var(--accent);font-size:22px;margin-left:5px}.beta{font-size:11px;background:var(--subtle);border-radius:20px;padding:5px 8px;color:var(--muted);margin-right:auto}.header-actions{display:flex;align-items:center;gap:5px}.header-actions button{font-size:12px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover:not(:disabled){color:var(--ink)}.workspace{display:grid;grid-template-columns:minmax(280px,310px) minmax(250px,1fr) minmax(270px,305px);height:calc(100vh - 58px);min-height:400px}.leftpanel,.rightpanel{background:var(--surface);min-height:0;display:flex;flex-direction:column;min-width:0;z-index:2}.leftpanel{border-right:1px solid var(--border)}.rightpanel{border-left:1px solid var(--border)}.panelhead{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--border);height:49px}.panelhead h2{font-size:15px;margin:0;font-weight:650}.panelhead h2 span{font-size:12px;color:var(--muted);font-weight:400}.panelhead button{padding:2px 7px}.commandbox{padding:13px;border-bottom:1px solid var(--border)}.commandbox label,.preset label{display:block;font-size:12px;font-weight:650;margin-bottom:7px}#command-form{display:flex;gap:5px}#command-form input{width:100%;font-family:Consolas,monospace;font-size:12px}#command-form button{font-size:19px;line-height:15px;color:var(--accent)}.hint{font-size:11px;line-height:1.45;color:var(--muted);margin:8px 0 0}.hint a{color:var(--accent)}.object-tools{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);gap:5px}.object-tools label{font-size:11px;color:var(--muted)}.object-tools button{font-size:11px;padding:6px 8px}.objects{overflow:auto;flex:1;min-height:70px}.object{display:flex;align-items:center;gap:6px;min-height:45px;border-bottom:1px solid var(--border);padding:5px 8px;cursor:pointer}.object:hover{background:var(--subtle)}.object.selected{background:var(--hover);box-shadow:inset 3px 0 var(--accent)}.object .glyph{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:var(--subtle);color:var(--accent);font-size:17px}.object .object-label{flex:1;min-width:0;font-size:12px}.object .object-label strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.object .object-label small{display:block;color:var(--muted);font-family:Consolas,monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.object button{border:0;background:none;font-size:13px;padding:3px}.object.hidden{opacity:.55}.properties{border-top:1px solid var(--border);padding:12px;max-height:41%;overflow:auto}.properties h3,.toolgroup h3,.controls h3{font-size:13px;font-weight:700;margin:0 0 10px}.subtle{font-size:12px;color:var(--muted)}.field{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;margin:8px 0}.field input,.field select{width:53%;font-size:12px}.field input[type=checkbox]{width:auto}.field label{min-width:0}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:6px}.twocol label{font-size:11px;color:var(--muted)}.twocol input{width:100%;margin-top:4px}.props-actions{display:flex;gap:5px}.props-actions button{flex:1;font-size:11px}.stage{position:relative;overflow:hidden;background:var(--stage);min-width:0}.stage-actions{position:absolute;left:13px;right:13px;top:12px;z-index:1;display:flex;gap:7px;align-items:center;justify-content:space-between;pointer-events:none}.stage-actions span{font-size:11px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px;box-shadow:var(--shadow)}.stage-actions div{display:flex;gap:3px;pointer-events:auto}.stage-actions button{font-size:11px;padding:7px 9px;box-shadow:var(--shadow)}#drawing{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;background:var(--surface)}#drawing[data-tool=select]{cursor:default}#drawing[data-tool=pan]{cursor:grab}#drawing .clickable{cursor:pointer}#drawing .selected-shape{filter:drop-shadow(0 0 3px #8d7af8)}.canvas-footer{pointer-events:none;position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;background:var(--surface);border-top:1px solid var(--border);color:var(--muted);padding:7px 12px;font-size:10px}.scrollpanel{overflow-y:auto;min-height:0;flex:1;padding:12px}.preset{border-bottom:1px solid var(--border);padding-bottom:13px}.preset select{width:100%;font-size:12px}.toolgroup{padding:15px 0 10px;border-bottom:1px solid var(--border)}.toolgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:67px;padding:8px 2px 6px;gap:5px;border-color:transparent}.tool svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.tool span{font-size:10px;white-space:normal;text-align:center;line-height:1.15}.tool.active{color:var(--accent);background:var(--hover);border-color:var(--accent)}.controls{padding:15px 0;border-bottom:1px solid var(--border)}.controls .check{font-size:12px;display:block;margin:10px 0}.colorrow{display:flex;gap:15px}.colorrow label{display:flex;align-items:center;gap:6px;font-size:11px}.export-menu{position:fixed;top:58px;right:15px;width:270px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:9px;padding:12px;z-index:20}.export-menu[hidden]{display:none}.export-heading{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:650}.export-heading button{border:0;font-size:18px}.export-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.export-options button{font-size:12px}.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#263449;color:#fff;padding:10px 16px;border-radius:8px;box-shadow:var(--shadow);font-size:12px;max-width:75vw;z-index:30;display:none}.toast.visible{display:block}body.left-collapsed .workspace{grid-template-columns:52px minmax(250px,1fr) minmax(270px,305px)}body.left-collapsed .leftpanel>:not(.panelhead){display:none}body.left-collapsed .leftpanel .panelhead h2{display:none}body.right-collapsed .workspace{grid-template-columns:minmax(280px,310px) minmax(250px,1fr) 52px}body.right-collapsed .rightpanel>:not(.panelhead){display:none}body.right-collapsed .rightpanel .panelhead h2{display:none}body.left-collapsed.right-collapsed .workspace{grid-template-columns:52px minmax(250px,1fr) 52px}@media(max-width:950px){.workspace{grid-template-columns:240px minmax(230px,1fr) 235px}.beta,.header-actions button span{display:none}.scrollpanel{padding:8px}.tool{min-height:61px}.tool span{font-size:9px}}@media(max-width:700px){.appbar{flex-wrap:wrap;height:auto;min-height:58px}.header-actions{overflow:auto}.workspace{height:calc(100dvh - 90px);grid-template-columns:42px minmax(180px,1fr) 42px}.leftpanel>:not(.panelhead),.rightpanel>:not(.panelhead){display:none}.panelhead h2{display:none}.stage-actions{top:6px;left:6px;right:6px}.stage-actions span{max-width:130px}}
+/* Cut 01 additions: searchable objects, semantic diagram import and conflict recovery. */
+#object-search{width:100%;min-width:0;margin-bottom:6px;border:1px solid var(--line,#cbd5e1);border-radius:6px;padding:7px 9px;background:var(--card,#fff);color:var(--text,#182438)}
+.object-tools{flex-wrap:wrap}
+.object-tools #object-search{flex:1 1 100%}
+.tex-dialog:not([hidden]){position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#0008;padding:20px}
+.tex-panel{width:min(660px,96vw);max-height:88vh;overflow:auto;background:var(--panel,#fff);color:var(--text,#182438);border:1px solid var(--line,#cbd5e1);box-shadow:0 12px 42px #0005;border-radius:14px;padding:18px}
+#tikzcd-input{display:block;width:100%;min-height:230px;resize:vertical;background:var(--card,#fff);color:var(--text,#182438);border:1px solid var(--line,#cbd5e1);border-radius:8px;padding:12px;font:14px/1.5 Consolas,monospace}
+.tex-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.conflict-banner:not([hidden]){position:fixed;z-index:999;left:50%;transform:translateX(-50%);bottom:55px;max-width:90vw;background:#fff4cf;color:#553900;border:1px solid #caa549;box-shadow:0 6px 26px #0003;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.conflict-banner button{white-space:nowrap}
+@media(max-width:830px){.tex-panel{padding:12px}.conflict-banner:not([hidden]){width:95vw}}
+.module-controls{padding-top:9px;padding-bottom:10px}
+.module-toggles{display:grid;grid-template-columns:1fr 1fr;gap:4px 6px}
+.module-toggles .check{font-size:12px;margin:0}
+.toolgroup[hidden]{display:none}
+
+/* Cut 02: the previous narrow layout permanently hid its tools. The collapsed
+   rail now opens a genuine scrollable drawer with working object/tool controls. */
+#object-search{border-color:var(--border);background:var(--surface);color:var(--ink)}
+.tex-panel{background:var(--surface);color:var(--ink);border-color:var(--border)}
+#tikzcd-input{background:var(--surface);color:var(--ink);border-color:var(--border)}
+.object:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media(max-width:700px){
+ .workspace{height:calc(100dvh - 90px)}
+ body.mobile-left-open .leftpanel,body.mobile-right-open .rightpanel{position:fixed;top:58px;bottom:0;width:min(88vw,320px);display:flex;z-index:15;box-shadow:0 15px 35px #0005;max-height:calc(100dvh - 58px)}
+ body.mobile-left-open .leftpanel{left:0}body.mobile-right-open .rightpanel{right:0}
+ body.mobile-left-open .leftpanel .panelhead h2,body.mobile-right-open .rightpanel .panelhead h2{display:block}
+ body.mobile-left-open .leftpanel>:not(.panelhead){display:block}
+ body.mobile-right-open .rightpanel>:not(.panelhead){display:block}
+ body.mobile-left-open .leftpanel .objects{flex:1;min-height:80px;overflow-y:auto}
+ body.mobile-right-open .rightpanel .scrollpanel{flex:1;overflow-y:auto}
+ body.mobile-left-open .leftpanel .properties{max-height:43%;overflow-y:auto}
+}
+
+/* Layout follows measured toolbar height, including mobile wrapping/font zoom. */
+.workspace{height:calc(100dvh - var(--appbar-height,58px))}
+@media(max-width:700px){
+ .workspace,body.left-collapsed .workspace,body.right-collapsed .workspace,body.left-collapsed.right-collapsed .workspace{height:calc(100dvh - var(--appbar-height,58px));grid-template-columns:42px minmax(180px,1fr) 42px}
+ body.mobile-left-open .leftpanel,body.mobile-right-open .rightpanel{top:var(--appbar-height,58px);max-height:calc(100dvh - var(--appbar-height,58px))}
+}
+
+/* Cut 05: deterministic row height for bounded object-list DOM virtualization. */
+.objects .object{height:45px;min-height:45px;max-height:45px}
+.objects .list-spacer{height:0;pointer-events:none;flex-shrink:0}
+
+.objects .empty-objects{padding:10px 12px}
+
+/* Respect per-tool visibility when a module is disabled; .tool uses display:flex. */
+.tool[hidden]{display:none}
+
+/* Cut 10: a real pointer backdrop for the keyboard-modal export selector.
+   Background actions must not edit the project while an export is pending. */
+#export-backdrop:not([hidden]){position:fixed;inset:0;background:#0006;z-index:19;display:block}
+#export-backdrop[hidden]{display:none}
+.export-menu{top:var(--appbar-height,58px);max-height:calc(100dvh - var(--appbar-height,58px) - 10px);overflow-y:auto}
+@media(max-width:700px){.export-menu{right:10px;width:min(320px,calc(100vw - 20px))}}
+
+/* Cut15: touch-first toolkits need targets sized for fingers, while the
+ * compact mouse/keyboard presentation remains unchanged.  Canvas keeps
+ * touch-action:none because it handles its own pointer transactions. */
+@media (pointer:coarse) {
+ .tool{min-height:72px;padding:9px 4px;touch-action:manipulation}
+ .panelhead button,.stage-actions button,.object-tools button,.export-options button,
+ .props-actions button,.tex-actions button{min-height:40px;min-width:40px;touch-action:manipulation}
+ .object button{min-width:36px;min-height:36px;touch-action:manipulation}
+ #drawing{touch-action:none}
+}
+
+/* Cut15: mobile navigation must expose Save/Export without requiring a
+ * horizontally hidden toolbar. Header height is observed by ResizeObserver,
+ * so the drawing stage and drawers automatically follow the wrapped rows. */
+@media(max-width:700px){
+ .appbar{justify-content:flex-start;align-items:center;padding:7px 9px;row-gap:7px}
+ .brand{font-size:16px}
+ .header-actions{flex:1 0 100%;width:100%;min-width:0;flex-wrap:wrap;overflow:visible;gap:5px}
+ .header-actions button{font-size:11px;padding:6px 8px;min-height:36px}
+ .workspace{min-height:0}
+ .stage-actions{gap:4px}
+ .stage-actions span{max-width:110px}
+ .stage-actions button{min-width:35px;padding:7px 6px}
+}
+@media(max-width:700px){html,body{overflow-x:clip}}
+@media(max-width:420px){.stage-actions #mode-label{display:none}}
+
+/* Cut 16: an explicitly actionable recovery path after localStorage denial. */
+.canvas-footer .save-feedback{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;flex-wrap:wrap}
+.canvas-footer #retry-autosave:not([hidden]){pointer-events:auto;display:inline-block;font-size:10px;padding:3px 6px;min-height:26px;color:var(--ink)}
+.canvas-footer #retry-autosave[hidden]{display:none}
+@media(max-width:700px){.canvas-footer{gap:5px;padding:5px 7px;align-items:center}.canvas-footer #coords{display:none}.canvas-footer #retry-autosave:not([hidden]){min-height:32px}}
+
+/* Cut 19: semantically multiline mathematical labels, not single-line inputs. */
+.properties .multiline-field{display:block}
+.properties .multiline-field textarea{display:block;resize:vertical;min-height:68px;max-height:220px;width:100%;margin-top:5px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--ink);font:12px/1.45 Consolas,monospace}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Cut 22: selected morphism label handle is editor-only, not export geometry. */
+#drawing [data-label-handle]{cursor:grab;touch-action:none;vector-effect:non-scaling-stroke}
+#drawing [data-label-handle]:active{cursor:grabbing}
+
+/* Cut24: long morphism route mode names must not be clipped inside a 53%-wide Properties selector. */
+.properties .routing-field{display:flex;flex-direction:column;align-items:stretch;gap:6px}.properties .routing-field select{width:100%;min-width:0}

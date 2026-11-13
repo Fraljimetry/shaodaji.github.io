@@ -1,0 +1,66 @@
+{
+  "project": "MathIllustrator",
+  "cut": "14",
+  "release": "0.15.0",
+  "date": "2026-11-12",
+  "cases": [
+    {
+      "id": "MI14-001",
+      "area": "cross-document draft isolation",
+      "baseline_red": "Cut13: first segment endpoint survives New; subsequent canvas click creates a ghost segment",
+      "fix": "Clear pending draftStart/draftPoints/draftNode and hover upon true document replacement",
+      "evidence": "browser_cut14.py: constructed segment, New, subsequent click, object count zero",
+      "status": "green_isolated_chromium"
+    },
+    {
+      "id": "MI14-002",
+      "area": "background/blur lifecycle",
+      "baseline_red": "Cut13: tab hiding rolls back drag but retains multi-click shape draft",
+      "fix": "Cancel incomplete draft upon document hidden and window blur, without recording document history",
+      "evidence": "browser_cut14.py: hidden event while segment draft active, next click cannot complete stale segment",
+      "status": "green_synthetic_chromium"
+    },
+    {
+      "id": "MI14-003",
+      "area": "asynchronous project identity",
+      "baseline_red": "Cut13: delayed file.text() can finish after an identical-content New, because documentRevision alone remains unchanged",
+      "fix": "Guard delayed JSON import using both documentRevision and documentGeneration",
+      "evidence": "browser_cut14.py: controllable File.text promise plus New and delayed resolve",
+      "status": "green_isolated_chromium"
+    },
+    {
+      "id": "MI14-004",
+      "area": "IME keyboard safety",
+      "baseline_red": "Cut13: isComposing Delete can trigger global object deletion and composing Escape can close tikz-cd import",
+      "fix": "Short-circuit global key handling before modal and destructive shortcut logic when composing or keyCode=229",
+      "evidence": "browser_cut14.py: synthetic composition events, object preserved, import modal stays open; ordinary Escape still closes",
+      "status": "green_synthetic_chromium"
+    },
+    {
+      "id": "MI14-005",
+      "area": "viewport and gesture reentrancy",
+      "baseline_red": "Cut13: programmatically activating Zoom during captured point drag can reinterpret pointerup with changed viewport",
+      "fix": "Cancel active drag before onWheel, zoom in/out/reset and Fit change view",
+      "evidence": "browser_cut14.py: drag then zoom before pointerup, original coordinates preserved",
+      "status": "green_isolated_chromium"
+    },
+    {
+      "id": "MI14-006",
+      "area": "quota failure/recovery",
+      "baseline_red": "Not a confirmed production defect; newly exercised previously unverified failure path",
+      "fix": "No code change required; confirms existing explicit error and JSON escape route",
+      "evidence": "browser_cut14.py: localStorage-shaped quota-failure double, previous save intact, JSON download available, subsequent save recovers",
+      "status": "pass_deterministic_double",
+      "limitation": "Does not prove real-origin browser quota, private-mode storage, or atomic multitab persistence"
+    }
+  ],
+  "model_tests": "93/93",
+  "browser_suites": "24/24 run in batches",
+  "explicitly_not_verified": [
+    "real-origin quota",
+    "same-origin multi-tab atomicity",
+    "physical IME and touch",
+    "native tab background suspension",
+    "other rendering engines and deployed site"
+  ]
+}

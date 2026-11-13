@@ -1,0 +1,47 @@
+{
+  "project": "MathIllustrator",
+  "cut": 23,
+  "release": "0.24.0",
+  "platform": "Headless Chromium from isolated inline HTML; SVG rebuild only; no real-device/browser comparison",
+  "workload": "180 visible/mixed diagram nodes plus 80 labeled direct morphisms; 3 warmups and 12 measurements per mode",
+  "unit": "milliseconds",
+  "run_order": [
+    "manual",
+    "auto"
+  ],
+  "results": {
+    "manual": [
+      13.2,
+      17.3,
+      6.9,
+      7.7,
+      11.1,
+      11.1,
+      12.7,
+      11.2,
+      12.9,
+      13.1,
+      13.0,
+      11.8
+    ],
+    "auto": [
+      17.4,
+      13.9,
+      14.0,
+      10.1,
+      10.7,
+      11.8,
+      10.7,
+      12.7,
+      16.0,
+      13.4,
+      13.2,
+      11.7
+    ]
+  },
+  "median_ms": {
+    "manual": 12.25,
+    "auto": 12.95
+  },
+  "interpretation": "Automatic label packing added ~0.7ms median in this particular run, but no general frame-rate or performance claim is supported. Candidate collision detection and font approximations may cost more in other scenes."
+}

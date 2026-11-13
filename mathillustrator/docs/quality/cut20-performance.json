@@ -1,0 +1,92 @@
+{
+  "scene": "1500 points and labels fully in viewport, fixed Chromium and viewport",
+  "measurements": {
+    "standard": {
+      "ms": [
+        42.399999998509884,
+        41.19999999925494,
+        43.600000001490116,
+        39.599999997764826,
+        63.80000000074506,
+        21.699999999254942,
+        23.199999999254942,
+        21.300000000745058,
+        20.800000000745058,
+        17.800000000745058,
+        20.199999999254942,
+        30.699999999254942,
+        22.5
+      ],
+      "median_ms": 23.199999999254942,
+      "min_ms": 17.800000000745058,
+      "max_ms": 63.80000000074506
+    },
+    "avoid": {
+      "ms": [
+        19.599999997764826,
+        23,
+        23.400000002235174,
+        20.800000000745058,
+        21,
+        25.699999999254942,
+        38.899999998509884,
+        34.900000002235174,
+        35.79999999701977,
+        41.80000000074506,
+        23.400000002235174,
+        21.199999999254942,
+        22.5
+      ],
+      "median_ms": 23.400000002235174,
+      "min_ms": 19.599999997764826,
+      "max_ms": 41.80000000074506
+    }
+  },
+  "note": "Synchronous zoom-reset button and SVG rebuild, excludes browser composite, font rasterization, import/autosave and end-to-end frame rate",
+  "comparison": {
+    "same_scene_uncached_initial_probe": {
+      "standard": {
+        "ms": [
+          38.70000000298023,
+          38.19999999925494,
+          37.599999997764826,
+          38.30000000074506,
+          36.5,
+          36.30000000074506,
+          38.80000000074506,
+          18.199999999254942,
+          19.199999999254942,
+          20.5,
+          19.900000002235174,
+          30.899999998509884,
+          18.399999998509884
+        ],
+        "median_ms": 36.30000000074506,
+        "min_ms": 18.199999999254942,
+        "max_ms": 38.80000000074506
+      },
+      "avoid": {
+        "ms": [
+          45.79999999701977,
+          47,
+          50,
+          51.100000001490116,
+          51.30000000074506,
+          52.19999999925494,
+          50.5,
+          63.100000001490116,
+          70.19999999925494,
+          53.899999998509884,
+          48.30000000074506,
+          49.600000001490116,
+          50.599999997764826
+        ],
+        "median_ms": 50.599999997764826,
+        "min_ms": 45.79999999701977,
+        "max_ms": 70.19999999925494
+      }
+    },
+    "notes": "Initial probe was made before adding the small settled-scene label cache. The later probe uses the cache and a separate run with different JIT/load conditions; do not attribute the entire median change to caching without a tighter A/B."
+  },
+  "provenance": "Two sets of actual isolated headless Chromium measurements, 1500 visible points; each has 4 warmups and 13 synchronous zoom-reset redraw samples per mode. Later run uses settled-scene caching. No controlled cross-run causal attribution, no GPU/frame or cross-browser certification."
+}

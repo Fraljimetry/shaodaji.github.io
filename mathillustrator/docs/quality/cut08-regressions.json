@@ -1,0 +1,104 @@
+{
+  "cut": "08",
+  "release": "0.9.0",
+  "date": "2026-11-12",
+  "baseline": "Cut07 + latest standalone tools.html overlay",
+  "cases": [
+    {
+      "id": "MI08-GEOM-01",
+      "baseline": "previously valid segment/circle collapses after anchor edit",
+      "change": "guardAnchorMove for newly degenerate transitive live constructions",
+      "tests": [
+        "cut08.test.mjs: anchor motion",
+        "browser_cut08.py: invalid property, pointer drag, undo/redo"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "MI08-GEOM-02",
+      "baseline": "morphism endpoints can coincide; legacy degenerate file must remain importable",
+      "change": "guard node movement and exempt already-degenerate historical geometry",
+      "tests": [
+        "cut08.test.mjs: morphism and legacy"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "MI08-XML-03",
+      "baseline": "unpaired surrogates / XML 1.0 forbidden controls accepted into SVG-visible labels",
+      "change": "runtime code-point check without loss of valid Unicode",
+      "tests": [
+        "cut08.test.mjs: labels",
+        "browser_cut08.py: rejected name"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "MI08-NUM-04",
+      "baseline": "subnormal snap interval overflows quotient",
+      "change": "bounded interval and explicit failure",
+      "tests": [
+        "cut08.test.mjs: interval",
+        "browser_cut08.py: Settings rejection"
+      ],
+      "status": "pass"
+    },
+    {
+      "id": "MI08-PERF-05",
+      "baseline": "quadratic reference name search in thousands of objects",
+      "change": "cached indexed name lookup during filter",
+      "tests": [
+        "browser_cut08.py: 4000 objects",
+        "mi_cut08_bench.py: baseline vs changed"
+      ],
+      "status": "pass",
+      "measurements_ms": {
+        "cut07": [
+          33.1,
+          31.5,
+          33.9,
+          25.9,
+          15.2,
+          16.6
+        ],
+        "cut08": [
+          7.3,
+          7.8,
+          8.2,
+          6.5,
+          5.6,
+          5.0
+        ]
+      }
+    },
+    {
+      "id": "MI08-SITE-06",
+      "baseline": "root tools.html has independent focused update after Cut07",
+      "change": "package latest root page with cumulative archive",
+      "tests": [
+        "site_integration.py",
+        "package_integrity.py"
+      ],
+      "status": "pass_static_and_isolated_browser"
+    }
+  ],
+  "unverified": [
+    "hosted-site HTTP navigation",
+    "Safari and Firefox",
+    "physical touch",
+    "real simultaneous Web Locks transactions",
+    "general constraints",
+    "dense SVG 60 FPS"
+  ],
+  "final_verification": {
+    "node": "61/61",
+    "isolated_browser_editor_scripts": "17/17",
+    "homepage_locale_width_checks": "8/8",
+    "latex_pdflatex": "2/2",
+    "json_schema_fixtures": "4/4",
+    "package_paths": "85/85",
+    "sha256_verified_paths": 83,
+    "hosted_site": "unverified",
+    "cross_browser": "unverified"
+  }
+}

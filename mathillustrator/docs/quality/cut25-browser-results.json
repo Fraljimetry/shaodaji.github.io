@@ -1,0 +1,192 @@
+{
+  "project": "MathIllustrator",
+  "cut": 25,
+  "release": "0.26.0",
+  "scope": "36 scripts verified with isolated Chromium page.set_content. Aggregate sweep interrupted; independently rerun affected scripts in bounded batches. Not a deployed-site certification.",
+  "scripts": [
+    {
+      "name": "browser_cut02.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut03.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut03_storage.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut04.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut04_opacity.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut04_pointer.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut04_stale.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut05.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut05_list.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut06.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut07_adversarial.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut07_inventory.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut07_properties.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut08.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut09.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut10.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut11.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut12.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut12_batch.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut13.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut14.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut15.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut15_mobile.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut16.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut17.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut18.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut19.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut20.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut21.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut22.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut23.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut24.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_cut25.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_edges.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_smoke.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    },
+    {
+      "name": "browser_storage.py",
+      "status": "pass",
+      "provenance": "separate bounded run or completed earlier batch"
+    }
+  ],
+  "total": 36,
+  "passing": 36,
+  "timeouts_as_failures": 0,
+  "test_run_limits": "Earlier monolithic sweeps timed out mid-run; completion is based on separate per-script exit status, not on the timed-out aggregate."
+}

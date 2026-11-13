@@ -1,0 +1,69 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.20.0",
+  "cut": "19",
+  "date": "2026-11-12",
+  "baseline": "Exact Cut18 cumulative overlay ZIP",
+  "cases": [
+    {
+      "id": "MI19-001",
+      "risk": "Auto-wrapped node labels lose repeated, leading and trailing spaces, changing mathematical notation",
+      "red": "node --test tests/cut19.test.mjs fails against exact Cut18 src/diagram_layout.mjs with label reconstruction mismatch",
+      "fix": "Keep all whitespace characters when splitting visual tspan lines. Never trim author text at word breaks.",
+      "green": "Both new Node tests pass, including multiple spaces, leading/trailing spaces and explicit line breaks. Browser verifies SVG node tspans concatenate to original text."
+    },
+    {
+      "id": "MI19-002",
+      "risk": "Text, node and morphism property editor is single-line even though JSON supports manual line breaks",
+      "red": "Cut18 has a single-line input for label editing; browser_cut19.py asserts textarea exists",
+      "fix": "Provide a spellcheck-free multiline field with keyboard focus safety and explicit commit-on-change semantics; explain in UI",
+      "green": "Browser type/edit and final JSON round-trip exercise text and morphism labels with embedded newline and spaces."
+    },
+    {
+      "id": "MI19-003",
+      "risk": "Raw SVG text and morphism labels treat explicit newline as whitespace rather than distinct visual line",
+      "red": "Cut18 plain text and morphism use one SVG text node with literal newline, no tspan lines",
+      "fix": "Create explicitly positioned tspans at font-relative line spacing, retaining author text in JSON; keep single-line output structure",
+      "green": "browser_cut19.py downloads SVG, asserts visible distinct tspans and verbatim JSON text. TikZ is disabled when multiline cannot be represented."
+    },
+    {
+      "id": "MI19-004",
+      "risk": "Thousands of completely offscreen text/diagram-node elements still rebuild DOM and worsen interaction responsiveness",
+      "red": "Cut18 benchmark: 2520 object-related SVG elements; 43.8 ms median rebuild",
+      "fix": "Conservative font-size-aware text bounds and existing exact approximate node box bounds allow viewport rejection without deleting scene objects",
+      "green": "Cut19 benchmark: 120 object-related SVG elements; 8.75 ms median; full raw 12-sample data retained."
+    },
+    {
+      "id": "MI19-005",
+      "risk": "Viewport culling could hide arrows whose semantic endpoints are offscreen but whose path crosses the viewport",
+      "red": "Potential new second-order regression from node culling, not an observed Cut18 defect",
+      "fix": "Cull node boxes individually, never implicitly discard dependent morphism paths; maintain same semantic refs",
+      "green": "browser_cut19.py checks crossing morphism path remains visible, hidden endpoint nodes are absent from SVG, all objects preserved in JSON and object list."
+    },
+    {
+      "id": "MI19-006",
+      "risk": "Historical regression tests depend on one-line label input topology and may falsely hang after correct UI change",
+      "red": "Cut07 property-suite timed out looking for an input after new multiline property controls were introduced",
+      "fix": "Update property-suite and TeX compiler test selectors to find textarea, retaining unchanged behavioral assertions",
+      "green": "Cut07 full properties suite, Cut03 browser suite and actual pdflatex exports pass with updated harness."
+    }
+  ],
+  "verification": {
+    "node": "110/110",
+    "isolated_chromium_editor_scripts": "30/30 (excluding benchmark, hosted-site and blocked same-origin multitab script)",
+    "real_pdflatex": "2/2",
+    "benchmark_repeats": 12,
+    "full_site": "isolated static integrated fixture only, not public deployment",
+    "final_clean_extraction_chromium": "30/30 PASS",
+    "release_package_inventory": "Manifest verified; recheck exact final ZIP after adding this evidence",
+    "browser_results_file": "cut19-browser-results.json"
+  },
+  "unverified": [
+    "Live GitHub Pages deployment",
+    "Real multi-tab atomicity, crash recovery",
+    "Physical touch, pen, IME, screen readers",
+    "Firefox/Safari fonts and pixel-parity",
+    "Automatic label collision avoidance and obstacle routing",
+    "Dense mostly-on-screen scene frame rate"
+  ]
+}

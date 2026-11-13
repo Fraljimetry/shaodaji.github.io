@@ -1,0 +1,48 @@
+{
+  "project": "MathIllustrator",
+  "cut": "13",
+  "release": "0.14.0",
+  "date": "2026-11-12",
+  "cases": [
+    {
+      "id": "MI13-001",
+      "risk": "unrelated focused toolbar button deletes selected geometry",
+      "result": "red on Cut12, green Cut13; browser_cut13.py"
+    },
+    {
+      "id": "MI13-002",
+      "risk": "preset indicator falsely implies default construction settings",
+      "result": "red on Cut12, green Cut13; browser_cut13.py"
+    },
+    {
+      "id": "MI13-003",
+      "risk": "export-only controls unnecessarily redraw thousands of SVG objects",
+      "result": "red on Cut12, green Cut13; node-identity assertion plus controlled benchmark"
+    },
+    {
+      "id": "MI13-004",
+      "risk": "legacy imported point radius changes from unrelated new-object defaults",
+      "result": "red on Cut12, green Cut13; model and browser scripts"
+    },
+    {
+      "id": "MI13-005",
+      "risk": "stale generic package integrity entry point rejects every newer cumulative ZIP",
+      "result": "red on first Cut13 extraction; green after updating package_integrity.py to execute current manifest/hashes"
+    }
+  ],
+  "node_tests": "93/93",
+  "browser_editor_tests": "23/23 including 1 new settings suite",
+  "environment": "Node v22 + isolated headless Chromium/Playwright; not deployed hosting",
+  "performance": {
+    "before_export_setting_median_ms": 35.6,
+    "after_export_setting_median_ms": 7.65,
+    "scene_points": 2500
+  },
+  "schema_version": 1,
+  "limitations": [
+    "real multi-tab atomicity unverified",
+    "test environment blocks hosted HTTP navigation",
+    "Firefox/Safari/mobile hardware unverified",
+    "settings matrix is staged, not exhaustive"
+  ]
+}

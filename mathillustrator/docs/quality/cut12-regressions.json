@@ -1,0 +1,47 @@
+{
+  "cut": "12",
+  "release": "0.13.0",
+  "date": "2026-11-12",
+  "baseline": "Exact Cut11 ZIP",
+  "new_cases": [
+    {
+      "id": "MI12-LIFE-001",
+      "area": "visibilitychange event target",
+      "red": "Document event did not invoke window listener; interrupted Move was not canceled",
+      "green": "document listener; Chromium Move+Pan rollback, pointer-up no extra edit",
+      "evidence": "tests/browser_cut12.py",
+      "scope": "isolated Chromium"
+    },
+    {
+      "id": "MI12-FIT-002",
+      "area": "visible-only Fit",
+      "red": "transparent anchor 800000,900000 pulled camera away from two nearby visible points",
+      "green": "skip opacity=0 and edges to hidden/transparent diagram nodes",
+      "evidence": "tests/cut12.test.mjs; tests/browser_cut12.py",
+      "scope": "model and isolated Chromium"
+    },
+    {
+      "id": "MI12-BATCH-003",
+      "area": "anchored multi-vertex construction",
+      "red": "Cut11 scans every point for every vertex despite existing spatial index",
+      "green": "reuse settled spatial index before adding vertices; strict cutoff; same IDs and new points as previous algorithm",
+      "evidence": "tests/browser_cut12_batch.py; local Cut11 vs Cut12 performance harness",
+      "scope": "screen-space construction; synthetic microbenchmark"
+    },
+    {
+      "id": "MI12-REG-004",
+      "area": "retained suite breadth",
+      "red": "baseline 87 Node tests do not assert new lifecycle or visible-only bounds",
+      "green": "91/91 Node; 21/21 Chromium old/new scripts; no real hosting/other-browser claims",
+      "evidence": "node --test tests/*.test.mjs; browser sweep",
+      "scope": "local package and isolated browser"
+    }
+  ],
+  "retained_suite": "91 Node tests, 21 isolated browser scripts, one standalone deterministic batch oracle",
+  "red_green": "Two Fit model tests and Fit browser test failed on original source; synthetic document visibility event demonstrated incorrect listener target; existing makeRefs O(anchors * vertices) shown by controlled benchmark. All green after patch.",
+  "limitations": [
+    "synthetic document.hidden event is not real tab suspend",
+    "all control/branch combinations not tested",
+    "same-origin hosted browser, Firefox/Safari and physical touch not verified"
+  ]
+}

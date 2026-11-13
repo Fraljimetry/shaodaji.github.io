@@ -1,14 +1,394 @@
 {
-  "release": "0.1.0",
+  "release": "0.26.0",
   "date": "2026-11-12",
-  "profiling": {"browser":"unavailable", "reason":"Headless browser navigation blocked by administrator policy", "measured_scene_ms": null, "measured_fps": null, "memory_bytes": null},
-  "current_design": ["SVG DOM objects recreated on paint", "requestAnimationFrame coalescing of pointer events", "Debounced browser storage writes (350ms)", "Renderer text status displays last draw elapsed ms in a browser", "World coordinates maintained independent of viewport", "Hard cap: 10000 objects per imported project", "Hard cap: 20000 points per imported freehand path"],
-  "benchmark_protocol": {
-    "scene_sizes": [100,1000,5000,10000],
-    "scene_types": ["points+segments", "polygons", "dense freehand", "live dependent graphs", "functions"],
-    "metrics": ["median frame ms", "p95 frame ms", "drag-to-paint latency", "heap memory", "open/save latency", "export latency", "import validation latency"],
-    "platforms": ["Windows Chromium/Edge", "Firefox", "Safari", "mobile browser"],
-    "requirements": "Warmup, record hardware and display density, profile CPU/heap, check accuracy, do not assume a machine-independent FPS guarantee"
+  "provenance": "Cut05 three independent one-pass runs of tests/browser_performance.py using isolated headless Chromium 1440x900. Not p50/p95 under controlled repeat sampling; historical cuts preserved.",
+  "measurements": [
+    {
+      "objects": 100,
+      "import_to_object_count_ms": 200.6,
+      "last_svg_rebuild_ms": 5.1,
+      "svg_dom_descendants": 202
+    },
+    {
+      "objects": 1000,
+      "import_to_object_count_ms": 305.3,
+      "last_svg_rebuild_ms": 23.6,
+      "svg_dom_descendants": 2002
+    },
+    {
+      "objects": 3000,
+      "import_to_object_count_ms": 535.3,
+      "last_svg_rebuild_ms": 55.3,
+      "svg_dom_descendants": 6002
+    }
+  ],
+  "conditions": "Simple point-only scenes, point labels and axes/grid disabled. Import_to_object_count includes page UI, file input, validation and frontend update. SVG rebuild timings are values reported by editor on draw. Chrome headless, cannot infer user device speeds.",
+  "current_design": [
+    "RequestAnimationFrame coalesces pointer repaint",
+    "resolver caches dependent point positions per draw; index map built once per paint",
+    "Debounced local autosave (~400 ms), flush on pagehide when uncontested",
+    "Undo at most 80 snapshots, bounded to 30 MiB for older snapshots",
+    "Import at most 10,000 objects, 20,000 samples per freehand path, 12 MB file input cap",
+    "Raster max 36 megapixels; restricted TikZ sample cap 2000",
+    "Bounded explicit function sampler, no GPU; raster resolution 1x–4x, 36 MP maximum and 16384 pixel side cap",
+    "Point click hit testing computes nearest visible point rather than rendering a separate invisible SVG disk per point",
+    "Point SVG primitives outside current viewport are conservatively omitted but remain in native JSON",
+    "Left list renders bounded 45px rows with overscan; scroll/search accesses all data",
+    "Cut06: multi-vertex anchor planning uses one shared resolver snapshot instead of creating and snapping vertices sequentially",
+    "Cut06: normal local save uses origin-scoped Web Locks where supported; unload path remains best effort",
+    "Cut10: bounded immutable explicit-plot path cache, 32 entries and 1.2M characters",
+    "Cut10: clip infinite lines to visible SVG before constructing geometry",
+    "Cut10: node-edge endpoint trims adapt to node-box boundaries, not static center offset"
+  ],
+  "known_hotspots": [
+    "3,000 points exceed a 16.7 ms frame budget in the isolated renderer, so not 60 FPS at that scene size",
+    "Snap-to-anchor performs linear scan of visible points on pointer movement",
+    "Entire freehand paths serialize into snapshots and SVG on changes",
+    "Full SVG still rebuilds all visible geometry and path segments on every redraw",
+    "Virtual list consumes DOM proportional to viewport height, but search/filter still traverses all objects",
+    "Geometric point hit and anchor snapping still scan candidate points linearly"
+  ],
+  "future_plan": [
+    "Viewport object culling",
+    "Incremental SVG/Canvas hybrid draw and spatial hit grid",
+    "Fast indexed object lookup and dirty object updates",
+    "Parametric path simplification/LOD with precision toggles",
+    "Async import/render for large documents with cancellation",
+    "Workers/WebGL for dense scenes, only with measured benefits"
+  ],
+  "next_validation": [
+    "10,000 mixed object scenes",
+    "p50/p95/worst frame times across devices",
+    "drag-to-frame latency",
+    "Firefox/Safari/Edge real hosted-site browsing",
+    "heap usage and startup time",
+    "responsive/mobile touch and accessibility",
+    "Cut16 made no new canvas frame-time measurement; benchmark large-scale storage JSON stringify, localStorage quota handling, pending Web Locks latency and UI responsiveness under contention"
+  ],
+  "cut02_observation": {
+    "transitive_delete_algorithm": "reverse-reference adjacency with BFS replaces repeated full-scene scanning",
+    "test_depth": 3200,
+    "provenance": "Node model test; no hardware wall-clock promise",
+    "rendering_status": "Full SVG rebuild still in use; prior Cut01 point-only measurements not invalidated nor claimed to improve"
   },
-  "optimizations_to_measure": ["indexed immutable scene versions", "geometry and expression caching", "partial SVG diff", "viewport culling", "spatial hit-testing", "path simplification and LOD", "GPU/WebGL for 3D and dense curves", "worker-based expensive operations with cancellation"]
+  "historical_measurements_release": "0.2.0",
+  "cut03_observation": {
+    "date": "2026-11-12",
+    "provenance": "Python Playwright isolated headless Chromium 1440x900, one point-only scene imported per measurement; tests/browser_performance.py; single measurements not percentiles or FPS",
+    "measurements": [
+      {
+        "objects": 100,
+        "import_to_object_count_ms": 168.1,
+        "last_svg_rebuild_ms": 3.9,
+        "svg_dom_descendants": 202
+      },
+      {
+        "objects": 1000,
+        "import_to_object_count_ms": 301.8,
+        "last_svg_rebuild_ms": 25.2,
+        "svg_dom_descendants": 2002
+      },
+      {
+        "objects": 3000,
+        "import_to_object_count_ms": 466.2,
+        "last_svg_rebuild_ms": 43.4,
+        "svg_dom_descendants": 6002
+      }
+    ],
+    "limit": "At 3000 points the isolated draw still exceeds a 16.7 ms 60 FPS frame budget; no cross-run or hardware improvement claim."
+  },
+  "cut04_observation": {
+    "date": "2026-11-12",
+    "environment": "One Playwright isolated headless Chromium run, point-only scenes at 1440x900; tests/browser_performance.py; single samples NOT a distribution",
+    "measurements": [
+      {
+        "objects": 100,
+        "import_to_object_count_ms": 165.0,
+        "last_svg_rebuild_ms": 5.3,
+        "svg_dom_descendants": 202
+      },
+      {
+        "objects": 1000,
+        "import_to_object_count_ms": 279.6,
+        "last_svg_rebuild_ms": 23.1,
+        "svg_dom_descendants": 2002
+      },
+      {
+        "objects": 3000,
+        "import_to_object_count_ms": 625.9,
+        "last_svg_rebuild_ms": 69.8,
+        "svg_dom_descendants": 6002
+      }
+    ],
+    "note": "No measured speedup: 3000-point draw exceeds 16.7ms 60 FPS budget. Not comparable as robust performance trend to historical single runs. Live corrected freehand preview adds path work; next optimize renderer and event coalescing."
+  },
+  "cut05_observation": {
+    "date": "2026-11-12",
+    "environment": "Three runs, each isolated Chromium 1440x900, 100/1000/3000 point-only scenes, grid/axes/labels disabled. Points x=0..9.9/y=0..29.9, 2600+ inside viewport. Measurements from editor render-info and Python browser performance test; NOT robust FPS benchmark",
+    "runs": [
+      {
+        "objects": 3000,
+        "import_to_object_count_ms": 86.5,
+        "svg_rebuild_ms": 21.8,
+        "svg_descendants": 2611
+      },
+      {
+        "objects": 3000,
+        "import_to_object_count_ms": 115.6,
+        "svg_rebuild_ms": 41.9,
+        "svg_descendants": 2611
+      },
+      {
+        "objects": 3000,
+        "import_to_object_count_ms": 113.6,
+        "svg_rebuild_ms": 34.2,
+        "svg_descendants": 2611
+      }
+    ],
+    "interpretation": "Old Cut04 single measurement was 69.8 ms, 6002 SVG descendants; new fewer nodes and shorter observed rebuilds, but variance prevents a strong speedup claim. The biggest new improvement is object list windowing and reduction in import-to-display time. 3k visible points can still exceed 16.7ms.",
+    "not_measured": [
+      "heap",
+      "GPU frame time",
+      "p95",
+      "Cross-device",
+      "mixed high-density diagrams"
+    ]
+  },
+  "cut06_observations": {
+    "environment": "isolated headless Chromium, 1450x900 approximate viewport",
+    "scene": "3,000 simple point objects in browser_performance.py",
+    "one_pass_renderer_ms": 20.4,
+    "import_to_object_count_ms": 89.1,
+    "svg_dom_descendants": 2611,
+    "qualification": "Single-run renderer-only number, not 60fps guarantee or benchmark-vs-Cut05 controlled comparison."
+  },
+  "cut08_object_list_filter": {
+    "date": "2026-11-12",
+    "environment": "isolated Playwright headless Chromium, viewport 1480x920, 4,000 objects: 1,600 point anchors and 2,400 linked segments; repeated search-input events; one baseline and one upgraded browser instance",
+    "cut07_ms": [
+      33.1,
+      31.5,
+      33.9,
+      25.9,
+      15.2,
+      16.6
+    ],
+    "cut08_ms": [
+      7.3,
+      7.8,
+      8.2,
+      6.5,
+      5.6,
+      5.0
+    ],
+    "cut07_median_ms": 28.7,
+    "cut08_median_ms": 6.9,
+    "measures": "synchronous object-list filtering/rendering per input change, not SVG redraw, full frame timing, or import latency",
+    "limits": "One run each; JIT and caching affect measurements. No 60fps guarantee, memory profile, cross-device or production benchmark."
+  },
+  "cut08_renderer_observation": {
+    "environment": "single isolated headless Chromium run, tests/browser_performance.py; point-only 100/1000/3000 object scenes",
+    "draw_only_ms": {
+      "100": 3.4,
+      "1000": 15.9,
+      "3000": 38.5
+    },
+    "import_to_object_count_ms": {
+      "100": 144.7,
+      "1000": 60.3,
+      "3000": 118.6
+    },
+    "3k_svg_descendants": 2611,
+    "qualification": "3,000-point redraw measured above 16.7 ms frame budget. Single samples, JIT/cold-start variance, not a controlled frame-time distribution; no 60fps claim."
+  },
+  "cut09_note": "No new scene-performance benchmark claimed. Raster export now bounds each asynchronous decode and encode stage to 15 seconds, not a GPU frame-time improvement. Previous point-only numbers remain historical.",
+  "cut10_plot_redraw": {
+    "scene": "nine explicit function y(x) curves with different sin/cos expressions; 1420 x 900 isolated Chromium viewport",
+    "method": "15 repeated zoom-reset clicks at unchanged viewport, reported time for SVG rebuilding only; first samples include JIT/warmup",
+    "provenance": "Cut09 and Cut10 exact local sources, Playwright/Chromium headless on same host, /mnt/data/mi_cut10_bench.py",
+    "cut09_median_ms": 3.2,
+    "cut10_median_ms": 1.0,
+    "samples_cut09_ms": [
+      10.6,
+      5.6,
+      4.2,
+      3.0,
+      4.1,
+      3.1,
+      3.1,
+      3.2,
+      3.1,
+      2.9,
+      3.3,
+      3.2,
+      3.3,
+      2.9,
+      3.0
+    ],
+    "samples_cut10_ms": [
+      1.4,
+      1.4,
+      1.8,
+      1.9,
+      0.9,
+      0.9,
+      0.9,
+      0.9,
+      1.0,
+      1.1,
+      1.0,
+      1.2,
+      0.9,
+      0.8,
+      0.9
+    ],
+    "qualification": "Not end-to-end frame time, real device, or cross-browser 60 FPS proof. Text metrics and other object types not accelerated."
+  },
+  "cut11_anchor_lookup": {
+    "fixture": "4,000 synthetic visible points in 80x50 grid, 120 deterministic snap checks",
+    "method": "Node.js v22.16.0; exact old Cut10 nearestAnchor behavior reproduced using Cut10 createResolver per query versus cached Cut11 32px spatial index; five timed repeats after warmup; index creation excluded from query timings",
+    "baseline_median_ms": 159.11,
+    "cut11_indexed_median_ms": 0.2592,
+    "candidate_divergences_after_tie_fix": 0,
+    "index_buckets": 570,
+    "qualification": "Lookup-only synthetic microbenchmark on this container. Index construction and full scene rendering excluded. Not a 60fps, browser pointer-event, portable device or whole-workflow guarantee."
+  },
+  "cut11_limitations": "Full SVG DOM rebuild remains; long labels add tspan nodes; plot detail can be CPU intensive. Plot sampler has 80,000 evaluations per sampled path and explicitly marks incomplete view. Native JSON remains lossless.",
+  "cut12_batch_anchor_resolution": {
+    "fixture": "6,000 existing grid anchors and 1,200 vertex lookups, all matched to existing anchors; 5 runs each",
+    "environment": "same local headless Chromium host, Cut11 cumulative source vs Cut12 modified source",
+    "cut11_samples_ms": [
+      150.7,
+      135.7,
+      138.2,
+      131.8,
+      134.2
+    ],
+    "cut12_samples_ms": [
+      12.6,
+      13.8,
+      5.4,
+      9.5,
+      4.8
+    ],
+    "cut11_median_ms": 135.7,
+    "cut12_median_ms": 9.5,
+    "reference_equivalence": "2,400 deterministic requests on 800 existing grid anchors: identical refs and inserted coordinates compared with original Cut11; also matched strict world-scan oracle in included browser_cut12_batch.py.",
+    "qualification": "Only makeRefs batch resolution, includes first index build and excludes full SVG redraw, pointer event dispatch, GC percentile, input latency and physical devices. Bench driver itself is an external audit helper, not part of production app."
+  },
+  "cut13_export_setting_redraw_avoidance": {
+    "fixture": "2,500 visible point objects, no axes/grid/point labels; 1420×820 desktop Chromium",
+    "operation": "Ten sequential exportScale select change events toggling 1×/2×; full DOM event dispatch including document validation/history/synchronization, not whole user workflow",
+    "cut12_samples_ms": [
+      35.2,
+      46.3,
+      38,
+      22.8,
+      25.7,
+      32.1,
+      34.4,
+      49.3,
+      36,
+      48.3
+    ],
+    "cut13_samples_ms": [
+      7.6,
+      11.9,
+      13.8,
+      7.6,
+      11.5,
+      12,
+      6.2,
+      5,
+      7.7,
+      5.1
+    ],
+    "cut12_median_ms": 35.6,
+    "cut13_median_ms": 7.65,
+    "provenance": "Same host isolated headless Chromium, exact Cut12 extracted baseline and Cut13 current source; /mnt/data/mi_cut13_bench.py, not shipped",
+    "limitations": "Not a cross-browser, device, frame-time, full-scene, autosave, or 60FPS proof. The export flag update still performs O(n) model stringify/validation. No speedup claimed for grid/page/background changes."
+  },
+  "cut14_note": "Cut14 made no measured rendering performance improvement. Existing Cut13 export-settings and Cut12 batch snapping data remain historical; new lifecycle tests target state integrity, not frame time.",
+  "cut15_note": "No full scene frame rate improvement measured. Cut15 targeted touch gesture correctness and responsive header accessibility; mobile emulation checked 320/390/700px layout and functional PNG export. Do not interpret this as hardware performance certification.",
+  "cut16_performance_note": "No general rendering speedup is claimed. Same-byte writes are now elided (one fewer storage write/event for already synchronized documents); this was verified by a unit assertion, not measured as a wall-clock benchmark.",
+  "cut17_mixed_scene": "cut17-performance.json",
+  "cut17_note": "3840 objects; 1100 offscreen segments; 180 on-viewport segments; 12 samples per version; Cut16 median 20.45ms, Cut17 6.30ms; 2920 versus 720 SVG data-id elements. Isolated Chromium, not FPS guarantee.",
+  "cut18_note": "No new rendering benchmark. Cut18 tests downloaded image encoding and output alpha; isolated Chromium only.",
+  "cut19_offscreen_labels": {
+    "reference": "cut19-performance.json",
+    "median_cut18_ms": 43.8,
+    "median_cut19_ms": 8.75,
+    "reduction_pct": 80.0,
+    "scene_objects": 2520,
+    "offscreen": 2400,
+    "visible": 120,
+    "repeats": 12,
+    "provenance": "isolated headless Chromium SVG rebuild; not complete frame time"
+  },
+  "cut20_dense_visible_labels": {
+    "reference": "cut20-performance.json",
+    "points": 1500,
+    "median_standard_ms": 36.3,
+    "median_avoid_ms": 50.6,
+    "provenance": "isolated Chromium synchronous full SVG rebuild from zoom reset; one workload, no 60 FPS guarantee",
+    "after_cache_standard_median_ms": 23.2,
+    "after_cache_avoid_median_ms": 23.4,
+    "uncached_run_standard_median_ms": 36.3,
+    "uncached_run_avoid_median_ms": 50.6,
+    "caveat": "Different timed runs, no causal speed claim or general 60 FPS promise"
+  },
+  "cut21_diagram_routing": {
+    "provenance": "Isolated Chromium 1380x860 with imported 320-node/80-morphism document, three warmups and 11 SVG rebuild measurements per mode. Note routing overhead is opt-in.",
+    "direct_median_ms": 14.8,
+    "avoid_median_ms": 17.2,
+    "raw_file": "quality/cut21-performance.json",
+    "limitation": "Not an end-to-end frame time or cross-browser device guarantee."
+  },
+  "cut24_crossing_avoidance": {
+    "project": "MathIllustrator",
+    "cut": 24,
+    "release": "0.25.0",
+    "scenario": "48 visible/mixed-position semantic nodes and 80 arrows, deterministic random seed 2424; same object graph both settings",
+    "provenance": "isolated headless Chromium; page.set_content; 3 warmups and 12 synchronous SVG rebuilds per mode, not full frame time, not user hardware",
+    "raw_ms": {
+      "avoid": [
+        12,
+        10.3,
+        13.5,
+        9,
+        5.8,
+        8.6,
+        6.3,
+        6,
+        6,
+        7.8,
+        7.6,
+        7.7
+      ],
+      "avoid-crossings": [
+        8.1,
+        10.1,
+        7.9,
+        7.9,
+        7.6,
+        7.2,
+        5.9,
+        6.1,
+        8.4,
+        15.1,
+        10.1,
+        6
+      ]
+    },
+    "median_ms": {
+      "avoid": 7.75,
+      "avoid-crossings": 7.9
+    },
+    "limitations": [
+      "Single synthetic scene; some routes unresolved or limited",
+      "No real compositor, input-latency, device thermal or memory measurement",
+      "Crossing inspection limited to earlier visible arrows, 128 arrow paths and 8192 pair checks per candidate"
+    ]
+  },
+  "cut25_observation": "cut25-performance.json"
 }

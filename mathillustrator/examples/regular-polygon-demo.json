@@ -1,0 +1,143 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Regular polygon and live geometry demonstration"
+  },
+  "settings": {
+    "grid": true,
+    "snap": true,
+    "snapStep": 0.5,
+    "correction": "medium",
+    "showAxes": true,
+    "stroke": "#3657ad",
+    "fill": "#b6c9f9",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "showLabels": true,
+    "snapAnchors": true,
+    "polygonSides": 6,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "point",
+      "name": "O",
+      "xy": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "point",
+      "name": "V",
+      "xy": [
+        3,
+        0
+      ]
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "regularPolygon",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "sides": 6,
+      "name": "regularPolygon 3"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "name": "M",
+      "xy": [
+        5,
+        1
+      ],
+      "text": "A",
+      "fontSize": 17
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "name": "N",
+      "xy": [
+        8,
+        1
+      ],
+      "text": "B",
+      "fontSize": 17
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#b6c9f9",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o4",
+        "o5"
+      ],
+      "text": "f",
+      "bend": 0,
+      "name": "morphism 6"
+    }
+  ],
+  "nextId": 7
+}

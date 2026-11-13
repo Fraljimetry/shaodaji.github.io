@@ -1,0 +1,52 @@
+{
+  "project": "MathIllustrator",
+  "cut": "16",
+  "release": "0.17.0",
+  "date": "2026-11-12",
+  "baseline": "Exact Cut15 cumulative overlay",
+  "provenance": "Node + Chromium set_content with mocked localStorage; attempted actual HTTP same-origin navigation blocked by ERR_BLOCKED_BY_ADMINISTRATOR",
+  "cases": [
+    {
+      "id": "MI16-001",
+      "risk": "Queued stale StorageEvent newValue incorrectly pauses valid autosave",
+      "red": "Cut15 browser_cut16.py raised false conflict",
+      "fix": "Read latest localStorage contents on event; ignore superseded notification",
+      "green": "Cut16 isolated Chromium browser test"
+    },
+    {
+      "id": "MI16-002",
+      "risk": "Same document saved by another writer falsely reports concurrent divergence",
+      "red": "Cut15 compareAndWrite returns conflict for identical desired bytes",
+      "fix": "Idempotent successful comparison, no duplicate setItem",
+      "green": "Cut16 Node unit tests including serialized locks"
+    },
+    {
+      "id": "MI16-003",
+      "risk": "Quota autosave failure has no manual retry without editing the drawing",
+      "red": "Cut15 browser_cut16.py failed: retry button not found",
+      "fix": "Visible accessible Retry local save control on failed storage write",
+      "green": "Cut16 Chromium failure, latest-document retry, status and preservation"
+    },
+    {
+      "id": "MI16-004",
+      "risk": "Corrupt startup banner title leaks into later normal conflict",
+      "red": "Cut15 setStorageConflict(false) did not restore banner heading",
+      "fix": "Reset correct heading by conflict cause",
+      "green": "Cut16 new scenario + inherited browser_cut03_storage.py"
+    },
+    {
+      "id": "MI16-005",
+      "risk": "Site storage clear may remove disk copy while editor retains unsaved data",
+      "red": "No prior key-null storage regression",
+      "fix": "Handle key-null storage event and pause autosave",
+      "green": "Cut16 Chromium key-null clear with intact drawing"
+    }
+  ],
+  "limits": [
+    "Not a real two-tab same-origin Web Locks integration result",
+    "No hardware quota or storage eviction fault injection",
+    "Web Locks unload durability and non-Web Locks races remain unverified",
+    "No new canvas performance benchmark",
+    "No deployed-site test"
+  ]
+}

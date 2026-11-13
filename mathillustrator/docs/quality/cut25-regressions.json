@@ -1,0 +1,90 @@
+{
+  "project": "MathIllustrator",
+  "cut": 25,
+  "release": "0.26.0",
+  "schema_version": 1,
+  "baseline": "Exact Cut24 cumulative overlay",
+  "new_tests": [
+    "tests/cut25.test.mjs",
+    "tests/browser_cut25.py",
+    "tests/browser_cut25_performance.py"
+  ],
+  "cases": [
+    {
+      "id": "MI25-001",
+      "risk": "Earlier arrows never reconsidered later fixed arrows",
+      "red": "Cut24 only tests earlier visible arrows",
+      "green": "Cut25 opt-in scene-aware routing checks all drawable edges in bounded relaxation and resolves an earlier-vs-later crossing",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-002",
+      "risk": "New mode could silently alter legacy diagram layouts",
+      "red": "Mode-wide rerouting changes published figures",
+      "green": "Only scene-crossings routes are replaceable; Direct/Avoid/earlier-only arrows retain their route records and endpoints",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-003",
+      "risk": "Many visible arrows freeze the UI",
+      "red": "Unbounded n² iterations",
+      "green": "48 drawable-arrow safety cap, maximum two passes, 8192 segment-pair cap per candidate; capacity warning is amber/dashed",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-004",
+      "risk": "A degenerate historical overlapping arrow can poison route optimization",
+      "red": "Invalid route with zero drawable points treated as capacity for all arrows",
+      "green": "Exclude historically non-renderable overlaps from intersection inputs while preserving their semantic JSON",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-005",
+      "risk": "Parallel or T-junction overlaps are invisible to strict-interior crossing count",
+      "red": "Cut24 strictIntersection ignores collinear overlap and T-junction contact",
+      "green": "New opt-in visual-conflict counter catches nonzero overlap/T junction, exempts endpoint-only contact",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-006",
+      "risk": "Optimize then later edge changes and status becomes false-clear",
+      "red": "Each route was labeled before final other paths were settled",
+      "green": "Final residual-conflict pass reevaluates all opted-in routes after two bounded sweeps",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-007",
+      "risk": "Route display, automatic label position and SVG export disagree",
+      "red": "Separate curve/path evaluation could diverge",
+      "green": "Single final refined map drives drawing, label positions and SVG/raster export; JSON preserves refs and settings",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-008",
+      "risk": "TikZ falsely represents changed path and imported JSON accepts invalid routing",
+      "red": "Restricted converter cannot encode route corridors",
+      "green": "TikZ choice remains disabled for scene-crossings; schema/runtime reject unknown or non-morphism values",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-009",
+      "risk": "Hidden later arrow incorrectly controls an earlier active route",
+      "red": "Stale route maps might include hidden arrows",
+      "green": "Chromium hide/undo/redo proves recomputation without semantic edge mutation",
+      "verification": "Node/browser focused regression"
+    },
+    {
+      "id": "MI25-010",
+      "risk": "Test runner wrongly claims aggregate PASS after timeout",
+      "red": "Historical combined browser sweep stalls at inventory",
+      "green": "Rerun inventory and remaining scripts in bounded calls; preserve batch-interruption provenance",
+      "verification": "test-runner provenance"
+    }
+  ],
+  "unsupported": [
+    "No global optimality proof",
+    "No guarantee for mazes requiring >two turns",
+    "Fonts and curved arrows approximated",
+    "Physical touch, deployed site, Firefox/Safari, real multi-tab remain unverified"
+  ]
+}

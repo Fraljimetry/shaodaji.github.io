@@ -1,0 +1,99 @@
+{
+  "release": "0.16.0",
+  "categories": [
+    {
+      "category": "touch construction",
+      "status": "direct isolated browser pass",
+      "cases": [
+        "primary release",
+        "second contact inside SVG",
+        "second contact on tools",
+        "finger release outside SVG",
+        "large final release movement",
+        "blur"
+      ]
+    },
+    {
+      "category": "pen and mouse regression",
+      "status": "direct isolated + inherited pass",
+      "cases": [
+        "final pointerup pan",
+        "mouse drag rollback",
+        "freehand",
+        "point selection"
+      ]
+    },
+    {
+      "category": "mobile UI",
+      "status": "Chromium emulation pass",
+      "cases": [
+        "320px",
+        "390px",
+        "700px",
+        "header buttons",
+        "no horizontal document scroll",
+        "canvas header offset",
+        "touchscreen.tap",
+        "PNG export"
+      ]
+    },
+    {
+      "category": "wheel portability",
+      "status": "synthetic isolated pass",
+      "cases": [
+        "deltaMode PIXEL",
+        "deltaMode LINE"
+      ],
+      "unverified": [
+        "physical touchpad",
+        "Safari wheel deltaMode PAGE"
+      ]
+    },
+    {
+      "category": "local storage",
+      "status": "synthetic contract and prior simulated UI pass",
+      "cases": [
+        "optimistic token conflict",
+        "deferred lock latest payload",
+        "quota throw",
+        "fallback"
+      ],
+      "unverified": [
+        "genuine same-origin simultaneous tabs",
+        "actual storage quota",
+        "pagehide atomicity"
+      ]
+    },
+    {
+      "category": "keyboard/modal focus",
+      "status": "inherited + direct smoke",
+      "cases": [
+        "Export Tab/Shift+Tab",
+        "Escape",
+        "IME previous cuts"
+      ],
+      "unverified": [
+        "screen-reader task completion",
+        "full keyboard drawing"
+      ]
+    },
+    {
+      "category": "vector and raster export",
+      "status": "inherited + targeted mobile PNG pass",
+      "cases": [
+        "SVG",
+        "PNG",
+        "JPEG",
+        "WebP",
+        "TikZ",
+        "tikz-cd",
+        "JSON"
+      ],
+      "unverified": [
+        "Safari/Firefox image color parity",
+        "large goldens",
+        "PDF"
+      ]
+    }
+  ]
+}

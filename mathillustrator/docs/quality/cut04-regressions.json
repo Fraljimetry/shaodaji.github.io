@@ -1,0 +1,25 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.5.0",
+  "cut": "04",
+  "date": "2026-11-12",
+  "test_provenance": {
+    "model": "Node v22.16.0 node --test tests/*.test.mjs; 42/42 passing",
+    "browser": "Playwright isolated headless Chromium, page.set_content(inlined ES modules), 10/10 scripts passing",
+    "latex": "Actual pdflatex compilation of two generated TikZ fragments, 2/2",
+    "schema": "JSON Schema Draft202012 example fixtures 4/4",
+    "site": "Static bilingual root navigation check passed; production HTTP not visited",
+    "performance": "One isolated Chromium render observation per scene, 3000 points 69.8 ms (not a trend)"
+  },
+  "new_cases": [
+    {"id":"MI-TEX-040","risk":"escaped ampersand becomes extra tikzcd cell","red":"3 nodes instead of 2","green":"2 nodes; 1 morphism; literal TeX text preserved","test":"tests/cut04.test.mjs"},
+    {"id":"MI-TEX-041","risk":"export injects node or arrow commands and changes directed graph","red":"unsafe exports enabled; roundtrip changes objects","green":"source reimport graph comparison rejects; export option disabled","test":"tests/cut04.test.mjs"},
+    {"id":"MI-DRAW-042","risk":"freehand stroke invisible until release; last point dropped","red":"no draft-freehand SVG element","green":"live corrected preview; pointerup endpoint committed; canceled gesture no object","test":"tests/browser_cut04.py"},
+    {"id":"MI-UI-043","risk":"detached UI closure modifies replacement project same object ID","red":"old name field changes new B into STALE_EDIT","green":"instance-identity guard blocks old field, delete button and eye toggle","test":"tests/browser_cut04_stale.py"},
+    {"id":"MI-PTR-044","risk":"click-only selection snaps an off-grid point","green":"3 px drag threshold + authoritative pointerup; undo works","test":"tests/browser_cut04_pointer.py"},
+    {"id":"MI-STOR-045","risk":"same-content incoming save triggers false conflict on next edit","green":"identical storage token adopted without overwriting divergent saves","test":"tests/browser_cut04.py","caution":"isolated storage double, not real multitabs"},
+    {"id":"MI-EXP-046","risk":"zero-opacity labels/hit disks remain observable and interfere","green":"SVG/TikZ alpha and hit layer verify","test":"tests/browser_cut04_opacity.py"},
+    {"id":"MI-EDIT-047","risk":"point radius tied exclusively to global setting","green":"optional per-object pointSize, validator rejects invalid new values, old JSON accepted","test":"tests/cut04.test.mjs"}
+  ],
+  "not_verified": ["deployed HTTPS", "actual Windows browser", "Safari/Firefox", "touch and pressure", "real two-tab atomicity", "publication-exact typography", "large-scene 60 FPS"]
+}

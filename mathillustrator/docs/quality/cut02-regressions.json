@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "release": "0.3.0",
+  "date": "2026-11-12",
+  "unit": {
+    "runner": "node --test tests/*.test.mjs",
+    "count": 30,
+    "passed": 30,
+    "failed": 0
+  },
+  "browser_provenance": "Playwright isolated Chromium DOM with inlined ES modules; storage double on about:blank. Not served or hosted site.",
+  "browser_passed": [
+    "tests/browser_smoke.py",
+    "tests/browser_edges.py",
+    "tests/browser_cut02.py",
+    "tests/browser_storage.py"
+  ],
+  "static_site": "tests/site_integration.py PASS, checks real HTML source and module paths",
+  "network_browser": "blocked: ERR_BLOCKED_BY_ADMINISTRATOR for localhost; no hosted-site verification",
+  "new_cases": [
+    {
+      "id": "SITE-020",
+      "focus": "bilingual home/Tools direct link and tutorials",
+      "result": "static-pass"
+    },
+    {
+      "id": "MOBILE-021",
+      "focus": "small viewport side rails open/close functional objects/tools",
+      "result": "isolated-chromium-pass"
+    },
+    {
+      "id": "EDIT-022",
+      "focus": "invalid then valid property, undo/redo no stale reference",
+      "result": "isolated-chromium-pass"
+    },
+    {
+      "id": "PERF-023",
+      "focus": "reverse-graph deletion of >3200 dependencies",
+      "result": "node-pass"
+    },
+    {
+      "id": "MODEL-024",
+      "focus": "append collision does not consume IDs",
+      "result": "node-pass"
+    },
+    {
+      "id": "REGPOLY-025",
+      "focus": "3-100 sides, live geometry, JSON migration, export and zero-radius rejection",
+      "result": "node+isolated-chromium-pass"
+    },
+    {
+      "id": "RESIZE-026",
+      "focus": "toolbar-height tracked by ResizeObserver to position drawers",
+      "result": "isolated-chromium-pass; hardware pending"
+    },
+    {
+      "id": "STORAGE-028",
+      "focus": "resolve external storage conflict without delayed overwrite/old undo",
+      "result": "isolated-chromium-pass; actual two-tab race pending"
+    }
+  ],
+  "critical_open": [
+    "real site HTTP / GitHub Pages route",
+    "real multi-tab atomicity",
+    "touch hardware and Firefox/Safari",
+    "large-scene rendering",
+    "full TeX and PDF fidelity"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "release": "0.20.0",
+  "cut": "19",
+  "date": "2026-11-12",
+  "workload": "2,520 mathematical text and diagram-node labels; 2,400 fully offscreen, 120 visible. Grid and axes off.",
+  "test": "tests/browser_cut19_performance.py",
+  "provenance": "Actual isolated headless Chromium, controlled scene imported into each full application, 4 warmups and 12 measured SVG rebuilds per version. Same browser executable and viewport. Does not measure UI event latency, JSON import, GPU frame budget, font parity, or cross-device performance.",
+  "baseline_cut18": {
+    "cut": "mathillustrator",
+    "objects": 2520,
+    "offscreen_labels": 2400,
+    "on_screen_labels": 120,
+    "dom_data_id": 2520,
+    "median_ms": 43.8,
+    "min_ms": 41.1,
+    "max_ms": 74.2,
+    "samples_ms": [
+      56,
+      42.9,
+      52.3,
+      55.1,
+      44.8,
+      74.2,
+      43.5,
+      42.9,
+      44.1,
+      41.1,
+      41.9,
+      41.3
+    ],
+    "browser_page_errors": []
+  },
+  "cut19": {
+    "cut": "mathillustrator",
+    "objects": 2520,
+    "offscreen_labels": 2400,
+    "on_screen_labels": 120,
+    "dom_data_id": 120,
+    "median_ms": 8.75,
+    "min_ms": 7.4,
+    "max_ms": 24.5,
+    "samples_ms": [
+      8.1,
+      10.5,
+      13.5,
+      9.7,
+      8.7,
+      8.6,
+      8.2,
+      9.5,
+      24.5,
+      8.8,
+      8.4,
+      7.4
+    ],
+    "browser_page_errors": []
+  },
+  "median_reduction_pct": 80.0,
+  "dom_elements_reduced": 2400,
+  "limitations": [
+    "Results are scene-dependent, no 60 FPS certification",
+    "No promise for mostly on-screen text or dense curved diagrams",
+    "Browser text size is estimated conservatively for safe culling",
+    "Full project data including offscreen labels is never removed"
+  ]
+}

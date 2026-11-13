@@ -1,0 +1,75 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.24.0",
+  "cut": 23,
+  "scope": "Newly introduced per-morphism label-avoid property and neighboring workflows; supplements original 152-entry historical matrix; not exhaustive all settings combinations",
+  "features": [
+    {
+      "id": "property.morphism.labelAvoid",
+      "status": "isolated_browser_verified",
+      "evidence": "tests/browser_cut23.py + tests/cut23.test.mjs",
+      "conditions": [
+        "default off for older JSON",
+        "checkbox on/off",
+        "manual label priority",
+        "hidden neighbor removed",
+        "undo",
+        "drag handoff",
+        "cancel",
+        "SVG export",
+        "TikZ disabled",
+        "JSON round trip",
+        "malformed boolean rejected"
+      ]
+    },
+    {
+      "id": "renderer.morphismLabelPacking",
+      "status": "isolated_browser_verified",
+      "evidence": "tests/cut23.test.mjs and tests/browser_cut23.py",
+      "conditions": [
+        "candidate avoidance",
+        "bounded index",
+        "determinism",
+        "unresolved status",
+        "presentational only"
+      ]
+    },
+    {
+      "id": "performance.morphismLabelPacking",
+      "status": "measured_one_chromium_environment",
+      "evidence": "tests/browser_cut23_performance.py + cut23-performance.json",
+      "conditions": [
+        "180 nodes + 80 labeled morphisms",
+        "12 SVG rebuilds/mode",
+        "no paint/compositor or other engines"
+      ]
+    },
+    {
+      "id": "publication.morphismAutoLabel",
+      "status": "isolated_browser_verified",
+      "evidence": "tests/browser_cut23.py",
+      "conditions": [
+        "SVG/JSON preserve",
+        "restricted TikZ disabled",
+        "semantic tikz-cd graph only"
+      ]
+    },
+    {
+      "id": "webroot.integration",
+      "status": "checked_separately",
+      "evidence": "tests/site_integration.py + tests/browser_site_home.py",
+      "conditions": [
+        "root index.html and tools.html preserved",
+        "MathReader untouched"
+      ]
+    }
+  ],
+  "unverified": [
+    "Firefox/Safari exact metrics",
+    "actual deployed GitHub Pages",
+    "physical touch/pen",
+    "large visible diagrams >1000 morphisms",
+    "global crossing minimization",
+    "concurrent tabs"
+  ]
+}

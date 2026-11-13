@@ -1,0 +1,678 @@
+{
+  "cut": "12",
+  "release": "0.13.0",
+  "method": "Regex inventory of named functions in src/*.mjs, with historic 152-control audit attached by reference. This is a coverage map, NOT proof that every function/branch/composition was tested.",
+  "function_count": 123,
+  "functions": [
+    {
+      "source": "src/anchor_index.mjs",
+      "symbol": "createAnchorIndex",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "notice",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "safeStorageSet",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "saveStatus",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "setStorageConflict",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "commitLatest",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "persistNow",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "enqueueSave",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "recordUndo",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "syncHistory",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "restore",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "undo",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "redo",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "refreshAfterMutation",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "update",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "el",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "project",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "unproject",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "xyEvent",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "screenPoints",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "desc",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "simple",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "drawBackground",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "attr",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "renderObject",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "draw",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "render",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "scheduleRender",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "currentObject",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "renderList",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "renderListWindow",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "focusListIndex",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "field",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "renderProperties",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "renderAll",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "select",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "selectTool",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "populateTools",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "syncSettings",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "setupSettings",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "currentAnchorIndex",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "hitTestPoint",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "nearestAnchor",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "makeRefs",
+      "cut12_evidence_level": "new_direct_tests"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "checkNewRefs",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "addTwoPoint",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "finishDraft",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "correctedPath",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "constructionPoint",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "pointerDown",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "pointerMove",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "cancelDrag",
+      "cut12_evidence_level": "new_direct_tests"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "pointerUp",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "onWheel",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "fit",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "deleteSelected",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "download",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "svgString",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "exportSignature",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "assertExportFresh",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "awaitExportStage",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "exportImage",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "latexEscape",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "canTikz",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "asTikz",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "rasterSupported",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "setupExport",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "trapDialogTab",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/app.mjs",
+      "symbol": "initialise",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram.mjs",
+      "symbol": "fail",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram.mjs",
+      "symbol": "splitTopLevel",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram.mjs",
+      "symbol": "parseArrow",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram.mjs",
+      "symbol": "importTikzCd",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram.mjs",
+      "symbol": "exportTikzCd",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram.mjs",
+      "symbol": "canExportTikzCd",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "glyphAdvance",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "measure",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "buildLabel",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "layoutNodeLabel",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "nodeBox",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "nodeLayoutCacheStats",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/diagram_layout.mjs",
+      "symbol": "edgeBetweenBoxes",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/export_fidelity.mjs",
+      "symbol": "tikzPoint",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/export_fidelity.mjs",
+      "symbol": "tikzGeometryIssue",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "regularPolygonVertices",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "smoothPath",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "worldBounds",
+      "cut12_evidence_level": "new_direct_tests"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "pageRect",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "arrowCurve",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "arrowHeadPoints",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "clipInfiniteLine",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "formatCoordinate",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/geometry.mjs",
+      "symbol": "fitSceneView",
+      "cut12_evidence_level": "new_direct_tests"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "xmlTextSafe",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "clone",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "newDoc",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "finite",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "safeCoord",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "get",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "byName",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "nextId",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "append",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "addPoint",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "createAnchored",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "createResolver",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "position",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "points",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "affected",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "remove",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "guardAnchorMove",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "layerOrder",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "roundSnap",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "snapPoint",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "parseExpression",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "checkNewGeometry",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "pointName",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "command",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/model.mjs",
+      "symbol": "validateDoc",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/plot.mjs",
+      "symbol": "sampleExplicitPlot",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/plot.mjs",
+      "symbol": "plotPath",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/plot_cache.mjs",
+      "symbol": "createPlotCache",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/storage.mjs",
+      "symbol": "compareAndWrite",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    },
+    {
+      "source": "src/storage.mjs",
+      "symbol": "coordinateSave",
+      "cut12_evidence_level": "existing_test_or_static_review_only"
+    }
+  ],
+  "ui_control_inventory_source": "docs/quality/cut07-control-matrix.json",
+  "ui_control_count": 152,
+  "ui_control_groups": {
+    "tool": 18,
+    "input": 17,
+    "workspace": 10,
+    "setting": 22,
+    "object": 27,
+    "viewport": 12,
+    "file": 9,
+    "dialog": 8,
+    "export": 10,
+    "special": 4,
+    "environment": 7,
+    "site": 8
+  },
+  "current_verification": [
+    "91 Node test assertions/subtests",
+    "21 isolated Chromium scripts with a representative UI and setting sweep",
+    "one additional indexed-batch equivalence Chromium script",
+    "SVG/JSON fixture and representative pdfLaTeX/static site checks",
+    "clean ZIP SHA/inventory tests"
+  ],
+  "new_direct_behaviors": [
+    "document visibilitychange interrupts Move and Pan",
+    "visible-only Fit with invisible point and invisible morphism endpoint",
+    "batch anchor resolution has same ID semantics as previous full scan"
+  ],
+  "not_exhaustively_verified": [
+    "all 152 UI controls across every setting and mode combination",
+    "every internal function branch and mutation sequence",
+    "true browser backgrounding or power suspension (event was synthetic)",
+    "real multi-tab Web Locks atomicity",
+    "published HTTPS module loading",
+    "Firefox, Safari and screen reader/touch/pen hardware",
+    "all mathematical plot singularities, label fonts and publication geometry"
+  ],
+  "next_batches": [
+    {
+      "batch": "13-A",
+      "scope": "All Settings default/valid/invalid/undo/reload/import cross-product and accessibility focus inspection"
+    },
+    {
+      "batch": "13-B",
+      "scope": "Export image golden cases across styles, crop, transparency, large canvases and browser engines"
+    },
+    {
+      "batch": "13-C",
+      "scope": "Persistence fault injection, real same-origin two-tab write contention, pagehide, quota and crash scenarios"
+    },
+    {
+      "batch": "13-D",
+      "scope": "Drawing-mode fuzz/property-based data generation, dependency stress, pointer/touch and mixed-scene end-to-end perf"
+    }
+  ]
+}

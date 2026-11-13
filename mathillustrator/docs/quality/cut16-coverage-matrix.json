@@ -1,0 +1,30 @@
+{
+  "cut": "16",
+  "release": "0.17.0",
+  "direct_tested": [
+    "localStorage last-write compare and idempotence",
+    "queued lock duplicate payload",
+    "stale StorageEvent with actual current data",
+    "external clear event",
+    "simulated quota failure and Retry",
+    "conflict label",
+    "manual JSON export inherited"
+  ],
+  "inherited_regression": [
+    "drawing tools",
+    "construction commands",
+    "undo/redo",
+    "property edits",
+    "imports/exports",
+    "touch emulation",
+    "responsive site"
+  ],
+  "not_certified": [
+    "real same-origin multiple tabs",
+    "browser unload atomicity",
+    "real storage quota",
+    "Firefox and Safari",
+    "deployed website",
+    "physical stylus and touch"
+  ]
+}

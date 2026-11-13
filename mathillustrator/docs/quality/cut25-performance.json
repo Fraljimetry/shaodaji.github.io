@@ -1,0 +1,85 @@
+{
+  "project": "MathIllustrator",
+  "cut": 25,
+  "release": "0.26.0",
+  "provenance": "isolated headless Chromium; page.set_content; synchronous SVG rebuild only; three warmups and 12 samples per mode",
+  "scene": "16 visible nodes in 4×4 grid and 20 arrows, deterministic pairs from seed 2525",
+  "results": {
+    "direct": {
+      "raw_ms": [
+        2.3,
+        1.9,
+        2.7,
+        1.9,
+        4.2,
+        2.3,
+        2.3,
+        1.7,
+        2,
+        2.1,
+        2.1,
+        1.7
+      ],
+      "median_ms": 2.1
+    },
+    "scene-crossings": {
+      "raw_ms": [
+        4.2,
+        3.5,
+        5.1,
+        4.5,
+        2.4,
+        2.5,
+        2.7,
+        2.2,
+        2.5,
+        2.9,
+        2.2,
+        2.8
+      ],
+      "median_ms": 2.75
+    }
+  },
+  "notes": [
+    "0.65 ms median added for this scene; no general FPS claim",
+    "Screen-space routing only; not total frame time or export encoding",
+    "48-arrow limit and two rounds prevent quadratic blow-ups for larger scenes"
+  ],
+  "clean_extraction_observation": {
+    "provenance": "same synthetic scene and measurement method, independently extracted Cut25 ZIP, run after the final conflict-detector code change",
+    "direct": {
+      "raw_ms": [
+        1.8,
+        2.2,
+        2.0,
+        1.9,
+        2.8,
+        2.4,
+        2.3,
+        1.5,
+        1.8,
+        1.3,
+        2.0,
+        1.6
+      ],
+      "median_ms": 1.95
+    },
+    "scene-crossings": {
+      "raw_ms": [
+        2.3,
+        2.5,
+        3.1,
+        3.0,
+        2.2,
+        3.8,
+        2.1,
+        2.5,
+        2.7,
+        2.0,
+        2.2,
+        2.3
+      ],
+      "median_ms": 2.4
+    }
+  }
+}

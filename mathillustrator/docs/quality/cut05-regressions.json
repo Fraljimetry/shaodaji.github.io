@@ -1,0 +1,64 @@
+{
+  "project": "MathIllustrator",
+  "release": "0.6.0",
+  "cut": "05",
+  "date": "2026-11-12",
+  "source_cut": "04",
+  "new_cases": [
+    {
+      "id": "MI-SVG-051",
+      "red": "same marker IDs in two independent SVG exports; arrowheads can refer to first definition",
+      "green": "marker-free arrowhead polygons, per-object color, undo/export fidelity",
+      "test": "tests/browser_cut05.py, tests/cut05.test.mjs"
+    },
+    {
+      "id": "MI-PERF-052",
+      "red": "one additional transparent hit SVG circle per visible point",
+      "green": "no hit overlay, geometric hit and overlapping polygon drag preserved",
+      "test": "tests/browser_cut05.py"
+    },
+    {
+      "id": "MI-PERF-053",
+      "red": "full 3000-row object list DOM rebuild on every edit",
+      "green": "bounded 45px row window with bottom scroll/search/hide/rename/undo preserved",
+      "test": "tests/browser_cut05_list.py"
+    },
+    {
+      "id": "MI-PERF-054",
+      "red": "all 3000 points drawn even when far outside viewport",
+      "green": "conservative cull, JSON retains all points",
+      "test": "tests/browser_cut05.py"
+    },
+    {
+      "id": "MI-FAIL-055",
+      "risk": "bad commands consume IDs despite rejection",
+      "green": "no object or counter mutations after failed commands",
+      "test": "tests/cut05.test.mjs"
+    },
+    {
+      "id": "MI-GRAPH-056",
+      "risk": "1800-node midpoint DAG causes stack overflow or incomplete cascade",
+      "green": "iterative resolver and transitive affected set tested",
+      "test": "tests/cut05.test.mjs"
+    },
+    {
+      "id": "MI-REL-057",
+      "red": "Cut04 cumulative ZIP omits original model.test.mjs, so extracted package cannot reproduce full stated suite",
+      "green": "Cut05 archive includes baseline test and 45/45 Node assertions pass from extracted ZIP",
+      "test": "package_cut05.py extracted-package gate"
+    }
+  ],
+  "not_verified": [
+    "live deployed site",
+    "genuine multi-tab write atomicity",
+    "cross browser fonts",
+    "full keyboard/screen-reader navigation of virtualization",
+    "60 FPS 3000 objects",
+    "touch hardware"
+  ],
+  "test_provenance": {
+    "model": "45/45 node --test tests/*.test.mjs",
+    "browser": "12/12 isolated Chromium scripts using page.set_content inline modules",
+    "performance": "3 isolated runs; redraw 21.8,41.9,34.2ms for 3000 point scene, not FPS guarantee"
+  }
+}

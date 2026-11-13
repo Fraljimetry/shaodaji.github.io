@@ -1,0 +1,71 @@
+{
+  "project": "MathIllustrator",
+  "cut": 23,
+  "release": "0.24.0",
+  "baseline": "Verified exact cumulative Cut22 ZIP (191 files, 125 inherited Node cases)",
+  "cases": [
+    {
+      "id": "MI23-001",
+      "risk": "Concurrent labels overprint with no correction",
+      "red": "Cut22 two morphisms sharing endpoints have identical SVG text coordinates",
+      "green": "Opt-in arrow auto placement yields a distinct position while the manually positioned label retains its old x/y; actual Chromium import and render"
+    },
+    {
+      "id": "MI23-002",
+      "risk": "Automatic placement overwrites author label or JSON semantics",
+      "red": "No per-arrow packing or manual-first placement exists in Cut22",
+      "green": "Pure model tests manual-first reservation, deterministic results, and actual exported native JSON retains exact refs and labelAvoid"
+    },
+    {
+      "id": "MI23-003",
+      "risk": "Drag handle on automatic label jumps to base position",
+      "red": "The pre-Cut23 drag algorithm starts from stored labelDx/Dy, not the displayed automatically shifted coordinate",
+      "green": "Browser pointer drag preserves displayed starting position, switches labelAvoid off and creates one undoable manual edit; stationary click preserves mode"
+    },
+    {
+      "id": "MI23-004",
+      "risk": "Unsolvable overlaps silently appear corrected",
+      "red": "A densely occupied label area has no clear candidate",
+      "green": "Deterministic crowded status, no text hiding; SVG amber/warning when unresolved"
+    },
+    {
+      "id": "MI23-005",
+      "risk": "TikZ silently loses automatic label positions",
+      "red": "Cut22 TikZ supports fixed manual positions, not automatic screen-space displacements",
+      "green": "Unsupported visible automatically placed labels disable TikZ/PGF; SVG and native JSON remain available"
+    },
+    {
+      "id": "MI23-006",
+      "risk": "Malformed optional property or legacy data loss",
+      "red": "No morphism-only labelAvoid property in Cut22 schema or runtime",
+      "green": "Strict schema and model boolean validation, nonmorphism rejection, older JSON absence preserves manual mode"
+    },
+    {
+      "id": "MI23-007",
+      "risk": "Dense-label layout causes unbounded spatial index memory",
+      "red": "Large rectangles can span thousands of screen-space buckets",
+      "green": "Bucket key caps, bounded overflow accounting and explicit crowded status for unindexable labels"
+    },
+    {
+      "id": "MI23-008",
+      "risk": "An opt-in flag on an unlabeled arrow unnecessarily disables a faithful TikZ export",
+      "red": "Initial canTikz() gating used the flag even when the morphism text was empty and no screen-space label existed",
+      "green": "TikZ remains available for otherwise-supported unlabeled morphisms; real Chromium export-button regression added"
+    }
+  ],
+  "verification": {
+    "model_tests": 129,
+    "chromium_scripts": 34,
+    "scope": "Isolated Chromium page.set_content, not deployed site",
+    "performance_benchmark": "Isolated Chromium 180-node/80-arrow SVG rebuild: manual median 12.25ms, automatic median 12.95ms",
+    "result": "PASS in isolated Chromium and Node; see cut23-browser-results.json"
+  },
+  "unverified": [
+    "cross-browser font/crop parity",
+    "physical touchscreen and stylus",
+    "real multi-tab atomicity",
+    "global arrow crossing optimization",
+    "performance with several thousand visible labels",
+    "semantically exact PDF/3D/animation"
+  ]
+}

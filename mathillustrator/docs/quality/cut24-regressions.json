@@ -1,0 +1,100 @@
+{
+  "project": "MathIllustrator",
+  "cut": 24,
+  "release": "0.25.0",
+  "baseline": "Exact Cut23 cumulative ZIP; 129 inherited model cases and 34 Chromium editor scripts",
+  "cases": [
+    {
+      "id": "MI24-001",
+      "risk": "Two arrows cross while the existing routing checks nodes only",
+      "red": "Cut23 mode enum has no crossing-aware option and routes ignore other arrows",
+      "green": "Pure geometry test yields crossing-free two-turn path for a simple X; browser selects new Property and verifies routed SVG"
+    },
+    {
+      "id": "MI24-002",
+      "risk": "Ordinary users experience unexpected rearrangement of existing diagrams",
+      "red": "Changing legacy route behavior would move published figures",
+      "green": "Legacy direct and avoid unit tests unchanged; new mode explicitly opt-in"
+    },
+    {
+      "id": "MI24-003",
+      "risk": "A perpendicular segment intersection is missed because one bbox has zero width",
+      "red": "Initial strict-intersection bbox shortcut rejected vertical-vs-horizontal proper crossing",
+      "green": "Corrected bbox pruning, explicit perpendicular regression"
+    },
+    {
+      "id": "MI24-004",
+      "risk": "A crowded four-node X has no supported clear two-turn corridor",
+      "red": "No complete planarization algorithm exists",
+      "green": "Returns crossing/blocked/capacity; SVG marks arrow amber dashed with accessible title, no false-success clear"
+    },
+    {
+      "id": "MI24-005",
+      "risk": "Previous hidden or transparent arrows still influence layout",
+      "red": "Past-arrow index cannot distinguish visible and hidden edges if populated naively",
+      "green": "Chromium Hide/Undo recalculates next route; only visible arrows included"
+    },
+    {
+      "id": "MI24-006",
+      "risk": "Conditional routing changes mathematical source/target or lost edits after Undo",
+      "red": "Crossing-aware routing could wrongly rewire semantic graph",
+      "green": "Unit verifies immutable JSON/refs; Chromium JSON export and Undo/Redo tests"
+    },
+    {
+      "id": "MI24-007",
+      "risk": "Large diagrams trigger quadratic or unbounded intersection work",
+      "red": "Naive crossing tests scale with arrows × candidates × polyline segments",
+      "green": "At 129+ previous arrows, status=capacity and amber warning; comparison budget per candidate; performance sample recorded"
+    },
+    {
+      "id": "MI24-008",
+      "risk": "TikZ silently falls back to a crossing layout after on-screen detours",
+      "red": "Restricted TikZ does not support screen-space optimized routes",
+      "green": "Browser disables TikZ/PGF for crossing-aware morphism, preserves SVG/JSON"
+    },
+    {
+      "id": "MI24-009",
+      "risk": "Crossing route and displayed label disagree due duplicate computation",
+      "red": "Cut23 calculates morphism route separately for rendered path and auto-label placement",
+      "green": "Cut24 computes one document-order map shared by renderer and label placement and export drawing"
+    },
+    {
+      "id": "MI24-010",
+      "risk": "An SVG export overwrites the editing handle’s auto-label state",
+      "red": "Export-side draw() previously overwrote currentMorphismLabels global",
+      "green": "Only non-export draw updates editing-only map; Cut23 drag/undo browser suite remains passing"
+    },
+    {
+      "id": "MI24-011",
+      "risk": "Illegal routing input becomes persisted without feedback",
+      "red": "New route enum unsupported by old JSON validator, unknown values need explicit rejection",
+      "green": "Schema and model accept only direct/avoid/avoid-crossings on morphisms; invalid import leaves scene intact"
+    },
+    {
+      "id": "MI24-012",
+      "risk": "Long routing-mode caption is clipped inside narrow Properties panel, obscuring active behavior",
+      "red": "Cut23 morphism routing selector inherits a 53%-wide Properties field and the new text is much longer",
+      "green": "Cut24 gives routing a full-width field, concise selected label, and Chromium width assertion; retains expanded explanation below selector"
+    }
+  ],
+  "verification": {
+    "model_tests": 136,
+    "chromium_editor_scripts": 35,
+    "latex_compilations_expected": 2,
+    "site_layout_cases_expected": 8,
+    "scope": "Isolated Chromium and Node; clean-ZIP gate separately recorded",
+    "performance": {
+      "avoid": 7.75,
+      "avoid-crossings": 7.9
+    }
+  },
+  "unverified": [
+    "Planar/minimum-crossing diagrams",
+    "Overlapping and collinear arrows",
+    "Cross-browser font exactness",
+    "Hosted deployment",
+    "Real multi-tab atomic writes",
+    "Physical touchscreen",
+    "Advanced PDF/3D"
+  ]
+}

@@ -45,10 +45,14 @@
 <main id="main">
 <header class="page-hero"><div class="container">
   <p class="page-kicker" data-en="Tools" data-zh="工具">Tools</p>
-  <h1 data-en="Mathematical tools for reading and exploration" data-zh="面向数学阅读与探索的工具">Mathematical tools for reading and exploration</h1>
-  <p data-en="Small, focused software for mathematical work. The tools are designed to remain useful without turning the reading or thinking process into a general-purpose productivity interface." data-zh="面向数学工作的轻量专用软件。这些工具强调直接服务于阅读、计算与思考，而不是把数学工作变成通用生产力软件界面。">Small, focused software for mathematical work. The tools are designed to remain useful without turning the reading or thinking process into a general-purpose productivity interface.</p>
+  <h1 data-en="Mathematical tools for reading and illustration" data-zh="面向数学阅读与插图的工具">Mathematical tools for reading and illustration</h1>
+  <p data-en="Two independent mathematical tools: MathReader for studying PDFs, and MathIllustrator for constructing and exporting figures. Each stays focused on its own workflow." data-zh="两款相互独立的数学软件：MathReader 用于阅读 PDF，MathIllustrator 用于绘制、构造和导出插图，各自专注于对应的工作流程。">Two independent mathematical tools: MathReader for studying PDFs, and MathIllustrator for constructing and exporting figures. Each stays focused on its own workflow.</p>
+  <div class="feature-links" aria-label="Browse mathematical tools">
+    <a href="#mathreader" class="button secondary" data-en="Explore MathReader" data-zh="了解 MathReader">Explore MathReader</a>
+    <a href="#mathillustrator" class="button secondary" data-en="Explore MathIllustrator" data-zh="了解 MathIllustrator">Explore MathIllustrator</a>
+  </div>
 </div></header>
-<section class="section section-rule"><div class="container">
+<section class="section section-rule" id="mathreader"><div class="container">
   <article class="feature">
     <div class="feature-math"><img src="assets/img/tool-mathreader-file-search.svg" alt="" style="position:relative;z-index:2;width:min(168px,72%);height:auto;display:block"></div>
     <div>
@@ -59,11 +63,22 @@
     </div>
   </article>
 </div></section>
+<section class="section section-rule" id="mathillustrator"><div class="container">
+  <article class="feature">
+    <div class="feature-math" aria-hidden="true"><div class="feature-formula math-tex">\[ P_k=O+(V-O)e^{2\pi i k/n} \]</div></div>
+    <div>
+      <span class="eyebrow" data-en="Figures · constructions · diagrams" data-zh="插图 · 构造 · 图表">Figures · constructions · diagrams</span>
+      <h3 data-en="MathIllustrator" data-zh="MathIllustrator 数学插图工具">MathIllustrator</h3>
+      <p data-en="An evolving mathematical illustration editor with live geometric dependencies, programmatic commands, editable vectors and free curves, semantic commutative diagrams, configurable correction, and supported SVG/image/TikZ exports. Advanced 3D and flow visualization are planned, not yet available." data-zh="持续完善的数学插图编辑器：支持实时几何依赖、命令式构造、可编辑矢量图形与自由曲线、语义交换图、可调节的修正，以及已支持的 SVG、图像与 TikZ 导出。高级三维与几何流可视化尚在规划中。">An evolving mathematical illustration editor with live geometric dependencies, programmatic commands, editable vectors and free curves, semantic commutative diagrams, configurable correction, and supported SVG/image/TikZ exports. Advanced 3D and flow visualization are planned, not yet available.</p>
+      <div class="feature-links"><a href="mathillustrator/" class="button primary" data-en="Open MathIllustrator" data-zh="打开 MathIllustrator">Open MathIllustrator</a><a href="mathillustrator/tutorial.html" class="button secondary" data-en="View tutorial" data-zh="查看教程">View tutorial</a></div>
+    </div>
+  </article>
+</div></section>
 <section class="section section-rule"><div class="container">
   <div class="section-head"><h2 data-en="Design principle" data-zh="设计原则">Design principle</h2><p data-en="Tools should stay mathematically specific, quiet, and inspectable." data-zh="工具应保持数学专用、克制，并让用户能够检查其结果。">Tools should stay mathematically specific, quiet, and inspectable.</p></div>
   <div class="cards">
-    <article class="card"><span class="meta" data-en="Local first" data-zh="本地优先">Local first</span><h3 data-en="Keep work on the device" data-zh="工作保留在本设备">Keep work on the device</h3><p data-en="Reader history, notes, cached PDFs, and Math OCR inputs stay local whenever the browser permits it." data-zh="在浏览器允许的范围内，阅读历史、笔记、缓存 PDF 与 Math OCR 输入都保留在本设备。">Reader history, notes, cached PDFs, and Math OCR inputs stay local whenever the browser permits it.</p></article>
-    <article class="card"><span class="meta" data-en="Mathematical" data-zh="数学专用">Mathematical</span><h3 data-en="Work with formulas and references" data-zh="围绕公式与引用工作">Work with formulas and references</h3><p data-en="The interface is organized around pages, formulas, notation, proof references, and reusable LaTeX rather than generic document editing." data-zh="界面围绕页面、公式、记号、证明引用与可复用 LaTeX 组织，而不是通用文档编辑。">The interface is organized around pages, formulas, notation, proof references, and reusable LaTeX rather than generic document editing.</p></article>
+    <article class="card"><span class="meta" data-en="Local first" data-zh="本地优先">Local first</span><h3 data-en="Keep your work in your browser" data-zh="在浏览器中掌控作品">Keep your work in your browser</h3><p data-en="MathReader keeps reading data locally when storage is available; MathIllustrator works with local projects and editable JSON files. Save exports for durable backups." data-zh="在浏览器存储可用时，MathReader 将阅读数据保留在本地；MathIllustrator 支持本地项目和可编辑 JSON 文件。请导出文件作为可靠备份。">MathReader keeps reading data locally when storage is available; MathIllustrator works with local projects and editable JSON files. Save exports for durable backups.</p></article>
+    <article class="card"><span class="meta" data-en="Mathematical" data-zh="数学专用">Mathematical</span><h3 data-en="From proofs to figures" data-zh="从证明阅读到数学绘图">From proofs to figures</h3><p data-en="Read mathematical notation and references in MathReader, or create editable geometric constructions, diagrams, and supported LaTeX exports in MathIllustrator. They are separate applications." data-zh="使用 MathReader 阅读数学记号与参考文献，或通过 MathIllustrator 创建可编辑几何构造、图表及已支持的 LaTeX 导出。两者是相互独立的应用。">Read mathematical notation and references in MathReader, or create editable geometric constructions, diagrams, and supported LaTeX exports in MathIllustrator. They are separate applications.</p></article>
     <article class="card"><span class="meta" data-en="Expandable" data-zh="可扩展">Expandable</span><h3 data-en="More tools can live here" data-zh="未来工具可继续加入">More tools can live here</h3><p data-en="This section is intentionally independent of Research so future mathematical utilities can be added without changing the structure of the academic pages." data-zh="该栏目与 Research 独立，今后可以继续加入数学工具，而无需改变学术页面的结构。">This section is intentionally independent of Research so future mathematical utilities can be added without changing the structure of the academic pages.</p></article>
   </div>
 </div></section>

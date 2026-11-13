@@ -1,0 +1,189 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Commutative square"
+  },
+  "settings": {
+    "grid": false,
+    "snap": true,
+    "snapStep": 1,
+    "correction": "off",
+    "showAxes": false,
+    "stroke": "#1d3557",
+    "fill": "#ffffff",
+    "opacity": 1,
+    "width": 1.6,
+    "pointSize": 5,
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "showLabels": true,
+    "snapAnchors": true,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        0,
+        0
+      ],
+      "text": "A",
+      "fontSize": 17,
+      "name": "node 1"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        3.5,
+        0
+      ],
+      "text": "B",
+      "fontSize": 17,
+      "name": "node 2"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        0,
+        -2.4
+      ],
+      "text": "C",
+      "fontSize": 17,
+      "name": "node 3"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        3.5,
+        -2.4
+      ],
+      "text": "D",
+      "fontSize": 17,
+      "name": "node 4"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "text": "f",
+      "bend": 0,
+      "swap": false,
+      "name": "morphism 5"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o1",
+        "o3"
+      ],
+      "text": "g",
+      "bend": 0,
+      "swap": true,
+      "name": "morphism 6"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o2",
+        "o4"
+      ],
+      "text": "h",
+      "bend": 0,
+      "swap": false,
+      "name": "morphism 7"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#1d3557",
+        "fill": "#ffffff",
+        "width": 1.6,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o3",
+        "o4"
+      ],
+      "text": "k",
+      "bend": 0,
+      "swap": true,
+      "name": "morphism 8"
+    }
+  ],
+  "nextId": 9
+}

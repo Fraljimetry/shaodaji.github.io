@@ -1,31 +1,662 @@
 {
   "project": "MathIllustrator",
-  "release": "0.1.0",
+  "release": "0.26.0",
   "run_date": "2026-11-12",
-  "provenance": "Node.js node:test; browser smoke attempted but blocked by administrator policy",
-  "automation": "node --test tests/model.test.mjs",
-  "cases": [
-    {"id":"CORE-001","topic":"JSON roundtrip","risk":"lossy persistence","test":"creates and roundtrips a valid empty document","result":"pass"},
-    {"id":"CORE-002","topic":"live dependencies","risk":"stale midpoint after vertex move","test":"names/commands and live midpoint dependencies","result":"pass"},
-    {"id":"CORE-003","topic":"shared point IDs","risk":"geometric objects detach","test":"live segment and circle refs stay linked to moved points","result":"pass"},
-    {"id":"CORE-004","topic":"command failure","risk":"partial objects or invalid graph","test":"invalid command does not create a partial object","result":"pass"},
-    {"id":"PARSER-005","topic":"expression precedence","risk":"wrong plot","test":"parser supports standard math and right associativity","result":"pass"},
-    {"id":"PARSER-006","topic":"expression injection","risk":"untrusted code execution","test":"parser refuses scripts/unknown syntax","result":"pass"},
-    {"id":"INPUT-007","topic":"snap configuration","risk":"coordinates changed despite off","test":"snap is tunable / off preserves precision","result":"pass"},
-    {"id":"CORE-008","topic":"transitive delete","risk":"dangling refs","test":"deletion removes transitive dependents without dangling refs","result":"pass"},
-    {"id":"IMPORT-009","topic":"import graph cycles","risk":"stack overflow and misleading success","test":"import rejects cycles and dangling refs","result":"pass"},
-    {"id":"IMPORT-010","topic":"malformed fields/injection","risk":"unsafe SVG attribute, duplicate identity","test":"import rejects injected colors, malformed file and duplicate object names","result":"pass"},
-    {"id":"PARSER-011","topic":"function grammar","risk":"invalid sampling","test":"function grammar and invalid coordinate protections","result":"pass"},
-    {"id":"CORE-012","topic":"auto-generated name","risk":"new point silently fails validation","test":"object count/ids stay stable after explicit cloning","result":"pass","history":"failed initially; corrected append ordering; green rerun"}
+  "provenance": "Cut17: 105 Node cases; isolated Chromium Cut17 + inherited suites, baseline red, fixed synthetic mixed-scene benchmark, browser PNG/SVG/TikZ and two pdflatex checks. No Firefox/Safari, deployed-site or native rendering certification.",
+  "automation": "node --test tests/*.test.mjs",
+  "next_required": [
+    "Windows Edge hosted-site smoke",
+    "Firefox and Safari raster+TeX fidelity",
+    "manually verify font and symbol positioning",
+    "larger mixed-scene benchmark",
+    "touch/accessibility and autosave failure-path tests",
+    "Test lone-surrogate and XML controls in Firefox/Safari SVG decoder",
+    "Test newly constrained shapes on real touch hardware",
+    "Measure large graph import/scroll/GC separately from search-filter latency",
+    "Run Cut13 focused keyboard/delete and presets under Firefox/Safari with IME input",
+    "Quantify Settings update latency on low-end phones and with real cloud-backed storage blockers"
+  ],
+  "legacy_cut00_cases": [
+    {
+      "id": "CORE-001",
+      "topic": "JSON roundtrip",
+      "risk": "lossy persistence",
+      "test": "creates and roundtrips a valid empty document",
+      "result": "pass"
+    },
+    {
+      "id": "CORE-002",
+      "topic": "live dependencies",
+      "risk": "stale midpoint after vertex move",
+      "test": "names/commands and live midpoint dependencies",
+      "result": "pass"
+    },
+    {
+      "id": "CORE-003",
+      "topic": "shared point IDs",
+      "risk": "geometric objects detach",
+      "test": "live segment and circle refs stay linked to moved points",
+      "result": "pass"
+    },
+    {
+      "id": "CORE-004",
+      "topic": "command failure",
+      "risk": "partial objects or invalid graph",
+      "test": "invalid command does not create a partial object",
+      "result": "pass"
+    },
+    {
+      "id": "PARSER-005",
+      "topic": "expression precedence",
+      "risk": "wrong plot",
+      "test": "parser supports standard math and right associativity",
+      "result": "pass"
+    },
+    {
+      "id": "PARSER-006",
+      "topic": "expression injection",
+      "risk": "untrusted code execution",
+      "test": "parser refuses scripts/unknown syntax",
+      "result": "pass"
+    },
+    {
+      "id": "INPUT-007",
+      "topic": "snap configuration",
+      "risk": "coordinates changed despite off",
+      "test": "snap is tunable / off preserves precision",
+      "result": "pass"
+    },
+    {
+      "id": "CORE-008",
+      "topic": "transitive delete",
+      "risk": "dangling refs",
+      "test": "deletion removes transitive dependents without dangling refs",
+      "result": "pass"
+    },
+    {
+      "id": "IMPORT-009",
+      "topic": "import graph cycles",
+      "risk": "stack overflow and misleading success",
+      "test": "import rejects cycles and dangling refs",
+      "result": "pass"
+    },
+    {
+      "id": "IMPORT-010",
+      "topic": "malformed fields/injection",
+      "risk": "unsafe SVG attribute, duplicate identity",
+      "test": "import rejects injected colors, malformed file and duplicate object names",
+      "result": "pass"
+    },
+    {
+      "id": "PARSER-011",
+      "topic": "function grammar",
+      "risk": "invalid sampling",
+      "test": "function grammar and invalid coordinate protections",
+      "result": "pass"
+    },
+    {
+      "id": "CORE-012",
+      "topic": "auto-generated name",
+      "risk": "new point silently fails validation",
+      "test": "object count/ids stay stable after explicit cloning",
+      "result": "pass",
+      "history": "failed initially; corrected append ordering; green rerun"
+    }
+  ],
+  "legacy_cut00_browser_cases": [
+    {
+      "id": "UI-001",
+      "topic": "load editor, tool icons, panel collapse",
+      "result": "blocked"
+    },
+    {
+      "id": "UI-002",
+      "topic": "cursor create/select/drag and live shape update",
+      "result": "blocked"
+    },
+    {
+      "id": "UI-003",
+      "topic": "undo after drag, import and new project",
+      "result": "blocked"
+    },
+    {
+      "id": "UI-004",
+      "topic": "polygon double-click and interrupted pointer",
+      "result": "blocked"
+    },
+    {
+      "id": "EXPORT-001",
+      "topic": "SVG and raster export media fidelity",
+      "result": "blocked"
+    },
+    {
+      "id": "EXPORT-002",
+      "topic": "disabled PDF, Asymptote, tikz-cd, animation; conditionally disabled TikZ",
+      "result": "blocked"
+    },
+    {
+      "id": "UI-005",
+      "topic": "small/large viewport and keyboard focus",
+      "result": "blocked"
+    }
+  ],
+  "added_cases": [
+    {
+      "id": "MODEL-013",
+      "test": "v1 optional settings migrate without data loss",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-014",
+      "test": "ellipse, Bezier and angle references remain typed and live",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-015",
+      "test": "node/morphism geometry follows node moves",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-016",
+      "test": "invalid geometry/style/graph data and injections are rejected",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-017",
+      "test": "scientific point notation and nonfinite rejection",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-018",
+      "test": "3,500-midpoint chain imports and resolves without recursive overflow",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-019",
+      "test": "freehand correction endpoints and max path count",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-020",
+      "test": "fit bounds include full circle and ellipse extents",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-021",
+      "test": "tikz-cd import/export valid grid incidence, label sides",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-022",
+      "test": "tikz-cd rejects unsupported/unsafe grammar",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-023",
+      "test": "invalid imported text placement and paint rejected",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-024",
+      "test": "shared dependency diamond accepted; real cycle rejected",
+      "result": "pass"
+    },
+    {
+      "id": "MODEL-025",
+      "test": "malformed morphism label-side flag rejected",
+      "result": "pass"
+    }
   ],
   "browser_cases": [
-    {"id":"UI-001","topic":"load editor, tool icons, panel collapse","result":"blocked"},
-    {"id":"UI-002","topic":"cursor create/select/drag and live shape update","result":"blocked"},
-    {"id":"UI-003","topic":"undo after drag, import and new project","result":"blocked"},
-    {"id":"UI-004","topic":"polygon double-click and interrupted pointer","result":"blocked"},
-    {"id":"EXPORT-001","topic":"SVG and raster export media fidelity","result":"blocked"},
-    {"id":"EXPORT-002","topic":"disabled PDF, Asymptote, tikz-cd, animation; conditionally disabled TikZ","result":"blocked"},
-    {"id":"UI-005","topic":"small/large viewport and keyboard focus","result":"blocked"}
+    {
+      "id": "UI-001",
+      "test": "start isolated Chromium application, tool palette and commands",
+      "result": "pass"
+    },
+    {
+      "id": "UI-002",
+      "test": "search objects, change preset/toolkit, disable unsupported exports",
+      "result": "pass"
+    },
+    {
+      "id": "EXPORT-001",
+      "test": "download SVG, PNG, TikZ and JSON; inspect file headers/contents",
+      "result": "pass"
+    },
+    {
+      "id": "EXPORT-002",
+      "test": "A4/Letter relative page SVG export crop",
+      "result": "pass"
+    },
+    {
+      "id": "DIAGRAM-001",
+      "test": "tikz-cd input->objects->output; undo/redo import",
+      "result": "pass"
+    },
+    {
+      "id": "UI-003",
+      "test": "object-property change and deferred render, no DOM exception",
+      "result": "pass"
+    },
+    {
+      "id": "UI-004",
+      "test": "polygon double click; overlapping point hit targets; pointercancel restore; point drag/undo; locked deletion prevention",
+      "result": "pass"
+    },
+    {
+      "id": "DEPLOY-001",
+      "test": "Direct HTTP/HTTPS production deployment and module resolver",
+      "result": "not-run",
+      "reason": "Browser navigation policy prohibits localhost in this environment"
+    },
+    {
+      "id": "EXPORT-003",
+      "test": "Cross-browser visual equivalence for JPEG/WebP/PNG and SVG",
+      "result": "not-run"
+    },
+    {
+      "id": "UX-005",
+      "test": "Mobile, keyboard-only, screen reader and touch gestures",
+      "result": "not-run"
+    },
+    {
+      "id": "SAVE-006",
+      "test": "Cross-tab storage conflict/quota/rapid navigation manual recovery",
+      "result": "not-run"
+    }
   ],
-  "next_required": ["Chrome/Edge Windows UI smoke", "Cross-browser export verification", "Undo/import/storage fault paths", "Long-scene performance and cancellation", "Full published tutorial screenshot parity"]
+  "performance_probe": "tests/browser_performance.py / docs/quality/performance.json",
+  "cut02_regressions": "cut02-regressions.json",
+  "cut03_addendum": "quality/cut03-regressions.json",
+  "cut04_addendum": {
+    "policy": "Additional subtle cases, not re-runs of prior fixes; retain red test reproduction in TEST_REPORT Cut04",
+    "node_cases": [
+      "MI-TEX-040 escaped ampersand cell integrity",
+      "MI-TEX-041 unsafe exporter disables semantically changing labels",
+      "MI-TEX-042 stable math labels and multiple morphisms",
+      "MI-POINT-043 individual radius and old v1 compatibility"
+    ],
+    "isolated_chromium_cases": [
+      "MI-DRAW-044 immediate freehand preview and pointer-up endpoint",
+      "MI-DRAW-045 pointercancel does not commit",
+      "MI-UI-046 detached controls reused IDs blocked",
+      "MI-PTR-047 click-only offgrid point is unchanged; pointerup-only drag commits",
+      "MI-STOR-048 identical external save token avoids false conflict",
+      "MI-EXP-049 opacity-zero label/hit fidelity and LaTeX",
+      "MI-REG-050 old browser suites pass"
+    ],
+    "results": "pass",
+    "nonclaims": [
+      "real multitabs atomicity",
+      "hosted HTTP",
+      "Safari/Firefox/Edge",
+      "verified math-text pixels",
+      "60 FPS at 3000 points"
+    ]
+  },
+  "cut05_addendum": {
+    "policy": "New subtle risk classes and performance effects, not repeated baseline happy paths",
+    "new_node_tests": [
+      "MI-SVG-051 arrowhead direction/finite geometry",
+      "MI-GRAPH-052 deep shared dependency graph delete/resolve",
+      "MI-FAIL-053 command failures do not allocate IDs"
+    ],
+    "new_browser_tests": [
+      "MI-SVG-054 SVG marker-ID collision removed, per-color export/undo",
+      "MI-HIT-055 click/drag through later polygon without hit-disk DOM",
+      "MI-PERF-056 remote points culled without JSON loss",
+      "MI-LIST-057 3000-object virtual scrolling/search/hide/property/undo"
+    ],
+    "results": "pass in isolated Chromium and Node; no cross-browser or production deployment",
+    "not_verified": [
+      "actual localStorage write collision atomicity",
+      "keyboard-only full virtual list",
+      "touch hardware",
+      "cross-engine glyph rendering",
+      "60 FPS dense onscreen geometry"
+    ]
+  },
+  "cut06_cases": [
+    {
+      "id": "MI-SNAP-061",
+      "risk": "A short segment aliases two newly created nearby anchors",
+      "verified_corrective_behavior": "Plan all anchor reuse before inserting any new point; reject collapsed resolved geometry",
+      "tests": "browser_cut06.py",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-SNAP-062",
+      "risk": "Fully transparent anchor captures nearest cursor snap",
+      "verified_corrective_behavior": "No automatic snap to opacity=0 or hidden point",
+      "tests": "browser_cut06.py",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-TEX-063",
+      "risk": "Hidden function blocks representable TikZ export",
+      "verified_corrective_behavior": "Ignore hidden unsupported objects in conditional export",
+      "tests": "browser_cut06.py",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-TEX-064",
+      "risk": "TikZ stroke and angle geometry change with editor zoom",
+      "verified_corrective_behavior": "Zoom-invariant SVG-pixel-to-TeX stroke mapping and fixed world radius",
+      "tests": "browser_cut06.py, tikz_compile.py",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-UI-065",
+      "risk": "Basic-module OFF hides essential pan and selection controls",
+      "verified_corrective_behavior": "Keep Move/Pan reachable and hide only Point",
+      "tests": "browser_cut06.py",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-SET-066",
+      "risk": "Infinite canvas accepts page-only export in forged JSON",
+      "verified_corrective_behavior": "Enforce runtime/schema cross-setting invariant",
+      "tests": "cut06.test.mjs, JSON fixtures",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-SAVE-067",
+      "risk": "Two stale tabs can overwrite each other without serialized writers",
+      "verified_corrective_behavior": "Web Locks exclusive serialize normal saves where available; fallback explicitly non-atomic",
+      "tests": "cut06.test.mjs; real-tab not verified",
+      "result": "pass in stated test provenance"
+    },
+    {
+      "id": "MI-REL-068",
+      "risk": "Missing original Cut00 assets in cumulative ZIP",
+      "verified_corrective_behavior": "Original four files restored exactly; permanent inventory gate",
+      "tests": "package_integrity.py, archive-union comparison",
+      "result": "pass in stated test provenance"
+    }
+  ],
+  "cut07_cases": [
+    {
+      "id": "MI-RECT-071",
+      "area": "Rectangle(A,B) command and cursor tool",
+      "prior_failure": "Cut06 rejected semantic rectangle command / made four-point polygon",
+      "corrected_behavior": "New two-point rectangle remains rectangular after anchor edits",
+      "tests": "cut07.test.mjs; browser_cut07_inventory.py; browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-RECT-072",
+      "area": "Degenerate new rectangle",
+      "prior_failure": "New equal-axis anchors must not create invisible rectangle",
+      "corrected_behavior": "Strict zero-width/height rejection and no mutation",
+      "tests": "cut07.test.mjs",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-RECT-073",
+      "area": "Legacy polygon compatibility",
+      "prior_failure": "Cut00–06 rectangles stored as ordinary polygons",
+      "corrected_behavior": "No reinterpretation of historic four-anchor polygon objects",
+      "tests": "cut07.test.mjs; JSON schema fixtures",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-INPUT-074",
+      "area": "Prompted labels over limit or 1000 characters",
+      "prior_failure": "Text allowed 2000 but cursor prompt silently truncated at 1000",
+      "corrected_behavior": "Preserve up to 2000 Text, explicitly reject oversize Text/node/morphism",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-IMPORT-075",
+      "area": "Delayed JSON file read completion after new edit",
+      "prior_failure": "Async file.text could replace a newer document when resolved",
+      "corrected_behavior": "Document revision guard rejects stale completion; no lost intervening edit",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-UI-076",
+      "area": "Open dialog keyboard context",
+      "prior_failure": "Escape failed to close; drawing shortcuts remained active behind overlays",
+      "corrected_behavior": "Escape closes and restores launcher focus; global drawing shortcuts ignored",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-TEX-077",
+      "area": "Unsafe plain-Unicode pdfLaTeX labels",
+      "prior_failure": "TikZ available despite unsupported Unicode/control labels",
+      "corrected_behavior": "Disable TikZ while retaining SVG/JSON",
+      "tests": "browser_cut07_adversarial.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-PROP-078",
+      "area": "Rapid property changes across render frames",
+      "prior_failure": "Deferred property redraw could replace a focused next field; changes intermittently lost",
+      "corrected_behavior": "Preserve focused editor on successful changes; force correct reset on validation failure",
+      "tests": "browser_cut07_properties.py",
+      "status": "verified in stated test provenance"
+    },
+    {
+      "id": "MI-AUDIT-079",
+      "area": "Full current control inventory",
+      "prior_failure": "Historical smoke coverage did not enumerate every tool/settings field",
+      "corrected_behavior": "Executable UI-control matrix with explicit limits and provenance",
+      "tests": "browser_cut07_inventory.py; browser_cut07_properties.py; cut07-control-matrix.json",
+      "status": "verified in stated test provenance"
+    }
+  ],
+  "cut09_additional_cases": "cut09-regressions.json",
+  "cut10_cases": [
+    {
+      "id": "MI10-DIAGRAM-01",
+      "risk": "morphism enters source node or reverses for close nodes",
+      "evidence": "Cut09 browser baseline x430.5 vs node right 444.5; tests/cut10.test.mjs, tests/browser_cut10.py",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-DIAGRAM-02",
+      "risk": "tight gap consumed by padding and visible arrow disappears",
+      "evidence": "tests/browser_cut07_properties.py red initially, green after adaptive padding",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-CACHE-03",
+      "risk": "duplicate function sampling on unchanged redraw, stale cache on viewport change",
+      "evidence": "tests/cut10.test.mjs, tests/browser_cut10.py and measured Cut09/Cut10 benchmark",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-SVG-04",
+      "risk": "extreme zoom pan renders huge infinite-line SVG endpoints",
+      "evidence": "tests/cut10.test.mjs viewport clipping",
+      "status": "pass_node_no_device_benchmark"
+    },
+    {
+      "id": "MI10-MODAL-05",
+      "risk": "keyboard-modal overlay permits background pointer edit/download actions",
+      "evidence": "tests/browser_cut10.py export backdrop and focus loop, retained browser_cut07_adversarial.py adjusted to honor modal state",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-LIST-06",
+      "risk": "focus disappears when virtualized row is recreated by selection",
+      "evidence": "tests/browser_cut10.py arrow/home/end focus preservation",
+      "status": "pass_isolated"
+    }
+  ],
+  "cut11_addendum": {
+    "cases": [
+      "MI11-LABEL-001",
+      "MI11-FIT-002",
+      "MI11-PRECISION-003",
+      "MI11-INDEX-004",
+      "MI11-PLOT-005",
+      "MI11-EXPORT-006",
+      "MI11-SECURITY-007",
+      "MI11-COMPAT-008"
+    ],
+    "model_tests": "87/87",
+    "browser_editor_scripts": "20/20 isolated Chromium (with Cut11 new script rerun individually after batch timeout)",
+    "evidence": "docs/quality/TEST_REPORT_20261112_CUT11.md",
+    "limitations": [
+      "actual deployed website or HTTP module MIME",
+      "Safari/Firefox and physical touch",
+      "font measurement exactness",
+      "strict topology proof of sampled functions",
+      "atomic simultaneous-tab writes",
+      "cross-browser screen reader focus"
+    ]
+  },
+  "cut12_cases": [
+    {
+      "id": "MI12-LIFE-001",
+      "area": "visibilitychange event target",
+      "red": "Document event did not invoke window listener; interrupted Move was not canceled",
+      "green": "document listener; Chromium Move+Pan rollback, pointer-up no extra edit",
+      "evidence": "tests/browser_cut12.py",
+      "scope": "isolated Chromium"
+    },
+    {
+      "id": "MI12-FIT-002",
+      "area": "visible-only Fit",
+      "red": "transparent anchor 800000,900000 pulled camera away from two nearby visible points",
+      "green": "skip opacity=0 and edges to hidden/transparent diagram nodes",
+      "evidence": "tests/cut12.test.mjs; tests/browser_cut12.py",
+      "scope": "model and isolated Chromium"
+    },
+    {
+      "id": "MI12-BATCH-003",
+      "area": "anchored multi-vertex construction",
+      "red": "Cut11 scans every point for every vertex despite existing spatial index",
+      "green": "reuse settled spatial index before adding vertices; strict cutoff; same IDs and new points as previous algorithm",
+      "evidence": "tests/browser_cut12_batch.py; local Cut11 vs Cut12 performance harness",
+      "scope": "screen-space construction; synthetic microbenchmark"
+    },
+    {
+      "id": "MI12-REG-004",
+      "area": "retained suite breadth",
+      "red": "baseline 87 Node tests do not assert new lifecycle or visible-only bounds",
+      "green": "91/91 Node; 21/21 Chromium old/new scripts; no real hosting/other-browser claims",
+      "evidence": "node --test tests/*.test.mjs; browser sweep",
+      "scope": "local package and isolated browser"
+    }
+  ],
+  "cut13_additional_cases": [
+    {
+      "id": "MI13-001",
+      "risk": "unrelated focused toolbar button deletes selected geometry",
+      "result": "red on Cut12, green Cut13; browser_cut13.py"
+    },
+    {
+      "id": "MI13-002",
+      "risk": "preset indicator falsely implies default construction settings",
+      "result": "red on Cut12, green Cut13; browser_cut13.py"
+    },
+    {
+      "id": "MI13-003",
+      "risk": "export-only controls unnecessarily redraw thousands of SVG objects",
+      "result": "red on Cut12, green Cut13; node-identity assertion plus controlled benchmark"
+    },
+    {
+      "id": "MI13-004",
+      "risk": "legacy imported point radius changes from unrelated new-object defaults",
+      "result": "red on Cut12, green Cut13; model and browser scripts"
+    },
+    {
+      "id": "MI13-005",
+      "risk": "old package test hard-codes Cut12 manifest and fails newer overlay",
+      "result": "red on first Cut13 clean extraction, fixed standard package test entry point; archived old manifest retained"
+    }
+  ],
+  "cut14_additional_cases": [
+    {
+      "id": "MI14-001",
+      "area": "cross-document draft isolation",
+      "baseline_red": "Cut13: first segment endpoint survives New; subsequent canvas click creates a ghost segment",
+      "fix": "Clear pending draftStart/draftPoints/draftNode and hover upon true document replacement",
+      "evidence": "browser_cut14.py: constructed segment, New, subsequent click, object count zero",
+      "status": "green_isolated_chromium"
+    },
+    {
+      "id": "MI14-002",
+      "area": "background/blur lifecycle",
+      "baseline_red": "Cut13: tab hiding rolls back drag but retains multi-click shape draft",
+      "fix": "Cancel incomplete draft upon document hidden and window blur, without recording document history",
+      "evidence": "browser_cut14.py: hidden event while segment draft active, next click cannot complete stale segment",
+      "status": "green_synthetic_chromium"
+    },
+    {
+      "id": "MI14-003",
+      "area": "asynchronous project identity",
+      "baseline_red": "Cut13: delayed file.text() can finish after an identical-content New, because documentRevision alone remains unchanged",
+      "fix": "Guard delayed JSON import using both documentRevision and documentGeneration",
+      "evidence": "browser_cut14.py: controllable File.text promise plus New and delayed resolve",
+      "status": "green_isolated_chromium"
+    },
+    {
+      "id": "MI14-004",
+      "area": "IME keyboard safety",
+      "baseline_red": "Cut13: isComposing Delete can trigger global object deletion and composing Escape can close tikz-cd import",
+      "fix": "Short-circuit global key handling before modal and destructive shortcut logic when composing or keyCode=229",
+      "evidence": "browser_cut14.py: synthetic composition events, object preserved, import modal stays open; ordinary Escape still closes",
+      "status": "green_synthetic_chromium"
+    },
+    {
+      "id": "MI14-005",
+      "area": "viewport and gesture reentrancy",
+      "baseline_red": "Cut13: programmatically activating Zoom during captured point drag can reinterpret pointerup with changed viewport",
+      "fix": "Cancel active drag before onWheel, zoom in/out/reset and Fit change view",
+      "evidence": "browser_cut14.py: drag then zoom before pointerup, original coordinates preserved",
+      "status": "green_isolated_chromium"
+    },
+    {
+      "id": "MI14-006",
+      "area": "quota failure/recovery",
+      "baseline_red": "Not a confirmed production defect; newly exercised previously unverified failure path",
+      "fix": "No code change required; confirms existing explicit error and JSON escape route",
+      "evidence": "browser_cut14.py: localStorage-shaped quota-failure double, previous save intact, JSON download available, subsequent save recovers",
+      "status": "pass_deterministic_double",
+      "limitation": "Does not prove real-origin browser quota, private-mode storage, or atomic multitab persistence"
+    }
+  ],
+  "cut16_current_suite": [
+    "tests/cut16.test.mjs",
+    "tests/browser_cut16.py"
+  ],
+  "cut17_current_suite": [
+    "tests/cut17.test.mjs",
+    "tests/browser_cut17.py"
+  ],
+  "cut18_note": "No new rendering benchmark. Cut18 tests downloaded image encoding and output alpha; isolated Chromium only.",
+  "cut19_current_suite": [
+    "tests/cut19.test.mjs",
+    "tests/browser_cut19.py",
+    "tests/browser_cut19_performance.py"
+  ],
+  "cut19_summary": "Exact wrapped label whitespace; multiline property and SVG/JSON fidelity; conservative text/node culling, crossing semantic arrows; benchmark and inherited test selector migration.",
+  "cut19_browser_evidence": "quality/cut19-browser-results.json (30/30 Chromium scripts against clean extraction, excluding standalone benchmarks and untestable HTTPS multitab test)",
+  "cut20_current_suite": [
+    "tests/cut20.test.mjs",
+    "tests/browser_cut20.py",
+    "tests/browser_cut20_performance.py"
+  ],
+  "cut20_summary": "Selectable coincident anchors and overlapping diagram nodes, optional bounded point-name layout, persistence, undo, export preflight, legacy compatibility and measured overhead.",
+  "cut21_current_suite": {
+    "direct_node_cases": 7,
+    "chromium_scripts": 32,
+    "new_node_cases": "tests/cut21.test.mjs: geometry routing, collisions, strict project fields, manual label math",
+    "new_browser": "tests/browser_cut21.py: detour, label editing, undo/hide, native SVG/JSON, restricted TikZ gating",
+    "inherited_browser": "docs/quality/cut21-browser-results.json: all 31 prior browser scripts plus Cut21",
+    "status": "PASS isolated Node and Chromium; public site and cross-browser unverified"
+  },
+  "cut24_current_suite": {
+    "node_cases": 136,
+    "chromium_editor_scripts": 35,
+    "new_cases": "cut24-regressions.json",
+    "scope": "Isolated HTML, not hosted website; real cross-tab, Firefox/Safari, physical touch unverified"
+  },
+  "cut25_evidence": "cut25-regressions.json"
 }

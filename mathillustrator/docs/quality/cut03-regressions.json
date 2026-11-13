@@ -1,0 +1,87 @@
+{
+  "release": "0.4.0",
+  "cut": "03",
+  "date": "2026-11-12",
+  "source_baseline": "Cut02 ZIP supplied in the conversation",
+  "red_green_evidence": [
+    {
+      "id": "C03-RED-01",
+      "baseline": "Cut02",
+      "command": "python tests/browser_cut03.py (test script copied to unmodified Cut02 checkout)",
+      "red": "AssertionError: missing #export-guides and #export-scale",
+      "green": "Chromium UI flow passes with Cut03"
+    },
+    {
+      "id": "C03-RED-02",
+      "baseline": "Cut02",
+      "command": "python tests/browser_cut03_storage.py (test script copied to unmodified Cut02 checkout)",
+      "red": "AssertionError: corrupt local backup did not trigger conflict banner",
+      "green": "Corrupt-localStorage quarantine and explicit overwrite flow passes in Cut03"
+    },
+    {
+      "id": "C03-RED-03",
+      "baseline": "Cut02",
+      "command": "new Node test imports src/plot.mjs absent in Cut02",
+      "red": "Feature/module did not exist; structural absence confirmed",
+      "green": "Adaptive sampler tests pass"
+    }
+  ],
+  "green_cases": [
+    {
+      "id": "C03-UNIT-001",
+      "tool": "node --test tests/*.test.mjs",
+      "scope": "38/38 including 8 new Cut03 assertions: migration, malformed settings, invalid geometry, old ellipse and safe IDs, adaptive plotting, poles, failure bounds, duplicate tikz-cd labels",
+      "status": "pass"
+    },
+    {
+      "id": "C03-BROWSER-001",
+      "tool": "python tests/browser_cut03.py",
+      "scope": "Editor-only page guide omitted, optional grid/axes, crop, 1x/4x PNG dimensions, JSON settings, explicit pole, pan Escape, nonprimary pointer, TikZ literal text special character export",
+      "status": "pass",
+      "provenance": "Isolated Chromium page.set_content with inline modules"
+    },
+    {
+      "id": "C03-BROWSER-002",
+      "tool": "python tests/browser_cut03_storage.py",
+      "scope": "Corrupted localStorage bytes remain until user explicitly confirms overwrite",
+      "status": "pass",
+      "provenance": "Isolated Chromium with localStorage double"
+    },
+    {
+      "id": "C03-REGRESSION-003",
+      "tool": "python tests/browser_smoke.py, browser_edges.py, browser_cut02.py, browser_storage.py",
+      "scope": "All previous browser suites pass; existing editor, pointer, mobile, valid autosave, imports/exports",
+      "status": "pass",
+      "provenance": "Isolated Chromium; one suite storage is a simulated storage double"
+    },
+    {
+      "id": "C03-TEX-004",
+      "tool": "python tests/tikz_compile.py",
+      "scope": "Actual pdflatex compiles exported mixed-geometry TikZ with escaped caret/tilde and semantic tikz-cd (two PDF output files generated in tempdir)",
+      "status": "pass",
+      "provenance": "Local installed TeX Live pdflatex + TikZ/tikz-cd; not xelatex/lualatex typography proof"
+    },
+    {
+      "id": "C03-SITE-005",
+      "tool": "python tests/site_integration.py <extracted-site-root>",
+      "scope": "Static EN/ZH homepage and Tools MathIllustrator links and unchanged MathReader navigation",
+      "status": "pass",
+      "provenance": "Static file/path assertions; not live HTTPS"
+    },
+    {
+      "id": "C03-SCHEMA-006",
+      "tool": "jsonschema.validate(example, project-v1.schema.json)",
+      "scope": "4 reference JSON example fixtures pass; optional export settings validated",
+      "status": "pass",
+      "provenance": "Python jsonschema"
+    }
+  ],
+  "not_verified": [
+    "Real GitHub Pages/shaodaji.cc deployment and HTTP navigation",
+    "Windows Edge, Firefox, Safari, iOS and real touch hardware",
+    "Cross-browser PNG/JPEG/WebP pixel/glyph golden comparison and physical print accuracy",
+    "True storage atomicity under concurrent tabs/quota/crash",
+    "Mathematical completeness of implicit/singular function plots and Ricci-flow/3D modules",
+    "10k mixed object smooth interactivity or universal 60 FPS"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "project": "MathIllustrator",
+  "cut": 24,
+  "release": "0.25.0",
+  "scenario": "48 visible/mixed-position semantic nodes and 80 arrows, deterministic random seed 2424; same object graph both settings",
+  "provenance": "isolated headless Chromium; page.set_content; 3 warmups and 12 synchronous SVG rebuilds per mode, not full frame time, not user hardware",
+  "raw_ms": {
+    "avoid": [
+      12,
+      10.3,
+      13.5,
+      9,
+      5.8,
+      8.6,
+      6.3,
+      6,
+      6,
+      7.8,
+      7.6,
+      7.7
+    ],
+    "avoid-crossings": [
+      8.1,
+      10.1,
+      7.9,
+      7.9,
+      7.6,
+      7.2,
+      5.9,
+      6.1,
+      8.4,
+      15.1,
+      10.1,
+      6
+    ]
+  },
+  "median_ms": {
+    "avoid": 7.75,
+    "avoid-crossings": 7.9
+  },
+  "limitations": [
+    "Single synthetic scene; some routes unresolved or limited",
+    "No real compositor, input-latency, device thermal or memory measurement",
+    "Crossing inspection limited to earlier visible arrows, 128 arrow paths and 8192 pair checks per candidate"
+  ]
+}

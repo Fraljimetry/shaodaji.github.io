@@ -1,0 +1,73 @@
+{
+  "cut": "11",
+  "release": "0.12.0",
+  "date": "2026-11-12",
+  "baseline": "Cut10 exact cumulative ZIP, v0.11.0",
+  "new_risks": [
+    "Desmos-style under-resolved plot detail",
+    "GeoGebra-style free/dependent object and snapping consistency",
+    "screen-space label overflow and obscured diagrams",
+    "expensive interactive nearest-anchor queries",
+    "untrusted labels/XSS and export fidelity"
+  ],
+  "cases": [
+    {
+      "id": "MI11-LABEL-001",
+      "invariant": "Long and explicit multiline node SVG text retains every character and wraps; arrow clipping follows updated box.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-FIT-002",
+      "invariant": "Fit reserves fixed pixel extents for node and point labels; warns where viewport cannot fit labels.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-PRECISION-003",
+      "invariant": "Small nonzero values remain nonzero in list and cursor coordinate displays.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-INDEX-004",
+      "invariant": "Visible point/midpoint spatial query, hidden/opacity-zero exclusion, overlap priority, first-created snap tie stability.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-PLOT-005",
+      "invariant": "Fast/Balanced/Detailed sampling, CPU budget flag, invalid setting rejection, old JSON default.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-EXPORT-006",
+      "invariant": "Auto-wrapped node disables non-faithful TikZ while SVG and JSON remain available.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-SECURITY-007",
+      "invariant": "Untrusted SVG/node label text stays plain text; no DOM HTML interpretation.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    },
+    {
+      "id": "MI11-COMPAT-008",
+      "invariant": "Retained 78 Node and 19 earlier Chromium suites plus Cut11 new script, schema examples and site integration.",
+      "test": "tests/cut11.test.mjs and/or tests/browser_cut11.py",
+      "status": "PASS in Node + isolated Chromium; no hosted/cross-browser claim"
+    }
+  ],
+  "red_evidence": "Baseline Cut10 long node has a single SVG text run and fixed-height box, Fit ignores pixel-size labels, left list formats 1e-9 as 0.000, nearestAnchor creates a new full resolver on every hover. Tests introduced before patch initially failed importing the new helpers. New helpers, integration and UI were subsequently exercised against the modified source.",
+  "retained_suites": "87 Node tests including 78 retained and 9 new; 20 isolated Chromium scripts, executed in batches and Cut11 separately; actual pdflatex/site checks documented in final report.",
+  "not_certified": [
+    "actual deployed website or HTTP module MIME",
+    "Safari/Firefox and physical touch",
+    "font measurement exactness",
+    "strict topology proof of sampled functions",
+    "atomic simultaneous-tab writes",
+    "cross-browser screen reader focus"
+  ]
+}

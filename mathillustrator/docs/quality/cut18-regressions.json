@@ -1,0 +1,62 @@
+{
+  "project": "MathIllustrator",
+  "cut": "18",
+  "release": "0.19.0",
+  "date": "2026-11-12",
+  "baseline": "Exact Cut17 cumulative zip",
+  "cases": [
+    {
+      "id": "MI18-001",
+      "risk": "Forced opaque SVG/PNG/WebP prevents publication overlay",
+      "red": "Baseline browser_cut18.py fails: missing export-transparent control",
+      "fix": "Optional exportTransparent boolean and alpha-preserving SVG/Canvas path",
+      "green": "Decoded downloaded PNG/WebP alpha zero, exported SVG omits background; editing canvas remains opaque"
+    },
+    {
+      "id": "MI18-002",
+      "risk": "JPEG silently flattened when alpha requested",
+      "red": "Baseline had no alpha-selection gating",
+      "fix": "Disable JPEG with explanatory tooltip and reject direct alpha/JPEG calls",
+      "green": "Chromium JPEG button disabled in transparency mode"
+    },
+    {
+      "id": "MI18-003",
+      "risk": "Legacy version 1 project incompatibility",
+      "red": "New setting absent from old project JSON",
+      "fix": "Default false in validator and schema optional field",
+      "green": "Node and Chromium import tests; opaque legacy PNG pixels"
+    },
+    {
+      "id": "MI18-004",
+      "risk": "Text spacing silently changed on SVG export",
+      "red": "Baseline SVG text lacks xml:space attribute",
+      "fix": "Preserve SVG text whitespace and refuse unsupported TikZ spacing",
+      "green": "Downloaded SVG retains multiple spaces; restricted TikZ option disabled for such labels"
+    },
+    {
+      "id": "MI18-005",
+      "risk": "Opaque halo remains behind label in transparent figures",
+      "red": "Prior morphism label had stroke equal to canvas background",
+      "fix": "Suppress halo stroke only in transparent SVG export",
+      "green": "Downloaded transparent SVG is parsed as XML and morphism text label stroke is none; browser_cut18.py (Chromium), after closing the prior modal."
+    }
+  ],
+  "provenance": "Node test; isolated actual headless Chromium downloaded bytes and Pillow decode; no network navigation, Firefox/Safari, or real-device certification",
+  "unverified": [
+    "live deployed site",
+    "full cross-browser alpha/font fidelity",
+    "large scene pixel-golden tests",
+    "native vector PDF",
+    "physical touchscreen",
+    "multi-tab crash atomicity"
+  ],
+  "test_results": {
+    "node": "108/108",
+    "chromium_editor_scripts": "29/29 (27 retained + Cut17 + Cut18; separate batches)",
+    "latex_compilation": "2/2",
+    "homepage_language_viewports": "8/8",
+    "example_json_schema": "4/4",
+    "regression_test_dependency": "Playwright+Chromium+Pillow; local only",
+    "limits": "No live site, Firefox/Safari or performance claim"
+  }
+}

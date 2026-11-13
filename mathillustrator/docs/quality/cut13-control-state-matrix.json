@@ -1,0 +1,158 @@
+{
+  "project": "MathIllustrator",
+  "cut": "13",
+  "release": "0.14.0",
+  "scope": "Settings/UI targeted round, not all cross-product combinations",
+  "tested_browser": "isolated Chromium with real DOM events",
+  "settings_controls": [
+    "preset",
+    "module-basic",
+    "module-construction",
+    "module-illustration",
+    "module-diagram",
+    "plot-quality",
+    "correction",
+    "polygon-sides",
+    "snap-step",
+    "snap",
+    "snap-anchors",
+    "grid",
+    "axes",
+    "labels",
+    "default-stroke",
+    "default-fill",
+    "default-width",
+    "point-size",
+    "default-opacity",
+    "page",
+    "export-region",
+    "export-guides",
+    "export-scale",
+    "background",
+    "theme"
+  ],
+  "columns": [
+    "default_or_selection",
+    "valid_edit",
+    "invalid_edit_where_applicable",
+    "redo_undo",
+    "imported_legacy",
+    "interaction_overlay_focus",
+    "large_scene"
+  ],
+  "coverage": [
+    {
+      "id": "preset",
+      "direct": [
+        "valid_edit",
+        "redo_undo",
+        "custom_indication"
+      ],
+      "inherited": [
+        "default_or_selection",
+        "module_visibility"
+      ],
+      "unverified": [
+        "all_interleavings",
+        "old_file_with_out_of_range_values"
+      ]
+    },
+    {
+      "id": "snap-step",
+      "direct": [
+        "invalid_edit_where_applicable",
+        "valid_edit",
+        "redo_undo"
+      ],
+      "inherited": [
+        "default_or_selection"
+      ],
+      "unverified": [
+        "native mobile number keypad",
+        "IME"
+      ]
+    },
+    {
+      "id": "point-size",
+      "direct": [
+        "valid_edit",
+        "imported_legacy"
+      ],
+      "inherited": [
+        "default_or_selection",
+        "point_property_override"
+      ],
+      "unverified": [
+        "huge legacy graph"
+      ]
+    },
+    {
+      "id": "export-region",
+      "direct": [
+        "valid_edit",
+        "redo_undo",
+        "large_scene_no_render"
+      ],
+      "inherited": [
+        "page_interaction"
+      ],
+      "unverified": [
+        "real raster golden baseline"
+      ]
+    },
+    {
+      "id": "export-guides",
+      "direct": [
+        "valid_edit",
+        "redo_undo",
+        "large_scene_no_render"
+      ],
+      "inherited": [
+        "actual_export_guides"
+      ],
+      "unverified": [
+        "Firefox/Safari"
+      ]
+    },
+    {
+      "id": "export-scale",
+      "direct": [
+        "valid_edit",
+        "redo_undo",
+        "large_scene_no_render"
+      ],
+      "inherited": [
+        "raster_dimensions"
+      ],
+      "unverified": [
+        "device_pixel_ratio_extremes"
+      ]
+    },
+    {
+      "id": "keyboard-delete",
+      "direct": [
+        "button_focused",
+        "object_selected",
+        "nontext_control"
+      ],
+      "inherited": [
+        "object_list_keyboard"
+      ],
+      "unverified": [
+        "screen_reader_virtual_cursor",
+        "IME"
+      ]
+    },
+    {
+      "id": "remaining-UI-settings",
+      "direct": [],
+      "inherited": [
+        "browser_cut07_inventory.py individual setting edits, module toggles, theme, page frame, preset/undo earlier scripts"
+      ],
+      "unverified": [
+        "all invalid inputs × all presets × all tools × all browser engines"
+      ]
+    }
+  ],
+  "standing_disclaimer": "152 controls are inventoried in cut07-control-matrix.json; 123 functions inventoried in cut12-function-inventory.json. A representative successful test is not an exhaustive proof. Do not overcount matrices as all tested."
+}

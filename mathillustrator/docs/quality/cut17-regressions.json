@@ -1,0 +1,60 @@
+{
+  "project": "MathIllustrator",
+  "cut": "17",
+  "release": "0.18.0",
+  "date": "2026-11-12",
+  "baseline": "Exact cumulative Cut16 archive from conversation; new source differs only in documented Cut17 improvements",
+  "provenance": "Cut16 browser_cut17.py red, Cut17 green; Node pure helper assertions; inherited Chromium scripts and headless benchmark; actual pdflatex compilation; local static site checks. NOT hosted deployment.",
+  "cases": [
+    {
+      "id": "MI17-001",
+      "risk": "Zero-opacity nodes and functions still create SVG elements and incur rendering/sampling work",
+      "red": "Cut16 browser_cut17.py failed at invisible node DOM assertion",
+      "fix": "Skip alpha-zero objects before resolver paths and SVG construction",
+      "green": "Cut17 browser_cut17.py checks rendered SVG absence and editable JSON preservation; inherited Cut04 opacity test updated to stronger representation-invariant contract"
+    },
+    {
+      "id": "MI17-002",
+      "risk": "Visible morphism to a transparent node reappears in TikZ despite being absent from SVG",
+      "red": "Baseline canTikz() checks hidden but not zero-opacity endpoints",
+      "fix": "Disable TikZ when a visible morphism has an invisible endpoint",
+      "green": "Cut17 Chromium TikZ option disabled; SVG morphism also absent"
+    },
+    {
+      "id": "MI17-003",
+      "risk": "Transparent morphism exported as residual TikZ arrow",
+      "red": "Cut16 asTikz() only excludes hidden objects, not opacity zero",
+      "fix": "TikZ emits only visible objects and edges",
+      "green": "Cut17 actual downloaded TikZ text has neither transparent edge nor its label"
+    },
+    {
+      "id": "MI17-004",
+      "risk": "Thousands of fully offscreen bounded SVG shapes monopolize DOM and redraw time",
+      "red": "Cut16 fixed synthetic scene 2920 SVG id nodes; median redraw 20.45ms",
+      "fix": "Conservative screen-space bbox/radius culling of bounded primitives; model retained",
+      "green": "Cut17 synthetic scene 720 SVG id nodes, median 6.30ms; viewport-crossing and near-edge segment browser assertions"
+    },
+    {
+      "id": "MI17-005",
+      "risk": "Culling incorrectly hides wide/curved/stroked geometry near or crossing canvas",
+      "red": "Adversarial crossing endpoints and circle-radius geometry added before acceptance",
+      "fix": "Bézier control hull, circle radius, stroke margin and conservative nonfinite fallback",
+      "green": "Cut17 5 Node tests plus actual Chromium crossing/near-edge SVG checks"
+    },
+    {
+      "id": "MI17-006",
+      "risk": "Old test assumed invisible SVG label must remain in DOM with alpha 0",
+      "red": "Retained browser_cut04_opacity.py failed after deliberate stronger optimization",
+      "fix": "Update historical test contract to absence in rendered/exported SVG and TikZ",
+      "green": "Cut17 standalone opacity suite passes; preserves non-hit-test requirements"
+    }
+  ],
+  "not_certified": [
+    "Firefox/Safari SVG+TikZ typography",
+    "real cloud/hosted website",
+    "browser-native screenshot goldens",
+    "end-to-end 60fps",
+    "real simultaneous tabs",
+    "mobile GPU and physical touch"
+  ]
+}

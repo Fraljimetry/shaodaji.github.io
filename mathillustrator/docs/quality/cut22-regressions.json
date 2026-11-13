@@ -1,0 +1,57 @@
+{
+  "project": "MathIllustrator",
+  "cut": "22",
+  "release": "0.23.0",
+  "baseline": "Exact cumulative Cut21 ZIP, 123 Node tests passing before changes",
+  "cases": [
+    {
+      "id": "MI22-001",
+      "risk": "No direct drag affordance for morphism label placement",
+      "red": "Cut21 has numeric labelDx/Dy properties but no interactive label handle",
+      "green": "Chromium real mouse moves selected handle; SVG text shifts and underlying morphism path/ref remain unchanged; JSON preserves offsets"
+    },
+    {
+      "id": "MI22-002",
+      "risk": "Transparent SVG hit path overlays an interactive label handle",
+      "red": "First Cut22 Chromium test: elementFromPoint returned path[data-id=o3], label shift stayed zero",
+      "green": "Move handle above hit path; real pointer event targets circle[data-label-handle=o3] and updates offset"
+    },
+    {
+      "id": "MI22-003",
+      "risk": "Interrupted drag writes speculative label positions and consumes Undo",
+      "red": "Pointer lifecycle previously supported points/pan/freehand only",
+      "green": "Browser blur rollback verifies previous offset and next Undo restores pre-drag edit"
+    },
+    {
+      "id": "MI22-004",
+      "risk": "No-motion click silently rounds old fractional offset",
+      "red": "Pure helper initially converted 2.25px to 2.3px on zero-movement release",
+      "green": "<2px drag retains original values and does not record a new undo step; Node regression"
+    },
+    {
+      "id": "MI22-005",
+      "risk": "Selection modifier clicks and exports interact with handle overlay",
+      "red": "Handle priority on pointerdown could consume modifier interactions; hit paths in export would leak editor marks",
+      "green": "Ctrl/Meta/Alt/Shift bypass special handle drag; SVG export does not include data-label-handle; locked arrow hides handle"
+    },
+    {
+      "id": "MI22-006",
+      "risk": "Model schema incompatible with mouse-only label drag",
+      "red": "New fields would require migration and potentially invalidate historical v1 documents",
+      "green": "Gesture writes existing optional labelDx/Dy only, v1 schema unchanged, all four legacy sample projects validate"
+    }
+  ],
+  "verification": {
+    "node_tests": 125,
+    "chromium_scripts": 33,
+    "outcome": "PASS in batches; not public deployed origin or physical hardware"
+  },
+  "unverified": [
+    "cross-browser rendering",
+    "real touchscreen/stylus",
+    "high-density drag frame-time distribution",
+    "screen-reader handle access; numeric fields remain available",
+    "multi-tab atomicity",
+    "diagram label collision avoidance"
+  ]
+}

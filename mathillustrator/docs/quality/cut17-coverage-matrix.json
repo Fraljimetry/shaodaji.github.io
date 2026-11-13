@@ -1,0 +1,34 @@
+{
+  "cut": "17",
+  "release": "0.18.0",
+  "direct": [
+    "invisible model object retained but no SVG",
+    "invisible function plot omitted",
+    "morphism with transparent endpoint TikZ disabled",
+    "transparent morphism omitted from TikZ",
+    "offscreen bounded segment culled",
+    "cross-viewport segment preserved",
+    "near-edge segment preserved",
+    "pure bbox radius and invalid-numeric safety",
+    "large mixed scene benchmark"
+  ],
+  "inherited": [
+    "drawing modes",
+    "undo/redo",
+    "gesture rollback",
+    "imports JSON/tikz-cd",
+    "mobile emulation",
+    "settings defaults",
+    "autosave recovery",
+    "existing function sampling",
+    "LaTeX compilation"
+  ],
+  "unverified": [
+    "SVG/PNG pixel goldens across browsers",
+    "real simultaneous-tab saves",
+    "deployed site",
+    "hardware stylus",
+    "general mathematical constraints",
+    "full accessibility"
+  ]
+}

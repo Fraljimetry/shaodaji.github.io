@@ -1,0 +1,233 @@
+[
+  {
+    "script": "browser_cut02.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.68,
+    "detail": "CHROMIUM_CUT02_PASS: live regular polygon, rejected edits and commands, undo/redo, SVG/TikZ/JPEG output, mobile drawer recovery"
+  },
+  {
+    "script": "browser_cut03.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.0,
+    "detail": "CHROMIUM_CUT03_PASS: editor-only guide omission, opted-in guide, page crop, PNG resolutions, JSON settings, plot pole, invalid geometry rollback, pan Escape, nonprimary pointer"
+  },
+  {
+    "script": "browser_cut03_storage.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.85,
+    "detail": "CHROMIUM_CUT03_CORRUPTION_PASS: malformed local backup quarantined, edits cannot overwrite, explicit user consent recovers autosave"
+  },
+  {
+    "script": "browser_cut04.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.92,
+    "detail": "CHROMIUM_CUT04_PASS: visible corrected freehand preview, final release coordinate, pointercancel, storage equivalent-version, no JS errors"
+  },
+  {
+    "script": "browser_cut04_opacity.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.17,
+    "detail": "CHROMIUM_CUT04_OPACITY_PASS: zero-opacity points omitted, non-hit-test and SVG/TikZ visual parity"
+  },
+  {
+    "script": "browser_cut04_pointer.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 1.85,
+    "detail": "CHROMIUM_CUT04_POINTER_PASS: click-to-select preserves off-grid precision, pointerup-only final movement, undo"
+  },
+  {
+    "script": "browser_cut04_stale.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.13,
+    "detail": "CHROMIUM_CUT04_STALE_PASS: reused-ID orphan input/delete/object-row blocked without corrupting current document"
+  },
+  {
+    "script": "browser_cut05.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.71,
+    "detail": "CHROMIUM_CUT05_PASS: marker-free arrows, per-object color, export/undo, overlapped-point dragging, no redundant hit disks, offscreen point culling"
+  },
+  {
+    "script": "browser_cut05_list.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.94,
+    "detail": "CHROMIUM_CUT05_LIST_PASS: virtual row count, 3000-object scrolling, hidden filter, search, selection, properties and undo"
+  },
+  {
+    "script": "browser_cut06.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.56,
+    "detail": "CHROMIUM_CUT06_PASS: atomic short construction, opacity-aware snapping, hidden unsupported export, zoom-invariant TikZ, reachable basic tools"
+  },
+  {
+    "script": "browser_cut07_adversarial.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 4.44,
+    "detail": "CHROMIUM_CUT07_ADVERSARIAL_PASS 6 cases: rectangle semantic drag/property/TeX, text prompt 1200 characters exact, text prompt >2000 rejects without truncated object, non-ascii TikZ disabled with SVG/JSON available, Escape/focus/global shortcuts in two dialogs, stale async JSON import rejected"
+  },
+  {
+    "script": "browser_cut07_inventory.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 15.34,
+    "detail": "CHROMIUM_CUT07_INVENTORY_PASS 22 categories: tool.point, tool.segment, tool.arrow, tool.line, tool.circle, tool.ellipse, tool.rectangle, tool.regularPolygon, tool.polygon, tool.polyline, tool.bezier, tool.angle, tool.text, tool.node, tool.freehand, commands.all-supported, commands.all-invalid-atomic, objects.search-select, objects.style-rename, settings.individual-controls, settings.presets-and-tool-modules, export.raster-svg-native"
+  },
+  {
+    "script": "browser_cut07_properties.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.9,
+    "detail": "CHROMIUM_CUT07_PROPERTIES_PASS 9 categories: point radius/style/invalid rollback/coordinates, regular polygon sides/fill/invalid rollback, function expression edit and parser rejection, node label/font and morphism bend/side/label, hide/filter/show/lock/delete refusal/unlock, layer order and center-view actions, transitive delete/undo/redo, zoom controls, fit and cursor pan, new and undo recovery"
+  },
+  {
+    "script": "browser_cut08.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.94,
+    "detail": "BROWSER_CUT08_PASS property collapse rejection, valid edit, undo/redo\nBROWSER_CUT08_PASS pointer drag collapse rollback\nBROWSER_CUT08_PASS XML-invalid name and extreme snap bounds\nBROWSER_CUT08_PASS 4000-object indexed search [7.7, 9.6, 8.1, 9] ms; max 550ms threshold in this isolated run"
+  },
+  {
+    "script": "browser_cut09.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.64,
+    "detail": "CUT09_BROWSER_PASS TikZ precision and dimension export gating\nCUT09_BROWSER_PASS delayed encoder canceled on intervening project edit\nCUT09_BROWSER_PASS interrupted gesture rollback on window blur"
+  },
+  {
+    "script": "browser_cut10.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.88,
+    "detail": "CUT10_PASS morphism stops outside both node rectangles\nCUT10_PASS overlapping diagram boxes suppress reversed SVG arrow, semantic graph intact\nCUT10_PASS object list arrow/home/end focus follows virtualization\nCUT10_PASS import/export focus loops and escape restore launcher\nCUT10_PASS cached plots stable when view identical, invalidated by zoom, no browser exceptions"
+  },
+  {
+    "script": "browser_cut11.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.07,
+    "detail": "CUT11_PASS node label wrapping and semantic arrow follow same dimensions\nCUT11_PASS Fit includes full fixed-pixel node labels\nCUT11_PASS wrapped SVG-only label disables geometrically inexact TikZ export\nCUT11_PASS Plot detail changes actual sampling and invalidates cached paths\nCUT11_PASS snap index invalidates after coordinate-property edits\nCUT11_PASS tiny nonzero coordinates remain distinguishable; no JS page errors"
+  },
+  {
+    "script": "browser_cut12.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.85,
+    "detail": "CUT12_PASS invisible point ignored by Fit\nCUT12_PASS document hidden rolls back partial pointer drag\nCUT12_PASS document hidden rolls back unfinished Pan"
+  },
+  {
+    "script": "browser_cut12_batch.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 1.52,
+    "detail": "CUT12_BATCH_PASS {'equal': True, 'firstMismatch': -1, 'added': 412, 'requests': 2400} matches strict legacy world-distance scan oracle"
+  },
+  {
+    "script": "browser_cut13.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.88,
+    "detail": "CUT13_PASS destructive shortcuts restricted to canvas/object-list context\nCUT13_PASS preset indicator and drawing defaults remain consistent\nCUT13_PASS export-only settings avoid redraw; undo/redo synchronizes UI\nCUT13_PASS invalid-then-valid setting commits and history\nCUT13_PASS imported legacy point radius preserved across default-size changes"
+  },
+  {
+    "script": "browser_cut14.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 5.14,
+    "detail": "CUT14_PASS no partial multi-click construction crosses New\nCUT14_PASS backgrounding cancels partial multi-click constructions\nCUT14_PASS delayed import rejected after same-content project replacement\nCUT14_PASS IME composition cannot trigger object deletion\nCUT14_PASS IME composition respected inside import modal\nCUT14_PASS active drag aborted before viewport modification\nCUT14_PASS storage quota failure preserves previous data and manual JSON download\nCUT14_PASS subsequent save succeeds after quota condition clears"
+  },
+  {
+    "script": "browser_cut15.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.78,
+    "detail": "CUT15_PASS touch points commit on release only\nCUT15_PASS final touch-up displacement cannot create a ghost tap\nCUT15_PASS contact released outside the canvas is cleared\nCUT15_PASS second finger on controls interrupts canvas operation\nCUT15_PASS multi-touch suppresses ghost point and recovers\nCUT15_PASS interrupted multi-click constructions cancel cleanly\nCUT15_PASS pinch interruption rolls back single-finger pan\nCUT15_PASS pan consumes final pen-up position\nCUT15_PASS touch pending tap cancels on blur\nCUT15_PASS line wheel deltas normalized to pixel wheel deltas\nCUT15_PASS export modal focus and page errors"
+  },
+  {
+    "script": "browser_cut15_mobile.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.31,
+    "detail": "CUT15_MOBILE_PASS 320 px: wrapped toolbar, visible Export, no overflow, canvas below header, native emulated tap\nCUT15_MOBILE_PASS PNG export after emulated touch 612 1310\nCUT15_MOBILE_PASS 390 px: wrapped toolbar, visible Export, no overflow, canvas below header, native emulated tap\nCUT15_MOBILE_PASS 700 px: wrapped toolbar, visible Export, no overflow, canvas below header, native emulated tap"
+  },
+  {
+    "script": "browser_cut16.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.64,
+    "detail": "CUT16_PASS stale queued StorageEvent is reconciled against current storage\nCUT16_PASS failed quota backup retains snapshot, retry persists latest state\nCUT16_PASS external storage clear pauses without deleting in-memory geometry\nCUT16_BROWSER_PASS storage event ordering, accurate conflict banner, explicit retry"
+  },
+  {
+    "script": "browser_cut17.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.2,
+    "detail": "CUT17_PASS hidden endpoint and transparent function omitted from SVG; TeX unavailable when semantics diverge\nCUT17_PASS zero-opacity semantic arrow is absent from TikZ\nCUT17_PASS offscreen culling preserves crossing strokes in SVG and visible canvas"
+  },
+  {
+    "script": "browser_cut18.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.09,
+    "detail": "CUT18_BROWSER_PASS alpha PNG, transparent SVG, JPEG-disabled, legacy opaque, SVG whitespace, editor background unchanged"
+  },
+  {
+    "script": "browser_cut19.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.3,
+    "detail": "CUT19_BROWSER_PASS multiline edit and SVG/JSON round-trip, exact wrapped spaces, offscreen culling, crossing morphism, searchable offscreen objects"
+  },
+  {
+    "script": "browser_edges.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.64,
+    "detail": "CHROMIUM_EDGE_SMOKE_PASS: polygon double-click 3 vertices, canceled pointer rollback, completed drag, single undo, lock/delete protection"
+  },
+  {
+    "script": "browser_smoke.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.17,
+    "detail": "CHROMIUM_ISOLATED_SMOKE_PASS: startup, tools, commands, search, presets, visibility, SVG/PNG/TikZ/JSON, frame crop, tikzcd interchange, undo/redo, property edit"
+  },
+  {
+    "script": "browser_storage.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.23,
+    "detail": "CHROMIUM_STORAGE_PASS: delayed autosave, external conflict pause, rejected overwrite, load-newer timer cancellation, history clearing"
+  },
+  {
+    "script": "browser_cut20.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 3.48,
+    "detail": "CUT20_BROWSER_PASS: stacked Ctrl-click cycling, non-mutating label decluttering, SVG+JSON fidelity, undo/redo"
+  },
+  {
+    "script": "browser_cut21.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 2.8,
+    "detail": "CUT21_BROWSER_PASS: route around node; label shift/position; SVG+JSON fidelity; TikZ gating; undo; hidden obstacle; rejected property"
+  },
+  {
+    "script": "browser_cut22.py",
+    "status": "PASS",
+    "exit": 0,
+    "elapsed_s": 4.07,
+    "detail": "CUT22_BROWSER_PASS: pointer label drag; visual preview; single undo; cancelled drag; SVG exclusion; locked handle; no pageerrors"
+  }
+]

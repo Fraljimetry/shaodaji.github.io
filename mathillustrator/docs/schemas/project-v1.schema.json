@@ -1,33 +1,810 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shaodaji.cc/mathillustrator/docs/schemas/project-v1.schema.json",
-  "title": "MathIllustrator native project v1 (documentary contract)",
+  "title": "MathIllustrator semantic project v1 — Cut23 opt-in morphism label collision avoidance",
   "type": "object",
-  "required": ["format", "version", "meta", "settings", "objects", "nextId"],
+  "required": [
+    "format",
+    "version",
+    "meta",
+    "settings",
+    "objects",
+    "nextId"
+  ],
   "properties": {
-    "format": {"const": "mathillustrator-project"},
-    "version": {"const": 1},
-    "meta": {"type": "object", "required": ["title"], "properties": {"title": {"type": "string"}}},
-    "nextId": {"type": "integer", "minimum": 1},
-    "settings": {"type": "object", "required": ["grid", "snap", "snapStep", "correction", "showAxes", "stroke", "fill", "opacity", "width", "pointSize", "page", "background"],
-      "properties": {"grid": {"type": "boolean"}, "snap": {"type": "boolean"}, "snapStep": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000}, "correction": {"enum": ["off", "gentle", "medium", "strong"]}, "showAxes": {"type": "boolean"}, "stroke": {"$ref": "#/$defs/color"}, "fill": {"$ref": "#/$defs/color"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}, "width": {"type": "number", "minimum": 0, "maximum": 100}, "pointSize": {"type": "number", "minimum": 1, "maximum": 100}, "page": {"enum": ["infinite", "a4", "letter"]}, "background": {"$ref": "#/$defs/color"}}},
-    "objects": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/object"}}
+    "format": {
+      "const": "mathillustrator-project"
+    },
+    "version": {
+      "const": 1
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "nextId": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "settings": {
+      "$ref": "#/$defs/settings"
+    },
+    "objects": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/object"
+      }
+    }
   },
   "$defs": {
-    "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
-    "point2": {"type": "array", "prefixItems": [{"type": "number"}, {"type": "number"}], "minItems": 2, "maxItems": 2},
-    "style": {"type": "object", "required": ["stroke", "fill", "opacity", "width"], "properties": {"stroke": {"$ref": "#/$defs/color"}, "fill": {"$ref": "#/$defs/color"}, "opacity": {"type": "number", "minimum": 0, "maximum": 1}, "width": {"type": "number", "minimum": 0, "maximum": 100}}},
-    "object": {"type": "object", "required": ["id", "name", "type", "style"],
-      "properties": {"id": {"type": "string", "pattern": "^o[1-9][0-9]*$"}, "name": {"type": "string", "maxLength": 180}, "hidden": {"type": "boolean"}, "locked": {"type": "boolean"}, "style": {"$ref": "#/$defs/style"}, "type": {"enum": ["point", "midpoint", "segment", "arrow", "line", "circle", "polygon", "polyline", "freehand", "text", "function"]}, "xy": {"$ref": "#/$defs/point2"}, "refs": {"type": "array", "items": {"type": "string", "pattern": "^o[1-9][0-9]*$"}}, "path": {"type": "array", "maxItems": 20000, "items": {"$ref": "#/$defs/point2"}}, "text": {"type": "string", "maxLength": 2000}, "fontSize": {"type": "number", "minimum": 5, "maximum": 200}, "expr": {"type": "string", "maxLength": 400}},
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "coord": {
+      "type": "number",
+      "exclusiveMinimum": -1000000000,
+      "exclusiveMaximum": 1000000000
+    },
+    "xy": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/coord"
+        },
+        {
+          "$ref": "#/$defs/coord"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "style": {
+      "type": "object",
+      "required": [
+        "stroke",
+        "fill",
+        "width",
+        "opacity"
+      ],
+      "properties": {
+        "stroke": {
+          "$ref": "#/$defs/color"
+        },
+        "fill": {
+          "$ref": "#/$defs/color"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pointSize": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Optional per-point radius in CSS px; valid only for point/midpoint objects. Older v1 objects may omit it; while untouched they display the current legacy pointSize default. When the user changes the new-object point-size default, MathIllustrator first pins those existing objects to their prior displayed radius using this optional field, preserving appearance."
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "required": [
+        "grid",
+        "snap",
+        "snapStep",
+        "correction",
+        "showAxes",
+        "stroke",
+        "fill",
+        "opacity",
+        "width",
+        "pointSize",
+        "page",
+        "background"
+      ],
+      "properties": {
+        "grid": {
+          "type": "boolean"
+        },
+        "snap": {
+          "type": "boolean"
+        },
+        "snapStep": {
+          "type": "number",
+          "maximum": 1000,
+          "minimum": 1e-06,
+          "description": "1e-6 through 1000 world units: lower legacy values now explicitly rejected because they can overflow floating-point snapping."
+        },
+        "correction": {
+          "enum": [
+            "off",
+            "gentle",
+            "medium",
+            "strong"
+          ]
+        },
+        "showAxes": {
+          "type": "boolean"
+        },
+        "stroke": {
+          "$ref": "#/$defs/color"
+        },
+        "fill": {
+          "$ref": "#/$defs/color"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100
+        },
+        "pointSize": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "page": {
+          "enum": [
+            "infinite",
+            "a4",
+            "letter"
+          ]
+        },
+        "background": {
+          "$ref": "#/$defs/color"
+        },
+        "exportRegion": {
+          "enum": [
+            "viewport",
+            "page"
+          ]
+        },
+        "showLabels": {
+          "type": "boolean"
+        },
+        "labelPlacement": {
+          "enum": [
+            "standard",
+            "avoid"
+          ],
+          "description": "Optional v1 visual layout preference. Standard preserves historical pixel placement; avoid repositions point name labels without changing text or coordinates."
+        },
+        "snapAnchors": {
+          "type": "boolean"
+        },
+        "modules": {
+          "type": "object",
+          "required": [
+            "basic",
+            "construction",
+            "illustration",
+            "diagram"
+          ],
+          "properties": {
+            "basic": {
+              "type": "boolean"
+            },
+            "construction": {
+              "type": "boolean"
+            },
+            "illustration": {
+              "type": "boolean"
+            },
+            "diagram": {
+              "type": "boolean"
+            }
+          }
+        },
+        "polygonSides": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 100,
+          "description": "Default side count for newly drawn regular polygons; optional for legacy v1 documents, default 6."
+        },
+        "exportGuides": {
+          "type": "boolean",
+          "description": "Optional v1; defaults to false. When enabled, image exports include visible grid and axes; never exports the editor page outline."
+        },
+        "exportScale": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Optional v1; defaults to 2. PNG/JPEG/WebP pixel-resolution multiplier (not calibrated DPI)."
+        },
+        "plotQuality": {
+          "enum": [
+            "fast",
+            "balanced",
+            "detailed"
+          ],
+          "description": "Optional v1 extension; missing means balanced. Analysis / plots preset selects detailed. Higher detail costs CPU and is never an exact plotting proof."
+        },
+        "exportTransparent": {
+          "type": "boolean",
+          "description": "Optional v1 extension; false if absent. Alpha-preserving SVG/PNG/WebP only; JPEG option disabled if true; editor background unchanged."
+        }
+      },
       "allOf": [
-        {"if": {"properties": {"type": {"const": "point"}}}, "then": {"required": ["xy"]}},
-        {"if": {"properties": {"type": {"const": "midpoint"}}}, "then": {"required": ["refs"]}},
-        {"if": {"properties": {"type": {"enum": ["segment", "arrow", "line", "circle", "polygon", "polyline"]}}}, "then": {"required": ["refs"]}},
-        {"if": {"properties": {"type": {"const": "freehand"}}}, "then": {"required": ["path"]}},
-        {"if": {"properties": {"type": {"const": "text"}}}, "then": {"required": ["xy", "text"]}},
-        {"if": {"properties": {"type": {"const": "function"}}}, "then": {"required": ["expr"]}}
+        {
+          "if": {
+            "properties": {
+              "page": {
+                "const": "infinite"
+              }
+            },
+            "required": [
+              "page"
+            ]
+          },
+          "then": {
+            "properties": {
+              "exportRegion": {
+                "not": {
+                  "const": "page"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "object": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "type",
+        "style",
+        "hidden",
+        "locked"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^o[1-9][0-9]*$",
+          "maxLength": 17
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "type": {
+          "enum": [
+            "point",
+            "midpoint",
+            "segment",
+            "arrow",
+            "line",
+            "circle",
+            "ellipse",
+            "rectangle",
+            "polygon",
+            "polyline",
+            "bezier",
+            "angle",
+            "freehand",
+            "text",
+            "function",
+            "node",
+            "morphism",
+            "regularPolygon"
+          ]
+        },
+        "style": {
+          "$ref": "#/$defs/style"
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "xy": {
+          "$ref": "#/$defs/xy"
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^o[1-9][0-9]*$"
+          },
+          "maxItems": 2000
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/xy"
+          },
+          "minItems": 2,
+          "maxItems": 20000
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "fontSize": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 200
+        },
+        "expr": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "bend": {
+          "type": "number",
+          "minimum": -5,
+          "maximum": 5
+        },
+        "swap": {
+          "type": "boolean"
+        },
+        "sides": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 100
+        },
+        "routing": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "avoid",
+            "avoid-crossings", "scene-crossings"
+          ],
+          "description": "Optional morphism-only routing. Legacy absent value means direct/curved. Avoid uses best-effort two-turn screen-space routing around visible nodes. Avoid-crossings additionally prioritizes fewer interior crossings with earlier visible arrows, subject to bounded search/inspection; unresolved crossings are warned. Neither changes semantic refs."
+        },
+        "labelT": {
+          "type": "number",
+          "minimum": 0.05,
+          "maximum": 0.95,
+          "description": "Optional morphism-only label fraction along arrow (default 0.5)."
+        },
+        "labelDistance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Optional morphism-only perpendicular label distance in CSS px (default 17)."
+        },
+        "labelDx": {
+          "type": "number",
+          "minimum": -300,
+          "maximum": 300,
+          "description": "Optional morphism-only horizontal label shift in CSS px (default 0)."
+        },
+        "labelDy": {
+          "type": "number",
+          "minimum": -300,
+          "maximum": 300,
+          "description": "Optional morphism-only vertical label shift in CSS px (default 0)."
+        },
+        "labelAvoid": {
+          "type": "boolean",
+          "description": "Optional morphism-only best-effort collision avoidance for screen-space label display; default false for legacy projects. Does not mutate semantic edges, labels, node coordinates or author-selected offsets. Manual handle dragging disables auto placement."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "point"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "xy"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "node"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "xy",
+              "text"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "xy",
+              "text"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "midpoint"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "segment"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "arrow"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "line"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "circle"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ellipse"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "bezier"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "angle"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "morphism"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs",
+              "text"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "polygon"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "minItems": 3,
+                "maxItems": 2000
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "polyline"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "minItems": 2,
+                "maxItems": 2000
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "freehand"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "function"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "expr"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "regularPolygon"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs",
+              "sides"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "rectangle"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "const": "morphism"
+                }
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "routing"
+                  ]
+                },
+                {
+                  "required": [
+                    "labelT"
+                  ]
+                },
+                {
+                  "required": [
+                    "labelDistance"
+                  ]
+                },
+                {
+                  "required": [
+                    "labelDx"
+                  ]
+                },
+                {
+                  "required": [
+                    "labelDy"
+                  ]
+                },
+                {
+                  "required": [
+                    "labelAvoid"
+                  ]
+                }
+              ]
+            }
+          }
+        }
       ]
     }
   },
-  "$comment": "Acyclic references, uniqueness of ids and names, nextId monotonicity, safe expression grammar and point-like reference validation are cross-object constraints enforced by src/model.mjs, not expressible in standard JSON Schema alone."
+  "$comment": "Runtime src/model.mjs remains authoritative: cross-object references, graph cycles, ID uniqueness, finite coordinates, expression validity, creation-time degeneracies and migrations are checked in JavaScript. Cut06 also encodes the finite-page-only export region invariant in JSON Schema; optional v1 settings retain defaults."
 }

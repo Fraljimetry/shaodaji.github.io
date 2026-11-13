@@ -1,0 +1,72 @@
+{
+  "cut": "09",
+  "release": "0.10.0",
+  "date": "2026-11-12",
+  "baseline": "exact extracted Cut08 ZIP",
+  "cases": [
+    {
+      "id": "MI09-TEX-01",
+      "risk": "valid short or narrow geometry silently collapses at 5-decimal TikZ rounding",
+      "evidence": "cut09.test.mjs and browser_cut09.py",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI09-TEX-02",
+      "risk": "oversized TeX dimensions and hidden/invisible support mismatch",
+      "evidence": "cut09.test.mjs and browser_cut09.py",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI09-ASYNC-03",
+      "risk": "stale PNG after a newer edit or dialog dismissal",
+      "evidence": "browser_cut09.py deferred real toBlob callback",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI09-RASTER-04",
+      "risk": "fractional page dimensions leave a stray raster output edge",
+      "evidence": "recomputed Canvas 2D transform exact pixel ratio; prior browser crop suite",
+      "status": "code_review_plus_regression",
+      "unverified": "cross-browser pixel-level golden comparison"
+    },
+    {
+      "id": "MI09-FOCUS-05",
+      "risk": "uncommitted drag leaks across hidden-window or loss-of-focus transition",
+      "evidence": "browser_cut09.py blur rollback and pointer-up no-op",
+      "status": "pass_synthetic_browser"
+    },
+    {
+      "id": "MI09-MULTITAB-06",
+      "risk": "real shared-origin localStorage / Web Locks collisions",
+      "evidence": "browser_cut09_multitab.py, attempted HTTPS navigation",
+      "status": "blocked_by_browser_policy",
+      "error": "ERR_BLOCKED_BY_ADMINISTRATOR",
+      "unverified": "authentic simultaneous-tab atomicity"
+    },
+    {
+      "id": "MI09-TEST-07",
+      "risk": "asynchronous SVG render before an older test reads a point hitbox",
+      "evidence": "browser_edges.py explicit visible wait, twice repeated green; initial extracted concurrent run red",
+      "status": "test_harness_timing_mitigated",
+      "limitation": "not proof of renderer failure/fix"
+    }
+  ],
+  "unverified": [
+    "real hosted navigation",
+    "Firefox/Safari",
+    "physical touch",
+    "cross-browser typography",
+    "true 2-tab atomicity",
+    "TeX physical-scale fidelity",
+    "dense-frame smoothness"
+  ],
+  "final_working_tree_verification": {
+    "node": "70/70",
+    "chromium_editor_scripts": "18/18",
+    "latex_pdf_compile": "2/2",
+    "homepage_language_width": "8/8",
+    "multitab": "blocked_by_browser_policy",
+    "hosted_site": "unverified",
+    "json_schema_version": "1 unchanged"
+  }
+}

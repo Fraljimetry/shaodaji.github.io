@@ -1,0 +1,80 @@
+{
+  "project": "MathIllustrator",
+  "cut": "20",
+  "release": "0.21.0",
+  "date": "2026-11-12",
+  "baseline": "Cut19 exact cumulative ZIP",
+  "cases": [
+    {
+      "id": "MI20-001",
+      "risk": "Coincident points are permanently unreachable using a single nearest-anchor hit test",
+      "red": "Cut19 browser_cut20.py: Ctrl-click four times kept selecting P3; observed IDs [P3,P3,P3,P3]",
+      "fix": "Retain existing ordinary click/drag behavior; add explicit Ctrl/Command-click cycling via screen-spatial hit stack, nearest first, most recent among exact ties",
+      "green": "Browser selects P1/P2/P3 in deterministic cycle; selection does not change point positions, object counts or native JSON."
+    },
+    {
+      "id": "MI20-002",
+      "risk": "Overlapping semantic diagram nodes cannot be disambiguated on canvas",
+      "red": "Cut19 canvas only picks the SVG topmost object; clicking other node through an opaque rectangle requires sidebar search",
+      "fix": "Combine geometric point hits and browser elementsFromPoint SVG hits, deduplicate by object ID and only consider visible objects; keep Shift/Alt pan behavior",
+      "green": "Two coincident diagram nodes are selected N2→N1→N2 by Ctrl-click with no geometry mutation."
+    },
+    {
+      "id": "MI20-003",
+      "risk": "Crowded point names cover other mathematical points and labels, or overflow the right canvas boundary",
+      "red": "Cut19 emitted all point labels at fixed +8,-9 px, confirmed identical positions for three coincident points",
+      "fix": "Optional bounded spatial-grid point label layout, six candidate anchors and viewport overflow penalties; standard mode remains exact legacy behavior",
+      "green": "Node tests verify deterministic bounded behavior and unclipping near right edge. Browser confirms three names remain intact with multiple distinct positions in Avoid mode."
+    },
+    {
+      "id": "MI20-004",
+      "risk": "New label layout could silently change saved geometry or lose labels on export/reload",
+      "red": "Potential second-order regression, not directly observed pre-fix",
+      "fix": "Use screen-space positions only during rendering, include same visual placement for SVG/raster, keep native JSON world coordinates and author names unchanged, undo/redo toggle setting",
+      "green": "Browser checks SVG strings, full JSON coordinates and names, and undo/redo of label-placement setting."
+    },
+    {
+      "id": "MI20-005",
+      "risk": "Restricted TikZ/PGF export misrepresents opt-in screen-space label placement",
+      "red": "Without preflight, asTikz writes all point names with fixed above-right anchor despite auto collision layout",
+      "fix": "Disable TikZ for any visible labeled point when avoidance is enabled; keep SVG/PNG/WebP and editable JSON available, no silent fallback",
+      "green": "Browser confirms TikZ button disabled in that case; older export smoke tests still pass in default Standard mode."
+    },
+    {
+      "id": "MI20-006",
+      "risk": "Collision avoidance causes pathological quadratic work for thousands of stacked anchors",
+      "red": "Naive all-pairs label placement would incur O(N²) and freeze editor for dense overlap",
+      "fix": "Spatial bins cap exact comparisons per cell at 40, deterministic overflow penalty; no global pair scan. Disabled by default for imported v1 files.",
+      "green": "3,000 co-located labels pass bounded Node workload test; paired 1,500-label browser timings include full overhead and raw samples."
+    },
+    {
+      "id": "MI20-007",
+      "risk": "New optional setting breaks older project compatibility or presets",
+      "red": "Old projects omit labelPlacement and must preserve original export/visual behavior",
+      "fix": "Runtime defaults absent field to Standard; schema optional enum; preset matching recognizes custom Avoid and restores Standard when selecting named preset",
+      "green": "Model validation tests, browser undo/redo, and all four historical JSON examples validate."
+    },
+    {
+      "id": "MI20-008",
+      "risk": "Caching label placements improves redraw but can leave dragged points with stale label positions",
+      "red": "Introduced by the optimization rather than observed in the Cut19 baseline; point coordinates mutate provisionally before documentRevision increments",
+      "fix": "Small bounded LRU for settled scene/viewport keys; explicitly bypass during active point dragging; invalidation on undo/redo/import/edit/pan/resize",
+      "green": "Node LRU eviction test and browser actual point drag/undo test show label follows moved anchor; full 31 retained browser suites rerun after caching."
+    }
+  ],
+  "verification": {
+    "node": "116/116",
+    "chromium_focused": "browser_cut20.py PASS, including node overlap + drag/repaint under cache",
+    "retained_chromium": "31/31 from cleanly extracted initial Cut20 ZIP, all PASS",
+    "site": "8/8 isolated Chromium home/tools viewport-locale cases; static site PASS with original assets fixture",
+    "pdflatex": "2/2 actual compilation",
+    "json_schema": "4/4 examples pass; invalid enum rejects",
+    "archive": "174-path ZIP inventory and 172 SHA-256 checks PASS; final docs-only rebuild pending recheck"
+  },
+  "unverified": [
+    "Automatic no-overlap guarantees for arbitrary diagram labels, morphism routing around node obstacles",
+    "Cross-browser font-exact labels and live website",
+    "Physical touch hardware, multi-tab atomicity",
+    "Whole-editor 60 FPS for dense visible scenes"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "cut": "10",
+  "release": "0.11.0",
+  "date": "2026-11-12",
+  "baseline": "exact Cut09 ZIP",
+  "cases": [
+    {
+      "id": "MI10-DIAGRAM-01",
+      "risk": "morphism enters source node or reverses for close nodes",
+      "evidence": "Cut09 browser baseline x430.5 vs node right 444.5; tests/cut10.test.mjs, tests/browser_cut10.py",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-DIAGRAM-02",
+      "risk": "tight gap consumed by padding and visible arrow disappears",
+      "evidence": "tests/browser_cut07_properties.py red initially, green after adaptive padding",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-CACHE-03",
+      "risk": "duplicate function sampling on unchanged redraw, stale cache on viewport change",
+      "evidence": "tests/cut10.test.mjs, tests/browser_cut10.py and measured Cut09/Cut10 benchmark",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-SVG-04",
+      "risk": "extreme zoom pan renders huge infinite-line SVG endpoints",
+      "evidence": "tests/cut10.test.mjs viewport clipping",
+      "status": "pass_node_no_device_benchmark"
+    },
+    {
+      "id": "MI10-MODAL-05",
+      "risk": "keyboard-modal overlay permits background pointer edit/download actions",
+      "evidence": "tests/browser_cut10.py export backdrop and focus loop, retained browser_cut07_adversarial.py adjusted to honor modal state",
+      "status": "pass_isolated"
+    },
+    {
+      "id": "MI10-LIST-06",
+      "risk": "focus disappears when virtualized row is recreated by selection",
+      "evidence": "tests/browser_cut10.py arrow/home/end focus preservation",
+      "status": "pass_isolated"
+    }
+  ],
+  "unsupported_or_unverified": [
+    "real simultaneous-tab Web Locks safety",
+    "hosted GitHub Pages HTTP/MIME/cache",
+    "Safari/Firefox on user devices",
+    "true label TeX typesetting/3D/Mobius/Ricci flow",
+    "physical touch and full screen-reader WCAG",
+    "universal 60 FPS in large mixed scenes"
+  ],
+  "schema_change": "none; v1 maintained",
+  "performance_reference": "docs/quality/performance.json cut10_plot_redraw",
+  "final_verification": {
+    "node": "78/78 PASS",
+    "browser_editor": "19/19 PASS in isolated Chromium from clean extraction",
+    "site_localized_viewports": "8/8 PASS with original CSS/JS fixtures",
+    "latex": "2/2 real pdflatex compiled",
+    "examples": "4/4 schema and runtime validation",
+    "cumulative_overlay": "99 paths, 97 SHA-256 checks",
+    "real_two_tab": "UNVERIFIED (previous simulated HTTPS navigation ERR_BLOCKED_BY_ADMINISTRATOR)"
+  }
+}

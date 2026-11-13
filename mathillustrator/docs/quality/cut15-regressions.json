@@ -1,0 +1,75 @@
+{
+  "cut": "15",
+  "version": "0.16.0",
+  "focus": "touch transaction staging, narrow UI, wheel portability, emulated native touch, deferred storage contract",
+  "cases": [
+    {
+      "id": "MI15-001",
+      "baseline_risk": "Touch point/two-click tools commit on pointerdown before second contact arrives",
+      "correction": "Deferring touch constructions to release; abort when another touch appears",
+      "evidence": "Synthetic Chromium PointerEvents: red on Cut14, green on Cut15",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-002",
+      "baseline_risk": "Final pointerup displacement can be unobserved if pointermove is absent",
+      "correction": "Touch-up movement limit and final pen pan coordinate processing",
+      "evidence": "Synthetic PointerEvent sequences; red/green",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-003",
+      "baseline_risk": "Secondary touch on canvas or tools panel interferes with a live gesture",
+      "correction": "Cancel captured drag and incomplete draft; block until all touch contacts have ended",
+      "evidence": "Synthetic primary+secondary contacts, SVG and cross-panel",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-004",
+      "baseline_risk": "Releasing an uncaptured pointer outside SVG strands active contact state",
+      "correction": "Window pointerup/pointercancel cleanup for contacts originating on canvas",
+      "evidence": "Synthetic outside release followed by a normal touch",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-005",
+      "baseline_risk": "A pending single-finger tap can commit after window blur",
+      "correction": "Invalidate pending touch state on blur and document visibility hidden",
+      "evidence": "Synthetic blur then delayed touch pointerup",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-006",
+      "baseline_risk": "Browser wheel deltaMode lines/pages treated as pixels, inconsistent zoom",
+      "correction": "Normalize line wheel (16px) and page wheel (canvas height), then clamp",
+      "evidence": "Synthetic WheelEvents: 16 pixel vs 1 line produces matching position",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-007",
+      "baseline_risk": "Mobile header overflow conceals Export and leaves horizontal page scroll",
+      "correction": "Wrap header controls, responsive stage layout, clipped horizontal overflow",
+      "evidence": "Emulated mobile Chromium at 320/390/700 px; native emulated tap",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-008",
+      "baseline_risk": "Native emulated touch PNG export needs end-to-end check",
+      "correction": "Preserve raster button and image generation after wrapped header and touch construction",
+      "evidence": "Chromium emulation at 390px; PNG signature + positive output dimensions",
+      "status": "passed_under_stated_scope"
+    },
+    {
+      "id": "MI15-009",
+      "baseline_risk": "Stale queued storage commit could capture an obsolete state",
+      "correction": "No production storage change: explicit regression locks deferred commit until latest payload, stale token rejection",
+      "evidence": "Four new Node contract tests; synthetic mocked lock/storage, not real multi-tab",
+      "status": "passed_under_stated_scope"
+    }
+  ],
+  "limits": [
+    "Real physical multi-touch hardware, Safari touch, screen-reader interaction and true cross-origin or same-origin multi-tab atomicity not verified",
+    "Chromium mobile has_touch emulation is not a physical device",
+    "Web Locks contract test uses mock; browser network navigation blocked by sandbox"
+  ]
+}

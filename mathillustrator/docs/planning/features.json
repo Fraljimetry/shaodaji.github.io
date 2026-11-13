@@ -1,33 +1,505 @@
 {
   "schema_version": 1,
-  "release": "0.1.0",
+  "release": "0.26.0",
   "updated": "2026-11-12",
-  "status_vocabulary": ["implemented", "partial", "planned", "unsupported"],
+  "status_vocabulary": [
+    "implemented",
+    "partial",
+    "planned",
+    "unsupported"
+  ],
   "features": [
-    {"id": "UI-TRIPANEL", "name": "3-panel editor with GeoGebra-style tool tiles", "status": "implemented", "component": "index.html"},
-    {"id": "CORE-GRAPH", "name": "Semantic live dependency references and midpoint", "status": "partial", "limitation": "No constraint solver, only references and midpoint", "component": "src/model.mjs"},
-    {"id": "DRAW-2D", "name": "2D cursor drawing primitives", "status": "implemented", "limitation": "Only points, segments, arrows, circles, polygons, polylines, freehand, text and rectangle-as-polygon"},
-    {"id": "DRAW-EXPRESSION", "name": "Programmatic objects and explicit f(x) graphs", "status": "partial", "limitation": "Small safe grammar, no arbitrary scripts or implicit equation solver"},
-    {"id": "DRAW-CORRECTION", "name": "Configurable immediate path correction", "status": "partial", "limitation": "Freehand smoothing only; no circle/line recognition or constraint inference"},
-    {"id": "DRAW-SNAP", "name": "A priori snap customization", "status": "partial", "limitation": "Grid step and nearby existing points only"},
-    {"id": "SETTINGS-PRESETS", "name": "5 preset workspaces and editable settings", "status": "partial", "limitation": "No user-created profiles or fully purpose-specific tool visibility"},
-    {"id": "CORE-UNDO", "name": "Document undo/redo and local autosave", "status": "implemented", "limitation": "Session-only history; view changes excluded"},
-    {"id": "CANVAS-PAGE", "name": "Infinite mathematical canvas and A4/Letter guide", "status": "partial", "limitation": "Visual frame only; not print-exact or page cropping"},
-    {"id": "EXPORT-SVG", "name": "SVG viewport export", "status": "implemented"},
-    {"id": "EXPORT-RASTER", "name": "PNG/JPEG/WebP via SVG→Canvas", "status": "partial", "limitation": "Browser support and practical output fidelity need verification"},
-    {"id": "EXPORT-JSON", "name": "Native editable JSON import/export", "status": "implemented"},
-    {"id": "EXPORT-TIKZ", "name": "TikZ export of basic geometry", "status": "partial", "limitation": "Coordinate-only, not semantic, disabled when unsupported objects exist"},
-    {"id": "IMPORT-TIKZ", "name": "Semantic TikZ import", "status": "planned"},
-    {"id": "DIAGRAM-COMMUTATIVE", "name": "Semantic topology/category/diagram chase system and tikz-cd", "status": "planned"},
-    {"id": "GEOMETRY-ADVANCED", "name": "IMO/Olympiad construction constraints and angle markers", "status": "planned"},
-    {"id": "COMPLEX-MOBIUS", "name": "Complex plane and Möbius transformation visualization", "status": "planned"},
-    {"id": "GEOMETRY-3D", "name": "Native 3D surfaces and differential-geometric visualization", "status": "planned"},
-    {"id": "RICCI-MODEL", "name": "3D Ricci-flow blow-up model illustration", "status": "planned"},
-    {"id": "ANIMATION", "name": "Sliders, timeline, GIF/video", "status": "planned"},
-    {"id": "EXPORT-PDF", "name": "Vector PDF", "status": "planned"},
-    {"id": "EXPORT-ASYMPTOTE", "name": "Asymptote generation", "status": "planned"},
-    {"id": "IMPORT-EXTERNAL", "name": "GeoGebra/Desmos or SVG native semantic import", "status": "planned"},
-    {"id": "SCRIPTS-PYTHON", "name": "Complex programmatic scripting engine", "status": "planned"},
-    {"id": "ODE-IMPLICIT", "name": "General implicit ODE/PDE solving", "status": "unsupported", "limitation": "Explicitly outside core requirement"}
+    {
+      "id": "UI-TRIPANEL",
+      "name": "3-panel editor with GeoGebra-style tool tiles",
+      "status": "implemented",
+      "component": "index.html",
+      "limitation": "Desktop triple panel, mobile drawers, now keyboard virtual-list navigation and trapped import/export Tab loops; real screen-reader/touch behavior remains unverified. Cut19 adds multiline textarea editing for text, diagram nodes and morphisms, with focus-safe commit-on-change semantics."
+    },
+    {
+      "id": "CORE-GRAPH",
+      "name": "Semantic live dependency references and midpoint",
+      "status": "partial",
+      "limitation": "Cut08 rejects newly collapsing live segments/angles/rectangles/circles/regular polygons/diagram morphisms during coordinate edits or drags; imported legacy degeneracies remain supported. No general constraint solver, auto-symmetry or collision-proof arbitrary topology.",
+      "component": "src/model.mjs"
+    },
+    {
+      "id": "DRAW-2D",
+      "name": "2D cursor drawing primitives",
+      "status": "partial",
+      "limitation": "2D cursor shapes including live two-anchor rectangles, regular polygons and per-object points. Old polygon rectangles remain polygons. General geometry constraints absent. Cut17: offscreen bounded scene geometry is conservatively culled in SVG; objects remain in the project. Labels and unbounded curves need separate safe strategies. Cut19 culls wholly offscreen text/node SVG with conservative font bounds; all model objects and crossing morphisms remain intact."
+    },
+    {
+      "id": "DRAW-EXPRESSION",
+      "name": "Programmatic objects and explicit f(x) graphs",
+      "status": "partial",
+      "limitation": "Cut11 offers Fast/Balanced/Detailed screen sampling, capped at 80k function evaluations per path and explicit incomplete-plot state. Not exact symbolic plotting or guaranteed detection of narrow poles/spikes."
+    },
+    {
+      "id": "DRAW-CORRECTION",
+      "name": "Configurable immediate path correction",
+      "status": "partial",
+      "limitation": "Live corrected freehand preview matches committed smoothing, with canceled gesture rollback; no geometric shape recognition or auto-tangency."
+    },
+    {
+      "id": "DRAW-SNAP",
+      "name": "A priori snap customization",
+      "status": "partial",
+      "limitation": "Cut11 lazily indexes visible, nontransparent points/midpoints in a 32px screen grid; snap ties retain first-created anchor, hit-test ties use top layer. Cache invalidates on mutations/zoom/resize. No exact intersection snapping. Cut12 uses the pre-gesture screen-space anchor index also for multi-vertex finishing; 2,400-point strict legacy-scan oracle verified identical references and inserted points."
+    },
+    {
+      "id": "SETTINGS-PRESETS",
+      "name": "6 preset workspaces and editable settings",
+      "status": "partial",
+      "limitation": "Cut11 adds Plot detail (Fast, Balanced, Detailed), with Analysis / plots preset selecting Detailed and legacy v1 defaulting Balanced. Workspaces remain customizable but not user-named."
+    },
+    {
+      "id": "CORE-UNDO",
+      "name": "Document undo/redo and local autosave",
+      "status": "implemented",
+      "limitation": "80 snapshots/30MiB older-history budget. Cut16: matching concurrent save bytes are idempotently synchronized; stale storage events read the latest saved state; quota failures offer a Retry local save button. Web Locks serializes normal saves only where supported. Pagehide, non-Web Locks, real multi-tab crash atomicity and auto-merge remain unverified or unsupported."
+    },
+    {
+      "id": "CANVAS-PAGE",
+      "name": "Infinite mathematical canvas and A4/Letter guide",
+      "status": "partial",
+      "limitation": "A4/Letter landscape page guides and infinite canvas, with runtime/schema rejection of page-only export when infinite; no physical print scale."
+    },
+    {
+      "id": "EXPORT-SVG",
+      "name": "SVG viewport export",
+      "status": "implemented",
+      "limitation": "Cuts 05–08 marker-free arrows and grid/page crop; XML-illegal labels now fail project validation. Browser Unicode/font fidelity unverified across engines. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them. Cut19 preserves display-wrapped spaces and renders author newlines in text/morphism as SVG tspans; browser font parity remains unverified."
+    },
+    {
+      "id": "EXPORT-RASTER",
+      "name": "PNG/JPEG/WebP via SVG→Canvas",
+      "status": "partial",
+      "limitation": "Cut09: PNG/JPEG/WebP SVG→Canvas pipeline checks revision/viewport/dialog epoch after asynchronous decode and encode, cancels stale outputs, prevents simultaneous launches, and bounds each stage to 15s. Actual pixel dimensions use exact crop-to-canvas transforms. Cross-browser/glyph fidelity still unverified. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "EXPORT-JSON",
+      "name": "Native editable JSON import/export",
+      "status": "implemented",
+      "limitation": "Native v1 editable schema; delayed file-read import is discarded if project mutated before completion; JSON remains only full semantic backup. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "EXPORT-TIKZ",
+      "name": "TikZ export of basic geometry",
+      "status": "partial",
+      "limitation": "Cut09: capability-gated for five-decimal coordinate collapse (including thin shapes) and conservative ±300 cm world range, as well as existing visible-object/ASCII limits. Not a full TeX numeric/font fidelity certification. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "IMPORT-TIKZ",
+      "name": "Semantic TikZ import",
+      "status": "partial",
+      "limitation": "TikZ uses stable zoom-independent line widths, excludes hidden unsupported shapes from capability checks, and retains only a restricted static depiction; actual TeX font parity and math-label parsing not yet complete."
+    },
+    {
+      "id": "DIAGRAM-COMMUTATIVE",
+      "name": "Semantic topology/category/diagram chase system and tikz-cd",
+      "status": "partial",
+      "limitation": "Semantic nodes/morphisms, restricted tikz-cd interchange, opt-in obstacle-aware arrows and morphism-label avoidance with handle-based manual placement. Not global graph crossing minimization, exact TeX typesetting or collision-free layout."
+    },
+    {
+      "id": "DIAGRAM-TIKZCD",
+      "name": "Strict semantic tikz-cd interchange",
+      "status": "partial",
+      "component": "src/diagram.mjs",
+      "limitation": "Restricted grid, escaped \\& inside node labels; export verifies graph/label roundtrip and disables unsafe documents; no arbitrary TikZ macros or layout/style parity."
+    },
+    {
+      "id": "STORAGE-CONFLICT",
+      "name": "Cross-tab autosave conflict warning and selectable resolution",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Existing Web Locks conflict detection remains best-effort; Cut09 attempted true two-tab mock HTTPS origin but Chromium blocked navigation, so authentic shared-origin atomicity remains unverified."
+    },
+    {
+      "id": "DRAW-DRAG-ROLLBACK",
+      "name": "Pointer cancellation, overlap-safe geometric point selection",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Cut09 adds window-blur and hidden-visibility abort before autosave to existing pointercancel/lostcapture rollback. Tested with synthetic browser blur; actual touchscreen focus transitions unverified."
+    },
+    {
+      "id": "GEOMETRY-ADVANCED",
+      "name": "IMO/Olympiad construction constraints and angle markers",
+      "status": "partial",
+      "limitation": "2D angle mark and Bézier added; constraints/intersections/circumcircle/tangent still planned"
+    },
+    {
+      "id": "COMPLEX-MOBIUS",
+      "name": "Complex plane and Möbius transformation visualization",
+      "status": "planned"
+    },
+    {
+      "id": "GEOMETRY-3D",
+      "name": "Native 3D surfaces and differential-geometric visualization",
+      "status": "planned"
+    },
+    {
+      "id": "RICCI-MODEL",
+      "name": "3D Ricci-flow blow-up model illustration",
+      "status": "planned"
+    },
+    {
+      "id": "ANIMATION",
+      "name": "Sliders, timeline, GIF/video",
+      "status": "planned"
+    },
+    {
+      "id": "EXPORT-PDF",
+      "name": "Vector PDF",
+      "status": "planned"
+    },
+    {
+      "id": "EXPORT-ASYMPTOTE",
+      "name": "Asymptote generation",
+      "status": "planned"
+    },
+    {
+      "id": "IMPORT-EXTERNAL",
+      "name": "GeoGebra/Desmos or SVG native semantic import",
+      "status": "planned"
+    },
+    {
+      "id": "SCRIPTS-PYTHON",
+      "name": "Complex programmatic scripting engine",
+      "status": "planned"
+    },
+    {
+      "id": "ODE-IMPLICIT",
+      "name": "General implicit ODE/PDE solving",
+      "status": "unsupported",
+      "limitation": "Explicitly outside core requirement"
+    },
+    {
+      "id": "SITE-DISCOVERY",
+      "name": "Discover MathIllustrator from site homepage and Tools page",
+      "status": "implemented",
+      "component": "../index.html + ../tools.html",
+      "limitation": "Root-site integration needs these two root HTML files; live GitHub Pages navigation not verified in this sandbox"
+    },
+    {
+      "id": "DRAW-REGULAR-POLYGON",
+      "name": "Live center/vertex regular polygon with 3–100 sides",
+      "status": "implemented",
+      "component": "src/model.mjs + src/geometry.mjs + src/app.mjs",
+      "limitation": "2D polygon, no curved geodesic polygons or self-intersecting star step variants"
+    },
+    {
+      "id": "UI-MOBILE-DRAWER",
+      "name": "Reopen mobile objects/toolkit drawers from collapsed side rails",
+      "status": "implemented",
+      "component": "src/app.mjs + style.css",
+      "limitation": "Confirmed in isolated headless Chromium; touch hardware/Safari needs additional testing"
+    },
+    {
+      "id": "CORE-DEPENDENT-DELETE",
+      "name": "Indexed transitive dependency deletion",
+      "status": "implemented",
+      "component": "src/model.mjs",
+      "limitation": "Index constructed on each deletion; not persistent across the document lifetime"
+    },
+    {
+      "id": "CORE-STALE-EDIT-GUARD",
+      "name": "Properties resolve live objects after undo and failed edits",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "New identity guard also blocks detached controls acting on reused IDs across document replacements; multi-tab collaboration is not transactional."
+    },
+    {
+      "id": "PLOT-ADAPTIVE-C03",
+      "name": "Bounded adaptive explicit-function plotting",
+      "status": "partial",
+      "component": "src/plot.mjs",
+      "limitation": "Detected poles/large jumps create gaps; no exact topology certification or arbitrary implicit curves."
+    },
+    {
+      "id": "EXPORT-GUIDES-C03",
+      "name": "Publication image grid/axes control",
+      "status": "implemented",
+      "component": "src/app.mjs + index.html",
+      "limitation": "Grid and axes are omitted by default, can be opted in; page editor outline never exports. Raster/SVG only. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "EXPORT-SCALE-C03",
+      "name": "Configurable 1–4× raster export",
+      "status": "implemented",
+      "component": "src/app.mjs + index.html",
+      "limitation": "Pixels bounded to 36 MP and 16384 side; no physical DPI or calibration. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "STORAGE-QUARANTINE-C03",
+      "name": "Corrupted local save quarantine",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Isolated mocked localStorage verifies no implicit overwrite; real multi-tab atomicity, quota/crash recovery remain unverified."
+    },
+    {
+      "id": "TIKZ-LABEL-ESCAPE-C03",
+      "name": "Safe literal TeX label escaping",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "TikZ uses stable zoom-independent line widths, excludes hidden unsupported shapes from capability checks, and retains only a restricted static depiction; actual TeX font parity and math-label parsing not yet complete."
+    },
+    {
+      "id": "EDIT-POINT-RADIUS-C04",
+      "name": "Per-object point radius",
+      "status": "implemented",
+      "component": "src/model.mjs, src/app.mjs",
+      "limitation": "New points store individual 1–100 px radius; legacy v1 points without property inherit document-wide radius; TikZ uses approximate physical scaling."
+    },
+    {
+      "id": "TIKZCD-ROUNDTRIP-C04",
+      "name": "Strict semantic loss guard for tikz-cd",
+      "status": "partial",
+      "component": "src/diagram.mjs",
+      "limitation": "Export reimports and checks graph; unsafe ampersands/embedded commands disable export; full TeX options and pixel styling unsupported."
+    },
+    {
+      "id": "DRAW-FREEHAND-PREVIEW-C04",
+      "name": "Live corrected freehand feedback and pointer-up completion",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Path redraw/Chaikin smoothing can be slow for lengthy strokes; no recognition of circles or arbitrary shape fitting."
+    },
+    {
+      "id": "STATE-IDENTITY-C04",
+      "name": "Rejected detached-property/row actions on reused object IDs",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Identity guards cover object-list and property controls; other asynchronous browser tasks still need ongoing audits."
+    },
+    {
+      "id": "STORAGE-SAMEVERSION-C04",
+      "name": "Recognize identical cross-tab saves",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Synthetic storage-event Chromium test; real multi-tab simultaneous writes are not atomic."
+    },
+    {
+      "id": "EXPORT-ALPHA-C04",
+      "name": "Zero-opacity canvas/export label and hit-target consistency",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Object remains in JSON and dependency graph; SVG/TikZ rendered label transparency tested, pixel-perfect image comparison pending. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "PERF-POINT-CULL",
+      "name": "Offscreen point culling and bounded object list",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Only point objects have conservative viewport culling; other shapes and text still render full SVG per frame; no 60 FPS guarantee at 3000 points."
+    },
+    {
+      "id": "PERF-OBJECT-SEARCH",
+      "name": "Indexed large-scene left-panel search",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Cut08 4,000-object synthetic graph filter median 6.9ms vs Cut07 28.7ms in isolated Chromium, six query changes; not a full-frame or cross-device benchmark."
+    },
+    {
+      "id": "UI-EXPORT-MODAL-10",
+      "name": "Pointer-blocking export dialog with dismissible backdrop and keyboard trap",
+      "status": "implemented",
+      "component": "src/app.mjs; style.css; index.html",
+      "limitation": "Verified in isolated Chromium; full ARIA/inert/accessibility and hosted mobile behavior unverified. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "DRAW-INFINITE-LINE-CLIP-10",
+      "name": "Viewport-clipped infinite straight lines",
+      "status": "implemented",
+      "component": "src/geometry.mjs",
+      "limitation": "Only viewport depiction is clipped; TikZ export remains a finite extension."
+    },
+    {
+      "id": "DIAGRAM-BOX-EDGE-10",
+      "name": "Boundary-aware semantic morphism display",
+      "status": "partial",
+      "component": "src/diagram_layout.mjs",
+      "limitation": "Approximate font metrics; overlapping boxes can suppress visible arrow without deleting graph relation."
+    },
+    {
+      "id": "PLOT-CACHE-10",
+      "name": "Bounded caching of explicit function SVG paths",
+      "status": "implemented",
+      "component": "src/plot_cache.mjs",
+      "limitation": "Does not certify plotting topology or remove full-scene DOM redraw."
+    },
+    {
+      "id": "UI-VIRTUAL-LIST-KEYBOARD-10",
+      "name": "Object list Arrow/Home/End navigation",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Isolated Chromium keyboard tests pass; screen-reader announcements and full keyboard-only geometry unverified."
+    },
+    {
+      "id": "UI-NODE-WRAP",
+      "name": "Multiline screen-space semantic node labels",
+      "status": "partial",
+      "component": "src/diagram_layout.mjs",
+      "limitation": "Wraps labels without deleting semantic text, supports explicit newlines and matches arrow node-box measurements; font widths are approximate, not actual font/TeX layout. TikZ geometric export is disabled when auto-wrapped."
+    },
+    {
+      "id": "UI-FIT-LABELS",
+      "name": "Fit includes fixed-pixel labels and node boxes",
+      "status": "partial",
+      "component": "src/geometry.mjs",
+      "limitation": "Fit reserves space for node/text/point labels; huge labels on narrow screens may still overflow and trigger warning. Does not solve infinite/unbounded graph fitting. Cut12 ignores fully transparent outlier objects and semantic arrows to invisible diagram nodes when fitting visible objects; no scene objects are deleted or changed."
+    },
+    {
+      "id": "PERF-ANCHOR-INDEX",
+      "name": "Screen-spatial indexed snapping and point picking",
+      "status": "implemented",
+      "component": "src/anchor_index.mjs",
+      "limitation": "Microbenchmark only; full SVG redraw and very dense overlapping anchor cells may still be slow; no GPU acceleration."
+    },
+    {
+      "id": "UI-SETTINGS-CUT13",
+      "name": "Preset state, keyboard deletion safety and right-panel undo",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Single-tab isolated Chromium tested. Presets control drawing/toolkit defaults only; advanced toolbar, IME, screen readers and real touch remain unverified."
+    },
+    {
+      "id": "DATA-LEGACY-POINTSIZE-CUT13",
+      "name": "Preserve older point radius across default-size updates",
+      "status": "implemented",
+      "component": "src/model.mjs",
+      "limitation": "Materializes optional v1 style.pointSize at explicit default-size change, preserving prior appearance; old JSON remains importable."
+    },
+    {
+      "id": "PERF-EXPORT-SETTINGS-CUT13",
+      "name": "Avoid full SVG rebuild on export-only settings changes",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Only exportRegion/exportGuides/exportScale are render-free; undo/redo still redraw, and JSON validation remains linear in document size. Cut17: zero-opacity shapes omitted; TikZ refuses arrows with zero-opacity node endpoints rather than misleadingly drawing them."
+    },
+    {
+      "id": "UI-LIFECYCLE-CUT14",
+      "name": "Transient multi-click draft isolation across New/Open/tab interruption",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Synthetic document-hidden and isolated Chromium checks; actual background suspension unverified"
+    },
+    {
+      "id": "DATA-ASYNC-IMPORT-CUT14",
+      "name": "Project identity guard against late native JSON read",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Delayed File.text() verified in isolated Chromium; no actual filesystem contention test"
+    },
+    {
+      "id": "UI-IME-VIEWPORT-CUT14",
+      "name": "IME composition keyboard safety and gesture rollback before viewport changes",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Synthetic IME events and zoom during mouse drag verified; real IME/touch hardware unverified"
+    },
+    {
+      "id": "PERSISTENCE-QUOTA-CUT14",
+      "name": "Autosave failure surfaced and native JSON backup available",
+      "status": "partial",
+      "component": "src/app.mjs,src/storage.mjs",
+      "limitation": "Only simulated storage quota failure and recovery verified; real browser quota/atomic multi-tab still open"
+    },
+    {
+      "id": "TOUCH-CONSTRUCTION-CUT15",
+      "name": "Deferred single-finger tap and multi-contact cancellation",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Isolated synthetic events and Chromium touch emulation; real hardware/palm rejection unverified"
+    },
+    {
+      "id": "TOUCH-MOBILE-UI-CUT15",
+      "name": "Wrapped narrow toolbar, coarse pointer targets and canvas label",
+      "status": "partial",
+      "component": "style.css,src/app.mjs",
+      "limitation": "320/390/700px emulated Chromium only, not device safe areas or virtual keyboards"
+    },
+    {
+      "id": "WHEEL-DELTA-CUT15",
+      "name": "Wheel unit normalization and pen release pan position",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Synthetic wheel/pen event cases; device/browser input sensitivity not measured"
+    },
+    {
+      "id": "STORAGE-CONTRACT-CUT15",
+      "name": "Deferred lock latest payload / stale token contract regressions",
+      "status": "partial",
+      "component": "tests/cut15.test.mjs",
+      "limitation": "No true same-origin multi-tab tests; same existing optimistic concurrency semantics"
+    },
+    {
+      "id": "EXPORT-ALPHA",
+      "name": "Transparent SVG/PNG/WebP image output",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Verified in isolated Chromium; JPEG disabled for alpha; font engine differences in other browsers untested."
+    },
+    {
+      "id": "EXPORT-TEXT-SPACING",
+      "name": "Preserve SVG text spacing / refuse lossy TikZ",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "SVG xml:space preserves repeated spaces; exact font metrics and arbitrary TeX typography not certified."
+    },
+    {
+      "id": "UI-OVERLAP-SELECT-CUT20",
+      "status": "implemented",
+      "description": "Explicit Ctrl/Command-click cycles overlapping visible point and SVG hit objects; no geometry mutation.",
+      "limitation": "Browser SVG hit-stack behavior and physical touch still need verification; hidden objects require sidebar selection."
+    },
+    {
+      "id": "UI-POINT-LABEL-AVOID-CUT20",
+      "status": "partial",
+      "description": "Optional bounded screen-space grid places point-name labels around point markers with approximate collision reduction.",
+      "limitation": "No guaranteed collision-free result, exact font measurement, arbitrary text/node/morphism label routing, or per-label manual offset. Opt-in layout costs CPU; TikZ is disabled for affected scenes."
+    },
+    {
+      "id": "DIAGRAM-ROUTING-C21",
+      "name": "Opt-in obstacle-aware semantic morphism routing",
+      "status": "partial",
+      "component": "src/diagram_routing.mjs",
+      "limitation": "Four deterministic two-turn candidates; blocked result dashed amber, source/target overlap suppresses SVG; not optimal, no arrow-to-arrow or full text collision guarantee. Default remains direct."
+    },
+    {
+      "id": "DIAGRAM-LABEL-C21",
+      "name": "Manual morphism label position, distance and X/Y offsets",
+      "status": "implemented",
+      "component": "src/app.mjs",
+      "limitation": "Screen-space label adjustment only, not true TeX font anchoring or collision-free placement. Unsupported TikZ visual export disabled; native JSON and SVG supported."
+    },
+    {
+      "id": "DIAGRAM-LABEL-DRAG",
+      "name": "Direct screen-space dragging of morphism labels",
+      "status": "implemented",
+      "component": "src/app.mjs + src/diagram_routing.mjs",
+      "limitation": "Available on selected visible unlocked labeled morphisms. An automatic label becomes manual on drag, preserving its visual location and one undo step. Hardware touch/cross-browser behavior unverified."
+    },
+    {
+      "id": "DIAGRAM-MORPHISM-LABEL-AVOID",
+      "name": "Opt-in best-effort morphism-label decluttering",
+      "status": "implemented",
+      "component": "src/morphism_label_layout.mjs + src/app.mjs",
+      "limitation": "Only visible diagram-node rectangles and morphism-label rectangles are considered. Deterministic bounded screen-space candidates, not guaranteed collision free; crowded cases amber with warning. Manual labels take priority; dragging an auto label commits explicit offsets and exits auto mode. No arrow-path crossing avoidance, exact TeX text metrics, guarantee for extreme fonts, or non-Chromium testing. TikZ disabled for visible opted-in arrows."
+    },
+    {
+      "id": "DIAGRAM-ARROW-CROSSINGS-C24",
+      "name": "Opt-in diagram arrow-crossing reduction",
+      "status": "partial",
+      "component": "src/diagram_routing.mjs + src/app.mjs",
+      "limitation": "Screen-space, stable document-order crossings with earlier visible arrows only; two-turn corridors, 128 prior-arrow limit, 8192 segment comparisons/candidate, no global planarity or minimum-crossing guarantee. A blocked/crossing/capacity path is amber/dashed; legacy direct/avoid unchanged, TikZ visual export disabled."
+    },
+    {
+      "id": "DIAGRAM-SCENE-CROSSINGS-C25",
+      "name": "Opt-in bounded later-and-earlier morphism crossing refinement",
+      "status": "partial",
+      "component": "src/diagram_global_routing.mjs",
+      "limitation": "No global optimality; at most 48 drawable arrows and two passes. Collinear/T contact checked; Bézier/stroke/arrowheads approximate. Older modes frozen. Capacity and remaining crossings warned. TikZ visual disabled; JSON v1 preserves mode."
+    }
   ]
 }
