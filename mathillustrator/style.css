@@ -167,3 +167,12 @@ html[data-theme="dark"] .object-action-menu button[data-action="delete"]:not(:di
 
 /* Consistent abstract-pencil brand mark; the wordmark remains accessible. */
 .brandmark{width:27px;height:27px;vertical-align:middle;margin:0 5px 0 4px;object-fit:contain}
+
+/* Round 9: fixed accessible swatches, leaving native custom colors available. */
+.color-swatch-label{font-size:11px;color:var(--muted);margin:10px 0 4px}
+.color-swatches{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:5px 0 9px}
+.color-swatch{width:20px;height:20px;min-width:20px;min-height:20px;padding:0;border:1px solid #64748b;border-radius:5px;background:var(--swatch);position:relative;box-shadow:inset 0 0 0 1px #ffffff55}
+.color-swatch[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px;z-index:1}
+.color-swatch:focus-visible{outline:2px solid var(--accent);outline-offset:2px;z-index:2}
+.color-swatch:hover:not(:disabled){background:var(--swatch);transform:translateY(-1px)}
+.properties>.color-swatches{margin-top:-3px;margin-bottom:10px}

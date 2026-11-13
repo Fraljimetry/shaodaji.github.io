@@ -151,3 +151,16 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - Existing isolated Chromium PASS: `browser_smoke.py`, `browser_object_menu_current.py`, `browser_compact_ui_current.py`, `browser_freehand_join_current.py`, `browser_pencil_ultra_current.py`, `browser_edges.py`, `browser_mobile_current.py`, `browser_touch_current.py`, `browser_storage.py`, `browser_latex_i18n.py` (10 older scripts + focused naming).
 
 **Remaining unverified:** live deployment, Safari/Firefox/Edge, physical stylus and assistive technology. Browser checks use inlined source modules in isolated Chromium, not the deployed website, and do not claim cross-tab locking. Full root-website shared assets were not supplied.
+
+
+## Round 9 — common stroke/fill color swatches (2026-11-13)
+
+**Scope:** R60 only. Added 11 static, semantic color-button swatches to New object style (stroke/fill) and selected-object Properties (stroke and fill on eligible object types), preserving native custom color inputs and all v1 JSON style values. Buttons are keyboard operable, grouped with explicit accessible names, expose `aria-pressed`, have white/dark-visible edges and focus outlines, and localize labels/tooltips to English/Chinese. No separate color schema, automatic recoloring, third-party API, root homepage change or MathReader change.
+
+**Verified in this working copy:**
+- Clean Round 8 baseline: `node --test tests/*.test.mjs` **163/163 PASS** before editing. Same full Node suite **163/163 PASS** after the feature. `node --check src/app.mjs` and `node --check src/i18n.mjs` PASS.
+- Focused isolated Chromium: `tests/browser_color_swatches_current.py` **PASS** for accessible palette controls, independent default/object edits, inheritance by new points, repeated pressed-button clicks while Properties retains focus, native picker custom colors, undo/redo, fill-only eligibility, locked-object protection, 4 consecutive English/Chinese changes, keyboard Enter, 320/390/1440px widths, JSON export/open, and invalid color import rollback.
+- Existing isolated Chromium **PASS**: `browser_smoke.py`, `browser_object_menu_current.py`, `browser_naming_current.py`, `browser_freehand_join_current.py`, `browser_pencil_ultra_current.py`, `browser_cut05.py`, `browser_latex_i18n.py`, `browser_storage.py`, `browser_touch_current.py`, `browser_performance.py` (3,000-object performance case).
+- `tests/manage_history.py verify`: archive original SHA checks and active-file inventory **PASS**, including both current website-root pages. Replayed unchanged Round 8 baseline plus this overlay and checked every changed path exactly; no other paths are included.
+
+**Not counted:** an oversized combined browser regression batch timed out. Individual `browser_cut07_properties.py` (historical shim) and `browser_mobile_current.py` (legacy mobile) did not complete within their time limits; they are **incomplete**, not claimed as passes. Chromium uses `page.set_content`/inlined local ES modules, not the public deployed site. Firefox/Safari/Edge, physical touch and stylus, actual screen reader, and live-hosted integration remain unverified.

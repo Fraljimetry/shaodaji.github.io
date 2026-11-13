@@ -19,6 +19,43 @@ const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
 glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
+// A fixed, keyboard-operable palette only changes ordinary document colors.
+// Custom hues remain available via native <input type=color> controls.
+const COMMON_COLORS=[
+ ['Ink','#111827'],['White','#ffffff'],['Gray','#94a3b8'],
+ ['Red','#ef4444'],['Orange','#f97316'],['Yellow','#eab308'],
+ ['Green','#22c55e'],['Teal','#14b8a6'],['Sky','#0ea5e9'],
+ ['Blue','#3b82f6'],['Purple','#a855f7']
+];
+function syncColorSwatches(){
+ for(const group of document.querySelectorAll('[data-color-swatches]')){
+  const role=group.dataset.colorSwatches,property=group.dataset.colorProperty;
+  const value=role==='default'?doc.settings[property]:get(doc,selected)?.style?.[property];
+  if(typeof value!=='string')continue;
+  for(const button of group.querySelectorAll('button[data-color]'))
+   button.setAttribute('aria-pressed',String(button.dataset.color===value.toLowerCase()));
+  // The property pane may keep keyboard focus after a transaction; update its
+  // live picker without replacing the focused swatch or invalidating handlers.
+  if(role==='object'){
+   const picker=group.previousElementSibling?.querySelector('input[type=color]');
+   if(picker&&picker!==document.activeElement)picker.value=value;
+  }
+ }
+}
+function appendColorSwatches(parent,{scope,property,apply}){
+ const group=document.createElement('div');group.className='color-swatches';group.dataset.colorSwatches=scope;
+ group.dataset.colorProperty=property;group.setAttribute('role','group');
+ group.setAttribute('aria-label',property==='stroke'?'Stroke colors':'Fill colors');
+ for(const [name,hex] of COMMON_COLORS){
+  const button=document.createElement('button');button.type='button';button.className='color-swatch';
+  button.dataset.color=hex;button.style.setProperty('--swatch',hex);
+  button.setAttribute('aria-label',name);button.title=name+' ('+hex+')';
+  button.setAttribute('aria-pressed','false');
+  button.onclick=()=>{if(apply(hex)!==false)syncColorSwatches();};
+  group.append(button);
+ }
+ parent.append(group);syncColorSwatches();return group;
+}
 const toolGroups={'basic-tools':[['select','Move'],['pan','Pan'],['point','Point']], 'construction-tools':[['segment','Segment'],['arrow','Vector'],['line','Infinite line'],['circle','Circle'],['ellipse','Ellipse'],['rectangle','Rectangle'],['polygon','Polygon'],['polyline','Polyline'],['bezier','Bézier'],['angle','Angle'],['regularPolygon','Regular polygon']], 'illustration-tools':[['freehand','Free curve'],['text','Text']], 'diagram-tools':[['node','Diagram node'],['morphism','Morphism']]};
 const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null;
 let currentMorphismLabels=new Map();
@@ -561,7 +598,11 @@ function renderProperties(){
  if(o.refs){const hint=document.createElement('span');hint.className='mini-help';hint.textContent='?';hint.title='Live references: '+o.refs.map(id=>get(doc,id)?.name||'?').join(' → ')+'. Select anchors in the object list to move them.';root.append(hint);}
  if(o.type==='freehand'){const hint=document.createElement('p');hint.className='hint';hint.textContent=`${o.path.length} path vertices. Individual vertices are not yet editable.`;hint.title=hint.textContent;hint.textContent='?';hint.className='mini-help';root.append(hint);}
  field(root,'Stroke',o.style.stroke,'color',v=>edit(live=>live.style.stroke=v));
- if(['polygon','regularPolygon','ellipse','rectangle','node'].includes(o.type))field(root,'Fill',o.style.fill,'color',v=>edit(live=>live.style.fill=v));
+ appendColorSwatches(root,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.style.stroke=v;})});
+ if(['polygon','regularPolygon','ellipse','rectangle','node'].includes(o.type)){
+  field(root,'Fill',o.style.fill,'color',v=>edit(live=>live.style.fill=v));
+  appendColorSwatches(root,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;})});
+ }
  if(['point','midpoint'].includes(o.type))field(root,'Point radius',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point radius must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  field(root,'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
  field(root,'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
@@ -608,9 +649,16 @@ function syncSettings(){
  const matching=Object.entries(PRESETS).find(([name,preset])=>Object.entries(preset).every(([k,v])=>doc.settings[k]===v)
   &&Object.entries(PRESET_MODULES[name]).every(([k,v])=>doc.settings.modules[k]===v)
   &&doc.settings.snapAnchors===true&&doc.settings.polygonSides===6&&doc.settings.showLabels===true&&doc.settings.labelPlacement==='standard');
+ syncColorSwatches();
  $('preset').value=matching?.[0]||'Custom';
 }
 function setupSettings(){
+ for(const property of ['stroke','fill']){
+  const picker=$(property==='stroke'?'default-stroke':'default-fill');
+  const target=$('default-color-swatches-'+property);
+  appendColorSwatches(target,{scope:'default',property,apply:hex=>update(()=>{doc.settings[property]=hex;})});
+ }
+
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
  preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='standard';});};
  for(const module of ['basic','construction','illustration','diagram'])$('module-'+module).onchange=()=>update(()=>{doc.settings.modules[module]=$('module-'+module).checked;});

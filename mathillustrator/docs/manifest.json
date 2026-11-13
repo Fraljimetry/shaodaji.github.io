@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "object-naming-conventions-round-8",
+  "release": "common-color-swatches-round-9",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "pascal-camel-snake-object-name-defaults",
+  "revision": "accessible-stroke-fill-quick-palette",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -35,12 +35,13 @@
     "freehand_join_browser_regression": "tests/browser_freehand_join_current.py",
     "root_showcase_regression": "tests/site_root_showcase_current.py",
     "naming_browser_regression": "tests/browser_naming_current.py",
-    "naming_node_regression": "tests/naming_current.test.mjs"
+    "naming_node_regression": "tests/naming_current.test.mjs",
+    "color_swatch_browser_regression": "tests/browser_color_swatches_current.py"
   },
   "data_contract": {
     "name": "mathillustrator-project",
     "current_version": 1,
-    "migration_policy": "Version 1 additive freehand joinStyle and namingConvention. Missing namingConvention uses legacy camelCase; stored names and IDs are never rewritten."
+    "migration_policy": "Version 1 additive freehand joinStyle and namingConvention. Missing namingConvention uses legacy camelCase; stored names and IDs are never rewritten. Round 9 common colors use existing stroke/fill strings only; no new schema."
   },
   "delivery_contract": {
     "format": "ZIP overlay rooted at website repository",
