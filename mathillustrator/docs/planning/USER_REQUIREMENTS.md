@@ -65,13 +65,13 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | R48 | Either move - 100% + fit away from canvas or make it invisible when not hovering above it. | Pending |
 | R49 | The Bezier icon is not displayed full. The two points are partially cropped away. | Done — this pass |
 | R50 | Objects should by default be named like RegularPolygon and Point instead of regularPolygon. And this convention is customizable in setting. | Pending |
-| R51 | Delete selected button can be removed. | Pending |
-| R52 | There can be three dots for each object by clicking which we can have multiple options like lock or delete etc. | Pending |
+| R51 | Delete selected button can be removed. | Done — object-menu delete and keyboard/Properties deletion retained |
+| R52 | There can be three dots for each object by clicking which we can have multiple options like lock or delete etc. | Done — Hide/Show, Lock/Unlock, Delete via accessible object menu |
 | R53 | Arrow should be renamed Vector. | Partial |
 | R54 | Again I request general LaTeX input capability for whatever is to be displayed on the canvas aside from regular text input. | Partial |
 | R55 | From Undo to Export, the buttons on the upper right corner is takes too much space. Use icon if necessary and words appearing by hover. | Done — this pass |
 | R56 | The icon for Math Illustrator on the upper left corner should be the same abstract pencil not sigma. | Pending |
-| R57 | The find object input could collapse to a magnifier icon conveniently placed and displays upon clicking, disappearing after reclicking the same icon. | Partial |
+| R57 | The find object input could collapse to a magnifier icon conveniently placed and displays upon clicking, disappearing after reclicking the same icon. | Done — magnifier toggles search; closing clears its filter |
 | R58 | Parallelograms etc. should be supported. You can classify by type, like points, triangles, quadrilaterals, circles, others as subsections. | Pending |
 | R59 | Think of a more revealing name for Freehand and Text than "Others". | Pending |
 | R60 | There should be some common colors provided not letting user select RGB every time which is too demanding and not stable. | Pending |
@@ -95,10 +95,18 @@ The user also requested, in prior rounds: a short nontechnical bilingual public 
 - Object search stays usable, supports clearing and the prior large-list filter; only *visual proportions* change.
 - Test malformed/legacy import, editor undo/redo, SVG and raster export, old touch/mobile scripts and repeat locale changes; do not claim browsers/devices not executed.
 
+## Current incremental delivery: per-object actions and collapsible search
+
+- Object rows expose one keyboard-operable `⋯` control. Its floating menu offers Hide/Show, Lock/Unlock, Delete; only one menu can be open, and Escape, Tab-away, outside pointer events, row virtualization, locale changes, resizing and project mutations invalidate it. Menu actions verify the live object identity and document generation before editing.
+- Delete uses the existing dependency-aware transactional pathway. Locked targets or dependents cannot be deleted; successful removal enters Recently Deleted, remains undoable/redoable, and saves with the existing project schema. Removing an unselected object preserves an unrelated selection.
+- The global Delete selected toolbar button is removed. The existing explicit Properties delete and guarded Delete/Backspace keyboard shortcut remain; neither is a substitute for the object menu.
+- Search begins collapsed behind a labeled magnifier. Opening focuses the search box; closing (including Escape) clears the filter to avoid a secretly filtered list; search contents are UI state, not project schema.
+- Acceptance: test menu keyboard and focus dismissal, locked dependents, cascade removal, Recently Deleted restoration, stale callbacks, undo/redo, local persistence and JSON export, filtering and hidden rows, locale changes, virtual scrolling, mobile widths and maliciously malformed imports. These are regression targets, not automatic pass claims.
+
 ## Architectural design gates for the next rounds (NOT implemented)
 
 1. **Editable object graph:** distinct semantic IDs, stable directed dependencies, well-defined object types, recomputation order, cycle rejection, transaction rollback, import and undo compatibility. A "point on circle" stores a parent reference and a parameter; an intersection stores both parents plus explicit branch choice. Keep geometric tolerances bounded and prevent false snapping. Test tangency, multiple intersections, degeneracies and source deletion.
-2. **Object-list controls:** `…` for Lock / Hide / Delete and later hierarchy; keyboard-accessible actions and no accidental delete. Add multi-select with a constrained batch-property intersection and atomic changes; drag reorder preserves IDs and dependency semantics. Only then remove the global Delete-selected action.
+2. **Object-list controls:** `…` for Lock / Hide / Delete and safe global-button removal are implemented; later hierarchy, multi-select with a constrained batch-property intersection and atomic changes, and drag reorder preserving IDs/dependency semantics remain pending.
 3. **UI / interaction:** collapsible search, consistent pencil emblem, compact colors, popup polygon sides, genuinely movable freehand objects, proper labeling/drag offsets, variable panel widths, ordered collapsible tool groups, pan-vs-move hit discrimination, no action chrome obscuring the SVG; preserve touch, keyboard and screen-reader access.
 4. **2D mathematical input:** searchable suggestions and paired parentheses without editing math source unexpectedly; supported `x(A)`, `y(A)`, overloaded `Circle` signatures, slider variables and dependency graph. Bounded explicit, parametric and implicit curves with discontinuity splitting and cancellation.
 5. **3D mathematical engine:** generalized explicit/parametric/implicit surfaces rather than domain-specific demos. Bounded adaptive samples/triangles, worker cancellation, progress feedback, numerical limits, camera controls, lights, mesh density, position/opacity and a performance ceiling. Add vector fields, contours, domain coloring and 3D complex-function plots progressively, not as fake menu entries.

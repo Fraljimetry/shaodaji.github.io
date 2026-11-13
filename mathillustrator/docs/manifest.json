@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "compact-editor-polish-and-requirements-round-3",
+  "release": "object-menus-and-collapsible-search-round-4",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "compact-editor-polish-round-3",
+  "revision": "object-actions-search-round-4",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -30,7 +30,8 @@
     "locale": "src/i18n.mjs",
     "local_math_vendor": "vendor/mathjax-tex-svg.js",
     "extended_reference": "docs/reference/tutorial-extended.html",
-    "living_user_requirements": "docs/planning/USER_REQUIREMENTS.md"
+    "living_user_requirements": "docs/planning/USER_REQUIREMENTS.md",
+    "object_actions_regression": "tests/browser_object_menu_current.py"
   },
   "data_contract": {
     "name": "mathillustrator-project",

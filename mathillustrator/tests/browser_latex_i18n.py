@@ -51,11 +51,11 @@ def run():
   assert len(page.locator('#mode-label').inner_text())<20
   assert 'Drag objects' in page.locator('#mode-label').get_attribute('title')
   assert page.locator('.panelhead h2').first.inner_text().startswith('对象')
-  assert page.locator('#delete').inner_text()=='删除选中'
+  assert page.locator('#object-search-toggle').get_attribute('title')=='查找对象'
   assert page.locator('#drawing svg[viewBox]').count()>=3
   page.locator('#ui-language').select_option('en')
   assert page.locator('#mode-label').inner_text().strip().startswith('Move')
-  assert page.locator('#delete').inner_text()=='Delete selected'
+  assert page.locator('#object-search-toggle').get_attribute('title')=='Find objects'
   # Invalid TeX source in editor: rejected instead of being committed.
   page.locator('#object-search').fill('Node 1');page.locator('#objects .object').first.click()
   tex=page.locator('#properties textarea').first

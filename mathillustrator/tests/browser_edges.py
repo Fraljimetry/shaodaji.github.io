@@ -1,5 +1,5 @@
 """Additional isolated-browser regression for cancellation, drag, locks and double-click."""
-from browser_smoke import inline_html,cmd,download
+from browser_smoke import object_action,inline_html,cmd,download
 from playwright.sync_api import sync_playwright
 import json, os
 
@@ -34,9 +34,9 @@ def run():
   assert project(page)['objects'][0]['xy']!=[0,0], 'Completed drag did not commit'
   page.locator('#undo').click();assert project(page)['objects'][0]['xy']==[0,0], 'Undo did not revert complete drag'
   # Lock A; direct deletion must be disabled and dependent deletion rejected.
-  row=page.locator('#objects .object[data-id="o1"]');row.locator('button').nth(1).click()
+  row=page.locator('#objects .object[data-id="o1"]');object_action(page,row,'lock')
   row=page.locator('#objects .object[data-id="o1"]');row.click()
-  assert page.locator('#delete').is_disabled()
+  row.locator('.object-menu-toggle').click();assert page.locator('#object-action-menu [data-action="delete"]').is_disabled();page.keyboard.press('Escape')
   assert project(page)['objects'][0]['locked'] is True
   assert not failures,failures
   print('CHROMIUM_EDGE_SMOKE_PASS: polygon double-click 3 vertices, canceled pointer rollback, completed drag, single undo, lock/delete protection')

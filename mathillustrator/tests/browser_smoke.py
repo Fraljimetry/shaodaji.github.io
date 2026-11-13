@@ -8,7 +8,7 @@ import base64, json, tempfile, os
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def inline_html():
+def inline_html(*,legacy_search_expanded=True):
     js = lambda src: 'data:text/javascript;base64,'+base64.b64encode(src.encode()).decode()
     model=js((ROOT/'src/model.mjs').read_text())
     layout=js((ROOT/'src/diagram_layout.mjs').read_text())
@@ -33,7 +33,45 @@ def inline_html():
     html=(ROOT/'index.html').read_text()
     html=html.replace('<link rel="stylesheet" href="./style.css">','<style>'+(ROOT/'style.css').read_text()+'</style>')
     html=html.replace('<script defer src="./vendor/mathjax-tex-svg.js"></script>', '<script>'+(ROOT/'vendor/mathjax-tex-svg.js').read_text()+'</script>')
-    return html.replace('<script type="module" src="./src/app.mjs"></script>','<script type="module">'+app+'</script>')
+    html=html.replace('<script type="module" src="./src/app.mjs"></script>','<script type="module">'+app+'</script>')
+    if legacy_search_expanded:
+        # Archived scripts are SHA-locked and describe the old always-on search,
+        # eye/lock inline controls and Delete button. Translate these *test-only*
+        # selectors to the real menu actions; the new focused browser suite uses
+        # legacy_search_expanded=False and exercises the unmodified current DOM.
+        legacy = r"""<script>
+window.addEventListener('load',()=>{
+ const search=document.getElementById('object-search-toggle');search.click();
+ const root=document.getElementById('objects'),tools=document.querySelector('.object-tools');
+ const deleteButton=document.createElement('button');deleteButton.id='delete';deleteButton.hidden=true;
+ deleteButton.textContent='Delete selected';tools.append(deleteButton);
+ function refresh(){
+  const sel=root.querySelector('.object.selected');
+  deleteButton.disabled=!sel||sel.dataset.locked==='true';
+  for(const row of root.querySelectorAll('.object')){
+   if(row.querySelector('.legacy-eye'))continue;
+   const toggle=row.querySelector('.object-menu-toggle');if(!toggle)continue;
+   function oldControl(action,label,cls){
+    const b=document.createElement('button');b.type='button';b.className=cls;
+    b.title=label;b.setAttribute('aria-label',label);
+    b.textContent=action==='visibility'?'◉':'◇';b.style.padding='2px';
+    b.onclick=e=>{e.stopPropagation();toggle.click();
+     document.querySelector('#object-action-menu [data-action="'+action+'"]')?.click();};
+    row.insertBefore(b,toggle);
+   }
+   oldControl('visibility',row.classList.contains('hidden')?'Show':'Hide','legacy-eye');
+   oldControl('lock',row.dataset.locked==='true'?'Unlock':'Lock','legacy-lock');
+  }
+ }
+ new MutationObserver(refresh).observe(root,{childList:true,subtree:true});refresh();
+});
+</script>"""
+        html=html.replace('</body>',legacy+'</body>')
+    return html
+
+def object_action(page,row,action):
+    row.locator('button.object-menu-toggle').click()
+    page.locator(f'#object-action-menu button[data-action="{action}"]').click()
 
 def cmd(page,source):
     page.locator('#command').fill(source)

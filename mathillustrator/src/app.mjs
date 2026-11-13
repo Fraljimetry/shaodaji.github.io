@@ -399,8 +399,46 @@ function currentObject(o){return get(doc,o.id)===o;}
 // The object list is a fixed-height window. Thousands of objects should not
 // construct thousands of DOM rows on every selection or imported document.
 const LIST_ROW_HEIGHT=45,LIST_OVERSCAN=10;
-let listedObjects=[];
+let listedObjects=[],objectMenuContext=null;
+function closeObjectMenu({restoreFocus=false}={}){
+ const context=objectMenuContext,menu=$('object-action-menu');if(!context)return;
+ objectMenuContext=null;menu.hidden=true;menu.replaceChildren();
+ if(context.trigger.isConnected)context.trigger.setAttribute('aria-expanded','false');
+ if(restoreFocus){const row=[...$('objects').querySelectorAll('.object')].find(r=>r.dataset.id===context.id);
+  (row?.querySelector('.object-menu-toggle')||$('object-search-toggle')).focus();}
+}
+function openObjectMenu(o,trigger){
+ const menu=$('object-action-menu');if(objectMenuContext?.trigger===trigger){closeObjectMenu({restoreFocus:true});return;}
+ closeObjectMenu();if(!currentObject(o))return;
+ const generation=documentGeneration;
+ objectMenuContext={id:o.id,object:o,trigger,generation};trigger.setAttribute('aria-expanded','true');
+ menu.replaceChildren();menu.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);
+ const actions=[['visibility',o.hidden?'Show':'Hide'],['lock',o.locked?'Unlock':'Lock'],['delete','Delete']];
+ const blocked=[...affected(doc,o.id)].some(id=>get(doc,id)?.locked);
+ for(const [action,label] of actions){const button=document.createElement('button');button.type='button';button.dataset.action=action;
+  button.setAttribute('role','menuitem');button.textContent=translated(label,uiPrefs.language);
+  if(action==='delete'&&blocked){button.disabled=true;button.title=translated('Unlock dependents before deleting.',uiPrefs.language);}
+  button.onclick=()=>{
+   const valid=objectMenuContext?.object===o&&objectMenuContext?.generation===documentGeneration&&currentObject(o)&&generation===documentGeneration;
+   closeObjectMenu();if(!valid){notice('The object changed. Reopen its menu.');return;}
+   if(action==='delete')deleteObject(o.id);
+   else update(()=>{if(!currentObject(o)||generation!==documentGeneration)throw Error('Stale object control.');
+    if(action==='visibility')o.hidden=!o.hidden;else o.locked=!o.locked;});
+   const row=[...$('objects').querySelectorAll('.object')].find(r=>r.dataset.id===o.id);
+   (row?.querySelector('.object-menu-toggle')||$('object-search-toggle')).focus();
+  };
+  menu.append(button);
+ }
+ menu.hidden=false;
+ const r=trigger.getBoundingClientRect(),w=menu.offsetWidth,h=menu.offsetHeight;
+ menu.style.left=`${Math.max(6,Math.min(innerWidth-w-6,r.right-w))}px`;
+ const preferredTop=r.bottom+3,above=r.top-h-3;
+ menu.style.top=`${Math.max(6,Math.min(innerHeight-h-6,preferredTop+h<=innerHeight-6?preferredTop:above>=6?above:preferredTop))}px`;
+ menu.querySelector('button:not(:disabled)')?.focus();
+}
+
 function renderList({resetScroll=false}={}){
+ closeObjectMenu();
  const wrapper=$('objects');
  $('object-count').textContent=String(doc.objects.length);
  const filter=($('object-search')?.value||'').toLowerCase().trim(),showHidden=$('show-hidden').checked;
@@ -414,7 +452,6 @@ function renderList({resetScroll=false}={}){
  wrapper.scrollTop=previous;
  // Programmatic scroll position restoration may change the visible range.
  renderListWindow();
- $('delete').disabled=!selected||!!get(doc,selected)?.locked;
 }
 function renderListWindow(){
  const wrapper=$('objects'),count=listedObjects.length,scroll=Math.max(0,wrapper.scrollTop),height=Math.max(90,wrapper.clientHeight);
@@ -424,11 +461,13 @@ function renderListWindow(){
  function spacer(px){const e=document.createElement('div');e.className='list-spacer';e.style.height=px+'px';e.setAttribute('aria-hidden','true');return e;}
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
-  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(o.id===selected?' selected':'')+(o.hidden?' hidden':'');row.dataset.id=o.id;row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
+  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(o.id===selected?' selected':'')+(o.hidden?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
   const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',polyline:'⌁',freehand:'∿',text:'T',function:'ƒ',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';row.append(glyph);
   const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;const small=document.createElement('small');small.textContent=desc(o);label.append(strong,small);row.append(label);
-  const eye=document.createElement('button');eye.textContent=o.hidden?'◌':'◉';eye.title=o.hidden?'Show':'Hide';eye.setAttribute('aria-label',eye.title);eye.onclick=e=>{e.stopPropagation();if(!currentObject(o))return;update(()=>{if(!currentObject(o))throw Error('Stale object control.');o.hidden=!o.hidden;});};row.append(eye);
-  const lock=document.createElement('button');lock.textContent=o.locked?'🔒':'◇';lock.title=o.locked?'Unlock':'Lock';lock.setAttribute('aria-label',lock.title);lock.onclick=e=>{e.stopPropagation();if(!currentObject(o))return;update(()=>{if(!currentObject(o))throw Error('Stale object control.');o.locked=!o.locked;});};row.append(lock);
+  const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
+  more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
+  more.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();openObjectMenu(o,more);}};
+  row.append(more);
   row.onclick=()=>{if(currentObject(o))select(o.id);};
   row.onkeydown=e=>{
    if(e.target!==row||!currentObject(o))return;
@@ -815,14 +854,15 @@ function fit(){
  if(result.clipped)notice('Some fixed-size labels are wider than this viewport. Enlarge the canvas or reduce font size.');
  render();
 }
-function deleteSelected(){
- if(!selected)return;
- const id=selected,targets=affected(doc,id);
+function deleteObject(id){
+ if(!get(doc,id))return;
+ const targets=affected(doc,id);
  if([...targets].some(key=>get(doc,key)?.locked)){notice('Unlock dependents before deleting.');return;}
  const removed=clone(doc.objects.filter(o=>targets.has(o.id)));
- const ok=update(()=>{remove(doc,id);selected=null;});
+ const ok=update(()=>{remove(doc,id);if(selected&&targets.has(selected))selected=null;});
  if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
 }
+function deleteSelected(){if(selected)deleteObject(selected);}
 function persistTrash(){
  try{localStorage.setItem(TRASH,JSON.stringify(trash));}catch(e){notice('Recently Deleted could not be saved. Export a JSON backup.');}
  renderTrash();
@@ -1004,9 +1044,9 @@ function setupInterface(){
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
  $('auto-move').checked=uiPrefs.autoMove!==false;$('auto-move').onchange=()=>{uiPrefs.autoMove=$('auto-move').checked;savePrefs();};
- function applyLanguage(){document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
+ function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
- $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();};applyLanguage();
+ $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();renderList();};applyLanguage();
  const properties=$('properties'),toggle=$('properties-toggle');toggle.onclick=()=>{const collapsed=!properties.hidden;properties.hidden=collapsed;toggle.textContent=collapsed?'+':'−';toggle.setAttribute('aria-expanded',String(!collapsed));};
  // Reorder full tool sections, never move a nested setting out of its group.
  const container=$('panel-sections'),sections=[...container.children].filter(e=>e.classList.contains('toolgroup')||e.classList.contains('controls'));
@@ -1015,7 +1055,19 @@ function setupInterface(){
  if(Array.isArray(uiPrefs.sections)){for(const id of uiPrefs.sections){const e=sections.find(s=>s.dataset.sectionId===id);if(e)container.append(e);}}
 }
 function initialise(){
- populateTools();setupSettings();setupInterface();$('objects').addEventListener('scroll',()=>renderListWindow(),{passive:true});let old=null;
+ populateTools();setupSettings();setupInterface();$('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow();},{passive:true});
+ const searchToggle=$('object-search-toggle'),search=$('object-search');
+ function setSearchOpen(open){search.hidden=!open;searchToggle.setAttribute('aria-expanded',String(open));
+  if(open)search.focus();else{if(search.value){search.value='';renderList({resetScroll:true});}searchToggle.focus();}}
+ searchToggle.onclick=()=>setSearchOpen(search.hidden);
+ search.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setSearchOpen(false);}});
+ document.addEventListener('pointerdown',e=>{if(objectMenuContext&&!$('object-action-menu').contains(e.target)&&!objectMenuContext.trigger.contains(e.target))closeObjectMenu();},true);
+ document.addEventListener('focusin',e=>{if(objectMenuContext&&!$('object-action-menu').contains(e.target)&&!objectMenuContext.trigger.contains(e.target))closeObjectMenu();});
+ window.addEventListener('resize',()=>closeObjectMenu());
+ $('object-action-menu').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeObjectMenu({restoreFocus:true});}
+  else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const entries=[...$('object-action-menu').querySelectorAll('button:not(:disabled)')];
+   const index=entries.indexOf(document.activeElement);if(entries.length)entries[e.key==='Home'?0:e.key==='End'?entries.length-1:(index+entries.length+(e.key==='ArrowDown'?1:-1))%entries.length].focus();}});
+ let old=null;
  try{old=localStorage.getItem(STORAGE);lastStored=old;saveStatus(old?'Recovered local project':'Local backup ready');}catch(e){saveStatus('Not saved locally · download JSON');notice('Browser storage is restricted: use Save to download JSON.');}
  if(old){try{doc=validateDoc(JSON.parse(old));}catch(e){setStorageConflict(true,'corrupt');notice('Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.');}}
  try{const stored=JSON.parse(localStorage.getItem(TRASH)||'[]');if(Array.isArray(stored))trash=stored.filter(e=>e&&Array.isArray(e.objects)&&Number.isFinite(e.at)).slice(0,20);}catch{}renderTrash();
@@ -1041,6 +1093,7 @@ function initialise(){
   // Composition keys belong to the IME even inside the tikz-cd modal.
   // In particular Escape must not dismiss the importer mid-composition.
   if(e.isComposing||e.keyCode===229)return;
+  if(objectMenuContext){if(e.key==='Escape'){e.preventDefault();closeObjectMenu({restoreFocus:true});}return;}
   // Overlay focus is a separate interaction context. Never delete drawing objects
   // or switch tools from a shortcut while an import/export overlay is active.
   if(!$('tikzcd-dialog').hidden){
@@ -1067,7 +1120,7 @@ function initialise(){
   else if(e.key==='Escape'){cancelDrag();draftStart=null;draftPoints=[];draftNode=null;selectTool('select');}
   else if(e.key==='Enter'&&['polygon','polyline'].includes(tool)){finishDraft();}
  });
- $('undo').onclick=undo;$('redo').onclick=redo;$('delete').onclick=deleteSelected;
+ $('undo').onclick=undo;$('redo').onclick=redo;
  $('retry-autosave').onclick=()=>{if(storageConflict){saveStatus('Autosave paused · resolve conflict first');return;}
   if(!dirty){saveStatus('No unsaved local changes');return;}clearTimeout(saveTimer);persistNow();};
  $('object-search').oninput=()=>renderList({resetScroll:true});
