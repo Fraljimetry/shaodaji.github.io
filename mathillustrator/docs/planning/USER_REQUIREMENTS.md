@@ -10,8 +10,8 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 
 | ID | Requirement (user wording) | Status |
 |---:|---|---|
-| R01 | Don's show my software in the main page of my homepage. | Pending |
-| R02 | The cover image in the tool page for math illustrator should have similar style with that for math reader, being a tilted pencil. | Partial — pencil-cover.svg created; **tools.html not supplied**, so the card still needs wiring |
+| R01 | Don's show my software in the main page of my homepage. | Done — homepage hero software links and full showcase section removed, while global Tools navigation is preserved. |
+| R02 | The cover image in the tool page for math illustrator should have similar style with that for math reader, being a tilted pencil. | Done — the Tools-page feature now displays the local tilted-pencil SVG prepared in Round 5. |
 | R03 | Find objects input should not be so big outshining the main input above it. | Done — this pass |
 | R04 | Items drawn should support multiple selection and dragging for reordering. | Pending |
 | R05 | Support parametric and implicit curves as well like in Desmos. | Pending |
@@ -83,7 +83,21 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 |---:|---|---|
 | R62 | Ultra smooth is not smooth enough. | Done — arc-length resampling and symmetric Gaussian filtering replace the Ultra-only Chaikin treatment; committed freehand preview now uses the same cubic rendering | 
 
-The root website update remains open: **R01 (remove software suggestion from the homepage)** is pending because the latest upload includes neither the website root `index.html` nor `tools.html`. `R02` has a newly prepared SVG image but **is not displayed in the Tools listing yet**. Do not overwrite the homepage with a guessed or older version.
+**Round 7 status:** R01 and R02 are complete in source: the homepage no longer advertises MathReader/MathIllustrator, but preserves the global Tools navigation. The Tools page now displays the prepared tilted-pencil image. Only the supplied current root pages were modified; no MathReader files changed. Hosted deployment and the rest of the website assets were not supplied for full integration testing.
+
+## New request — near-end freehand joining (Round 6)
+
+| ID | Requirement (user wording) | Status |
+|---:|---|---|
+| R63 | When free hand curve start and end with too close locations they should be joined. But not joined smoothly but with a corner unless they are almost tangent, then smoothly joined. This extra joining can be invalidated in setting. | Done — new projects auto-join endpoints within 12 screen px after a meaningful stroke; corners retain a sharp path seam, near-tangent directions (≤20° apart) use a continuous periodic spline, and **Geometry options → Free curves → Keep open · disable joining** turns joining off. Saved objects store `joinStyle` so future settings/view changes do not alter their geometry. Existing files explicitly saved with Open retain Open; missing legacy setting migrates to Open. |
+
+**Round 6 acceptance:** new/old v1 JSON compatibility, no mutation of original samples, 24px minimum path length for automatic joining, short/canceled strokes, 12px zoom-scaled proximity, same preview and final seam, corner geometry vs tangent geometry, undo/redo, SVG and JSON export, old closed drawings and corrupt `joinStyle` import rejection. Tested on isolated Chromium/Node; true physical pen input and live site remain unverified. Always close at distant endpoints retains its legacy spline (the new corner/tangent choice only applies when endpoints are near). The homepage edits are delivered separately in Round 7, not bundled with the Round 6 freehand cut.
+
+## Deferred root integration from Round 5 — completed in independent Round 7
+
+**Scope:** remove both the homepage hero software links and the dedicated homepage software showcase (including now-unused scoped CSS); retain the normal Tools site navigation and all research/academic content. Replace only the MathIllustrator preview formula on `tools.html` with the existing local `mathillustrator/assets/pencil-cover.svg` tilted-pencil artwork; remove the now-unused external MathJax CDN script from that Tools page. Keep MathReader's Tools-page preview, wording, and paths unchanged. Both supplied root HTML files are treated as authoritative; no older root file was used.
+
+**Acceptance:** no software promo in homepage markup in either language; homepage Tools navigation remains; both Tools cards and their existing links remain; pencil asset path exists, SVG parses, no external imagery; other homepage sections and bilingual text unchanged. Verify independent HTML parsing plus isolated Chromium DOM checks (full stylesheet and deployment layout are not available). Full website assets and live deployment remain unverified.
 
 ## Preserved earlier product-level requirements
 

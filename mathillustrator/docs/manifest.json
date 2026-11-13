@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "ultra-smooth-and-pencil-artwork-round-5",
+  "release": "root-site-homepage-tools-promo-round-7",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "arc-length-ultra-smooth-pencil-art",
+  "revision": "homepage-no-software-promotion-tools-pencil-cover",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -31,12 +31,14 @@
     "local_math_vendor": "vendor/mathjax-tex-svg.js",
     "extended_reference": "docs/reference/tutorial-extended.html",
     "living_user_requirements": "docs/planning/USER_REQUIREMENTS.md",
-    "object_actions_regression": "tests/browser_object_menu_current.py"
+    "object_actions_regression": "tests/browser_object_menu_current.py",
+    "freehand_join_browser_regression": "tests/browser_freehand_join_current.py",
+    "root_showcase_regression": "tests/site_root_showcase_current.py"
   },
   "data_contract": {
     "name": "mathillustrator-project",
     "current_version": 1,
-    "migration_policy": "Version 1 additive textMode, pointLabel, fontFamily; absent label modes preserve legacy plain text. No TeX execution."
+    "migration_policy": "Version 1 additive freehand joinStyle for newly auto-joined strokes; older closed curves remain cyclic and saved Open setting is preserved."
   },
   "delivery_contract": {
     "format": "ZIP overlay rooted at website repository",
@@ -76,7 +78,7 @@
   ],
   "pencil_assets": {
     "editor_mark": "assets/pencil-mark.svg",
-    "tools_cover_ready_not_connected": "assets/pencil-cover.svg"
+    "tools_cover_connected": "assets/pencil-cover.svg"
   },
-  "root_homepage_available": false
+  "root_homepage_available": true
 }

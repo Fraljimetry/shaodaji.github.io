@@ -10,21 +10,6 @@
   <title>Shaoda Ji | Mathematics</title>
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/css/style-v15.css">
-  <style id="math-software-home-styles">
-    /* MathReader / MathIllustrator homepage showcase; scoped to avoid site-wide regressions. */
-    .hero-tool-links { display:flex; align-items:baseline; flex-wrap:wrap; gap:.3rem .8rem; margin:1.05rem 0 0; font-size:.9rem; color:var(--muted); }
-    .hero-tool-links a { font-weight:750; }
-    .software-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.2rem; }
-    .software-card { min-width:0; }
-    .software-art { display:grid; place-items:center; overflow:hidden; height:145px; margin-bottom:1.15rem; border:1px solid var(--line); border-radius:.55rem; color:var(--accent-deep); background:var(--surface-soft); }
-    .software-art img { width:min(130px,60%); height:120px; object-fit:contain; }
-    .software-art svg { display:block; width:min(340px,100%); height:100%; }
-    .software-card .software-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem 1rem; margin-top:auto; padding-top:1.15rem; }
-    .software-actions a { font-size:.94rem; font-weight:750; }
-    .software-card h3 { font-size:1.55rem; }
-    #mathematical-software { scroll-margin-top:5rem; }
-    @media (max-width:700px) { .software-grid { grid-template-columns:1fr; } .software-art { height:125px; } }
-  </style>
   <script>
     (() => {
       try {
@@ -79,7 +64,6 @@
       <a href="files/Shaoda_Ji_CV.pdf" class="button secondary" data-en="Download CV" data-zh="下载简历">Download CV</a>
       <a href="mailto:frankjiiiiiiii@gmail.com" class="button secondary" data-en="Email me" data-zh="给我发邮件">Email me</a>
     </div>
-    <p class="hero-tool-links"><span data-en="Mathematical software:" data-zh="数学软件：">Mathematical software:</span><a href="mathreader/" data-en="MathReader · Read PDFs" data-zh="MathReader · 阅读 PDF">MathReader · Read PDFs</a><a href="mathillustrator/" data-en="MathIllustrator · Draw figures" data-zh="MathIllustrator · 绘制插图">MathIllustrator · Draw figures</a></p>
   </div>
   <figure class="portrait-frame">
     <img src="assets/img/shaoda-ji-square-v4.webp" width="800" height="800" alt="Shaoda Ji standing beside a lake" data-alt-en="Shaoda Ji standing beside a lake" data-alt-zh="汲绍达站在湖边">
@@ -90,34 +74,6 @@
   <div class="formula math-tex">\[f(x+y)+f(x-y)=2f(x)f(y)\]</div>
   <p data-en="D’Alembert’s functional equation, studied in my 2023 paper on an elementary definition of the cosine function." data-zh="D’Alembert 函数方程；我在 2023 年的论文中用它给出了余弦函数的一种初等定义。">D’Alembert’s functional equation, studied in my 2023 paper on an elementary definition of the cosine function.</p>
 </div></aside>
-<section class="section section-rule" id="mathematical-software" aria-labelledby="software-heading"><div class="container">
-  <div class="section-head"><h2 id="software-heading" data-en="Mathematical software" data-zh="数学软件">Mathematical software</h2><p data-en="Two independent browser tools: MathReader for studying mathematical PDFs, and MathIllustrator for creating editable figures. Choose the workflow you need." data-zh="两款独立的浏览器数学工具：MathReader 用于阅读数学 PDF，MathIllustrator 用于制作可编辑插图。根据任务选择相应工具。">Two independent browser tools: MathReader for studying mathematical PDFs, and MathIllustrator for creating editable figures. Choose the workflow you need.</p></div>
-  <div class="software-grid">
-    <article class="card software-card">
-      <div class="software-art" aria-hidden="true"><img src="assets/img/tool-mathreader-file-search.svg" alt="" width="130" height="120" loading="lazy"></div>
-      <span class="meta" data-en="Read · Annotate · Formula OCR" data-zh="阅读 · 批注 · 公式 OCR">Read · Annotate · Formula OCR</span>
-      <h3>MathReader</h3>
-      <p data-en="Read mathematical PDFs, navigate results and references, annotate proofs, and extract supported formulas with local OCR." data-zh="阅读数学 PDF、导航结果与参考文献、批注证明，并通过本地 OCR 提取受支持的公式。">Read mathematical PDFs, navigate results and references, annotate proofs, and extract supported formulas with local OCR.</p>
-      <div class="software-actions"><a href="mathreader/" data-en="Open MathReader →" data-zh="打开 MathReader →">Open MathReader →</a><a href="tools.html#mathreader" data-en="More details" data-zh="了解详情">More details</a></div>
-    </article>
-    <article class="card software-card">
-      <div class="software-art" aria-hidden="true">
-        <svg viewBox="0 0 340 160" xmlns="http://www.w3.org/2000/svg" focusable="false">
-          <g stroke="currentColor" stroke-opacity=".18" stroke-width="1"><path d="M28 132H313M48 20V145"/><path d="M48 112H313M48 92H313M48 72H313M48 52H313M48 32H313" stroke-dasharray="2 7"/></g>
-          <circle cx="171" cy="80" r="58" fill="none" stroke="currentColor" stroke-opacity=".47" stroke-width="2"/>
-          <path d="M117 108L155 26L233 99Z" fill="currentColor" fill-opacity=".09" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/>
-          <path d="M155 26L171 80L233 99" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.5" stroke-dasharray="4 5"/>
-          <g fill="var(--surface)" stroke="currentColor" stroke-width="2.2"><circle cx="117" cy="108" r="4.2"/><circle cx="155" cy="26" r="4.2"/><circle cx="233" cy="99" r="4.2"/></g>
-          <g fill="currentColor" font-family="Georgia,serif" font-size="14"><text x="102" y="126">A</text><text x="141" y="17">B</text><text x="239" y="108">C</text></g>
-        </svg>
-      </div>
-      <span class="meta" data-en="Draw · Construct · Export" data-zh="绘图 · 构造 · 导出">Draw · Construct · Export</span>
-      <h3>MathIllustrator</h3>
-      <p data-en="Make editable 2D figures with linked constructions, freehand curves and semantic diagrams. Export supported scenes as SVG, images or TikZ. Advanced 3D is not available yet." data-zh="使用关联几何构造、自由曲线和语义图表制作可编辑二维插图。可将受支持的场景导出为 SVG、图像或 TikZ。高级三维功能尚未提供。">Make editable 2D figures with linked constructions, freehand curves and semantic diagrams. Export supported scenes as SVG, images or TikZ. Advanced 3D is not available yet.</p>
-      <div class="software-actions"><a href="mathillustrator/" data-en="Open MathIllustrator →" data-zh="打开 MathIllustrator →">Open MathIllustrator →</a><a href="mathillustrator/tutorial.html" data-en="Tutorial" data-zh="使用教程">Tutorial</a></div>
-    </article>
-  </div>
-</div></section>
 <section class="section"><div class="container">
   <div class="section-head"><h2 data-en="About" data-zh="关于我">About</h2><p data-en="I am pursuing a PhD in the Department of Mathematics at the University of Washington, with an expected completion in 2030. My PhD advisers have not yet been determined; they will be selected at the end of the second year of the program." data-zh="我正在华盛顿大学数学系攻读博士学位，预计于 2030 年完成学业。博士导师尚未确定，将在博士项目第二学年结束时选定。">I am pursuing a PhD in the Department of Mathematics at the University of Washington, with an expected completion in 2030. My PhD advisers have not yet been determined; they will be selected at the end of the second year of the program.</p></div>
   <div class="cards">
