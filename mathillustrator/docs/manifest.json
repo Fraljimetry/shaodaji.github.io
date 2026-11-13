@@ -1,12 +1,14 @@
 {
   "project": "MathIllustrator",
-  "release": "0.26.1",
+  "release": "UI-labels-localization-round-2",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "maintenance-history-consolidation",
-  "date": "2026-11-12",
+  "revision": "math-labels-i18n-round-2",
+  "date": "2026-11-13",
   "site_path": "mathillustrator/",
-  "independent_from": ["mathreader/"],
+  "independent_from": [
+    "mathreader/"
+  ],
   "runtime": "Static GitHub Pages HTML/CSS/ES modules; local browser state; no server runtime",
   "current_entry_points": {
     "editor": "index.html",
@@ -23,12 +25,16 @@
     "active_package_inventory": "docs/quality/package-files.json",
     "historical_archive": "docs/history/release-history.zip",
     "historical_index": "docs/history/contents.json",
-    "regression_entry_point": "tests/manage_history.py"
+    "regression_entry_point": "tests/manage_history.py",
+    "labels": "src/math_labels.mjs",
+    "locale": "src/i18n.mjs",
+    "local_math_vendor": "vendor/mathjax-tex-svg.js",
+    "extended_reference": "docs/reference/tutorial-extended.html"
   },
   "data_contract": {
     "name": "mathillustrator-project",
     "current_version": 1,
-    "migration_policy": "No implicit migration or change to semantic JSON in maintenance revision; historic import failures must remain explicit"
+    "migration_policy": "Version 1 additive textMode, pointLabel, fontFamily; absent label modes preserve legacy plain text. No TeX execution."
   },
   "delivery_contract": {
     "format": "ZIP overlay rooted at website repository",
@@ -37,9 +43,33 @@
     "requires_prune_for_deletion": true,
     "safe_cleanup_command": "python mathillustrator/tests/manage_history.py prune --apply",
     "safe_restore_command": "python mathillustrator/tests/manage_history.py restore --apply",
-    "skipped_cuts_supported": [7, 11],
-    "never_modify": ["mathreader/", "unrelated website assets"]
+    "skipped_cuts_supported": [
+      7,
+      11
+    ],
+    "never_modify": [
+      "mathreader/",
+      "unrelated website assets"
+    ]
   },
-  "verification_categories": ["Node model/regression", "isolated Chromium UI", "actual TeX compile", "schema examples", "website HTML integration", "archive SHA and reversible cleanup", "separate real hosted/cross-browser acceptance"],
-  "retained_policy": ["no silent fallback", "no false-success", "backward-compatible JSON", "subtle race/reentrancy/rollback coverage", "accessible failure states", "performance bounds", "explicit unsupported outputs", "immutable historical provenance", "no speculative source changes"]
+  "verification_categories": [
+    "Node model/regression",
+    "isolated Chromium UI",
+    "actual TeX compile",
+    "schema examples",
+    "website HTML integration",
+    "archive SHA and reversible cleanup",
+    "separate real hosted/cross-browser acceptance"
+  ],
+  "retained_policy": [
+    "no silent fallback",
+    "no false-success",
+    "backward-compatible JSON",
+    "subtle race/reentrancy/rollback coverage",
+    "accessible failure states",
+    "performance bounds",
+    "explicit unsupported outputs",
+    "immutable historical provenance",
+    "no speculative source changes"
+  ]
 }

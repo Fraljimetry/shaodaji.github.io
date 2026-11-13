@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shaodaji.cc/mathillustrator/docs/schemas/project-v1.schema.json",
-  "title": "MathIllustrator semantic project v1 — Cut23 opt-in morphism label collision avoidance",
+  "title": "MathIllustrator semantic project v1",
   "type": "object",
   "required": [
     "format",
@@ -243,6 +243,14 @@
         "exportTransparent": {
           "type": "boolean",
           "description": "Optional v1 extension; false if absent. Alpha-preserving SVG/PNG/WebP only; JPEG option disabled if true; editor background unchanged."
+        },
+        "freehandClose": {
+          "type": "string",
+          "enum": [
+            "open",
+            "near",
+            "always"
+          ]
         }
       },
       "allOf": [
@@ -374,7 +382,8 @@
           "enum": [
             "direct",
             "avoid",
-            "avoid-crossings", "scene-crossings"
+            "avoid-crossings",
+            "scene-crossings"
           ],
           "description": "Optional morphism-only routing. Legacy absent value means direct/curved. Avoid uses best-effort two-turn screen-space routing around visible nodes. Avoid-crossings additionally prioritizes fewer interior crossings with earlier visible arrows, subject to bounded search/inspection; unresolved crossings are warned. Neither changes semantic refs."
         },
@@ -405,6 +414,54 @@
         "labelAvoid": {
           "type": "boolean",
           "description": "Optional morphism-only best-effort collision avoidance for screen-space label display; default false for legacy projects. Does not mutate semantic edges, labels, node coordinates or author-selected offsets. Manual handle dragging disables auto placement."
+        },
+        "nodeBorder": {
+          "type": "boolean"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "arrowStyle": {
+          "type": "string",
+          "enum": [
+            "solid",
+            "dashed",
+            "dotted",
+            "hook",
+            "hook-dashed",
+            "twohead",
+            "tail"
+          ]
+        },
+        "textMode": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "latex"
+          ],
+          "description": "Optional type/node/morphism label rendering. Absence retains historical plain text."
+        },
+        "fontFamily": {
+          "type": "string",
+          "enum": [
+            "Georgia, serif",
+            "Arial, sans-serif",
+            "Consolas, monospace"
+          ],
+          "description": "Optional plain-text font; mathematical SVG uses its bundled mathematical glyphs."
+        },
+        "pointLabel": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional point/midpoint display label, separate from the immutable reference name."
+        },
+        "pointLabelMode": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "latex"
+          ],
+          "description": "Optional point/midpoint label math renderer. Absence means legacy plain text."
         }
       },
       "allOf": [

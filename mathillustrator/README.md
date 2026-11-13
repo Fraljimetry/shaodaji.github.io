@@ -1,54 +1,54 @@
-# MathIllustrator — semantic mathematical figure editor
+# MathIllustrator — mathematical figure editor
 
-**Current baseline: v0.26.1, Cut 25 maintenance revision.** This is the independent, static-browser MathIllustrator application at `/mathillustrator/`, separate from MathReader. The mathematics and drawing behavior of Cut 25 is unchanged in this maintenance revision; old release documentation and cut-specific tests have been collected into a verified, recoverable history archive.
+MathIllustrator is a local-first, static-browser editor at `/mathillustrator/`. It is independent of MathReader. The user-facing [quick guide](tutorial.html) is concise and bilingual; the detailed development, quality and architecture references start at [docs/INDEX.md](docs/INDEX.md).
 
-## What it does today
+## Current capabilities
 
-A three-pane 2D editor with points, dependent objects, construction commands, circles, ellipses, Bézier curves, lines, polygons, freehand strokes, explicit-function plots, node/morphism diagrams, configurable drawing settings and presets. Editable JSON is the authoritative lossless project format. SVG and PNG/JPEG/WebP are rendered outputs; restricted TikZ and semantic `tikz-cd` are available only when representable. Diagram routing includes direct, node-aware, earlier-arrow-aware and opt-in bounded scene-aware crossing reduction. The last mode does not guarantee globally optimal routing.
+- Semantic 2D geometry: point/dependency constructions, circles, ellipses, polygons, Bézier/freehand paths, function `y=f(x)` graphs, move/pan tools and undo/redo.
+- Diagram nodes and morphisms: borderless nodes by default, curved/routed arrows, line-end/dash styles, label placement controls and restricted `tikz-cd` interchange.
+- **Real locally typeset LaTeX mathematics** in new diagram nodes and arrow labels, plus optional point labels and other text objects. MathJax glyphs become SVG paths, not plain-text TeX. Existing JSON labels with no `textMode` retain their original plain-text appearance.
+- English/Chinese interface with a reusable translation module (**partial coverage**: some runtime warnings, prompts and accessibility copy remain English). Ordinary text objects have editable font family/size; MathJax mathematical fonts remain fixed.
+- Settings, rearrangeable right-panel tool sections, closable Properties, Recently Deleted, automatic Point → Move, and locally stored interface preferences.
+- Editable native JSON projects, SVG, PNG, WebP and conditional JPEG/TikZ/semantic `tikz-cd` exports. Representations that cannot preserve the current scene are explicitly refused/disabled rather than silently simplified.
 
-Try `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` and `Midpoint(A,B)` in the command box. Use the Move tool to change A and inspect the dependent result. Try the examples under `examples/`; the full user guide is [tutorial.html](tutorial.html).
+Enter `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` in the construction box, or use the diagram tools to create a node with label `\\frac{A_1}{B_2}`. Consult the concise [user guide](tutorial.html) for usage and the [live feature catalog](docs/planning/features.json) for current limits.
 
-**Not supported as full solutions:** general symbolic constraints, arbitrary implicit equations, all intersections/tangencies, full TeX math-label layout, genuine 3D, numerical PDE/Ricci-flow solvers, full animation, arbitrary TikZ import or guaranteed high-performance rendering of complex scenes. See [features.json](docs/planning/features.json) and [KNOWN_ISSUES.md](docs/quality/KNOWN_ISSUES.md) for exact distinctions.
+**Not yet implemented:** general 3D plotting, interactive parameter sliders, general implicit/symbolic geometry, PDE solvers, full MathReader-style movable/dockable *main* panels, complete Chinese translation, arbitrary TeX packages, and universal TikZ support. The earlier Drawing preset selector is intentionally hidden; show desired toolkits via the Toolkits controls, with General/default all visible.
 
-## Installation / avoiding missed overlays
+## Install a changed-files-only overlay
 
-Apply the supplied MathIllustrator overlay ZIP **at the website repository root**, not inside `mathillustrator/`. All paths in the ZIP are website-root relative. Your supplied Cut 25 website already contains the full current runtime, including all Cut 07 and Cut 11 modules; this **maintenance-only overlay does not re-ship runtime source** and assumes that verified Cut 25 baseline. Do not install skipped intermediate overlays. Never layer an older overlay on top of a newer one.
+Extract the supplied ZIP **at the website repository root**. It must preserve `mathillustrator/...` paths. Overlays do not replace unrelated MathReader files or root-site navigation. The latest overlay requires the existing verified Cut 25 site plus earlier maintenance/UI overlay(s); do not apply an older ZIP afterward. In particular, Cuts 07 and 11 are already represented in the verified cumulative site and must not be reinstalled.
 
-The existing website's root `index.html` and `tools.html` links to MathIllustrator must remain intact. No root files are changed in this maintenance patch, and no MathReader files are changed. Open `/mathillustrator/` and `/mathillustrator/tutorial.html` after deployment. The actual hosted pages, browser engine compatibility and shared-origin multi-tab storage must still be tested separately.
+## Organized project structure
 
-## Stable directory layout (instead of one new file per cut)
+| Directory | Purpose |
+| --- | --- |
+| `src/` | Active model, geometry, diagrams, mathematical labels, localization, browser controller |
+| `vendor/` | Offline MathJax SVG bundle and its retained upstream license |
+| `docs/manifest.json`, `docs/planning/`, `docs/schemas/` | Living contracts and feature catalog |
+| `docs/quality/` | Current test report, known issues, regression/performance references, SHA-256 inventory |
+| `docs/history/` | Immutable verified archive of 173 old release/test artifacts and six documentation snapshots |
+| `tests/` | Current domain/browser tests and archive reconstruction/cleanup runner |
+| `examples/`, `tutorial.html`, `index.html`, `style.css` | Example projects and concise user experience |
 
-| Location | Purpose | Growth rule |
-| --- | --- | --- |
-| `src/` | Current ES modules; `app.mjs` controls the UI | Change the existing module or introduce a module only for a clear boundary |
-| `docs/manifest.json`, `docs/planning/`, `docs/schemas/` | Current architecture/feature/schema contracts | Update in place |
-| `docs/quality/` | Current issue catalog, regression policy, performance ledger, release report and package inventory | Update existing living documents; no `cutNN-*` file proliferation |
-| `docs/history/release-history.zip`, `contents.json` | Exact archived cut reports, per-cut tests and former handover snapshots | Retain immutable history; fold old cut evidence into archive on future release |
-| `tests/` | Stable tests + maintenance/regression entry point | Add checks to stable domain suites; temporary extraction runs archived regressions |
-| `examples/`, `tutorial.html`, `index.html`, `style.css` | Sample projects and user interface | Keep consistent with verified behavior |
+Update living documents in place rather than creating a new Cut-numbered file after every delivery. The old extended user guide is preserved as **historical reference**, not current truth, at `docs/reference/tutorial-extended.html`.
 
-The historical ZIP contains **173 byte-preserved reports/test artifacts**, plus 6 snapshots of older central documents. Its SHA-256 inventory is in `docs/history/contents.json`; the archive is not part of runtime loading. Existing historical files may remain on disk after extracting an overlay; ZIP extraction **cannot delete files**. Removing them is a separate, safe, reversible action. **For a GitHub Pages deployment, commit and push the resulting Git deletions as well as the overlay additions; extracting the ZIP alone does not remove existing tracked files from the published repository.**
+## Checks and safe history cleanup
 
-## Verify, clean and restore
-
-From the **website repository root**:
+From the website root:
 
 ```powershell
 python mathillustrator/tests/manage_history.py verify
-python mathillustrator/tests/manage_history.py self-test
 python mathillustrator/tests/manage_history.py test
 python mathillustrator/tests/manage_history.py test --browser
+python mathillustrator/tests/manage_history.py self-test
 python mathillustrator/tests/manage_history.py prune
 python mathillustrator/tests/manage_history.py prune --apply
 python mathillustrator/tests/manage_history.py restore --apply
 ```
 
-- `self-test` verifies prune/restore and altered-file rejection in a disposable copy. `verify` checks the active package's SHA-256 hashes, the history ZIP, and any legacy originals. It refuses unexplained or changed files rather than deleting them.
-- `test` reconstructs archived tests in an isolated temporary copy and runs **all 144 Node tests, site integration, actual TeX compilation and ES-module syntax**; `--browser` also runs the 45 isolated Chromium scripts. Requires Node.js, Python, Playwright + Chromium for the browser option, and `pdflatex` for TeX compilation. Set `MATHILLUSTRATOR_CHROMIUM` if the browser executable is not auto-located.
-- `prune` is a read-only preview. `prune --apply` removes **only byte-identical historical test/report files already secured in the archive**. It does not touch `src/`, active contracts, MathReader or the website root. `restore --apply` restores only missing archived originals and never overwrites changed files.
+`verify` checks current active bytes and the historical archive. `test` copies the project to a temporary site, reconstructs archived tests and runs syntax/Node/schema/integration/actual TeX compilation; `--browser` additionally exercises isolated Chromium scripts. The old drawing-preset tests, and the pre-auto-Move touch test, are deliberately excluded with explicit messages (their archived bytes are preserved). A current touch regression replaces the old behavioral assumption. This is **not** testing the publicly deployed GitHub Pages origin or Firefox/Safari/physical devices.
 
-**After consolidation**, the staged historical runner was also rerun after deleting the standalone legacy copies: 144/144 Node tests, 45/45 isolated Chromium scripts, 4/4 schema examples, 2 TeX compilations, integration checks and the reversible-cleanup self-test passed.
+`prune` previews removal of archived historical files; `prune --apply` removes only hashes that exactly match archived originals; `restore --apply` can recreate the originals without overwriting existing files. ZIP extraction alone cannot remove old tracked files, and publishing deletions requires committing them to Git.
 
-**Verification provenance, not marketing:** The supplied original Cut25 tree passed 144/144 Node tests, 45/45 isolated Chromium scripts (one retried after restoring a missing audit fixture), four JSON examples, two pdfLaTeX compilations, static site checks and 220/220 cumulative SHA checks. The stable current report is [TEST_REPORT_CURRENT.md](docs/quality/TEST_REPORT_CURRENT.md). No live hosted-site, Safari/Firefox or physical-touch certification is implied.
-
-For developers, start at [docs/INDEX.md](docs/INDEX.md). Every change must include subtly affected states, failure/rollback behavior, data compatibility, performance implications, source evidence and the overlay ZIP. Never silently fall back from an unsupported output.
+See [the current verification report](docs/quality/TEST_REPORT_CURRENT.md) for exact PASS/NOT RUN provenance and [known issues](docs/quality/KNOWN_ISSUES.md) for unsupported or degraded cases. Never convert an unsupported output silently or replace the user’s existing project without a recoverable action.

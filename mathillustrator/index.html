@@ -10,7 +10,7 @@
 <body>
   <header class="appbar">
     <a class="brand" href="../tools.html" title="Return to Tools">← <span class="brandmark">∑</span> MathIllustrator</a>
-    <span class="beta">Early editor · v0.21.0</span>
+    
     <div class="header-actions">
       <button id="undo" title="Undo (Ctrl+Z)" disabled>↶ <span>Undo</span></button>
       <button id="redo" title="Redo (Ctrl+Y)" disabled>↷ <span>Redo</span></button>
@@ -18,43 +18,43 @@
       <button id="open" title="Open a JSON project">Open</button><input id="open-file" type="file" accept=".json,application/json" hidden>
       <button id="save" title="Save editable project">Save</button><button id="tikzcd-open" title="Import semantic tikz-cd diagram">Import TeX</button>
       <button id="export-open" class="primary">Export ▾</button>
-      <button id="help" title="Open tutorial">?</button>
+      <button id="settings-open" title="Settings" aria-controls="settings-panel" aria-expanded="false">⚙</button><select id="ui-language" title="Language / 语言" aria-label="Language"><option value="en">English</option><option value="zh">中文</option></select><button id="help" title="Open tutorial">?</button>
     </div>
   </header>
   <main class="workspace">
     <aside class="leftpanel" aria-label="Objects and properties">
       <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
       <div class="commandbox"><label for="command">Construction input</label><form id="command-form"><input id="command" autocomplete="off" spellcheck="false" placeholder="A = (0, 0)" aria-label="Construction command"><button aria-label="Add construction" title="Run construction">↵</button></form><p class="hint">Points, geometric objects, f(x) plots · <a href="tutorial.html#commands" target="_blank">Syntax</a></p></div>
-      <div class="object-tools"><input id="object-search" type="search" placeholder="Find objects…" aria-label="Search objects"><label><input type="checkbox" id="show-hidden" checked> Show hidden</label><button id="delete" disabled>Delete selected</button></div>
-      <div id="objects" class="objects" role="list" aria-label="Drawable objects"></div>
-      <div id="properties" class="properties"><h3>Properties</h3><p class="subtle">Select an object to edit its style and geometry.</p></div>
+      <div class="object-tools"><input id="object-search" type="search" placeholder="Find objects…" aria-label="Search objects"><label title="Hidden objects remain in the project but are not rendered; the eye button toggles visibility."><input type="checkbox" id="show-hidden" checked> Hidden <span class="mini-help">?</span></label><button id="delete" disabled>Delete selected</button></div>
+      <div id="objects" class="objects" role="list" aria-label="Drawable objects"></div><details id="recently-deleted" class="trash-panel"><summary>Recently Deleted <span id="trash-count">0</span></summary><div id="trash-items"></div></details>
+      <div class="properties-head"><strong>Properties</strong><button id="properties-toggle" aria-expanded="true" title="Collapse Properties">−</button></div><div id="properties" class="properties"><h3>Properties</h3><p class="subtle">Select an object to edit its style and geometry.</p></div>
     </aside>
     <section class="stage" aria-label="Illustration canvas">
-      <div class="stage-actions"><span id="mode-label">Select · drag points to edit</span><div><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-reset" title="Reset view">100%</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit objects to canvas">Fit</button></div></div>
+      <div id="settings-panel" class="settings-panel" hidden><div class="settings-heading"><strong>Settings / 设置</strong><button id="settings-close" title="Close settings">×</button></div><label>Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option></select></label><label><input type="checkbox" id="auto-move" checked> Return to Move after placing a point</label><p class="compact-help">Drag tool sections by their headings to rearrange.</p></div><div class="stage-actions"><span id="mode-label">Select · drag points to edit</span><div><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-reset" title="Reset view">100%</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit objects to canvas">Fit</button></div></div>
       <svg id="drawing" xmlns="http://www.w3.org/2000/svg" tabindex="0" role="img" aria-label="Interactive mathematical drawing canvas"></svg>
       <div class="canvas-footer"><span id="coords">x 0.00 · y 0.00</span><span class="save-feedback"><span id="autosave-info" role="status" aria-live="polite">Local backup ready</span><button id="retry-autosave" title="Retry saving the current project in this browser" hidden>Retry local save</button></span><span id="render-info">Ready</span></div>
     </section>
     <aside class="rightpanel" aria-label="Drawing tools and settings">
       <div class="panelhead"><h2>Tools</h2><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
-      <div class="scrollpanel">
-        <div class="preset"><label for="preset">Drawing preset</label><select id="preset"></select><p class="hint">Presets reset drawing and toolkit defaults, not page/export/theme. Existing objects stay unchanged; Custom means you changed drawing defaults.</p></div>
-        <section class="controls module-controls"><h3>Visible toolkits</h3><div class="module-toggles"><label class="check"><input id="module-basic" type="checkbox"> Basic</label><label class="check"><input id="module-construction" type="checkbox"> Geometry</label><label class="check"><input id="module-illustration" type="checkbox"> Illustration</label><label class="check"><input id="module-diagram" type="checkbox"> Diagrams</label></div></section>
+      <div class="scrollpanel" id="panel-sections">
+        <div class="preset" hidden><label for="preset" hidden>Drawing preset</label><select id="preset"></select></div>
+        <section class="controls module-controls"><h3>Toolkits <span class="mini-help" title="Show or hide groups of drawing tools without affecting existing objects.">?</span></h3><div class="module-toggles"><label class="check"><input id="module-basic" type="checkbox"> Basic</label><label class="check"><input id="module-construction" type="checkbox"> Geometry</label><label class="check"><input id="module-illustration" type="checkbox"> Illustration</label><label class="check"><input id="module-diagram" type="checkbox"> Diagrams</label></div></section>
         <section class="toolgroup" data-tool-module="basic"><h3>Basic</h3><div class="toolgrid" id="basic-tools"></div></section>
-        <section class="toolgroup" data-tool-module="construction"><h3>Construction</h3><div class="toolgrid" id="construction-tools"></div></section>
+        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><div class="toolgrid" id="construction-tools"></div></section>
         <section class="toolgroup" data-tool-module="illustration"><h3>Illustration</h3><div class="toolgrid" id="illustration-tools"></div></section><section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section>
-        <section class="controls"><h3>Function plotting</h3>
+        <section class="controls"><h3>Plotting <span class="mini-help" title="Use the construction input for a function, such as f(x)=sin(x).">?</span></h3>
           <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast · responsive</option><option value="balanced">Balanced · default</option><option value="detailed">Detailed · more sampling</option></select></label>
-          <p class="hint">Sampled graphs are approximate. Narrow spikes or singularities may be missed even at Detailed quality; higher detail costs CPU time.</p>
+          
         </section>
-        <section class="controls"><h3>Correction & snapping</h3>
-          <label class="field">Correction <select id="correction"><option value="off">Off · exact pointer</option><option value="gentle">Gentle · smooth</option><option value="medium">Medium · smooth + simplify</option><option value="strong">Strong · smooth + simplify</option></select></label>
+        <section class="controls"><h3>Geometry options</h3><label class="field">Free curves <select id="freehand-close"><option value="open">Open</option><option value="near">Close when ends are near</option><option value="always">Always close</option></select></label>
+          <label class="field">Curve smoothing <select id="correction"><option value="off">Off · exact pointer</option><option value="gentle">Gentle · smooth</option><option value="medium">Medium · smooth + simplify</option><option value="strong">Strong</option><option value="ultra">Ultra-smooth</option></select></label>
           <label class="field">Regular polygon sides <input id="polygon-sides" type="number" min="3" max="100" step="1"></label>
           <label class="field">Snap interval <input id="snap-step" type="number" min="0.000001" max="1000" step="any"></label>
           <label class="check"><input id="snap" type="checkbox"> Snap to grid</label><label class="check"><input id="snap-anchors" type="checkbox"> Snap to existing points</label>
           <label class="check"><input id="grid" type="checkbox"> Show grid</label>
           <label class="check"><input id="axes" type="checkbox"> Show axes</label><label class="check"><input id="labels" type="checkbox"> Show point labels</label>
           <label class="field">Point label placement <select id="label-placement"><option value="standard">Standard · exact legacy position</option><option value="avoid">Avoid nearby overlaps</option></select></label>
-          <p class="hint">In Move mode, Ctrl-click (Command-click on macOS) cycles overlapping objects. Shift-drag pans. Automatic label placement changes visual positions only; it never hides or edits mathematical text.</p>
+          
         </section>
         <section class="controls"><h3>New object style</h3>
           <div class="colorrow"><label>Stroke <input id="default-stroke" type="color"></label><label>Fill <input id="default-fill" type="color"></label></div>
@@ -62,10 +62,10 @@
         </section>
         <section class="controls"><h3>Page & appearance</h3>
           <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4 landscape frame</option><option value="letter">Letter landscape frame</option></select></label>
-          <label class="field">Export area <select id="export-region"><option value="viewport">Current viewport</option><option value="page">Page frame only</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Include grid and axes in image exports</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent SVG / PNG / WebP (JPEG unavailable)</label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2× · default</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Background <input id="background" type="color"></label>
+          <label class="field">Export area <select id="export-region"><option value="viewport">Current viewport</option><option value="page">Page frame only</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Include grid and axes in image exports</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent background <span class="mini-help" title="Transparency is supported in SVG, PNG and WebP, not JPEG.">?</span></label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2× · default</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Background <input id="background" type="color"></label>
           <label class="field">Theme <select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
         </section>
-        <section class="controls"><h3>Other fields · planned</h3><p class="hint">3D surfaces, Ricci flow models, diagram chasing, Möbius grids, animation timelines, advanced labels and semantic TikZ import/export are not yet implemented. See <a href="tutorial.html#limitations" target="_blank">limitations</a>.</p></section>
+        
       </div>
     </aside>
   </main>
@@ -74,6 +74,8 @@
   <div id="export-backdrop" hidden aria-hidden="true"></div>
   <div id="export-menu" class="export-menu" hidden role="dialog" aria-modal="true" aria-label="Export illustration"><div class="export-heading">Export illustration <button id="export-close" aria-label="Close export options">×</button></div><div id="export-options" class="export-options"></div><p class="hint">Unavailable formats are disabled. SVG/PNG/JPEG/WebP export the selected viewport or page frame without editor guides by default. Transparent export is available in SVG/PNG/WebP; JPEG cannot represent alpha. TikZ and JSON use their own scene semantics.</p></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
+  <script defer src="./vendor/mathjax-tex-svg.js"></script>
   <script type="module" src="./src/app.mjs"></script>
 </body>
 </html>

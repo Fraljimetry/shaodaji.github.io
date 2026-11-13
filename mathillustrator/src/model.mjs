@@ -32,7 +32,7 @@ export function xmlTextSafe(value){
  return true;
 }
 export function clone(x){return JSON.parse(JSON.stringify(x));}
-export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,labelPlacement:'standard',snapAnchors:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
+export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'open',labelPlacement:'standard',snapAnchors:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return doc.objects.find(o=>o.id===id);}
@@ -207,10 +207,17 @@ export function validateDoc(raw){
   if(o.type==='freehand'&&(!Array.isArray(o.path)||o.path.length<2||o.path.length>20000||!o.path.every(safeCoord)))throw Error('Invalid freehand path.');
   if(o.path!==undefined&&o.type!=='freehand')throw Error('Unexpected drawing path.');
   if(['text','node'].includes(o.type)){if(!xmlTextSafe(o.text))throw Error('Text contains characters illegal in SVG XML.');if(o.text.length>(o.type==='text'?2000:1000)||!finite(o.fontSize??18)||o.fontSize<5||o.fontSize>200)throw Error('Invalid text label.');}
+  if(o.pointLabel!==undefined&&(!POINT_LIKE.has(o.type)||typeof o.pointLabel!=='string'||o.pointLabel.length>1000||!xmlTextSafe(o.pointLabel)))throw Error('Invalid point label text.');
+  if(o.pointLabelMode!==undefined&&(!POINT_LIKE.has(o.type)||!['plain','latex'].includes(o.pointLabelMode)))throw Error('Invalid point label mode.');
+  if(o.fontFamily!==undefined&&(!['text','node','morphism'].includes(o.type)||!['Georgia, serif','Arial, sans-serif','Consolas, monospace'].includes(o.fontFamily)))throw Error('Invalid label font.');
+  if(o.textMode!==undefined&&(!['text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.textMode)))throw Error('Invalid mathematical label mode.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
   if(o.type==='morphism'&&(o.text.length>1000||!finite(o.bend??0)||Math.abs(o.bend)>5||o.refs[0]===o.refs[1]))throw Error('Invalid morphism label or bend.');
+  if(o.arrowStyle!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','hook','hook-dashed','twohead','tail'].includes(o.arrowStyle)))throw Error('Invalid diagram arrow style.');
+  if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
+  if(o.closed!==undefined&&(o.type!=='freehand'||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
   if(o.swap!==undefined&&(o.type!=='morphism'||typeof o.swap!=='boolean'))throw Error('Invalid morphism label-side flag.');
   if(o.routing!==undefined&&(o.type!=='morphism'||!['direct','avoid','avoid-crossings','scene-crossings'].includes(o.routing)))throw Error('Invalid morphism routing mode.');
   if(o.labelAvoid!==undefined&&(o.type!=='morphism'||typeof o.labelAvoid!=='boolean'))throw Error('Invalid morphism label avoidance flag.');
@@ -222,9 +229,11 @@ export function validateDoc(raw){
  if(!Number.isFinite(max)||d.nextId<=max)throw Error('Invalid nextId counter.');
  if(!HEX.test(d.settings.background)||!HEX.test(d.settings.stroke)||!HEX.test(d.settings.fill))throw Error('Invalid scene color.');
  if(!finite(d.settings.snapStep)||d.settings.snapStep<1e-6||d.settings.snapStep>1000)throw Error('Snap interval must be between 0.000001 and 1000.');
- if(!['infinite','a4','letter'].includes(d.settings.page)||!['off','gentle','medium','strong'].includes(d.settings.correction)||typeof d.settings.grid!=='boolean'||typeof d.settings.snap!=='boolean'||typeof d.settings.showAxes!=='boolean')throw Error('Invalid document settings.');
+ if(!['infinite','a4','letter'].includes(d.settings.page)||!['off','gentle','medium','strong','ultra'].includes(d.settings.correction)||typeof d.settings.grid!=='boolean'||typeof d.settings.snap!=='boolean'||typeof d.settings.showAxes!=='boolean')throw Error('Invalid document settings.');
  if(!finite(d.settings.width)||d.settings.width<0.1||d.settings.width>100||!finite(d.settings.opacity)||d.settings.opacity<0||d.settings.opacity>1||!finite(d.settings.pointSize)||d.settings.pointSize<1||d.settings.pointSize>100)throw Error('Invalid drawing defaults.');
  // Optional v1 extensions are given defaults when opening older v1 projects.
+ if(d.settings.freehandClose===undefined)d.settings.freehandClose='open';
+ if(!['open','near','always'].includes(d.settings.freehandClose))throw Error('Invalid free curve closure.');
  if(d.settings.plotQuality===undefined)d.settings.plotQuality='balanced';
  if(!['fast','balanced','detailed'].includes(d.settings.plotQuality))throw Error('Plot detail must be Fast, Balanced or Detailed.');
  if(d.settings.polygonSides===undefined)d.settings.polygonSides=6;

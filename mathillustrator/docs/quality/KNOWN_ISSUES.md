@@ -293,3 +293,26 @@ The current editor still renders mathematical labels as plain SVG text; rich TeX
 - **Visual intersection approximation:** the new option counts nontrivial straight-segment overlap and T-junction contact, but does not fully model curved outlines, stroked width, arrowheads or Bézier intersection geometry. Direct curved paths are approximated with a small polyline.
 - **Performance cost:** 16-node/20-arrow isolated Chromium median SVG rebuild was 2.10 ms Direct versus 2.75 ms scene-aware; no frame-rate claim. Capacity warns instead of silently skipping work.
 - **Export/recovery:** native JSON stores only the routing mode, not transient screen paths. SVG/raster captures the current viewport; TikZ visual output is disabled. Page crops may cut detours. Real hosted-site, physical touch/stylus, Firefox/Safari and multi-tab atomicity remain unverified.
+
+
+### UI/drawing pass (2026-11-13) — pending verification
+
+- Recently Deleted is bounded to 20 deletion batches per browser and uses localStorage; it does not follow exported JSON or across devices. Browser-storage failures are reported; Undo remains available during this session. Recovery refuses ID/name collisions and invalid dependencies. Multi-tab trash synchronization is not provided.
+- Partial Chinese translation covers fixed toolbar and several section labels, not all dynamic property forms, dialogs, exports, tutorial, or accessibility strings. Font selection changes UI font only, not mathematical publication fonts.
+- Cubic freehand SVG geometry is not semantically identical to legacy straight-segment TikZ, so TikZ is explicitly disabled on visible freehand objects. Arrow styles beyond solid are not presently round-trip safe in TikZ or `tikz-cd`.
+- Chrome interactive smoke was blocked by local execution policy; no visual/browser-level PASS is asserted. Device/viewport and memory/storage stress testing remain necessary.
+
+
+### Math SVG / localization / layout boundaries (round 2)
+- MathJax is bundled locally (no CDN), but requires a JavaScript/SVG-capable browser; while initializing, math objects show a visible warning rather than silently falling back to literal TeX. Export refuses missing/invalid mathematical glyph conversion. Large numbers of distinct formulas may cost CPU/memory; a bounded LRU limits retained compiled labels.
+- New diagram labels render true TeX math; imported legacy JSON labels are deliberately kept plain to prevent silent visual changes. Latex-only font styles are not configurable via the ordinary text font choice. This is not full arbitrary LaTeX compilation.
+- Diagram arrows are clipped to measured, screen-space TeX node bounds; optional collision avoidance for morphism labels remains approximate, especially for very tall matrices or long formulas.
+- UI/quick guide supports English and Chinese; some runtime warnings, confirmation prompts, historical technical references and accessibility text remain English, with follow-up translation planned.
+- Mobile browser, standalone exported SVG in all target software, complex/multilingual TeX fonts and real hosted GitHub Pages caching are not yet end-to-end verified.
+
+
+### Additional round-2 regressions and remaining risks
+- **FIXED:** Cloned MathJax local-font SVG definitions reused IDs for repeated formulas. Every math-label render now namespaces its own glyph definitions and references; exported SVG was checked for unique IDs.
+- **FIXED:** Very long tool instructions could visibly overflow the canvas toolbar. The current mode is a compact name plus `?`; detailed help is available on hover/focus, and switching language updates the name without canceling an in-progress construction.
+- **TEST ADAPTATION:** Five old archived Chromium UI scripts assert retired preset access or Point remaining selected after a tap. They are preserved in the immutable archive and transparently excluded by the staged runner; current touch/mobile suites replace the changed assumptions, but the old inventory test's full breadth is not reimplemented as a single replacement test.
+- **PERFORMANCE:** One isolated 64-repeated-formula scene took 50.4 ms for SVG rebuild, above a 60-FPS per-frame budget. Mathematical labels are vector paths, not free. Dense diagrams still need profiling and optimization; no automatic degradation or silent fallback is allowed.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "release": "0.26.0",
-  "updated": "2026-11-12",
+  "updated": "2026-11-13",
   "status_vocabulary": [
     "implemented",
     "partial",
@@ -49,9 +49,9 @@
     },
     {
       "id": "SETTINGS-PRESETS",
-      "name": "6 preset workspaces and editable settings",
+      "name": "General/all-toolkit default and editable settings",
       "status": "partial",
-      "limitation": "Cut11 adds Plot detail (Fast, Balanced, Detailed), with Analysis / plots preset selecting Detailed and legacy v1 defaulting Balanced. Workspaces remain customizable but not user-named."
+      "limitation": "Legacy preset recipes remain readable internally for compatibility but the Drawing preset selector is intentionally hidden. All four toolkits are visible by default and may be toggled independently; settings and panel layout can be customized."
     },
     {
       "id": "CORE-UNDO",
@@ -319,7 +319,7 @@
       "name": "Boundary-aware semantic morphism display",
       "status": "partial",
       "component": "src/diagram_layout.mjs",
-      "limitation": "Approximate font metrics; overlapping boxes can suppress visible arrow without deleting graph relation."
+      "limitation": "Math-mode diagram nodes use MathJax SVG glyph measurements and legacy plain-text nodes use approximate font metrics. Overlapping boxes can still suppress some arrows; neither mode guarantees globally collision-free routing."
     },
     {
       "id": "PLOT-CACHE-10",
@@ -340,7 +340,7 @@
       "name": "Multiline screen-space semantic node labels",
       "status": "partial",
       "component": "src/diagram_layout.mjs",
-      "limitation": "Wraps labels without deleting semantic text, supports explicit newlines and matches arrow node-box measurements; font widths are approximate, not actual font/TeX layout. TikZ geometric export is disabled when auto-wrapped."
+      "limitation": "Legacy plain-text diagram node labels keep multiline SVG text and approximated widths; opt-in math-mode labels use measured offline MathJax SVG glyph bounds. Very complex or unusually tall expressions still need manual layout."
     },
     {
       "id": "UI-FIT-LABELS",
@@ -358,10 +358,10 @@
     },
     {
       "id": "UI-SETTINGS-CUT13",
-      "name": "Preset state, keyboard deletion safety and right-panel undo",
+      "name": "Editable settings, deletion safety and undo",
       "status": "partial",
       "component": "src/app.mjs",
-      "limitation": "Single-tab isolated Chromium tested. Presets control drawing/toolkit defaults only; advanced toolbar, IME, screen readers and real touch remain unverified."
+      "limitation": "The old preset selector is hidden, replaced by General/all-toolkit behavior and individual settings. Mobile, screen-reader and real multi-tab testing are incomplete."
     },
     {
       "id": "DATA-LEGACY-POINTSIZE-CUT13",
@@ -500,6 +500,34 @@
       "status": "partial",
       "component": "src/diagram_global_routing.mjs",
       "limitation": "No global optimality; at most 48 drawable arrows and two passes. Collinear/T contact checked; Bézier/stroke/arrowheads approximate. Older modes frozen. Capacity and remaining crossings warned. TikZ visual disabled; JSON v1 preserves mode."
+    },
+    {
+      "id": "UI-LATEX-SVG",
+      "name": "Offline SVG mathematical labels",
+      "status": "partial",
+      "component": "src/math_labels.mjs",
+      "limitation": "Default for newly drawn diagram nodes and labeled morphisms, and imported tikz-cd labels; opt-in for ordinary text and point display labels. Actual MathJax vector glyph geometry is embedded in SVG/PNG. Legacy labels remain plain. Complex TeX packages, unrestricted macros and some CJK glyphs are not supported."
+    },
+    {
+      "id": "UI-EN-ZH",
+      "name": "English/Chinese interface localization",
+      "status": "partial",
+      "component": "src/i18n.mjs",
+      "limitation": "Most fixed controls, headings, tooltips and Properties fields have translation; some dynamic runtime notices, confirmation dialogs and accessibility labels remain English."
+    },
+    {
+      "id": "UI-LABEL-FONT",
+      "name": "Editable ordinary text label fonts",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Plain text objects and node labels permit serif/sans/monospace and font-size changes. Mathematical LaTeX glyphs use the bundled MathJax font. Browser font parity is not certified."
+    },
+    {
+      "id": "UI-RESTORE-DELETE",
+      "name": "Recently Deleted with bounded restore",
+      "status": "partial",
+      "component": "src/app.mjs",
+      "limitation": "Local browser list retains at most 20 deletion batches. Recovery refuses conflicting IDs/names, and the list is not exported with the project or synchronized between tabs."
     }
   ]
 }

@@ -1,7 +1,9 @@
 import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs';
-import {smoothPath,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs';
+import {smoothCurveSvg,smoothPath,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
+import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
+import {localizeUI,translated} from './i18n.mjs';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
@@ -20,8 +22,9 @@ glyph.line='<path d="M2 22L22 2"/><path d="M4 4L20 20"/>';glyph.ellipse='<ellips
 const toolGroups={'basic-tools':[['select','Move'],['pan','Pan'],['point','Point']], 'construction-tools':[['segment','Segment'],['arrow','Arrow'],['line','Infinite line'],['circle','Circle'],['ellipse','Ellipse'],['rectangle','Rectangle'],['polygon','Polygon'],['polyline','Polyline'],['bezier','Bézier'],['angle','Angle'],['regularPolygon','Regular polygon']], 'illustration-tools':[['freehand','Free curve'],['text','Text']], 'diagram-tools':[['node','Diagram node'],['morphism','Morphism']]};
 const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null;
 let currentMorphismLabels=new Map();
-let doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
-const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1';
+let trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
+const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1',TRASH='mathillustrator-trash-v1';
+let uiPrefs={language:'en',font:'system',autoMove:true,sections:[]};
 function notice(msg){const e=$('toast');e.textContent=msg;e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
@@ -80,7 +83,7 @@ function refreshAfterMutation(forceProperties=false){
  if(pendingPropertiesFrame)cancelAnimationFrame(pendingPropertiesFrame);
  pendingPropertiesFrame=requestAnimationFrame(()=>{
   pendingPropertiesFrame=0;
-  if(forceProperties||!$('properties').contains(document.activeElement))renderProperties();
+  if(forceProperties||!$('properties').contains(document.activeElement)){renderProperties();localizeUI($('properties'),uiPrefs.language);}
  });
 }
 function update(mutator,{refreshList=true,renderCanvas=true}={}){
@@ -142,6 +145,19 @@ function textOutside(x,y,text,fontSize){
  const bottom=y+fontSize*(lines.length-1)*1.4+fontSize;
  return bboxOutsideViewport([[x-fontSize,top],[right,bottom]],size.w,size.h,40);
 }
+function labelBox(o){
+ if(o?.textMode==='latex'&&mathReady()){
+  try{const m=mathMetrics(o.text,o.fontSize||17);return {width:Math.max(12,m.width+16),height:Math.max(18,m.height+12),lines:[o.text],lineHeight:m.height};}
+  catch{ return {width:140,height:40,lines:[o.text],lineHeight:20}; }
+ }
+ return nodeBox(o.text,o.fontSize);
+}
+function latexDisplay(o,x,y,fontSize,{anchor='start',vertical='baseline',color=o.style.stroke,opacity=o.style.opacity,exporting=false}={}){
+ if(o.textMode!=='latex')return null;
+ try{return renderLatexSvg(o.text,x,y,fontSize,{anchor,vertical,color,opacity});}
+ catch(error){if(exporting)throw Error('Cannot export LaTeX label "'+o.name+'": '+error.message);
+  return el('text',{x,y,fill:'#b45309','font-size':12,'pointer-events':'none'},'⚠ TeX');}
+}
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
  if(o.hidden||o.style?.opacity===0)return;
  const isSel=selected===o.id&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
@@ -158,11 +174,14 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  if(o.type==='point'||o.type==='midpoint'){
   const pt=resolver.at(o.id);if(!pt)return;const [x,y]=project(pt);
   const radius=Number(o.style.pointSize??doc.settings.pointSize)||5;
-  const reach=doc.settings.showLabels?Math.max(50,(o.name||'').length*14+18):0;
+  const displayedLabel=o.pointLabel||o.name;
+  const reach=doc.settings.showLabels?Math.max(50,displayedLabel.length*14+18):0;
   // Offscreen point culling preserves visible labels that reach into the frame.
   if(x < -radius-reach || x > size.w+radius || y < -radius-22 || y > size.h+radius+22)return;
   item=el('circle',{cx:x,cy:y,r:radius,stroke:isSel?'#7e66df':o.style.stroke,fill:o.style.stroke,'stroke-width':1,opacity:sty.opacity});
-  if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},o.name));}
+  if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;
+   if(o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
+   else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
  }else if(['segment','arrow','line'].includes(o.type)&&coords?.length===2){
   let [a,b]=coords;if(o.type==='line'){
    const clipped=clipInfiniteLine(a,b,size.w,size.h);
@@ -185,22 +204,25 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean)){const vertices=regularPolygonVertices(p[0],p[1],o.sides).map(project);if(bboxOutsideViewport(vertices,size.w,size.h,cullMargin))return;if(vertices.length)item=mk('polygon',{points:vertices.map(q=>q.join(',')).join(' '),'fill-opacity':.24});
  }else if(o.type==='bezier'&&coords?.length===4){item=mk('path',{d:`M${coords[0].join(' ')} C${coords[1].join(' ')},${coords[2].join(' ')},${coords[3].join(' ')}`,fill:'none'});
  }else if(o.type==='angle'&&coords?.length===3){const [a,b,c]=coords,r=26,theta1=Math.atan2(a[1]-b[1],a[0]-b[0]),theta2=Math.atan2(c[1]-b[1],c[0]-b[0]);let delta=(theta2-theta1+Math.PI*2)%(Math.PI*2);if(delta>Math.PI)delta-=2*Math.PI;const start=[b[0]+r*Math.cos(theta1),b[1]+r*Math.sin(theta1)],end=[b[0]+r*Math.cos(theta1+delta),b[1]+r*Math.sin(theta1+delta)];item=mk('path',{d:`M${start.join(' ')} A${r} ${r} 0 0 ${delta>0?1:0} ${end.join(' ')}`,fill:'none'});
- }else if(o.type==='freehand'&&o.path?.length>1){const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;item=mk('polyline',{points:pathCoords.map(q=>q.join(',')).join(' '),fill:'none','stroke-linejoin':'round','stroke-linecap':'round'});
+ }else if(o.type==='freehand'&&o.path?.length>1){const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;item=mk('path',{d:smoothCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-linecap':'round'});
  }else if(o.type==='text'){const [x,y]=project(o.xy),fontSize=o.fontSize||18;if(textOutside(x,y,o.text,fontSize))return;
-  item=el('text',{'xml:space':'preserve',x,y,'font-size':fontSize,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity});
-  appendTextLines(item,o.text,x,y,fontSize);
+  if(o.textMode==='latex'){item=latexDisplay(o,x,y,fontSize,{exporting});if(!exporting)item.setAttribute('pointer-events','visiblePainted');}
+  else{item=el('text',{'xml:space':'preserve',x,y,'font-size':fontSize,'font-family':o.fontFamily||'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity});
+   appendTextLines(item,o.text,x,y,fontSize);}
  }else if(o.type==='node'){
-  const [x,y]=project(o.xy),{width,height,lines,lineHeight}=layoutNodeLabel(o.text,o.fontSize||17);
+  const [x,y]=project(o.xy),{width,height,lines,lineHeight}=o.textMode==='latex'?labelBox(o):layoutNodeLabel(o.text,o.fontSize||17);
   if(bboxOutsideViewport([[x-width/2,y-height/2],[x+width/2,y+height/2]],size.w,size.h,cullMargin))return;
-  item=el('g',{'data-id':o.id});item.append(el('rect',{x:x-width/2,y:y-height/2,width,height,rx:7,stroke:sty.stroke,'stroke-width':sty['stroke-width'],fill:sty.fill,'fill-opacity':.18,opacity:sty.opacity}));
-  const label=el('text',{'xml:space':'preserve','text-anchor':'middle','font-size':o.fontSize||17,'font-family':'Georgia, serif',fill:sty.stroke,opacity:sty.opacity,'pointer-events':'none'});
-  const startY=y-(lines.length-1)*lineHeight/2+(o.fontSize||17)*.32;
-  lines.forEach((line,i)=>label.append(el('tspan',{x,y:startY+i*lineHeight},line||'\u00a0')));
-  item.append(label);
+  item=el('g',{'data-id':o.id});
+  if(o.nodeBorder)item.append(el('rect',{x:x-width/2,y:y-height/2,width,height,rx:7,stroke:sty.stroke,'stroke-width':sty['stroke-width'],fill:sty.fill,'fill-opacity':.18,opacity:sty.opacity}));
+  else if(!exporting)item.append(el('rect',{x:x-width/2,y:y-height/2,width,height,fill:'transparent','pointer-events':'all','data-id':o.id,'aria-label':'Select diagram node'}));
+  if(o.textMode==='latex')item.append(latexDisplay(o,x,y,o.fontSize||17,{anchor:'middle',vertical:'middle',exporting}));
+  else{const label=el('text',{'xml:space':'preserve','text-anchor':'middle','font-size':o.fontSize||17,'font-family':o.fontFamily||'Georgia, serif',fill:sty.stroke,opacity:sty.opacity,'pointer-events':'none'});
+   const startY=y-(lines.length-1)*lineHeight/2+(o.fontSize||17)*.32;
+   lines.forEach((line,i)=>label.append(el('tspan',{x,y:startY+i*lineHeight},line||'\u00a0')));item.append(label);}
  }else if(o.type==='morphism'&&coords?.length===2){
   const fromNode=resolver.object(o.refs[0]),toNode=resolver.object(o.refs[1]);
   if(!fromNode||!toNode||fromNode.hidden||toNode.hidden||fromNode.style.opacity===0||toNode.style.opacity===0)return;
-  const fromBox=nodeBox(fromNode.text,fromNode.fontSize),toBox=nodeBox(toNode.text,toNode.fontSize);
+  const fromBox=labelBox(fromNode),toBox=labelBox(toNode);
   const auto=['avoid','avoid-crossings','scene-crossings'].includes(o.routing);
   const route=morphismRoutes?.get(o.id);
   if(!route)return; // Route was validated and frozen for this render in document order.
@@ -218,15 +240,21 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
     route.status==='crossing'?'Some arrow crossings remain after the bounded candidate search.':
     'Automatic routing could not find a clear two-turn path around diagram nodes.';
    item.append(el('title',{},reason+' Dashed amber means unresolved.'));}
+  if(['dashed','hook-dashed'].includes(o.arrowStyle))path.setAttribute('stroke-dasharray','7 5');
+  if(o.arrowStyle==='dotted')path.setAttribute('stroke-dasharray','2 5');
   item.append(path);
+  if(['hook','hook-dashed'].includes(o.arrowStyle)){const from=auto?route.points[1]:curve.control;const len=Math.hypot(from[0]-a[0],from[1]-a[1]);if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;item.append(mk('path',{d:`M${a[0]-uy*7} ${a[1]+ux*7} Q${a[0]-ux*6-uy*8} ${a[1]-uy*6+ux*8} ${a[0]-ux*6} ${a[1]-uy*6}`,fill:'none'}));}}
+  if(o.arrowStyle==='tail'){const from=auto?route.points[1]:curve.control;const len=Math.hypot(from[0]-a[0],from[1]-a[1]);if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;item.append(mk('line',{x1:a[0]-uy*6,y1:a[1]+ux*6,x2:a[0]+uy*6,y2:a[1]-ux*6}));}}
+  if(o.arrowStyle==='twohead'){const first=arrowHeadPoints(a,auto?route.points[1]:curve.control,o.style.width);if(first.length)item.append(el('polygon',{points:first.map(q=>q.join(',')).join(' '),fill:o.style.stroke,'pointer-events':'none'}));}
   if(head.length)item.append(el('polygon',{class:'arrowhead',points:head.map(q=>q.join(',')).join(' '),fill:blocked?'#b45309':o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));
   if(o.text){const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
    const pos=auto?labelOnPolyline(route.points,t,distance,!!o.swap,dx,dy):labelOnQuadratic(a,curve.control,b,t,distance,!!o.swap,dx,dy);
    if(pos){const placed=morphismLabels?.get(o.id),[lx,ly]=placed?[placed.x,placed.y]:pos;
     if(placed?.status==='crowded'){item.setAttribute('data-label-collision','unresolved');
      item.append(el('title',{},'Label collision remains: no clear location among the supported candidates. Adjust the label manually.'));}
-    const label=el('text',{'xml:space':'preserve',x:lx,y:ly,'font-size':15,'font-family':'Georgia, serif','text-anchor':'middle',fill:placed?.status==='crowded'?'#b45309':o.style.stroke,'paint-order':'stroke','stroke':exporting&&doc.settings.exportTransparent?'none':doc.settings.background,'stroke-width':4,opacity:sty.opacity});
-    appendTextLines(label,o.text,lx,ly,15,{centered:true});item.append(label);
+    if(o.textMode==='latex')item.append(latexDisplay(o,lx,ly,15,{anchor:'middle',color:placed?.status==='crowded'?'#b45309':o.style.stroke,exporting}));
+    else{const label=el('text',{'xml:space':'preserve',x:lx,y:ly,'font-size':15,'font-family':o.fontFamily||'Georgia, serif','text-anchor':'middle',fill:placed?.status==='crowded'?'#b45309':o.style.stroke,'paint-order':'stroke','stroke':exporting&&doc.settings.exportTransparent?'none':doc.settings.background,'stroke-width':4,opacity:sty.opacity});
+     appendTextLines(label,o.text,lx,ly,15,{centered:true});item.append(label);}
     // Editing-only handle: never exported and never part of the semantic graph.
     // The root SVG captures the pointer, so a redraw cannot orphan the gesture.
     if(isSel&&!o.locked&&tool==='select'){
@@ -271,7 +299,7 @@ function draw(svg,{exporting=false}={}){
   diagramBoxes=new Map();for(const node of doc.objects){
    if(node.type!=='node'||node.hidden||node.style?.opacity===0)continue;
    const center=resolver.at(node.id);if(!center)continue;
-   diagramBoxes.set(node.id,boxRect(project(center),nodeBox(node.text,node.fontSize)));
+   diagramBoxes.set(node.id,boxRect(project(center),labelBox(node)));
   }
  }
  // Cut24: calculate routes ONCE in stable document order. Crossing reduction
@@ -284,7 +312,7 @@ function draw(svg,{exporting=false}={}){
   const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
   if(!from||!to||from.hidden||to.hidden||from.style?.opacity===0||to.style?.opacity===0)continue;
   const p=resolver.points(o);if(!p.every(Boolean))continue;
-  const a=project(p[0]),b=project(p[1]),fb=nodeBox(from.text,from.fontSize),tb=nodeBox(to.text,to.fontSize);
+  const a=project(p[0]),b=project(p[1]),fb=labelBox(from),tb=labelBox(to);
   const mode=o.routing||'direct';
   const obstacles=mode!=='direct'&&diagramBoxes?[...diagramBoxes].filter(([id])=>!o.refs.includes(id)).map(([,rect])=>rect):[];
   const route=routeDiagramEdge(a,b,fb,tb,obstacles,mode==='scene-crossings'?'avoid':mode,mode==='avoid-crossings'?earlierArrowPaths:[]);
@@ -313,13 +341,13 @@ function draw(svg,{exporting=false}={}){
  if(doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid)){
   const nodeRects=[],nodeRectById=new Map(),entries=[];
   for(const o of doc.objects){if(o.type!=='node'||o.hidden||o.style?.opacity===0)continue;
-   const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),nodeBox(o.text,o.fontSize));nodeRects.push(r);nodeRectById.set(o.id,r);}
+   const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),labelBox(o));nodeRects.push(r);nodeRectById.set(o.id,r);}
   }
   for(const o of doc.objects){if(o.type!=='morphism'||o.hidden||o.style?.opacity===0||!o.text)continue;
    const p=resolver.points(o);if(!p.every(Boolean))continue;
    const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
    if(!from||!to||from.hidden||to.hidden||from.style.opacity===0||to.style.opacity===0)continue;
-   const a=project(p[0]),b=project(p[1]),fb=nodeBox(from.text,from.fontSize),tb=nodeBox(to.text,to.fontSize);
+   const a=project(p[0]),b=project(p[1]),fb=labelBox(from),tb=labelBox(to);
    const auto=['avoid','avoid-crossings','scene-crossings'].includes(o.routing);
    const route=morphismRoutes.get(o.id);if(!route?.points.length)continue;
    const begin=route.points[0],finish=route.points.at(-1),curve=auto?null:arrowCurve(begin,finish,o.bend||0);
@@ -339,7 +367,7 @@ function draw(svg,{exporting=false}={}){
    for(const o of doc.objects){if(!['point','midpoint'].includes(o.type)||o.hidden||o.style?.opacity===0)continue;
     const p=resolver.at(o.id);if(!p)continue;const [x,y]=project(p);
     if(x < -100||x > size.w+100||y < -100||y > size.h+100)continue;
-    entries.push({id:o.id,x,y,text:o.name});
+    entries.push({id:o.id,x,y,text:o.pointLabel||o.name});
    }
    return layoutPointLabels(entries,size.w,size.h);
   };
@@ -427,7 +455,7 @@ function focusListIndex(index){
 }
 function field(parent,label,value,type,onChange,opts={}){const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');wrap.textContent=label;const input=document.createElement(type==='multiline'?'textarea':'input');if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}input.value=String(value??'');if(opts.step)input.step=opts.step;if(opts.min!==undefined)input.min=opts.min;if(opts.max!==undefined)input.max=opts.max;let accepted=input.value;input.onchange=()=>{if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}const next=input.value;if(onChange(type==='number'?Number(next):next)===false)input.value=accepted;else accepted=next;};wrap.append(input);parent.append(wrap);return input;}
 function renderProperties(){
- const root=$('properties');root.replaceChildren();const h=document.createElement('h3');h.textContent='Properties';root.append(h);const o=get(doc,selected);
+ const root=$('properties');root.replaceChildren();const o=get(doc,selected);
  if(!o){const p=document.createElement('p');p.className='subtle';p.textContent='Select an object to edit its style, labels, coordinates or dependencies.';root.append(p);return;}
  if(o.locked){const p=document.createElement('p');p.className='hint';p.textContent='Locked: unlock with the lock icon in the object list before editing.';root.append(p);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
@@ -439,16 +467,33 @@ function renderProperties(){
   fn(live);
  });
  field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+ if(['point','midpoint'].includes(o.type)){
+  const mode=document.createElement('label');mode.className='field';mode.textContent='Point label format';const modeSelect=document.createElement('select');
+  for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
+  modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.pointLabel||live.name);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
+  field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex')validateLatexInput(v||live.name);live.pointLabel=v;}));
+ }
  if(['point','node','text'].includes(o.type)){
   const coords=document.createElement('div');coords.className='twocol';for(let i=0;i<2;i++){
    const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='number';input.step='any';input.value=String(o.xy[i]);
    input.onchange=()=>{const ok=edit(live=>{if(!input.value.trim())throw Error('Coordinate is required.');const v=Number(input.value);if(!finite(v))throw Error('Invalid coordinate.');const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});if(!ok)input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);};l.append(input);coords.append(l);
   }root.append(coords);
  }
- if(['text','node','morphism'].includes(o.type)){field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>live.text=v));const tip=document.createElement('p');tip.className='hint';tip.textContent='Enter inserts a line break. Click outside to apply; SVG preserves spaces and line breaks where supported.';root.append(tip);}
+ if(['text','node','morphism'].includes(o.type)){
+  const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
+  for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
+  modeSelect.value=o.textMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.text);live.textMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
+  field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>{if(live.textMode==='latex')validateLatexInput(v);live.text=v;}));const tip=document.createElement('p');tip.className='hint';tip.textContent='Enter inserts a line break. Click outside to apply; SVG preserves spaces and line breaks where supported.';tip.title=tip.textContent;tip.textContent='';tip.className='mini-help';tip.textContent='?';root.append(tip);}
+ if(['text','node','morphism'].includes(o.type)&&o.textMode!=='latex'){
+  const family=document.createElement('label');family.className='field';family.textContent='Font';const pick=document.createElement('select');
+  for(const [value,label] of [['Georgia, serif','Serif'],['Arial, sans-serif','Sans-serif'],['Consolas, monospace','Monospace']]){const option=document.createElement('option');option.value=value;option.textContent=label;pick.append(option);}
+  pick.value=o.fontFamily||(['text'].includes(o.type)?'Arial, sans-serif':'Georgia, serif');pick.onchange=()=>edit(live=>live.fontFamily=pick.value);family.append(pick);root.append(family);
+ }
  if(['text','node'].includes(o.type))field(root,'Font size',o.fontSize||18,'number',v=>edit(live=>{if(!finite(v)||v<5||v>200)throw Error('Font size must be 5–200.');live.fontSize=v;}),{min:5,max:200,step:1});
+ if(o.type==='node'){const border=document.createElement('label');border.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
  if(o.type==='morphism'){
-  const warning=document.createElement('p');warning.className='hint';warning.textContent='When node boxes overlap, the arrow may be suppressed. With Move selected, click the arrow label in the canvas to select it, then drag its purple handle to reposition the label. The shift is undoable.';root.append(warning);
+  const arrowLabel=document.createElement('label');arrowLabel.className='field';arrowLabel.textContent='Arrow style';const arrowChoice=document.createElement('select');for(const [value,label] of [['solid','→ Solid'],['dashed','Dashed'],['dotted','Dotted'],['hook','Hooked'],['hook-dashed','Hooked dashed'],['twohead','Two heads'],['tail','Tail bar']]){const option=document.createElement('option');option.value=value;option.textContent=label;arrowChoice.append(option);}arrowChoice.value=o.arrowStyle||'solid';arrowChoice.onchange=()=>edit(live=>live.arrowStyle=arrowChoice.value);arrowLabel.append(arrowChoice);root.append(arrowLabel);
+  const warning=document.createElement('p');warning.className='hint';warning.textContent='When node boxes overlap, the arrow may be suppressed. With Move selected, click the arrow label in the canvas to select it, then drag its purple handle to reposition the label. The shift is undoable.';warning.title=warning.textContent;warning.textContent='?';warning.className='mini-help';root.append(warning);
   field(root,'Curve / bend',o.bend||0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>5)throw Error('Bend range: −5 to 5.');live.bend=v;}),{min:-5,max:5,step:.1});
   const routeRow=document.createElement('label');routeRow.className='field routing-field';routeRow.textContent='Arrow routing';
   const routeSelect=document.createElement('select');routeSelect.id='morphism-routing';
@@ -457,24 +502,24 @@ function renderProperties(){
   }
   routeSelect.value=o.routing||'direct';routeSelect.onchange=()=>edit(live=>{live.routing=routeSelect.value;});
   routeRow.append(routeSelect);root.append(routeRow);
-  const routeHint=document.createElement('p');routeHint.className='hint';routeHint.textContent='Avoid routes around visible diagram nodes. Reduce earlier crossings uses document order. Consider all arrows also revisits later visible edges (48-arrow cap, two bounded passes). All options are best-effort screen-space attempts; bend is ignored. Unsolved crossings or safety limits show dashed amber. No globally optimal or crossing-free guarantee.';root.append(routeHint);
+  const routeHint=document.createElement('p');routeHint.className='hint';routeHint.textContent='Avoid routes around visible diagram nodes. Reduce earlier crossings uses document order. Consider all arrows also revisits later visible edges (48-arrow cap, two bounded passes). All options are best-effort screen-space attempts; bend is ignored. Unsolved crossings or safety limits show dashed amber. No globally optimal or crossing-free guarantee.';routeHint.title=routeHint.textContent;routeHint.textContent='?';routeHint.className='mini-help';root.append(routeHint);
   const collisionRow=document.createElement('label');collisionRow.className='check';
   const collisionCheck=document.createElement('input');collisionCheck.type='checkbox';collisionCheck.id='morphism-label-avoid';
   collisionCheck.checked=!!o.labelAvoid;collisionCheck.onchange=()=>edit(live=>{live.labelAvoid=collisionCheck.checked;});
-  collisionRow.append(collisionCheck,document.createTextNode(' Avoid nearby nodes / labels (best effort)'));root.append(collisionRow);
+  collisionRow.append(collisionCheck,document.createTextNode(' Avoid collisions'));root.append(collisionRow);
   const collisionHint=document.createElement('p');collisionHint.className='hint';
-  collisionHint.textContent='Optional screen-space placement: keeps the exact label and arrow references; may not resolve every collision. Dragging the label switches that arrow to manual positioning. Auto placement is not represented by TikZ.';root.append(collisionHint);
+  collisionHint.textContent='Optional screen-space placement: keeps the exact label and arrow references; may not resolve every collision. Dragging the label switches that arrow to manual positioning. Auto placement is not represented by TikZ.';collisionHint.title=collisionHint.textContent;collisionHint.textContent='?';collisionHint.className='mini-help';root.append(collisionHint);
   field(root,'Label position on arrow (0.05–0.95)',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
   field(root,'Label distance (px)',o.labelDistance??17,'number',v=>edit(live=>{if(!finite(v)||v<0||v>200)throw Error('Label distance must be 0–200 px.');live.labelDistance=v;}),{min:0,max:200,step:1});
   field(root,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
   field(root,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
   const side=document.createElement('label');side.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;cb.onchange=()=>edit(live=>live.swap=cb.checked);side.append(cb,document.createTextNode(' Swap label side'));root.append(side);
  }
- if(o.type==='function'){const warn=document.createElement('p');warn.className='hint';warn.textContent='Approximate sampling: thin spikes, poles or fine oscillations may be unresolved. Plot detail is adjustable on the right.';root.append(warn);}
+ if(o.type==='function'){const warn=document.createElement('span');warn.className='mini-help';warn.textContent='?';warn.title='Sampling may miss thin spikes, poles, or rapid oscillations. Adjust plot detail in the tools panel.';root.append(warn);}
  if(o.type==='function')field(root,'y(x) =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');live.sides=v;}),{step:1,min:3,max:100});
- if(o.refs){const hint=document.createElement('p');hint.className='hint';hint.textContent='Live references: '+o.refs.map(id=>get(doc,id)?.name||'?').join(' → ')+'. Select an anchor in the object list to move it.';root.append(hint);}
- if(o.type==='freehand'){const hint=document.createElement('p');hint.className='hint';hint.textContent=`${o.path.length} path vertices. Individual vertices are not yet editable.`;root.append(hint);}
+ if(o.refs){const hint=document.createElement('span');hint.className='mini-help';hint.textContent='?';hint.title='Live references: '+o.refs.map(id=>get(doc,id)?.name||'?').join(' → ')+'. Select anchors in the object list to move them.';root.append(hint);}
+ if(o.type==='freehand'){const hint=document.createElement('p');hint.className='hint';hint.textContent=`${o.path.length} path vertices. Individual vertices are not yet editable.`;hint.title=hint.textContent;hint.textContent='?';hint.className='mini-help';root.append(hint);}
  field(root,'Stroke',o.style.stroke,'color',v=>edit(live=>live.style.stroke=v));
  if(['polygon','regularPolygon','ellipse','rectangle','node'].includes(o.type))field(root,'Fill',o.style.fill,'color',v=>edit(live=>live.style.fill=v));
  if(['point','midpoint'].includes(o.type))field(root,'Point radius',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point radius must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
@@ -487,20 +532,26 @@ function renderProperties(){
  const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=['point','midpoint','node'].includes(live.type)?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
  actions.append(del,up,down,focus);root.append(actions);
 }
-function renderAll(){renderList();renderProperties();render();syncSettings();}
-function select(id){selected=id;renderList();renderProperties();scheduleRender();}
+function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
+function select(id){selected=id;renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();}
 function clearDraft(){draftStart=null;draftPoints=[];draftNode=null;hover=null;pendingTouchTap=null;}
+const toolInstructions={select:'Drag objects to edit; Ctrl-click cycles overlapping objects.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click opposite corners.',rectangle:'Click opposite corners.'};
+function updateModeLabel(t){
+ const label=toolGroups['basic-tools'].concat(toolGroups['construction-tools'],toolGroups['illustration-tools'],toolGroups['diagram-tools']).find(([id])=>id===t)?.[1]||t;
+ const localized=translated(label,uiPrefs.language),help=toolInstructions[t]||'Click the canvas.';
+ const mode=$('mode-label');mode.textContent=localized+'  ?';mode.title=help;mode.tabIndex=0;
+ mode.setAttribute('aria-label',localized+': '+help);
+ $('drawing').setAttribute('aria-label','Interactive mathematical drawing canvas · '+localized+': '+help);
+}
 function selectTool(t){
  if(!TOOLS.includes(t))return;
  if(drag)cancelDrag();tool=t;clearDraft();$('drawing').dataset.tool=t;
  document.querySelectorAll('[data-tool-choice]').forEach(b=>{const active=b.dataset.toolChoice===t;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');});
- const instructions={select:'Select · drag points, nodes and arrow-label handles · Ctrl-click cycles overlaps',pan:'Pan · drag the canvas',polygon:'Polygon · click vertices; Enter finishes',polyline:'Polyline · click vertices; Enter finishes',bezier:'Bézier · click 4 controls',angle:'Angle · click 3 points (vertex second)',freehand:'Free curve · drag the pointer',morphism:'Morphism · click source and target nodes',regularPolygon:'Regular polygon · center, then vertex',node:'Diagram node · click the canvas',ellipse:'Ellipse · click opposite corners',rectangle:'Rectangle · click opposite corners'};
- $('mode-label').textContent=instructions[t]||`${t[0].toUpperCase()+t.slice(1)} · click canvas`;
- $('drawing').setAttribute('aria-label','Interactive mathematical drawing canvas · '+$('mode-label').textContent);scheduleRender();
+ updateModeLabel(t);scheduleRender();
 }
 function populateTools(){for(const [root,group]of Object.entries(toolGroups)){for(const [id,label]of group){const b=document.createElement('button');b.className='tool';b.dataset.toolChoice=id;b.title=label;b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${glyph[id]}</svg><span>${label}</span>`;b.onclick=()=>selectTool(id);$(root).append(b);}}selectTool('select');}
 function syncSettings(){
- for(const [id,k]of [['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
  $('export-region').querySelector('option[value="page"]').disabled=doc.settings.page==='infinite';
@@ -523,7 +574,7 @@ function setupSettings(){
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
  preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='standard';});};
  for(const module of ['basic','construction','illustration','diagram'])$('module-'+module).onchange=()=>update(()=>{doc.settings.modules[module]=$('module-'+module).checked;});
- for(const [id,k]of [['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   $(id).onchange=()=>update(()=>{
    const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
    const value=input.type==='checkbox'?input.checked:(input.type==='number'||k==='exportScale')?Number(input.value):input.value;
@@ -644,7 +695,7 @@ function pointerDown(e){
  if(drag)try{$('drawing').setPointerCapture(e.pointerId);}catch{}
 }
 function performConstructionTap(e,pt){
- if(tool==='point'){update(()=>selected=addPoint(doc,pt).id);}
+ if(tool==='point'){const ok=update(()=>selected=addPoint(doc,pt).id);if(ok&&uiPrefs.autoMove)selectTool('select');}
  else if(['segment','arrow','line','circle','ellipse','rectangle','regularPolygon'].includes(tool)){
   if(!draftStart){draftStart=pt;scheduleRender();}else{const a=draftStart;draftStart=null;if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;});else addTwoPoint(tool,a,pt);}
  }else if(['polygon','polyline','bezier','angle'].includes(tool)){
@@ -652,13 +703,13 @@ function performConstructionTap(e,pt){
   if((tool==='bezier'&&draftPoints.length===4)||(tool==='angle'&&draftPoints.length===3))finishDraft();else scheduleRender();
  }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world]};}
  else if(tool==='text'||tool==='node'){
-  const label=window.prompt(tool==='node'?'Diagram node label (plain text or TeX source):':'Text label (plain text):');
-  if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else update(()=>selected=append(doc,{type:tool,xy:pt,text:label,fontSize:tool==='node'?17:18}).id);}
+  const label=window.prompt(tool==='node'?'Diagram node label (TeX source or text):':'Text label (plain text):');
+  if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else update(()=>{if(tool==='node')validateLatexInput(label);selected=append(doc,{type:tool,xy:pt,text:label,textMode:tool==='node'?'latex':'plain',fontSize:tool==='node'?17:18}).id;});}
  }else if(tool==='morphism'){
   const id=e.target.closest('[data-id]')?.dataset.id,node=get(doc,id);
   if(node?.type!=='node'){notice('Choose a diagram node.');return;}
   if(!draftNode){draftNode=id;draftStart=node.xy;scheduleRender();}
-  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Arrow label (plain text or TeX source):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>selected=append(doc,{type:'morphism',refs:[start,id],text:label,bend:0,swap:false}).id);}}}
+  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Arrow label (TeX source or text):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:label.trim()?'latex':'plain',bend:0,swap:false}).id;});}}}
  }
 }
 function pointerMove(e){
@@ -752,7 +803,7 @@ function pointerUp(e){
    if(Math.hypot(last[0]-released[0],last[1]-released[1])>1e-10)completed.path.push(released);
   }
   const path=correctedPath(completed.path);
-  if(path.length>=2&&Math.hypot(path[0][0]-path.at(-1)[0],path[0][1]-path.at(-1)[1])>0.01)update(()=>selected=append(doc,{type:'freehand',path}).id);
+  if(path.length>=2){const mode=doc.settings.freehandClose||'open';const distance=Math.hypot(path[0][0]-path.at(-1)[0],path[0][1]-path.at(-1)[1]);const closed=mode==='always'||(mode==='near'&&distance<12/view.scale);if(distance>0.01||closed)update(()=>selected=append(doc,{type:'freehand',path,closed}).id);}
  }
  scheduleRender();
 }
@@ -766,10 +817,38 @@ function fit(){
 }
 function deleteSelected(){
  if(!selected)return;
- const id=selected;update(()=>{
-  const targets=affected(doc,id);if([...targets].some(id=>get(doc,id)?.locked))throw Error('Cannot delete a locked object or its locked dependent. Unlock first.');
-  const count=remove(doc,id);selected=null;notice(`Deleted ${count} object${count===1?'':'s'} including dependents.`);
- });
+ const id=selected,targets=affected(doc,id);
+ if([...targets].some(key=>get(doc,key)?.locked)){notice('Unlock dependents before deleting.');return;}
+ const removed=clone(doc.objects.filter(o=>targets.has(o.id)));
+ const ok=update(()=>{remove(doc,id);selected=null;});
+ if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
+}
+function persistTrash(){
+ try{localStorage.setItem(TRASH,JSON.stringify(trash));}catch(e){notice('Recently Deleted could not be saved. Export a JSON backup.');}
+ renderTrash();
+}
+function renderTrash(){
+ const root=$('trash-items');if(!root)return;
+ root.replaceChildren();$('trash-count').textContent=String(trash.length);
+ for(const [index,entry] of trash.entries()){
+  const row=document.createElement('div');row.className='trash-row';
+  const title=document.createElement('span');title.textContent=`${entry.objects.length} object(s) · ${new Date(entry.at).toLocaleString()}`;
+  const button=document.createElement('button');button.textContent='Restore';
+  button.onclick=()=>{
+   if(storageConflict){notice('Resolve the other-tab conflict before restoring.');return;}
+   const source=trash[index];if(!source)return;
+   if(source.objects.some(o=>get(doc,o.id)||doc.objects.some(existing=>existing.name===o.name))){notice('Restore blocked: an object ID or name is already used.');return;}
+   // The deletion snapshot retains dependencies. Validate the entire candidate before removing trash.
+   const ok=update(()=>{
+    doc.objects.push(...clone(source.objects));
+    const maximum=Math.max(...source.objects.map(o=>Number(o.id.slice(1))));
+    if(!Number.isSafeInteger(maximum))throw Error('Invalid restored identifier.');
+    doc.nextId=Math.max(doc.nextId,maximum+1);
+   });
+   if(ok){trash.splice(index,1);persistTrash();}
+  };
+  row.append(title,button);root.append(row);
+ }
 }
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);}
 function svgString(){
@@ -835,9 +914,9 @@ function canTikz(){
  // TeX collapses leading/trailing and repeated spaces even when SVG preserves them.
  const safeText=s=>typeof s==='string'&&/^[\x20-\x7e]*$/.test(s)&&!/(^ | $| {2,})/.test(s);
  return doc.objects.every(o=>o.hidden||o.style?.opacity===0||(
-  (!['point','midpoint'].includes(o.type)||!doc.settings.showLabels||safeText(o.name))&&
-  (!['text','node','morphism'].includes(o.type)||safeText(o.text))&&
-  (o.type!=='node'||layoutNodeLabel(o.text,o.fontSize||17).lines.length===1)&&(o.type!=='morphism'||(o.routing??'direct')==='direct'&&(o.labelT??.5)===.5&&(o.labelDistance??17)===17&&(o.labelDx??0)===0&&(o.labelDy??0)===0&&(!o.labelAvoid||!o.text))&&['point','midpoint','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','node','morphism'].includes(o.type)&&(o.type!=='freehand'||o.path.length<=2000)&&(o.type!=='morphism'||o.hidden||o.refs.every(id=>get(doc,id)?.type==='node'&&!get(doc,id)?.hidden&&get(doc,id)?.style?.opacity!==0))));}
+  (!['point','midpoint'].includes(o.type)||!doc.settings.showLabels||(o.pointLabelMode!=='latex'&&safeText(o.pointLabel||o.name)))&&
+  (!['text','node','morphism'].includes(o.type)||(o.textMode!=='latex'&&safeText(o.text)))&&
+  (o.type!=='node'||layoutNodeLabel(o.text,o.fontSize||17).lines.length===1)&&(o.type!=='morphism'||(o.arrowStyle===undefined||o.arrowStyle==='solid')&&(o.routing??'direct')==='direct'&&(o.labelT??.5)===.5&&(o.labelDistance??17)===17&&(o.labelDx??0)===0&&(o.labelDy??0)===0&&(!o.labelAvoid||!o.text))&&['point','midpoint','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','node','morphism'].includes(o.type)&&(o.type!=='freehand'||false)&&(o.type!=='morphism'||o.hidden||o.refs.every(id=>get(doc,id)?.type==='node'&&!get(doc,id)?.hidden&&get(doc,id)?.style?.opacity!==0))));}
 function asTikz(){
  if(!canTikz())throw Error('TikZ export is unavailable for a visible unsupported object or label. Use SVG or JSON instead.');
  const lines=['\\begin{tikzpicture}[x=1cm,y=1cm,line cap=round,line join=round]'],resolver=createResolver(doc);
@@ -846,7 +925,7 @@ function asTikz(){
   const style=`draw=${rgb(o.style.stroke)},line width=${(o.style.width*.75).toFixed(4)}pt,opacity=${o.style.opacity}`;
   const p=resolver.points(o);if(o.type==='point'||o.type==='midpoint'){
    const xy=resolver.at(o.id);if(!xy)continue;lines.push(`\\fill[fill=${rgb(o.style.stroke)},opacity=${o.style.opacity}] ${texPoint(xy)} circle (${((o.style.pointSize??doc.settings.pointSize)*.75).toFixed(3)}pt);`);
-   if(doc.settings.showLabels)lines.push(`\\node[above right,opacity=${o.style.opacity}] at ${texPoint(xy)} {${latexEscape(o.name)}};`);
+   if(doc.settings.showLabels)lines.push(`\\node[above right,opacity=${o.style.opacity}] at ${texPoint(xy)} {${latexEscape(o.pointLabel||o.name)}};`);
   }else if(['segment','arrow','line'].includes(o.type)&&p.length===2&&p.every(Boolean)){
    let [a,b]=p;if(o.type==='line'){const d=[b[0]-a[0],b[1]-a[1]],len=Math.hypot(...d);if(!len)continue;const k=100/len;a=[a[0]-d[0]*k,a[1]-d[1]*k];b=[b[0]+d[0]*k,b[1]+d[1]*k];}
    lines.push(`\\draw[${style}${o.type==='arrow'?',->':''}] ${texPoint(a)} -- ${texPoint(b)};`);
@@ -872,7 +951,7 @@ function asTikz(){
    const chosen=o.path;
    lines.push(`\\draw[${style}] ${chosen.map(texPoint).join(' -- ')};`);
   }else if(o.type==='text')lines.push(`\\node[anchor=west,text=${rgb(o.style.stroke)},opacity=${o.style.opacity}] at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
-  else if(o.type==='node')lines.push(`\\node[draw=${rgb(o.style.stroke)},rounded corners,inner sep=5pt,opacity=${o.style.opacity}] (mi${o.id}) at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
+  else if(o.type==='node')lines.push(`\\node[${o.nodeBorder?`draw=${rgb(o.style.stroke)},rounded corners,`:''}inner sep=5pt,opacity=${o.style.opacity}] (mi${o.id}) at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='morphism')continue;
  }
  for(const o of doc.objects){if(o.hidden||o.style?.opacity===0||o.type!=='morphism')continue;
@@ -915,10 +994,33 @@ function trapDialogTab(e,overlay){
  if(e.shiftKey&&(active===first||!overlay.contains(active))){e.preventDefault();last.focus();}
  else if(!e.shiftKey&&(active===last||!overlay.contains(active))){e.preventDefault();first.focus();}
 }
+function savePrefs(){try{localStorage.setItem('mathillustrator-layout-v1',JSON.stringify(uiPrefs));}catch{notice('Layout preferences could not be saved.');}}
+function setupInterface(){
+ try{const prefs=JSON.parse(localStorage.getItem('mathillustrator-layout-v1')||'{}');if(prefs&&typeof prefs==='object')uiPrefs={...uiPrefs,...prefs};}catch{}
+ const panel=$('settings-panel');
+ function showSettings(show){panel.hidden=!show;$('settings-open').setAttribute('aria-expanded',String(show));if(show)$('settings-close').focus();}
+ $('settings-open').onclick=()=>showSettings(panel.hidden);$('settings-close').onclick=()=>{$('settings-open').focus();showSettings(false);};
+ const fontMap={system:'system-ui, sans-serif',serif:'Georgia, serif',sans:'Arial, sans-serif',mono:'Consolas, monospace'};
+ $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
+ $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
+ $('auto-move').checked=uiPrefs.autoMove!==false;$('auto-move').onchange=()=>{uiPrefs.autoMove=$('auto-move').checked;savePrefs();};
+ function applyLanguage(){document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
+ $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
+ $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();};applyLanguage();
+ const properties=$('properties'),toggle=$('properties-toggle');toggle.onclick=()=>{const collapsed=!properties.hidden;properties.hidden=collapsed;toggle.textContent=collapsed?'+':'−';toggle.setAttribute('aria-expanded',String(!collapsed));};
+ // Reorder full tool sections, never move a nested setting out of its group.
+ const container=$('panel-sections'),sections=[...container.children].filter(e=>e.classList.contains('toolgroup')||e.classList.contains('controls'));
+ sections.forEach((e,i)=>{e.dataset.sectionId=e.id||e.querySelector('h3')?.textContent.trim().toLowerCase().replace(/[^a-z]+/g,'-')||String(i);e.draggable=true;e.title='Drag heading to reorder';});
+ let dragged=null;for(const e of sections){e.addEventListener('dragstart',event=>{if(event.target.closest('input,select,button,textarea')){event.preventDefault();return;}dragged=e;e.classList.add('moving');event.dataTransfer.effectAllowed='move';});e.addEventListener('dragover',event=>{if(!dragged||dragged===e)return;event.preventDefault();event.dataTransfer.dropEffect='move';});e.addEventListener('drop',event=>{if(!dragged||dragged===e)return;event.preventDefault();const before=event.clientY<e.getBoundingClientRect().top+e.offsetHeight/2;container.insertBefore(dragged,before?e:e.nextSibling);uiPrefs.sections=[...container.children].map(x=>x.dataset.sectionId).filter(Boolean);savePrefs();});e.addEventListener('dragend',()=>{e.classList.remove('moving');dragged=null;});}
+ if(Array.isArray(uiPrefs.sections)){for(const id of uiPrefs.sections){const e=sections.find(s=>s.dataset.sectionId===id);if(e)container.append(e);}}
+}
 function initialise(){
- populateTools();setupSettings();$('objects').addEventListener('scroll',()=>renderListWindow(),{passive:true});let old=null;
+ populateTools();setupSettings();setupInterface();$('objects').addEventListener('scroll',()=>renderListWindow(),{passive:true});let old=null;
  try{old=localStorage.getItem(STORAGE);lastStored=old;saveStatus(old?'Recovered local project':'Local backup ready');}catch(e){saveStatus('Not saved locally · download JSON');notice('Browser storage is restricted: use Save to download JSON.');}
  if(old){try{doc=validateDoc(JSON.parse(old));}catch(e){setStorageConflict(true,'corrupt');notice('Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.');}}
+ try{const stored=JSON.parse(localStorage.getItem(TRASH)||'[]');if(Array.isArray(stored))trash=stored.filter(e=>e&&Array.isArray(e.objects)&&Number.isFinite(e.at)).slice(0,20);}catch{}renderTrash();
+ const mathjax=window.MathJax;
+ if(mathjax?.startup?.promise)mathjax.startup.promise.then(()=>{renderAll();}).catch(e=>notice('LaTeX renderer failed: '+e.message));
  const svg=$('drawing');svg.addEventListener('pointerdown',pointerDown);svg.addEventListener('pointermove',pointerMove);svg.addEventListener('pointerup',pointerUp);svg.addEventListener('pointercancel',pointerUp);svg.addEventListener('lostpointercapture',pointerUp);
  // A second contact on a side panel must also interrupt a canvas gesture.
  // Touch releases outside an uncaptured empty-area selection must not leave

@@ -100,3 +100,44 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* Cut24: long morphism route mode names must not be clipped inside a 53%-wide Properties selector. */
 .properties .routing-field{display:flex;flex-direction:column;align-items:stretch;gap:6px}.properties .routing-field select{width:100%;min-width:0}
+
+/* Compact research-editor presentation: keep long explanations in help tooltips. */
+:root{font-family:var(--ui-font,system-ui,sans-serif)}
+[hidden]{display:none!important}
+.header-actions{min-width:0;flex-wrap:wrap;justify-content:flex-end}
+.header-actions #ui-language{width:76px;max-width:76px;font-size:11px;padding:5px 2px}
+.appbar{height:auto;min-height:58px}
+.workspace{min-height:0}
+.props-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.props-actions button{min-width:0;white-space:normal;min-height:35px;line-height:1.25;overflow-wrap:anywhere}
+.properties-head{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding:6px 12px;font-size:12px}
+.properties-head button{padding:2px 8px;font-size:16px}
+.properties{max-height:36%;border-top:0}
+.mini-help{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border);color:var(--muted);font-size:10px;width:17px;height:17px;line-height:1;cursor:help;margin-left:3px;vertical-align:middle}
+.controls .hint,.module-controls .hint{display:none}
+.toolgroup>h3,.controls>h3{cursor:grab;user-select:none}
+.moving{opacity:.4}
+.trash-panel{padding:6px 12px;border-top:1px solid var(--border);max-height:145px;overflow:auto;font-size:11px}
+.trash-panel summary{cursor:pointer;line-height:24px}
+.trash-row{display:flex;justify-content:space-between;gap:5px;align-items:center;margin:5px 0;border-top:1px solid var(--border);padding-top:5px}
+.trash-row button{font-size:10px;padding:4px 5px}
+.settings-panel{position:absolute;z-index:9;top:56px;right:12px;width:min(300px,calc(100% - 24px));max-height:70%;overflow:auto;display:grid;gap:12px;background:var(--surface);box-shadow:var(--shadow);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px}
+.settings-panel label{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.settings-panel label:has(input[type=checkbox]){justify-content:flex-start}
+.settings-panel select{max-width:145px}
+.settings-heading{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.settings-heading button{padding:2px 7px}
+.compact-help{font-size:11px;color:var(--muted);margin:0}
+#export-menu,.export-menu{min-width:270px;max-width:min(340px,calc(100vw - 20px))}
+.export-options button{white-space:normal;overflow-wrap:anywhere}
+#mode-label{max-width:min(55%,410px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){.properties-head{min-height:35px}.settings-panel{top:12px;right:5px;max-height:80%}.header-actions #ui-language{min-height:34px}}
+
+/* Progressive disclosure and compact controls. */
+.rightpanel .field,.rightpanel .check{min-width:0;overflow-wrap:normal;word-break:normal}
+.rightpanel .field select{min-width:0;max-width:100%}
+.rightpanel .module-toggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.rightpanel .module-toggles label{min-width:0}
+.properties .mini-help{margin:3px 4px;float:none}
+.settings-panel[hidden],.properties[hidden]{display:none!important}
+@media(max-width:900px){.header-actions{flex-wrap:wrap}.rightpanel .field{align-items:stretch;flex-direction:column}}

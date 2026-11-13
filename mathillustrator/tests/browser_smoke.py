@@ -28,8 +28,11 @@ def inline_html():
     app=(ROOT/'src/app.mjs').read_text().replace("from './model.mjs'",f"from '{model}'").replace("from './geometry.mjs'",f"from '{geometry}'").replace("from './diagram.mjs'",f"from '{diagram}'").replace("from './plot.mjs'",f"from '{plot}'").replace("from './storage.mjs'",f"from '{storage}'").replace("from './export_fidelity.mjs'",f"from '{fidelity}'").replace("from './diagram_layout.mjs'",f"from '{layout}'").replace("from './plot_cache.mjs'",f"from '{cache}'").replace("from './anchor_index.mjs'",f"from '{anchors}'").replace("from './label_layout.mjs'",f"from '{labels}'").replace("from './diagram_routing.mjs'",f"from '{routing}'")
     app=app.replace("from './morphism_label_layout.mjs'",f"from '{morphism_labels}'")
     app=app.replace("from './diagram_global_routing.mjs'",f"from '{global_routing}'")
+    app=app.replace("from './math_labels.mjs'",f"from '{js((ROOT/'src/math_labels.mjs').read_text())}'")
+    app=app.replace("from './i18n.mjs'",f"from '{js((ROOT/'src/i18n.mjs').read_text())}'")
     html=(ROOT/'index.html').read_text()
     html=html.replace('<link rel="stylesheet" href="./style.css">','<style>'+(ROOT/'style.css').read_text()+'</style>')
+    html=html.replace('<script defer src="./vendor/mathjax-tex-svg.js"></script>', '<script>'+(ROOT/'vendor/mathjax-tex-svg.js').read_text()+'</script>')
     return html.replace('<script type="module" src="./src/app.mjs"></script>','<script type="module">'+app+'</script>')
 
 def cmd(page,source):
@@ -60,7 +63,7 @@ def run():
         page.locator('#object-search').fill('Bezier')
         assert page.locator('#objects .object').count()==1
         page.locator('#object-search').fill('')
-        page.locator('#preset').select_option('Commutative diagrams')
+        page.locator('#module-construction').uncheck()  # Presets were retired from the user interface
         assert page.locator('[data-tool-module="diagram"]').is_visible()
         assert not page.locator('[data-tool-module="construction"]').is_visible()
         page.locator('#module-construction').check()

@@ -18,7 +18,7 @@ Prioritize direct manipulation of paths, property-driven point refs and transfor
 
 ## Future phase · full mathematical diagrams / TeX
 
-General node shapes and ports, routing/labels, commutative squares/cubes, algebraic-topology and category-theory templates, richer `tikz-cd` and safe TikZ parsing, faithful LaTeX math-label rendering and TeX compile reference tests. Never show an enabled export when data/style semantics cannot be represented without an acknowledged loss.
+General node shapes and ports, routing/labels, commutative squares/cubes, algebraic-topology and category-theory templates, richer `tikz-cd` and safe TikZ parsing, support for full math packages beyond the now-shipped local MathJax SVG subset, plus TeX compile reference tests. Never show an enabled export when data/style semantics cannot be represented without an acknowledged loss.
 
 ## Future phase · analysis/complex geometry
 
@@ -179,3 +179,20 @@ Delivered: document-order two-turn detours, strict proper-intersection tests, no
 ## Cut 25 delivered / next routing work
 
 Cut25 adds opt-in bounded all-visible-arrow refinement, JSON v1 support, testable warnings and new overlap/T-junction conflict detection; preserves direct and earlier-only modes. The 48-drawable-arrow cap and two-pass local search intentionally avoid runaway work. Future work: obstacle-grid or visibility-graph routing with more bends, arrow/label interactions, global objective evaluation with stable rerouting, on-screen layout and large-scene memory measurement, real multi-tab/browser/hardware testing. Avoid claiming current mode is a global graph optimizer.
+
+
+## Mathematical labels and localization — completed partial delivery
+
+- Bundled offline MathJax SVG with self-contained vector glyph paths. New diagram labels default to math mode; old JSON labels remain plain; ordinary labels, diagram labels and point-display labels can opt into source-based TeX. UI fonts for plain text are configurable.
+- Embedded SVG/raster math and measured node glyph bounds have isolated Chromium coverage; duplicate `<defs>` glyph IDs and unbordered-node hit targets were fixed. Dangerous TeX commands are rejected, and invalid edits roll back rather than silently falling back.
+- English/Chinese translation now covers much of the fixed UI, with a concise bilingual quick guide. Some runtime warnings, prompts and accessibility strings still require translation. Main side panels are not yet fully dockable/draggable like MathReader.
+- A 64-node repeated-formula sample recorded a ~50 ms synchronous redraw in headless Chromium; math-dense scenes therefore do not meet a guaranteed 60-FPS budget. Retain bounded caches, explicit warnings and actual stress evidence.
+
+## Next implementation priority — general-purpose 3D and live parameters
+
+1. **3D foundation, not one special field:** Define validated scene/camera data contracts for Cartesian 3D axes, meshes, parametric surfaces and basic objects. Keep expression evaluation bounded and deterministic. Do not pretend a 2D SVG is true interactive 3D.
+2. **Parameter sliders:** Numeric definitions with finite domains/step/default, dependency-aware parameter re-evaluation and undo/persistence. Design for analysis, geometry, algebra, PDE visualization and other applications without hardcoding one illustrative example.
+3. **User-experience completion:** Moveable/dockable main panels with viewport and persisted layout handling, full Chinese text coverage, accessible compact help, editable diagram ports and more arrowheads/route control.
+4. **Regression and release gates:** Real 3D camera/projection correctness, mesh size/time limits, workers/GPU capability checks without hidden fallback, slider event throttling/rollback, save/import migration, SVG/raster/JSON fidelity, Firefox/Safari/Edge/deployed-site behavior and mathematical-label stress under parameter updates. Preserve current 2D regressions and slim stable file organization.
+
+These are priorities, **not claims of implemented 3D or sliders**. Deliver them incrementally with explicit supported/unsupported states and changed-files-only overlays.

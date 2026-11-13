@@ -390,5 +390,15 @@
       "Crossing inspection limited to earlier visible arrows, 128 arrow paths and 8192 pair checks per candidate"
     ]
   },
-  "cut25_observation": "cut25-performance.json"
+  "cut25_observation": "cut25-performance.json",
+  "math_svg_round2_observation": {
+    "date": "2026-11-13",
+    "source": "isolated local headless Chromium page.set_content, single 1440x900 run (not p50/p95)",
+    "scene": "64 visible unbordered node math labels with repeated \\frac{a_i^2+b_i}{c_i}; no axes or grid",
+    "import_to_count_ms": 157.6,
+    "svg_rebuild_ms": 50.4,
+    "visible_math_svg_count": 64,
+    "error_labels": 0,
+    "notes": "Browser and CPU dependent. 50.4 ms exceeds 16.7 ms; do not claim 60 FPS or extrapolate to distinct formulas."
+  }
 }

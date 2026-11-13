@@ -658,5 +658,37 @@
     "new_cases": "cut24-regressions.json",
     "scope": "Isolated HTML, not hosted website; real cross-tab, Firefox/Safari, physical touch unverified"
   },
-  "cut25_evidence": "cut25-regressions.json"
+  "cut25_evidence": "cut25-regressions.json",
+  "round2_domain_cases": [
+    {
+      "id": "MATH-LABEL-001",
+      "test": "browser_latex_i18n.py",
+      "assertion": "Real TeX fractions/radicals/composition render as embedded math SVG; svg/PNG exports decode"
+    },
+    {
+      "id": "MATH-LABEL-002",
+      "test": "browser_latex_i18n.py",
+      "assertion": "Repeated formula glyph defs have globally unique SVG IDs and references"
+    },
+    {
+      "id": "MATH-LABEL-003",
+      "test": "browser_latex_i18n.py",
+      "assertion": "Invalid math edits roll back; old JSON labels stay plain text"
+    },
+    {
+      "id": "MATH-LABEL-004",
+      "test": "latex_i18n.test.mjs",
+      "assertion": "Malicious TeX commands rejected and optional JSON textMode validates"
+    },
+    {
+      "id": "LOCALE-001",
+      "test": "browser_latex_i18n.py",
+      "assertion": "Chinese/English toggle reversibly updates ordinary interface and compact mode label"
+    },
+    {
+      "id": "TOUCH-001",
+      "test": "browser_touch_current.py, browser_mobile_current.py",
+      "assertion": "Updated Point auto-Move does not break touch or mobile viewport/export behavior"
+    }
+  ]
 }

@@ -9,13 +9,13 @@ export function regularPolygonVertices(center,vertex,sides){
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
- const tolerance={gentle:0.65,medium:1.6,strong:3}[mode]||0;
+ const tolerance={gentle:0.65,medium:1.6,strong:3,ultra:4.5}[mode]||0;
  if(!tolerance)return raw;
  const gap=tolerance/Math.max(scale,1),kept=[raw[0]];
  for(let i=1;i<raw.length-1;i++){const p=raw[i],q=kept.at(-1);if(Math.hypot(p[0]-q[0],p[1]-q[1])>=gap)kept.push(p);}
  kept.push(raw.at(-1));
  let pts=kept;
- const rounds=mode==='strong'?2:1;
+ const rounds=mode==='ultra'?3:mode==='strong'?2:1;
  for(let r=0;r<rounds;r++){
   if(pts.length*2+2>20000)break;
   const next=[pts[0]];
@@ -160,4 +160,24 @@ export function bboxOutsideViewport(points,width,height,margin=0){
 export function circleOutsideViewport(center,radius,width,height,margin=0){
  if(!Array.isArray(center)||center.length!==2||![...center,radius,width,height,margin].every(Number.isFinite)||radius<0||margin<0||width<=0||height<=0)return false;
  return center[0]+radius < -margin || center[0]-radius > width+margin || center[1]+radius < -margin || center[1]-radius > height+margin;
+}
+
+/** Convert vertices to smooth, bounded cubic Béziers (Catmull–Rom interpolation).
+ * Endpoints are preserved, including for closed paths, and no external libraries are used. */
+export function smoothCurveSvg(points,closed=false){
+ if(!Array.isArray(points)||points.length<2)return '';
+ const p=points.filter(v=>Array.isArray(v)&&v.length===2&&v.every(Number.isFinite));
+ if(p.length<2)return '';
+ const fmt=v=>Number(v.toFixed(3));
+ const xy=v=>`${fmt(v[0])} ${fmt(v[1])}`;
+ if(p.length===2)return `M${xy(p[0])} L${xy(p[1])}${closed?' Z':''}`;
+ const n=p.length,steps=closed?n:n-1;let d=`M${xy(p[0])}`;
+ for(let i=0;i<steps;i++){
+  const a=p[(i+n-1)%n],b=p[i],c=p[(i+1)%n],e=p[(i+2)%n];
+  const prev=!closed&&i===0?b:a,next=!closed&&i===n-2?c:e;
+  const c1=[b[0]+(c[0]-prev[0])/6,b[1]+(c[1]-prev[1])/6];
+  const c2=[c[0]-(next[0]-b[0])/6,c[1]-(next[1]-b[1])/6];
+  d+=` C${xy(c1)} ${xy(c2)} ${xy(c)}`;
+ }
+ return d+(closed?' Z':'');
 }

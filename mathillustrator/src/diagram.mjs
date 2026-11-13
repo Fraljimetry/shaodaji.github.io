@@ -56,8 +56,8 @@ export function importTikzCd(source){
  }
  if(!parsed.length)fail('no labeled nodes.');
  const doc=newDoc();Object.assign(doc.settings,PRESETS['Commutative diagrams']);doc.meta.title='Imported commutative diagram';
- const lookup=new Map();for(const n of parsed){const obj=append(doc,{type:'node',xy:[n.c*CELL_X,-n.r*CELL_Y],text:n.label,fontSize:17});lookup.set(`${n.r}:${n.c}`,obj.id);}
- for(const a of arrows){const from=lookup.get(`${a.r}:${a.c}`),to=lookup.get(`${a.r+a.dy}:${a.c+a.dx}`);if(!from||!to)fail('arrow points to an empty cell.');append(doc,{type:'morphism',refs:[from,to],text:a.label,bend:0,swap:a.swap});}
+ const lookup=new Map();for(const n of parsed){const obj=append(doc,{type:'node',xy:[n.c*CELL_X,-n.r*CELL_Y],text:n.label,fontSize:17,textMode:'latex'});lookup.set(`${n.r}:${n.c}`,obj.id);}
+ for(const a of arrows){const from=lookup.get(`${a.r}:${a.c}`),to=lookup.get(`${a.r+a.dy}:${a.c+a.dx}`);if(!from||!to)fail('arrow points to an empty cell.');append(doc,{type:'morphism',refs:[from,to],text:a.label,bend:0,swap:a.swap,textMode:a.label?'latex':'plain'});}
  return doc;
 }
 /** Semantic only; mathematical content and directed incidences are retained, but styling is not. */
@@ -67,6 +67,7 @@ export function exportTikzCd(doc){
  const nodes=visible.filter(o=>o.type==='node'),edges=visible.filter(o=>o.type==='morphism');
  if(!nodes.length||nodes.length>1600)fail('diagram requires 1–1600 nodes.');
  if(nodes.some(o=>!o.text||/"|\r|\n/.test(o.text)))fail('nodes require nonempty labels without double quotes or line breaks.');
+ if(edges.some(o=>o.arrowStyle&&o.arrowStyle!=='solid'))fail('styled arrows are not yet round-trip safe in tikz-cd.');
  if(edges.some(o=>/"|\r|\n/.test(o.text)||Math.abs(o.bend||0)>1e-8))fail('quoted or bent morphisms are not yet representable.');
  const coordinateIndex=(values,reverse=false)=>{
   const sorted=[...values].sort((a,b)=>reverse?b-a:a-b),groups=[];

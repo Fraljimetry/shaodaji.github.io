@@ -1,4 +1,4 @@
-# MathIllustrator current verification — 2026-11-12 / v0.26.1 maintenance
+# MathIllustrator current verification (with historical baseline)
 
 ## Scope and baseline
 
@@ -38,3 +38,34 @@ No v7/v11 runtime module was absent from the verified Cut25 site. Reapplying an 
 ## Remaining risks / follow-up
 
 Browser tests load inlined module graphs rather than the actual hosted deployment paths. Current test results do not certify CDN caching, GitHub Pages MIME behavior, service-worker interactions, browser-specific text metrics, large real-world SVG/raster exports, security under arbitrary inputs, accessibility on assistive devices or true multi-tab transactional storage. Some dense scenes exceed a guaranteed 60 FPS budget; scene-aware routing is bounded and not an optimal crossing solver. Continue targeted red/green tests and explicitly label unverified behavior.
+
+
+## UI/drawing implementation pass — 2026-11-13
+
+New work: compact settings overlay, common-label Chinese locale (partial), interface font, section order persistence, collapsible Properties, 2×2 actions, local Recently Deleted with dependency restore, automatic point-to-Move, unbordered nodes, dashed/hooked/dotted/twoheaded/tail arrows, optional closed free curves, cubic freehand SVG. Active manifest updated; no legacy test/report files duplicated. New targeted Node tests cover model validation, defaults, cubic geometry, old project compatibility and `tikz-cd` unsupported style rejection.
+
+**Evidence:** 144 pre-existing Node assertions passed via the historical staged runner, four new targeted tests passed locally; full static-site and TeX checks passed after restoring original website assets to the selective test fixture. Chromium interactive smoke navigation was blocked by execution-environment administrator policy, so **browser interaction, mobile responsiveness, visual overflow, storage permission failures and live-site correctness are not certified** by this pass.
+
+**Open:** TeX source is not mathematical SVG layout; full bilingual UI, 3D plotting, parameter sliders, additional domain tools, draggable/dockable top-level panels, and a full user-facing tutorial reduction remain unimplemented.
+
+
+## Math labels and bilingual quick guide — implementation round 2
+
+The active editor now bundles MathJax SVG locally under `vendor/`, with the Apache-2.0 license preserved. A mathematical label is converted to embedded SVG glyph geometry and nested within exported SVG; PNG and WebP/JPEG are derived from the same SVG scene. New diagram nodes/morphism labels and newly imported `tikz-cd` nodes/labels opt into math rendering; preexisting JSON labels remain plain until users explicitly switch format. Geometry point/midpoint display labels may opt into TeX independently of their semantic object names. Plain labels have selectable serif/sans/monospace fonts.
+
+Bilingual English/Chinese UI strings are handled by a reusable, local DOM translation module, with no modifications to object contents; longer walkthroughs are now in developer reference documentation instead of overwhelming the user quick guide. Chinese UI coverage is extensive but not yet exhaustive for all runtime notices, dialog prompts and advanced technical explanations.
+
+**Focused verification (round 2):** 152/152 Node tests; four example schemas; isolated Chromium browser checks of SVG/PNG math, Chinese toggling, rejected TeX edits and legacy plain-text compatibility; all without an HTTP-origin deployment. Full staged browser suite details are recorded in the subsequent section. URL/origin-specific deployment, Edge/Safari/Firefox behavior and real touch hardware remain unverified.
+
+**Bounds:** No network fetch required for core math labels; math engine takes time to initialize and may not support arbitrary user macros, embedded external assets, CJK fallback fonts or complex TeX packages. TikZ/PGF export remains disabled for math-mode labels instead of dropping typesetting. The mathematical-label cache is limited to 256 distinct expressions; extremely large mathematical diagrams need performance profiling. `tikz-cd` interchange retains restricted semantics and cannot round-trip all new arrow styles.
+
+
+## Latest isolated verification — offline mathematical labels + UI (2026-11-13)
+
+- **Implementation:** Local MathJax SVG engine, embedded vector paths in exported SVG and raster, measured math-node bounds for diagram routing, per-label `textMode` and optional point-label TeX, plain-label fonts, reusable English/Chinese UI dictionary, concise bilingual quick guide. An editor-only invisible hit target makes unbordered nodes selectable; repeated math glyph IDs are namespaced so exported SVG definitions remain unique.
+- **Data integrity:** Older JSON without `textMode` stays plain; invalid TeX property edits roll back. Unsupported TikZ conversion is disabled, not silently flattened. Dangerous TeX extensions are rejected; SVG math compilation requires the local vendor engine. The upstream MathJax license accompanies the bundle.
+- **Node and schema:** 152/152 tests and 4/4 JSON example documents. ES-module syntax, root-site static integration, two real `pdflatex` compilations passed.
+- **Browser:** 43/43 *applicable* isolated headless Chromium scripts passed on the previous full staged run; **five obsolete archived UI scripts were not run** because they assert retired preset controls or persistent Point mode. Their immutable originals remain inside the checksum-verified archive. Two current browser successors check the updated touch and mobile contracts, and `browser_latex_i18n.py` covers true `\frac`, `\sqrt` and `\circ`, locale switching, duplicate glyph IDs, invalid-TeX rollback, legacy plain labels, export and unbordered pointer interaction. The final latest-source staged regression independently reran and passed 43/43 applicable Chromium scripts (five obsolete archived UI scripts were explicitly excluded, preserved in the immutable history ZIP). This check used the current runtime including compact tool help and the corrected real-TeX test fixture.
+- **One-shot stress observation:** 64 identical typeset fraction nodes, 1440×900 isolated Chromium, grid/axes off: 157.6 ms from file input to updated object count and 50.4 ms reported synchronous SVG rebuild; 64 mathematical SVG objects and zero error glyphs. This is a *single sample*, not p50/p95 or a claim of 60 FPS. Performance will depend on mathematical complexity and device.
+- **Not verified:** public GitHub Pages origin, actual HTTP/module-cache behavior, physical stylus/touch hardware, Safari/Firefox/Edge, very long TeX, arbitrary TeX extensions, mobile virtual keyboard and simultaneous multi-tab writes.
+- **Deferred:** native 3D surface plotting, parameter sliders, broader field-specific tools and dockable main panels remain future work, with no UI placeholder claimed complete.
