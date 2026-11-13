@@ -52,3 +52,7 @@ python mathillustrator/tests/manage_history.py restore --apply
 `prune` previews removal of archived historical files; `prune --apply` removes only hashes that exactly match archived originals; `restore --apply` can recreate the originals without overwriting existing files. ZIP extraction alone cannot remove old tracked files, and publishing deletions requires committing them to Git.
 
 See [the current verification report](docs/quality/TEST_REPORT_CURRENT.md) for exact PASS/NOT RUN provenance and [known issues](docs/quality/KNOWN_ISSUES.md) for unsupported or degraded cases. Never convert an unsupported output silently or replace the user’s existing project without a recoverable action.
+
+### Product requirements (single living register)
+
+See [`docs/planning/USER_REQUIREMENTS.md`](docs/planning/USER_REQUIREMENTS.md) for the full, maintained user requirement inventory, delivery status and future acceptance gates.

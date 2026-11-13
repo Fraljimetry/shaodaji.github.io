@@ -35,3 +35,5 @@ Cut 07 introduced full control/feature inventory and improved document-boundary 
 
 - Concise bilingual user guide: `../tutorial.html`; old extended guide (historical): `reference/tutorial-extended.html`
 - Local math label renderer and license: `../src/math_labels.mjs`, `../vendor/MATHJAX-LICENSE.txt`; UI localization: `../src/i18n.mjs`
+
+- **[Living user requirements and acceptance gates](planning/USER_REQUIREMENTS.md):** one growing record of every request, implementation status, design gates and small-round policy.

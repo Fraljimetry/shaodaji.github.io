@@ -69,3 +69,23 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - **One-shot stress observation:** 64 identical typeset fraction nodes, 1440×900 isolated Chromium, grid/axes off: 157.6 ms from file input to updated object count and 50.4 ms reported synchronous SVG rebuild; 64 mathematical SVG objects and zero error glyphs. This is a *single sample*, not p50/p95 or a claim of 60 FPS. Performance will depend on mathematical complexity and device.
 - **Not verified:** public GitHub Pages origin, actual HTTP/module-cache behavior, physical stylus/touch hardware, Safari/Firefox/Edge, very long TeX, arbitrary TeX extensions, mobile virtual keyboard and simultaneous multi-tab writes.
 - **Deferred:** native 3D surface plotting, parameter sliders, broader field-specific tools and dockable main panels remain future work, with no UI placeholder claimed complete.
+
+## Compact editor controls and consolidated user requirements — 2026-11-13
+
+**Scope:** A narrow UI-only pass on the already verified Round 2 math-labels baseline. Added a single cumulative user-requirements register (45 requests from the first new list + 16 semantic requests from the second list), compact icon toolbar with stable accessible labels and explanatory `title` tooltips, smaller object filter, revised Bézier/angle/line/point glyphs, user-facing `Vector` label for existing arrow tool, and Chinese `向量`. No change to JSON type, stored math geometry, MathJax renderer, dependency engine, export code or root website navigation.
+
+**Verified in this extracted working copy (not hosted website):**
+
+| Gate | Result | Method / scope |
+| --- | --- | --- |
+| Existing Node assertions | **PASS 152/152** | `node --test`, staged historical runner |
+| Isolated Chromium regressions | **PASS 44/44 applicable** | All archived applicable scripts plus new `browser_compact_ui_current.py`; five obsolete UI scripts explicitly excluded, immutable originals remain archived |
+| New browser UI regression | **PASS** | Header action accessible names/hover tooltip presence and width, glyph geometry including strokes, full filter semantics, undo/redo, legacy `Arrow(A,B)` and SVG export, 4 repeated English/Chinese locale transitions, 1440/700/390/320px responsive visibility |
+| Historical compatibility | **PASS** | Regressions exposed and corrected exact `Save` accessible-name mismatch and ambiguous `Open a JSON project` accessible-name match; original historical tests pass unchanged |
+| JSON schema fixtures | **PASS 4/4** | JSON Schema Draft 2020-12 fixtures against unchanged data format |
+| Site HTML and root navigation | **PASS** | Static integration assertions; root `index.html`, `tools.html` are unmodified in this overlay |
+| Real LaTeX/TikZ compilation | **PASS 2/2** | `pdflatex` compile on tested SVG/TikZ and `tikz-cd` export fixture |
+| Historical cleanup | **PASS** | Verified SHA archive, prune→restore roundtrip, modified-historical-file hard rejection in a disposable copy |
+| Visual inspection | **Performed, not an automated aesthetics guarantee** | Isolated desktop 1440×900 and mobile 390×844 captures; zoom controls still overlie stage, and mobile header is tall. Both remain open requirements. |
+
+**Limitations:** Toolbar buttons use native `title` hover descriptions and `aria-label` rather than a custom tooltip component. Object search is compact but not yet an icon-only toggle. Arrow-to-Vector is a visible naming improvement only; legacy internal `arrow` remains the compatibility type and `Vector(A,B)` is not yet supported. The global Delete selected button has **not** been removed until a safe, tested object action menu replaces it. Other roadmap tasks (object graph / snapping, full 2D parametric+implicit, sliders, 3D, complete Chinese localization, true dockable panels) remain unimplemented. The 44 browser tests use an isolated Chromium `page.set_content` fixture, not the public GitHub Pages origin. Firefox, Safari, Edge and physical touch remain unverified.

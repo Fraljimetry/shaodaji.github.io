@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "UI-labels-localization-round-2",
+  "release": "compact-editor-polish-and-requirements-round-3",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "math-labels-i18n-round-2",
+  "revision": "compact-editor-polish-round-3",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -29,7 +29,8 @@
     "labels": "src/math_labels.mjs",
     "locale": "src/i18n.mjs",
     "local_math_vendor": "vendor/mathjax-tex-svg.js",
-    "extended_reference": "docs/reference/tutorial-extended.html"
+    "extended_reference": "docs/reference/tutorial-extended.html",
+    "living_user_requirements": "docs/planning/USER_REQUIREMENTS.md"
   },
   "data_contract": {
     "name": "mathillustrator-project",

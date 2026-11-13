@@ -141,3 +141,13 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .properties .mini-help{margin:3px 4px;float:none}
 .settings-panel[hidden],.properties[hidden]{display:none!important}
 @media(max-width:900px){.header-actions{flex-wrap:wrap}.rightpanel .field{align-items:stretch;flex-direction:column}}
+
+/* Compact editor controls: keep every action keyboard-accessible and labeled. */
+.header-actions button.compact-action{min-width:33px;min-height:33px;width:33px;padding:5px;display:inline-flex;justify-content:center;align-items:center}
+.header-actions .compact-action .action-icon{display:block;flex:none;width:18px;height:18px}
+.header-actions .compact-action .action-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.object-tools{flex-wrap:nowrap;gap:6px;padding:7px 9px}
+.object-tools #object-search{flex:0 1 125px;width:125px;max-width:45%;min-width:65px;margin:0;padding:5px 6px;font-size:11px}
+.object-tools label{white-space:nowrap}
+.object-tools #delete{margin-left:auto;min-width:0;padding:5px 6px;font-size:10px}
+@media(max-width:950px){.header-actions .compact-action .action-text{display:none}}
