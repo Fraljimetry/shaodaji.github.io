@@ -1,5 +1,8 @@
 # Cut 16 current status (v0.17.0)
 
+> **Historical evidence locations (v0.26.1 maintenance):** Older `cutNN-*.json` files and per-cut test reports are archived unchanged in `docs/history/release-history.zip`. The living files in this directory retain current known issues and regression obligations. Restore archived paths safely with `python mathillustrator/tests/manage_history.py restore --apply`; no runtime sources changed.
+
+
 **Fixed with directly exercised regressions:** false storage conflict from queued stale events; redundant writes and false conflicts for identical saved JSON; missing retry affordance after quota denial; stale conflict heading after a separate corrupt-startup incident; external `localStorage.clear()` must not discard the open illustration.
 
 **Still unresolved:** Web Locks cannot guarantee durability across tab teardown; the `pagehide` fallback and browsers without Web Locks are best effort and not atomic. Two real same-origin tabs, storage eviction, power loss/crashes, Firefox/Safari, hosted deployment, and physical touch hardware are not certified in this environment. No native cloud synchronization, auto-merge, or historical version restore. The app's native JSON download remains the authoritative manual backup. No new canvas rendering performance figure is claimed.

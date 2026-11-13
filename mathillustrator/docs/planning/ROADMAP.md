@@ -1,5 +1,7 @@
 # MathIllustrator roadmap — completed work and explicit future gates
 
+> Historical `quality/TEST_REPORT_20261112*` and `quality/cutNN-*.json` references in older roadmap sections now resolve through `docs/history/release-history.zip` (documented at `docs/history/INDEX.md`). Current implementation truth remains in `features.json`.
+
 **Principle:** Broad purpose is the long-term goal; no unimplemented mathematical subject should be advertised as an existing mode. Versioned JSON, an accurate tutorial, regression provenance, performance measurements and an incremental ZIP overlay accompany every cut.
 
 ## Cut 00 — initial editor (historical baseline)
