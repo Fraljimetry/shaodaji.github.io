@@ -17,10 +17,10 @@ def run():
   assert page.locator('#preset').is_hidden()
   for group in ('basic','construction','illustration','diagram'):
    assert page.locator(f'[data-tool-module="{group}"]').is_visible(),group
-  page.locator('#module-construction').uncheck()
-  assert page.locator('[data-tool-module="construction"]').is_hidden()
-  page.locator('#module-construction').check()
-  assert page.locator('[data-tool-module="construction"]').is_visible()
+  page.locator('[data-tool-module="construction"] > h3 > .section-toggle').click()
+  assert page.locator('#construction-tools').is_hidden()
+  page.locator('[data-tool-module="construction"] > h3 > .section-toggle').click()
+  assert page.locator('#construction-tools').is_visible()
   baseline=json.loads((ROOT/'examples/diagram-demo.json').read_text())
   baseline['objects']=[{'id':'o1','name':'Node 1','type':'node','text':r'\frac{A_1}{B_2}', 'textMode':'latex','fontSize':19,'xy':[0,0],'hidden':False,'locked':False,'style':{'stroke':'#263342','fill':'#ffffff','width':2,'opacity':1}},
        {'id':'o2','name':'Node 2','type':'node','text':r'\sqrt{x^2+y^2}','textMode':'latex','fontSize':19,'xy':[4,0],'hidden':False,'locked':False,'style':{'stroke':'#263342','fill':'#ffffff','width':2,'opacity':1}},

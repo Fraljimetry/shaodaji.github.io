@@ -164,3 +164,79 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - `tests/manage_history.py verify`: archive original SHA checks and active-file inventory **PASS**, including both current website-root pages. Replayed unchanged Round 8 baseline plus this overlay and checked every changed path exactly; no other paths are included.
 
 **Not counted:** an oversized combined browser regression batch timed out. Individual `browser_cut07_properties.py` (historical shim) and `browser_mobile_current.py` (legacy mobile) did not complete within their time limits; they are **incomplete**, not claimed as passes. Chromium uses `page.set_content`/inlined local ES modules, not the public deployed site. Firefox/Safari/Edge, physical touch and stylus, actual screen reader, and live-hosted integration remain unverified.
+
+
+## Round 10 — compact appearance controls (2026-11-13)
+
+**Scope:** R21 layout only. Both New object style and selected-object Properties use a two-column grid for stroke/fill with width/opacity below, plus optional point-size/radius. Original color picker and common palette, semantic field labels, field bounds and transactional handlers are retained. One optional Fill control is not rendered on ineligible object types. No schema, storage, external assets, homepage or MathReader changes.
+
+**Verified:**
+- `node --check src/app.mjs`, `node --check src/i18n.mjs` and `node --test tests/*.test.mjs`: **163/163 PASS** (model unchanged).
+- New isolated Chromium `tests/browser_style_grid_current.py`: **PASS** for two-column geometry at 1440, 700, 390 and 320 CSS px, no clipped controls/swatches, filled vs unfilled objects, point radius, width/opacity/color edits, undo/redo, rejected numeric edits and malformed import atomicity, JSON roundtrip, EN/ZH accessible groups, and locked-object non-editability.
+- Existing isolated Chromium **PASS**: `browser_color_swatches_current.py`, `browser_compact_ui_current.py`, `browser_object_menu_current.py`, `browser_naming_current.py`, `browser_latex_i18n.py`, `browser_smoke.py`, `browser_storage.py`.
+
+**Not counted:** broad browser batch was interrupted while attempting `browser_touch_current.py`, so the touch and later scripts in that batch have no success result. Hosted-site CSS integration, physical stylus/touch, screen-reader evaluation, Firefox/Safari/Edge and shared website assets remain unverified. Chromium runs a local inlined-module fixture, not the deployed origin.
+
+
+## Round 11 — compact bounded numeric controls (2026-11-13)
+
+**Scope:** R19–R20 partial. A stylesheet-only refinement makes short bounded numeric inputs and two short enum selectors content-sized instead of stretched. Appearance controls keep the Round 10 grid; long text fields, coordinate columns, input types, validation, event handlers, undo/redo, storage, JSON schema, homepage and MathReader files are unchanged. Broader flexible arranging/movable panels remain pending.
+
+**Verified in this current extracted tree:**
+- `node --test tests/*.test.mjs`: **163/163 PASS**; `node --check src/app.mjs`: PASS (unmodified script).
+- New isolated Chromium `tests/browser_numeric_compact_current.py`: **PASS** at widths 320, 390, 700 and 1440 in EN and ZH; measured short-field widths and bounding regions; checked geometry settings, default appearance, editable point and morphism Properties, preserved coordinate sizes; tested native type/step/ranges, boundary values `100`, `0.000001` and `-300`, undo/redo, JSON save, invalid numeric rollback and rejected malformed imports.
+- Existing isolated Chromium scripts **10 PASS:** `browser_style_grid_current.py`, `browser_color_swatches_current.py`, `browser_compact_ui_current.py`, `browser_naming_current.py`, `browser_mobile_current.py`, `browser_object_menu_current.py`, `browser_smoke.py`, `browser_latex_i18n.py`, `browser_freehand_join_current.py`, `browser_storage.py`.
+
+**Limits:** all Chromium runs use locally inlined modules and styles, not a published website. Browser CSS zoom/font scaling, actual touch hardware, Safari, Firefox, Edge, assistive technology, and the deployed site were not tested in this slice. No runtime business logic or data model has been altered.
+
+
+## Round 12 — Geometry palette organization (2026-11-13)
+
+**Implementation:** Point moved to Geometry, two bilingual noninteractive Geometry subgroup headings added, Illustration relabeled Others and moved after Diagrams, redundant Basic module checkbox removed, vertex glyph markers filled. Semantic tool IDs, `modules` storage fields, `illustration` drag-order key, commands, save/export formats and model logic are unmodified. Existing preferences can retain an explicit custom panel order; new default order is Diagrams before Others.
+
+**Verified (isolated current-source tree):**
+- `node --check src/app.mjs`, `node --check src/i18n.mjs`, and `node --test tests/*.test.mjs`: **163/163 PASS**.
+- New `tests/browser_tool_palette_current.py`: **PASS** — exactly one Point button, accessible bilingual subgroup/title labels, filled marker containment, selection and real point placement, disabled geometry fallback, module undo/redo, legacy basic=false import, rejected corrupted import with unchanged project, 320/390/700/1440 CSS-pixel layout.
+- Existing Chromium browser regressions **13 PASS**: `browser_smoke.py`, `browser_compact_ui_current.py` (active glyph expectations updated to 6 filled regular polygon dots), `browser_object_menu_current.py`, `browser_naming_current.py`, `browser_mobile_current.py`, `browser_latex_i18n.py`, `browser_storage.py`, `browser_numeric_compact_current.py`, `browser_freehand_join_current.py`, `browser_color_swatches_current.py`, `browser_style_grid_current.py`, `browser_pencil_ultra_current.py`, `browser_touch_current.py`. Test provenance: Playwright Chromium using the source-inlined `browser_smoke.inline_html()` offline fixture.
+- The historical Cut06 test asserting Point in Basic is now an outdated visual expectation and is left intact in the immutable historical archive. The current test explicitly covers the new location instead.
+
+**Unverified:** live-hosted website, same-origin reload of persistent custom panel order (the local browser fixture uses an opaque origin where `localStorage` is blocked), Firefox/Safari/Edge, screen reader hardware, physical touch/stylus and other deployment environments. No claims of visual verification outside the listed viewport widths.
+
+
+## Round 13 — unified collapsible palette and settings (2026-11-13)
+
+**Actual implementation:** R13 top-level tool and nested settings section disclosures, independent drag handles and Alt+Up/Down ordering, Settings parent and Interface preferences moved from floating stage overlay, gear shortcut into expanded Settings, all visible module checkboxes retired. UI state is stored separately as browser layout preferences; imported/exported JSON scene and legacy modules flags are unchanged. Old user section order is migrated within legal tool/settings containers. Geometry subsections remain visual-only.
+
+**Observed verification:**
+- `node --check src/app.mjs` and `src/i18n.mjs`, and `node --test tests/*.test.mjs`: **163/163 PASS**.
+- `tests/browser_palette_sections_current.py`: **PASS** — all ten section disclosures, no visible toolkit checkboxes, genuine drag handles and keyboard reordering, parent/child independence, language/accessible labels, font/Auto-Move, preferences serialization and fixture hydration, malformed import rollback, preserved legacy modules=false, no unintended project mutation, Settings shortcut/focus, 320/390/700/1440 CSS pixel layout.
+- Existing current Chromium scripts **15 PASS**: `browser_smoke.py`, `browser_tool_palette_current.py`, `browser_latex_i18n.py` (active UI tests updated for the new public behavior, archived test bytes untouched), `browser_numeric_compact_current.py`, `browser_object_menu_current.py`, `browser_naming_current.py`, `browser_freehand_join_current.py`, `browser_color_swatches_current.py`, `browser_style_grid_current.py`, `browser_compact_ui_current.py`, `browser_mobile_current.py`, `browser_touch_current.py`, `browser_storage.py`, `browser_pencil_ultra_current.py`, `browser_performance.py` (3,000 objects). An intermediate CSS regression where the extra section body invalidated direct-child numeric selectors was fixed and the numeric regression rerun to PASS.
+- Actual HTML5 drag was exercised in headless Chromium between tool sections and between settings subsections. Browser HTML is source-inlined, not served from the user's website.
+
+**Not verified:** genuine same-origin cross-reload persistence — browser navigation to even a mocked origin was blocked by administrator policy; the new test verifies preference serialization/hydration using a deterministic localStorage shim. No live-hosted website, Safari/Firefox, screen-reader hardware or real pen/touch hardware verification. No 30-minute completion claim is asserted by test result.
+
+
+## Round 14 — independent Geometry palette categories (2026-11-13)
+
+**Scope:** R14 only. Added four bilingual Geometry subgroups, each with nested disclosure, actual drag handle and Alt+Up/Down reordering. Browser-local `geometryGroups` order and namespaced `collapsed` preferences use the preexisting layout preference key. No drawing-project schema, model, IDs, commands, exports, root website or MathReader edits. The two old visual-only headings are replaced with accessible collapsible category sections.
+
+**Verified in the extracted Round 13 baseline:**
+- `node --check src/app.mjs`, `node --check src/i18n.mjs`, `node --test tests/*.test.mjs`: **163/163 PASS**.
+- New `tests/browser_geometry_subgroups_current.py`: **PASS** for exactly 12 tools within four groups, heading labels, parent/child disclosure, keyboard and actual HTML5 drag, unchanged project JSON and active tool, localStorage shim preference save/reload, malformed/legacy preference list normalization, English/Chinese transitions including Chinese-first startup, 320–1440px and rejected malformed imported project.
+- Existing Chromium scripts completed successfully in this round: `browser_smoke.py`, `browser_palette_sections_current.py`, `browser_tool_palette_current.py`, `browser_latex_i18n.py`, `browser_compact_ui_current.py`, `browser_color_swatches_current.py`, `browser_style_grid_current.py` (rerun), `browser_numeric_compact_current.py`, `browser_object_menu_current.py`, `browser_naming_current.py`, `browser_freehand_join_current.py`, `browser_mobile_current.py`, `browser_storage.py`, `browser_touch_current.py`, `browser_pencil_ultra_current.py`, `browser_performance.py` (3,000 objects).
+- The initial combined run encountered a responsive-mode transition race in `browser_style_grid_current.py` at 700px with the right drawer temporarily hidden; isolated rerun passed. This is recorded as a **test timing issue**, not as production correctness evidence; the test now waits for responsive viewport settling. The oversized aggregate shell run stopped before all scripts, so only individually completed runs are counted.
+
+**Unverified:** current deployed website, real-origin multi-reload persistence (browser fixture uses deterministic storage shim), Safari/Firefox/Edge, physical touch/stylus and screen-reader hardware. HTML5 drag tested under isolated headless Chromium only.
+
+
+## Round 15 — desktop panel resizing (2026-11-13)
+
+**Scope:** R45 sizing. Added two keyboard/pointer accessible splitters, browser-local width preferences, bounded layout fitting with a minimum center canvas, desktop collapse/reopen restoration and mobile drawer safeguards. No scene-model, undo-history, JSON-schema, geometric, export, website-root or MathReader files changed. Existing `.workspace` desktop grid rules are superseded at widths >700px, including collapsed states and the 701–950px breakpoint; mobile rail/drawer rules are unchanged.
+
+**Completed verification in the extracted Round 14 source tree:**
+- `node --check src/app.mjs src/panel_sizes.mjs` and `node --test tests/*.test.mjs`: **168/168 PASS** (five new pure layout assertions).
+- New `tests/browser_panel_resize_current.py`: **PASS** (real Chromium pointer drag, Escape rollback, arrow/Shift/Home/End, double-click reset, aria bounds and bilingual labels, storage-shim hydration, collapse restoration, 701px canvas clamp, 390px mobile drawer, corrupt preference fallback, unchanged project JSON export and undo).
+- Existing isolated Chromium **16 PASS**: `browser_smoke.py`, `browser_palette_sections_current.py`, `browser_geometry_subgroups_current.py`, `browser_mobile_current.py`, `browser_storage.py`, `browser_object_menu_current.py`, `browser_numeric_compact_current.py`, `browser_color_swatches_current.py`, `browser_freehand_join_current.py`, `browser_pencil_ultra_current.py`, `browser_latex_i18n.py`, `browser_performance.py` (including 3,000 objects), `browser_tool_palette_current.py`, `browser_compact_ui_current.py`, `browser_style_grid_current.py`, `browser_naming_current.py`. Other active browser suites may be run independently; do not treat unfinished tests as successful.
+- `browser_touch_current.py` printed eleven passing subchecks but exceeded the combined-run time limit before a final success exit: **NOT COUNTED**. Physical touch, native browser storage at deployed origin, Safari/Firefox/Edge and assistive technology were not verified. The fixture injects `localStorage` into an isolated HTML page; it does **not** simulate a real same-origin reload.
+
+**Reliability boundaries:** If the browser rejects storage writes, pane widths adjust in-session with a visible notice but cannot be guaranteed to persist. Resizing may trigger SVG re-rendering for dense projects; the existing animation-frame render scheduler remains in effect. Full movable/dockable main panels were not implemented.

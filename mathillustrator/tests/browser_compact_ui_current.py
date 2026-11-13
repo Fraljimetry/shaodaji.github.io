@@ -34,7 +34,7 @@ def run():
         assert page.locator('[data-tool-choice="bezier"] circle[fill="currentColor"]').count() == 2
         assert page.locator('[data-tool-choice="point"] circle[fill="currentColor"]').count() == 1
         assert page.locator('[data-tool-choice="segment"] circle[fill="currentColor"]').count() == 2
-        assert page.locator('[data-tool-choice="regularPolygon"] circle[fill="currentColor"]').count() == 1
+        assert page.locator('[data-tool-choice="regularPolygon"] circle[fill="currentColor"]').count() == 6
         # Keep serialized legacy Arrow geometry despite the user-facing Vector label.
         for source in ('A=(0,0)', 'B=(2,1)', 'Arrow(A,B)'):
             cmd(page, source)

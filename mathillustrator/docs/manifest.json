@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "common-color-swatches-round-9",
+  "release": "resizable-desktop-panels-round-15",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "accessible-stroke-fill-quick-palette",
+  "revision": "desktop-sidebar-splitters-local-preferences",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -36,12 +36,19 @@
     "root_showcase_regression": "tests/site_root_showcase_current.py",
     "naming_browser_regression": "tests/browser_naming_current.py",
     "naming_node_regression": "tests/naming_current.test.mjs",
-    "color_swatch_browser_regression": "tests/browser_color_swatches_current.py"
+    "color_swatch_browser_regression": "tests/browser_color_swatches_current.py",
+    "style_grid_browser_regression": "tests/browser_style_grid_current.py",
+    "numeric_compact_browser_regression": "tests/browser_numeric_compact_current.py",
+    "tool_palette_browser_regression": "tests/browser_tool_palette_current.py",
+    "section_disclosure_browser_regression": "tests/browser_palette_sections_current.py",
+    "panel_sizing": "src/panel_sizes.mjs",
+    "panel_resize_browser_regression": "tests/browser_panel_resize_current.py",
+    "panel_resize_node_regression": "tests/panel_sizes.test.mjs"
   },
   "data_contract": {
     "name": "mathillustrator-project",
     "current_version": 1,
-    "migration_policy": "Version 1 additive freehand joinStyle and namingConvention. Missing namingConvention uses legacy camelCase; stored names and IDs are never rewritten. Round 9 common colors use existing stroke/fill strings only; no new schema."
+    "migration_policy": "JSON v1 unchanged; imported legacy modules flags retained and validated but no longer gate tool availability. Section collapse/order are independent local layout-v1 preferences, including old plotting- key migration. Desktop sidebar widths are optional browser-local layout-v1 properties and do not modify JSON v1."
   },
   "delivery_contract": {
     "format": "ZIP overlay rooted at website repository",

@@ -14,7 +14,7 @@
       "name": "3-panel editor with GeoGebra-style tool tiles",
       "status": "implemented",
       "component": "index.html",
-      "limitation": "Desktop triple panel, mobile drawers, now keyboard virtual-list navigation and trapped import/export Tab loops; real screen-reader/touch behavior remains unverified. Cut19 adds multiline textarea editing for text, diagram nodes and morphisms, with focus-safe commit-on-change semantics."
+      "limitation": "Desktop triple panel, mobile drawers, now keyboard virtual-list navigation and trapped import/export Tab loops; real screen-reader/touch behavior remains unverified. Cut19 adds multiline textarea editing for text, diagram nodes and morphisms, with focus-safe commit-on-change semantics. Round 15 adds keyboard/pointer-resizable browser-local desktop sidebar widths with canvas-size clamps and mobile drawer safeguards; freely movable/dockable panels are not available."
     },
     {
       "id": "CORE-GRAPH",
@@ -51,7 +51,7 @@
       "id": "SETTINGS-PRESETS",
       "name": "General/all-toolkit default and editable settings",
       "status": "partial",
-      "limitation": "Legacy preset recipes remain readable internally for compatibility but the Drawing preset selector is intentionally hidden. All four toolkits are visible by default and may be toggled independently; settings and panel layout can be customized."
+      "limitation": "Legacy preset recipes and settings.modules flags remain readable in v1 JSON but are not visibility switches; the preset selector and toolkit checkboxes are retired. Four top-level tools sections and five Settings subsections can be collapsed/reordered separately. Geometry has four independently collapsible and reorderable categories; layout preferences are browser-local, never part of the drawing project."
     },
     {
       "id": "CORE-UNDO",

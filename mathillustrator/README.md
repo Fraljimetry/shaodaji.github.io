@@ -8,12 +8,12 @@ MathIllustrator is a local-first, static-browser editor at `/mathillustrator/`. 
 - Diagram nodes and morphisms: borderless nodes by default, curved/routed arrows, line-end/dash styles, label placement controls and restricted `tikz-cd` interchange.
 - **Real locally typeset LaTeX mathematics** in new diagram nodes and arrow labels, plus optional point labels and other text objects. MathJax glyphs become SVG paths, not plain-text TeX. Existing JSON labels with no `textMode` retain their original plain-text appearance.
 - English/Chinese interface with a reusable translation module (**partial coverage**: some runtime warnings, prompts and accessibility copy remain English). Ordinary text objects have editable font family/size; MathJax mathematical fonts remain fixed.
-- Settings, rearrangeable right-panel tool sections, closable Properties, Recently Deleted, automatic Point → Move, and locally stored interface preferences.
+- Settings, collapsible/reorderable right-panel tool sections and four independently rearrangeable Geometry categories, resizable desktop sidebars, closable Properties, Recently Deleted, automatic Point → Move, and locally stored interface preferences.
 - Editable native JSON projects, SVG, PNG, WebP and conditional JPEG/TikZ/semantic `tikz-cd` exports. Representations that cannot preserve the current scene are explicitly refused/disabled rather than silently simplified.
 
 Enter `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` in the construction box, or use the diagram tools to create a node with label `\\frac{A_1}{B_2}`. Consult the concise [user guide](tutorial.html) for usage and the [live feature catalog](docs/planning/features.json) for current limits.
 
-**Not yet implemented:** general 3D plotting, interactive parameter sliders, general implicit/symbolic geometry, PDE solvers, full MathReader-style movable/dockable *main* panels, complete Chinese translation, arbitrary TeX packages, and universal TikZ support. The earlier Drawing preset selector is intentionally hidden; show desired toolkits via the Toolkits controls, with General/default all visible.
+**Not yet implemented:** general 3D plotting, interactive parameter sliders, general implicit/symbolic geometry, PDE solvers, full MathReader-style movable/dockable *main* panels, complete Chinese translation, arbitrary TeX packages, and universal TikZ support. The earlier Drawing preset selector and toolkit visibility checkboxes are intentionally hidden; tools remain reachable through the collapsible palette, with all four tool sections available.
 
 ## Install a changed-files-only overlay
 

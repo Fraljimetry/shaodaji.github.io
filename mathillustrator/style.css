@@ -176,3 +176,75 @@ html[data-theme="dark"] .object-action-menu button[data-action="delete"]:not(:di
 .color-swatch:focus-visible{outline:2px solid var(--accent);outline-offset:2px;z-index:2}
 .color-swatch:hover:not(:disabled){background:var(--swatch);transform:translateY(-1px)}
 .properties>.color-swatches{margin-top:-3px;margin-bottom:10px}
+
+
+/* Round 10 / R21: compact two-column appearance controls in both panels.
+   Explicit grid areas keep Width/Opacity on the same row when Fill is absent. */
+.style-controls-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto auto auto;gap:9px 8px;align-items:start;min-width:0;margin:9px 0 12px}
+.style-controls-grid .style-slot{min-width:0;max-width:100%}
+.style-controls-grid .style-stroke{grid-area:1 / 1}
+.style-controls-grid .style-fill{grid-area:1 / 2}
+.style-controls-grid .style-width{grid-area:2 / 1}
+.style-controls-grid .style-opacity{grid-area:2 / 2}
+.style-controls-grid .style-pointsize{grid-area:3 / 1}
+.style-controls-grid .field{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin:0;font-size:11px;min-width:0}
+.style-controls-grid .field input{width:100%;min-width:0;max-width:100%;font-size:12px;padding:6px 7px;min-height:30px}
+.style-controls-grid .field input[type=color]{width:45px;min-height:30px;padding:1px;flex:none}
+.style-controls-grid .color-swatches{gap:4px;margin:7px 0 0}
+.style-controls-grid .color-swatch{width:20px;min-width:20px;height:20px;min-height:20px}
+
+
+/* Round 11 / R19-R20: bounded values get readable, non-stretched input widths.
+   Keep long text, coordinates, and variable-length selectors untouched.
+   Clamp to available grid/panel width for mobile drawers and browser zoom. */
+.rightpanel .controls > .section-body > .field > input[type=number]{width:min(100%,124px);max-width:100%;flex:0 1 124px;font-variant-numeric:tabular-nums}
+.rightpanel .controls > .section-body > .field > #polygon-sides{width:min(100%,94px);flex-basis:94px}
+.properties > .field > input[type=number]{width:min(100%,116px);max-width:100%;flex:0 1 116px;font-variant-numeric:tabular-nums}
+.style-controls-grid .field > input[type=number]{width:min(100%,98px);max-width:100%;align-self:flex-start;font-variant-numeric:tabular-nums}
+.rightpanel .controls > .section-body > .field > #theme{width:min(100%,96px);max-width:100%;flex:0 1 96px}
+.rightpanel .controls > .section-body > .field > #export-scale{width:min(100%,124px);max-width:100%;flex:0 1 124px}
+
+/* Round 13: section disclosure and accessible reorder grips, no project-style overrides. */
+.section-heading{display:flex;align-items:center;gap:5px;margin:0 0 7px!important;min-width:0}
+.section-heading .section-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:5px 3px;border:0;text-align:left;background:transparent;color:var(--ink);font-size:13px;font-weight:700;white-space:normal}
+.section-heading .section-chevron{color:var(--muted);width:12px;flex:0 0 12px;text-align:center}
+.section-heading .mini-help{flex-shrink:0}
+.section-heading .section-drag-handle{flex:0 0 auto;padding:3px 8px;border:1px solid transparent;color:var(--muted);font-size:17px;line-height:1.2;cursor:grab;touch-action:manipulation}
+.section-heading .section-drag-handle:active{cursor:grabbing}
+.section-heading .section-drag-handle:hover{border-color:var(--border)}
+.section-body[hidden],.settings-sections[hidden]{display:none!important}
+.toolgroup,.settings-collection{padding:10px 0 8px;border-bottom:1px solid var(--border)}
+.settings-sections>.controls{padding:8px 0 10px;border-bottom:1px solid var(--border)}
+.settings-sections>.controls:last-child{border-bottom:0}
+.section-heading{cursor:default!important;user-select:auto!important}
+.toolgroup.moving,.controls.moving{opacity:.5}
+
+/* Interface preferences have moved out of the floating stage overlay. */
+.settings-sections .compact-help{font-size:11px;line-height:1.5;color:var(--muted);margin:9px 0 1px;white-space:normal}
+
+/* Round 14: four independent Geometry categories, local-UI-only ordering. */
+.geometry-categories{display:block;min-width:0}
+.geometry-subgroup{border-bottom:1px solid var(--border);padding:4px 0 7px;min-width:0}
+.geometry-subgroup:last-child{border-bottom:0}
+.geometry-subgroup>.section-heading{margin:0 0 3px!important}
+.geometry-subgroup>.section-heading .section-toggle{font-size:11px;font-weight:650;color:var(--muted);padding:5px 2px}
+.geometry-subgroup>.section-heading .section-drag-handle{font-size:15px;padding:3px 7px}
+.geometry-subgroup>.section-body>.toolgrid{width:100%;min-width:0}
+.geometry-subgroup.moving{opacity:.5}
+
+/* Round 15 / R45: desktop-only, boundary-clamped panel resizing.  Existing
+   mobile rail/drawer rules remain authoritative at 700px and below. */
+@media(min-width:701px){
+ .workspace{grid-template-columns:var(--mi-left-width,310px) minmax(240px,1fr) var(--mi-right-width,305px)}
+ body.left-collapsed .workspace{grid-template-columns:52px minmax(240px,1fr) var(--mi-right-width,305px)}
+ body.right-collapsed .workspace{grid-template-columns:var(--mi-left-width,310px) minmax(240px,1fr) 52px}
+ body.left-collapsed.right-collapsed .workspace{grid-template-columns:52px minmax(240px,1fr) 52px}
+ .leftpanel,.rightpanel{position:relative}
+ .panel-resizer{position:absolute;z-index:6;top:0;bottom:0;width:12px;border:0;background:transparent;cursor:col-resize;touch-action:none;outline-offset:-2px}
+ .left-resizer{right:-6px}
+ .right-resizer{left:-6px}
+ .panel-resizer::after{content:"";position:absolute;top:0;bottom:0;left:5px;width:2px;background:transparent;transition:background .12s}
+ .panel-resizer:hover::after,.panel-resizer:focus-visible::after,body.panels-resizing .panel-resizer::after{background:var(--accent)}
+ body.panels-resizing{user-select:none;cursor:col-resize}
+}
+@media(max-width:700px){.panel-resizer{display:none!important}}

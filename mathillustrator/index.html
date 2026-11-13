@@ -19,31 +19,33 @@
       <button id="save" class="compact-action" title="Save editable project" aria-label="Save"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h13l3 3v15H4Z M8 3v6h8V3 M8 21v-8h8v8"/></svg><span class="action-text">Save</span></button>
       <button id="tikzcd-open" class="compact-action" title="Import semantic tikz-cd diagram" aria-label="Import semantic tikz-cd diagram"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3h7v18H9v-5M9 3h4M3 12h13M3 12l4-4M3 12l4 4"/></svg><span class="action-text">Import TeX</span></button>
       <button id="export-open" class="compact-action primary" title="Export illustration" aria-label="Export"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3M7 8l5-5 5 5M4 14v7h16v-7"/></svg><span class="action-text">Export</span></button>
-      <button id="settings-open" title="Settings" aria-controls="settings-panel" aria-expanded="false">⚙</button><select id="ui-language" title="Language / 语言" aria-label="Language"><option value="en">English</option><option value="zh">中文</option></select><button id="help" title="Open tutorial">?</button>
+      <button id="settings-open" title="Settings" aria-controls="settings-sections" aria-expanded="true">⚙</button><select id="ui-language" title="Language / 语言" aria-label="Language"><option value="en">English</option><option value="zh">中文</option></select><button id="help" title="Open tutorial">?</button>
     </div>
   </header>
   <div id="object-action-menu" class="object-action-menu" role="menu" aria-label="Object actions" hidden></div>
   <main class="workspace">
     <aside class="leftpanel" aria-label="Objects and properties">
       <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
+      <div id="left-resizer" class="panel-resizer left-resizer" role="separator" tabindex="0" aria-label="Resize Objects panel" aria-orientation="vertical" aria-controls="objects" title="Drag or use arrow keys; Shift for larger steps; double-click to reset"></div>
       <div class="commandbox"><label for="command">Construction input</label><form id="command-form"><input id="command" autocomplete="off" spellcheck="false" placeholder="A = (0, 0)" aria-label="Construction command"><button aria-label="Add construction" title="Run construction">↵</button></form><p class="hint">Points, geometric objects, f(x) plots · <a href="tutorial.html#commands" target="_blank">Syntax</a></p></div>
       <div class="object-tools"><button id="object-search-toggle" type="button" title="Find objects" aria-label="Find objects" aria-controls="object-search" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button><input id="object-search" type="search" placeholder="Find…" aria-label="Search objects" hidden><label title="Hidden objects remain in the project but are not rendered; use an object menu to change visibility."><input type="checkbox" id="show-hidden" checked> Hidden <span class="mini-help">?</span></label></div>
       <div id="objects" class="objects" role="list" aria-label="Drawable objects"></div><details id="recently-deleted" class="trash-panel"><summary>Recently Deleted <span id="trash-count">0</span></summary><div id="trash-items"></div></details>
       <div class="properties-head"><strong>Properties</strong><button id="properties-toggle" aria-expanded="true" title="Collapse Properties">−</button></div><div id="properties" class="properties"><h3>Properties</h3><p class="subtle">Select an object to edit its style and geometry.</p></div>
     </aside>
     <section class="stage" aria-label="Illustration canvas">
-      <div id="settings-panel" class="settings-panel" hidden><div class="settings-heading"><strong>Settings / 设置</strong><button id="settings-close" title="Close settings">×</button></div><label>Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option></select></label><label><input type="checkbox" id="auto-move" checked> Return to Move after placing a point</label><p class="compact-help">Drag tool sections by their headings to rearrange.</p></div><div class="stage-actions"><span id="mode-label">Select · drag points to edit</span><div><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-reset" title="Reset view">100%</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit objects to canvas">Fit</button></div></div>
+      <div class="stage-actions"><span id="mode-label">Select · drag points to edit</span><div><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-reset" title="Reset view">100%</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit objects to canvas">Fit</button></div></div>
       <svg id="drawing" xmlns="http://www.w3.org/2000/svg" tabindex="0" role="img" aria-label="Interactive mathematical drawing canvas"></svg>
       <div class="canvas-footer"><span id="coords">x 0.00 · y 0.00</span><span class="save-feedback"><span id="autosave-info" role="status" aria-live="polite">Local backup ready</span><button id="retry-autosave" title="Retry saving the current project in this browser" hidden>Retry local save</button></span><span id="render-info">Ready</span></div>
     </section>
     <aside class="rightpanel" aria-label="Drawing tools and settings">
       <div class="panelhead"><h2>Tools</h2><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
+      <div id="right-resizer" class="panel-resizer right-resizer" role="separator" tabindex="0" aria-label="Resize Tools panel" aria-orientation="vertical" aria-controls="panel-sections" title="Drag or use arrow keys; Shift for larger steps; double-click to reset"></div>
       <div class="scrollpanel" id="panel-sections">
         <div class="preset" hidden><label for="preset" hidden>Drawing preset</label><select id="preset"></select></div>
-        <section class="controls module-controls"><h3>Toolkits <span class="mini-help" title="Show or hide groups of drawing tools without affecting existing objects.">?</span></h3><div class="module-toggles"><label class="check"><input id="module-basic" type="checkbox"> Basic</label><label class="check"><input id="module-construction" type="checkbox"> Geometry</label><label class="check"><input id="module-illustration" type="checkbox"> Illustration</label><label class="check"><input id="module-diagram" type="checkbox"> Diagrams</label></div></section>
         <section class="toolgroup" data-tool-module="basic"><h3>Basic</h3><div class="toolgrid" id="basic-tools"></div></section>
-        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><div class="toolgrid" id="construction-tools"></div></section>
-        <section class="toolgroup" data-tool-module="illustration"><h3>Illustration</h3><div class="toolgrid" id="illustration-tools"></div></section><section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section>
+        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><div class="geometry-categories" id="construction-tools"></div></section>
+        <section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section><section class="toolgroup" data-tool-module="illustration" data-section-id="illustration"><h3>Others</h3><div class="toolgrid" id="illustration-tools"></div></section>
+        <section class="settings-collection" data-section-id="settings"><h3>Settings</h3><div id="settings-sections" class="settings-sections">
         <section class="controls"><h3>Plotting <span class="mini-help" title="Use the construction input for a function, such as f(x)=sin(x).">?</span></h3>
           <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast · responsive</option><option value="balanced">Balanced · default</option><option value="detailed">Detailed · more sampling</option></select></label>
           
@@ -60,17 +62,25 @@
         </section>
         <section class="controls"><h3>New object style</h3>
           <label class="field">Object naming <select id="naming-convention" aria-label="Automatic object naming"><option value="pascal">PascalCase · Point 1</option><option value="camel">camelCase · point 1 (legacy)</option><option value="snake">snake_case · regular_polygon 1</option></select></label>
-          <div class="colorrow"><label>Stroke <input id="default-stroke" type="color"></label><label>Fill <input id="default-fill" type="color"></label></div>
-          <div class="color-swatch-label">Stroke colors</div><div id="default-color-swatches-stroke"></div>
-          <div class="color-swatch-label">Fill colors</div><div id="default-color-swatches-fill"></div>
-          <label class="field">Line width <input id="default-width" type="number" min="0.1" max="100" step="0.5"></label><label class="field">Point size <input id="point-size" type="number" min="1" max="100" step="1"></label><label class="field">Opacity <input id="default-opacity" type="number" min="0" max="1" step="0.1"></label>
+          <div class="style-controls-grid" role="group" aria-label="New object appearance">
+            <div class="style-slot style-stroke"><label class="field">Stroke <input id="default-stroke" type="color"></label><div id="default-color-swatches-stroke"></div></div>
+            <div class="style-slot style-fill"><label class="field">Fill <input id="default-fill" type="color"></label><div id="default-color-swatches-fill"></div></div>
+            <div class="style-slot style-width"><label class="field">Line width <input id="default-width" type="number" min="0.1" max="100" step="0.5"></label></div>
+            <div class="style-slot style-opacity"><label class="field">Opacity <input id="default-opacity" type="number" min="0" max="1" step="0.1"></label></div>
+            <div class="style-slot style-pointsize"><label class="field">Point size <input id="point-size" type="number" min="1" max="100" step="1"></label></div>
+          </div>
         </section>
         <section class="controls"><h3>Page & appearance</h3>
           <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4 landscape frame</option><option value="letter">Letter landscape frame</option></select></label>
           <label class="field">Export area <select id="export-region"><option value="viewport">Current viewport</option><option value="page">Page frame only</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Include grid and axes in image exports</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent background <span class="mini-help" title="Transparency is supported in SVG, PNG and WebP, not JPEG.">?</span></label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2× · default</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Background <input id="background" type="color"></label>
           <label class="field">Theme <select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
         </section>
-        
+        <section class="controls"><h3>Interface</h3>
+          <label class="field">Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option></select></label>
+          <label class="check"><input type="checkbox" id="auto-move" checked> Return to Move after placing a point</label>
+          <p class="compact-help">Collapse sections using their arrows. Drag the grip to reorder; with the grip focused, use Alt+↑/↓.</p>
+        </section>
+        </div></section>
       </div>
     </aside>
   </main>
