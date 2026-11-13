@@ -32,17 +32,28 @@ export function xmlTextSafe(value){
  return true;
 }
 export function clone(x){return JSON.parse(JSON.stringify(x));}
-export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'open',labelPlacement:'standard',snapAnchors:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
+export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'standard',snapAnchors:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return doc.objects.find(o=>o.id===id);}
 export function byName(doc,name){return doc.objects.find(o=>o.name===name);}
 export function nextId(doc){if(!Number.isSafeInteger(doc.nextId)||doc.nextId>Number.MAX_SAFE_INTEGER-1)throw Error('Object ID capacity exceeded.');return 'o'+doc.nextId++;}
+/** Naming affects future automatic names only. Never rename references or existing objects. */
+export function automaticName(doc,type){
+ const convention=doc.settings?.namingConvention??'camel'; // Older v1 documents kept their original scheme.
+ if(!['pascal','camel','snake'].includes(convention))throw Error('Invalid object naming convention.');
+ const label=convention==='camel'?type:(type==='arrow'?'vector':type);
+ const base=convention==='pascal'?label[0].toUpperCase()+label.slice(1):
+  convention==='snake'?label.replace(/[A-Z]/g,letter=>'_'+letter.toLowerCase()):label;
+ return `${base} ${doc.nextId}`;
+}
 export function append(doc,obj){
  if(!SUPPORTED.includes(obj.type))throw Error('Unsupported object type: '+obj.type);
  if(!Number.isSafeInteger(doc.nextId)||doc.nextId<1||doc.nextId>Number.MAX_SAFE_INTEGER-1)throw Error('Object ID capacity exceeded.');
- const id='o'+doc.nextId,name=obj.name||`${obj.type} ${doc.nextId}`;
- if(byName(doc,name))throw Error('Name already in use: '+name);
+ const id='o'+doc.nextId,name=obj.name||automaticName(doc,obj.type);
+ // Preserve fail-closed collision handling. Automatic names also avoid case-
+ // only ambiguity when crossing conventions, with a single scene scan.
+ if(doc.objects.some(o=>o.name===name||(!obj.name&&o.name.toLowerCase()===name.toLowerCase())))throw Error('Name already in use: '+name);
  doc.nextId++;
  const style={stroke:doc.settings.stroke,fill:doc.settings.fill,width:doc.settings.width,opacity:doc.settings.opacity};
  if(POINT_LIKE.has(obj.type))style.pointSize=doc.settings.pointSize;
@@ -218,6 +229,7 @@ export function validateDoc(raw){
   if(o.arrowStyle!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','hook','hook-dashed','twohead','tail'].includes(o.arrowStyle)))throw Error('Invalid diagram arrow style.');
   if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
   if(o.closed!==undefined&&(o.type!=='freehand'||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
+  if(o.joinStyle!==undefined&&(o.type!=='freehand'||o.closed!==true||!['smooth','corner'].includes(o.joinStyle)))throw Error('Invalid free curve join style.');
   if(o.swap!==undefined&&(o.type!=='morphism'||typeof o.swap!=='boolean'))throw Error('Invalid morphism label-side flag.');
   if(o.routing!==undefined&&(o.type!=='morphism'||!['direct','avoid','avoid-crossings','scene-crossings'].includes(o.routing)))throw Error('Invalid morphism routing mode.');
   if(o.labelAvoid!==undefined&&(o.type!=='morphism'||typeof o.labelAvoid!=='boolean'))throw Error('Invalid morphism label avoidance flag.');
@@ -232,6 +244,9 @@ export function validateDoc(raw){
  if(!['infinite','a4','letter'].includes(d.settings.page)||!['off','gentle','medium','strong','ultra'].includes(d.settings.correction)||typeof d.settings.grid!=='boolean'||typeof d.settings.snap!=='boolean'||typeof d.settings.showAxes!=='boolean')throw Error('Invalid document settings.');
  if(!finite(d.settings.width)||d.settings.width<0.1||d.settings.width>100||!finite(d.settings.opacity)||d.settings.opacity<0||d.settings.opacity>1||!finite(d.settings.pointSize)||d.settings.pointSize<1||d.settings.pointSize>100)throw Error('Invalid drawing defaults.');
  // Optional v1 extensions are given defaults when opening older v1 projects.
+ // Legacy naming defaults to camelCase; no existing object names are rewritten.
+ if(d.settings.namingConvention===undefined)d.settings.namingConvention='camel';
+ if(!['pascal','camel','snake'].includes(d.settings.namingConvention))throw Error('Invalid object naming convention.');
  if(d.settings.freehandClose===undefined)d.settings.freehandClose='open';
  if(!['open','near','always'].includes(d.settings.freehandClose))throw Error('Invalid free curve closure.');
  if(d.settings.plotQuality===undefined)d.settings.plotQuality='balanced';

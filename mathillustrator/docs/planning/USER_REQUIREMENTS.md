@@ -64,7 +64,7 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 | R47 | Development, debugging, performance, compatibility, stability should always be balanced. | Process rule — adopted |
 | R48 | Either move - 100% + fit away from canvas or make it invisible when not hovering above it. | Pending |
 | R49 | The Bezier icon is not displayed full. The two points are partially cropped away. | Done — this pass |
-| R50 | Objects should by default be named like RegularPolygon and Point instead of regularPolygon. And this convention is customizable in setting. | Pending |
+| R50 | Objects should by default be named like RegularPolygon and Point instead of regularPolygon. And this convention is customizable in setting. | Done — Round 8: default PascalCase for new projects, configurable camelCase or snake_case under New object style; existing names unchanged and legacy imports retain camelCase. |
 | R51 | Delete selected button can be removed. | Done — object-menu delete and keyboard/Properties deletion retained |
 | R52 | There can be three dots for each object by clicking which we can have multiple options like lock or delete etc. | Done — Hide/Show, Lock/Unlock, Delete via accessible object menu |
 | R53 | Arrow should be renamed Vector. | Partial |
@@ -98,6 +98,12 @@ The items below preserve **all 45 requirements in `temp1.txt` and all 16 semanti
 **Scope:** remove both the homepage hero software links and the dedicated homepage software showcase (including now-unused scoped CSS); retain the normal Tools site navigation and all research/academic content. Replace only the MathIllustrator preview formula on `tools.html` with the existing local `mathillustrator/assets/pencil-cover.svg` tilted-pencil artwork; remove the now-unused external MathJax CDN script from that Tools page. Keep MathReader's Tools-page preview, wording, and paths unchanged. Both supplied root HTML files are treated as authoritative; no older root file was used.
 
 **Acceptance:** no software promo in homepage markup in either language; homepage Tools navigation remains; both Tools cards and their existing links remain; pencil asset path exists, SVG parses, no external imagery; other homepage sections and bilingual text unchanged. Verify independent HTML parsing plus isolated Chromium DOM checks (full stylesheet and deployment layout are not available). Full website assets and live deployment remain unverified.
+
+## Round 8 — object naming conventions (2026-11-13)
+
+**R50 delivered (focused scope):** Newly created projects use PascalCase auto-generated names such as `Point 1`, `RegularPolygon 3`, and `Vector 4`. The existing `arrow` JSON object type, reference IDs, command parser and manually entered object names are unchanged. Right panel → **New object style → Object naming** offers PascalCase, legacy camelCase (`point 1`, `regularPolygon 3`, `arrow 4`) and snake_case (`point 1`, `regular_polygon 3`, `vector 4`). Choice is saved with the JSON project and participates in undo/redo; it affects **future** automatically named objects only. Opening a legacy v1 JSON document lacking `namingConvention` defaults to camelCase to preserve its historical behavior; no stored object names, IDs or dependencies are rewritten. New projects default to PascalCase. Unsupported setting values are rejected transactionally rather than silently substituted. Automatic-name collisions, including case-only ambiguity across conventions, fail before changing the object list/ID counter; users may rename the existing conflicting object manually. Explicit names still obey the original case-sensitive uniqueness rule.
+
+**Acceptance:** check Point/RegularPolygon/Vector forms; all three modes; name/ID preservation after setting change; existing commands with explicit user names and references; legacy migration; collision failure with no partial object; invalid import rollback; JSON round-trip, SVG/export, undo/redo, locale switches, responsive settings, existing object menus/storage/touch and freehand regression. Verification evidence belongs in the existing `docs/quality/TEST_REPORT_CURRENT.md`. No multi-object rename, custom formatting template or graph changes are claimed.
 
 ## Preserved earlier product-level requirements
 

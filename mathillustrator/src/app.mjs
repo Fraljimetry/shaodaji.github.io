@@ -1,5 +1,5 @@
 import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs';
-import {smoothCurveSvg,smoothPath,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs';
+import {smoothCurveSvg,smoothPath,closeFreehandStroke,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
@@ -204,7 +204,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean)){const vertices=regularPolygonVertices(p[0],p[1],o.sides).map(project);if(bboxOutsideViewport(vertices,size.w,size.h,cullMargin))return;if(vertices.length)item=mk('polygon',{points:vertices.map(q=>q.join(',')).join(' '),'fill-opacity':.24});
  }else if(o.type==='bezier'&&coords?.length===4){item=mk('path',{d:`M${coords[0].join(' ')} C${coords[1].join(' ')},${coords[2].join(' ')},${coords[3].join(' ')}`,fill:'none'});
  }else if(o.type==='angle'&&coords?.length===3){const [a,b,c]=coords,r=26,theta1=Math.atan2(a[1]-b[1],a[0]-b[0]),theta2=Math.atan2(c[1]-b[1],c[0]-b[0]);let delta=(theta2-theta1+Math.PI*2)%(Math.PI*2);if(delta>Math.PI)delta-=2*Math.PI;const start=[b[0]+r*Math.cos(theta1),b[1]+r*Math.sin(theta1)],end=[b[0]+r*Math.cos(theta1+delta),b[1]+r*Math.sin(theta1+delta)];item=mk('path',{d:`M${start.join(' ')} A${r} ${r} 0 0 ${delta>0?1:0} ${end.join(' ')}`,fill:'none'});
- }else if(o.type==='freehand'&&o.path?.length>1){const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;item=mk('path',{d:smoothCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-linecap':'round'});
+ }else if(o.type==='freehand'&&o.path?.length>1){const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;item=mk('path',{d:smoothCurveSvg(pathCoords,!!o.closed,o.joinStyle),fill:'none','stroke-linejoin':o.joinStyle==='corner'?'miter':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
  }else if(o.type==='text'){const [x,y]=project(o.xy),fontSize=o.fontSize||18;if(textOutside(x,y,o.text,fontSize))return;
   if(o.textMode==='latex'){item=latexDisplay(o,x,y,fontSize,{exporting});if(!exporting)item.setAttribute('pointer-events','visiblePainted');}
   else{item=el('text',{'xml:space':'preserve',x,y,'font-size':fontSize,'font-family':o.fontFamily||'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity});
@@ -388,8 +388,9 @@ function draw(svg,{exporting=false}={}){
   // Live feedback uses the same a-priori correction as the committed stroke.
   // Drafts are never added to the document or the export SVG.
   if(drag?.kind==='freehand'&&drag.path.length>1){
-   const pts=correctedPath(drag.path).map(project);
-   svg.append(el('path',{class:'draft-freehand',d:smoothCurveSvg(pts,false),stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':'round','stroke-linecap':'round','pointer-events':'none'}));
+   const prepared=closeFreehandStroke(correctedPath(drag.path),doc.settings.freehandClose,view.scale);
+   const pts=prepared.path.map(project);
+   svg.append(el('path',{class:'draft-freehand',d:smoothCurveSvg(pts,prepared.closed,prepared.joinStyle),stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':prepared.joinStyle==='corner'?'miter':'round','stroke-miterlimit':3,'stroke-linecap':'round','pointer-events':'none'}));
   }
  }
 }
@@ -590,7 +591,7 @@ function selectTool(t){
 }
 function populateTools(){for(const [root,group]of Object.entries(toolGroups)){for(const [id,label]of group){const b=document.createElement('button');b.className='tool';b.dataset.toolChoice=id;b.title=label;b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${glyph[id]}</svg><span>${label}</span>`;b.onclick=()=>selectTool(id);$(root).append(b);}}selectTool('select');}
 function syncSettings(){
- for(const [id,k]of [['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['naming-convention','namingConvention'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
  $('export-region').querySelector('option[value="page"]').disabled=doc.settings.page==='infinite';
@@ -613,7 +614,7 @@ function setupSettings(){
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
  preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='standard';});};
  for(const module of ['basic','construction','illustration','diagram'])$('module-'+module).onchange=()=>update(()=>{doc.settings.modules[module]=$('module-'+module).checked;});
- for(const [id,k]of [['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['naming-convention','namingConvention'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   $(id).onchange=()=>update(()=>{
    const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
    const value=input.type==='checkbox'?input.checked:(input.type==='number'||k==='exportScale')?Number(input.value):input.value;
@@ -841,8 +842,9 @@ function pointerUp(e){
    const last=completed.path.at(-1);
    if(Math.hypot(last[0]-released[0],last[1]-released[1])>1e-10)completed.path.push(released);
   }
-  const path=correctedPath(completed.path);
-  if(path.length>=2){const mode=doc.settings.freehandClose||'open';const distance=Math.hypot(path[0][0]-path.at(-1)[0],path[0][1]-path.at(-1)[1]);const closed=mode==='always'||(mode==='near'&&distance<12/view.scale);if(distance>0.01||closed)update(()=>selected=append(doc,{type:'freehand',path,closed}).id);}
+  const prepared=closeFreehandStroke(correctedPath(completed.path),doc.settings.freehandClose,view.scale);
+  const {path,closed,joinStyle}=prepared;
+  if(path.length>=2){const start=path[0];const meaningful=closed||path.some(p=>Math.hypot(p[0]-start[0],p[1]-start[1])*view.scale>2);if(meaningful)update(()=>selected=append(doc,{type:'freehand',path,closed,...(joinStyle?{joinStyle}:{})}).id);}
  }
  scheduleRender();
 }

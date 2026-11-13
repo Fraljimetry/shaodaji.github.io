@@ -1,9 +1,9 @@
 {
   "project": "MathIllustrator",
-  "release": "root-site-homepage-tools-promo-round-7",
+  "release": "object-naming-conventions-round-8",
   "runtime_baseline": "Cut 25 / v0.26.0",
   "cut": 25,
-  "revision": "homepage-no-software-promotion-tools-pencil-cover",
+  "revision": "pascal-camel-snake-object-name-defaults",
   "date": "2026-11-13",
   "site_path": "mathillustrator/",
   "independent_from": [
@@ -33,12 +33,14 @@
     "living_user_requirements": "docs/planning/USER_REQUIREMENTS.md",
     "object_actions_regression": "tests/browser_object_menu_current.py",
     "freehand_join_browser_regression": "tests/browser_freehand_join_current.py",
-    "root_showcase_regression": "tests/site_root_showcase_current.py"
+    "root_showcase_regression": "tests/site_root_showcase_current.py",
+    "naming_browser_regression": "tests/browser_naming_current.py",
+    "naming_node_regression": "tests/naming_current.test.mjs"
   },
   "data_contract": {
     "name": "mathillustrator-project",
     "current_version": 1,
-    "migration_policy": "Version 1 additive freehand joinStyle for newly auto-joined strokes; older closed curves remain cyclic and saved Open setting is preserved."
+    "migration_policy": "Version 1 additive freehand joinStyle and namingConvention. Missing namingConvention uses legacy camelCase; stored names and IDs are never rewritten."
   },
   "delivery_contract": {
     "format": "ZIP overlay rooted at website repository",
