@@ -92,7 +92,10 @@ export function worldBounds(doc,resolver){
   else if(o.refs){const p=resolver.points(o);for(const x of p)put(x);
    if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean))for(const vertex of regularPolygonVertices(p[0],p[1],o.sides))put(vertex);
    if(o.type==='circle'&&p.every(Boolean)){const r=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);put([p[0][0]-r,p[0][1]-r]);put([p[0][0]+r,p[0][1]+r]);}
-   if(o.type==='ellipse'&&p.every(Boolean)){put([p[0][0],p[1][1]]);put([p[1][0],p[0][1]]);}
+   if(o.type==='ellipse'&&p.every(Boolean)){
+    if(p.length===3){const e=focalEllipse(p);if(e){const x=Math.hypot(e.rx*Math.cos(e.angle),e.ry*Math.sin(e.angle)),y=Math.hypot(e.rx*Math.sin(e.angle),e.ry*Math.cos(e.angle));put([e.cx-x,e.cy-y]);put([e.cx+x,e.cy+y]);}}
+    else{put([p[0][0],p[1][1]]);put([p[1][0],p[0][1]]);}
+   }
   }
  }
  return bounds.minX===Infinity?null:bounds;
@@ -192,6 +195,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
+import {focalEllipse} from './model.mjs?cut=round19';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -241,6 +245,80 @@ export function closeFreehandStroke(path,mode='near',scale=50){
  const start=direction(true),end=direction(false);
  const tangent=gap<=18&&start&&end&&start[0]*end[0]+start[1]*end[1]>=Math.cos(Math.PI/9);
  return {path,closed:true,joinStyle:tangent?'smooth':'corner'};
+}
+
+/** Magnetic free-curve endpoint attraction (screen-space tolerance).
+ * Snap to the visible perimeter/stroke, not a bounding box. Geometry is a
+ * coordinate snap, NOT a persistent dependency on the target object.
+ * Never mutate a source object, resolver, or input point.
+ */
+export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels=16){
+ if(!Array.isArray(point)||point.length!==2||!point.every(Number.isFinite)||
+    !Array.isArray(objects)||!resolver||typeof resolver.points!=='function'||
+    !Number.isFinite(scale)||scale<=0||!Number.isFinite(maxPixels)||maxPixels<=0)return null;
+ const maxDistance=maxPixels/scale;let best=null;
+ const offer=(p,o,priority=0)=>{
+  if(!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite))return;
+  const distance=Math.hypot(point[0]-p[0],point[1]-p[1]);
+  if(distance>maxDistance)return;
+  const score=distance*scale-priority;
+  if(!best||score<best.score-1e-8)best={world:[...p],id:o.id,type:o.type,distancePx:distance*scale,score};
+ };
+ const segment=(a,b,o,infinite=false)=>{
+  if(!a||!b||!a.every(Number.isFinite)||!b.every(Number.isFinite))return;
+  const dx=b[0]-a[0],dy=b[1]-a[1],norm=dx*dx+dy*dy;
+  if(norm<1e-20){offer(a,o);return;}
+  const t=((point[0]-a[0])*dx+(point[1]-a[1])*dy)/norm;
+  const u=infinite?t:Math.max(0,Math.min(1,t));
+  offer([a[0]+u*dx,a[1]+u*dy],o);
+ };
+ for(const o of objects){
+  if(!o||o.hidden||o.style?.opacity===0)continue;
+  if(['point','midpoint'].includes(o.type)){
+   offer(resolver.at?.(o.id),o,2);continue;
+  }
+  if(['text','node'].includes(o.type)){offer(o.xy,o,1);continue;}
+  if(o.type==='freehand'){
+   const path=o.path;
+   if(!Array.isArray(path)||path.length<2)continue;
+   // Bound work for very long strokes while retaining both endpoints.
+   const stride=Math.max(1,Math.ceil((path.length-1)/750));
+   for(let i=0;i<path.length-1;i+=stride)segment(path[i],path[Math.min(path.length-1,i+stride)],o);
+   if(o.closed)segment(path.at(-1),path[0],o);
+   continue;
+  }
+  const pts=resolver.points(o);
+  if(!Array.isArray(pts)||!pts.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)))continue;
+  if(['segment','arrow','line'].includes(o.type)&&pts.length===2){segment(pts[0],pts[1],o,o.type==='line');continue;}
+  if(o.type==='circle'&&pts.length===2){
+   const [a,b]=pts,r=Math.hypot(a[0]-b[0],a[1]-b[1]),d=Math.hypot(point[0]-a[0],point[1]-a[1]);
+   if(r>1e-10&&d>1e-10)offer([a[0]+r*(point[0]-a[0])/d,a[1]+r*(point[1]-a[1])/d],o);
+   continue;
+  }
+  let path=pts,closed=o.type==='polygon'||o.type==='rectangle'||o.type==='regularPolygon';
+  if(o.type==='regularPolygon'){path=regularPolygonVertices(pts[0],pts[1],o.sides);}
+  if(o.type==='ellipse'&&pts.length===3){
+   const e=focalEllipse(pts);if(!e)continue;
+   const co=Math.cos(e.angle),si=Math.sin(e.angle);
+   path=Array.from({length:129},(_,i)=>{const t=i*Math.PI/64,x=e.rx*Math.cos(t),y=e.ry*Math.sin(t);return [e.cx+x*co-y*si,e.cy+x*si+y*co];});
+   closed=false;
+  }
+  if(o.type==='rectangle'||(o.type==='ellipse'&&pts.length===2)){
+   const [a,b]=pts;if(!a||!b)continue;
+   const cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2,rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
+   if(o.type==='rectangle')path=[[cx-rx,cy-ry],[cx+rx,cy-ry],[cx+rx,cy+ry],[cx-rx,cy+ry]];
+   else if(rx<1e-10||ry<1e-10){path=[a,b];closed=false;}
+   else {path=Array.from({length:73},(_,i)=>[cx+rx*Math.cos(i*Math.PI/36),cy+ry*Math.sin(i*Math.PI/36)]);closed=false;}
+  }
+  if(o.type==='bezier'&&pts.length===4){
+   const [a,b,c,d]=pts;
+   path=Array.from({length:65},(_,i)=>{const t=i/64,u=1-t;return [0,1].map(j=>u*u*u*a[j]+3*u*u*t*b[j]+3*u*t*t*c[j]+t*t*t*d[j]);});closed=false;
+  }
+  if(!['polyline','polygon','angle','regularPolygon','rectangle','ellipse','bezier'].includes(o.type))continue;
+  for(let i=1;i<path.length;i++)segment(path[i-1],path[i],o);
+  if(closed&&path.length>2)segment(path.at(-1),path[0],o);
+ }
+ return best&&{world:best.world,id:best.id,type:best.type,distancePx:best.distancePx};
 }
 
 /** Convert vertices to smooth, bounded cubic Béziers (Catmull–Rom interpolation).

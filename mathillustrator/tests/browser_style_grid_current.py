@@ -27,8 +27,11 @@ def assert_grid(page, selector, has_fill, has_pointsize, width):
     assert abs(metrics['width']['y']-metrics['opacity']['y'])<=1,(width, metrics)
     assert metrics['width']['x']<metrics['opacity']['x'],(width, metrics)
     if has_fill:
-        assert abs(metrics['stroke']['y']-metrics['fill']['y'])<=1,(width, metrics)
-        assert metrics['stroke']['x']<metrics['fill']['x'],(width, metrics)
+        if selector.startswith('#properties'):
+            assert metrics['fill']['y']>metrics['stroke']['y'],(width, metrics)
+        else:
+            assert abs(metrics['stroke']['y']-metrics['fill']['y'])<=1,(width, metrics)
+            assert metrics['stroke']['x']<metrics['fill']['x'],(width, metrics)
     if has_pointsize:
         assert metrics['pointsize']['y']>metrics['opacity']['y'],(width,metrics)
 
@@ -62,7 +65,7 @@ def run():
         cmd(page,'P=(1,2)')
         page.locator('#objects .object').first.click()
         assert_grid(page,object_grid,False,True,1440)
-        assert page.locator('#properties [data-color-swatches="object"] button').count()==11
+        assert page.locator('#properties [data-color-swatches="object"] button').count()==10
         assert page.locator(object_grid+' input').evaluate_all('nodes => nodes.map(n => n.closest(".style-slot")?.className)') == ['style-slot style-stroke','style-slot style-width','style-slot style-opacity','style-slot style-pointsize'], 'Tab order must follow visible row order'
         # Width, opacity and point size remain in the same input pipeline.
         node=page.locator(object_grid)
@@ -82,7 +85,7 @@ def run():
         cmd(page,'Rectangle(P,Q)')
         page.locator('#objects .object').first.click()
         assert_grid(page,object_grid,True,False,1440)
-        assert page.locator('#properties [data-color-swatches="object"] button').count()==22
+        assert page.locator('#properties [data-color-swatches="object"] button').count()==20
         swatch=page.locator('#properties [data-color-swatches="object"][data-color-property="fill"] button[data-color="#ef4444"]')
         swatch.click()
         assert snapshot(page)['objects'][-1]['style']['fill']=='#ef4444'

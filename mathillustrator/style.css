@@ -1,4 +1,10 @@
 :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color-scheme:light;--ink:#243247;--muted:#6d7d91;--border:#dee5ed;--surface:#fff;--subtle:#f4f7fb;--stage:#eff3f7;--accent:#6558d6;--hover:#f0efff;--shadow:0 7px 25px #222f4b12}html[data-theme="dark"]{color-scheme:dark;--ink:#e4ebf6;--muted:#a0adc0;--border:#39485d;--surface:#202a38;--subtle:#293648;--stage:#151e2a;--accent:#a79dfb;--hover:#373453;--shadow:0 7px 25px #0005}*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--surface);color:var(--ink)}button,input,select,textarea{font:inherit}button{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:7px;padding:7px 10px;cursor:pointer;white-space:nowrap}button:hover:not(:disabled){background:var(--hover)}button:disabled{opacity:.35;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}input,select{min-width:0;color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:7px;background:var(--surface)}input[type=color]{padding:1px;width:36px;height:30px}input[type=checkbox]{accent-color:var(--accent)}.appbar{height:58px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 15px;gap:10px;background:var(--surface)}.brand{color:var(--ink);font-weight:700;text-decoration:none;white-space:nowrap}.brandmark{color:var(--accent);font-size:22px;margin-left:5px}.beta{font-size:11px;background:var(--subtle);border-radius:20px;padding:5px 8px;color:var(--muted);margin-right:auto}.header-actions{display:flex;align-items:center;gap:5px}.header-actions button{font-size:12px}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover:not(:disabled){color:var(--ink)}.workspace{display:grid;grid-template-columns:minmax(280px,310px) minmax(250px,1fr) minmax(270px,305px);height:calc(100vh - 58px);min-height:400px}.leftpanel,.rightpanel{background:var(--surface);min-height:0;display:flex;flex-direction:column;min-width:0;z-index:2}.leftpanel{border-right:1px solid var(--border)}.rightpanel{border-left:1px solid var(--border)}.panelhead{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--border);height:49px}.panelhead h2{font-size:15px;margin:0;font-weight:650}.panelhead h2 span{font-size:12px;color:var(--muted);font-weight:400}.panelhead button{padding:2px 7px}.commandbox{padding:13px;border-bottom:1px solid var(--border)}.commandbox label,.preset label{display:block;font-size:12px;font-weight:650;margin-bottom:7px}#command-form{display:flex;gap:5px}#command-form input{width:100%;font-family:Consolas,monospace;font-size:12px}#command-form button{font-size:19px;line-height:15px;color:var(--accent)}.hint{font-size:11px;line-height:1.45;color:var(--muted);margin:8px 0 0}.hint a{color:var(--accent)}.object-tools{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);gap:5px}.object-tools label{font-size:11px;color:var(--muted)}.object-tools button{font-size:11px;padding:6px 8px}.objects{overflow:auto;flex:1;min-height:70px}.object{display:flex;align-items:center;gap:6px;min-height:45px;border-bottom:1px solid var(--border);padding:5px 8px;cursor:pointer}.object:hover{background:var(--subtle)}.object.selected{background:var(--hover);box-shadow:inset 3px 0 var(--accent)}.object .glyph{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:var(--subtle);color:var(--accent);font-size:17px}.object .object-label{flex:1;min-width:0;font-size:12px}.object .object-label strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.object .object-label small{display:block;color:var(--muted);font-family:Consolas,monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.object button{border:0;background:none;font-size:13px;padding:3px}.object.hidden{opacity:.55}.properties{border-top:1px solid var(--border);padding:12px;max-height:41%;overflow:auto}.properties h3,.toolgroup h3,.controls h3{font-size:13px;font-weight:700;margin:0 0 10px}.subtle{font-size:12px;color:var(--muted)}.field{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;margin:8px 0}.field input,.field select{width:53%;font-size:12px}.field input[type=checkbox]{width:auto}.field label{min-width:0}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:6px}.twocol label{font-size:11px;color:var(--muted)}.twocol input{width:100%;margin-top:4px}.props-actions{display:flex;gap:5px}.props-actions button{flex:1;font-size:11px}.stage{position:relative;overflow:hidden;background:var(--stage);min-width:0}.stage-actions{position:absolute;left:13px;right:13px;top:12px;z-index:1;display:flex;gap:7px;align-items:center;justify-content:space-between;pointer-events:none}.stage-actions span{font-size:11px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px;box-shadow:var(--shadow)}.stage-actions div{display:flex;gap:3px;pointer-events:auto}.stage-actions button{font-size:11px;padding:7px 9px;box-shadow:var(--shadow)}#drawing{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;background:var(--surface)}#drawing[data-tool=select]{cursor:default}#drawing[data-tool=pan]{cursor:grab}#drawing .clickable{cursor:pointer}#drawing .selected-shape{filter:drop-shadow(0 0 3px #8d7af8)}.canvas-footer{pointer-events:none;position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;background:var(--surface);border-top:1px solid var(--border);color:var(--muted);padding:7px 12px;font-size:10px}.scrollpanel{overflow-y:auto;min-height:0;flex:1;padding:12px}.preset{border-bottom:1px solid var(--border);padding-bottom:13px}.preset select{width:100%;font-size:12px}.toolgroup{padding:15px 0 10px;border-bottom:1px solid var(--border)}.toolgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:67px;padding:8px 2px 6px;gap:5px;border-color:transparent}.tool svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.tool span{font-size:10px;white-space:normal;text-align:center;line-height:1.15}.tool.active{color:var(--accent);background:var(--hover);border-color:var(--accent)}.controls{padding:15px 0;border-bottom:1px solid var(--border)}.controls .check{font-size:12px;display:block;margin:10px 0}.colorrow{display:flex;gap:15px}.colorrow label{display:flex;align-items:center;gap:6px;font-size:11px}.export-menu{position:fixed;top:58px;right:15px;width:270px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:9px;padding:12px;z-index:20}.export-menu[hidden]{display:none}.export-heading{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:650}.export-heading button{border:0;font-size:18px}.export-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.export-options button{font-size:12px}.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#263449;color:#fff;padding:10px 16px;border-radius:8px;box-shadow:var(--shadow);font-size:12px;max-width:75vw;z-index:30;display:none}.toast.visible{display:block}body.left-collapsed .workspace{grid-template-columns:52px minmax(250px,1fr) minmax(270px,305px)}body.left-collapsed .leftpanel>:not(.panelhead){display:none}body.left-collapsed .leftpanel .panelhead h2{display:none}body.right-collapsed .workspace{grid-template-columns:minmax(280px,310px) minmax(250px,1fr) 52px}body.right-collapsed .rightpanel>:not(.panelhead){display:none}body.right-collapsed .rightpanel .panelhead h2{display:none}body.left-collapsed.right-collapsed .workspace{grid-template-columns:52px minmax(250px,1fr) 52px}@media(max-width:950px){.workspace{grid-template-columns:240px minmax(230px,1fr) 235px}.beta,.header-actions button span{display:none}.scrollpanel{padding:8px}.tool{min-height:61px}.tool span{font-size:9px}}@media(max-width:700px){.appbar{flex-wrap:wrap;height:auto;min-height:58px}.header-actions{overflow:auto}.workspace{height:calc(100dvh - 90px);grid-template-columns:42px minmax(180px,1fr) 42px}.leftpanel>:not(.panelhead),.rightpanel>:not(.panelhead){display:none}.panelhead h2{display:none}.stage-actions{top:6px;left:6px;right:6px}.stage-actions span{max-width:130px}}
+/* Round 19 — readable grouping and non-collapsible floating inspector. */
+.settings-subsection{border:1px solid var(--border);border-radius:7px;padding:7px 8px 9px;margin:9px 0 3px;min-width:0}
+.settings-subsection h4{font-size:11px;font-weight:700;letter-spacing:.015em;color:var(--muted);margin:0 0 8px}
+.settings-subsection .check{margin:6px 0}
+.rightpanel .settings-subsection .field > #snap-step{width:min(100%,124px);max-width:100%;flex:0 1 124px;font-variant-numeric:tabular-nums}
+body.properties-floating #properties-toggle:disabled{opacity:.45;cursor:not-allowed}
 /* Cut 01 additions: searchable objects, semantic diagram import and conflict recovery. */
 #object-search{width:100%;min-width:0;margin-bottom:6px;border:1px solid var(--line,#cbd5e1);border-radius:6px;padding:7px 9px;background:var(--card,#fff);color:var(--text,#182438)}
 .object-tools{flex-wrap:wrap}
@@ -282,3 +288,94 @@ html[data-theme="dark"] .object-action-menu button[data-action="delete"]:not(:di
  .properties-dock .properties{max-height:none!important}
 }
 @media (pointer:coarse){.properties-head-actions button{min-width:40px;min-height:40px}}
+
+/* Round 17: detachable principal panels, without changing canvas/project geometry. */
+:root{--accent:#286cae;--hover:#e9f2fc}
+html[data-theme="dark"]{--accent:#81b8ec;--hover:#294967}
+#ui-language{cursor:pointer;appearance:none;min-width:58px;text-align:center;padding-right:8px;padding-left:8px}
+.panelhead>.panel-undock{margin-left:auto;margin-right:7px;padding:5px 9px;font-size:11px}
+.dock-placeholder{display:none;min-width:0;background:var(--subtle);border-inline:1px solid var(--border);justify-content:center;padding:8px 3px}
+.dock-placeholder.is-active{display:flex}
+.dock-restore{font-size:11px;white-space:normal;overflow-wrap:anywhere;writing-mode:vertical-rl;align-self:flex-start;max-height:140px;padding:9px 6px}
+.floating-panel-corner{display:none}
+@media(min-width:701px){
+ body>.floating-panel{position:fixed;z-index:16;display:flex;min-height:0;min-width:0;max-width:none;max-height:none;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 14px 44px #0005}
+ body>.floating-tools{z-index:17}
+ body>.floating-panel>.panelhead{flex-shrink:0;cursor:move;touch-action:none;user-select:none;background:var(--subtle)}
+ body>.floating-panel>.panelhead:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+ body>.floating-panel>.panel-resizer{display:none}
+ body>.floating-panel>.floating-panel-corner{display:block;position:absolute;bottom:0;right:0;width:23px;height:23px;z-index:5;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 56%,var(--muted) 58%,var(--muted) 62%,transparent 64%,transparent 73%,var(--muted) 75%,var(--muted) 79%,transparent 81%);background-size:14px 14px;background-repeat:no-repeat;background-position:bottom 4px right 4px}
+ body>.floating-panel>.floating-panel-corner:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+ body.floating-panel-moving{cursor:move;user-select:none}
+ body.floating-panel-resizing{cursor:nwse-resize;user-select:none}
+}
+@media(max-width:700px){.dock-placeholder{display:none!important}.panel-undock,.floating-panel-corner{display:none!important}}
+/* Ten palette values: two rows of five for the narrow new-style inspector. */
+.style-controls-grid .color-swatches{display:grid;grid-template-columns:repeat(5,20px);gap:4px;width:max-content;max-width:100%}
+/* Selected-object Properties have room for a full, single row. */
+.properties .style-controls-grid{grid-template-rows:none}
+.properties .style-controls-grid .style-stroke{grid-area:1 / 1 / 2 / -1}
+.properties .style-controls-grid .style-fill{grid-area:2 / 1 / 3 / -1}
+.properties .style-controls-grid .style-width{grid-area:3 / 1 / 4 / 2}
+.properties .style-controls-grid .style-opacity{grid-area:3 / 2 / 4 / 3}
+.properties .style-controls-grid .style-pointsize{grid-area:4 / 1 / 5 / 2}
+.properties .style-controls-grid:not(:has(.style-fill)) .style-width{grid-area:2 / 1 / 3 / 2}
+.properties .style-controls-grid:not(:has(.style-fill)) .style-opacity{grid-area:2 / 2 / 3 / 3}
+.properties .style-controls-grid:not(:has(.style-fill)) .style-pointsize{grid-area:3 / 1 / 4 / 2}
+.properties .style-controls-grid .color-swatches{display:flex;flex-wrap:nowrap;gap:4px}
+@media(min-width:701px){body>.floating-panel>.panelhead #left-collapse,body>.floating-panel>.panelhead #right-collapse{display:none}}
+
+/* Round 17 refinement: named help stays on the Name caption row. */
+.properties .property-name-caption{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;max-width:100%}
+.properties .property-name-caption .mini-help{margin:0 0 0 1px;flex:none;float:none}
+.properties .property-name-caption .mini-help:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* MathReader-like insertion preview: an outlined receiving section and a
+   visible upper/lower insertion edge; box-shadow avoids shifting layout. */
+.toolgroup.section-drop-target,.controls.section-drop-target,.geometry-subgroup.section-drop-target{position:relative;outline:2px solid var(--accent);outline-offset:-2px;background:var(--hover);border-radius:5px}
+.section-drop-before{box-shadow:inset 0 4px 0 var(--accent)}
+.section-drop-after{box-shadow:inset 0 -4px 0 var(--accent)}
+/* Icon-only object menu; accessible names are exposed by hover and focus. */
+.object-action-menu{grid-template-columns:repeat(3,38px);gap:5px;min-width:0;padding:6px;overflow:visible}
+.object-action-menu button{width:38px;height:38px;display:grid;place-items:center;padding:7px;position:relative;text-align:center}
+.object-action-menu button svg{width:19px;height:19px;pointer-events:none}
+.object-action-menu button:disabled{opacity:.45;cursor:not-allowed}
+.object-action-menu button:is(:hover,:focus-visible)::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font-size:11px;font-weight:500;line-height:1.2;white-space:nowrap;padding:5px 7px;border-radius:5px;pointer-events:none;background:var(--ink);color:var(--surface);box-shadow:0 4px 9px #0003;z-index:4}
+@media(pointer:coarse){.object-action-menu{grid-template-columns:repeat(3,44px)}.object-action-menu button{width:44px;height:44px}}
+
+/* Round 18: search never collapses; the magnifier is only a visual prefix. */
+.object-tools #object-search-icon{display:grid;place-items:center;flex:none;width:23px;height:30px;color:var(--muted);pointer-events:none}
+.object-tools #object-search{flex:1 1 110px;min-width:50px;width:auto;max-width:none}
+.object-tools label{margin-left:auto}
+/* Native help cursors add a second '?' next to the pointer; use normal pointer. */
+.mini-help{cursor:default}
+.mini-help[tabindex]{cursor:pointer}
+.trash-row .trash-names{min-width:0;flex:1;overflow-wrap:anywhere;font-size:11px;line-height:1.45}
+.freehand-snap-indicator{filter:drop-shadow(0 0 2px #0d948844)}
+
+/* Round 20 — quiet, compact settings; keep every selection's model value. */
+.header-actions .guide-action{display:inline-grid;place-items:center;width:33px;height:33px;padding:6px}
+.header-actions .guide-action svg{width:18px;height:18px}
+.settings-sections>.controls{padding:5px 0 7px}
+.settings-sections .controls .section-heading{margin-bottom:3px!important}
+.settings-sections .controls .section-body>.field{display:grid;grid-template-columns:minmax(0,1fr) minmax(104px,52%);align-items:center;column-gap:7px;margin:5px 0;font-size:11.5px;min-height:29px}
+.settings-sections .controls .section-body>.field>select,
+.settings-sections .controls .section-body>.field>input:not([type=checkbox]){box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:29px;flex:none;padding:5px 7px;font-size:11.5px;text-overflow:clip}
+.settings-sections .controls .section-body>.field>input[type=color]{width:42px;justify-self:end;padding:1px;min-height:29px}
+.settings-sections .controls .section-body>.check{display:flex;align-items:center;gap:5px;margin:6px 0;font-size:11.5px;line-height:1.25}
+.settings-sections .controls .section-body>.check input{flex:none;margin:0}
+.geometry-options .settings-subsection{background:var(--subtle);border:1px solid var(--border);border-radius:7px;padding:7px 8px 8px;margin:7px 0 0;min-width:0}
+.geometry-options .settings-subsection h4{font-size:11px;letter-spacing:.03em;color:var(--ink);margin:0 0 7px}
+.geometry-options .settings-subsection>.check{display:inline-flex;align-items:center;vertical-align:top;width:calc(50% - 5px);margin:3px 0 5px;padding-right:4px;font-size:11px;line-height:1.3;gap:4px;white-space:normal}
+.geometry-options .settings-subsection>.check input{flex:none;margin:0}
+.geometry-options .settings-subsection>.field{display:grid;grid-template-columns:minmax(0,1fr) minmax(94px,51%);gap:6px;align-items:center;margin:4px 0 8px;font-size:11px}
+.geometry-options .settings-subsection>.field>select,.geometry-options .settings-subsection>.field>input{min-height:28px;width:100%!important;max-width:100%!important;min-width:0;flex:none!important;padding:4px 6px;font-size:11px}
+.style-controls-grid{gap:7px 10px;margin:7px 0 8px}
+.style-controls-grid .style-stroke .field,.style-controls-grid .style-fill .field{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:5px;min-height:30px}
+.style-controls-grid .style-stroke .field input[type=color],.style-controls-grid .style-fill .field input[type=color]{width:39px;min-width:39px;max-width:39px;height:29px;min-height:29px;margin-left:auto;padding:2px}
+.style-controls-grid .color-swatches{margin-top:5px}
+.style-controls-grid .style-width .field,.style-controls-grid .style-opacity .field,.style-controls-grid .style-pointsize .field{gap:3px}
+/* Narrow floating/docked panels retain the short controls instead of clipping them. */
+@media(max-width:900px){.rightpanel .settings-sections .controls .section-body>.field{display:grid;align-items:center;grid-template-columns:minmax(0,1fr) minmax(90px,52%)}}
+@media(max-width:420px){.geometry-options .settings-subsection>.check{width:calc(50% - 5px)}}
+/* Keep short numeric values compact even inside the two-column Snap row. */
+.geometry-options #snap-step{width:min(100%,124px)!important;justify-self:end}

@@ -23,8 +23,8 @@ def run():
             assert button.get_attribute('title'), name
             assert button.bounding_box()['width'] <= 42, name
             assert button.locator('svg.action-icon').count() == 1, name
-        assert page.locator('#object-search-toggle').bounding_box()['width'] <= 42
-        assert page.locator('#object-search').is_visible()  # legacy test fixture deliberately expands search
+        assert page.locator('#object-search-icon').bounding_box()['width'] <= 42
+        assert page.locator('#object-search').is_visible()  # search stays expanded without any toggle
         # Viewbox metrics catch the previously cropped Bézier endpoint circles
         # and prevent regression to the crossed-line/triangle-like glyphs.
         for name in ('bezier', 'line', 'angle', 'point', 'segment', 'regularPolygon'):

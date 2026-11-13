@@ -44,6 +44,10 @@ def run():
             for position in marks.evaluate_all('(nodes)=>nodes.map(n=>[Number(n.getAttribute("cx")),Number(n.getAttribute("cy")),Number(n.getAttribute("r"))])'):
                 x,y,r=position
                 assert 0<=x-r and x+r<=24 and 0<=y-r and y+r<=24,(name,position)
+        # This is a tool-palette test; dock the now-default-floating inspector
+        # before clicking a fixed canvas coordinate beneath its overlay.
+        assert page.locator('#properties-toggle').is_disabled()
+        page.locator('#properties-undock').click()
         # Point placement via the moved button uses the original semantic type.
         page.locator('#construction-tools [data-tool-choice="point"]').click()
         assert page.locator('#drawing').get_attribute('data-tool')=='point'

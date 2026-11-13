@@ -112,8 +112,8 @@ def run():
         # independent of saved drawing JSON and use the same layout key.
         page.locator('#ui-font').select_option('serif')
         assert 'Georgia' in page.evaluate('document.documentElement.style.getPropertyValue("--ui-font")')
-        page.locator('#auto-move').uncheck()
-        assert json.loads(page.evaluate('localStorage.getItem("mathillustrator-layout-v1")'))['autoMove'] is False
+        page.locator('#auto-pan').uncheck()
+        assert json.loads(page.evaluate('localStorage.getItem("mathillustrator-layout-v1")'))['autoPan'] is False
         assert snapshot(page)==baseline,'Interface preferences changed project'
         # Import legacy modules=false without disabling the editor's geometry tools.
         legacy=snapshot(page);legacy['settings']['modules']['construction']=False
@@ -134,14 +134,15 @@ def run():
         assert '调整分区' in page.locator('[data-section-id="geometry"] > h3 > .section-drag-handle').get_attribute('aria-label')
         page.locator('#ui-language').select_option('en')
         assert 'Collapse section' in page.locator('[data-section-id="settings"] .section-toggle').first.get_attribute('aria-label')
-        # Cog opens the unified Settings sidebar, including Interface, and
-        # correctly focuses a usable font control instead of an old overlay.
+        # Settings is already in the Tools sidebar: there is no redundant
+        # header cog; opening its disclosure exposes the font control.
+        assert page.locator('#settings-open').count()==0
         page.locator('[data-section-id="interface"] .section-toggle').click()
-        page.locator('[data-section-id="settings"] .section-toggle').first.click()
-        page.locator('#settings-open').click()
+        assert page.locator('#ui-font').is_hidden()
+        page.locator('[data-section-id="interface"] .section-toggle').click()
         assert page.locator('#ui-font').is_visible()
+        page.locator('#ui-font').focus()
         assert page.locator('#ui-font').evaluate('(e)=>document.activeElement===e')
-        assert page.locator('#settings-open').get_attribute('aria-expanded')=='true'
         # Viewports / mobile drawers. Collapsed sections preserve their height.
         for width in (1440,700,390,320):
             page.set_viewport_size({'width':width,'height':850})
@@ -150,10 +151,9 @@ def run():
             geom=page.locator('[data-section-id="geometry"] > h3 > .section-toggle')
             assert geom.is_visible(),width
             assert geom.evaluate('(el)=>{const r=el.getBoundingClientRect(),p=el.closest("aside").getBoundingClientRect();return r.width>50&&r.left>=p.left-1&&r.right<=p.right+1;}'),width
-        # From a closed mobile right drawer, the cog must reveal and focus
-        # the shared Settings controls rather than leave them inaccessible.
+        # The mobile drawer's original rail trigger is the sole entry point.
         page.evaluate('document.body.classList.remove("mobile-right-open")')
-        page.locator('#settings-open').click()
+        page.locator('#right-collapse').click()
         assert page.evaluate('document.body.classList.contains("mobile-right-open")')
         assert page.locator('#ui-font').is_visible()
         # Old layout records used `plotting-`; accept its position without

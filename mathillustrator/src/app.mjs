@@ -1,11 +1,11 @@
-import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs';
-import {smoothCurveSvg,smoothPath,closeFreehandStroke,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?repair=boot-20261113';
+import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,focalEllipse,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round19';
+import {smoothCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round19';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs';
+import {localizeUI,translated} from './i18n.mjs?cut=round20';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round19';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
 import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset} from './diagram_routing.mjs';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
@@ -14,20 +14,21 @@ import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
 import {createPlotCache} from './plot_cache.mjs';
 import {layoutMorphismLabels} from './morphism_label_layout.mjs';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs';
-import {PROPERTY_DOCK_DEFAULT, PROPERTY_DOCK_MIN, normalizePropertiesLayout, fitFloatingProperties, fitDockPropertiesHeight} from './properties_layout.mjs';
+import {PROPERTY_DOCK_DEFAULT, PROPERTY_DOCK_MIN, normalizePropertiesLayout, fitFloatingProperties, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round19';
+import {normalizeFloatingPanel,fitFloatingPanel,FLOAT_PANEL_MIN_W,FLOAT_PANEL_MIN_H,FLOAT_PANEL_MAX_W,FLOAT_PANEL_MAX_H} from './floating_panels.mjs';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="9" cy="4" r="1.6" fill="currentColor"/><circle cx="21" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="3" r="1.4" fill="currentColor"/><circle cx="20.6" cy="9.5" r="1.4" fill="currentColor"/><circle cx="17.5" cy="20" r="1.4" fill="currentColor"/><circle cx="6.5" cy="20" r="1.4" fill="currentColor"/><circle cx="3.4" cy="9.5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="1.5" fill="currentColor"/><circle cx="8.5" cy="19" r="1.6" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
+glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="3" r="1.4" fill="currentColor"/><circle cx="20.6" cy="9.5" r="1.4" fill="currentColor"/><circle cx="17.5" cy="20" r="1.4" fill="currentColor"/><circle cx="6.5" cy="20" r="1.4" fill="currentColor"/><circle cx="3.4" cy="9.5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="1.5" fill="currentColor"/><circle cx="8.5" cy="19" r="1.6" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
 // A fixed, keyboard-operable palette only changes ordinary document colors.
 // Custom hues remain available via native <input type=color> controls.
 const COMMON_COLORS=[
  ['Ink','#111827'],['White','#ffffff'],['Gray','#94a3b8'],
  ['Red','#ef4444'],['Orange','#f97316'],['Yellow','#eab308'],
  ['Green','#22c55e'],['Teal','#14b8a6'],['Sky','#0ea5e9'],
- ['Blue','#3b82f6'],['Purple','#a855f7']
+ ['Blue','#3b82f6']
 ];
 function syncColorSwatches(){
  for(const group of document.querySelectorAll('[data-color-swatches]')){
@@ -70,7 +71,15 @@ const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null;
 let currentMorphismLabels=new Map();
 let trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
 const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1',TRASH='mathillustrator-trash-v1';
-let uiPrefs={language:'en',font:'system',autoMove:true,sections:[],geometryGroups:[],collapsed:{}};
+/** Existing editor choice wins; otherwise follow the site theme key when present. */
+function initialSiteTheme(){
+ try{const own=JSON.parse(localStorage.getItem(SETTINGS)||'{}').theme;if(['light','dark'].includes(own))return own;}catch{}
+ for(const name of ['theme','site-theme','shaodaji-theme','shaodaji_theme']){
+  try{const raw=localStorage.getItem(name);if(raw){const value=raw.replace(/^\"|\"$/g,'').toLowerCase();if(['dark','light'].includes(value))return value;}}catch{}
+ }
+ return 'dark'; // The site's default navy appearance; the user's explicit choice remains authoritative.
+}
+let uiPrefs={language:'en',font:'system',autoPan:true,sections:[],geometryGroups:[],collapsed:{}};
 function notice(msg){const e=$('toast');e.textContent=msg;e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
@@ -212,7 +221,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  // conservative: control-point hulls bound Béziers, and labels/node boxes are
  // excluded because they have their own independent pixel dimensions.
  const cullMargin=Math.max(28,(Number(o.style.width)||2)*2+12);
- if(coords&&['segment','arrow','rectangle','ellipse','polygon','polyline','bezier','angle'].includes(o.type)
+ if(coords&&['segment','arrow','rectangle','polygon','polyline','bezier','angle'].includes(o.type)
    &&bboxOutsideViewport(coords,size.w,size.h,cullMargin))return;
  if(o.type==='circle'&&coords?.length===2&&circleOutsideViewport(coords[0],
     Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),size.w,size.h,cullMargin))return;
@@ -239,6 +248,14 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    if(head.length)item.append(el('polygon',{class:'arrowhead',points:head.map(q=>q.join(',')).join(' '),fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));
   }else item=mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'});
  }else if(o.type==='circle'&&coords?.length===2){item=mk('circle',{cx:coords[0][0],cy:coords[0][1],r:Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),fill:'none'});
+  }else if(o.type==='ellipse'&&p.length===3&&p.every(Boolean)){
+  const f=focalEllipse(p);if(!f)return;
+  const outerX=Math.hypot(f.rx*Math.cos(f.angle),f.ry*Math.sin(f.angle))*view.scale;
+  const outerY=Math.hypot(f.rx*Math.sin(f.angle),f.ry*Math.cos(f.angle))*view.scale;
+  const [cx,cy]=project([f.cx,f.cy]);
+  if(bboxOutsideViewport([[cx-outerX,cy-outerY],[cx+outerX,cy+outerY]],size.w,size.h,cullMargin))return;
+  item=mk('ellipse',{cx,cy,rx:f.rx*view.scale,ry:f.ry*view.scale,
+   transform:`rotate(${f.angle*180/Math.PI} ${cx} ${cy})`,'fill-opacity':.20});
  }else if(o.type==='ellipse'&&coords?.length===2){
   const a=coords[0],b=coords[1],rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
   // Render historical v1 flattened ellipses as their limiting line, not invisible SVG ellipses.
@@ -430,13 +447,20 @@ function draw(svg,{exporting=false}={}){
  // Points are picked geometrically at pointerdown. No extra SVG circle per point:
  // avoids doubling the DOM and still selects points beneath later filled polygons.
  if(!exporting){const preview=draftPoints.length?draftPoints:(draftStart?[draftStart]:[]);
-  if(preview.length&&hover){const pts=[...preview,hover].map(project);svg.append(el('polyline',{points:pts.map(p=>p.join(',')).join(' '),stroke:doc.settings.stroke,'stroke-width':1.5,'stroke-dasharray':'4 4',fill:'none','pointer-events':'none'}));}
+  if(preview.length&&hover){
+   if(tool==='ellipse'&&draftPoints.length===2){
+    const f=focalEllipse([...draftPoints,hover]);
+    if(f){const [cx,cy]=project([f.cx,f.cy]);svg.append(el('ellipse',{class:'draft-ellipse',cx,cy,rx:f.rx*view.scale,ry:f.ry*view.scale,transform:`rotate(${f.angle*180/Math.PI} ${cx} ${cy})`,stroke:doc.settings.stroke,'stroke-width':1.5,'stroke-dasharray':'5 4',fill:'none','pointer-events':'none'}));}
+    for(const focus of draftPoints){const [x,y]=project(focus);svg.append(el('circle',{cx:x,cy:y,r:4,fill:doc.settings.stroke,'pointer-events':'none'}));}
+   }else{const pts=[...preview,hover].map(project);svg.append(el('polyline',{points:pts.map(p=>p.join(',')).join(' '),stroke:doc.settings.stroke,'stroke-width':1.5,'stroke-dasharray':'4 4',fill:'none','pointer-events':'none'}));}
+  }
   // Live feedback uses the same a-priori correction as the committed stroke.
   // Drafts are never added to the document or the export SVG.
   if(drag?.kind==='freehand'&&drag.path.length>1){
-   const prepared=closeFreehandStroke(correctedPath(drag.path),doc.settings.freehandClose,view.scale);
+   const {prepared,begin,finish}=preparedFreehand(drag.path,drag.startAttachment);
    const pts=prepared.path.map(project);
    svg.append(el('path',{class:'draft-freehand',d:smoothCurveSvg(pts,prepared.closed,prepared.joinStyle),stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':prepared.joinStyle==='corner'?'miter':'round','stroke-miterlimit':3,'stroke-linecap':'round','pointer-events':'none'}));
+   for(const target of [begin,finish])if(target){const [x,y]=project(target.world);svg.append(el('circle',{class:'freehand-snap-indicator',cx:x,cy:y,r:7,stroke:'#0d9488','stroke-width':2,fill:'none','pointer-events':'none'}));}
   }
  }
 }
@@ -452,7 +476,7 @@ function closeObjectMenu({restoreFocus=false}={}){
  objectMenuContext=null;menu.hidden=true;menu.replaceChildren();
  if(context.trigger.isConnected)context.trigger.setAttribute('aria-expanded','false');
  if(restoreFocus){const row=[...$('objects').querySelectorAll('.object')].find(r=>r.dataset.id===context.id);
-  (row?.querySelector('.object-menu-toggle')||$('object-search-toggle')).focus();}
+  (row?.querySelector('.object-menu-toggle')||$('object-search')).focus();}
 }
 function openObjectMenu(o,trigger){
  const menu=$('object-action-menu');if(objectMenuContext?.trigger===trigger){closeObjectMenu({restoreFocus:true});return;}
@@ -461,10 +485,19 @@ function openObjectMenu(o,trigger){
  objectMenuContext={id:o.id,object:o,trigger,generation};trigger.setAttribute('aria-expanded','true');
  menu.replaceChildren();menu.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);
  const actions=[['visibility',o.hidden?'Show':'Hide'],['lock',o.locked?'Unlock':'Lock'],['delete','Delete']];
+ const paths={Hide:'<path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7"/><path d="M9.9 5.2a10.9 10.9 0 0 1 2.1-.2c4.9 0 8.9 4.7 10 7a15 15 0 0 1-3.6 4.5M6 6.1C3.8 7.7 2.6 10 2 12c1.1 2.3 5.1 7 10 7 1.5 0 2.9-.4 4.1-1.1"/>',
+  Show:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  Lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
+  Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'};
  const blocked=[...affected(doc,o.id)].some(id=>get(doc,id)?.locked);
  for(const [action,label] of actions){const button=document.createElement('button');button.type='button';button.dataset.action=action;
-  button.setAttribute('role','menuitem');button.textContent=translated(label,uiPrefs.language);
-  if(action==='delete'&&blocked){button.disabled=true;button.title=translated('Unlock dependents before deleting.',uiPrefs.language);}
+  const blockedDelete=action==='delete'&&blocked;
+  const description=translated(blockedDelete?'Unlock dependents before deleting.':label,uiPrefs.language);
+  button.setAttribute('role','menuitem');button.title=description;button.setAttribute('aria-label',description);
+  button.dataset.tooltip=description;
+  button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[label]}</svg>`;
+  if(blockedDelete)button.disabled=true;
   button.onclick=()=>{
    const valid=objectMenuContext?.object===o&&objectMenuContext?.generation===documentGeneration&&currentObject(o)&&generation===documentGeneration;
    closeObjectMenu();if(!valid){notice('The object changed. Reopen its menu.');return;}
@@ -472,7 +505,7 @@ function openObjectMenu(o,trigger){
    else update(()=>{if(!currentObject(o)||generation!==documentGeneration)throw Error('Stale object control.');
     if(action==='visibility')o.hidden=!o.hidden;else o.locked=!o.locked;});
    const row=[...$('objects').querySelectorAll('.object')].find(r=>r.dataset.id===o.id);
-   (row?.querySelector('.object-menu-toggle')||$('object-search-toggle')).focus();
+   (row?.querySelector('.object-menu-toggle')||$('object-search')).focus();
   };
   menu.append(button);
  }
@@ -526,7 +559,7 @@ function renderListWindow(){
   };fragment.append(row);
  }
  if(last<count)fragment.append(spacer((count-last)*LIST_ROW_HEIGHT));
- if(!count){const empty=document.createElement('p');empty.className='subtle empty-objects';empty.textContent=doc.objects.length?'No matching objects.':'No objects yet. Use commands or tools to draw.';fragment.append(empty);}
+ if(!count){const empty=document.createElement('p');empty.className='subtle empty-objects';empty.textContent=doc.objects.length?'No matches':'No objects';fragment.append(empty);}
  wrapper.replaceChildren(fragment);
 }
 
@@ -542,8 +575,8 @@ function focusListIndex(index){
 function field(parent,label,value,type,onChange,opts={}){const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');wrap.textContent=label;const input=document.createElement(type==='multiline'?'textarea':'input');if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}input.value=String(value??'');if(opts.step)input.step=opts.step;if(opts.min!==undefined)input.min=opts.min;if(opts.max!==undefined)input.max=opts.max;let accepted=input.value;input.onchange=()=>{if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}const next=input.value;if(onChange(type==='number'?Number(next):next)===false)input.value=accepted;else accepted=next;};wrap.append(input);parent.append(wrap);return input;}
 function renderProperties(){
  const root=$('properties');root.replaceChildren();const o=get(doc,selected);
- if(!o){const p=document.createElement('p');p.className='subtle';p.textContent='Select an object to edit its style, labels, coordinates or dependencies.';root.append(p);return;}
- if(o.locked){const p=document.createElement('p');p.className='hint';p.textContent='Locked: unlock with the lock icon in the object list before editing.';root.append(p);return;}
+ if(!o)return;
+ if(o.locked){const p=document.createElement('p');p.className='subtle';p.textContent='Locked';root.append(p);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
  // replace the document and make the old object reference stale. Resolve by ID in
  // every transaction, preventing false-success edits that silently do nothing.
@@ -552,7 +585,7 @@ function renderProperties(){
   if(editorGeneration!==documentGeneration||!live||live.type!==o.type||live.locked||selected!==o.id)throw Error('Object changed while editing. Please reselect it.');
   fn(live);
  });
- field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+ const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
  if(['point','midpoint'].includes(o.type)){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Point label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
@@ -569,7 +602,7 @@ function renderProperties(){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.textMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.text);live.textMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
-  field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>{if(live.textMode==='latex')validateLatexInput(v);live.text=v;}));const tip=document.createElement('p');tip.className='hint';tip.textContent='Enter inserts a line break. Click outside to apply; SVG preserves spaces and line breaks where supported.';tip.title=tip.textContent;tip.textContent='';tip.className='mini-help';tip.textContent='?';root.append(tip);}
+  field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>{if(live.textMode==='latex')validateLatexInput(v);live.text=v;}));}
  if(['text','node','morphism'].includes(o.type)&&o.textMode!=='latex'){
   const family=document.createElement('label');family.className='field';family.textContent='Font';const pick=document.createElement('select');
   for(const [value,label] of [['Georgia, serif','Serif'],['Arial, sans-serif','Sans-serif'],['Consolas, monospace','Monospace']]){const option=document.createElement('option');option.value=value;option.textContent=label;pick.append(option);}
@@ -578,34 +611,30 @@ function renderProperties(){
  if(['text','node'].includes(o.type))field(root,'Font size',o.fontSize||18,'number',v=>edit(live=>{if(!finite(v)||v<5||v>200)throw Error('Font size must be 5–200.');live.fontSize=v;}),{min:5,max:200,step:1});
  if(o.type==='node'){const border=document.createElement('label');border.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
  if(o.type==='morphism'){
-  const arrowLabel=document.createElement('label');arrowLabel.className='field';arrowLabel.textContent='Arrow style';const arrowChoice=document.createElement('select');for(const [value,label] of [['solid','→ Solid'],['dashed','Dashed'],['dotted','Dotted'],['hook','Hooked'],['hook-dashed','Hooked dashed'],['twohead','Two heads'],['tail','Tail bar']]){const option=document.createElement('option');option.value=value;option.textContent=label;arrowChoice.append(option);}arrowChoice.value=o.arrowStyle||'solid';arrowChoice.onchange=()=>edit(live=>live.arrowStyle=arrowChoice.value);arrowLabel.append(arrowChoice);root.append(arrowLabel);
-  const warning=document.createElement('p');warning.className='hint';warning.textContent='When node boxes overlap, the arrow may be suppressed. With Move selected, click the arrow label in the canvas to select it, then drag its purple handle to reposition the label. The shift is undoable.';warning.title=warning.textContent;warning.textContent='?';warning.className='mini-help';root.append(warning);
+  const arrowLabel=document.createElement('label');arrowLabel.className='field';arrowLabel.textContent='Arrow style';const arrowChoice=document.createElement('select');for(const [value,label] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['hook','Hooked'],['hook-dashed','Hook dashed'],['twohead','Two heads'],['tail','Tail bar']]){const option=document.createElement('option');option.value=value;option.textContent=label;arrowChoice.append(option);}arrowChoice.value=o.arrowStyle||'solid';arrowChoice.onchange=()=>edit(live=>live.arrowStyle=arrowChoice.value);arrowLabel.append(arrowChoice);root.append(arrowLabel);
+
   field(root,'Curve / bend',o.bend||0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>5)throw Error('Bend range: −5 to 5.');live.bend=v;}),{min:-5,max:5,step:.1});
   const routeRow=document.createElement('label');routeRow.className='field routing-field';routeRow.textContent='Arrow routing';
   const routeSelect=document.createElement('select');routeSelect.id='morphism-routing';
-  for(const [value,text] of [['direct','Direct / curved (legacy)'],['avoid','Avoid diagram nodes (two-turn)'],['avoid-crossings','Reduce earlier crossings'],['scene-crossings','Consider all visible arrows (max 48)']]){
+  for(const [value,text] of [['direct','Direct'],['avoid','Avoid nodes'],['avoid-crossings','Fewer crossings'],['scene-crossings','All arrows']]){
    const option=document.createElement('option');option.value=value;option.textContent=text;routeSelect.append(option);
   }
   routeSelect.value=o.routing||'direct';routeSelect.onchange=()=>edit(live=>{live.routing=routeSelect.value;});
   routeRow.append(routeSelect);root.append(routeRow);
-  const routeHint=document.createElement('p');routeHint.className='hint';routeHint.textContent='Avoid routes around visible diagram nodes. Reduce earlier crossings uses document order. Consider all arrows also revisits later visible edges (48-arrow cap, two bounded passes). All options are best-effort screen-space attempts; bend is ignored. Unsolved crossings or safety limits show dashed amber. No globally optimal or crossing-free guarantee.';routeHint.title=routeHint.textContent;routeHint.textContent='?';routeHint.className='mini-help';root.append(routeHint);
+
   const collisionRow=document.createElement('label');collisionRow.className='check';
   const collisionCheck=document.createElement('input');collisionCheck.type='checkbox';collisionCheck.id='morphism-label-avoid';
   collisionCheck.checked=!!o.labelAvoid;collisionCheck.onchange=()=>edit(live=>{live.labelAvoid=collisionCheck.checked;});
   collisionRow.append(collisionCheck,document.createTextNode(' Avoid collisions'));root.append(collisionRow);
-  const collisionHint=document.createElement('p');collisionHint.className='hint';
-  collisionHint.textContent='Optional screen-space placement: keeps the exact label and arrow references; may not resolve every collision. Dragging the label switches that arrow to manual positioning. Auto placement is not represented by TikZ.';collisionHint.title=collisionHint.textContent;collisionHint.textContent='?';collisionHint.className='mini-help';root.append(collisionHint);
-  field(root,'Label position on arrow (0.05–0.95)',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
+
+  field(root,'Label position',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
   field(root,'Label distance (px)',o.labelDistance??17,'number',v=>edit(live=>{if(!finite(v)||v<0||v>200)throw Error('Label distance must be 0–200 px.');live.labelDistance=v;}),{min:0,max:200,step:1});
   field(root,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
   field(root,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
   const side=document.createElement('label');side.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;cb.onchange=()=>edit(live=>live.swap=cb.checked);side.append(cb,document.createTextNode(' Swap label side'));root.append(side);
  }
- if(o.type==='function'){const warn=document.createElement('span');warn.className='mini-help';warn.textContent='?';warn.title='Sampling may miss thin spikes, poles, or rapid oscillations. Adjust plot detail in the tools panel.';root.append(warn);}
  if(o.type==='function')field(root,'y(x) =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');live.sides=v;}),{step:1,min:3,max:100});
- if(o.refs){const hint=document.createElement('span');hint.className='mini-help';hint.textContent='?';hint.title='Live references: '+o.refs.map(id=>get(doc,id)?.name||'?').join(' → ')+'. Select anchors in the object list to move them.';root.append(hint);}
- if(o.type==='freehand'){const hint=document.createElement('p');hint.className='hint';hint.textContent=`${o.path.length} path vertices. Individual vertices are not yet editable.`;hint.title=hint.textContent;hint.textContent='?';hint.className='mini-help';root.append(hint);}
  // Compact appearance controls reuse the existing transaction handlers. Keep
  // fill absent for ineligible types and preserve the existing field order.
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';
@@ -628,16 +657,16 @@ function renderProperties(){
  const up=document.createElement('button');up.textContent='Bring forward';up.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>=0&&n<doc.objects.length-1)doc.objects.splice(n,2,doc.objects[n+1],live);});
  const down=document.createElement('button');down.textContent='Send backward';down.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>0)doc.objects.splice(n-1,2,live,doc.objects[n-1]);});
  const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=['point','midpoint','node'].includes(live.type)?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
- actions.append(del,up,down,focus);root.append(actions);
+ actions.append(del,focus,down,up);root.append(actions);
 }
 function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
 function select(id){selected=id;renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();}
 function clearDraft(){draftStart=null;draftPoints=[];draftNode=null;hover=null;pendingTouchTap=null;}
-const toolInstructions={select:'Drag objects to edit; Ctrl-click cycles overlapping objects.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click opposite corners.',rectangle:'Click opposite corners.'};
+const toolInstructions={select:'Drag objects to edit; Ctrl-click cycles overlapping objects.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click opposite corners.'};
 function updateModeLabel(t){
  const label=toolGroups['basic-tools'].concat(toolGroups['construction-tools'],toolGroups['illustration-tools'],toolGroups['diagram-tools']).find(([id])=>id===t)?.[1]||t;
  const localized=translated(label,uiPrefs.language),help=toolInstructions[t]||'Click the canvas.';
- const mode=$('mode-label');mode.textContent=localized+'  ?';mode.title=help;mode.tabIndex=0;
+ const mode=$('mode-label');mode.textContent=localized;mode.removeAttribute('title');mode.removeAttribute('tabindex');
  mode.setAttribute('aria-label',localized+': '+help);
  $('drawing').setAttribute('aria-label','Interactive mathematical drawing canvas · '+localized+': '+help);
 }
@@ -669,7 +698,7 @@ function populateTools(){
  selectTool('select');
 }
 function syncSettings(){
- for(const [id,k]of [['naming-convention','namingConvention'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
  $('export-region').querySelector('option[value="page"]').disabled=doc.settings.page==='infinite';
@@ -680,7 +709,7 @@ function syncSettings(){
  // polygon sides or point-label visibility. Page/export/theme are independent.
  const matching=Object.entries(PRESETS).find(([name,preset])=>Object.entries(preset).every(([k,v])=>doc.settings[k]===v)
   &&Object.entries(PRESET_MODULES[name]).every(([k,v])=>doc.settings.modules[k]===v)
-  &&doc.settings.snapAnchors===true&&doc.settings.polygonSides===6&&doc.settings.showLabels===true&&doc.settings.labelPlacement==='standard');
+  &&doc.settings.snapAnchors===true&&doc.settings.snapObjects===true&&doc.settings.polygonSides===6&&doc.settings.showLabels===true&&doc.settings.labelPlacement==='standard');
  syncColorSwatches();
  $('preset').value=matching?.[0]||'Custom';
 }
@@ -692,8 +721,8 @@ function setupSettings(){
  }
 
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
- preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='standard';});};
- for(const [id,k]of [['naming-convention','namingConvention'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.snapObjects=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='standard';});};
+ for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   $(id).onchange=()=>update(()=>{
    const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
    const value=input.type==='checkbox'?input.checked:(input.type==='number'||k==='exportScale')?Number(input.value):input.value;
@@ -703,7 +732,7 @@ function setupSettings(){
    if(k==='page'&&value==='infinite')doc.settings.exportRegion='viewport';
   },['exportRegion','exportGuides','exportScale','exportTransparent'].includes(k)?{refreshList:false,renderCanvas:false}:{});
  }
- const theme=$('theme');try{theme.value=JSON.parse(localStorage.getItem(SETTINGS)||'{}').theme||'light';}catch{theme.value='light';}
+ const theme=$('theme');theme.value=initialSiteTheme();
  document.documentElement.dataset.theme=theme.value;theme.onchange=()=>{document.documentElement.dataset.theme=theme.value;safeStorageSet(SETTINGS,JSON.stringify({theme:theme.value}));};
 }
 // Build a spatial index only once per settled document and viewport. During
@@ -731,9 +760,9 @@ function stackedSelection(e,sx,sy){
  });
  return cycleSelection(candidates,selected);
 }
-function nearestAnchor(pt){
+function nearestAnchor(pt,excluded=null){
  if(!doc.settings.snapAnchors)return null;
- const [sx,sy]=project(pt);return currentAnchorIndex().nearest(sx,sy,12);
+ const [sx,sy]=project(pt);return currentAnchorIndex().nearest(sx,sy,12,excluded);
 }
 /** Resolve all existing anchors *before* adding any new vertex in one gesture.
  * Otherwise the first newly inserted anchor can capture the second vertex,
@@ -760,16 +789,49 @@ function checkNewRefs(type,refs){
   for(let i=1;i<pairs.length;i++)if(pairs[i]===pairs[i-1])throw Error('Construction has a repeated consecutive vertex.');
  }
 }
-function addTwoPoint(type,a,b){update(()=>{checkNewGeometry(type,[a,b]);const refs=makeRefs([a,b]);checkNewRefs(type,refs);selected=append(doc,{type,refs}).id;});}
+function addTwoPoint(type,a,b){return update(()=>{checkNewGeometry(type,[a,b]);const refs=makeRefs([a,b]);checkNewRefs(type,refs);selected=append(doc,{type,refs}).id;});}
 function finishDraft(){
  const mins={polygon:3,polyline:2,bezier:4,angle:3};if(!mins[tool]||draftPoints.length<mins[tool]){notice('Add more vertices before finishing.');return;}
  const pts=clone(draftPoints),type=tool;
  try{checkNewGeometry(type,pts);}catch(e){notice(e.message);return;}
  const ok=update(()=>{const refs=makeRefs(pts);checkNewRefs(type,refs);selected=append(doc,{type,refs}).id;});
- if(ok){draftPoints=[];scheduleRender();}
+ if(ok){draftPoints=[];afterOneConstruction();scheduleRender();}
 }
 function correctedPath(path){return smoothPath(path,doc.settings.correction,view.scale);}
-function constructionPoint(world){const anchor=nearestAnchor(world);return anchor?anchor.world:snapPoint(world,doc.settings);}
+function freehandAttachment(world){
+ return doc.settings.freehandClose==='near'
+  ?nearestFreehandAttachment(world,doc.objects,createResolver(doc),view.scale):null;
+}
+function preparedFreehand(path,startAttachment=null){
+ const corrected=correctedPath(path);
+ if(doc.settings.freehandClose==='near'&&corrected.length>=2){
+  const begin=startAttachment||freehandAttachment(path[0]);
+  const finish=freehandAttachment(path.at(-1));
+  if(begin)corrected[0]=begin.world;
+  if(finish)corrected[corrected.length-1]=finish.world;
+  return {prepared:closeFreehandStroke(corrected,'near',view.scale),begin,finish};
+ }
+ return {prepared:closeFreehandStroke(corrected,doc.settings.freehandClose,view.scale),begin:null,finish:null};
+}
+/** Point-to-object attraction is opt-in per document and coordinate-only.
+ * Filter the moving point AND all of its dependents: otherwise a moving point
+ * can snap to geometry whose coordinates it is itself changing. */
+function objectPointAttachment(world,excluded=null){
+ if(doc.settings.snapObjects!==true)return null;
+ const candidates=excluded?doc.objects.filter(o=>!excluded.has(o.id)):doc.objects;
+ return nearestFreehandAttachment(world,candidates,createResolver(doc),view.scale);
+}
+function constructionPoint(world,excludeId=null){
+ // Cache the dependency exclusion for a continuous drag. A point cannot attach
+ // to itself or to a moving segment/ellipse that refers to that same point.
+ const excluded=excludeId?(drag?.id===excludeId&&drag.excluded?drag.excluded:affected(doc,excludeId)):null;
+ const anchor=nearestAnchor(world,excluded);
+ if(anchor)return anchor.world;
+ const attached=objectPointAttachment(world,excluded);
+ return attached?attached.world:snapPoint(world,doc.settings);
+}
+function constructionVertex(world){const anchor=nearestAnchor(world);return anchor?anchor.world:snapPoint(world,doc.settings);}
+function afterOneConstruction(){if(uiPrefs.autoPan!==false)selectTool('pan');}
 function pointerDown(e){
  if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;
  // Touch drawing must wait for release; otherwise the first finger of a pinch
@@ -784,7 +846,7 @@ function pointerDown(e){
   }
   if(touchBlocked)return;
  }
- if(e.button!==0||!e.isPrimary||drag)return;const [sx,sy]=xyEvent(e),world=unproject(sx,sy),pt=['select','pan'].includes(tool)?world:constructionPoint(world);
+ if(e.button!==0||!e.isPrimary||drag)return;const [sx,sy]=xyEvent(e),world=unproject(sx,sy),pt=['select','pan'].includes(tool)?world:tool==='point'?constructionPoint(world):constructionVertex(world);
  $('drawing').focus();hover=pt;
  if(e.pointerType==='touch'&&!['select','pan','freehand'].includes(tool)){
   pendingTouchTap={pointerId:e.pointerId,sx,sy,moved:false};
@@ -807,28 +869,37 @@ function pointerDown(e){
   const id=hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null;
   if(e.shiftKey||e.altKey){drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};}
   else if(e.ctrlKey||e.metaKey){select(stackedSelection(e,sx,sy));}
-  else{select(id);const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&['point','node','text'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false};}
- }else if(tool==='pan'){drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};}
- else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world]};}
+  else{select(id);const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&['point','node','text'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};}
+ }else if(tool==='pan'){
+  const id=uiPrefs.autoPan!==false?(hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null):null;
+  const obj=id&&get(doc,id);
+  if(obj&&!obj.hidden&&!obj.locked)drag={kind:'pan-object-pending',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy,id};
+  else drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};
+ }
+ else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
  else performConstructionTap(e,pt);
  if(drag)try{$('drawing').setPointerCapture(e.pointerId);}catch{}
 }
 function performConstructionTap(e,pt){
- if(tool==='point'){const ok=update(()=>selected=addPoint(doc,pt).id);if(ok&&uiPrefs.autoMove)selectTool('select');}
- else if(['segment','arrow','line','circle','ellipse','rectangle','regularPolygon'].includes(tool)){
-  if(!draftStart){draftStart=pt;scheduleRender();}else{const a=draftStart;draftStart=null;if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;});else addTwoPoint(tool,a,pt);}
+ if(tool==='point'){const ok=update(()=>selected=addPoint(doc,pt).id);if(ok)afterOneConstruction();}
+ else if(tool==='ellipse'){
+  draftPoints.push(pt);
+  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
+  scheduleRender();
+ }else if(['segment','arrow','line','circle','rectangle','regularPolygon'].includes(tool)){
+  if(!draftStart){draftStart=pt;scheduleRender();}else{const a=draftStart;draftStart=null;if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;})&&afterOneConstruction();else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
  }else if(['polygon','polyline','bezier','angle'].includes(tool)){
   if(draftPoints.length===0||Math.hypot(pt[0]-draftPoints.at(-1)[0],pt[1]-draftPoints.at(-1)[1])>1e-8)draftPoints.push(pt);
   if((tool==='bezier'&&draftPoints.length===4)||(tool==='angle'&&draftPoints.length===3))finishDraft();else scheduleRender();
- }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world]};}
+ }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
  else if(tool==='text'||tool==='node'){
   const label=window.prompt(tool==='node'?'Diagram node label (TeX source or text):':'Text label (plain text):');
-  if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else update(()=>{if(tool==='node')validateLatexInput(label);selected=append(doc,{type:tool,xy:pt,text:label,textMode:tool==='node'?'latex':'plain',fontSize:tool==='node'?17:18}).id;});}
+  if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else if(update(()=>{if(tool==='node')validateLatexInput(label);selected=append(doc,{type:tool,xy:pt,text:label,textMode:tool==='node'?'latex':'plain',fontSize:tool==='node'?17:18}).id;}))afterOneConstruction();}
  }else if(tool==='morphism'){
   const id=e.target.closest('[data-id]')?.dataset.id,node=get(doc,id);
   if(node?.type!=='node'){notice('Choose a diagram node.');return;}
   if(!draftNode){draftNode=id;draftStart=node.xy;scheduleRender();}
-  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Arrow label (TeX source or text):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:label.trim()?'latex':'plain',bend:0,swap:false}).id;});}}}
+  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Arrow label (TeX source or text):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:label.trim()?'latex':'plain',bend:0,swap:false}).id;})&&afterOneConstruction();}}}
  }
 }
 function pointerMove(e){
@@ -843,11 +914,17 @@ function pointerMove(e){
  // coordinates or alter construction previews while another pointer is captured.
  if(e.isPrimary===false||(drag&&drag.pointerId!==e.pointerId))return;
  const [sx,sy]=xyEvent(e),world=unproject(sx,sy);
- hover=(drag||tool==='select'||tool==='pan')?world:constructionPoint(world);$('coords').textContent=`x ${formatCoordinate(world[0])} · y ${formatCoordinate(world[1])}`;
+ hover=(drag||tool==='select'||tool==='pan')?world:tool==='point'?constructionPoint(world):constructionVertex(world);$('coords').textContent=`x ${formatCoordinate(world[0])} · y ${formatCoordinate(world[1])}`;
+ if(drag?.kind==='pan-object-pending'&&Math.hypot(sx-drag.sx,sy-drag.sy)>4){
+  const pending=drag,obj=get(doc,pending.id);
+  drag=null;selectTool('select');select(pending.id);
+  if(obj&&['point','node','text'].includes(obj.type))drag={kind:'point',pointerId:e.pointerId,id:pending.id,before:JSON.stringify(doc),sx:pending.sx,sy:pending.sy,moved:true,excluded:affected(doc,pending.id)};
+  else drag={kind:'selected-object',pointerId:e.pointerId,id:pending.id};
+ }
  if(drag?.kind==='pan'){view.cx=drag.cx-(sx-drag.sx)/view.scale;view.cy=drag.cy+(sy-drag.sy)/view.scale;}
  else if(drag?.kind==='point'){
   if(Math.hypot(sx-drag.sx,sy-drag.sy)>3)drag.moved=true;
-  if(drag.moved){const o=get(doc,drag.id);if(o)o.xy=snapPoint(world,doc.settings);}
+  if(drag.moved){const o=get(doc,drag.id);if(o)o.xy=o.type==='point'?constructionPoint(world,drag.id):snapPoint(world,doc.settings);}
  }
  else if(drag?.kind==='label'){
   const offset=labelDragOffset(drag.offsetX,drag.offsetY,[drag.sx,drag.sy],[sx,sy]);
@@ -881,7 +958,7 @@ function pointerUp(e){
    try{if($('drawing').hasPointerCapture(e.pointerId))$('drawing').releasePointerCapture(e.pointerId);}catch{}
    if(e.type==='pointerup'&&!blocked&&!tap.moved){
     const [x,y]=xyEvent(e),world=unproject(x,y);
-    if(x>=0&&x<=size.w&&y>=0&&y<=size.h&&Math.hypot(x-tap.sx,y-tap.sy)<=10&&world.every(finite)){hover=world;performConstructionTap(e,constructionPoint(world));scheduleRender();}
+    if(x>=0&&x<=size.w&&y>=0&&y<=size.h&&Math.hypot(x-tap.sx,y-tap.sy)<=10&&world.every(finite)){hover=world;performConstructionTap(e,tool==='point'?constructionPoint(world):constructionVertex(world));scheduleRender();}
    }
    return;
   }
@@ -910,7 +987,7 @@ function pointerUp(e){
  }
  if(completed.kind==='point'){
   const moved=get(doc,completed.id);
-  if(moved&&released.every(finite)&&(completed.moved||Math.hypot(endX-completed.sx,endY-completed.sy)>3))moved.xy=snapPoint(released,doc.settings);
+  if(moved&&released.every(finite)&&(completed.moved||Math.hypot(endX-completed.sx,endY-completed.sy)>3))moved.xy=moved.type==='point'?constructionPoint(released,completed.id):snapPoint(released,doc.settings);
   const before=completed.before;
   try{validateDoc(doc);guardAnchorMove(JSON.parse(before),doc,completed.id);}catch(err){doc=JSON.parse(before);documentGeneration++;notice('Move rejected: '+err.message);renderAll();return;}
   if(JSON.stringify(doc)!==before){recordUndo(before);documentRevision++;enqueueSave();}
@@ -921,9 +998,9 @@ function pointerUp(e){
    const last=completed.path.at(-1);
    if(Math.hypot(last[0]-released[0],last[1]-released[1])>1e-10)completed.path.push(released);
   }
-  const prepared=closeFreehandStroke(correctedPath(completed.path),doc.settings.freehandClose,view.scale);
+  const {prepared}=preparedFreehand(completed.path,completed.startAttachment);
   const {path,closed,joinStyle}=prepared;
-  if(path.length>=2){const start=path[0];const meaningful=closed||path.some(p=>Math.hypot(p[0]-start[0],p[1]-start[1])*view.scale>2);if(meaningful)update(()=>selected=append(doc,{type:'freehand',path,closed,...(joinStyle?{joinStyle}:{})}).id);}
+  if(path.length>=2){const start=path[0];const meaningful=closed||path.some(p=>Math.hypot(p[0]-start[0],p[1]-start[1])*view.scale>2);if(meaningful&&update(()=>selected=append(doc,{type:'freehand',path,closed,...(joinStyle?{joinStyle}:{})}).id))afterOneConstruction();}
  }
  scheduleRender();
 }
@@ -953,7 +1030,10 @@ function renderTrash(){
  root.replaceChildren();$('trash-count').textContent=String(trash.length);
  for(const [index,entry] of trash.entries()){
   const row=document.createElement('div');row.className='trash-row';
-  const title=document.createElement('span');title.textContent=`${entry.objects.length} object(s) · ${new Date(entry.at).toLocaleString()}`;
+  const title=document.createElement('span');title.className='trash-names';
+  const names=entry.objects.map(o=>typeof o.name==='string'&&o.name.trim()?o.name.trim():o.id).filter(Boolean);
+  title.textContent=`${names.join(', ')||entry.objects.length+' object(s)'} · ${new Date(entry.at).toLocaleString()}`;
+  title.title=names.join(', ');
   const button=document.createElement('button');button.textContent='Restore';
   button.onclick=()=>{
    if(storageConflict){notice('Resolve the other-tab conflict before restoring.');return;}
@@ -1052,6 +1132,12 @@ function asTikz(){
    lines.push(`\\draw[${style}${o.type==='arrow'?',->':''}] ${texPoint(a)} -- ${texPoint(b)};`);
   }else if(o.type==='circle'&&p.length===2&&p.every(Boolean)){
    lines.push(`\\draw[${style}] ${texPoint(p[0])} circle (${Math.hypot(p[1][0]-p[0][0],p[1][1]-p[0][1]).toFixed(5)}cm);`);
+   }else if(o.type==='ellipse'&&p.length===3&&p.every(Boolean)){
+   const f=focalEllipse(p);if(!f)continue;
+   const angle=(f.angle*180/Math.PI).toFixed(5);
+   lines.push(`\\begin{scope}[shift={${texPoint([f.cx,f.cy])}},rotate=${angle}]`);
+   lines.push(`\\draw[${style},fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}] (0,0) ellipse (${f.rx.toFixed(5)}cm and ${f.ry.toFixed(5)}cm);`);
+   lines.push('\\end{scope}');
   }else if(o.type==='ellipse'&&p.length===2&&p.every(Boolean)){
    const cx=(p[0][0]+p[1][0])/2,cy=(p[0][1]+p[1][1])/2,rx=Math.abs(p[1][0]-p[0][0])/2,ry=Math.abs(p[1][1]-p[0][1])/2;
    if(rx<1e-9||ry<1e-9)lines.push(`\\draw[${style}] ${texPoint(p[0])} -- ${texPoint(p[1])};`);
@@ -1121,11 +1207,16 @@ function setupInterface(){
  const fontMap={system:'system-ui, sans-serif',serif:'Georgia, serif',sans:'Arial, sans-serif',mono:'Consolas, monospace'};
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
- $('auto-move').checked=uiPrefs.autoMove!==false;$('auto-move').onchange=()=>{uiPrefs.autoMove=$('auto-move').checked;savePrefs();};
+ $('auto-pan').checked=uiPrefs.autoPan!==false;$('auto-pan').onchange=()=>{uiPrefs.autoPan=$('auto-pan').checked;savePrefs();};
  function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
+ const languageSwitch=$('ui-language');
+ languageSwitch.title='Click once to switch English / 中文';
+ languageSwitch.addEventListener('pointerdown',event=>{if(event.button===0){event.preventDefault();}});
+ languageSwitch.addEventListener('click',event=>{if(event.detail!==0){languageSwitch.value=languageSwitch.value==='zh'?'en':'zh';languageSwitch.dispatchEvent(new Event('change',{bubbles:true}));}});
+ languageSwitch.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();languageSwitch.value=languageSwitch.value==='zh'?'en':'zh';languageSwitch.dispatchEvent(new Event('change',{bubbles:true}));}});
  $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();renderList();};applyLanguage();
- const properties=$('properties'),toggle=$('properties-toggle');toggle.onclick=()=>{const collapsed=!properties.hidden;properties.hidden=collapsed;toggle.textContent=collapsed?'+':'−';toggle.setAttribute('aria-expanded',String(!collapsed));};
+ const properties=$('properties'),toggle=$('properties-toggle');toggle.onclick=()=>{if(toggle.disabled)return;const collapsed=!properties.hidden;properties.hidden=collapsed;toggle.textContent=collapsed?'+':'−';toggle.setAttribute('aria-expanded',String(!collapsed));};
  // Only interface preferences change on disclosure/reorder: no undo entry, no
  // project mutation, no imported `settings.modules` rewrite, no lost selection.
  const palette=$('panel-sections'),settingsContent=$('settings-sections');
@@ -1162,7 +1253,8 @@ function setupInterface(){
  }
  palette.append(settingsGroup);
  function saveOrder(){uiPrefs.sections=[...palette.children,...settingsContent.children].filter(e=>validIds.has(e.dataset.sectionId)&&e!==settingsGroup).map(e=>e.dataset.sectionId);uiPrefs.geometryGroups=[...$('construction-tools').children].filter(e=>e.classList.contains('geometry-subgroup')).map(e=>e.dataset.geometryGroup);savePrefs();}
- let dragged=null;
+ let dragged=null,dropTarget=null;
+ function clearDropTarget(){if(!dropTarget)return;dropTarget.classList.remove('section-drop-target','section-drop-before','section-drop-after');dropTarget=null;}
  function moveSection(e,shift){
   const parent=e.parentElement,kind=e.classList.contains('toolgroup')?'toolgroup':e.classList.contains('geometry-subgroup')?'geometry-subgroup':'controls';
   const siblings=[...parent.children].filter(node=>node!==settingsGroup&&node.classList.contains(kind));
@@ -1178,20 +1270,17 @@ function setupInterface(){
   if(!body){body=document.createElement('div');body.className='section-body';while(heading.nextSibling)body.append(heading.nextSibling);section.append(body);}
   body.id=body.id||`section-body-${id}`;
   heading.classList.add('section-heading');
-  const tooltip=heading.querySelector('.mini-help');
   const toggle=document.createElement('button');toggle.type='button';toggle.className='section-toggle';
   toggle.setAttribute('aria-controls',body.id);
   const arrow=document.createElement('span');arrow.className='section-chevron';arrow.setAttribute('aria-hidden','true');
   const title=document.createElement('span');title.textContent=name;toggle.append(arrow,title);
   heading.replaceChildren(toggle);
-  if(tooltip)heading.append(tooltip);
   function updateDisclosure(){
    const collapsed=uiPrefs.collapsed[id]===true;
    body.hidden=collapsed;arrow.textContent=collapsed?'▸':'▾';toggle.setAttribute('aria-expanded',String(!collapsed));
    const prefix=translated(collapsed?'Expand section':'Collapse section',uiPrefs.language);
    toggle.setAttribute('aria-label',`${prefix}: ${translated(name,uiPrefs.language)}`);
    toggle.title=toggle.getAttribute('aria-label');
-   if(id==='settings')$('settings-open').setAttribute('aria-expanded',String(!collapsed));
   }
   toggle.onclick=()=>{uiPrefs.collapsed[id]=!(uiPrefs.collapsed[id]===true);updateDisclosure();savePrefs();};
   section.refreshDisclosure=updateDisclosure;
@@ -1202,38 +1291,33 @@ function setupInterface(){
   function updateGrip(){grip.title=translated('Drag to reorder; Alt+Up/Down',uiPrefs.language);grip.setAttribute('aria-label',`${translated('Reorder section',uiPrefs.language)}: ${translated(name,uiPrefs.language)}`);}
   section.refreshGrip=updateGrip;updateGrip();
   grip.addEventListener('dragstart',event=>{
-   dragged=section;section.classList.add('moving');event.dataTransfer.effectAllowed='move';
+   clearDropTarget();dragged=section;section.classList.add('moving');event.dataTransfer.effectAllowed='move';
    event.dataTransfer.setData('text/plain',id);event.stopPropagation();
   });
-  grip.addEventListener('dragend',()=>{section.classList.remove('moving');dragged=null;});
+  grip.addEventListener('dragend',()=>{section.classList.remove('moving');dragged=null;clearDropTarget();});
   grip.addEventListener('keydown',event=>{
    if(!event.altKey||!['ArrowUp','ArrowDown'].includes(event.key))return;
    event.preventDefault();moveSection(section,event.key==='ArrowUp'?-1:1);grip.focus();
   });
   section.addEventListener('dragover',event=>{
    if(!dragged||dragged===section||dragged.parentElement!==section.parentElement)return;
-   event.preventDefault();event.dataTransfer.dropEffect='move';
+   event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='move';
+   const before=event.clientY<section.getBoundingClientRect().top+section.offsetHeight/2;
+   if(dropTarget!==section)clearDropTarget();
+   dropTarget=section;section.classList.add('section-drop-target');
+   section.classList.toggle('section-drop-before',before);section.classList.toggle('section-drop-after',!before);
   });
   section.addEventListener('drop',event=>{
    if(!dragged||dragged===section||dragged.parentElement!==section.parentElement)return;
-   event.preventDefault();event.stopPropagation();const position=event.clientY<section.getBoundingClientRect().top+section.offsetHeight/2;
-   section.parentElement.insertBefore(dragged,position?section:section.nextSibling);
+   event.preventDefault();event.stopPropagation();const before=event.clientY<section.getBoundingClientRect().top+section.offsetHeight/2;
+   clearDropTarget();
+   section.parentElement.insertBefore(dragged,before?section:section.nextSibling);
    if(dragged.parentElement===palette)palette.append(settingsGroup);saveOrder();
   });
  }
+ document.addEventListener('dragover',event=>{if(dragged&&!event.target.closest?.('.toolgroup,.controls,.geometry-subgroup'))clearDropTarget();});
+ document.addEventListener('drop',clearDropTarget);
  for(const section of allSections)addDisclosure(section,section!==settingsGroup);
- // Header cog is now a shortcut to the unified Settings sidebar, not a
- // competing floating dialog. Open the right drawer first on small screens.
- $('settings-open').onclick=()=>{
-  if(matchMedia('(max-width:700px)').matches){
-   if(!document.body.classList.contains('mobile-right-open'))$('right-collapse').click();
-  }else if(document.body.classList.contains('right-collapsed'))$('right-collapse').click();
-  for(const id of ['settings','interface'])if(uiPrefs.collapsed[id]===true){
-   const section=allSections.find(e=>e.dataset.sectionId===id);
-   section?.querySelector(':scope > h3 > .section-toggle')?.click();
-  }
-  $('ui-font').scrollIntoView({block:'nearest'});$('ui-font').focus();
- };
  // Language is switched after buttons are generated; update mutable labels
  // explicitly rather than relying on cached DOM localization attributes.
  const previousLanguage=applyLanguage;
@@ -1244,7 +1328,7 @@ function setupPanelResizing(mobile){
  const workspace=document.querySelector('.workspace');
  const handles={left:$('left-resizer'),right:$('right-resizer')};
  let active=null,displayed=null;
- const collapsed=side=>document.body.classList.contains(`${side}-collapsed`);
+ const collapsed=side=>document.body.classList.contains(`${side}-collapsed`)||document.body.classList.contains(`${side==='left'?'objects':'tools'}-floating`);
  const defaults=()=>matchMedia('(max-width:950px)').matches?{left:240,right:235}:{left:310,right:305};
  function desired(){
   const saved=uiPrefs.sidebarWidths;
@@ -1395,6 +1479,7 @@ function setupPropertiesLayout(mobile){
  }
  function apply(next=preferred){
   const floating=desktop()&&next.mode==='floating';
+  $('properties').hidden=floating?false:next.collapsed;toggle.disabled=floating;toggle.textContent=$('properties').hidden?'+':'−';
   document.body.classList.toggle('properties-floating',floating);
   // Reparent only for actual floating mode. The left sidebar is a z-indexed
   // stacking context and could otherwise hide the inspector behind Tools.
@@ -1521,19 +1606,148 @@ function setupPropertiesLayout(mobile){
  return {apply};
 }
 
+/** Round 17 — independently detachable Objects/Tools shells.
+ * All state is UI-only; the canvas and project JSON are never reparented. */
+function setupDockablePanels(mobile,propertiesLayout,refreshPanelWidths){
+ const workspace=document.querySelector('.workspace');
+ const original={left:document.querySelector('.leftpanel'),right:document.querySelector('.rightpanel')};
+ const records={};let active=null,zOrder=16;
+ const top=()=>document.querySelector('.appbar').getBoundingClientRect().height;
+ const desktop=()=>!mobile.matches;
+ function updateGrid(){
+  if(!desktop()){workspace.style.removeProperty('grid-template-columns');return;}
+  const lw=document.body.classList.contains('left-collapsed')||records.left.preferred.mode==='floating'?'52px':'var(--mi-left-width,310px)';
+  const rw=document.body.classList.contains('right-collapsed')||records.right.preferred.mode==='floating'?'52px':'var(--mi-right-width,305px)';
+  workspace.style.gridTemplateColumns=`${lw} minmax(240px,1fr) ${rw}`;
+ }
+ function updateAria(r){
+  const float=r.preferred.mode==='floating';
+  const verb=translated(float?'Dock':'Float',uiPrefs.language);
+  const subject=translated(r.side==='left'?'Objects':'Tools',uiPrefs.language);
+  r.button.textContent=verb;
+  r.button.title=translated(float?'Dock '+(r.side==='left'?'Objects':'Tools')+' panel':'Float '+(r.side==='left'?'Objects':'Tools')+' panel',uiPrefs.language);r.button.setAttribute('aria-label',r.button.title);
+  r.placeholderButton.title=r.button.title;r.placeholderButton.setAttribute('aria-label',r.button.title);
+  r.placeholderButton.textContent=subject;
+  r.head.setAttribute('aria-label',translated('Move '+(r.side==='left'?'Objects':'Tools')+' panel',uiPrefs.language));
+  r.corner.setAttribute('aria-label',translated('Resize floating '+(r.side==='left'?'Objects':'Tools')+' panel',uiPrefs.language));
+  const rect=r.pane.getBoundingClientRect();
+  r.corner.setAttribute('aria-valuetext',`${Math.round(rect.width)} × ${Math.round(rect.height)} ${translated('pixels',uiPrefs.language)}`);
+ }
+ function apply(r){
+  const floated=desktop()&&r.preferred.mode==='floating';
+  const focusedInside=r.pane.contains(document.activeElement);
+  r.placeholder.classList.toggle('is-active',floated);
+  document.body.classList.toggle(r.side==='left'?'objects-floating':'tools-floating',floated);
+  if(floated){
+   if(r.pane.parentElement!==document.body)document.body.append(r.pane);
+   const geometry=fitFloatingPanel(r.preferred,window.innerWidth,window.innerHeight,top(),r.side);
+   Object.assign(r.pane.style,{left:`${geometry.x}px`,top:`${geometry.y}px`,width:`${geometry.width}px`,height:`${geometry.height}px`});
+  }else{
+   if(r.pane.parentElement!==workspace)workspace.insertBefore(r.pane,r.placeholder.nextSibling);
+   for(const name of ['left','top','width','height','zIndex'])r.pane.style.removeProperty(name==='zIndex'?'z-index':name);
+  }
+  r.pane.classList.toggle('floating-panel',floated);
+  r.pane.classList.toggle('floating-objects',floated&&r.side==='left');
+  r.pane.classList.toggle('floating-tools',floated&&r.side==='right');
+  r.head.tabIndex=floated?0:-1;r.corner.tabIndex=floated?0:-1;
+  r.button.hidden=!desktop();
+  // A floating panel can become a closed mobile drawer during viewport change.
+  // Redirect any now-invisible keyboard focus to its visible drawer trigger.
+  if(mobile.matches&&focusedInside&&!document.body.classList.contains(r.side==='left'?'mobile-left-open':'mobile-right-open')){
+   $(r.side==='left'?'left-collapse':'right-collapse').focus({preventScroll:true});
+  }
+  updateAria(r);
+ }
+ function applyAll(){
+  if(active)cancel();
+  for(const r of Object.values(records))apply(r);
+  updateGrid();
+  propertiesLayout.apply();
+  refreshPanelWidths();
+ }
+ function persist(r,next){
+  r.preferred=normalizeFloatingPanel(next,r.side);
+  uiPrefs.floatingPanels={...(uiPrefs.floatingPanels&&typeof uiPrefs.floatingPanels==='object'&&!Array.isArray(uiPrefs.floatingPanels)?uiPrefs.floatingPanels:{}),[r.side]:{...r.preferred}};
+  savePrefs();applyAll();
+ }
+ function cancel(save=false){
+  if(!active)return;
+  const {r,handle,id,preview}=active;
+  active=null;document.body.classList.remove('floating-panel-moving','floating-panel-resizing');
+  if(handle.hasPointerCapture?.(id))handle.releasePointerCapture(id);
+  if(save&&preview)persist(r,preview);else applyAll();
+ }
+ function track(event){
+  if(!active||active.id!==event.pointerId)return;
+  const g=active,dx=event.clientX-g.startX,dy=event.clientY-g.startY;
+  const candidate={...g.r.preferred};
+  if(g.kind==='move'){candidate.x=g.rect.x+dx;candidate.y=g.rect.y+dy;}
+  else{candidate.width=Math.max(FLOAT_PANEL_MIN_W,Math.min(FLOAT_PANEL_MAX_W,Math.round(g.rect.width+dx)));
+   candidate.height=Math.max(FLOAT_PANEL_MIN_H,Math.min(FLOAT_PANEL_MAX_H,Math.round(g.rect.height+dy)));}
+  const fit=fitFloatingPanel(candidate,window.innerWidth,window.innerHeight,top(),g.r.side);
+  if(g.kind==='move'){candidate.x=fit.x;candidate.y=fit.y;}
+  g.preview=candidate;
+  Object.assign(g.r.pane.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
+  updateAria(g.r);
+ }
+ for(const [side,pane]of Object.entries(original)){
+  const name=side==='left'?'Objects':'Tools';const heading=pane.querySelector('.panelhead');
+  const r={side,pane,head:heading,button:$(side==='left'?'objects-undock':'tools-undock'),preferred:normalizeFloatingPanel(uiPrefs.floatingPanels?.[side],side)};
+  const placeholder=document.createElement('div');placeholder.className=`dock-placeholder dock-placeholder-${side}`;
+  const restore=document.createElement('button');restore.type='button';restore.className='dock-restore';restore.setAttribute('aria-controls',side==='left'?'objects':'panel-sections');
+  placeholder.append(restore);workspace.insertBefore(placeholder,pane);
+  const corner=document.createElement('div');corner.className='floating-panel-corner';corner.tabIndex=-1;corner.setAttribute('role','group');corner.title='Drag to resize; arrow keys to adjust';pane.append(corner);
+  Object.assign(r,{placeholder,placeholderButton:restore,corner});records[side]=r;
+  function dockOrFloat(){if(active)cancel();persist(r,{...r.preferred,mode:r.preferred.mode==='floating'?'docked':'floating'});r.button.focus({preventScroll:true});}
+  r.button.addEventListener('click',dockOrFloat);restore.addEventListener('click',()=>{if(r.preferred.mode==='floating'){persist(r,{...r.preferred,mode:'docked'});r.button.focus({preventScroll:true});}});
+  function begin(handle,kind,event){
+   if(!desktop()||r.preferred.mode!=='floating'||active||!event.isPrimary||event.button!==0)return;
+   if(kind==='move'&&event.target.closest('button,input,select,textarea,a,[contenteditable]'))return;
+   event.preventDefault();event.stopPropagation();
+   active={r,handle,id:event.pointerId,kind,startX:event.clientX,startY:event.clientY,rect:pane.getBoundingClientRect(),preview:null};
+   handle.setPointerCapture(event.pointerId);
+   document.body.classList.add(kind==='move'?'floating-panel-moving':'floating-panel-resizing');
+  }
+  for(const [handle,kind]of [[heading,'move'],[corner,'resize']]){
+   handle.addEventListener('pointerdown',event=>begin(handle,kind,event));
+   handle.addEventListener('pointermove',track);
+   handle.addEventListener('pointerup',event=>{if(active?.handle===handle&&active.id===event.pointerId){event.preventDefault();cancel(true);}});
+   handle.addEventListener('pointercancel',event=>{if(active?.handle===handle&&active.id===event.pointerId)cancel();});
+   handle.addEventListener('lostpointercapture',event=>{if(active?.handle===handle&&active.id===event.pointerId)cancel();});
+  }
+  heading.addEventListener('keydown',event=>{
+   if(!desktop()||r.preferred.mode!=='floating'||active||!event.altKey||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
+   event.preventDefault();event.stopPropagation();const delta=event.shiftKey?24:8;
+   const g=fitFloatingPanel(r.preferred,window.innerWidth,window.innerHeight,top(),r.side);
+   const next={...r.preferred,x:event.key==='Home'?(side==='left'?80:670):g.x+(event.key==='ArrowRight'?delta:event.key==='ArrowLeft'?-delta:0),y:event.key==='Home'?top()+16:g.y+(event.key==='ArrowDown'?delta:event.key==='ArrowUp'?-delta:0)};
+   const fit=fitFloatingPanel(next,window.innerWidth,window.innerHeight,top(),r.side);persist(r,{...next,x:fit.x,y:fit.y});
+  });
+  corner.addEventListener('keydown',event=>{
+   if(!desktop()||r.preferred.mode!=='floating'||active||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
+   event.preventDefault();event.stopPropagation();const delta=event.shiftKey?24:8;
+   const g=fitFloatingPanel(r.preferred,window.innerWidth,window.innerHeight,top(),r.side);
+   persist(r,{...r.preferred,width:event.key==='Home'?340:Math.max(FLOAT_PANEL_MIN_W,Math.min(FLOAT_PANEL_MAX_W,g.width+(event.key==='ArrowRight'?delta:event.key==='ArrowLeft'?-delta:0))),height:event.key==='Home'?580:Math.max(FLOAT_PANEL_MIN_H,Math.min(FLOAT_PANEL_MAX_H,g.height+(event.key==='ArrowDown'?delta:event.key==='ArrowUp'?-delta:0)))});
+  });
+ }
+ window.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();cancel();}},true);
+ window.addEventListener('blur',()=>cancel());
+ window.addEventListener('resize',applyAll);
+ mobile.addEventListener('change',applyAll);
+ $('ui-language').addEventListener('change',applyAll);
+ applyAll();return {apply:applyAll};
+}
+
 function initialise(){
  populateTools();setupSettings();setupInterface();$('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow();},{passive:true});
- const searchToggle=$('object-search-toggle'),search=$('object-search');
- function setSearchOpen(open){search.hidden=!open;searchToggle.setAttribute('aria-expanded',String(open));
-  if(open)search.focus();else{if(search.value){search.value='';renderList({resetScroll:true});}searchToggle.focus();}}
- searchToggle.onclick=()=>setSearchOpen(search.hidden);
- search.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setSearchOpen(false);}});
+ const search=$('object-search');
+ // Search stays visible. The magnifying glass is deliberately decorative.
+ search.addEventListener('keydown',e=>{if(e.key==='Escape'&&search.value){e.stopPropagation();search.value='';renderList({resetScroll:true});}});
  document.addEventListener('pointerdown',e=>{if(objectMenuContext&&!$('object-action-menu').contains(e.target)&&!objectMenuContext.trigger.contains(e.target))closeObjectMenu();},true);
  document.addEventListener('focusin',e=>{if(objectMenuContext&&!$('object-action-menu').contains(e.target)&&!objectMenuContext.trigger.contains(e.target))closeObjectMenu();});
  window.addEventListener('resize',()=>closeObjectMenu());
  $('object-action-menu').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeObjectMenu({restoreFocus:true});}
-  else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const entries=[...$('object-action-menu').querySelectorAll('button:not(:disabled)')];
-   const index=entries.indexOf(document.activeElement);if(entries.length)entries[e.key==='Home'?0:e.key==='End'?entries.length-1:(index+entries.length+(e.key==='ArrowDown'?1:-1))%entries.length].focus();}});
+  else if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const entries=[...$('object-action-menu').querySelectorAll('button:not(:disabled)')];
+   const index=entries.indexOf(document.activeElement);if(entries.length)entries[e.key==='Home'?0:e.key==='End'?entries.length-1:(index+entries.length+(['ArrowDown','ArrowRight'].includes(e.key)?1:-1))%entries.length].focus();}});
  let old=null;
  try{old=localStorage.getItem(STORAGE);lastStored=old;saveStatus(old?'Recovered local project':'Local backup ready');}catch(e){saveStatus('Not saved locally · download JSON');notice('Browser storage is restricted: use Save to download JSON.');}
  if(old){try{doc=validateDoc(JSON.parse(old));}catch(e){setStorageConflict(true,'corrupt');notice('Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.');}}
@@ -1628,12 +1842,13 @@ function initialise(){
  const mobile=window.matchMedia('(max-width:700px)');
  const refreshPanelWidths=setupPanelResizing(mobile);
  const propertyLayout=setupPropertiesLayout(mobile);
+ const dockPanels=setupDockablePanels(mobile,propertyLayout,refreshPanelWidths);
  function syncPanelButtons(){
   $('left-collapse').textContent=mobile.matches?(document.body.classList.contains('mobile-left-open')?'×':'›'):(document.body.classList.contains('left-collapsed')?'›':'‹');
   $('right-collapse').textContent=mobile.matches?(document.body.classList.contains('mobile-right-open')?'×':'‹'):(document.body.classList.contains('right-collapsed')?'‹':'›');
   $('left-collapse').setAttribute('aria-expanded',String(mobile.matches?document.body.classList.contains('mobile-left-open'):!document.body.classList.contains('left-collapsed')));
   $('right-collapse').setAttribute('aria-expanded',String(mobile.matches?document.body.classList.contains('mobile-right-open'):!document.body.classList.contains('right-collapsed')));
-  refreshPanelWidths();
+  refreshPanelWidths();dockPanels.apply();
  }
  $('left-collapse').onclick=()=>{if(mobile.matches){document.body.classList.toggle('mobile-left-open');document.body.classList.remove('mobile-right-open');}else document.body.classList.toggle('left-collapsed');syncPanelButtons();};
  $('right-collapse').onclick=()=>{if(mobile.matches){document.body.classList.toggle('mobile-right-open');document.body.classList.remove('mobile-left-open');}else document.body.classList.toggle('right-collapsed');syncPanelButtons();};
@@ -1642,7 +1857,7 @@ function initialise(){
  const resize=new ResizeObserver(()=>{const b=svg.getBoundingClientRect();size={w:Math.max(1,Math.round(b.width)),h:Math.max(1,Math.round(b.height))};scheduleRender();});resize.observe(svg);
  // Toolbar height varies with font metrics, window width and localized labels.
  // Avoid hard-coded mobile drawer offsets that overlap the toolbar after wrapping.
- const bar=document.querySelector('.appbar'),barResize=new ResizeObserver(()=>{document.documentElement.style.setProperty('--appbar-height',`${bar.getBoundingClientRect().height}px`);propertyLayout.apply();});barResize.observe(bar);
+ const bar=document.querySelector('.appbar'),barResize=new ResizeObserver(()=>{document.documentElement.style.setProperty('--appbar-height',`${bar.getBoundingClientRect().height}px`);dockPanels.apply();});barResize.observe(bar);
  document.documentElement.style.setProperty('--appbar-height',`${bar.getBoundingClientRect().height}px`);renderAll();
 }
 initialise();

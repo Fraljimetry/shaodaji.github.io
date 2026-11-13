@@ -25,7 +25,7 @@ def run():
     with sync_playwright() as p:
         browser=p.chromium.launch(executable_path=os.environ.get('MATHILLUSTRATOR_CHROMIUM','/usr/bin/chromium'),headless=True,args=['--no-sandbox'])
         context=browser.new_context(viewport={'width':1440,'height':900},accept_downloads=True)
-        page=create_page(context,errors=errors)
+        page=create_page(context,{KEY:json.dumps({'propertiesPanel':{'mode':'docked'}})},errors)
         props=page.locator('#properties-dock')
         assert props.is_visible() and props.evaluate('(n)=>n.parentElement.className')=='leftpanel'
         assert page.locator('#properties-splitter').is_visible()
@@ -72,13 +72,21 @@ def run():
         page.locator('#left-collapse').click()
         page.locator('#objects .object').first.click()
         assert page.locator('#properties input').count()>0
-        # Fold and unfold without deleting the selection or losing preferred size.
+        # While floating, Properties stays expanded and the fold toggle is disabled.
         size=prefs(page)['propertiesPanel'].copy()
+        assert page.locator('#properties-toggle').is_disabled()
+        assert page.locator('#properties').is_visible() and page.locator('#properties-corner').is_visible()
+        assert prefs(page)['propertiesPanel']['collapsed'] is False
+        # Docked collapse remains available and persists independently of position.
+        page.locator('#properties-undock').click()
+        assert page.locator('#properties-toggle').is_enabled()
         page.locator('#properties-toggle').click()
         assert prefs(page)['propertiesPanel']['collapsed'] is True
         assert page.locator('#properties').is_hidden() and page.locator('#properties-corner').is_hidden()
         page.locator('#properties-toggle').click()
-        assert page.locator('#properties').is_visible() and page.locator('#properties-corner').is_visible()
+        assert page.locator('#properties').is_visible()
+        page.locator('#properties-undock').click()
+        assert page.locator('#properties-toggle').is_disabled() and page.locator('#properties').is_visible()
         assert prefs(page)['propertiesPanel']['collapsed'] is False
         assert {k:v for k,v in prefs(page)['propertiesPanel'].items() if k!='collapsed'}=={k:v for k,v in size.items() if k!='collapsed'}
         # Responsive: no floating overlay on a mobile drawer.

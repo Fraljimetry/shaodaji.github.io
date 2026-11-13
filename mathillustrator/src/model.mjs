@@ -20,6 +20,18 @@ export const PRESET_MODULES = {
 export const SUPPORTED = ['point','midpoint','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','function','node','morphism'];
 const POINT_LIKE = new Set(['point','midpoint']);
 const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
+/** Three-point ellipse: focus, focus, any point on the curve.
+ * The old two-reference rectangle-bounds ellipse is intentionally retained.
+ * Return null rather than producing NaN/Infinity on collapsed input. */
+export function focalEllipse(p){
+ if(!Array.isArray(p)||p.length!==3||!p.every(safeCoord))return null;
+ const [f1,f2,q]=p,dx=f2[0]-f1[0],dy=f2[1]-f1[1];
+ const c=Math.hypot(dx,dy)/2,a=(Math.hypot(q[0]-f1[0],q[1]-f1[1])+Math.hypot(q[0]-f2[0],q[1]-f2[1]))/2;
+ if(!Number.isFinite(a)||!Number.isFinite(c)||a-c<=Math.max(1e-9,a*1e-10))return null;
+ const b=Math.sqrt((a-c)*(a+c)),cx=(f1[0]+f2[0])/2,cy=(f1[1]+f2[1])/2;
+ if(!Number.isFinite(b)||b<=0||![cx,cy].every(finite))return null;
+ return {cx,cy,rx:a,ry:b,angle:Math.atan2(dy,dx)};
+}
 const HEX = /^#[0-9a-fA-F]{6}$/;
 /** Unicode scalar values admitted by XML 1.0; SVG exports are XML, not HTML.
  * Reject rather than silently replace NUL, C0 controls or lone UTF-16 surrogates.
@@ -32,7 +44,7 @@ export function xmlTextSafe(value){
  return true;
 }
 export function clone(x){return JSON.parse(JSON.stringify(x));}
-export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'standard',snapAnchors:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
+export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'standard',snapAnchors:true,snapObjects:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return doc.objects.find(o=>o.id===id);}
@@ -173,6 +185,7 @@ export function parseExpression(source){
 /** Reject invisible *new* geometry without invalidating legacy v1 projects on import. */
 export function checkNewGeometry(type,p){
  if(['segment','arrow','line','circle','regularPolygon'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(type==='ellipse'&&p.length===3&&!focalEllipse(p))throw Error('Ellipse needs two foci and a third point outside the focal segment.');
  if(type==='rectangle'&&(Math.abs(p[0][0]-p[1][0])<1e-9||Math.abs(p[0][1]-p[1][1])<1e-9))throw Error('Rectangle requires nonzero width and height.');
  if(type==='angle'&&(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9||Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1])<1e-9))throw Error('Angle requires distinct rays.');
 }
@@ -186,7 +199,7 @@ export function command(doc,source){
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2]);return append(doc,{type:'function',name:m[1],expr:m[2]});}
  m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
  if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
-  if(parts.some(x=>!x)||parts.length<min||(!['polygon','polyline'].includes(type)&&parts.length!==min))throw Error('Incorrect number of point arguments.');
+  if(parts.some(x=>!x)||parts.length<min||(!['polygon','polyline'].includes(type)&&(type==='ellipse'?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
   const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));return append(doc,{type,refs});
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*"([^"\\]{1,180})"\s*\)$/i);
@@ -210,7 +223,7 @@ export function validateDoc(raw){
   ids.add(o.id);names.add(o.name);max=Math.max(max,numericId);
   if(!o.style||!HEX.test(o.style.stroke)||!HEX.test(o.style.fill)||!finite(o.style.width)||o.style.width<0.1||o.style.width>100||!finite(o.style.opacity)||o.style.opacity<0||o.style.opacity>1)throw Error('Invalid object style or color.');
   if(o.style.pointSize!==undefined&&(!POINT_LIKE.has(o.type)||!finite(o.style.pointSize)||o.style.pointSize<1||o.style.pointSize>100))throw Error('Object point size must be 1–100 on points or midpoints.');
-  const len=REF_LENGTHS[o.type];
+  const len=o.type==='ellipse'&&o.refs?.length===3?3:REF_LENGTHS[o.type];
   if(len!==undefined){if(!Array.isArray(o.refs)||o.refs.length!==len||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid reference count for '+o.type);}
   else if(o.type==='polygon'||o.type==='polyline'){if(!Array.isArray(o.refs)||o.refs.length<(o.type==='polygon'?3:2)||o.refs.length>2000||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid vertex references.');}
   else if(o.refs!==undefined)throw Error('Unexpected object references.');
@@ -263,6 +276,8 @@ export function validateDoc(raw){
  if(d.settings.labelPlacement===undefined)d.settings.labelPlacement='standard';
  if(!['standard','avoid'].includes(d.settings.labelPlacement))throw Error('Invalid point label placement setting.');
  if(d.settings.snapAnchors===undefined)d.settings.snapAnchors=true;
+ if(d.settings.snapObjects===undefined)d.settings.snapObjects=true;
+ if(typeof d.settings.snapObjects!=='boolean')throw Error('Invalid object snapping setting.');
  if(d.settings.modules===undefined)d.settings.modules={...PRESET_MODULES.General};
  if(!d.settings.modules||typeof d.settings.modules!=='object'||Object.keys(PRESET_MODULES.General).some(k=>typeof d.settings.modules[k]!=='boolean'))throw Error('Invalid tool visibility settings.');
  if(d.settings.page==='infinite'&&d.settings.exportRegion==='page')throw Error('Page-only export requires a finite page frame.');

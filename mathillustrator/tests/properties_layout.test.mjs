@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizePropertiesLayout,fitFloatingProperties,fitDockPropertiesHeight} from '../src/properties_layout.mjs';
 
-test('R45 new and legacy layouts initialize docked and stable',()=>{
+test('R45 new layouts float by default and saved dock layouts remain stable',()=>{
  const d=normalizePropertiesLayout(null);
- assert.deepEqual(d,{mode:'docked',collapsed:false,dockHeight:230,x:360,y:110,width:330,height:420});
- assert.deepEqual(normalizePropertiesLayout({mode:'docked',dockHeight:250}),{...d,dockHeight:250});
+ assert.deepEqual(d,{mode:'floating',collapsed:false,dockHeight:230,x:320,y:100,width:300,height:320});
+ assert.deepEqual(normalizePropertiesLayout({mode:'docked',dockHeight:250}),{...d,mode:'docked',dockHeight:250});
  assert.deepEqual(normalizePropertiesLayout({mode:'floating',collapsed:false,dockHeight:320,x:140,y:190,width:450,height:510}),{mode:'floating',collapsed:false,dockHeight:320,x:140,y:190,width:450,height:510});
 });
 test('R45 collapsed state is explicitly boolean and does not leak into scene files',()=>{
@@ -15,8 +15,8 @@ test('R45 collapsed state is explicitly boolean and does not leak into scene fil
 test('R45 reject malformed inherited / foreign preference geometry without NaN or prototype leakage',()=>{
  const data=[undefined,null,[],true,5,'bad',{mode:'foreign',dockHeight:'900',width:-400,height:Infinity,x:null,y:NaN},Object.create({mode:'floating',width:480})];
  for(const input of data){const p=normalizePropertiesLayout(input);for(const key of ['width','height','x','y','dockHeight'])assert.ok(Number.isFinite(p[key]));}
- assert.equal(normalizePropertiesLayout({mode:'floating',width:'450'}).width,330);
- assert.equal(normalizePropertiesLayout({mode:'floating',x:-1}).x,360);
+ assert.equal(normalizePropertiesLayout({mode:'floating',width:'450'}).width,300);
+ assert.equal(normalizePropertiesLayout({mode:'floating',x:-1}).x,320);
 });
 test('R45 float visual clamping never mutates preferred saved layout',()=>{
  const src=normalizePropertiesLayout({mode:'floating',x:9000,y:9000,width:580,height:700});

@@ -32,7 +32,7 @@ def run():
         page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
         page.wait_for_function("document.querySelector('[data-tool-choice=point]') !== null")
         assert page.locator('[data-color-swatches="default"]').count()==2
-        assert page.locator('[data-color-swatches="default"] button').count()==22
+        assert page.locator('[data-color-swatches="default"] button').count()==20
         assert page.locator('#default-stroke').input_value()=='#3657ad'
         assert checked(page,'default','stroke').count()==0,'custom default must not pretend a palette color is selected'
         assert swatch(page,'default','stroke','#ef4444').get_attribute('aria-label')=='Red'
@@ -85,7 +85,7 @@ def run():
             page.locator('#ui-language').select_option(locale)
             assert swatch(page,'default','stroke','#ef4444').get_attribute('aria-label')==name
             assert page.locator('[data-color-swatches="default"][data-color-property="stroke"]').get_attribute('aria-label')==('线条常用色' if locale=='zh' else 'Stroke colors')
-            assert page.locator('[data-color-swatches="default"] button').count()==22
+            assert page.locator('[data-color-swatches="default"] button').count()==20
         # Undo/redo default palette; saved JSON changes are normal settings.
         original=snapshot(page)
         page.locator('#default-stroke').fill('#506070')
@@ -119,7 +119,7 @@ def run():
             # Hidden tools panel at mobile widths: open through existing mobile drawer.
             if width<=390:
                 page.evaluate('document.body.classList.add("mobile-right-open")')
-            assert page.locator('[data-color-swatches="default"] button').count()==22
+            assert page.locator('[data-color-swatches="default"] button').count()==20
             assert not page.evaluate('''() => [...document.querySelectorAll('.color-swatch')].some(b => b.getBoundingClientRect().width > 28)''')
         assert not errors,errors
         browser.close()

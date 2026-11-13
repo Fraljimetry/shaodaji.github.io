@@ -12,33 +12,35 @@ def inline_html(*,legacy_search_expanded=True):
     js = lambda src: 'data:text/javascript;base64,'+base64.b64encode(src.encode()).decode()
     model=js((ROOT/'src/model.mjs').read_text())
     layout=js((ROOT/'src/diagram_layout.mjs').read_text())
-    geometry=js((ROOT/'src/geometry.mjs').read_text().replace("from './diagram_layout.mjs'",f"from '{layout}'"))
+    geometry=js((ROOT/'src/geometry.mjs').read_text().replace("from './diagram_layout.mjs'",f"from '{layout}'").replace("from './model.mjs?cut=round19'",f"from '{model}'").replace("from './model.mjs'",f"from '{model}'"))
     routing=js((ROOT/'src/diagram_routing.mjs').read_text().replace("from './diagram_layout.mjs'",f"from '{layout}'"))
     global_routing=js((ROOT/'src/diagram_global_routing.mjs').read_text().replace("from './diagram_routing.mjs'",f"from '{routing}'"))
     anchors=js((ROOT/'src/anchor_index.mjs').read_text())
     labels=js((ROOT/'src/label_layout.mjs').read_text())
     morphism_labels=js((ROOT/'src/morphism_label_layout.mjs').read_text())
-    diagram=(ROOT/'src/diagram.mjs').read_text().replace("from './model.mjs'",f"from '{model}'")
+    diagram=(ROOT/'src/diagram.mjs').read_text().replace("from './model.mjs?cut=round19'",f"from '{model}'").replace("from './model.mjs'",f"from '{model}'")
     diagram=js(diagram)
     plot=js((ROOT/'src/plot.mjs').read_text())
     storage=js((ROOT/'src/storage.mjs').read_text())
-    fidelity=(ROOT/'src/export_fidelity.mjs').read_text().replace("from './model.mjs'",f"from '{model}'").replace("from './geometry.mjs'",f"from '{geometry}'")
+    fidelity=(ROOT/'src/export_fidelity.mjs').read_text().replace("from './model.mjs?cut=round19'",f"from '{model}'").replace("from './model.mjs'",f"from '{model}'").replace("from './geometry.mjs?cut=round19'",f"from '{geometry}'").replace("from './geometry.mjs'",f"from '{geometry}'")
     fidelity=js(fidelity)
     cache=js((ROOT/'src/plot_cache.mjs').read_text())
     panel_sizes=js((ROOT/'src/panel_sizes.mjs').read_text())
     properties_layout=js((ROOT/'src/properties_layout.mjs').read_text())
-    app=(ROOT/'src/app.mjs').read_text().replace("from './model.mjs'",f"from '{model}'").replace("from './geometry.mjs'",f"from '{geometry}'").replace("from './diagram.mjs'",f"from '{diagram}'").replace("from './plot.mjs'",f"from '{plot}'").replace("from './storage.mjs'",f"from '{storage}'").replace("from './export_fidelity.mjs'",f"from '{fidelity}'").replace("from './diagram_layout.mjs'",f"from '{layout}'").replace("from './plot_cache.mjs'",f"from '{cache}'").replace("from './anchor_index.mjs'",f"from '{anchors}'").replace("from './label_layout.mjs'",f"from '{labels}'").replace("from './diagram_routing.mjs'",f"from '{routing}'")
+    floating_panels=js((ROOT/'src/floating_panels.mjs').read_text())
+    app=(ROOT/'src/app.mjs').read_text().replace("from './model.mjs?cut=round19'",f"from '{model}'").replace("from './model.mjs'",f"from '{model}'").replace("from './geometry.mjs?cut=round19'",f"from '{geometry}'").replace("from './geometry.mjs'",f"from '{geometry}'").replace("from './diagram.mjs'",f"from '{diagram}'").replace("from './plot.mjs'",f"from '{plot}'").replace("from './storage.mjs'",f"from '{storage}'").replace("from './export_fidelity.mjs?cut=round19'",f"from '{fidelity}'").replace("from './diagram_layout.mjs'",f"from '{layout}'").replace("from './plot_cache.mjs'",f"from '{cache}'").replace("from './anchor_index.mjs'",f"from '{anchors}'").replace("from './label_layout.mjs'",f"from '{labels}'").replace("from './diagram_routing.mjs'",f"from '{routing}'")
     app=app.replace("from './morphism_label_layout.mjs'",f"from '{morphism_labels}'")
     app=app.replace("from './diagram_global_routing.mjs'",f"from '{global_routing}'")
     app=app.replace("from './math_labels.mjs'",f"from '{js((ROOT/'src/math_labels.mjs').read_text())}'")
-    app=app.replace("from './i18n.mjs'",f"from '{js((ROOT/'src/i18n.mjs').read_text())}'")
+    app=app.replace("from './i18n.mjs?cut=round20'",f"from '{js((ROOT/'src/i18n.mjs').read_text())}'")
     app=app.replace("from './panel_sizes.mjs'",f"from '{panel_sizes}'")
-    app=app.replace("from './properties_layout.mjs'",f"from '{properties_layout}'")
+    app=app.replace("from './properties_layout.mjs?cut=round19'",f"from '{properties_layout}'").replace("from './properties_layout.mjs'",f"from '{properties_layout}'")
+    app=app.replace("from './floating_panels.mjs'",f"from '{floating_panels}'")
     app=app.replace("from './geometry.mjs?repair=boot-20261113'",f"from '{geometry}'")
     html=(ROOT/'index.html').read_text()
-    html=html.replace('<link rel="stylesheet" href="./style.css">','<style>'+(ROOT/'style.css').read_text()+'</style>')
+    html=html.replace('<link rel="stylesheet" href="./style.css?cut=round20">','<style>'+(ROOT/'style.css').read_text()+'</style>')
     html=html.replace('<script defer src="./vendor/mathjax-tex-svg.js"></script>', '<script>'+(ROOT/'vendor/mathjax-tex-svg.js').read_text()+'</script>')
-    html=html.replace('<script type="module" src="./src/app.mjs?repair=boot-20261113"></script>','<script type="module">'+app+'</script>')
+    html=html.replace('<script type="module" src="./src/app.mjs?cut=round20"></script>','<script type="module">'+app+'</script>')
     if legacy_search_expanded:
         # Archived scripts are SHA-locked and describe the old always-on search,
         # eye/lock inline controls and Delete button. Translate these *test-only*
@@ -46,7 +48,7 @@ def inline_html(*,legacy_search_expanded=True):
         # legacy_search_expanded=False and exercises the unmodified current DOM.
         legacy = r"""<script>
 window.addEventListener('load',()=>{
- const search=document.getElementById('object-search-toggle');search.click();
+ // Search is permanently visible in Round 18; no toggle is necessary.
  const root=document.getElementById('objects'),tools=document.querySelector('.object-tools');
  const deleteButton=document.createElement('button');deleteButton.id='delete';deleteButton.hidden=true;
  deleteButton.textContent='Delete selected';tools.append(deleteButton);

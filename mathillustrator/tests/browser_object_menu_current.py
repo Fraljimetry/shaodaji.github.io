@@ -30,26 +30,23 @@ def run():
     page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
     page.evaluate('''() => {const data=new Map();Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)}});}''')
     page.wait_for_function('document.querySelector("[data-tool-choice=point]") !== null')
-    assert page.locator('#object-search').is_hidden()
-    assert page.locator('#object-search-toggle').get_attribute('aria-expanded')=='false'
+    assert page.locator('#object-search').is_visible()
+    assert page.locator('#object-search-icon').count()==1
     assert page.locator('#delete').count()==0
     for source in ('A=(0,0)','B=(2,0)','Segment(A,B)'):
         cmd(page,source)
     assert len(objects(page))==3
-    # Search is progressive, clears on collapse, and does not leave a hidden filter.
-    page.locator('#object-search-toggle').click()
-    assert page.locator('#object-search').evaluate('(el)=>document.activeElement===el')
+    # Search is always visible; Escape clears the active filter without hiding it.
+    assert page.locator('#object-search-icon').get_attribute('aria-hidden')=='true'
     page.locator('#object-search').fill('not-here')
     assert page.locator('#objects .object').count()==0
-    page.locator('#object-search-toggle').click()
-    assert page.locator('#object-search').is_hidden()
+    page.locator('#object-search').press('Escape')
+    assert page.locator('#object-search').is_visible()
     assert page.locator('#object-search').input_value()==''
     assert page.locator('#objects .object').count()==3
-    page.locator('#object-search-toggle').click()
-    page.locator('#object-search').fill('A')
-    page.locator('#object-search').press('Escape')
-    assert page.locator('#object-search').is_hidden()
-    assert page.locator('#objects .object').count()==3
+    page.locator('#object-search').fill('not-here')
+    assert page.locator('#objects .object').count()==0
+    page.locator('#object-search').fill('')
     # Keyboard and focus: menu consumes Escape; opening does not select an object.
     toggle=page.locator('#objects .object[data-id="o1"] .object-menu-toggle')
     toggle.focus();toggle.press('Enter')
@@ -71,10 +68,10 @@ def run():
     action(page,'o1','visibility')
     assert not next(o for o in objects(page) if o['id']=='o1')['hidden']
     page.locator('#ui-language').select_option('zh')
-    assert menu(page,'o1').locator('[data-action="visibility"]').inner_text()=='隐藏'
+    assert menu(page,'o1').locator('[data-action="visibility"]').get_attribute('aria-label')=='隐藏'
     assert page.locator('#objects .object[data-id="o1"] .object-menu-toggle').get_attribute('title')=='对象操作'
     page.keyboard.press('Escape')
-    assert page.locator('#object-search-toggle').get_attribute('title')=='查找对象'
+    assert page.locator('#object-search').get_attribute('aria-label')=='搜索对象'
     page.locator('#ui-language').select_option('en')
     # Locked dependent disables deletion of an otherwise unlocked parent.
     action(page,'o3','lock')
@@ -90,6 +87,8 @@ def run():
     assert [o['id'] for o in objects(page)]==['o2']
     assert 'selected' in page.locator('#objects .object[data-id="o2"]').get_attribute('class')
     assert page.locator('#trash-count').inner_text()=='1'
+    assert 'A' in page.locator('#trash-items .trash-names').first.text_content()
+    assert 'Segment' in page.locator('#trash-items .trash-names').first.text_content()
     page.locator('#undo').click();assert len(objects(page))==3
     page.locator('#redo').click();assert [o['id'] for o in objects(page)]==['o2']
     # Restore retains both IDs and dependency edges, then remains undoable.
@@ -125,9 +124,7 @@ def run():
         assert bounds['x']>=0 and bounds['x']+bounds['width']<=width
         assert bounds['y']>=0 and bounds['y']+bounds['height']<=780
         page.keyboard.press('Escape')
-        page.locator('#object-search-toggle').click()
         assert page.locator('#object-search').is_visible()
-        page.locator('#object-search-toggle').click()
     assert not errors,errors
     browser.close()
     print('OBJECT_MENU_BROWSER_PASS: disclosure, keyboard, focus, hide/lock, dependent refusal, nonselected cascade, trash restore, undo/redo, import rollback, stale row, autosave, mobile')

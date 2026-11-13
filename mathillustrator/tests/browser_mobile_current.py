@@ -20,7 +20,7 @@ def run():
    x=stage['x']+stage['width']/2;y=stage['y']+stage['height']/2
    page.touchscreen.tap(x,y)
    assert page.locator('#object-count').inner_text()=='1',(width,'touchscreen.tap failed')
-   assert page.locator('#drawing').get_attribute('data-tool')=='select', 'Point should auto-return to Move when enabled'
+   assert page.locator('#drawing').get_attribute('data-tool')=='pan', 'Point should auto-return to Pan when enabled'
    if width==390:
     import struct
     page.locator('#export-open').click()

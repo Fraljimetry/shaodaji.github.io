@@ -11,12 +11,12 @@ const safe=(v,fallback,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min
 export function normalizePropertiesLayout(raw){
  const o=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  return {
-  mode:o.mode==='floating'?'floating':'docked',
+  mode:o.mode==='docked'?'docked':'floating',
   collapsed:o.collapsed===true,
   dockHeight:safe(o.dockHeight,PROPERTY_DOCK_DEFAULT,PROPERTY_DOCK_MIN,1000),
-  x:safe(o.x,360,0,10000),y:safe(o.y,110,0,10000),
-  width:safe(o.width,330,PROPERTY_FLOAT_MIN_W,PROPERTY_FLOAT_MAX_W),
-  height:safe(o.height,420,PROPERTY_FLOAT_MIN_H,PROPERTY_FLOAT_MAX_H)
+  x:safe(o.x,320,0,10000),y:safe(o.y,100,0,10000),
+  width:safe(o.width,300,PROPERTY_FLOAT_MIN_W,PROPERTY_FLOAT_MAX_W),
+  height:safe(o.height,320,PROPERTY_FLOAT_MIN_H,PROPERTY_FLOAT_MAX_H)
  };
 }
 /** Fit without overwriting preferred position or dimensions on viewport shrink. */

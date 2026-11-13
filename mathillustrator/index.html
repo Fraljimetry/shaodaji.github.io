@@ -1,11 +1,16 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="MathIllustrator: a local-first mathematical illustration editor for figures, constructions and diagrams.">
   <title>MathIllustrator · Mathematical illustration</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
+  <script>(function(){try{let own=JSON.parse(localStorage.getItem('mathillustrator-ui-v1')||'{}').theme;
+ if(!['light','dark'].includes(own)){for(const key of ['theme','site-theme','shaodaji-theme','shaodaji_theme']){
+ const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
+ }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
+ }catch{}})();</script>
+  <link rel="stylesheet" href="./style.css?cut=round20">
 </head>
 <body>
   <header class="appbar">
@@ -19,24 +24,24 @@
       <button id="save" class="compact-action" title="Save editable project" aria-label="Save"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h13l3 3v15H4Z M8 3v6h8V3 M8 21v-8h8v8"/></svg><span class="action-text">Save</span></button>
       <button id="tikzcd-open" class="compact-action" title="Import semantic tikz-cd diagram" aria-label="Import semantic tikz-cd diagram"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3h7v18H9v-5M9 3h4M3 12h13M3 12l4-4M3 12l4 4"/></svg><span class="action-text">Import TeX</span></button>
       <button id="export-open" class="compact-action primary" title="Export illustration" aria-label="Export"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3M7 8l5-5 5 5M4 14v7h16v-7"/></svg><span class="action-text">Export</span></button>
-      <button id="settings-open" title="Settings" aria-controls="settings-sections" aria-expanded="true">⚙</button><select id="ui-language" title="Language / 语言" aria-label="Language"><option value="en">English</option><option value="zh">中文</option></select><button id="help" title="Open tutorial">?</button>
+      <select id="ui-language" title="Language / 语言" aria-label="Language"><option value="en">English</option><option value="zh">中文</option></select><button id="help" class="guide-action" title="Tutorial" aria-label="Tutorial"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 6c-2.6-1.9-5.8-2.1-9-1v14c3.2-1.1 6.4-.9 9 1 2.6-1.9 5.8-2.1 9-1V5c-3.2-1.1-6.4-.9-9 1Z"/><path d="M12 6v14"/></svg></button>
     </div>
   </header>
   <div id="object-action-menu" class="object-action-menu" role="menu" aria-label="Object actions" hidden></div>
   <main class="workspace">
     <aside class="leftpanel" aria-label="Objects and properties">
-      <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
-      <div id="left-resizer" class="panel-resizer left-resizer" role="separator" tabindex="0" aria-label="Resize Objects panel" aria-orientation="vertical" aria-controls="objects" title="Drag or use arrow keys; Shift for larger steps; double-click to reset"></div>
-      <div class="commandbox"><label for="command">Construction input</label><form id="command-form"><input id="command" autocomplete="off" spellcheck="false" placeholder="A = (0, 0)" aria-label="Construction command"><button aria-label="Add construction" title="Run construction">↵</button></form><p class="hint">Points, geometric objects, f(x) plots · <a href="tutorial.html#commands" target="_blank">Syntax</a></p></div>
-      <div class="object-tools"><button id="object-search-toggle" type="button" title="Find objects" aria-label="Find objects" aria-controls="object-search" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button><input id="object-search" type="search" placeholder="Find…" aria-label="Search objects" hidden><label title="Hidden objects remain in the project but are not rendered; use an object menu to change visibility."><input type="checkbox" id="show-hidden" checked> Hidden <span class="mini-help">?</span></label></div>
+      <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="objects-undock" type="button" class="panel-undock" title="Float Objects panel" aria-label="Float Objects panel">Float</button><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
+      <div id="left-resizer" class="panel-resizer left-resizer" role="separator" tabindex="0" aria-label="Resize Objects panel" aria-orientation="vertical" aria-controls="objects" title="Resize panel"></div>
+      <div class="commandbox"><label for="command">Construction input</label><form id="command-form"><input id="command" autocomplete="off" spellcheck="false" placeholder="A = (0, 0)" aria-label="Construction command"><button aria-label="Add construction" title="Run construction">↵</button></form></div>
+      <div class="object-tools"><span id="object-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span><input id="object-search" type="search" placeholder="Find…" aria-label="Search objects"><label><input type="checkbox" id="show-hidden" checked> Hidden</label></div>
       <div id="objects" class="objects" role="list" aria-label="Drawable objects"></div><details id="recently-deleted" class="trash-panel"><summary>Recently Deleted <span id="trash-count">0</span></summary><div id="trash-items"></div></details>
       <section id="properties-dock" class="properties-dock" aria-label="Properties panel">
-        <div id="properties-splitter" class="properties-splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-controls="properties" aria-label="Resize Properties height" title="Drag or use arrow keys; Shift for larger steps; double-click to reset"></div>
+        <div id="properties-splitter" class="properties-splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-controls="properties" aria-label="Resize Properties height" title="Resize panel"></div>
         <div id="properties-head" class="properties-head" tabindex="-1" aria-label="Move Properties panel">
           <strong>Properties</strong><div class="properties-head-actions"><button id="properties-undock" type="button" aria-label="Float Properties panel" title="Float Properties panel">Float</button><button id="properties-toggle" type="button" aria-controls="properties" aria-expanded="true" title="Collapse Properties">−</button></div>
         </div>
-        <div id="properties" class="properties"><h3>Properties</h3><p class="subtle">Select an object to edit its style and geometry.</p></div>
-        <div id="properties-corner" class="properties-corner" tabindex="-1" role="group" aria-label="Resize floating Properties panel" title="Drag to resize; arrow keys to adjust width/height"></div>
+        <div id="properties" class="properties"></div>
+        <div id="properties-corner" class="properties-corner" tabindex="-1" role="group" aria-label="Resize floating Properties panel" title="Resize Properties"></div>
       </section>
     </aside>
     <section class="stage" aria-label="Illustration canvas">
@@ -45,30 +50,36 @@
       <div class="canvas-footer"><span id="coords">x 0.00 · y 0.00</span><span class="save-feedback"><span id="autosave-info" role="status" aria-live="polite">Local backup ready</span><button id="retry-autosave" title="Retry saving the current project in this browser" hidden>Retry local save</button></span><span id="render-info">Ready</span></div>
     </section>
     <aside class="rightpanel" aria-label="Drawing tools and settings">
-      <div class="panelhead"><h2>Tools</h2><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
-      <div id="right-resizer" class="panel-resizer right-resizer" role="separator" tabindex="0" aria-label="Resize Tools panel" aria-orientation="vertical" aria-controls="panel-sections" title="Drag or use arrow keys; Shift for larger steps; double-click to reset"></div>
+      <div class="panelhead"><h2>Tools</h2><button id="tools-undock" type="button" class="panel-undock" title="Float Tools panel" aria-label="Float Tools panel">Float</button><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
+      <div id="right-resizer" class="panel-resizer right-resizer" role="separator" tabindex="0" aria-label="Resize Tools panel" aria-orientation="vertical" aria-controls="panel-sections" title="Resize panel"></div>
       <div class="scrollpanel" id="panel-sections">
         <div class="preset" hidden><label for="preset" hidden>Drawing preset</label><select id="preset"></select></div>
         <section class="toolgroup" data-tool-module="basic"><h3>Basic</h3><div class="toolgrid" id="basic-tools"></div></section>
         <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><div class="geometry-categories" id="construction-tools"></div></section>
         <section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section><section class="toolgroup" data-tool-module="illustration" data-section-id="illustration"><h3>Others</h3><div class="toolgrid" id="illustration-tools"></div></section>
         <section class="settings-collection" data-section-id="settings"><h3>Settings</h3><div id="settings-sections" class="settings-sections">
-        <section class="controls"><h3>Plotting <span class="mini-help" title="Use the construction input for a function, such as f(x)=sin(x).">?</span></h3>
-          <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast · responsive</option><option value="balanced">Balanced · default</option><option value="detailed">Detailed · more sampling</option></select></label>
+        <section class="controls"><h3>Plotting</h3>
+          <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label>
           
         </section>
-        <section class="controls"><h3>Geometry options</h3><label class="field">Free curves <select id="freehand-close"><option value="open">Keep open · disable joining</option><option value="near">Join nearby ends (corner or tangent)</option><option value="always">Always close</option></select></label>
-          <label class="field">Curve smoothing <select id="correction"><option value="off">Off · exact pointer</option><option value="gentle">Gentle · smooth</option><option value="medium">Medium · smooth + simplify</option><option value="strong">Strong</option><option value="ultra">Ultra-smooth</option></select></label>
+        <section class="controls geometry-options"><h3>Geometry options</h3><label class="field">Free curves <select id="freehand-close"><option value="open">Keep open</option><option value="near">Join & snap</option><option value="always" hidden>Legacy close</option></select></label>
+          <label class="field">Curve smoothing <select id="correction"><option value="off">Off</option><option value="gentle">Gentle</option><option value="medium">Medium</option><option value="strong">Strong</option><option value="ultra">Ultra-smooth</option></select></label>
           <label class="field">Regular polygon sides <input id="polygon-sides" type="number" min="3" max="100" step="1"></label>
-          <label class="field">Snap interval <input id="snap-step" type="number" min="0.000001" max="1000" step="any"></label>
-          <label class="check"><input id="snap" type="checkbox"> Snap to grid</label><label class="check"><input id="snap-anchors" type="checkbox"> Snap to existing points</label>
-          <label class="check"><input id="grid" type="checkbox"> Show grid</label>
-          <label class="check"><input id="axes" type="checkbox"> Show axes</label><label class="check"><input id="labels" type="checkbox"> Show point labels</label>
-          <label class="field">Point label placement <select id="label-placement"><option value="standard">Standard · exact legacy position</option><option value="avoid">Avoid nearby overlaps</option></select></label>
+          <div class="settings-subsection" role="group" aria-label="Snap"><h4>Snap</h4>
+            <label class="field">Snap interval <input id="snap-step" type="number" min="0.000001" max="1000" step="any"></label>
+            <label class="check"><input id="snap" type="checkbox"> Grid</label>
+            <label class="check"><input id="snap-anchors" type="checkbox"> Points</label>
+            <label class="check"><input id="snap-objects" type="checkbox"> Objects</label>
+          </div>
+          <div class="settings-subsection" role="group" aria-label="Show"><h4>Show</h4>
+            <label class="check"><input id="grid" type="checkbox"> Grid</label>
+            <label class="check"><input id="axes" type="checkbox"> Axes</label><label class="check"><input id="labels" type="checkbox"> Point labels</label>
+            <label class="field">Point label placement <select id="label-placement"><option value="standard">Standard</option><option value="avoid">Avoid overlap</option></select></label>
+          </div>
           
         </section>
         <section class="controls"><h3>New object style</h3>
-          <label class="field">Object naming <select id="naming-convention" aria-label="Automatic object naming"><option value="pascal">PascalCase · Point 1</option><option value="camel">camelCase · point 1 (legacy)</option><option value="snake">snake_case · regular_polygon 1</option></select></label>
+          <label class="field">Object naming <select id="naming-convention" aria-label="Automatic object naming"><option value="pascal">PascalCase</option><option value="camel">camelCase</option><option value="snake">snake_case</option></select></label>
           <div class="style-controls-grid" role="group" aria-label="New object appearance">
             <div class="style-slot style-stroke"><label class="field">Stroke <input id="default-stroke" type="color"></label><div id="default-color-swatches-stroke"></div></div>
             <div class="style-slot style-fill"><label class="field">Fill <input id="default-fill" type="color"></label><div id="default-color-swatches-fill"></div></div>
@@ -78,26 +89,26 @@
           </div>
         </section>
         <section class="controls"><h3>Page & appearance</h3>
-          <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4 landscape frame</option><option value="letter">Letter landscape frame</option></select></label>
-          <label class="field">Export area <select id="export-region"><option value="viewport">Current viewport</option><option value="page">Page frame only</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Include grid and axes in image exports</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent background <span class="mini-help" title="Transparency is supported in SVG, PNG and WebP, not JPEG.">?</span></label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2× · default</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Background <input id="background" type="color"></label>
+          <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4</option><option value="letter">Letter</option></select></label>
+          <label class="field">Export area <select id="export-region"><option value="viewport">Viewport</option><option value="page">Page</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Export guides</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent background</label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Background <input id="background" type="color"></label>
           <label class="field">Theme <select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
         </section>
         <section class="controls"><h3>Interface</h3>
           <label class="field">Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option></select></label>
-          <label class="check"><input type="checkbox" id="auto-move" checked> Return to Move after placing a point</label>
-          <p class="compact-help">Collapse sections using their arrows. Drag the grip to reorder; with the grip focused, use Alt+↑/↓.</p>
+          <label class="check"><input type="checkbox" id="auto-pan" checked> Auto Pan / Move</label>
+          
         </section>
         </div></section>
       </div>
     </aside>
   </main>
   <div id="conflict-banner" class="conflict-banner" hidden role="alert"><strong>Another tab changed this project.</strong> Autosave is paused to prevent lost updates. Download this version before resolving if needed. <button id="conflict-load">Load other tab</button><button id="conflict-overwrite">Keep this tab</button></div>
-  <div id="tikzcd-dialog" class="tex-dialog" hidden role="dialog" aria-modal="true" aria-label="Import tikz-cd"><div class="tex-panel"><div class="export-heading">Import semantic tikz-cd <button id="tikzcd-close" aria-label="Close importer">×</button></div><p class="hint">Paste one supported tikz-cd environment. This replaces the current project after confirmation. Unsupported TeX is rejected, not silently interpreted.</p><textarea id="tikzcd-input" spellcheck="false" aria-label="tikz-cd source" placeholder="\begin{tikzcd}&#10;A \arrow[r, &quot;f&quot;] &amp; B&#10;\end{tikzcd}"></textarea><div class="tex-actions"><button id="tikzcd-apply" class="primary">Import diagram</button></div></div></div>
+  <div id="tikzcd-dialog" class="tex-dialog" hidden role="dialog" aria-modal="true" aria-label="Import tikz-cd"><div class="tex-panel"><div class="export-heading">Import semantic tikz-cd <button id="tikzcd-close" aria-label="Close importer">×</button></div><textarea id="tikzcd-input" spellcheck="false" aria-label="tikz-cd source" placeholder="\begin{tikzcd}&#10;A \arrow[r, &quot;f&quot;] &amp; B&#10;\end{tikzcd}"></textarea><div class="tex-actions"><button id="tikzcd-apply" class="primary">Import diagram</button></div></div></div>
   <div id="export-backdrop" hidden aria-hidden="true"></div>
-  <div id="export-menu" class="export-menu" hidden role="dialog" aria-modal="true" aria-label="Export illustration"><div class="export-heading">Export illustration <button id="export-close" aria-label="Close export options">×</button></div><div id="export-options" class="export-options"></div><p class="hint">Unavailable formats are disabled. SVG/PNG/JPEG/WebP export the selected viewport or page frame without editor guides by default. Transparent export is available in SVG/PNG/WebP; JPEG cannot represent alpha. TikZ and JSON use their own scene semantics.</p></div>
+  <div id="export-menu" class="export-menu" hidden role="dialog" aria-modal="true" aria-label="Export illustration"><div class="export-heading">Export illustration <button id="export-close" aria-label="Close export options">×</button></div><div id="export-options" class="export-options"></div></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?repair=boot-20261113"></script>
+  <script type="module" src="./src/app.mjs?cut=round20"></script>
 </body>
 </html>

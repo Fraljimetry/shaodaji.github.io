@@ -3,8 +3,8 @@
  * Do not silently flatten geometry after quantization or exceed TeX's bounded
  * dimensions. This check is deliberately conservative; JSON/SVG stay available.
  */
-import {createResolver} from './model.mjs';
-import {regularPolygonVertices} from './geometry.mjs';
+import {createResolver,focalEllipse} from './model.mjs?cut=round19';
+import {regularPolygonVertices} from './geometry.mjs?cut=round19';
 
 export const TIKZ_DECIMALS = 5;
 export const TIKZ_COORD_LIMIT = 300; // cm; allow 100cm extension for infinite lines
@@ -22,6 +22,11 @@ export function tikzGeometryIssue(doc){
   else if(o.type==='freehand')ps=o.path;
   else if(o.refs)ps=resolver.points(o);
   if(ps.some(p=>!normal(p)))return 'A visible object has coordinates beyond the reliable ±300 cm TikZ export range.';
+  if(o.type==='ellipse'&&ps.length===3){
+   const e=focalEllipse(ps);
+   if(!e||!normal([e.cx,e.cy])||e.rx>100||e.ry>100)return 'Focal ellipse exceeds TikZ export limits or is degenerate.';
+   if(quant(e.rx)<=0||quant(e.ry)<=0)return 'A focal ellipse radius would collapse after TikZ rounding.';
+  }
   if(['segment','arrow','line','morphism','circle','rectangle','ellipse'].includes(o.type)&&ps.length===2){
    const [a,b]=ps;
    if(a&&b&&(a[0]!==b[0]||a[1]!==b[1])&&same(a,b))return 'A visible construction would collapse after TikZ coordinate rounding.';
