@@ -1,0 +1,72 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {newDoc,addPoint,append,createResolver,validateDoc,TOOLS,STRAIGHT_TYPES,affected} from '../src/model.mjs';
+import {r50Shape,r50SourceShape,circleArcPoints,parabolaPoints,hyperbolaPoints,triangleCenter,circleTangents,polylineCrossings,projectToCurve,transformPoint} from '../src/geometry_round50.mjs';
+const doc=()=>newDoc();
+const add=(d,x,y)=>addPoint(d,[x,y]);
+const close=(a,b,eps=1e-5)=>assert.ok(a&&b&&a.length===2&&Math.hypot(a[0]-b[0],a[1]-b[1])<eps,`${a} != ${b}`);
+test('Round50 tools registered and legacy model compatibility',()=>{
+ for(const t of ['pointOnObject','tangentCircle','circularArc','parabola','hyperbola','generalIntersection','transformCopy','locus','fixedLength','fixedAngle','triangleCenter'])assert.ok(TOOLS.includes(t),t);
+ assert.ok(STRAIGHT_TYPES.has('fixedLength'));
+ assert.ok(validateDoc(doc()));
+});
+test('Round50 constrained point, circle tangents, arc, conics',()=>{
+ const d=doc(),a=add(d,0,0),b=add(d,4,0),upper=add(d,0,4),lower=add(d,-2,-3),line=append(d,{type:'line',refs:[a.id,b.id]}),circle=append(d,{type:'circle',refs:[a.id,b.id]});
+ const c=append(d,{type:'pointOnObject',refs:[circle.id],parameter:.25});
+ close(createResolver(d).at(c.id),[0,4]);
+ const tangentPoint=add(d,8,0);
+ const left=append(d,{type:'tangentCircle',refs:[tangentPoint.id,circle.id],branch:-1});
+ const right=append(d,{type:'tangentCircle',refs:[tangentPoint.id,circle.id],branch:1});
+ const res=createResolver(d);
+ assert.ok(res.line(left)&&res.line(right));
+ assert.ok(Math.abs(res.line(left).d[1])>.1&&Math.abs(res.line(right).d[1])>.1);
+ const arc=append(d,{type:'circularArc',refs:[b.id,upper.id,lower.id]});
+ assert.ok(r50Shape(arc,createResolver(d)).length>30);
+ const parabola=append(d,{type:'parabola',refs:[upper.id,line.id]});
+ const shape=r50Shape(parabola,createResolver(d));assert.ok(shape.length>30);
+ const f1=add(d,-3,0),f2=add(d,3,0),on=add(d,4,1);
+ const hyper=append(d,{type:'hyperbola',refs:[f1.id,f2.id,on.id]});
+ assert.ok(r50Shape(hyper,createResolver(d)).length>30);
+ assert.ok(validateDoc(d));
+});
+test('Round50 triangle centers, fixed angle & segment, transformation paths',()=>{
+ const d=doc(),a=add(d,0,0),b=add(d,4,0),c=add(d,0,3);
+ const means=[['centroid',[4/3,1]],['circumcenter',[2,1.5]],['incenter',[1,1]],['orthocenter',[0,0]]];
+ for(const [kind,pt]of means){const ob=append(d,{type:'triangleCenter',refs:[a.id,b.id,c.id],centerKind:kind});close(createResolver(d).at(ob.id),pt);}
+ const fixed=append(d,{type:'fixedLength',refs:[a.id,b.id],length:2});assert.equal(createResolver(d).line(fixed).length,2);
+ const angle=append(d,{type:'fixedAngle',refs:[b.id,a.id],angle:Math.PI/2});assert.ok(r50Shape(angle,createResolver(d)).length>20);
+ const seg=append(d,{type:'segment',refs:[a.id,b.id]});
+ const reflect=append(d,{type:'transformCopy',refs:[seg.id,fixed.id],transform:'reflect',amount:0});
+ assert.equal(r50Shape(reflect,createResolver(d)).length,2);
+ const translation=append(d,{type:'transformCopy',refs:[seg.id,b.id,c.id],transform:'translate',amount:0});
+ close(r50Shape(translation,createResolver(d))[0],[-4,3]);
+ const rotated=append(d,{type:'transformCopy',refs:[seg.id,a.id],transform:'rotate',amount:Math.PI/2});
+ close(r50Shape(rotated,createResolver(d))[1],[0,4]);
+ const dilated=append(d,{type:'transformCopy',refs:[seg.id,a.id],transform:'dilate',amount:2});
+ close(r50Shape(dilated,createResolver(d))[1],[8,0]);
+ assert.ok(validateDoc(d));
+});
+test('Round50 general intersection and trace dependencies are preserved',()=>{
+ const d=doc(),left=add(d,-3,0),right=add(d,3,0),lo=add(d,0,-3),hi=add(d,0,3);
+ const h=append(d,{type:'line',refs:[left.id,right.id]}),v=append(d,{type:'line',refs:[lo.id,hi.id]});
+ const intersection=append(d,{type:'generalIntersection',refs:[h.id,v.id],rootIndex:0});
+ close(createResolver(d).at(intersection.id),[0,0]);
+ const circle=append(d,{type:'circle',refs:[left.id,right.id]});
+ const driver=append(d,{type:'pointOnObject',refs:[circle.id],parameter:0});
+ const follower=append(d,{type:'midpoint',refs:[left.id,driver.id]});
+ const locus=append(d,{type:'locus',refs:[follower.id,driver.id]});
+ assert.ok(affected(d,driver.id).has(follower.id));assert.ok(validateDoc(d));
+ const v2=validateDoc(JSON.parse(JSON.stringify(d)));
+ assert.equal(v2.objects.length,d.objects.length);
+});
+test('Round50 pure geometry failure cases fail closed',()=>{
+ assert.equal(triangleCenter([[0,0],[1,0],[2,0]],'circumcenter'),null);
+ assert.deepEqual(circleTangents([0,0],{center:[0,0],radius:3}),[]);
+ assert.deepEqual(parabolaPoints([2,0],{a:[0,0],d:[1,0]}),[]);
+ assert.deepEqual(hyperbolaPoints([[0,0],[1,0],[.5,0]]),[]);
+ assert.equal(projectToCurve([0,0],[]),null);
+ assert.equal(transformPoint([1,2],'dilate',[0,0],Infinity),null);
+ const d=doc(),a=add(d,0,0),b=add(d,1,0);
+ append(d,{type:'fixedLength',refs:[a.id,b.id],length:-2});
+ assert.throws(()=>validateDoc(d),/Invalid fixed length/);
+});

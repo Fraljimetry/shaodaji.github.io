@@ -798,3 +798,14 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - **Heavy 3D orbit:** `browser_round45_3d_interaction.py` previously printed its PASS diagnostic for full/preview face counts and restore behavior, but that invocation did not complete a clean process exit within the runner timeout; not credited in the independent clean-PASS count.
 
 **Performance/accuracy note:** R49 does not claim a new GPU path, more memory, or faster implicit meshing. Regressions show prior 3D controls still work; they are not exhaustive benchmarks or proof that every complex surface is complete. CPU/SVG high-detail surfaces can remain expensive to paint/export, and transparent depth sorting remains approximate.
+
+
+## Round 50 — Geometry expansion, basic regression (2026-11-14)
+
+- Authoritative source: Round49 working source and Round49 published overlay; Round50 is website-root changed/new-file overlay, no Git commits.
+- Static `node --check`: app, model, new pure geometry module (see release checks).
+- Node `node --test tests/*.test.mjs`: **322/322 PASS** (317 prior + 5 new Round50 geometry tests). Includes constrained points, tangents, sampled conics, center formulas, fixed parameters, transforms, intersections, JSON validation and degeneracy failures.
+- Actual isolated Chromium `python tests/browser_smoke.py`: **PASS** (startup, old drawing, SVG/PNG/TikZ/JSON export, keyboard, undo/redo).
+- Actual isolated Chromium `python tests/browser_round50_geometry.py`: **PASS** (seven Geometry subsections, fourteen new buttons, equal-size click marker counts, mouse construction of circle tangents and triangle center). Tests use inlined local modules via the maintained `browser_smoke.py` fixture, not a live HTTP hostname.
+- Source-to-overlay ZIP replay and file scope: see final round handoff.
+- Limitations: General Intersections and Locus rely on finite numerical samples (tangencies / bifurcations can be missed); parametric source transformations are not universal; Point-on-object uses finite render ranges for infinite lines; Fixed Angle is an angle marker without a geometric constraint solver. Dense overlapping selectable objects and all fourteen real click workflows are **not** yet exhaustively browser-validated. 3D rendering pipeline unchanged; existing CPU/SVG transparency/depth issues still apply.

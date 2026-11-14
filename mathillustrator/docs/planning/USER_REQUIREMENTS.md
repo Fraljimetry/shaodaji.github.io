@@ -907,3 +907,24 @@ The user's five screenshots after Round 48 establish a **single global layout ru
 **Remaining 10/12 Geometry queue:** Point on Object; Tangent to Circle; Circular Arc; Parabola; Hyperbola; General Intersection; Geometric Transformations; Locus / Trace; Fixed Length / Angle; Triangle Centers. The existing first tool is Angle Bisector. Keep glyph marker count equal to required construction clicks, control points consistent in size, and do not alter older glyphs. Reuse working construction operations rather than invent redundant tools.
 
 **Known limitations:** The new Foot is defined on the supporting infinite line, not clipped to a segment/ray domain. Clicking an existing line can require a clear visible stroke in crowded scenes; the separate Geometry picking system is not a guarantee of target availability behind dense plots. Deeply overlapping translucent 3D faces still require a real depth buffer to fully resolve. Browser testing here uses injected local modules and does not assert live hosted assets, Firefox/Safari or GPU performance. No Git commits.
+
+
+## Round 50 — Remaining Geometry foundation (2026-11-14)
+
+The user requested **all ten** previously proposed Geometry *categories* in one code-focused cut, explicitly leaving layout polishing and comprehensive debugging for a later round. Round 50 adds fourteen individual buttons covering ten groups, organized under seven concise Geometry subsections: Points & measurements; Lines & constructions; Circles & conics; Polygons & centers; Intersections; Transformations; Curves & loci. All existing glyph paths remain unchanged.
+
+| Requirement | Current implementation / testable scope |
+| --- | --- |
+| R337 Point on Object | Two clicks: select supported geometric object, then its on-object position. Saved scalar parameter recomputes dependent point; points can be dragged along sampled source path. Segment, ray, line, circle and selected conics/curves supported. A line is previewed within a finite window. |
+| R338 Tangents to circle | Two clicks: external point, circle; creates both tangents. No tangents for a point on/inside circle. Dynamic dependencies, JSON and SVG. |
+| R339 Circular arc | Three clicks: start, through-point, end. Circumcircle-derived arc; near-collinear anchors rejected. |
+| R340 Parabola | Two clicks: focus point and existing directrix. Sampled world-space conic, rejects focus on the line. |
+| R341 Hyperbola | Three clicks: two distinct foci, one point on branch; samples the branch selected by that point. |
+| R342 General intersection | Two clicks: choose curves. Numerically samples world-space polylines and creates stable-index crossing points for detected roots, capped at 32. Near tangencies and branch discontinuities may be missed; this is **not** an exact algebraic conic solver. |
+| R343 Geometric transformations | Reflection (source + line), rotation (source + center, numeric degrees), translation (source + start/end points), dilation (source + center, scalar). Transform copies dynamically resample source geometry; no source mutation. Polygon/rectangle/regular polygon closure and Bézier source paths supported. Nested unsupported objects may be unavailable. |
+| R344 Locus / trace | Two clicks: dependent target point + constrained Point on Object driver. Samples 65 dependency states. Intentionally not available above 250 2D objects to prevent runaway recalculation. No symbolic locus analysis or exact tracing through singularities. |
+| R345 Fixed length / angle | Two-click fixed length segment follows direction anchor with entered exact finite positive length. Two-click fixed-angle marker uses reference point + vertex with entered degrees. **Angle feature is a measurement/arc marker, not a full solver constraining another vertex.** Expressions may use pi/e via the restricted math parser. |
+| R346 Triangle centers | Three vertices, dynamic centroid by default; Properties selector switches to incenter, circumcenter, or orthocenter. Collinear vertices rejected. |
+| R347 Glyphs & regression | Every new tool icon has exactly its 2 or 3 **equal-radius control markers** corresponding to selection clicks; reference objects count as one click each; no extra markers for computed points. Frozen older glyphs remain byte-identical. Node and real Chromium basic test provenance in current quality report. |
+
+**Accepted R50 limits:** Basic construction/persistence/renderer integration only. Geometry picking beneath overlapping strokes, exact roots near tangency, continuous conic branch identification, trace accuracy at singularities, and exhaustive drag/undo/export/device performance are *next-round debugging* rather than claimed passes. SVG and JSON reflect new objects; restricted TikZ refuses unsupported shapes. Source names, object IDs, dependency graph, and legacy JSON version remain unchanged. No Git commits, no unsupported fallback, and only changed/new `mathillustrator/` files in the overlay.
