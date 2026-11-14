@@ -1,13 +1,14 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
+import {reorderVisible,shiftVisible} from './object_order.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round46';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round47';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round46';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round47';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round46';
+import {localizeUI,translated} from './i18n.mjs?cut=round47';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round38';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
@@ -78,17 +79,20 @@ glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r
 glyph.perpendicularThrough='<path d="M2 18H22M12 2V22M12 15H15V18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 18L23 6"/><circle cx="5" cy="15.82" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="8.18" r="1.8" fill="currentColor" stroke="none"/>';
+// Three construction clicks = exactly three identical 2px filled markers.
+// The dashed-looking diagonal is the internal bisector of the right angle.
+glyph.angleBisector='<path d="M6 5V19H20M6 19L17 8"/><circle cx="6" cy="5" r="2" fill="currentColor"/><circle cx="6" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
- 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Line'],['perpBisector','Perpendicular bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circleCircleIntersection','Circle–circle intersections'],['ellipse','Ellipse'],['rectangle','Rectangle'],['parallelogram','Parallelogram'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve']],
+ 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Line'],['perpBisector','Perpendicular bisector'],['angleBisector','Angle bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circleCircleIntersection','Circle–circle intersections'],['ellipse','Ellipse'],['rectangle','Rectangle'],['parallelogram','Parallelogram'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve']],
  'diagram-tools':[['node','Diagram node'],['morphism','Morphism'],['text','Text']]
 };
 // An interface-only visibility preference: advanced tools remain functional in
 // existing projects and are never lost from JSON, undo history or SVG export.
 const ESSENTIAL_GEOMETRY=new Set(['point','segment','arrow','line','angle','circle','ellipse','rectangle','parallelogram','polygon','regularPolygon','polyline','bezier','spline','freehand']);
 const geometryCategories=[
- {id:'points-lines',title:'Points & lines',tools:['point','midpoint','segment','ray','arrow','line','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','angle']},
+ {id:'points-lines',title:'Points & lines',tools:['point','midpoint','segment','ray','arrow','line','perpBisector','angleBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','angle']},
  {id:'circles-conics',title:'Circles & conics',tools:['circle','circleDiameter','circleThrough3','circleCircleIntersection','ellipse']},
  {id:'polygons',title:'Polygons',tools:['rectangle','parallelogram','triangle','quadrilateral','polygon','regularPolygon']},
  {id:'curves',title:'Curves',tools:['polyline','bezier','spline','closedSpline','freehand']}
@@ -356,7 +360,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;
    if(o.pointLabel&&o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
    else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
- }else if(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough'].includes(o.type)){
+ }else if(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough'].includes(o.type)){
   const line=resolver.line(o);if(!line)return;
   let a=project(line.a),b=project([line.a[0]+line.d[0]*line.length,line.a[1]+line.d[1]*line.length]);
   if(line.domain==='infinite'){
@@ -528,7 +532,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   // Domain coloring is raster content; do not apply the normal stroke/fill style.
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');svg.append(item);
- if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)){
+ if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)){
   const paths=o.type==='vectorField'&&o.colorRange===true?[...item.querySelectorAll('path')]:[item.tagName.toLowerCase()==='g'?item.querySelector('path'):item];
   for(const path of paths){if(!path)continue;const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
  }
@@ -869,6 +873,46 @@ const PLOT3D_ACTION_PATHS={
  Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
  Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'
 };
+let activeObjectDrag=null;
+function addObjectOrderGrip(row,id,dimension){
+ const grip=document.createElement('button');grip.type='button';grip.className='object-order-grip';grip.draggable=true;
+ grip.textContent='⠿';grip.title=translated('Drag to reorder; Alt+Up/Down',uiPrefs.language);
+ grip.setAttribute('aria-label',`${translated('Drag to reorder; Alt+Up/Down',uiPrefs.language)}: ${dimension==='3d'?'3D ':''}${id}`);
+ grip.onclick=event=>event.stopPropagation();
+ grip.addEventListener('dragstart',event=>{
+  activeObjectDrag={id,dimension};event.dataTransfer?.setData('text/plain',id);
+  if(event.dataTransfer)event.dataTransfer.effectAllowed='move';
+  row.classList.add('object-dragging');
+ });
+ grip.addEventListener('dragend',()=>{
+  activeObjectDrag=null;document.querySelectorAll('.object-drop-target,.object-dragging').forEach(node=>node.classList.remove('object-drop-target','object-dragging'));
+ });
+ grip.onkeydown=event=>{
+  if(!event.altKey||!['ArrowUp','ArrowDown'].includes(event.key))return;
+  event.preventDefault();event.stopPropagation();
+  const up=event.key==='ArrowUp',items=dimension==='3d'?doc.scene3d.plots:doc.objects;
+  if(!items.some(o=>o.id===id))return;
+  const changed=update(()=>shiftVisible(dimension==='3d'?doc.scene3d.plots:doc.objects,id,up));
+  if(changed)requestAnimationFrame(()=>{
+   const selector=dimension==='3d'?`#objects-3d .object[data-plot3d="${id}"] .object-order-grip`:`#objects .object[data-id="${id}"] .object-order-grip`;
+   document.querySelector(selector)?.focus({preventScroll:true});
+  });
+ };
+ row.addEventListener('dragover',event=>{
+  if(!activeObjectDrag||activeObjectDrag.dimension!==dimension||activeObjectDrag.id===id)return;
+  event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';row.classList.add('object-drop-target');
+ });
+ row.addEventListener('dragleave',event=>{if(!row.contains(event.relatedTarget))row.classList.remove('object-drop-target');});
+ row.addEventListener('drop',event=>{
+  row.classList.remove('object-drop-target');
+  const dragging=activeObjectDrag;activeObjectDrag=null;
+  if(!dragging||dragging.dimension!==dimension||dragging.id===id)return;
+  event.preventDefault();event.stopPropagation();
+  const bounds=row.getBoundingClientRect(),before=event.clientY<bounds.top+bounds.height/2;
+  update(()=>reorderVisible(dimension==='3d'?doc.scene3d.plots:doc.objects,dragging.id,id,before));
+ });
+ return grip;
+}
 function render3DList(){
  const root=$('objects-3d');root.hidden=false;root.replaceChildren();$('object-count').textContent=String(doc.scene3d?.plots.length||0);
  $('objects').hidden=true;const filter=($('object-search').value||'').trim().toLowerCase(),showHidden=$('show-hidden').checked;
@@ -885,6 +929,7 @@ function render3DList(){
    button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg><span class="sr-only">${label}</span>`;
    button.onclick=e=>{e.stopPropagation();callback();};row.append(button);
   }
+  row.prepend(addObjectOrderGrip(row,plot.id,'3d'));
   row.append(info);
   action(plot.hidden?'Show':'Hide',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.hidden=!live.hidden;if(!live.hidden)enforce3DVisibility(doc.scene3d,live.id);}));
   action(plot.locked?'Unlock':'Lock',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.locked=!live.locked;}));
@@ -933,10 +978,10 @@ function renderListWindow(){
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
   const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
-  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'━',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'•─',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
+  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'━',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'•─',perpBisector:'⟂',angleBisector:'∠',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
  if(o.type==='polyline'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M2 19L9 3L15 18L22 4"/></svg>'); }
  if(o.type==='circleIntersection'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="6" cy="17" r="1.7" fill="currentColor"/><circle cx="18" cy="7" r="1.7" fill="currentColor"/></svg>'); }
- row.append(glyph);
+ row.append(addObjectOrderGrip(row,o.id,'2d'),glyph);
   const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;const small=document.createElement('small');small.textContent=desc(o);label.append(strong,small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
@@ -1222,7 +1267,7 @@ function renderProperties(){
 function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
 function select(id){setSelection(id?[id]:[],id);}
 function clearDraft(){draftStart=null;draftPoints=[];draftNode=null;draftReference=null;hover=null;pendingTouchTap=null;}
-const toolInstructions={parallelThrough:'Click a point, then a straight line, segment, or ray.',perpendicularThrough:'Click a point, then a straight line, segment, or ray.',intersection:'Click two crossing straight objects.',circleIntersection:'Click a straight object and a circle; both intersections are created when available.',midpoint:'Click two points; the midpoint follows both.',ray:'Click the start, then the direction point.',perpBisector:'Click two points; the bisector stays perpendicular as they move.',circleDiameter:'Click two opposite ends of a diameter.',circleThrough3:'Click three noncollinear points.',triangle:'Click three vertices.',quadrilateral:'Click four vertices.',spline:'Click at least three points; Enter finishes.',closedSpline:'Click at least three points; Enter closes smoothly.',select:'Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click an edge start, edge end, then a point indicating perpendicular height.',parallelogram:'Click three consecutive vertices.'};
+const toolInstructions={angleBisector:'Click three points; the second point is the vertex of the angle.',parallelThrough:'Click a point, then a straight line, segment, or ray.',perpendicularThrough:'Click a point, then a straight line, segment, or ray.',intersection:'Click two crossing straight objects.',circleIntersection:'Click a straight object and a circle; both intersections are created when available.',midpoint:'Click two points; the midpoint follows both.',ray:'Click the start, then the direction point.',perpBisector:'Click two points; the bisector stays perpendicular as they move.',circleDiameter:'Click two opposite ends of a diameter.',circleThrough3:'Click three noncollinear points.',triangle:'Click three vertices.',quadrilateral:'Click four vertices.',spline:'Click at least three points; Enter finishes.',closedSpline:'Click at least three points; Enter closes smoothly.',select:'Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click an edge start, edge end, then a point indicating perpendicular height.',parallelogram:'Click three consecutive vertices.'};
 function updateModeLabel(t){
  const label=toolGroups['basic-tools'].concat(toolGroups['construction-tools'],toolGroups['diagram-tools']).find(([id])=>id===t)?.[1]||t;
  const localized=translated(label,uiPrefs.language),help=toolInstructions[t]||'Click the canvas.';
@@ -1444,7 +1489,7 @@ function checkNewRefs(type,refs){
 }
 function addTwoPoint(type,a,b){return update(()=>{checkNewGeometry(type,[a,b]);const refs=makeRefs([a,b]);checkNewRefs(type,refs);selected=append(doc,{type,refs}).id;});}
 function finishDraft(){
- const mins={rectangle:3,parallelogram:3,polygon:3,polyline:2,spline:3,closedSpline:3,bezier:4,angle:3,circleThrough3:3,triangle:3,quadrilateral:4};if(!mins[tool]||draftPoints.length<mins[tool]){notice('Add more vertices before finishing.');return;}
+ const mins={rectangle:3,parallelogram:3,polygon:3,polyline:2,spline:3,closedSpline:3,bezier:4,angle:3,angleBisector:3,circleThrough3:3,triangle:3,quadrilateral:4};if(!mins[tool]||draftPoints.length<mins[tool]){notice('Add more vertices before finishing.');return;}
  const pts=clone(draftPoints),type=tool,storedType=['triangle','quadrilateral'].includes(type)?'polygon':type==='closedSpline'?'spline':type;
  try{checkNewGeometry(storedType,pts);}catch(e){notice(e.message);if(['rectangle','parallelogram'].includes(type))draftPoints.pop();scheduleRender();return;}
  const ok=update(()=>{
@@ -1660,9 +1705,9 @@ function performConstructionTap(e,pt){
     const center=append(doc,{type:'midpoint',refs}).id;
     selected=append(doc,{type:'circle',refs:[center,refs[0]]}).id;
    })&&afterOneConstruction();else if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;appendDerivedShapeEdges(doc,selected);})&&afterOneConstruction();else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
- }else if(['rectangle','parallelogram','polygon','polyline','bezier','angle','triangle','quadrilateral','circleThrough3','spline','closedSpline'].includes(tool)){
+ }else if(['rectangle','parallelogram','polygon','polyline','bezier','angle','angleBisector','triangle','quadrilateral','circleThrough3','spline','closedSpline'].includes(tool)){
   if(draftPoints.length===0||Math.hypot(pt[0]-draftPoints.at(-1)[0],pt[1]-draftPoints.at(-1)[1])>1e-8)draftPoints.push(pt);
-  if((['rectangle','parallelogram'].includes(tool)&&draftPoints.length===3)||(tool==='bezier'&&draftPoints.length===4)||(tool==='angle'&&draftPoints.length===3)||(tool==='circleThrough3'&&draftPoints.length===3)||(tool==='triangle'&&draftPoints.length===3)||(tool==='quadrilateral'&&draftPoints.length===4))finishDraft();else scheduleRender();
+  if((['rectangle','parallelogram'].includes(tool)&&draftPoints.length===3)||(tool==='bezier'&&draftPoints.length===4)||(['angle','angleBisector'].includes(tool)&&draftPoints.length===3)||(tool==='circleThrough3'&&draftPoints.length===3)||(tool==='triangle'&&draftPoints.length===3)||(tool==='quadrilateral'&&draftPoints.length===4))finishDraft();else scheduleRender();
  }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
  else if(tool==='text'||tool==='node'){
   const label=window.prompt(tool==='node'?'Diagram label (LaTeX):':'Text (LaTeX):');
@@ -2447,7 +2492,7 @@ function initialise(){
     const resolution=mode==='domainColoring'?Math.min(768,Math.max(32,Math.floor(Math.sqrt(900000/aspect)/16)*16)):0;
     curve=mode==='vectorField'?append(doc,{type:mode,xExpr:value,yExpr:y,region,density:12,normalized:false}):append(doc,{type:mode,expr:value,region,resolution,colorMode:'phase-modulus'});
    }else{
-    const construction=/^(?:[A-Za-z][A-Za-z0-9_]*\s*=\s*\(|[A-Za-z][A-Za-z0-9_]*\s*\(x\)\s*=|(?:Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint|Parallel|Perpendicular|Intersect|RegularPolygon|Morphism)\s*\()/i;
+    const construction=/^(?:[A-Za-z][A-Za-z0-9_]*\s*=\s*\(|[A-Za-z][A-Za-z0-9_]*\s*\(x\)\s*=|(?:Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|AngleBisector|Midpoint|Parallel|Perpendicular|Intersect|RegularPolygon|Morphism)\s*\()/i;
     if(construction.test(value))curve=command(doc,value);
     else {const expr=value.replace(/^y\s*=\s*/i,'');parseExpression(expr);curve=append(doc,{type:'function',expr});}
    }

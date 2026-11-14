@@ -1,4 +1,4 @@
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round45';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round47';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round39';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
@@ -46,7 +46,7 @@ export function derivedSidePoints(edge,owner,at){
  return i<vertices.length?[vertices[i],vertices[(i+1)%vertices.length]]:null;
 }
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',plotBudget:1000000,implicitGrid:12,showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
@@ -63,10 +63,10 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','parametric','implicit','vectorField','domainColoring','node','morphism'];
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','parametric','implicit','vectorField','domainColoring','node','morphism'];
 const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection']);
-export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough']);
-const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
+export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough']);
+const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,angleBisector:3,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.
  * The old two-reference rectangle-bounds ellipse is intentionally retained.
  * Return null rather than producing NaN/Infinity on collapsed input. */
@@ -248,6 +248,15 @@ function computedStraight(o,at,line){
   a=anchor;
   const d=o.type==='parallelThrough'?source.d:[-source.d[1],source.d[0]];
   b=[a[0]+d[0],a[1]+d[1]];
+ }else if(o.type==='angleBisector'){
+  const p=o.refs?.map(at);if(!p||p.some(q=>!q))return null;
+  const [first,vertex,last]=p;
+  const u=[first[0]-vertex[0],first[1]-vertex[1]],v=[last[0]-vertex[0],last[1]-vertex[1]];
+  const lu=Math.hypot(...u),lv=Math.hypot(...v);
+  if(lu<1e-9||lv<1e-9)return null;
+  const direction=[u[0]/lu+v[0]/lv,u[1]/lu+v[1]/lv];
+  if(Math.hypot(...direction)<1e-9)return null; // 180° has no unique internal ray.
+  a=vertex;b=[a[0]+direction[0],a[1]+direction[1]];domain='ray';
  }else{
   a=at(o.refs?.[0]);b=at(o.refs?.[1]);
   if(!a||!b)return null;
@@ -449,7 +458,11 @@ export function checkNewGeometry(type,p){
  if(type==='circleThrough3'&&!circumcircle(p))throw Error('Choose three noncollinear points for a circle.');
  if(type==='ellipse'&&p.length===3&&!focalEllipse(p))throw Error('Ellipse needs two foci and a third point outside the focal segment.');
  if(['rectangle','parallelogram'].includes(type)&&!shapeVerticesFromPoints(type,p).length)throw Error(type==='rectangle'?(p.length===2?'Rectangle requires nonzero width and height.':'Rectangle needs a nonzero first edge and perpendicular height.'):'Parallelogram needs three noncollinear consecutive vertices.');
- if(type==='angle'&&(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9||Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1])<1e-9))throw Error('Angle requires distinct rays.');
+ if(['angle','angleBisector'].includes(type)&&(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9||Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1])<1e-9))throw Error('Angle requires distinct rays.');
+ if(type==='angleBisector'){
+  const a=p[0],b=p[1],c=p[2],u=[a[0]-b[0],a[1]-b[1]],v=[c[0]-b[0],c[1]-b[1]],lu=Math.hypot(...u),lv=Math.hypot(...v);
+  if(lu<1e-9||lv<1e-9||Math.hypot(u[0]/lu+v[0]/lv,u[1]/lu+v[1]/lv)<1e-9)throw Error('Angle bisector needs a non-straight angle.');
+ }
 }
 function pointName(doc,name){const o=byName(doc,name.trim());if(!o||!POINT_LIKE.has(o.type))throw Error('Unknown point: '+name.trim());return o.id;}
 export function command(doc,source){
@@ -467,8 +480,8 @@ export function command(doc,source){
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(x\)\s*=\s*(.+)$/);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2]);return append(doc,{type:'function',name:m[1],expr:m[2]});}
- m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
- if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:3,parallelogram:3,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
+ m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|AngleBisector|Midpoint)\s*\(([^()]*)\)$/i);
+ if(m){const type=m[1].toLowerCase()==='anglebisector'?'angleBisector':m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={angleBisector:3,segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:3,parallelogram:3,polygon:3,polyline:2,bezier:4,angle:3,anglebisector:3,midpoint:2}[type];
   if(parts.some(x=>!x)||parts.length<(type==='rectangle'?2:min)||(!['polygon','polyline'].includes(type)&&(['ellipse','rectangle'].includes(type)?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
   const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);if(['rectangle','parallelogram'].includes(type))appendDerivedShapeEdges(doc,result.id);return result;
  }

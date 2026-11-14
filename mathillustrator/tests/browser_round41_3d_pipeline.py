@@ -54,7 +54,7 @@ def run():
    page.wait_for_function('JSON.parse(window.__round36Snapshot()).scene3d.plots.length === 80',timeout=18000)
    finished()
    assert sum(not p["hidden"] for p in snapshot()["scene3d"]["plots"])==3
-   assert page.locator('#drawing polygon').count()<=66000
+   assert page.locator('#drawing polygon').count()<=135000, 'R47 multi-surface budget: max 135k faces'
    with page.expect_download(timeout=15000) as project:page.locator('#save').click()
    assert len(json.loads(project.value.path().read_text())['scene3d']['plots'])==80
    page.locator('#export-open').click()

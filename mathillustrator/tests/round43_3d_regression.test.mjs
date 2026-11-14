@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newScene3D,add3DPlot,parse3DRangeExpression,project3DScene,sample3DPlot,validate3D,meshCacheStats,MAX_3D_FACES,create3DProjectionTask} from '../src/plot3d.mjs';
+import {newScene3D,add3DPlot,parse3DRangeExpression,project3DScene,sample3DPlot,validate3D,meshCacheStats,MAX_3D_FACES,MAX_3D_EVALUATIONS,create3DProjectionTask} from '../src/plot3d.mjs';
 
 const copy = value=>structuredClone(value);
 const litScene=()=>{const s=newScene3D();add3DPlot(s,'surface3d',['sin(x)*cos(y)']);s.options.detail=24;return s;};
@@ -58,5 +58,5 @@ test('Round43 three intricate implicit surfaces receive fair sampling and all re
  assert.equal(r.limited,false,'All complete surfaces fit at adaptive resolution');
  assert.ok(r.faces.length>50000&&r.faces.length<=MAX_3D_FACES);
  assert.deepEqual(new Set(r.faces.map(face=>face.color)),new Set(['#ff0000','#00ff00','#0000ff']));
- assert.ok(r.evaluations<=230000);
+ assert.ok(r.evaluations<=MAX_3D_EVALUATIONS);
 });

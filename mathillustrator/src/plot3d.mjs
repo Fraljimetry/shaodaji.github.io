@@ -103,11 +103,14 @@ export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
 function finitePoint(p){return Array.isArray(p)&&p.length===3&&p.every(v=>ok(v)&&Math.abs(v)<1e6);}
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const minus=(a,b)=>a.map((x,i)=>x-b[i]);
-export const MAX_3D_EVALUATIONS=230000;
-export const MAX_3D_FACES=66000;
+export const MAX_3D_EVALUATIONS=850000;
+export const MAX_3D_FACES=210000;
+// Keep multi-surface scenes responsive: each visible face-producing plot shares
+// a smaller combined DOM budget; a single detailed surface retains full quality.
+export const MAX_3D_MULTI_FACES=135000;
 export const MAX_3D_LINES=4800;
 const MAX_MESH_FACES=MAX_3D_FACES;
-const MAX_MESH_CACHE_BYTES=128*1024*1024;
+const MAX_MESH_CACHE_BYTES=192*1024*1024;
 function makeCamera(bounds,options,width,height){
  const yaw=options.yaw*Math.PI/180,pitch=options.pitch*Math.PI/180,cos=Math.cos(yaw),sin=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const center=['x','y','z'].map(axis=>(bounds[axis+'Min']+bounds[axis+'Max'])/2),span=['x','y','z'].map(axis=>(bounds[axis+'Max']-bounds[axis+'Min'])/2);
@@ -183,13 +186,22 @@ export function* sample3DPlotSteps(plot,detail){
   // A consistent body diagonal partitions adjacent cubes into conforming tetrahedra.
   // The 2-versus-2 case must connect its four crossings cyclically; an arbitrary
   // edge-pair order creates crossing / inverted triangles and visible mesh holes.
-  const n=Math.min(52,Math.max(8,Math.round(detail*.45+9))),cube=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+  const n=implicitGridCells(detail),cube=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
   const stride=n+1,values=new Float64Array(stride**3),index=(i,j,k)=>k*stride*stride+j*stride+i;
   const at=(i,j,k)=>[b.xMin+(b.xMax-b.xMin)*i/n,b.yMin+(b.yMax-b.yMin)*j/n,b.zMin+(b.zMax-b.zMin)*k/n];
+  // Work directly in scalar coordinates; allocate no temporary 3-vector per
+  // sample. Yield for each row, not each plane, to keep heavy meshes cancelable.
+  const dx=(b.xMax-b.xMin)/n,dy=(b.yMax-b.yMin)/n,dz=(b.zMax-b.zMin)/n;
   for(let k=0;k<=n;k++){
-   for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){
-    let value;try{value=fn(...at(i,j,k));}catch{value=NaN;}evaluations++;values[index(i,j,k)]=ok(value)?value:NaN;
-   }yield;
+   const z=b.zMin+k*dz;
+   for(let j=0;j<=n;j++){
+    const y=b.yMin+j*dy,offset=index(0,j,k);
+    for(let i=0;i<=n;i++){
+     let value;try{value=fn(b.xMin+i*dx,y,z);}catch{value=NaN;}
+     evaluations++;values[offset+i]=ok(value)?value:NaN;
+    }
+    yield;
+   }
   }
   for(let k=0;k<n&&!limited;k++)for(let j=0;j<n&&!limited;j++){
    for(let i=0;i<n&&!limited;i++){
@@ -246,9 +258,15 @@ function storeMesh(key,mesh){const bytes=meshBytes(mesh);if(bytes>MAX_MESH_CACHE
  meshCache.set(key,mesh);meshCacheBytes+=bytes;
  while(meshCacheBytes>MAX_MESH_CACHE_BYTES){const oldest=meshCache.keys().next().value;meshCacheBytes-=meshBytes(meshCache.get(oldest));meshCache.delete(oldest);}
 }
+/** Increasing Mesh detail must increase actual implicit sampling density.
+ * Earlier rounds capped the grid at 52 and then pre-clamped it by an
+ * estimated triangle count, making high settings visually identical.
+ * Scene-level budgets can still reduce density *explicitly* for 3 plots.
+ */
+export function implicitGridCells(detail){return Math.min(88,Math.max(10,Math.round(detail*.83+8)));}
 function estimatedEvaluations(plot,detail){
  if(plot.kind==='vector3d')return plot.density**3;
- if(plot.kind==='implicit3d')return (Math.min(52,Math.max(8,Math.round(detail*.45+9)))+1)**3;
+ if(plot.kind==='implicit3d')return (implicitGridCells(detail)+1)**3;
  return (Math.max(8,Math.min(96,detail))+1)**2;
 }
 /** Synchronous exports and cooperative screen rendering share EXACT geometry,
@@ -270,7 +288,9 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   [axis+'Max',Math.max(...plots.map(p=>p.bounds[axis+'Max']))]
  ])):defaultBounds3D();
  const camera=makeCamera(bounds,opt,width,height);let evaluations=0,limited=active.length>MAX_VISIBLE_3D_PLOTS;
- const perPlotFaces=Math.floor(MAX_3D_FACES/Math.max(1,plots.length));
+ const facePlotCount=plots.filter(plot=>plot.kind!=='vector3d').length;
+ const totalFaceBudget=facePlotCount>1?MAX_3D_MULTI_FACES:MAX_3D_FACES;
+ const perPlotFaces=Math.floor(totalFaceBudget/Math.max(1,facePlotCount));
  if(opt.cube){const v=[];for(let k=0;k<8;k++)v.push(camera.project([k&1?bounds.xMax:bounds.xMin,k&2?bounds.yMax:bounds.yMin,k&4?bounds.zMax:bounds.zMin]));
   for(let i=0;i<8;i++)for(const bit of [1,2,4])if(!(i&bit))cube.push([v[i],v[i|bit]]);
  }
@@ -298,10 +318,27 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   // only a broken first slice. Implicit complexity varies by formula, so a
   // bounded refinement retry still handles unexpectedly intricate level sets.
   let effectiveDetail=Math.min(renderDetail,Math.floor(Math.sqrt(perPlotFaces/2))-1);
-  if(plot.kind==='implicit3d'){
-   const maxCells=Math.min(52,Math.max(8,Math.floor(Math.sqrt(perPlotFaces/26))));
-   effectiveDetail=Math.min(renderDetail,Math.floor((maxCells-9)/.45));
-  }else if(plot.kind==='vector3d')effectiveDetail=renderDetail;
+  if(plot.kind==='vector3d')effectiveDetail=renderDetail;
+  // A small conforming pilot mesh estimates the actual geometry complexity.
+  // A fixed cube-to-face ratio previously stopped high Mesh detail from
+  // changing anything; blind high-res retries instead consumed the global
+  // evaluation budget, paradoxically making Detail 96 *worse* than 80.
+  // The pilot is cached by formula/bounds and done only above its resolution.
+  if(plot.kind==='implicit3d'&&implicitGridCells(effectiveDetail)>implicitGridCells(22)){
+   const pilotDetail=22,key=meshKey(plot,pilotDetail);
+   let pilot=getCachedMesh(key);
+   if(!pilot){const sampler=sample3DPlotSteps(plot,pilotDetail);let next;
+    do{next=sampler.next();if(!next.done)yield;}while(!next.done);
+    pilot=next.value;
+    // Pilot sampling is real work too; account for it in the scene budget.
+    evaluations+=pilot.evaluations;
+    if(!pilot.limited)storeMesh(key,pilot);
+   }
+   if(pilot.faces.length){
+    const affordableCells=Math.floor(implicitGridCells(pilotDetail)*Math.sqrt(perPlotFaces/pilot.faces.length)*.98);
+    effectiveDetail=Math.min(effectiveDetail,Math.max(8,Math.floor((affordableCells-8)/.83)));
+   }
+  }
   effectiveDetail=Math.max(8,effectiveDetail);
   let mesh;
   for(let attempt=0;attempt<12;attempt++){
