@@ -489,3 +489,10 @@ html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;borde
 #plot-inputs{display:flex;gap:4px;flex:1;min-width:0}
 #command-form #plot-inputs input{flex:1;min-width:0;width:100%;font-size:12px}
 #command-y[hidden]{display:none}
+
+/* Round 38: compact single-symbol selector, bounded region editor. */
+.command-heading #parameter-symbol{width:45px;min-width:42px;max-width:50px;margin-left:3px;}
+.plot-region-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px 8px;margin-top:10px;}
+.plot-region-editor .field{min-width:0;margin:0;}
+.plot-region-editor input{width:100%;min-width:0;box-sizing:border-box;}
+.plot-region-editor .region-redraw{grid-column:1/-1;margin-top:5px;}

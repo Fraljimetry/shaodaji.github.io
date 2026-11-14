@@ -19,7 +19,8 @@ def run():
    param=[('cos(u)','sin(v)'),('u*cos(u)','u*sin(v)'),('1/(u-3)','sin(v)'),('u^2','u^3-3*u'),('2*cos(u)-cos(2*u)','2*sin(v)-sin(2*v)'),('u','u^2-1')]
    impl=['x^2+y^2=1','x^2-y^2=1','x*y=0','x^4+y^4=1','sin(x)*cos(y)=0','x^2+y^2=0','1/x-y','x^2+y^2+1','y^2=x^3-x','abs(x)+abs(y)=1']
    for expression in explicit:go(p,'function',expression)
-   for x,y in param:go(p,'parametric',x,y)
+   p.locator('#plot-mode').select_option('parametric');p.locator('#parameter-symbol').select_option('u')
+   for x,y in param:go(p,'parametric',x,y.replace('v','u'))
    for expression in impl:go(p,'implicit',expression)
    d=json.loads(p.evaluate('window.__round36Snapshot()'))
    assert len(d['objects'])==len(explicit)+len(param)+len(impl)

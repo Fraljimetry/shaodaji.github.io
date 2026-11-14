@@ -646,3 +646,38 @@ All **R01–R223** remain binding. This round contains **a posteriori UI/behavio
 | R229 | Preserve cumulative documentation, current quality evidence, concise English release note, root-relative **changed-files-only** MathIllustrator overlay, and no Git commits. | Targeted Node/Chromium tests added; frozen approved glyph snapshot updated. Tested local-storage migration and object-color preservation, mobile viewport, undo/history and neighboring geometry/diagram/plotting suites. Do not imply a live-site cache, physical device, or user workspace was tested. |
 
 **Next suggested cut:** Reproduce and correct any remaining real-site color/style-cache mismatch with a concrete exported project and browser evidence, and stress-test dense geometry/plotting without further icon redesign without consent.
+
+## Round 38 — unified parametric symbols, vector fields, complex domain coloring (2026-11-14)
+
+All **R01–R229** remain authoritative. This round distinguishes new structural plotting capabilities from corrections to already-shipped plotting UX. Scope remains strictly numerical and 2D; no network-based computation, unsafe execution or new tool glyphs. Object colors and previous drawings are preserved.
+
+### Structural development — R230–R240
+
+| ID | Requirement | Implemented scope / remaining boundary |
+|---:|---|---|
+| R230 | New parametric curves use **one** parameter, user-selectable among **t/u/v**, common to x and y, default t. Parameter choice stays consistent. | Implemented compact symbol selector beside construction mode and single-symbol parser, Properties selector atomically renaming both components. Range remains stored under tMin/tMax. Old v1 x(u),y(v) projects are still accepted as *legacy shared u=v curves*; new ones cannot mix symbols. |
+| R231 | Support case-insensitive **pi** and **e** constants for real mathematics and implicit multiplication throughout math inputs. | Implemented strict interpreted arithmetic in Function, Parametric, Implicit, Vector field, and Complex modes; also supports constant expressions in point-coordinate commands such as `A=(2pi,e)`. Real functions support explicit syntax and common juxtaposition (`3x`, `xy`, `2sin(x)`, `(x+1)(x-1)`). No JS eval or property access. Mathematical operators and grouping are validated before mutations. |
+| R232 | Add **Vector field** to the compact construction-input mode selector; supply two components **X(x,y)**, **Y(x,y)** only. | Implemented. Zero and undefined vectors are skipped, finite world-space samples draw SVG stroke paths with arrowheads; uses the ordinary per-object stroke/line width/opacity, selection/hidden/locked/deletion/undo/redo/JSON controls. No streamline integration or PDE solver implied. |
+| R233 | Vector fields need adjustable arrow density and normalization of vector length. | Properties offers density 3–40 and a Normalize vector lengths checkbox; non-normalized magnitude changes length with a legibility cap. Sampling counts adapt to aspect ratio, capped by 60 grid rows and per-object evaluation budget; behavior is approximate visualization, not a magnitude legend. |
+| R234 | Vector field domain must be a finite world-space rectangle with x- and y-ranges in Properties, defaulting to **current canvas** before manual setting. | Capture the visible canvas rectangle once at object creation. Properties shows X min/max and Y min/max; zooming later does not change region. Fit includes these saved bounds. Values are bounded to ±1e6 and require increasing ranges. |
+| R235 | Add **Domain coloring** for complex functions of **z**, with common complex functions and case-insensitive `i` (as well as pi/e). | Implemented local complex arithmetic for `+ - * / ^`, sin/cos/tan, sinh/cosh/tanh, exp/log/ln/sqrt, abs/arg/conj/re/im, including `i`, `z` without case sensitivity. Phase maps to hue. Undefined/pole samples may be transparent. This is a numerical view, not proof of analytic continuation or exact branch geometry. |
+| R236 | Domain-color region should default to the current canvas, with explicit x/y bounds later. | Same bounded persistent rectangular-region model as vector field; generated bitmap is stored in an SVG image *in memory*, while saved JSON stores only the editable function and region. Zooming does not silently rewrite the domain. |
+| R237 | After region edits, users must press a **Redraw region** button. | Implemented as four draft numeric inputs plus one validated, atomic, undoable update; incomplete edits do not change object bounds or canvas. An invalid range leaves the previous rendering intact. |
+| R238 | Include common domain-color variants in Properties, or defer if necessary. | Implemented 3 schemes: Phase + modulus, Phase only, Modulus bands, plus horizontal coloring resolution 32–256. Color values are locally generated without remote assets; SVG embeds a PNG data URI. Image export uses the normal fail-closed raster pipeline. |
+| R239 | Plotting should remain safe and responsive under tricky formulas, singularities and many objects. | Each field/domain sample is bounded by a per-object evaluation limit; strict finite-coordinate and property validation; global many-object budget, asynchronous cancellation, GPU shaders and exact complex branch cuts remain open. Screenshots/visual color conventions may still require manual adjustment on real devices. |
+| R240 | Provide **detailed English/Chinese user documentation** for all five modes, expression syntax, parameter choice, domain management, examples, plotting settings, export behavior and limits. | Updated maintained bilingual `tutorial.html` and README; retained earlier guidance and no changed icon geometry. |
+
+### A posteriori corrections — R241–R242
+
+| ID | Existing discrepancy | Correction / compatibility rule |
+|---:|---|---|
+| R241 | Round 36 presented `x(u),y(v)` as if separate parameters, although a plane parametric curve needs one parameter. | For newly created curves the visible symbol selector forces one t/u/v value in both coordinate functions; model import continues to accept historical shared u=v definitions and the Properties selector safely converts them. Renaming uses token positions so it does not modify function names, `pi`, numeric scientific notation or free text. |
+| R242 | The existing Implicit Properties label `F(x, y) = 0` should simply read **`F(x, y)`**. | Label corrected; expressions with `=` and zero-level expressions remain interchangeable. Existing JSON is not rewritten. |
+
+### Delivery and verification — R243
+
+| ID | Policy | Implementation |
+|---:|---|---|
+| R243 | Small cohesive rounds, cumulative requirements and test report; full Node + actual Chromium checks, module checks, rollback/import/export/EN-ZH/mobile; do not invent results; concise English report and website-root changed-files-only ZIP, no Git commits. | Updated active regressions and new focused Node/Chromium suites; see `docs/quality/TEST_REPORT_CURRENT.md` for exact scope and unresolved checks. The former Round36 visual/complex test fixtures were updated to the new five-mode and consistent-parameter expectations. Frozen tool icons unchanged. |
+
+**Recommended next cut:** Global plotting time/evaluation cap and cancellation across many simultaneous vector/domain objects; improve adaptive sampling around poles and branch cuts, then evaluate optional legends. Maintain backward compatibility and no unauthorized glyph changes.

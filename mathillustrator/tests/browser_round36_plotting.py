@@ -19,16 +19,17 @@ def run():
    # The inline heading is one row; fields stay in the existing command form.
    a=p.locator('.command-heading label').bounding_box();c=p.locator('#plot-mode').bounding_box()
    assert abs((a['y']+a['height']/2)-(c['y']+c['height']/2))<8
-   assert p.locator('#plot-mode option').all_text_contents()==['Function','Parametric','Implicit']
+   assert p.locator('#plot-mode option').all_text_contents()==['Function','Parametric','Implicit','Vector field','Domain coloring']
    assert p.locator('#command-y').is_hidden()
    # Function mode accepts raw expressions and historical grammar.
    submit(p,'function','sin(x)+x^2/2');d=exported(p)
    assert d['objects'][-1]['type']=='function' and d['objects'][-1]['expr']=='sin(x)+x^2/2'
    assert p.locator(f'#drawing [data-id="{d["objects"][-1]["id"]}"]').first.get_attribute('d').startswith('M')
    submit(p,'function','A=(0,0)');assert exported(p)['objects'][-1]['type']=='point'
-   # Parametric x(u),y(v) are evaluated at shared parameter u=v.
+   # New parametric curves use one chosen parameter consistently in both inputs.
    p.locator('#plot-mode').select_option('parametric');assert p.locator('#command-y').is_visible()
-   submit(p,'parametric','cos(u)','sin(v)');d=exported(p);para=d['objects'][-1]
+   p.locator('#parameter-symbol').select_option('u')
+   submit(p,'parametric','cos(u)','sin(u)');d=exported(p);para=d['objects'][-1]
    assert para['type']=='parametric' and para['tMin']==0 and 6.28<para['tMax']<6.29
    assert p.locator(f'#drawing [data-id="{para["id"]}"]').first.get_attribute('d').startswith('M')
    p.locator(f'#objects [data-id="{para["id"]}"]').click()
@@ -59,7 +60,7 @@ def run():
    p.locator('#export-open').click();svg=download(p,'SVG').read_text();assert '<svg' in svg and '<path' in svg
    if p.locator('#export-close').is_visible():p.locator('#export-close').click()
    p.locator('#ui-language').select_option('zh')
-   assert p.locator('#plot-mode option').all_text_contents()==['函数','参数曲线','隐式曲线']
+   assert p.locator('#plot-mode option').all_text_contents()==['函数','参数曲线','隐式曲线','向量场','定义域着色']
    assert p.locator('#plot-budget').is_visible()==False or p.locator('#plot-budget').count()==1
    p.set_viewport_size({'width':390,'height':780});assert p.locator('#plot-mode').count()==1
    assert p.locator('#command-y').count()==1

@@ -1,6 +1,6 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round35';
-import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible} from './model.mjs?cut=round35';
+export {regularPolygonVertices} from './model.mjs?cut=round38';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible} from './model.mjs?cut=round38';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -83,6 +83,7 @@ export function worldBounds(doc,resolver){
   }))continue;
   if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node'].includes(o.type))put(resolver.at(o.id));
   else if(o.type==='text')put(o.xy);
+  else if(['vectorField','domainColoring'].includes(o.type)&&o.region){put([o.region.xMin,o.region.yMin]);put([o.region.xMax,o.region.yMax]);}
   else if(o.type==='freehand')for(const p of o.path)put(p);
   else if(o.refs){const p=resolver.points(o);if(!['rectangle','parallelogram'].includes(o.type))for(const x of p)put(x);
    if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean))for(const vertex of regularPolygonVertices(p[0],p[1],o.sides))put(vertex);
@@ -193,7 +194,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round32';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round38';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.

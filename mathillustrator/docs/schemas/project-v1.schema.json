@@ -336,6 +336,8 @@
             "function",
             "parametric",
             "implicit",
+            "vectorField",
+            "domainColoring",
             "node",
             "morphism",
             "regularPolygon",
@@ -415,6 +417,12 @@
         },
         "xExpr": {"type":"string","minLength":1,"maxLength":400},
         "yExpr": {"type":"string","minLength":1,"maxLength":400},
+        "parameter": {"enum":["t","u","v"]},
+        "region": {"type":"object","required":["xMin","xMax","yMin","yMax"],"additionalProperties":false,"properties":{"xMin":{"type":"number","minimum":-1000000,"maximum":1000000},"xMax":{"type":"number","minimum":-1000000,"maximum":1000000},"yMin":{"type":"number","minimum":-1000000,"maximum":1000000},"yMax":{"type":"number","minimum":-1000000,"maximum":1000000}}},
+        "density": {"type":"integer","minimum":3,"maximum":40},
+        "normalized": {"type":"boolean"},
+        "resolution": {"type":"integer","minimum":32,"maximum":256},
+        "colorMode": {"enum":["phase-modulus","phase","contours"]},
         "tMin": {"type":"number","minimum":-1000000,"maximum":1000000},
         "tMax": {"type":"number","minimum":-1000000,"maximum":1000000},
         "bend": {
@@ -952,6 +960,8 @@
           "if": {"properties": {"type": {"const":"parametric"}}},
           "then": {"required": ["xExpr","yExpr","tMin","tMax"]}
         },
+        {"if":{"properties":{"type":{"const":"vectorField"}}},"then":{"required":["xExpr","yExpr","region","density","normalized"]}},
+        {"if":{"properties":{"type":{"const":"domainColoring"}}},"then":{"required":["expr","region"]}},
         {
           "if": {
             "properties": {

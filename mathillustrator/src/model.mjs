@@ -1,4 +1,4 @@
-import {parseParametric,parseImplicit} from './plot_modes.mjs';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -62,7 +62,7 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','parametric','implicit','node','morphism'];
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','parametric','implicit','vectorField','domainColoring','node','morphism'];
 const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection']);
 export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough']);
 const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
@@ -440,31 +440,8 @@ export function roundSnap(v,s){
  return snapped;
 }
 export function snapPoint(p,s){return p.map(v=>roundSnap(v,s));}
-const FUNCS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sqrt:Math.sqrt,abs:Math.abs,log:Math.log,ln:Math.log,exp:Math.exp,floor:Math.floor,ceil:Math.ceil};
-/** Strict arithmetic parser; no JavaScript evaluation, member access, or implicit multiplication. */
-export function parseExpression(source){
- if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
- const tokens=source.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z]+|[()+\-*/^]/g)||[];
- if(tokens.join('').length!==source.replace(/\s/g,'').length)throw Error('Unsupported character in expression.');
- let i=0;const peek=()=>tokens[i],take=()=>tokens[i++];
- function primary(){
-  const t=take();if(!t)throw Error('Incomplete expression.');
-  if(t==='+'||t==='-'){const n=expression(3);return x=>(t==='-'?-1:1)*n(x);}
-  if(t==='('){const n=expression(0);if(take()!==')')throw Error('Missing closing parenthesis.');return n;}
-  if(/^(?:\d|\.)/.test(t)){const v=Number(t);if(!finite(v))throw Error('Numeric literal out of range.');return ()=>v;}
-  if(t==='x')return x=>x;
-  if(t==='pi')return ()=>Math.PI;
-  if(t==='e')return ()=>Math.E;
-  if(Object.hasOwn(FUNCS,t)){
-   if(take()!=='(')throw Error(`Function ${t} requires parentheses.`);
-   const n=expression(0);if(take()!==')')throw Error('Missing closing parenthesis.');return x=>FUNCS[t](n(x));
-  }
-  throw Error('Unknown symbol: '+t);
- }
- const prec={'+':1,'-':1,'*':2,'/':2,'^':4};
- function expression(min){let left=primary();while(prec[peek()]>=min){const op=take(),p=prec[op],right=expression(op==='^'?p:p+1),prev=left;left=x=>{const a=prev(x),b=right(x);return op==='+'?a+b:op==='-'?a-b:op==='*'?a*b:op==='/'?a/b:a**b;};}return left;}
- const fn=expression(0);if(i!==tokens.length)throw Error('Unexpected token: '+peek());return fn;
-}
+/** Explicit functions share the same strict implicit-multiplication parser. */
+export function parseExpression(source){const fn=parseCurveExpression(source,['x']);return x=>fn({x});}
 /** Reject invisible *new* geometry without invalidating legacy v1 projects on import. */
 export function checkNewGeometry(type,p){
  if(['segment','arrow','line','ray','perpBisector','midpoint','circle','regularPolygon'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
@@ -476,9 +453,17 @@ export function checkNewGeometry(type,p){
 function pointName(doc,name){const o=byName(doc,name.trim());if(!o||!POINT_LIKE.has(o.type))throw Error('Unknown point: '+name.trim());return o.id;}
 export function command(doc,source){
  const s=String(source).trim();if(!s)throw Error('Enter a construction command.');
- const num='([+-]?(?:(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?))';
- let m=s.match(new RegExp('^([A-Za-z][A-Za-z0-9_]*)\\s*=\\s*\\(\\s*'+num+'\\s*,\\s*'+num+'\\s*\\)$'));
- if(m){if(byName(doc,m[1]))throw Error('Name already in use.');return addPoint(doc,[Number(m[2]),Number(m[3])],m[1]);}
+ let m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.+)\)$/);
+ if(m){
+  const parts=m[2].split(',');if(parts.length!==2)throw Error('A point needs exactly two coordinate expressions.');
+  const xy=parts.map(expr=>{
+   if(/^[+\-]?(?:Infinity|NaN)$/i.test(expr.trim()))throw Error('Unsupported coordinate literal.');
+   try{return parseCurveExpression(expr,[])({});}
+   catch(error){if(/Numeric literal out of range/.test(error.message))throw Error('Point coordinates must be finite.');throw error;}
+  });
+  if(!safeCoord(xy)||xy.some(v=>Math.abs(v)>1e6))throw Error('Point coordinates must be finite and within ±1,000,000.');
+  if(byName(doc,m[1]))throw Error('Name already in use.');return addPoint(doc,xy,m[1]);
+ }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(x\)\s*=\s*(.+)$/);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2]);return append(doc,{type:'function',name:m[1],expr:m[2]});}
  m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
@@ -540,11 +525,26 @@ export function validateDoc(raw){
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
  if(o.type==='parametric'){
   if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Parametric curve requires x(u) and y(v).');
-  parseParametric(o.xExpr,o.yExpr);
+  parseParametric(o.xExpr,o.yExpr,o.parameter);
+  if(o.parameter!==undefined&&!['t','u','v'].includes(o.parameter))throw Error('Invalid parametric symbol.');
   if(!finite(o.tMin)||!finite(o.tMax)||o.tMin>=o.tMax||Math.abs(o.tMin)>1e6||Math.abs(o.tMax)>1e6)throw Error('Parameter range must be finite, ascending and within ±1,000,000.');
  }
  if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr);}
- if(o.type!=='parametric'&&(o.xExpr!==undefined||o.yExpr!==undefined||o.tMin!==undefined||o.tMax!==undefined))throw Error('Unexpected parametric properties.');
+ if(['vectorField','domainColoring'].includes(o.type)){
+  validatePlotRegion(o.region);
+  if(o.type==='vectorField'){
+   if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Vector field requires two components.');
+   parseVectorField(o.xExpr,o.yExpr);
+   if(!Number.isInteger(o.density)||o.density<3||o.density>40||typeof o.normalized!=='boolean')throw Error('Invalid vector field settings.');
+  }else{
+   if(typeof o.expr!=='string'||!['phase-modulus','phase','contours'].includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
+   parseComplexExpression(o.expr);
+   if(!Number.isInteger(o.resolution??128)||(o.resolution??128)<32||(o.resolution??128)>256)throw Error('Invalid domain resolution.');
+  }
+ }
+ if(o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
+ if(o.type!=='parametric'&&o.parameter!==undefined)throw Error('Unexpected parametric symbol.');
+ if(!['parametric','vectorField'].includes(o.type)&&(o.xExpr!==undefined||o.yExpr!==undefined)||o.type!=='parametric'&&(o.tMin!==undefined||o.tMax!==undefined))throw Error('Unexpected parametric properties.');
 
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
   if(o.type==='morphism'&&(o.text.length>1000||!finite(o.bend??0)||Math.abs(o.bend)>5||o.refs[0]===o.refs[1]))throw Error('Invalid morphism label or bend.');

@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round37">
+  <link rel="stylesheet" href="./style.css?cut=round38">
 </head>
 <body>
   <header class="appbar">
@@ -32,7 +32,7 @@
     <aside class="leftpanel" aria-label="Objects and properties">
       <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="objects-undock" type="button" class="panel-undock" title="Float Objects panel" aria-label="Float Objects panel" hidden disabled>Float</button><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
       <div id="left-resizer" class="panel-resizer left-resizer" role="separator" tabindex="0" aria-label="Resize Objects panel" aria-orientation="vertical" aria-controls="objects" title="Resize panel"></div>
-      <div class="commandbox"><div class="command-heading"><label for="command">Construction input</label><select id="plot-mode" aria-label="Plot input mode" title="Choose function, parametric, or implicit plotting"><option value="function">Function</option><option value="parametric">Parametric</option><option value="implicit">Implicit</option></select></div><form id="command-form"><div id="plot-inputs"><input id="command" autocomplete="off" spellcheck="false" placeholder="sin(x)" aria-label="Function or construction command"><input id="command-y" autocomplete="off" spellcheck="false" placeholder="sin(v)" aria-label="Parametric y(v)" hidden></div><button aria-label="Add construction" title="Add curve or construction">↵</button></form></div>
+      <div class="commandbox"><div class="command-heading"><label for="command">Construction input</label><select id="plot-mode" aria-label="Plot input mode" title="Choose a plotting mode"><option value="function">Function</option><option value="parametric">Parametric</option><option value="implicit">Implicit</option><option value="vectorField">Vector field</option><option value="domainColoring">Domain coloring</option></select><select id="parameter-symbol" aria-label="Parameter symbol" title="Use the same parameter in x and y" hidden><option value="t">t</option><option value="u">u</option><option value="v">v</option></select></div><form id="command-form"><div id="plot-inputs"><input id="command" autocomplete="off" spellcheck="false" placeholder="sin(x)" aria-label="Function or construction command"><input id="command-y" autocomplete="off" spellcheck="false" placeholder="sin(t)" aria-label="Second component" hidden></div><button aria-label="Add construction" title="Add curve or construction">↵</button></form></div>
       <div class="object-tools"><span id="object-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span><input id="object-search" type="search" placeholder="Find…" aria-label="Search objects"><label><input type="checkbox" id="show-hidden" checked> Hidden</label></div>
       <div id="objects" class="objects" role="list" aria-label="Drawable objects"></div><details id="recently-deleted" class="trash-panel"><summary>Recently Deleted <span id="trash-count">0</span></summary><div id="trash-items"></div></details>
       <section id="properties-dock" class="properties-dock" aria-label="Properties panel">
@@ -111,6 +111,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round37"></script>
+  <script type="module" src="./src/app.mjs?cut=round38"></script>
 </body>
 </html>

@@ -320,3 +320,10 @@ The current editor still renders mathematical labels as plain SVG text; rich TeX
 - **FIXED:** Very long tool instructions could visibly overflow the canvas toolbar. The current mode is a compact name plus `?`; detailed help is available on hover/focus, and switching language updates the name without canceling an in-progress construction.
 - **TEST ADAPTATION:** Five old archived Chromium UI scripts assert retired preset access or Point remaining selected after a tap. They are preserved in the immutable archive and transparently excluded by the staged runner; current touch/mobile suites replace the changed assumptions, but the old inventory test's full breadth is not reimplemented as a single replacement test.
 - **PERFORMANCE:** One isolated 64-repeated-formula scene took 50.4 ms for SVG rebuild, above a 60-FPS per-frame budget. Mathematical labels are vector paths, not free. Dense diagrams still need profiling and optimization; no automatic degradation or silent fallback is allowed.
+
+### Round 38 numerical plotting limits
+
+- Vector-field sampling is finite and per-object, with no streamline/ODE integration. Arrow length without normalization is capped for visibility, not a globally calibrated magnitude scale. Large aspect-ratio regions can have constrained sample counts.
+- Domain coloring is a bounded PNG raster within the SVG, not mathematically exact and not independently editable at the pixel level. Poles/undefined values yield empty pixels; complex logarithm/square-root branches use principal values and may have seams. High-resolution or highly elongated regions may exhaust the evaluation budget and stop image export (JSON remains available).
+- The runtime caps each plot, not the sum of every plot's evaluations; hundreds of high-detail simultaneous fields can still block the main thread. Global budget, async cancellation, richer phase legends and analytic singularity analysis remain future work.
+- Imported Round 36 parametric curves using `u` for x and `v` for y are supported as legacy shared-parameter `u=v` definitions. New curves enforce a single chosen t/u/v symbol; changing it in Properties converts both formulas.

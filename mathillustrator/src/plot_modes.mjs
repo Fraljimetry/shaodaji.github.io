@@ -1,33 +1,99 @@
-/** Numeric 2D curve modes. Local, bounded, strict arithmetic expressions only.
- * Parametric x(u),y(v) share ONE parameter: at sample s, u=v=s.
- * A pair of independent parameters would describe a region, not a 2D curve.
+/** Strict locally interpreted arithmetic; no eval, arbitrary calls or property access.
+ * Implicit multiplication supports 2pi, 3x, (x+1)(x-1), xy and 2sin(x).
+ * Complex evaluation uses two real components, with bounded sampling later.
  */
-const MATH={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sqrt:Math.sqrt,abs:Math.abs,log:Math.log,ln:Math.log,exp:Math.exp,floor:Math.floor,ceil:Math.ceil};
 const valid=v=>typeof v==='number'&&Number.isFinite(v);
-export function parseCurveExpression(source,variables=['x']){
- if(typeof source!=='string'||source.trim().length===0||source.length>400)throw Error('Expression must contain 1–400 characters.');
- if(!Array.isArray(variables)||!variables.length||variables.some(v=>!['x','y','u','v'].includes(v)))throw Error('Invalid expression variables.');
- const tokens=source.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z]+|[()+\-*/^]/g)||[];
- if(tokens.join('')!==source.replace(/\s/g,''))throw Error('Unsupported character in expression.');
- let i=0;const take=()=>tokens[i++],peek=()=>tokens[i];
+const REAL_FUNCS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,sqrt:Math.sqrt,abs:Math.abs,log:Math.log,ln:Math.log,exp:Math.exp,floor:Math.floor,ceil:Math.ceil};
+const REAL_FUNCTIONS=Object.keys(REAL_FUNCS);
+const COMPLEX_FUNCTIONS=['sin','cos','tan','sinh','cosh','tanh','sqrt','abs','log','ln','exp','conj','arg','re','im'];
+const VARIABLES=['x','y','t','u','v','z','i'];
+const TOKENS=[...new Set([...REAL_FUNCTIONS,...COMPLEX_FUNCTIONS,'pi','e',...VARIABLES])].sort((a,b)=>b.length-a.length);
+function tokenize(source){
+ if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
+ const result=[];let i=0;
+ while(i<source.length){
+  const c=source[i];if(/\s/.test(c)){i++;continue;}
+  const num=source.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/);
+  if(num){const n=Number(num[0]);if(!valid(n)||Math.abs(n)>=1e9)throw Error('Numeric literal out of range.');result.push({kind:'num',value:n});i+=num[0].length;continue;}
+  if(/[a-z]/i.test(c)){
+   const word=TOKENS.find(t=>source.slice(i,i+t.length).toLowerCase()===t);
+   if(!word)throw Error('Unknown symbol near: '+source.slice(i,i+16));
+   result.push({kind:'word',value:word,start:i,end:i+word.length});i+=word.length;continue;
+  }
+  if('()+-*/^'.includes(c)){result.push({kind:c,value:c});i++;continue;}
+  throw Error('Unsupported character in expression.');
+ }
+ return result;
+}
+const R={
+ num:x=>x,add:(a,b)=>a+b,sub:(a,b)=>a-b,mul:(a,b)=>a*b,div:(a,b)=>a/b,pow:(a,b)=>a**b,neg:a=>-a,
+ fun:(name,x)=>REAL_FUNCS[name](x),fromVar:(name,vars)=>vars[name],fromConst:name=>name==='pi'?Math.PI:Math.E
+};
+const C={
+ num:x=>[x,0],add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],
+ mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],
+ div:(a,b)=>{const d=b[0]**2+b[1]**2;return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];},
+ neg:a=>[-a[0],-a[1]],fromVar:(_name,vars)=>vars.z,fromConst:name=>name==='pi'?[Math.PI,0]:name==='e'?[Math.E,0]:[0,1],
+ fun(name,z){const [x,y]=z,r=Math.hypot(x,y),a=Math.atan2(y,x);
+  if(name==='re')return [x,0];if(name==='im')return [y,0];if(name==='conj')return [x,-y];
+  if(name==='arg')return [a,0];if(name==='abs')return [r,0];
+  if(name==='log'||name==='ln')return [Math.log(r),a];
+  if(name==='exp'){const v=Math.exp(x);return [v*Math.cos(y),v*Math.sin(y)];}
+  if(name==='sqrt')return [Math.sqrt(r)*Math.cos(a/2),Math.sqrt(r)*Math.sin(a/2)];
+  if(name==='sin')return [Math.sin(x)*Math.cosh(y),Math.cos(x)*Math.sinh(y)];
+  if(name==='cos')return [Math.cos(x)*Math.cosh(y),-Math.sin(x)*Math.sinh(y)];
+  if(name==='sinh')return [Math.sinh(x)*Math.cos(y),Math.cosh(x)*Math.sin(y)];
+  if(name==='cosh')return [Math.cosh(x)*Math.cos(y),Math.sinh(x)*Math.sin(y)];
+  if(name==='tan')return C.div(C.fun('sin',z),C.fun('cos',z));
+  if(name==='tanh')return C.div(C.fun('sinh',z),C.fun('cosh',z));
+  throw Error('Unsupported complex function: '+name);
+ }
+};
+C.pow=(a,b)=>{
+ if(a[0]===0&&a[1]===0&&b[1]===0&&b[0]>0)return [0,0];
+ return C.fun('exp',C.mul(b,C.fun('log',a)));
+};
+function compile(source,variables,complex=false){
+ const allowed=new Set(variables);const ts=tokenize(source),ops=complex?C:R,functions=complex?COMPLEX_FUNCTIONS:REAL_FUNCTIONS;
+ let i=0;const peek=()=>ts[i],take=()=>ts[i++];
  function atom(){
   const t=take();if(!t)throw Error('Incomplete expression.');
-  if(t==='+'||t==='-'){const n=expr(3);return vars=>(t==='-'?-1:1)*n(vars);}
-  if(t==='('){const n=expr(0);if(take()!==')')throw Error('Missing closing parenthesis.');return n;}
-  if(/^(?:\d|\.)/.test(t)){const n=Number(t);if(!valid(n)||Math.abs(n)>=1e9)throw Error('Numeric literal out of range.');return ()=>n;}
-  if(variables.includes(t))return vars=>vars[t];
-  if(t==='pi')return ()=>Math.PI;
-  if(t==='e')return ()=>Math.E;
-  if(Object.hasOwn(MATH,t)){if(take()!=='(')throw Error(`Function ${t} requires parentheses.`);const n=expr(0);if(take()!==')')throw Error('Missing closing parenthesis.');return vars=>MATH[t](n(vars));}
-  throw Error('Unknown symbol: '+t);
+  if(t.kind==='+'||t.kind==='-'){const n=expr(3);return vars=>t.kind==='-'?ops.neg(n(vars)):n(vars);}
+  if(t.kind==='('){const n=expr(0);if(take()?.kind!==')')throw Error('Missing closing parenthesis.');return n;}
+  if(t.kind==='num')return ()=>ops.num(t.value);
+  if(t.kind==='word'){
+   const name=t.value;
+   if(allowed.has(name))return vars=>ops.fromVar(name,vars);
+   if(name==='pi'||name==='e'||complex&&name==='i')return ()=>ops.fromConst(name);
+   if(functions.includes(name)){
+    if(take()?.kind!=='(')throw Error(`Function ${name} requires parentheses.`);
+    const inner=expr(0);if(take()?.kind!==')')throw Error('Missing closing parenthesis.');return vars=>ops.fun(name,inner(vars));
+   }
+   throw Error('Unknown symbol: '+name);
+  }
+  throw Error('Unexpected operator: '+t.value);
  }
  const priority={'+':1,'-':1,'*':2,'/':2,'^':4};
- function expr(min){let left=atom();while(priority[peek()]>=min){const op=take(),p=priority[op],right=expr(op==='^'?p:p+1),prev=left;left=vars=>{const a=prev(vars),b=right(vars);return op==='+'?a+b:op==='-'?a-b:op==='*'?a*b:op==='/'?a/b:a**b;};}return left;}
- const tree=expr(0);if(i!==tokens.length)throw Error('Unexpected token: '+peek());return tree;
+ function expr(min){let left=atom();while(true){
+  const t=peek();if(!t||t.kind===')')break;
+  // Juxtaposition means multiplication, including 2pi, xy, and (...) (...).
+  const implied=t.kind==='num'||t.kind==='word'||t.kind==='(';
+  const op=implied?'*':t.kind,p=priority[op];if(p===undefined||p<min)break;
+  if(!implied)take();const right=expr(op==='^'?p:p+1),prev=left;
+  left=vars=>op==='+'?ops.add(prev(vars),right(vars)):op==='-'?ops.sub(prev(vars),right(vars)):op==='*'?ops.mul(prev(vars),right(vars)):op==='/'?ops.div(prev(vars),right(vars)):ops.pow(prev(vars),right(vars));
+ }return left;}
+ const result=expr(0);if(i!==ts.length)throw Error('Unexpected token: '+ts[i].value);return result;
 }
-export function parseParametric(xExpr,yExpr){
- const fx=parseCurveExpression(xExpr,['u','v']),fy=parseCurveExpression(yExpr,['u','v']);
- return s=>{const vars={u:s,v:s};return [fx(vars),fy(vars)];};
+export function parseCurveExpression(source,variables=['x']){
+ if(!Array.isArray(variables)||variables.some(v=>!['x','y','t','u','v'].includes(v)))throw Error('Invalid expression variables.');
+ return compile(source,variables);
+}
+/** parameter undefined means compatibility with imported legacy u=v curves only. */
+export function parseParametric(xExpr,yExpr,parameter){
+ if(parameter!==undefined&&!['t','u','v'].includes(parameter))throw Error('Parameter must be t, u or v.');
+ const vars=parameter?[parameter]:['u','v'];
+ const fx=parseCurveExpression(xExpr,vars),fy=parseCurveExpression(yExpr,vars);
+ return s=>{const values=parameter?{[parameter]:s}:{u:s,v:s};return [fx(values),fy(values)];};
 }
 export function parseImplicit(source){
  if(typeof source!=='string'||source.length>801)throw Error('Implicit equation is too long.');
@@ -35,6 +101,65 @@ export function parseImplicit(source){
  const left=parseCurveExpression(pieces[0],['x','y']);
  const right=pieces.length===2?parseCurveExpression(pieces[1],['x','y']):()=>0;
  return (x,y)=>left({x,y})-right({x,y});
+}
+export function parseVectorField(xExpr,yExpr){
+ const x=parseCurveExpression(xExpr,['x','y']),y=parseCurveExpression(yExpr,['x','y']);
+ return (a,b)=>[x({x:a,y:b}),y({x:a,y:b})];
+}
+/** Retarget one shared parameter without altering e.g. sqrt, pi or scientific notation. */
+export function renameCurveParameter(source,oldSymbol,newSymbol){
+ if(!['t','u','v'].includes(oldSymbol)||!['t','u','v'].includes(newSymbol))throw Error('Invalid parameter rename.');
+ if(!source.trim())return source;
+ const words=tokenize(source).filter(t=>t.kind==='word'&&t.value===oldSymbol);let next='',end=0;
+ for(const t of words){next+=source.slice(end,t.start)+newSymbol;end=t.end;}
+ return next+source.slice(end);
+}
+export function parseComplexExpression(source){const fn=compile(source,['z'],true);return (re,im)=>fn({z:[re,im]});}
+export function validatePlotRegion(r){
+ if(!r||typeof r!=='object'||!['xMin','xMax','yMin','yMax'].every(k=>valid(r[k])&&Math.abs(r[k])<=1e6)||r.xMin>=r.xMax||r.yMin>=r.yMax)throw Error('Region needs ascending finite x and y ranges within ±1,000,000.');
+ return r;
+}
+/** Finite region, uniform world-space samples. Invisible/undefined vectors leave gaps. */
+export function sampleVectorField(fn,region,{density=12,normalized=false,maxEvaluations=80000}={}){
+ validatePlotRegion(region);
+ if(!Number.isInteger(density)||density<3||density>40||typeof normalized!=='boolean')throw Error('Vector density must be 3–40.');
+ const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin),nx=density,ny=Math.max(2,Math.min(60,Math.round(nx*ratio)));
+ if(nx*ny>maxEvaluations)return {arrows:[],limited:true,evaluations:0};
+ const dx=(region.xMax-region.xMin)/nx,dy=(region.yMax-region.yMin)/ny,scale=Math.min(dx,dy)*.37;
+ const arrows=[];for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+  const x=region.xMin+(i+.5)*dx,y=region.yMin+(j+.5)*dy;
+  let v;try{v=fn(x,y);}catch{continue;}
+  if(!Array.isArray(v)||v.length!==2||!v.every(valid))continue;
+  const magnitude=Math.hypot(...v);if(!valid(magnitude)||magnitude<1e-12)continue;
+  const length=normalized?scale:scale*Math.min(1.6,magnitude);
+  const ux=v[0]/magnitude,uy=v[1]/magnitude;
+  arrows.push({start:[x-ux*length*.5,y-uy*length*.5],end:[x+ux*length*.5,y+uy*length*.5],magnitude});
+ }
+ return {arrows,limited:false,evaluations:nx*ny};
+}
+export function domainColor(re,im,mode='phase-modulus'){
+ if(!valid(re)||!valid(im))return null;
+ const hue=((Math.atan2(im,re)*180/Math.PI)%360+360)%360;
+ const radius=Math.hypot(re,im);
+ // Keep hue continuous and use log-modulus bands to distinguish zeros/poles.
+ const band=Math.log2(Math.max(1e-12,radius)),fract=((band%1)+1)%1;
+ const light=mode==='phase'?0.52:mode==='contours'?0.36+0.38*fract:0.42+0.28*Math.tanh(band/3);
+ const saturation=.82;
+ const f=n=>{const k=(n+hue/30)%12,a=saturation*Math.min(light,1-light);return Math.round(255*(light-a*Math.max(-1,Math.min(k-3,9-k,1))));};
+ return [f(0),f(8),f(4),255];
+}
+export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
+ validatePlotRegion(region);
+ if(!Number.isInteger(resolution)||resolution<32||resolution>256||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
+ const height=Math.max(16,Math.round(resolution*(region.yMax-region.yMin)/(region.xMax-region.xMin)));
+ const width=resolution;if(width*height>maxEvaluations)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
+ const rgba=new Uint8ClampedArray(width*height*4);
+ for(let j=0;j<height;j++)for(let i=0;i<width;i++){
+  let result;try{result=fn(region.xMin+(i+.5)*(region.xMax-region.xMin)/width,region.yMax-(j+.5)*(region.yMax-region.yMin)/height);}catch{}
+  const rgb=Array.isArray(result)?domainColor(result[0],result[1],mode):null;
+  if(rgb)rgba.set(rgb,(j*width+i)*4);
+ }
+ return {rgba,width,height,limited:false,evaluations:width*height};
 }
 /** Adaptive screen-space chord-error sampling with conservative pole gaps. */
 export function sampleParametricPlot(fn,start,end,project,{quality='balanced',maxEvaluations=80000}={}){

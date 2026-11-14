@@ -1,14 +1,14 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round37';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round35';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round38';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {parseParametric,parseImplicit,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round29';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round35';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round38';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
 import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round34';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
@@ -216,7 +216,9 @@ function screenPoints(o){const p=points(doc,o);return p.every(Boolean)?p.map(pro
 function desc(o,nameById=null){if(o.type==='point')return `(${o.xy.map(formatCoordinate).join(', ')})`;
  if(o.type==='midpoint')return `Midpoint(${o.refs?.map(id=>nameById?.get(id)||get(doc,id)?.name||'?').join(', ')})`;
  if(o.type==='function')return `y = ${o.expr}`;
- if(o.type==='parametric')return `x(u) = ${o.xExpr}; y(v) = ${o.yExpr}, u=v ∈ [${o.tMin}, ${o.tMax}]`;
+ if(o.type==='parametric')return `x(${o.parameter||'u'}) = ${o.xExpr}; y(${o.parameter||'v'}) = ${o.yExpr}, [${o.tMin}, ${o.tMax}]`;
+ if(o.type==='vectorField')return `(${o.xExpr}, ${o.yExpr}), ${o.density} arrows across x`;
+ if(o.type==='domainColoring')return `F(z) = ${o.expr}`;
  if(o.type==='implicit')return o.expr.includes('=')?o.expr:`${o.expr} = 0`;
  if(o.type==='circleThrough3')return 'circle through 3 points';
  if(o.type==='perpBisector')return 'perpendicular bisector';
@@ -313,8 +315,9 @@ function geometryLabelAnchor(o,resolver){
  if(o.type==='function'){
   try{const y=parseExpression(o.expr)(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
  }
- if(o.type==='parametric'){try{return project(parseParametric(o.xExpr,o.yExpr)((o.tMin+o.tMax)/2));}catch{return null;}}
+ if(o.type==='parametric'){try{return project(parseParametric(o.xExpr,o.yExpr,o.parameter)((o.tMin+o.tMax)/2));}catch{return null;}}
  if(o.type==='implicit')return null;
+ if(['vectorField','domainColoring'].includes(o.type))return project([(o.region.xMin+o.region.xMax)/2,(o.region.yMin+o.region.yMax)/2]);
  if(o.type==='freehand')return o.path?.length?project(o.path[Math.floor(o.path.length/2)]):null;
  if(['parallelThrough','perpendicularThrough'].includes(o.type)){
   const line=resolver.line(o);return line?project(line.a):null;
@@ -469,7 +472,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const path=plotCache.get(key,()=>{
    const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
    const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
-    o.type==='parametric'?sampleParametricPlot(parseParametric(o.xExpr,o.yExpr),o.tMin,o.tMax,project,options):
+    o.type==='parametric'?sampleParametricPlot(parseParametric(o.xExpr,o.yExpr,o.parameter),o.tMin,o.tMax,project,options):
     sampleImplicitPlot(parseImplicit(o.expr),px=>unproject(px,0)[0],py=>unproject(0,py)[1],size.w,size.h,{...options,cellPx:doc.settings.implicitGrid??12});
    if(plot.limited){limitedPlotKeys.add(key);while(limitedPlotKeys.size>32)limitedPlotKeys.delete(limitedPlotKeys.values().next().value);}
    else limitedPlotKeys.delete(key);
@@ -478,9 +481,36 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(limitedPlotKeys.has(key))plotLimitedInScene=true;
   item=mk('path',{d:path,fill:'none'});
 
+ }else if(o.type==='vectorField'){
+  const region=o.region,options={density:o.density,normalized:o.normalized,maxEvaluations:doc.settings.plotBudget};
+  const result=sampleVectorField(parseVectorField(o.xExpr,o.yExpr),region,options);
+  if(result.limited)plotLimitedInScene=true;
+  const parts=[];
+  for(const arrow of result.arrows){
+   const a=project(arrow.start),b=project(arrow.end),len=Math.hypot(b[0]-a[0],b[1]-a[1]);
+   if(len<1||!Number.isFinite(len)||len>1e5)continue;
+   const dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len,h=Math.min(9,Math.max(4,len*.28));
+   parts.push(`M${a[0].toFixed(2)} ${a[1].toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}M${(b[0]-h*dx+h*.42*dy).toFixed(2)} ${(b[1]-h*dy-h*.42*dx).toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}L${(b[0]-h*dx-h*.42*dy).toFixed(2)} ${(b[1]-h*dy+h*.42*dx).toFixed(2)}`);
+  }
+  item=mk('path',{d:parts.join(''),fill:'none'});
+ }else if(o.type==='domainColoring'){
+  const region=o.region,key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,doc.settings.plotBudget]);
+  const uri=plotCache.get(key,()=>{
+   const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??128,mode:o.colorMode??'phase-modulus',maxEvaluations:doc.settings.plotBudget});
+   if(result.limited){limitedPlotKeys.add(key);return '';}
+   limitedPlotKeys.delete(key);
+   const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
+   const ctx=canvas.getContext('2d',{willReadFrequently:false});if(!ctx)throw Error('Browser canvas is unavailable for domain coloring.');
+   const image=ctx.createImageData(result.width,result.height);image.data.set(result.rgba);ctx.putImageData(image,0,0);
+   return canvas.toDataURL('image/png');
+  });
+  if(limitedPlotKeys.has(key))plotLimitedInScene=true;
+  const a=project([region.xMin,region.yMax]),b=project([region.xMax,region.yMin]);
+  item=el('image',{x:a[0],y:a[1],width:b[0]-a[0],height:b[1]-a[1],href:uri,opacity:o.style.opacity,preserveAspectRatio:'none'});
+  // Domain coloring is raster content; do not apply the normal stroke/fill style.
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');svg.append(item);
- if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','bezier','angle','morphism'].includes(o.type)){
+ if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)){
   const path=item.tagName.toLowerCase()==='g'?item.querySelector('path'):item;
   if(path){const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
  }
@@ -738,7 +768,7 @@ function renderListWindow(){
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
   const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
-  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'⇀',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
+  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'⇀',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
  if(o.type==='polyline'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M2 19L9 3L15 18L22 4"/></svg>'); }
  if(o.type==='circleIntersection'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="6" cy="17" r="1.7" fill="currentColor"/><circle cx="18" cy="7" r="1.7" fill="currentColor"/></svg>'); }
  row.append(glyph);
@@ -882,12 +912,46 @@ function renderProperties(){
  }
  if(o.type==='function')field(root,'y =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
  if(o.type==='parametric'){
-  field(root,'x(u) =',o.xExpr,'text',v=>edit(live=>{parseParametric(v,live.yExpr);live.xExpr=v;}));
-  field(root,'y(v) =',o.yExpr,'text',v=>edit(live=>{parseParametric(live.xExpr,v);live.yExpr=v;}));
+  const current=o.parameter||'u';
+  const wrap=document.createElement('label');wrap.className='field';wrap.textContent=translated('Parameter symbol',uiPrefs.language);
+  const sel=document.createElement('select');sel.setAttribute('aria-label','Parameter symbol');
+  for(const symbol of ['t','u','v']){const option=document.createElement('option');option.value=symbol;option.textContent=symbol;sel.append(option);}
+  sel.value=current;
+  sel.onchange=()=>{const old=current,next=sel.value;const ok=edit(live=>{
+   // Convert both expressions atomically, including legacy u=v references.
+   const replace=expr=>live.parameter?renameCurveParameter(expr,old,next):renameCurveParameter(renameCurveParameter(expr,'u',next),'v',next);
+   live.xExpr=replace(live.xExpr);live.yExpr=replace(live.yExpr);parseParametric(live.xExpr,live.yExpr,next);live.parameter=next;
+  });if(!ok)sel.value=old;};wrap.append(sel);root.append(wrap);
+  field(root,`x(${current}) =`,o.xExpr,'text',v=>edit(live=>{parseParametric(v,live.yExpr,live.parameter);live.xExpr=v;}));
+  field(root,`y(${o.parameter||'v'}) =`,o.yExpr,'text',v=>edit(live=>{parseParametric(live.xExpr,v,live.parameter);live.yExpr=v;}));
   field(root,'Parameter start',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
   field(root,'Parameter end',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
  }
- if(o.type==='implicit')field(root,'F(x, y) = 0',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
+ if(o.type==='implicit')field(root,'F(x, y)',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
+ if(o.type==='vectorField'){
+  field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
+  field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
+  field(root,'Arrow density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
+  const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' '+translated('Normalize vector lengths',uiPrefs.language)));root.append(check);
+ }
+ if(o.type==='domainColoring'){
+  field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
+  const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
+  const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
+  select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
+  field(root,'Coloring resolution',o.resolution??128,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>256)throw Error('Resolution must be 32–256.');live.resolution=v;}),{min:32,max:256,step:16});
+ }
+ if(['vectorField','domainColoring'].includes(o.type)){
+  const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
+  const entries={};for(const [key,label] of [['xMin','X min'],['xMax','X max'],['yMin','Y min'],['yMax','Y max']]){
+   entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'number',()=>true,{step:0.1});
+   // Region changes remain a draft until explicitly redrawn.
+   entries[key].onchange=()=>{};
+  }
+  const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent=translated('Redraw region',uiPrefs.language);
+  button.onclick=()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,Number(input.value)]));validatePlotRegion(region);live.region=region;});
+  form.append(button);root.append(form);
+ }
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  if(o.type==='segment'||o.type==='angle'){
   const p=createResolver(doc).points(o);let measured=null;
@@ -2044,22 +2108,28 @@ function initialise(){
  $('retry-autosave').onclick=()=>{if(storageConflict){saveStatus('Autosave paused · resolve conflict first');return;}
   if(!dirty){saveStatus('No unsaved local changes');return;}clearTimeout(saveTimer);persistNow();};
  $('object-search').oninput=()=>renderList({resetScroll:true});
- const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode');
+ const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode'),symbol=$('parameter-symbol');
  function syncPlotMode(){
-  const mode=plotMode.value;plotY.hidden=mode!=='parametric';
-  plotInput.setAttribute('aria-label',mode==='parametric'?'Parametric x(u)':mode==='implicit'?'Implicit equation':'Function or construction command');
-  plotInput.placeholder=mode==='parametric'?'cos(u)':mode==='implicit'?'x^2 + y^2 = 1':'sin(x)';
-  plotY.placeholder='sin(v)';
-  // An empty input stays empty: placeholders demonstrate the syntax; they are not saved data.
+  const mode=plotMode.value,two=['parametric','vectorField'].includes(mode);
+  plotY.hidden=!two;symbol.hidden=mode!=='parametric';
+  plotInput.setAttribute('aria-label',mode==='parametric'?`Parametric x(${symbol.value})`:mode==='vectorField'?'Vector X(x, y)':mode==='domainColoring'?'Complex F(z)':mode==='implicit'?'Implicit equation':'Function or construction command');
+  plotInput.placeholder=mode==='parametric'?`cos(${symbol.value})`:mode==='vectorField'?'-y':mode==='domainColoring'?'z^2+1':mode==='implicit'?'x^2+y^2=1':'sin(x)';
+  plotY.placeholder=mode==='parametric'?`sin(${symbol.value})`:mode==='vectorField'?'x':'';
  }
- plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});syncPlotMode();
+ plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});
+ symbol.addEventListener('change',()=>{for(const input of [plotInput,plotY])input.value=['t','u','v'].reduce((v,ch)=>renameCurveParameter(v,ch,symbol.value),input.value);syncPlotMode();});syncPlotMode();
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   const success=update(()=>{
    let curve;
-   if(mode==='parametric'){parseParametric(value,y);curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,tMin:0,tMax:2*Math.PI});}
+   if(mode==='parametric'){parseParametric(value,y,symbol.value);curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:symbol.value,tMin:0,tMax:2*Math.PI});}
    else if(mode==='implicit'){parseImplicit(value);curve=append(doc,{type:'implicit',expr:value});}
-   else{
-    // Preserve the complete existing command grammar in Function mode.
+   else if(mode==='vectorField'||mode==='domainColoring'){
+    if(mode==='vectorField')parseVectorField(value,y);else parseComplexExpression(value);
+    // The first region is a snapshot of the visible canvas, not a moving viewport.
+    const a=unproject(0,size.h),b=unproject(size.w,0);
+    const region={xMin:a[0],xMax:b[0],yMin:a[1],yMax:b[1]};validatePlotRegion(region);
+    curve=mode==='vectorField'?append(doc,{type:mode,xExpr:value,yExpr:y,region,density:12,normalized:false}):append(doc,{type:mode,expr:value,region,resolution:128,colorMode:'phase-modulus'});
+   }else{
     const construction=/^(?:[A-Za-z][A-Za-z0-9_]*\s*=\s*\(|[A-Za-z][A-Za-z0-9_]*\s*\(x\)\s*=|(?:Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint|Parallel|Perpendicular|Intersect|RegularPolygon|Morphism)\s*\()/i;
     if(construction.test(value))curve=command(doc,value);
     else {const expr=value.replace(/^y\s*=\s*/i,'');parseExpression(expr);curve=append(doc,{type:'function',expr});}
