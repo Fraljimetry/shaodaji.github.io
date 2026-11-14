@@ -1043,7 +1043,9 @@ function render3DList(){
    button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg><span class="sr-only">${label}</span>`;
    button.onclick=e=>{e.stopPropagation();callback();};row.append(button);
   }
-  row.prepend(addObjectOrderGrip(row,plot.id,'3d'));
+  const objectIcon=document.createElement('span');objectIcon.className='glyph';
+  objectIcon.innerHTML=plotGlyphSvg(plot.kind);
+  row.prepend(addObjectOrderGrip(row,plot.id,'3d'),objectIcon);
   row.append(info);
   action(plot.hidden?'Show':'Hide',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.hidden=!live.hidden;if(!live.hidden)enforce3DVisibility(doc.scene3d,live.id);}));
   action(plot.locked?'Unlock':'Lock',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.locked=!live.locked;}));
@@ -1104,7 +1106,7 @@ function shortObjectSubtitle(o){
 }
 // Use one authoritative SVG for Geometry/Diagram tools and their Objects-list
 // rows. Plotting modes have a separate set of five semantic SVG glyphs.
-// Five mathematically distinct 2D plot pictograms; not used by Geometry tools.
+// Five shared 2D/3D plot pictograms; not used by Geometry tools.
 // Axes for y=f(x), a closed 8-shaped parameter trace, two implicit level
 // components, a circulating vector field, and colored phase sectors.
 const PLOTTING_GLYPHS=Object.freeze({
@@ -1114,9 +1116,11 @@ const PLOTTING_GLYPHS=Object.freeze({
  vectorField:'<path d="M17 5H9M11.5 2.5L9 5L11.5 7.5M19 9V16M16.5 13.5L19 16L21.5 13.5M7 19H15M12.5 16.5L15 19L12.5 21.5M5 16V9M2.5 11.5L5 9L7.5 11.5"/>',
  domainColoring:'<path d="M12 12L12 3A9 9 0 0 1 19.79 7.5Z" fill="#b38be3" stroke="none"/><path d="M12 12L19.79 7.5A9 9 0 0 1 19.79 16.5Z" fill="#638ecd" stroke="none"/><path d="M12 12L19.79 16.5A9 9 0 0 1 12 21Z" fill="#5db8ad" stroke="none"/><path d="M12 12L12 21A9 9 0 0 1 4.21 16.5Z" fill="#e0bf69" stroke="none"/><path d="M12 12L4.21 16.5A9 9 0 0 1 4.21 7.5Z" fill="#df8f83" stroke="none"/><path d="M12 12L4.21 7.5A9 9 0 0 1 12 3Z" fill="#be91be" stroke="none"/><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="var(--surface)" stroke="none"/>'
 });
+const PLOT3D_GLYPH_SOURCE=Object.freeze({surface3d:'function',parametric3d:'parametric',implicit3d:'implicit',vector3d:'vectorField',domain3d:'domainColoring'});
 function plotGlyphSvg(type){
- if(!Object.hasOwn(PLOTTING_GLYPHS,type))throw Error('No plotting glyph for mode: '+type);
- return `<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${PLOTTING_GLYPHS[type]}</svg>`;
+ const source=PLOT3D_GLYPH_SOURCE[type]||type;
+ if(!Object.hasOwn(PLOTTING_GLYPHS,source))throw Error('No plotting glyph for mode: '+type);
+ return `<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${PLOTTING_GLYPHS[source]}</svg>`;
 }
 const TRANSFORM_GLYPH_TOOL=Object.freeze({reflect:'reflection',rotate:'rotation',translate:'translation',dilate:'dilation',invert:'circleInversion'});
 function objectGlyphTool(o){
@@ -1248,13 +1252,34 @@ function renderBulkProperties(root,objects){
  if(!grid.querySelector('.style-fill'))grid.classList.add('stroke-only-grid');
  root.append(grid);
 }
+// Plot bounds are a single atomic edit: Enter commits all axes, while a double
+// click on any axis caption prepares symmetric bounds without persisting drafts.
+function installPlotRegionKeys(container,inputs,commit){
+ const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
+ for(const [key,input] of Object.entries(inputs)){
+  const caption=input.closest('label');
+  caption.title='Double-click a bound label to fill symmetric ranges for all axes; Enter to redraw.';
+  caption.addEventListener('dblclick',event=>{
+   if(event.target!==caption)return;
+   const raw=input.value.trim();const numeric=Number(raw);
+   if(!raw||!Number.isFinite(numeric)){notice('Enter a finite bound first.');return;}
+   const radius=Math.abs(numeric);
+   if(!radius){notice('Symmetric range must have nonzero width.');return;}
+   for(const axis of axes){inputs[axis+'Min'].value=String(-radius);inputs[axis+'Max'].value=String(radius);}
+  });
+  input.addEventListener('keydown',event=>{
+   if(event.key!=='Enter'||event.isComposing)return;
+   event.preventDefault();event.stopPropagation();commit();
+  });
+ }
+}
 function renderProperties3D(root){
  root.classList.add('properties-3d');
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
  if(selectedPlot.locked){const note=document.createElement('p');note.className='subtle';note.textContent=translated('Locked',uiPrefs.language);root.append(note);return;}
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
- const componentLabels=selectedPlot.kind==='domain3d'?['F(z) =']:selectedPlot.kind==='surface3d'?['z(x, y) =']:selectedPlot.kind==='parametric3d'?['X(u, v) =','Y(u, v) =','Z(u, v) =']:selectedPlot.kind==='implicit3d'?['F(x, y, z) =']:['X(x, y, z) =','Y(x, y, z) =','Z(x, y, z) ='];
+ const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['X(u, v)','Y(u, v)','Z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
  if(fields.length){const rangeGrid=document.createElement('div');rangeGrid.className='parametric-range-grid';rangeGrid.setAttribute('role','group');rangeGrid.setAttribute('aria-label','Surface parameter ranges');root.append(rangeGrid);
@@ -1263,7 +1288,8 @@ function renderProperties3D(root){
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
- const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));});block.append(button);root.append(block);
+ installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));}));
+ root.append(block);
  if(selectedPlot.kind==='domain3d'){
   const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
   for(const [key,label] of [['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;heightSelect.append(opt);}
@@ -1384,32 +1410,32 @@ function renderProperties(){
   field(numericGrid,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
   field(numericGrid,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
  }
- if(o.type==='function')field(root,'y =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
+ if(o.type==='function')field(root,'f(x)',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
  if(o.type==='parametric'){
-  const current=o.parameter||'u';
-  const wrap=document.createElement('label');wrap.className='field';wrap.textContent=translated('Parameter symbol',uiPrefs.language);
-  const sel=document.createElement('select');sel.setAttribute('aria-label','Parameter symbol');
-  for(const symbol of ['t','u','v']){const option=document.createElement('option');option.value=symbol;option.textContent=symbol;sel.append(option);}
-  sel.value=current;
-  sel.onchange=()=>{const old=current,next=sel.value;const ok=edit(live=>{
-   // Convert both expressions atomically, including legacy u=v references.
-   const replace=expr=>live.parameter?renameCurveParameter(expr,old,next):renameCurveParameter(renameCurveParameter(expr,'u',next),'v',next);
-   live.xExpr=replace(live.xExpr);live.yExpr=replace(live.yExpr);parseParametric(live.xExpr,live.yExpr,next);live.parameter=next;
-  });if(!ok)sel.value=old;};wrap.append(sel);root.append(wrap);
-  field(root,`x(${current}) =`,o.xExpr,'text',v=>edit(live=>{parseParametric(v,live.yExpr,live.parameter);live.xExpr=v;}));
-  field(root,`y(${o.parameter||'v'}) =`,o.yExpr,'text',v=>edit(live=>{parseParametric(live.xExpr,v,live.parameter);live.yExpr=v;}));
-  field(root,'Parameter start',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1,hint:'Range: −1,000,000 to 1,000,000; start < end.'});
-  field(root,'Parameter end',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1,hint:'Range: −1,000,000 to 1,000,000; end > start.'});
+  // Legacy documents may use u, v or the historical split u/v scheme.
+  // Present t consistently, converting both expressions only when edited.
+  const toT=(expr,axis,parameter)=>parameter?renameCurveParameter(expr,parameter,'t'):renameCurveParameter(expr,axis==='x'?'u':'v','t');
+  const xText=toT(o.xExpr,'x',o.parameter),yText=toT(o.yExpr,'y',o.parameter);
+  const change=(axis,value)=>edit(live=>{
+   const x=axis==='x'?value:toT(live.xExpr,'x',live.parameter);
+   const y=axis==='y'?value:toT(live.yExpr,'y',live.parameter);
+   parseParametric(x,y,'t');live.xExpr=x;live.yExpr=y;live.parameter='t';
+  });
+  field(root,'x(t)',xText,'text',v=>change('x',v));
+  field(root,'y(t)',yText,'text',v=>change('y',v));
+  const range=document.createElement('div');range.className='parametric-range-grid';root.append(range);
+  field(range,'t min',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
+  field(range,'t max',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
  }
- if(o.type==='implicit')field(root,'F(x, y) =',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
+ if(o.type==='implicit')field(root,'F(x, y)',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
  if(o.type==='vectorField'){
-  field(root,'X(x, y) =',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
-  field(root,'Y(x, y) =',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
+  field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
+  field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
   field(root,'Arrow density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
   const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' '+translated('Normalize vector lengths',uiPrefs.language)));root.append(check);
  }
  if(o.type==='domainColoring'){
-  field(root,'F(z) =',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
+  field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
   const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
   const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
@@ -1419,12 +1445,10 @@ function renderProperties(){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
   const entries={};for(const [key,label] of [['xMin','X min'],['xMax','X max'],['yMin','Y min'],['yMax','Y max']]){
    entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'number',()=>true,{step:0.1,hint:'Finite bound; min must be less than max.'});
-   // Region changes remain a draft until explicitly redrawn.
    entries[key].onchange=()=>{};
   }
-  const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent=translated('Redraw region',uiPrefs.language);
-  button.onclick=()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,Number(input.value)]));validatePlotRegion(region);live.region=region;});
-  form.append(button);root.append(form);
+  installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,Number(input.value)]));validatePlotRegion(region);live.region=region;}));
+  root.append(form);
  }
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  const measurement=measureGeometry(o,createResolver(doc));
@@ -1543,10 +1567,10 @@ function syncTooltips(){
 function syncPlotModeControl(){
  const plotInput=$('command'),plotY=$('command-y'),plotZ=$('command-z'),mode=$('plot-mode').value,symbol=$('parameter-symbol'),three=in3D();
  const preview=$('plot-mode-preview');
- if(preview){preview.hidden=three;preview.innerHTML=three?'':plotGlyphSvg(mode);preview.title=three?'':$('plot-mode').selectedOptions[0]?.textContent||mode;}
+ if(preview){preview.hidden=false;preview.innerHTML=plotGlyphSvg(mode);preview.title=$('plot-mode').selectedOptions[0]?.textContent||mode;}
  const multiple=['parametric','vectorField','parametric3d','vector3d'].includes(mode);
  plotY.hidden=!multiple;plotZ.hidden=!three||!['parametric3d','vector3d'].includes(mode);
- symbol.hidden=mode!=='parametric';
+ symbol.value='t';symbol.hidden=true;
  const placeholders={function:'sin(x)',parametric:`cos(${symbol.value})`,implicit:'x^2+y^2=1',vectorField:'-y',domainColoring:'z^2+1',domain3d:'z^2+1',surface3d:'sin(x)*cos(y)',parametric3d:'cos(u)*sin(v)',implicit3d:'x^2+y^2+z^2=4',vector3d:'-y'};
  plotInput.placeholder=placeholders[mode]||'Expression';plotY.placeholder=mode==='parametric'?`sin(${symbol.value})`:mode==='vectorField'?'x':mode==='parametric3d'?'sin(u)*sin(v)':'x';
  plotZ.placeholder=mode==='parametric3d'?'cos(v)':'z';
@@ -2836,13 +2860,13 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode'),symbol=$('parameter-symbol');
  function syncPlotMode(){syncPlotModeControl();}
  plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});
- symbol.addEventListener('change',()=>{for(const input of [plotInput,plotY])input.value=['t','u','v'].reduce((v,ch)=>renameCurveParameter(v,ch,symbol.value),input.value);syncPlotMode();});syncPlotMode();
+ syncPlotMode();
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   let raisedDomainBudget=false;
   const success=update(()=>{
    let curve;
    if(in3D()){const c=$('command-z').value.trim();if(!doc.scene3d)doc.scene3d=newScene3D();const plot=add3DPlot(doc.scene3d,mode,[value,y,c]);selected3d=plot.id;}
-   else if(mode==='parametric'){parseParametric(value,y,symbol.value);curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:symbol.value,tMin:0,tMax:2*Math.PI});}
+   else if(mode==='parametric'){parseParametric(value,y,'t');curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:'t',tMin:0,tMax:2*Math.PI});}
    else if(mode==='implicit'){parseImplicit(value);curve=append(doc,{type:'implicit',expr:value});}
    else if(mode==='vectorField'||mode==='domainColoring'){
     if(mode==='vectorField')parseVectorField(value,y);else parseComplexExpression(value);

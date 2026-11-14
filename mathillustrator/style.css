@@ -793,3 +793,11 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .rightpanel .style-controls-grid:has(#point-size) #point-size{
  width:56px;min-width:0;max-width:56px;box-sizing:border-box;justify-self:end;
 }
+
+/* Round 51R: identical two-column plot parameter layout in 2D and 3D. */
+.properties>.parametric-range-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 8px;margin:8px 0 11px;min-width:0}
+.properties>.parametric-range-grid>.field{display:grid;grid-template-columns:36px minmax(0,1fr);gap:5px;align-items:center;min-width:0;margin:0;font-size:11px;white-space:nowrap}
+.properties>.parametric-range-grid>.field>input{min-width:0;width:100%;max-width:100%;height:30px;box-sizing:border-box;padding:4px 5px;margin:0;font-variant-numeric:tabular-nums}
+.properties .plot-region-editor>.field{cursor:default}
+/* The deprecated t/u/v selector must not reserve a blank slot in either mode. */
+.command-heading #parameter-symbol[hidden]{display:none!important}

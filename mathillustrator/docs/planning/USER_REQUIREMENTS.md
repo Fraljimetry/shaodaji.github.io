@@ -1121,3 +1121,14 @@ The user explicitly requested removal of **Intersection Point** because **Genera
 ## Round 51P — Point size numeric alignment (2026-11-14)
 
 - R405: In the right-panel New object style grid, the **Point size numeric textbox must have the same horizontal position and width as the Opacity numeric textbox** directly above it, rather than aligning to the far-right Line width textbox. Preserve the fourth row and keep labels/inputs non-overlapping at desktop and narrow drawer widths. Do not alter selected-object Properties layout or behavior.
+
+
+## Round 51Q — shared 2D/3D plotting mode glyphs (2026-11-14)
+- The five 3D plotting modes in the left-hand plotting selector must inherit, without redesign or duplication, the corresponding 2D SVG glyphs: Function/Surface, Parametric/Parametric surface, Implicit/Implicit surface, Vector field/Vector field, and Domain coloring/Domain coloring.
+- The 3D Objects list must likewise use the same mapping for each plot type. Preserve the five authoritative 2D glyph definitions and existing geometry icons, SVG dimensions, tool behavior, and document schema.
+
+## Round 51R — 2D/3D plotting Properties consistency (2026-11-14)
+- Plot expression captions in Properties omit the terminal `=` for all five 2D/3D plot families; 2D function uses `f(x)`, 3D explicit height uses `f(x, y)` rather than `z(x, y)`.
+- New 2D parametric curves exclusively use `t`, with `x(t)` and `y(t)` inputs and compact side-by-side `t min`/`t max`. Remove the visible parameter-choice control. Imported curves with legacy `u`/`v` syntax remain renderable and are converted atomically on expression edit rather than silently modified on load.
+- 2D and 3D region editors have no Redraw Region button. Press Enter in any bound to validate and commit the complete draft atomically; blur alone must not commit. Invalid edits leave model bounds unchanged. Double-click a numeric bound's caption to prepare symmetric `[-r,+r]` ranges on every plot axis without committing until Enter.
+- Retain undo/redo, persistence, plotting semantics and compatibility. Expand browser regression to cover ranges, invalid input, parameter labels and 3D.

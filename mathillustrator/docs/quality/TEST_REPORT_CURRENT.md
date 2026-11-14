@@ -1055,3 +1055,19 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Focused Chromium:** `browser_round51p_point_alignment.py` checks actual input X positions, widths, vertical separation and opposite-column nonintersection at viewport widths 1450, 980, and 700 px. Other regressions and Node results below are from this cut's execution; local inlined browser harness does not certify production hosting.
 
 **Final verification:** Node `node --test tests/*.test.mjs` **345/345 PASS** (zero skipped/failed). Actual isolated Chromium **7/7 scripts PASS**: `browser_round51p_point_alignment.py`, `browser_round51n_arc_style.py`, `browser_round51m_glyph_properties.py`, `browser_smoke.py`, `browser_round51b_geometry_sweep.py`, `browser_round51c_subtle_geometry.py`, `browser_round51l_glyph_consistency.py`; these include UI alignment, geometry toolbar, inversion, persistence, undo/redo, and application startup. No hosted-site or other browser-engine verification.
+
+
+## Round 51Q — shared 3D plotting glyphs (2026-11-14)
+- Changed `src/app.mjs` to map all five 3D plot modes to the existing 2D SVG glyph strings. Enabled the 3D selector preview and added the same icon to 3D Objects rows. Updated `index.html` script cache key.
+- `node --check src/app.mjs`: PASS. `node --test tests/*.test.mjs`: 345/345 PASS (one obsolete Round 51F 2D-only preview assertion updated).
+- Chromium using local inline source fixture: `tests/browser_round51q_3d_plot_glyphs.py`: PASS at 1480 and 980 px for each of five exact SVG matches on 2D→3D→2D toggling; no JavaScript page errors.
+- Chromium: `tests/browser_round51p_point_alignment.py`: PASS at 1450/980/700 px.
+- 3D Objects-row glyph implementation is source-verified, not separately proven through a live added-plot browser check in this cut. Mobile 700 px glyph check was not completed (left panel is collapsed). Tests execute in local inline-browser fixtures, not the hosted website.
+- No project schema changes, no Git commits.
+
+## Round 51R — 2D/3D plotting Properties consistency (2026-11-14)
+**Changes:** In `src/app.mjs`, shared region keyboard/double-click handling and plot expression captions; 2D `t`-only parametric UI with conversion-on-edit for imported legacy parameter expressions; in `style.css`, 2D compact two-column parameter grid and removal of unused selector spacing; `index.html` drops u/v choices. No document schema migration, no Git commits.
+
+**Verification:** `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` **345/345 PASS** (0 failures). Actual Chromium, isolated inline source: `tests/browser_round51r_plot_consistency.py` **2D PASS / 3D PASS**, checking new constructions, caption text, 2D parametric grid, symmetric range draft, Enter atomic commit, invalid entry rollback, 2D undo/redo, and absence of redraw buttons. Browser fixture runs against this current tree, not the hosted deployment.
+
+**Compatibility notes:** Obsolete archived browser scripts expecting a selectable u/v parameter or Redraw Region button intentionally no longer match this UI and must be updated before inclusion in a comprehensive browser batch. Preserved parser acceptance of u/v for historical documents. Symmetric range shortcut requires a literal finite numeric field value (rather than a symbolic pi expression). No fresh GPU-level overlapping-surface benchmark or exhaustive geometry sweep in this UI-focused cut.
