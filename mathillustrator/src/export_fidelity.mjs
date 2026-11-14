@@ -3,7 +3,7 @@
  * Do not silently flatten geometry after quantization or exceed TeX's bounded
  * dimensions. This check is deliberately conservative; JSON/SVG stay available.
  */
-import {createResolver,focalEllipse} from './model.mjs?cut=round27';
+import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round35';
 import {regularPolygonVertices} from './geometry.mjs?cut=round27';
 
 export const TIKZ_DECIMALS = 5;
@@ -43,6 +43,11 @@ export function tikzGeometryIssue(doc){
   }
   if(o.type==='polygon'&&ps.length>2&&ps.at(-1)&&ps[0]&&same(ps.at(-1),ps[0])&&(ps.at(-1)[0]!==ps[0][0]||ps.at(-1)[1]!==ps[0][1]))
    return 'A polygon closing edge would collapse after TikZ rounding.';
+  if(['rectangle','parallelogram'].includes(o.type)&&ps.every(Boolean)){
+   const vertices=shapeVerticesFromPoints(o.type,ps);
+   if(vertices.length!==4||vertices.some(v=>!normal(v))||vertices.some((v,i)=>same(v,vertices[(i+1)%4])))
+    return 'The rectangle or parallelogram exceeds TikZ bounds or an edge collapses after rounding.';
+  }
   if(o.type==='regularPolygon'&&ps.length===2&&ps.every(Boolean)){
    const verts=regularPolygonVertices(ps[0],ps[1],o.sides);
    if(verts.some(v=>!normal(v))||verts.some((v,i)=>same(v,verts[(i+1)%verts.length])))

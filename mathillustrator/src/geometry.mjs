@@ -1,6 +1,6 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round33';
-import {regularPolygonVertices,isObjectVisible} from './model.mjs?cut=round33';
+export {regularPolygonVertices} from './model.mjs?cut=round35';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible} from './model.mjs?cut=round35';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -84,8 +84,9 @@ export function worldBounds(doc,resolver){
   if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node'].includes(o.type))put(resolver.at(o.id));
   else if(o.type==='text')put(o.xy);
   else if(o.type==='freehand')for(const p of o.path)put(p);
-  else if(o.refs){const p=resolver.points(o);for(const x of p)put(x);
+  else if(o.refs){const p=resolver.points(o);if(!['rectangle','parallelogram'].includes(o.type))for(const x of p)put(x);
    if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean))for(const vertex of regularPolygonVertices(p[0],p[1],o.sides))put(vertex);
+   if(['rectangle','parallelogram'].includes(o.type))for(const vertex of shapeVerticesFromPoints(o.type,p))put(vertex);
    if(o.type==='circleThrough3'&&p.length===3&&p.every(Boolean)){const circle=circumcircle(p);if(circle){const [cx,cy]=circle.center,r=circle.radius;put([cx-r,cy-r]);put([cx+r,cy+r]);}}
    if(o.type==='circle'&&p.every(Boolean)){const r=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);put([p[0][0]-r,p[0][1]-r]);put([p[0][0]+r,p[0][1]+r]);}
    if(o.type==='ellipse'&&p.every(Boolean)){
@@ -439,7 +440,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
    if(r>1e-10&&d>1e-10)offer([a[0]+r*(point[0]-a[0])/d,a[1]+r*(point[1]-a[1])/d],o);
    continue;
   }
-  let path=pts,closed=o.type==='polygon'||o.type==='rectangle'||o.type==='regularPolygon'||(o.type==='spline'&&o.closed===true);
+  let path=pts,closed=o.type==='polygon'||o.type==='rectangle'||o.type==='parallelogram'||o.type==='regularPolygon'||(o.type==='spline'&&o.closed===true);
   if(o.type==='regularPolygon'){path=regularPolygonVertices(pts[0],pts[1],o.sides);}
   if(o.type==='ellipse'&&pts.length===3){
    const e=focalEllipse(pts);if(!e)continue;
@@ -447,11 +448,11 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
    path=Array.from({length:129},(_,i)=>{const t=i*Math.PI/64,x=e.rx*Math.cos(t),y=e.ry*Math.sin(t);return [e.cx+x*co-y*si,e.cy+x*si+y*co];});
    closed=false;
   }
-  if(o.type==='rectangle'||(o.type==='ellipse'&&pts.length===2)){
+  if(['rectangle','parallelogram'].includes(o.type))path=shapeVerticesFromPoints(o.type,pts);
+  if(o.type==='ellipse'&&pts.length===2){
    const [a,b]=pts;if(!a||!b)continue;
    const cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2,rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
-   if(o.type==='rectangle')path=[[cx-rx,cy-ry],[cx+rx,cy-ry],[cx+rx,cy+ry],[cx-rx,cy+ry]];
-   else if(rx<1e-10||ry<1e-10){path=[a,b];closed=false;}
+   if(rx<1e-10||ry<1e-10){path=[a,b];closed=false;}
    else {path=Array.from({length:73},(_,i)=>[cx+rx*Math.cos(i*Math.PI/36),cy+ry*Math.sin(i*Math.PI/36)]);closed=false;}
   }
   if(o.type==='bezier'&&pts.length===4){
@@ -467,7 +468,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
    path=Array.from({length:count+1},(_,i)=>[b[0]+radius*Math.cos(first+sweep*i/count),b[1]+radius*Math.sin(first+sweep*i/count)]);
    closed=false;
   }
-  if(!['polyline','polygon','spline','angle','regularPolygon','rectangle','ellipse','bezier'].includes(o.type))continue;
+  if(!['polyline','polygon','spline','angle','regularPolygon','rectangle','parallelogram','ellipse','bezier'].includes(o.type))continue;
   if(o.type==='spline'){
    // A spline's control polygon is generally nowhere near its actual visible
    // cubic segments. Never magnetically target those hidden straight chords.

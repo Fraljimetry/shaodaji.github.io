@@ -569,3 +569,24 @@ All historical requirements **R01–R177 remain binding**. This round continues 
 | R202 | Preserve all old behavior, bilingual/mobile usability, hierarchy integrity, proper imports, history, safe exports, and a website-root changed-files ZIP with actual verification. | **Verified in tested scope:** 253/253 Node tests, 28 distinct isolated Chromium suites, static ES-module named imports and checks, JSON schema of the stress scene, English/Chinese UI, mobile viewport and clean overlay replay (see current test report). No Git commit, external homepage or MathReader modifications. Direct browser navigation to local HTTP was blocked by environment policy; live deployed-site and browser-network/cache behavior remain unverified. |
 
 **Next continuation:** deepen high-density geometry/object snapping and diagram/arrow overlap routing while keeping common tools central and never retouching unrelated icons. End-to-end performance in very large scenes, arbitrary glyph-contour geometry, adjacent hook overlaps and browser-engine differences are ongoing limitations—not passed gates.
+
+
+## Round 35 — three-point quadrilaterals, geometry measurements, authorized glyphs and smart Move (2026-11-14)
+
+All **R01–R202** remain binding. The following are newly authorized changes; **other tool icons must not be altered without explicit permission**.
+
+| ID | Requirement | Implementation and boundaries |
+|---:|---|---|
+| R203 | Rectangle must allow arbitrary orientation and require **three clicks**, not two. | **Implemented:** first edge A–B and height guide C, projected perpendicularly to AB for a true rectangle. The control guide C need not exactly coincide with the projected third corner. Existing saved two-anchor axis-aligned rectangles and `Rectangle(A,B)` remain readable; `Rectangle(A,B,C)` builds new oriented rectangles. |
+| R204 | Add a simple **Parallelogram** in Polygons using three consecutive clicks. | **Implemented:** A–B–C define fourth vertex D=A+C−B. Reject collinear, repeated or unsafe anchors. No uncommon variants added. |
+| R205 | Both new quadrilaterals must maintain genuine live dependencies. | **Implemented:** four owned Segment sides each with stable ID, edge index and the owner's three source references; rendering, snapping, bounds, delete/hide inheritance, JSON, SVG/TikZ and undo/redo use one derived-vertex construction. No artificial vertex objects. Additional validator allowance for three-ref **owned** segments only, with strict owner/ref matching. |
+| R206 | Segment Properties must show its current **length**; Angle Properties its **angle size**. | **Implemented:** read-only live measurements, length in canvas units and smaller angle in degrees (0–180). Existing model units are coordinate units, not real-world calibrated measurements; no extra persistent JSON fields. |
+| R207 | All **new** objects should default black rather than blue. | **Verified/preserved** existing General/preset black stroke and fill for new objects and owned sides; never recolor saved imported styles. |
+| R208 | Tool glyph control points must match canvas construction: three for Rectangle and Parallelogram. | **Implemented**, and the only other glyph edits are those explicitly listed below. |
+| R209 | Vector icon must show both endpoints; Segment and Ray endpoint dots must be the same size. | **Implemented:** two equal-sized control markers for Segment/Ray/Vector. Other icon proportions are not arbitrarily normalized. |
+| R210 | Bézier icon must show all **four** controls, with two interior handles; Point must be a single dot without crosshairs. | **Implemented:** exactly four control markers on Bézier, one isolated point glyph. |
+| R211 | Move mode should intelligently turn an empty-space drag into a temporary **Pan** without switching the active tool. | **Implemented:** empty click clears selection; empty drag pans; Shift/Ctrl/Cmd+drag retains selection marquee; dragging a selected object and actual Pan tool retain old semantics; Escape safely cancels a gesture. |
+| R212 | Globally consider glyph-control-dot meaning and relative sizes, but do **not** redesign any other icons without permission. | **Enforced:** frozen snapshot updated only for authorized six existing glyphs plus new Parallelogram; other icon snapshots retain Round 33 values. |
+| R213 | Continue cumulative documentation and real regressions; keep future chat responses **concise**. | **Implemented in release documentation:** bilingual tutorial, cumulative register, current test report, model notes, focused Node and Chromium tests. Release message should give concise results, ZIP and one next cut; no Git commit or unrelated files. |
+
+**Next cut focus:** test snapping/constraint transforms across highly interconnected oblique shapes and dense diagrams; maintain selection and owner-side identity when source anchors are moved, hidden, imported, and deleted. Test more touch/zoom arrangements without unauthorized icon changes.

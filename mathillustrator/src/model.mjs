@@ -8,16 +8,35 @@ export function regularPolygonVertices(center,vertex,sides){
  const phase=Math.atan2(dy,dx);
  return Array.from({length:sides},(_,i)=>[center[0]+r*Math.cos(phase+i*2*Math.PI/sides),center[1]+r*Math.sin(phase+i*2*Math.PI/sides)]);
 }
-/** Rectangle corners use the same min/max axis-aligned order as its SVG.
- * Side identities remain stable when opposite defining corners cross axes. */
+/** The single authoritative vertex construction for rendering, snapping,
+ * derived segments and exports. Old two-point rectangles are kept compatible.
+ * New rectangles take first edge AB and a height guide C: the latter is
+ * projected perpendicular to AB, so the drawn figure is always rectangular.
+ * Parallelograms take three consecutive vertices A-B-C. */
+export function shapeVerticesFromPoints(type,p){
+ if(!Array.isArray(p)||!p.every(safeCoord))return [];
+ if(type==='parallelogram'&&p.length===3){
+  const [a,b,c]=p,d=[a[0]+c[0]-b[0],a[1]+c[1]-b[1]];
+  const cross=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);
+  return safeCoord(d)&&Math.abs(cross)>1e-9*Math.max(1,Math.hypot(b[0]-a[0],b[1]-a[1])*Math.hypot(c[0]-b[0],c[1]-b[1]))?[a,b,c,d]:[];
+ }
+ if(type!=='rectangle')return [];
+ if(p.length===2){
+  const [a,b]=p,minX=Math.min(a[0],b[0]),maxX=Math.max(a[0],b[0]),minY=Math.min(a[1],b[1]),maxY=Math.max(a[1],b[1]);
+  return maxX-minX>=1e-9&&maxY-minY>=1e-9?[[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]]:[];
+ }
+ if(p.length!==3)return [];
+ const [a,b,c]=p,dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);
+ if(length<1e-9)return [];
+ const nx=-dy/length,ny=dx/length,height=(c[0]-b[0])*nx+(c[1]-b[1])*ny;
+ if(!Number.isFinite(height)||Math.abs(height)<1e-9)return [];
+ const third=[b[0]+height*nx,b[1]+height*ny],fourth=[a[0]+height*nx,a[1]+height*ny];
+ return safeCoord(third)&&safeCoord(fourth)?[a,b,third,fourth]:[];
+}
 export function derivedShapeVertices(owner,at){
- if(!owner||!['rectangle','regularPolygon'].includes(owner.type)||!Array.isArray(owner.refs))return [];
- const [a,b]=owner.refs.map(at);if(!safeCoord(a)||!safeCoord(b))return [];
- if(owner.type==='regularPolygon')return regularPolygonVertices(a,b,owner.sides);
- const minX=Math.min(a[0],b[0]),maxX=Math.max(a[0],b[0]);
- const minY=Math.min(a[1],b[1]),maxY=Math.max(a[1],b[1]);
- if(maxX-minX<1e-9||maxY-minY<1e-9)return [];
- return [[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]];
+ if(!owner||!['rectangle','regularPolygon','parallelogram'].includes(owner.type)||!Array.isArray(owner.refs))return [];
+ const p=owner.refs.map(at);if(!p.every(safeCoord))return [];
+ return owner.type==='regularPolygon'?regularPolygonVertices(p[0],p[1],owner.sides):shapeVerticesFromPoints(owner.type,p);
 }
 export function derivedSidePoints(edge,owner,at){
  if(!edge||!Number.isInteger(edge.edgeIndex)||edge.edgeIndex<0)return null;
@@ -25,7 +44,7 @@ export function derivedSidePoints(edge,owner,at){
  return i<vertices.length?[vertices[i],vertices[(i+1)%vertices.length]]:null;
 }
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
@@ -42,10 +61,10 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
 const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection']);
 export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough']);
-const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
+const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.
  * The old two-reference rectangle-bounds ellipse is intentionally retained.
  * Return null rather than producing NaN/Infinity on collapsed input. */
@@ -145,8 +164,8 @@ export function appendPolygonEdges(doc,polygonId){
  * the original two point dependencies; edgeIndex chooses derived endpoints. */
 export function appendDerivedShapeEdges(doc,ownerId){
  const owner=get(doc,ownerId);
- if(!owner||!['rectangle','regularPolygon'].includes(owner.type))throw Error('Derived sides require a rectangle or regular polygon.');
- const count=owner.type==='rectangle'?4:owner.sides;
+ if(!owner||!['rectangle','regularPolygon','parallelogram'].includes(owner.type))throw Error('Derived sides require a rectangle, parallelogram or regular polygon.');
+ const count=owner.type==='regularPolygon'?owner.sides:4;
  if(doc.objects.length+count>10000||doc.nextId+count>Number.MAX_SAFE_INTEGER-1)throw Error('Derived sides exceed object capacity.');
  return Array.from({length:count},(_,i)=>append(doc,{type:'segment',refs:[...owner.refs],edgeOf:ownerId,edgeIndex:i}).id);
 }
@@ -187,7 +206,7 @@ export function preserveInheritedPointSizes(doc){
  return pinned;
 }
 
-export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);const obj=append(doc,{type,refs,...opts});if(type==='polygon')appendPolygonEdges(doc,obj.id);if(['rectangle','regularPolygon'].includes(type))appendDerivedShapeEdges(doc,obj.id);return obj;}
+export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);const obj=append(doc,{type,refs,...opts});if(type==='polygon')appendPolygonEdges(doc,obj.id);if(['rectangle','regularPolygon','parallelogram'].includes(type))appendDerivedShapeEdges(doc,obj.id);return obj;}
 /** Stable line descriptor. Supporting-line calculation is shared by rendering,
  * snapping, intersections, and validation; half-line/segment bounds are kept.
  * Input coordinates are world-space; no screen-space geometry leaks into JSON.
@@ -432,7 +451,7 @@ export function checkNewGeometry(type,p){
  if(['segment','arrow','line','ray','perpBisector','midpoint','circle','regularPolygon'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
  if(type==='circleThrough3'&&!circumcircle(p))throw Error('Choose three noncollinear points for a circle.');
  if(type==='ellipse'&&p.length===3&&!focalEllipse(p))throw Error('Ellipse needs two foci and a third point outside the focal segment.');
- if(type==='rectangle'&&(Math.abs(p[0][0]-p[1][0])<1e-9||Math.abs(p[0][1]-p[1][1])<1e-9))throw Error('Rectangle requires nonzero width and height.');
+ if(['rectangle','parallelogram'].includes(type)&&!shapeVerticesFromPoints(type,p).length)throw Error(type==='rectangle'?(p.length===2?'Rectangle requires nonzero width and height.':'Rectangle needs a nonzero first edge and perpendicular height.'):'Parallelogram needs three noncollinear consecutive vertices.');
  if(type==='angle'&&(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9||Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1])<1e-9))throw Error('Angle requires distinct rays.');
 }
 function pointName(doc,name){const o=byName(doc,name.trim());if(!o||!POINT_LIKE.has(o.type))throw Error('Unknown point: '+name.trim());return o.id;}
@@ -443,10 +462,10 @@ export function command(doc,source){
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');return addPoint(doc,[Number(m[2]),Number(m[3])],m[1]);}
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(x\)\s*=\s*(.+)$/);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2]);return append(doc,{type:'function',name:m[1],expr:m[2]});}
- m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
- if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
-  if(parts.some(x=>!x)||parts.length<min||(!['polygon','polyline'].includes(type)&&(type==='ellipse'?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
-  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);if(type==='rectangle')appendDerivedShapeEdges(doc,result.id);return result;
+ m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
+ if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:3,parallelogram:3,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
+  if(parts.some(x=>!x)||parts.length<(type==='rectangle'?2:min)||(!['polygon','polyline'].includes(type)&&(['ellipse','rectangle'].includes(type)?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
+  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);if(['rectangle','parallelogram'].includes(type))appendDerivedShapeEdges(doc,result.id);return result;
  }
  m=s.match(/^(Parallel|Perpendicular|Intersect)\s*\(\s*([A-Za-z][A-Za-z0-9_ ]*)\s*,\s*([A-Za-z][A-Za-z0-9_ ]*)\s*\)$/i);
  if(m){
@@ -480,7 +499,7 @@ export function validateDoc(raw){
   ids.add(o.id);names.add(o.name);max=Math.max(max,numericId);
   if(!o.style||!HEX.test(o.style.stroke)||!HEX.test(o.style.fill)||!finite(o.style.width)||o.style.width<0.1||o.style.width>100||!finite(o.style.opacity)||o.style.opacity<0||o.style.opacity>1)throw Error('Invalid object style or color.');
   if(o.style.pointSize!==undefined&&(!POINT_LIKE.has(o.type)||!finite(o.style.pointSize)||o.style.pointSize<1||o.style.pointSize>100))throw Error('Object point size must be 1–100 on points or midpoints.');
-  const len=o.type==='ellipse'&&o.refs?.length===3?3:REF_LENGTHS[o.type];
+  const len=o.type==='segment'&&o.edgeIndex!==undefined&&o.refs?.length===3?3:(o.type==='ellipse'||o.type==='rectangle')&&o.refs?.length===2?2:o.type==='ellipse'&&o.refs?.length===3?3:REF_LENGTHS[o.type];
   if(len!==undefined){if(!Array.isArray(o.refs)||o.refs.length!==len||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid reference count for '+o.type);}
   else if(o.type==='polygon'||o.type==='polyline'||o.type==='spline'){if(!Array.isArray(o.refs)||o.refs.length<(o.type==='polyline'?2:3)||o.refs.length>2000||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid vertex references.');}
   else if(o.refs!==undefined)throw Error('Unexpected object references.');
@@ -548,14 +567,14 @@ export function validateDoc(raw){
  const objects=new Map(d.objects.map(o=>[o.id,o]));
  for(const o of d.objects)if(o.edgeOf!==undefined){
   const owner=objects.get(o.edgeOf);
-  if(!owner||!['polygon','rectangle','regularPolygon'].includes(owner.type))throw Error('Segment edge has no supported owner.');
+  if(!owner||!['polygon','rectangle','parallelogram','regularPolygon'].includes(owner.type))throw Error('Segment edge has no supported owner.');
   if(owner.type==='polygon'){
    if(o.edgeIndex!==undefined)throw Error('Free-vertex polygon edges cannot have derived side indices.');
    const refs=owner.refs||[];
    if(!refs.some((id,i)=>o.refs[0]===id&&o.refs[1]===refs[(i+1)%refs.length]))throw Error('Polygon edge does not match its owner.');
   }else{
-   if(!Number.isInteger(o.edgeIndex)||o.edgeIndex>=(owner.type==='rectangle'?4:owner.sides)||
-      o.refs.length!==2||o.refs.some((id,i)=>id!==owner.refs[i]))throw Error('Derived side does not match its owner.');
+   if(!Number.isInteger(o.edgeIndex)||o.edgeIndex>=(owner.type==='regularPolygon'?owner.sides:4)||
+      o.refs.length!==owner.refs.length||o.refs.some((id,i)=>id!==owner.refs[i]))throw Error('Derived side does not match its owner.');
   }
  }
 
@@ -571,7 +590,7 @@ export function validateDoc(raw){
   const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):POINT_LIKE.has(parent.type);
   if(!valid)throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
- const constrained=new Set(['rectangle','regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection']);
+ const constrained=new Set(['rectangle','parallelogram','regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection']);
  const resolver=d.objects.some(o=>constrained.has(o.type)||o.edgeIndex!==undefined)?createResolver(d):null;
  for(const o of d.objects)if(constrained.has(o.type)||o.edgeIndex!==undefined){
   if(STRAIGHT_TYPES.has(o.type)){if(!resolver.line(o))throw Error('Invalid line dependencies for '+o.type+'.');continue;}

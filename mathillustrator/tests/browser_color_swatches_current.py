@@ -75,7 +75,8 @@ def run():
         box=page.locator('#drawing').bounding_box()
         page.mouse.click(box['x']+box['width']*.57,box['y']+box['height']*.54)
         page.mouse.click(box['x']+box['width']*.67,box['y']+box['height']*.63)
-        assert len(snapshot(page)['objects'])==8 and sum(o['type']=='segment' for o in snapshot(page)['objects'])==4 and next(o for o in snapshot(page)['objects'] if o['type']=='rectangle')
+        page.mouse.click(box['x']+box['width']*.71,box['y']+box['height']*.52)
+        assert len(snapshot(page)['objects'])==9 and sum(o['type']=='segment' for o in snapshot(page)['objects'])==4 and next(o for o in snapshot(page)['objects'] if o['type']=='rectangle')
         page.locator('#objects .object').filter(has_text='Rectangle').first.click()
         assert page.locator('[data-color-swatches="object"][data-color-property="fill"]').count()==1
         swatch(page,'object','fill','#eab308').click()

@@ -64,7 +64,7 @@ test('Round33: shrinking polygon refuses silently deleting linked or locked deri
  assert.equal(p.sides,5);edges[4].locked=false;
  resizeRegularPolygon(d,p.id,4);assert.doesNotThrow(()=>validateDoc(d));
 });
-test('Round33: icon snapshot detects unapproved glyph changes across every tool',()=>{
+test('Round33/35: icon snapshot protects all unchanged glyphs and approves six requested changes',()=>{
  const source=readFileSync(new URL('../src/app.mjs',import.meta.url),'utf8');
  const match=source.match(/const glyph=\{([\s\S]*?)\};/);assert.ok(match);
  const map=Object.fromEntries([...match[1].matchAll(/(\w+):'([^']+)'/g)].map(m=>[m[1],m[2]]));

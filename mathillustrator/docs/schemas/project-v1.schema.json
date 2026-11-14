@@ -324,6 +324,7 @@
             "circle",
             "ellipse",
             "rectangle",
+            "parallelogram",
             "polygon",
             "polyline",
             "bezier",
@@ -357,9 +358,25 @@
         "xy": {
           "$ref": "#/$defs/xy"
         },
-        "edgeOf": {"type":"string","pattern":"^o[1-9][0-9]*$","description":"Owner of an independently editable segment: free-vertex polygon, rectangle, or regular polygon. Ownership is validated by the model."},
-        "edgeIndex": {"type":"integer","minimum":0,"maximum":99,"description":"Optional derived-side ordinal (0-based) for rectangle or regular-polygon owned segments. Referenced anchors are the owner's defining anchors; endpoints are computed live. Both owner and index are cross-validated by the model."},
-        "branch": {"type":"integer","enum":[-1,1],"description":"Signed root along the oriented straight object for dynamic line-circle intersections."},
+        "edgeOf": {
+          "type": "string",
+          "pattern": "^o[1-9][0-9]*$",
+          "description": "Owner of an independently editable segment: free-vertex polygon, rectangle, or regular polygon. Ownership is validated by the model."
+        },
+        "edgeIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 99,
+          "description": "Optional derived-side ordinal (0-based) for rectangle or regular-polygon owned segments. Referenced anchors are the owner's defining anchors; endpoints are computed live. Both owner and index are cross-validated by the model."
+        },
+        "branch": {
+          "type": "integer",
+          "enum": [
+            -1,
+            1
+          ],
+          "description": "Signed root along the oriented straight object for dynamic line-circle intersections."
+        },
         "refs": {
           "type": "array",
           "items": {
@@ -518,8 +535,37 @@
         }
       },
       "allOf": [
-        {"if":{"required":["edgeIndex"]},"then":{"required":["edgeOf"],"properties":{"type":{"const":"segment"}}}},
-        {"if":{"required":["edgeOf"]},"then":{"properties":{"type":{"const":"segment"}}}},
+        {
+          "if": {
+            "required": [
+              "edgeIndex"
+            ]
+          },
+          "then": {
+            "required": [
+              "edgeOf"
+            ],
+            "properties": {
+              "type": {
+                "const": "segment"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "edgeOf"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "segment"
+              }
+            }
+          }
+        },
         {
           "if": {
             "properties": {
@@ -565,12 +611,60 @@
           }
         },
         {
-          "if": {"properties":{"type":{"const":"circleCircleIntersection"}}},
-          "then": {"required":["refs","branch"],"properties":{"refs":{"type":"array","minItems":2,"maxItems":2},"branch":{"enum":[-1,1]}}}
+          "if": {
+            "properties": {
+              "type": {
+                "const": "circleCircleIntersection"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs",
+              "branch"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "branch": {
+                "enum": [
+                  -1,
+                  1
+                ]
+              }
+            }
+          }
         },
         {
-          "if": {"properties":{"type":{"const":"circleIntersection"}}},
-          "then": {"required":["refs","branch"],"properties":{"refs":{"type":"array","minItems":2,"maxItems":2},"branch":{"enum":[-1,1]}}}
+          "if": {
+            "properties": {
+              "type": {
+                "const": "circleIntersection"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs",
+              "branch"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "branch": {
+                "enum": [
+                  -1,
+                  1
+                ]
+              }
+            }
+          }
         },
         {
           "if": {
@@ -605,13 +699,33 @@
             "required": [
               "refs"
             ],
-            "properties": {
-              "refs": {
-                "type": "array",
-                "minItems": 2,
-                "maxItems": 2
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "edgeIndex"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "refs": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 3
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "refs": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  }
+                }
               }
-            }
+            ]
           }
         },
         {
@@ -868,7 +982,28 @@
               "refs": {
                 "type": "array",
                 "minItems": 2,
-                "maxItems": 2
+                "maxItems": 3
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "parallelogram"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3
               }
             }
           }

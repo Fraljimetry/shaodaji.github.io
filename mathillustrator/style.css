@@ -473,3 +473,6 @@ html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;borde
 .properties > .check input[type=checkbox]{box-sizing:border-box;flex:0 0 12px;width:12px;height:12px;min-width:12px;min-height:12px;margin:0;padding:0;vertical-align:middle}
 /* The purple outline stays outside objects; their own stroke and fill are untouched. */
 #drawing .selected-shape{filter:drop-shadow(0 0 2px #7e66df90)}
+
+/* Round 35: measurements are live, read-only values; not editable numeric inputs. */
+.properties .field .measurement-value{display:block;flex:0 1 53%;max-width:53%;min-width:0;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--subtle);color:var(--ink);text-align:left;font-variant-numeric:tabular-nums;font-size:12px;user-select:text}

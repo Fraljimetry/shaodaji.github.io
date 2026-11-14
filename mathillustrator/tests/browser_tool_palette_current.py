@@ -34,7 +34,7 @@ def run():
         assert page.locator('[data-tool-module="diagram"]').get_attribute('data-section-id')=='diagrams'
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-toggle > span:last-child').all_inner_texts()==['Points & lines','Circles & conics','Polygons','Curves']
         assert page.locator('[data-tool-choice]').evaluate_all('(nodes)=>new Set(nodes.map(n=>n.dataset.toolChoice)).size===nodes.length')
-        assert page.locator('button[data-tool-choice]').count()==32
+        assert page.locator('button[data-tool-choice]').count()==33
         # Source SVG icons must use filled rather than outline marker circles.
         for name,min_markers in [('point',1),('segment',2),('circle',1),('polygon',4),('polyline',4),('angle',3),('regularPolygon',2),('bezier',2)]:
             marks=page.locator(f'[data-tool-choice="{name}"] svg circle[fill]')

@@ -10,7 +10,7 @@ from browser_smoke import cmd
 
 LABELS=['Points & lines','Circles & conics','Polygons','Curves']
 IDS=['points-lines','circles-conics','polygons','curves']
-TOOLS=[['point','midpoint','segment','ray','arrow','line','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','angle'],['circle','circleDiameter','circleThrough3','circleCircleIntersection','ellipse'],['rectangle','triangle','quadrilateral','polygon','regularPolygon'],['polyline','bezier','spline','closedSpline','freehand']]
+TOOLS=[['point','midpoint','segment','ray','arrow','line','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','angle'],['circle','circleDiameter','circleThrough3','circleCircleIntersection','ellipse'],['rectangle','parallelogram','triangle','quadrilateral','polygon','regularPolygon'],['polyline','bezier','spline','closedSpline','freehand']]
 
 def order(page):
     return page.locator('#construction-tools > .geometry-subgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.geometryGroup)')
@@ -32,7 +32,7 @@ def run():
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-toggle > span:last-child').all_inner_texts()==LABELS
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-toggle').count()==4
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-drag-handle').count()==4
-        assert page.locator('#construction-tools button[data-tool-choice]').count()==27
+        assert page.locator('#construction-tools button[data-tool-choice]').count()==28
         assert page.locator('[data-tool-choice]').evaluate_all('(nodes)=>new Set(nodes.map(n=>n.dataset.toolChoice)).size===nodes.length')
         for category,tools in zip(IDS,TOOLS):
             assert page.locator(f'[data-geometry-group="{category}"] button[data-tool-choice]').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.toolChoice)')==tools
@@ -83,7 +83,7 @@ def run():
         legacy=new_page(context,{'mathillustrator-layout-v1':json.dumps(damaged)},errors)
         assert order(legacy)==['curves','points-lines','circles-conics','polygons']
         assert legacy.locator('[data-geometry-group="curves"] [data-tool-choice="bezier"]').is_hidden()
-        assert legacy.locator('#construction-tools button[data-tool-choice]').count()==27
+        assert legacy.locator('#construction-tools button[data-tool-choice]').count()==28
         legacy.close()
         # EN/ZH transitions and preference-first Chinese startup.
         page.locator('#ui-language').select_option('zh')
