@@ -976,3 +976,46 @@ In Settings → Show, put **Label placement** above Grid / Axes / Labels checkbo
 **Second-order Geometry audit:** account for old, still-rendered 2-point rectangle and 2-point ellipse representations when newer numerical construction tools call `r50SourceShape` for intersections, constrained points or circle inversion. Sampling must be consistent with the existing renderer, dynamically follow their original anchors, and fail conservatively for degenerate bounds. Keep backwards-compatible project JSON, no silent format rewrite.
 
 **Self-critique (mandatory at each cut):** name the precise defect reproduced, distinguish algorithmic checks from actual browser interactions and live-host verification, list uncovered edge cases openly, and avoid presenting palette-selection checks as exhaustive construction validation.
+
+
+## Round 51D — Geometry glyph correction pass and sweep (2026-11-14)
+
+The user requested a focused **glyph-correction round** rather than adding more Geometry tools. Scope: redraw the newly designed Geometry glyphs so their depicted objects are mathematically correct and elegantly positioned; keep older frozen icons untouched; then run a Geometry debugging sweep.
+
+| ID | Requested behavior / constraint | Round 51D disposition |
+| --- | --- | --- |
+| R359 | Redraw new glyphs so object positions are mathematically accurate and visually clean. | **Implemented** for Point on object, Fixed length, Fixed angle, Perpendicular foot, Tangents to circle, Parabola, Hyperbola, General intersection, Locus, Rectangle, Parallelogram and all Transformation glyphs. |
+| R360 | Point on object glyph should show a random curve and a chosen point on that curve. | **Implemented** with a nonstraight curve and on-curve markers. |
+| R361 | Fixed length should start from the Segment glyph and use two equal perpendicular tick marks. | **Implemented**; dashed placeholder removed. |
+| R362 | Fixed angle should start from the Angle glyph and use two arcs. | **Implemented** with the original angle shape and two concentric angle arcs. |
+| R363 | Perpendicular foot glyph should not show a separate point on the horizontal line. | **Implemented**. |
+| R364 | Tangents to circle must draw both tangents correctly and indicate both tangent points. | **Implemented**. |
+| R365 | Parabola glyph should not place a marker on the directrix. | **Implemented**. |
+| R366 | Hyperbola glyph should show two vertices and two foci, with no stray joining segment. | **Implemented**. |
+| R367 | Rectangle and Parallelogram glyphs must show all four vertices. | **Implemented**. |
+| R368 | General intersection glyph should show two nontrivial curves and their actual intersection point. | **Implemented**; the first redraw was corrected after the browser sweep caught an off-curve point. |
+| R369 | Transformation glyphs must not use dashed paths, hollow point circles, arrowheads or a rotation radius; use a cross for the transformed image. Circle inversion should remove the point on the inversion circle; rotation and circle inversion should use a larger radius. | **Implemented**. Crosses now denote transformed images in Reflection, Rotation, Translation, Dilation and Circle inversion. |
+| R370 | Locus glyph should show a dashed random curve with a point on it. | **Implemented**. |
+| R371 | After glyph changes, test all Geometry items for debugging. | **Implemented** with a full 44-tool Chromium palette sweep plus current Geometry construction and regression scripts. Exact construction correctness for every tool under every drag/undo/export path is **not** claimed; see quality report. |
+
+**Design clarification:** this cut intentionally prioritizes mathematically faithful glyphs over a rigid one-filled-marker-per-click convention when those two goals conflict. Filled circles indicate defining points when useful; transformation outputs use crosses. Older pre-Round-50 icons remain unchanged.
+
+
+## Round 51E — Exact Objects/Tools glyph parity (2026-11-14)
+
+**User requirement R372:** Every icon in the **left Objects panel** must depict **the exact same glyph as its corresponding right Tools-panel icon**, except plotting objects, which retain their separate plot symbols. Preserve all existing right-panel glyph paths and geometry; do not redesign any icons in this cut.
+
+**Implemented:** Both sides now call the same SVG factory, so paths, markers, viewBox, stroke widths, dimensions, and color rules are shared rather than copied. This applies to all valid Geometry and Diagram object types, including restored legacy objects. A `transformCopy` object uses the icon for its specific transform (`reflect`, `rotate`, `translate`, `dilate`, or `invert`); closed splines use the Closed spline icon. Plotting objects (`function`, `parametric`, `implicit`, `vectorField`, `domainColoring`) retain their earlier Unicode symbols, and the 3D Plot list remains unchanged. The existing virtualized list, search, selections, click navigation, drag order and object actions are unaffected. Asset URLs for app JavaScript and CSS are cache-busted to `round51e`.
+
+**Acceptance:** Exact SVG markup for new Geometry/Diagram objects, full supported-type map, transformation subtypes, closed/open curves, plotting exception, real rendered left rows and right tiles in Chromium, current Node suite, startup/selection/undo/redo/export and geometry interaction regression; no Git commits, changed-file ZIP under `mathillustrator/` only.
+
+## Round 51F — Timestamped exports and unified plot/Geometry pictograms (2026-11-14)
+
+| ID | Requested behavior | Disposition |
+| --- | --- | --- |
+| R372 | Every exported file must contain the local date and time in its filename. | **Implemented:** Save and Export filenames use `mathillustrator_YYYYMMDD_HHMMSS.ext` for SVG, PNG, JPEG, WebP, TikZ, and JSON. The semantic tikz-cd export retains its distinct `mathillustrator-tikzcd_YYYYMMDD_HHMMSS.tex` prefix. Time is captured when the download begins; document content and schema are unchanged. Unsupported PDF/Asymptote/animation remain disabled. |
+| R373 | Redesign glyphs of all five 2D plotting modes to depict their mathematics. | **Implemented:** Function uses a single-valued graph on axes; Parametric uses a figure-eight curve; Implicit uses two disconnected level curves; Vector field depicts rotational quiver arrows; Domain coloring uses six colored phase sectors. The same SVG is displayed beside the plot-mode selector and in the left Objects row. 3D selectors keep their own non-2D behavior. |
+| R374 | Make Geometry glyphs more consistent in tilt, marker size and strokes; maintain left/right parity. | **Implemented:** aligned Segment, Midpoint, Line, Ray, Vector and Fixed Length along matching 45° diagonals; normalized filled Geometry point/control markers to 2 SVG units; retained the shared stroke style and existing SVG factory in both panels. Specialized curve/angle/conic glyphs retain their mathematically meaningful geometry. |
+| R375 | Concise delivery: changes and ZIP only; change/new files under `mathillustrator/`, no commits. | **Maintained.** Full Node and local Chromium verification are reported in the existing current quality file. |
+
+**Boundaries:** timestamp naming applies to filenames, not metadata embedded in exported SVG/PNG/TeX; parallel downloads within the same second may receive the same suggested name and the browser decides how to disambiguate. SVG plot glyphs represent *types of plot*, not a preview of the user's actual expression. Cross-browser, hosted HTTP cache behavior and real GPU rendering remain outside this cut.

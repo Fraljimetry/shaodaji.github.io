@@ -23,7 +23,7 @@ def run():
    for t in ['perpBisector','circleIntersection','perpendicularThrough','spline','closedSpline']:
     svg=page.locator(f'[data-tool-choice="{t}"] svg')
     assert svg.count()==1 and svg.locator('path').count()>=1,t
-    assert all(abs(r-(1.8 if t=="circleIntersection" else 2))<.01 for r in svg.locator('circle[fill="currentColor"]').evaluate_all('(nodes)=>nodes.map(n=>+n.getAttribute("r"))')),t
+    assert all(abs(r-2)<.01 for r in svg.locator('circle[fill="currentColor"]').evaluate_all('(nodes)=>nodes.map(n=>+n.getAttribute("r"))')),t
    # Polygon command creates side segments and can undo all together.
    page.locator('#auto-pan').uncheck()
    for text in ['A=(0,0)','B=(4,0)','C=(3,3)','D=(0,2)','Polygon(A,B,C,D)']:

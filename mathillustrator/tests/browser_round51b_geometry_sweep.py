@@ -15,10 +15,10 @@ CATEGORIES={
  'curves':['polyline','bezier','spline','closedSpline','freehand','locus'],
 }
 MARKERS={
- 'pointOnObject':2,'tangentCircle':2,'circularArc':3,'parabola':2,
- 'hyperbola':3,'generalIntersection':2,'reflection':2,'rotation':2,
- 'translation':3,'dilation':2,'locus':2,'fixedLength':2,
- 'fixedAngle':2,'triangleCenter':3,'circleInversion':2,
+ 'pointOnObject':2,'tangentCircle':3,'circularArc':3,'parabola':1,
+ 'hyperbola':4,'generalIntersection':1,'reflection':1,'rotation':2,
+ 'translation':3,'dilation':2,'locus':1,'fixedLength':2,
+ 'fixedAngle':3,'triangleCenter':3,'circleInversion':2,
 }
 
 def main():
@@ -52,6 +52,14 @@ def main():
     assert circles.count()==clicks,(tool,circles.count(),clicks)
     assert circles.evaluate_all('(arr)=>arr.map(x=>x.getAttribute("r"))')==['2']*clicks,tool
     assert image.locator('path,ellipse,circle').count()>=2,tool
+   for tool in ['reflection','rotation','translation','dilation','circleInversion']:
+    image=page.locator(f'[data-tool-choice="{tool}"] svg')
+    assert image.locator('[stroke-dasharray]').count()==0,tool
+    assert image.locator('circle[fill="none"]').count()==0,tool
+   inversion=page.locator('[data-tool-choice="circleInversion"] svg')
+   circles=inversion.locator('circle')
+   radii=circles.evaluate_all('(arr)=>arr.map(e=>e.getAttribute("r"))')
+   assert '8.5' in radii,radii
    # Check displayed marker locations against the path geometry for tools in which
    # the clicked control points are supposed to lie on their depicted lines.
    geometry=page.evaluate('''() => {
@@ -70,7 +78,7 @@ def main():
     }));
    }''')
    assert all(all(d<.25 for d in distances) for distances in geometry.values()),geometry
-   print('stage: 15 new glyphs, consistent click markers, geometrically located control points PASS',flush=True)
+   print('stage: redesigned Geometry glyphs, faithful markers and path placement PASS',flush=True)
    def command(source):
     page.locator('#command').fill(source)
     page.locator('#command-form button').click()
@@ -115,6 +123,6 @@ def main():
    tool('circleInversion');click_obj(1);click_ring(5)
    assert len(snapshot()['objects'])==8,'center inversion was incorrectly saved'
    assert not errors,errors
-   print('ROUND51B_GEOMETRY_CHROMIUM_PASS: palette sweep + exact glyph geometry + inverse circle + undo/redo/JSON + singular failure',flush=True)
+   print('ROUND51B_GEOMETRY_CHROMIUM_PASS: palette sweep + redesigned glyph geometry + inverse circle + undo/redo/JSON + singular failure',flush=True)
   finally:browser.close()
 if __name__=='__main__':main()

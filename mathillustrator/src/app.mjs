@@ -27,13 +27,13 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
-const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<path d="M3 17L17 20L20 6L6 3Z"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="6" r="2" fill="currentColor"/>',polygon:'<path d="M6 3L18 3L22 12L18 21L6 21L2 12Z"/><circle cx="6" cy="3" r="1.5" fill="currentColor"/><circle cx="18" cy="3" r="1.5" fill="currentColor"/><circle cx="22" cy="12" r="1.5" fill="currentColor"/><circle cx="18" cy="21" r="1.5" fill="currentColor"/><circle cx="6" cy="21" r="1.5" fill="currentColor"/><circle cx="2" cy="12" r="1.5" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.parallelogram='<path d="M3 18L16 18L21 6L8 6Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="16" cy="18" r="2" fill="currentColor"/><circle cx="21" cy="6" r="2" fill="currentColor"/>';
-glyph.line='<path d="M3.5 20.5L20.5 3.5"/><circle cx="7.5" cy="16.5" r="2" fill="currentColor" stroke="none"/><circle cx="16.5" cy="7.5" r="2" fill="currentColor" stroke="none"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
-glyph.arrow='<path d="M3 20L21 4M13 4h8v8"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>';
+const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>',segment:'<path d="M4 20L20 4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="currentColor"/>',rectangle:'<path d="M3 17L17 20L20 6L6 3Z"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="6" r="2" fill="currentColor"/><circle cx="6" cy="3" r="2" fill="currentColor"/>',polygon:'<path d="M6 3L18 3L22 12L18 21L6 21L2 12Z"/><circle cx="6" cy="3" r="2" fill="currentColor"/><circle cx="18" cy="3" r="2" fill="currentColor"/><circle cx="22" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="21" r="2" fill="currentColor"/><circle cx="6" cy="21" r="2" fill="currentColor"/><circle cx="2" cy="12" r="2" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="5" r="2" fill="currentColor"/><circle cx="14" cy="13" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
+glyph.parallelogram='<path d="M3 18L16 18L21 6L8 6Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="16" cy="18" r="2" fill="currentColor"/><circle cx="21" cy="6" r="2" fill="currentColor"/><circle cx="8" cy="6" r="2" fill="currentColor"/>';
+glyph.line='<path d="M2 22L22 2"/><circle cx="7" cy="17" r="2" fill="currentColor" stroke="none"/><circle cx="17" cy="7" r="2" fill="currentColor" stroke="none"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
+glyph.arrow='<path d="M4 20L20 4M12 4H20V12"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/>';
 glyph.bezier='<path d="M3 19C5 4 19 4 21 19"/><path d="M3 19L5 4M19 4L21 19" stroke-dasharray="2 2"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="5" cy="4" r="2" fill="currentColor"/><circle cx="19" cy="4" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';
-glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
-glyph.ray='<path d="M4 20L21 3"/><circle cx="4" cy="20" r="2" fill="currentColor" stroke="none"/><circle cx="12.5" cy="11.5" r="2" fill="currentColor" stroke="none"/>' 
+glyph.midpoint='<path d="M4 20L20 4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
+glyph.ray='<path d="M4 20L22 2"/><circle cx="4" cy="20" r="2" fill="currentColor" stroke="none"/><circle cx="12.5" cy="11.5" r="2" fill="currentColor" stroke="none"/>' 
 glyph.perpBisector='<path d="M4 12H20M12 3V21"/><path d="M12 15H15V12"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.circleDiameter='<circle cx="12" cy="12" r="8"/><path d="M4 12H20"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.circleThrough3='<circle cx="12" cy="12" r="9"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/><circle cx="3" cy="12" r="2" fill="currentColor"/>';
@@ -81,33 +81,34 @@ function appendColorSwatches(parent,{scope,property,apply}){
 glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r="2" fill="currentColor"/>';
 glyph.perpendicularThrough='<path d="M2 18H22M12 2V22M12 15H15V18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
-glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 18L23 6"/><circle cx="5" cy="15.82" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="8.18" r="1.8" fill="currentColor" stroke="none"/>';
+glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 18L23 6"/><circle cx="5" cy="15.82" r="2" fill="currentColor" stroke="none"/><circle cx="19" cy="8.18" r="2" fill="currentColor" stroke="none"/>';
 // Three construction clicks = exactly three identical 2px filled markers.
 // The dashed-looking diagonal is the internal bisector of the right angle.
 glyph.angleBisector='<path d="M6 5V19H20M6 19L17 8"/><circle cx="6" cy="5" r="2" fill="currentColor"/><circle cx="6" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';
 // Two construction clicks: source point and existing straight object. The computed foot is not a control click.
 glyph.perpendicularFoot='<path d="M3 19H21M10 3V19M10 15H14V19"/><circle cx="10" cy="3" r="2" fill="currentColor"/><circle cx="19" cy="19" r="2" fill="currentColor"/>';
-glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
+glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
 // Round 51: redraw only the Round 50+ construction glyphs. Uniform 2px
-// filled dots mark user clicks, not computed points. Paths and dots share
-// the same world->icon geometry; e.g. focus and directrix are not on a parabola.
+// filled dots indicate defining points when they clarify the construction;
+// transformed images use crosses. Icons prioritize mathematically faithful
+// placement over a rigid marker-per-click convention.
 const r50Glyph=(path,markers)=>path+markers.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2" fill="currentColor" stroke="none"/>`).join('');
 Object.assign(glyph,{
- pointOnObject:r50Glyph('<path d="M2 19L22 5"/>',[[5,16.9],[15,9.9]]),
- tangentCircle:r50Glyph('<circle cx="15" cy="14" r="7"/><path d="M2 3L8.68 17.01 M2 3L16.93 7.27"/>',[[2,3],[15,7]]),
+ pointOnObject:r50Glyph('<path d="M2 18Q10 2 22 8"/>',[[6.25,11.38],[13.04,6.72]]),
+ tangentCircle:'<circle cx="15" cy="13" r="6"/><path d="M3 4L11.4 17.8M3 4L17.4 7.18"/><circle cx="3" cy="4" r="2" fill="currentColor" stroke="none"/><circle cx="11.4" cy="17.8" r="2" fill="currentColor" stroke="none"/><circle cx="17.4" cy="7.18" r="2" fill="currentColor" stroke="none"/>',
  circularArc:r50Glyph('<path d="M3.54 16.08A9 9 0 1 1 20.86 11.44"/>',[[3.54,16.08],[10.44,4.14],[20.86,11.44]]),
- parabola:r50Glyph('<path d="M3 10.625Q12 17.375 21 10.625 M2 20H22"/>',[[12,8],[19,20]]),
- hyperbola:r50Glyph('<path d="M7.37 5.9Q10.63 12 7.37 18.1 M16.63 5.9Q13.37 12 16.63 18.1"/>',[[6,12],[18,12],[15,12]]),
- generalIntersection:r50Glyph('<path d="M2 5L22 19 M2 19L22 5"/><circle cx="12" cy="12" r="2.2" fill="none"/>',[[4,6.4],[20,6.4]]),
- reflection:r50Glyph('<path d="M12 2V22 M5 7H19" stroke-dasharray="2 2"/><circle cx="19" cy="7" r="2.2" fill="none"/>',[[5,7],[12,18]]),
- rotation:r50Glyph('<path d="M19 12A7 7 0 0 0 12 5 M12 5l4.5 0.4-1.8 3.7"/><circle cx="12" cy="5" r="2.2" fill="none"/>',[[19,12],[12,12]]),
- translation:r50Glyph('<path d="M6 6H16 M12 2l4 4-4 4 M4 17H14" stroke-dasharray="2.5 2"/><circle cx="14" cy="17" r="2.2" fill="none"/>',[[4,17],[6,6],[16,6]]),
- dilation:r50Glyph('<path d="M4 12H20"/><circle cx="20" cy="12" r="2.2" fill="none"/>',[[10,12],[4,12]]),
- locus:r50Glyph('<path d="M2 19C8 19 8 3 14 7S18 18 22 4" stroke-dasharray="2 2"/><path d="M3 3L21 21"/>',[[2,19],[12,12]]),
- fixedLength:r50Glyph('<path d="M4 17L14.6 10.375 M14.6 10.375L20 7" stroke-dasharray="3 2"/><path d="M9.5 12l2 3"/>',[[4,17],[20,7]]),
- fixedAngle:r50Glyph('<path d="M5 3V19H21 M5 12A7 7 0 0 1 12 19"/><path d="M5 19L19 14" stroke-dasharray="2 2"/>',[[5,3],[5,19]]),
+ parabola:'<path d="M3 11.2Q12 18.4 21 11.2M2 20H22"/><circle cx="12" cy="8" r="2" fill="currentColor" stroke="none"/>',
+ hyperbola:'<path d="M6 6C8.4 8.5 9.3 10.4 9.8 12C9.3 13.6 8.4 15.5 6 18M18 6C15.6 8.5 14.7 10.4 14.2 12C14.7 13.6 15.6 15.5 18 18"/><circle cx="5.6" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="18.4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="8.6" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="15.4" cy="12" r="2" fill="currentColor" stroke="none"/>',
+ generalIntersection:'<path d="M2 17Q12 5 22 17M3 5Q12 17 21 5"/><circle cx="12" cy="11" r="2" fill="currentColor" stroke="none"/>',
+ reflection:'<path d="M12 2V22M6 8L9 11M18 8l-3 3M16.2 9.2l3.6 3.6M19.8 9.2l-3.6 3.6"/><circle cx="6" cy="8" r="2" fill="currentColor" stroke="none"/>',
+ rotation:'<path d="M20 12A8 8 0 0 1 12 4M10.2 2.2l3.6 3.6M13.8 2.2l-3.6 3.6"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>',
+ translation:'<path d="M8 17L16 9M12.2 11.2l3.6 3.6M15.8 11.2l-3.6 3.6"/><circle cx="4" cy="19" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="17" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="9" r="2" fill="currentColor" stroke="none"/>',
+ dilation:'<path d="M4 12H20M16.2 10.2l3.6 3.6M19.8 10.2l-3.6 3.6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="12" r="2" fill="currentColor" stroke="none"/>',
+ locus:'<path d="M2 18C7 3 10 20 14 10S19 8 22 5" stroke-dasharray="2 2"/><circle cx="14" cy="10" r="2" fill="currentColor" stroke="none"/>',
+ fixedLength:r50Glyph('<path d="M4 20L20 4M7.5 13.5L10.5 16.5M13.5 7.5L16.5 10.5"/>',[[4,20],[20,4]]),
+ fixedAngle:'<path d="M5 3L8.5 19H21M8.5 15A4 4 0 0 1 12.5 19M8.5 13A6 6 0 0 1 14.5 19"/><circle cx="5" cy="3" r="2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="19" r="2" fill="currentColor" stroke="none"/><circle cx="21" cy="19" r="2" fill="currentColor" stroke="none"/>',
  triangleCenter:r50Glyph('<path d="M12 3L21 20H3Z M12 3V20 M3 20L16.5 11.5 M21 20L7.5 11.5"/><circle cx="12" cy="14.33" r="2" fill="none"/>',[[12,3],[21,20],[3,20]]),
- circleInversion:r50Glyph('<circle cx="12" cy="12" r="7"/><path d="M12 12L21 8" stroke-dasharray="2 2"/><circle cx="16.55" cy="9.98" r="2.2" fill="none"/>',[[21,8],[12,5]])
+ circleInversion:'<circle cx="12" cy="12" r="8.5"/><path d="M6.4 10.2l3.6 3.6M10 10.2l-3.6 3.6"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>'
 });
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
@@ -1064,11 +1065,32 @@ function shortObjectSubtitle(o){
  if(o.type==='vectorField')return 'Vector field';
  return compactSubtitle(labels[o.type]||o.type.replace(/([a-z])([A-Z])/g,'$1 $2'));
 }
-const SECTION_OBJECT_GLYPHS={
- pointOnObject:'•',perpendicularFoot:'⟂',generalIntersection:'×',circleCircleIntersection:'×',triangleCenter:'⬡',
- tangentCircle:'◯',circularArc:'◯',parabola:'◯',hyperbola:'◯',
- transformCopy:'↗',locus:'∿',fixedLength:'╱',fixedAngle:'∠'
-};
+// Use one authoritative SVG for Geometry/Diagram tools and their Objects-list
+// rows. Plotting modes have a separate set of five semantic SVG glyphs.
+// Five mathematically distinct 2D plot pictograms; not used by Geometry tools.
+// Axes for y=f(x), a closed 8-shaped parameter trace, two implicit level
+// components, a circulating vector field, and colored phase sectors.
+const PLOTTING_GLYPHS=Object.freeze({
+ function:'<path d="M3 19H22M5 22V2" stroke-width="1.3"/><path d="M4 16C7 18 8 6 12 7S16 17 21 5"/>',
+ parametric:'<path d="M4 12C4 4 10 4 12 12C14 20 20 20 20 12C20 4 14 4 12 12C10 20 4 20 4 12Z"/><circle cx="4" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+ implicit:'<path d="M4 12C4 6 10 5 11 12C10 19 4 18 4 12ZM13 12C14 5 20 6 20 12C20 18 14 19 13 12Z"/>',
+ vectorField:'<path d="M17 5H9M11.5 2.5L9 5L11.5 7.5M19 9V16M16.5 13.5L19 16L21.5 13.5M7 19H15M12.5 16.5L15 19L12.5 21.5M5 16V9M2.5 11.5L5 9L7.5 11.5"/>',
+ domainColoring:'<path d="M12 12L12 3A9 9 0 0 1 19.79 7.5Z" fill="#b38be3" stroke="none"/><path d="M12 12L19.79 7.5A9 9 0 0 1 19.79 16.5Z" fill="#638ecd" stroke="none"/><path d="M12 12L19.79 16.5A9 9 0 0 1 12 21Z" fill="#5db8ad" stroke="none"/><path d="M12 12L12 21A9 9 0 0 1 4.21 16.5Z" fill="#e0bf69" stroke="none"/><path d="M12 12L4.21 16.5A9 9 0 0 1 4.21 7.5Z" fill="#df8f83" stroke="none"/><path d="M12 12L4.21 7.5A9 9 0 0 1 12 3Z" fill="#be91be" stroke="none"/><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="var(--surface)" stroke="none"/>'
+});
+function plotGlyphSvg(type){
+ if(!Object.hasOwn(PLOTTING_GLYPHS,type))throw Error('No plotting glyph for mode: '+type);
+ return `<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${PLOTTING_GLYPHS[type]}</svg>`;
+}
+const TRANSFORM_GLYPH_TOOL=Object.freeze({reflect:'reflection',rotate:'rotation',translate:'translation',dilate:'dilation',invert:'circleInversion'});
+function objectGlyphTool(o){
+ if(o.type==='transformCopy')return TRANSFORM_GLYPH_TOOL[o.transform]||null;
+ if(o.type==='spline'&&o.closed===true)return 'closedSpline';
+ return Object.hasOwn(glyph,o.type)?o.type:null;
+}
+function toolGlyphSvg(type){
+ if(!Object.hasOwn(glyph,type))throw Error('No SVG icon for tool: '+type);
+ return `<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${glyph[type]}</svg>`;
+}
 function navigateToObject(id){
  if(!id||!get(doc,id))return;
  if($('object-search').value&&!listedObjects.some(o=>o.id===id)){
@@ -1090,10 +1112,12 @@ function renderListWindow(){
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
   const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
-  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'━',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'•─',perpBisector:'⟂',angleBisector:'∠',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||SECTION_OBJECT_GLYPHS[o.type]||'•';
- if(o.type==='polyline'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M2 19L9 3L15 18L22 4"/></svg>'); }
- if(o.type==='circleIntersection'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="6" cy="17" r="1.7" fill="currentColor"/><circle cx="18" cy="7" r="1.7" fill="currentColor"/></svg>'); }
- row.append(addObjectOrderGrip(row,o.id,'2d'),glyph);
+  const objectIcon=document.createElement('span');objectIcon.className='glyph';
+  const toolGlyph=objectGlyphTool(o);
+  if(toolGlyph)objectIcon.innerHTML=toolGlyphSvg(toolGlyph);
+  else if(Object.hasOwn(PLOTTING_GLYPHS,o.type))objectIcon.innerHTML=plotGlyphSvg(o.type);
+  else throw Error('Missing matching Objects-list icon for '+o.type);
+  row.append(addObjectOrderGrip(row,o.id,'2d'),objectIcon);
   const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;strong.title=o.name;const small=document.createElement('small');const fullDescription=desc(o);small.textContent=shortObjectSubtitle(o);small.title=fullDescription;label.append(strong,small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
@@ -1462,7 +1486,7 @@ function populateTools(){
   if(shortcutForTool[type])button.setAttribute('aria-keyshortcuts',shortcutForTool[type]);
   // Keep SVG paths unchanged outside explicitly authorized glyphs. Extra viewBox
   // breathing room prevents stroke and control-dot clipping at tile edges.
-  button.innerHTML=`<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${glyph[type]}</svg><span>${label}</span>`;
+  button.innerHTML=`${toolGlyphSvg(type)}<span>${label}</span>`;
   if(['construction-tools','transform-tools'].includes(id))button.dataset.advancedGeometry=String(!ESSENTIAL_GEOMETRY.has(type));
   button.onclick=()=>selectTool(type);parent.append(button);
  }
@@ -1481,6 +1505,8 @@ function syncTooltips(){
 }
 function syncPlotModeControl(){
  const plotInput=$('command'),plotY=$('command-y'),plotZ=$('command-z'),mode=$('plot-mode').value,symbol=$('parameter-symbol'),three=in3D();
+ const preview=$('plot-mode-preview');
+ if(preview){preview.hidden=three;preview.innerHTML=three?'':plotGlyphSvg(mode);preview.title=three?'':$('plot-mode').selectedOptions[0]?.textContent||mode;}
  const multiple=['parametric','vectorField','parametric3d','vector3d'].includes(mode);
  plotY.hidden=!multiple;plotZ.hidden=!three||!['parametric3d','vector3d'].includes(mode);
  symbol.hidden=mode!=='parametric';
@@ -2172,7 +2198,14 @@ function renderTrash(){
   row.append(title,button);root.append(row);
  }
 }
-function datedProjectName(){const now=new Date(),pad=n=>String(n).padStart(2,'0');return `mathillustrator_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;}
+// Local wall-clock timestamp, created only when an actual download starts.
+// Consistent across Save and every supported Export format.
+function datedExportName(extension,kind=''){
+ const now=new Date(),pad=n=>String(n).padStart(2,'0');
+ const suffix=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+ return `mathillustrator${kind?'-'+kind:''}_${suffix}.${extension}`;
+}
+function datedProjectName(){return datedExportName('json');}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);}
 function svgString(){
  const svg=el('svg',{xmlns:NS,width:size.w,height:size.h,viewBox:`0 0 ${size.w} ${size.h}`});plotLimitedInScene=false;draw(svg,{exporting:true});
@@ -2202,7 +2235,7 @@ function awaitExportStage(register,label,timeoutMs=15000){
 }
 async function exportImage(type){
  const signature=exportSignature(),result=svgString(),background=doc.settings.background,factor=doc.settings.exportScale;
- if(type==='svg'){download(new Blob([result.text],{type:'image/svg+xml;charset=utf-8'}),'mathillustrator.svg');return;}
+ if(type==='svg'){download(new Blob([result.text],{type:'image/svg+xml;charset=utf-8'}),datedExportName('svg'));return;}
  if(type==='jpeg'&&doc.settings.exportTransparent)throw Error('JPEG cannot represent transparency. Turn off transparent export or choose PNG/WebP/SVG.');
  const width=Math.max(1,Math.round(result.width*factor)),height=Math.max(1,Math.round(result.height*factor));
  if(width>16384||height>16384||width*height>36e6)throw Error('Raster output exceeds the 36-megapixel / 16384-pixel limit. Lower export resolution or resize the viewport.');
@@ -2222,7 +2255,7 @@ async function exportImage(type){
   const blob=await awaitExportStage((resolve,reject)=>can.toBlob(v=>v?resolve(v):reject(Error(type.toUpperCase()+' encoding failed.')),mime,.94),'Raster encoding');
   assertExportFresh(signature);
   if(blob.type!==mime)throw Error(type.toUpperCase()+' export is unsupported by this browser.');
-  download(blob,'mathillustrator.'+(type==='jpeg'?'jpg':type));
+  download(blob,datedExportName(type==='jpeg'?'jpg':type));
  }finally{URL.revokeObjectURL(src);}
 }
 function latexEscape(s){const map={'\\':'\\textbackslash{}','#':'\\#','$':'\\$','%':'\\%','&':'\\&','_':'\\_','{':'\\{','}':'\\}'};map['^']='\\textasciicircum{}';map['~']='\\textasciitilde{}';return [...String(s)].map(c=>map[c]||c).join('');}
@@ -2309,8 +2342,8 @@ function setupExport(){
   b.onclick=async()=>{if(exportBusy)return;exportBusy=true;for(const other of root.querySelectorAll('button'))other.disabled=true;try{
     if(['svg','png','jpeg','webp'].includes(type))await exportImage(type);
     else if(type==='json')download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
-    else if(type==='tikz')download(new Blob([asTikz()],{type:'text/plain'}),'mathillustrator.tex');
-    else if(type==='tikzcd')download(new Blob([exportTikzCd(doc)],{type:'text/plain'}),'mathillustrator-tikzcd.tex');
+    else if(type==='tikz')download(new Blob([asTikz()],{type:'text/plain'}),datedExportName('tex'));
+    else if(type==='tikzcd')download(new Blob([exportTikzCd(doc)],{type:'text/plain'}),datedExportName('tex','tikzcd'));
     $('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();
    }catch(e){notice(e.message);}finally{exportBusy=false;if(!$('export-menu').hidden)setupExport();}};root.append(b);
  }

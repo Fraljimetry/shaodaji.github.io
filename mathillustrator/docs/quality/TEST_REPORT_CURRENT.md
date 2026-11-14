@@ -879,3 +879,57 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Chromium:** **11 separate current Playwright scripts PASS**, using `/usr/bin/chromium` with production JS/CSS modules embedded in the offline harness: `browser_smoke.py`, `browser_round27_ui_snap_circles.py`, `browser_round50_geometry.py`, `browser_round51_temp4.py`, `browser_round51b_geometry_sweep.py`, new `browser_round51c_subtle_geometry.py`, `browser_round49_layout_geometry.py`, `browser_round47_order_geometry.py`, `browser_round48_lighting_layout.py`, `browser_round43_temp3_3d.py`, and `browser_round40_2d_backdrop.py`. New browser regression tests actual consecutive `page.mouse.click` inputs (point and circle), filtered list navigation/focus, different objects clicked rapidly, intersection subtitles/hover values, new Geometry LaTeX formats, persisted LaTeX display label, and settings layout. A preliminary run of the new test intermittently raced canvas paint; test now awaits visible rendered objects before computing screen coordinates. That timing is a **test harness race**, not a demonstrated runtime geometry failure.
 
 **Self-critique / ongoing risks:** these tests do not validate *every* geometric construction through all drag/undo/export combinations, nor numerical conditioning of arbitrary General Intersections, branch tracking near tangencies, locus continuity through singularities, or 3D implicit-mesh overlap/lighting correctness at scale. No hosted HTTP import/cache verification (loopback blocked in this environment), Safari/Firefox, touchscreen double-tap, full performance benchmark or physical-device pass. Old no-mode labels remain plain for backwards compatibility, although all newly added labels default to LaTeX. The mouse double-click heuristic deliberately uses a 500-ms/9-px window; may need real-device tuning. No claims of exhaustive Geometry quality.
+
+
+## Round 51D — Geometry glyph correction pass and sweep (2026-11-14)
+
+**Baseline:** authoritative Round 50 ZIP with the accepted Round 51 temp4, Round 51B, and Round 51C overlays replayed in order. This cut changes only `mathillustrator/` files; no Git commits.
+
+**Implemented source changes:**
+- Redrew the requested Round 50/51 Geometry glyphs in `src/app.mjs`: Point on object, Tangents to circle, Parabola, Hyperbola, General intersection, Locus, Fixed length, Fixed angle, and all five Transformation glyphs.
+- Added the missing fourth vertex markers to Rectangle and Parallelogram.
+- Transformation glyphs no longer use dashed paths or hollow circles for result points; transformed images are rendered as crosses. Rotation no longer shows a radius, and Circle inversion no longer uses a point on the inversion circle.
+- Updated browser Geometry tests to reflect the corrected semantics rather than the old marker-count convention, and refreshed the icon snapshot fixture.
+
+**Self-critique / confirmed defect caught during the cut:**
+- The first redraw of **General intersection** still placed its highlighted point about 1 px away from the depicted curve crossing. The `browser_round51b_geometry_sweep.py` path-distance check failed and forced a source correction. The final glyph now passes the geometric placement assertion instead of weakening the test.
+- This cut validates palette semantics and representative construction behavior, but it still does **not** prove every Geometry construction under every drag/undo/export path or every numerical edge case.
+
+**Node:** `node --test tests/*.test.mjs` → **337 / 337 PASS**, zero failures/skips. This includes the icon snapshot test after refreshing the approved glyph hashes.
+
+**Real Chromium (Playwright + `/usr/bin/chromium`, offline embedded production modules):** the following scripts passed with clean exit 0:
+1. `browser_round51b_geometry_sweep.py` — all **44 Geometry tools** across **7** subsections found and selectable; redesigned glyph marker counts/sizes; representative on-path marker geometry; transformation glyph conventions; actual Circle inversion creation, undo/redo, JSON export and singular-center rejection.
+2. `browser_round50_geometry.py` — Geometry sections, updated glyph semantics, tangents and triangle-center construction.
+3. `browser_round51c_subtle_geometry.py` — label placement, real double-click navigation, compact subtitles, LaTeX defaults.
+4. `browser_smoke.py` — startup, commands, selection, exports, undo/redo and properties.
+
+**Coverage boundary:** the 44-tool Chromium sweep proves presence/order/selectability and key glyph invariants for every Geometry tool, not exhaustive mathematical interaction for all tools. Exact line/conic intersection conditioning near tangency, locus continuity near singularities, and unresolved 3D implicit-surface/overlap issues remain open. No hosted-URL, Safari/Firefox, mobile touch or GPU-depth-buffer claim.
+
+
+## Round 51E — Exact Objects/Tools glyph parity (2026-11-14)
+
+**Confirmed root cause:** The left Objects list rendered hard-coded Unicode approximations (`◯`, `↗`, `⟂`, etc.), and two shapes had independently authored inline SVG snippets. The right Tools tiles used the current authoritative `glyph` SVG definitions, including the corrected Round 51D glyphs. This caused inconsistent mathematical illustrations across panels.
+
+**Fix:** All supported non-plot objects now resolve a tool icon via `objectGlyphTool` and the shared `toolGlyphSvg` factory used by both left and right panels. Both have the same 27px SVG dimensions, viewBox, `currentColor`, fill/stroke properties; 29px left list wrapper preserves row layout. The existing object-type-specific transform mode selects the correct icon (`reflection`, `rotation`, `translation`, `dilation`, `circleInversion`), and closed splines use `closedSpline`. Plotting Unicode glyphs and 3D plot controls remain unchanged. No underlying icon path changes, geometry/math changes, document schema changes or Git commits. Updated `index.html` to request `?cut=round51e` JS/CSS to avoid stale cached assets; updated offline browser fixture to recognize these filenames.
+
+**Node:** `node --test tests/*.test.mjs`: **339/339 PASS**, 0 failed, 0 skipped (including two new R51E code/asset parity checks). The historical snapshot fixture contained a stray `className` key accidentally captured from the *former* local variable `glyph.className` in the left-panel renderer. After that variable was renamed `objectIcon`, the fixture mismatch exposed the mistaken entry; it has been removed without modifying any existing tool icon path/hash.
+
+**Chromium (installed headless Chromium, source-inlined production modules):** **7 scripts passed** independently: `browser_round51e_panel_glyphs.py`, `browser_round51b_geometry_sweep.py`, `browser_round50_geometry.py`, `browser_round51c_subtle_geometry.py`, `browser_smoke.py`, `browser_round47_order_geometry.py`, and `browser_round49_layout_geometry.py`. The new test compared exact rendered SVG path content, viewBox, computed dimensions/stroke/color for **32 actually constructed Geometry/Diagram-family rows** (including derived segments), checked the icon mapping for every supported non-plot type, verified **five real transform-copy list entries** against right-panel tiles, and confirmed plotting exclusions and closed-spline behavior. `browser_round49_layout_geometry.py` initially reached the combined sequential-command timeout after printing PASS; a separate run completed with exit 0.
+
+**Self-critique / limits:** Left/right SVG equivalence is tested exhaustively for type mapping and for representative real list rows, not every conceivable imported document state, cross-browser font/display scaling, or physical touch device. The drawing geometry and mathematical validity of the icons are unchanged from R51D; this cut only synchronizes presentation. Chromium uses a local inlined module fixture; it does not assert live hosted HTTP/cache or cross-browser validation.
+
+## Round 51F — Exports, plotting glyphs and Geometry normalization (2026-11-14)
+
+**Baseline:** latest Round 51E authoritative overlay replayed over Round 51D, Round 51C, Round 51B and Round 51 temp4 from the user's source ZIP. Changed/new `mathillustrator/` paths only; no Git commits.
+
+**Changes:**
+- All download-triggering Save/Export operations now use local date-time suffixed filenames for JSON, SVG, PNG, JPG, WebP, TikZ and semantic tikz-cd. Output file contents are not changed by naming.
+- Replaced the five plotting-object Unicode icons with type-specific SVGs and a matching 2D plot-mode selector preview. Retained concise mode labels; 3D mode hides the 2D preview.
+- Standardized common geometric diagonal tool glyphs to a consistent 45° slope; standardized filled Geometry control-point radii to `2`, including point, polygon, polyline, intersections and circle center markers. Left/right Geometry SVG markup still comes from the same factory.
+- Updated current browser fixture to recognize the new `round51f` module/style cache token; refreshed only approved icon snapshot hashes and assertions affected by the requested changes.
+
+**Node:** `node --test tests/*.test.mjs` → **342/342 PASS** (zero skipped, zero failed). Three new R51F tests cover every date-stamped extension and explicit tikz-cd prefix using a deterministic fake local clock, exact five plotting mode registration/shared SVG factory, 45-degree construction line family and uniform 2-unit filled point markers. `node --check src/app.mjs` also passes.
+
+**Chromium:** **9 local isolated Chromium scripts PASS**: `browser_round51f_exports_plotglyphs.py` (five actual plotted objects, matching dropdown/Objects SVG, 2D/3D toggle, every Geometry marker size/diagonal, real downloaded SVG/PNG/JPEG/WebP/JSON/TikZ/tikz-cd and Save filenames with file signatures); `browser_smoke.py`; `browser_round50_geometry.py`; `browser_round51b_geometry_sweep.py` (44 selectable Geometry tools); `browser_round51c_subtle_geometry.py`; `browser_round51e_panel_glyphs.py` (32 constructed objects, transform parity); `browser_round47_order_geometry.py`; `browser_round48_lighting_layout.py`; and `browser_round28_quality.py`.
+
+**Self-critique and limitations:** The original source-inlining browser harness did not recognize the new `round51f` index token; it silently left an uninitialized app in its HTML fixture. This was fixed in `browser_smoke.py`, not treated as a product startup failure. An early tikz-cd download test stalled because the new test forgot to accept the import confirmation dialog; the harness was corrected and the full exporter test passed. The icon normalization does **not** change actual Geometry geometry/sampling algorithms or mean all 44 construction workflows have been exhaustively dragged/exported. Date/time is embedded in suggested **filenames** only; duplicate downloads in the same second rely on browser collision handling. No hosted HTTP test, Safari/Firefox, native touch or performance guarantee.

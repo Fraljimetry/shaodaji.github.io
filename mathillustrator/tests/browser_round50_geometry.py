@@ -15,7 +15,7 @@ def main():
    page.wait_for_timeout(200)
    snapshot=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
    count=lambda typ:len([o for o in snapshot()['objects'] if o['type']==typ])
-   clicks={'pointOnObject':2,'tangentCircle':2,'circularArc':3,'parabola':2,'hyperbola':3,'generalIntersection':2,'reflection':2,'rotation':2,'translation':3,'dilation':2,'locus':2,'fixedLength':2,'fixedAngle':2,'triangleCenter':3}
+   clicks={'pointOnObject':2,'tangentCircle':3,'circularArc':3,'parabola':1,'hyperbola':4,'generalIntersection':1,'reflection':1,'rotation':2,'translation':3,'dilation':2,'locus':1,'fixedLength':2,'fixedAngle':3,'triangleCenter':3,'circleInversion':2}
    assert page.locator('[data-geometry-group]').count()==7
    for typ,click_count in clicks.items():
     tool=page.locator('[data-tool-choice="'+typ+'"]')
@@ -24,7 +24,7 @@ def main():
     assert markers.count()==click_count,(typ,markers.count(),click_count)
     sizes=markers.evaluate_all('(arr)=>arr.map(e=>e.getAttribute("r"))')
     assert sizes==['2']*click_count,(typ,sizes)
-   print('stage: all glyphs and seven geometry subsections PASS',flush=True)
+   print('stage: updated Geometry glyph semantics and seven geometry subsections PASS',flush=True)
    def cmd(src):
     page.locator('#command').fill(src);page.locator('#command-form button').click();page.wait_for_timeout(90)
    def tool(name):
@@ -42,7 +42,7 @@ def main():
    assert count('triangleCenter')==1,snapshot()['objects']
    print('stage: tangents, triangle center PASS',flush=True)
    assert not errors,errors
-   print('ROUND50_CHROMIUM_PASS: 14 new tool buttons, glyph 2/3 click marker counts, 7 Geometry sections, live creation of tangents and triangle center',flush=True)
+   print('ROUND50_CHROMIUM_PASS: Geometry sections, updated glyph semantics, live creation of tangents and triangle center',flush=True)
   finally:
    browser.close()
 if __name__=='__main__':main()
