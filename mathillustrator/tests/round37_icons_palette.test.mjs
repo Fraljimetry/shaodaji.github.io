@@ -39,8 +39,9 @@ test('Round37: authorized glyphs reflect construction semantics and preserve all
  assert.equal(circleCount('polygon'),6,'Polygon glyph uses a six-sided example');
  assert.equal(circleCount('quadrilateral'),4,'Concave quadrilateral has four selection vertices');
  assert.equal(circleCount('ray'),2);assert.equal(circleCount('line'),2);assert.equal(circleCount('arrow'),2);
- assert.match(map.ray,/cx="12\.5" cy="11"/,'the second ray point is interior');
+ assert.match(map.ray,/cx="12\.5" cy="11\.5"/,'the second ray point is interior');
  assert.match(map.line,/cx="7\.5" cy="16\.5"/);assert.match(map.line,/cx="16\.5" cy="7\.5"/);
+ assert.ok(!map.ray.includes('m-7')&&!map.line.includes('M3.5 14.5'),'Ray and Line no longer have arrowheads');
  assert.match(source,/viewBox="-1\.5 -1\.5 27 27"/,'all palette glyphs receive extra stroke clearance');
  // Signed cross product at four successive vertices must change sign (nonconvex).
  const q=[[3,4],[21,5],[12,11],[5,21]];

@@ -681,3 +681,42 @@ All **R01–R229** remain authoritative. This round distinguishes new structural
 | R243 | Small cohesive rounds, cumulative requirements and test report; full Node + actual Chromium checks, module checks, rollback/import/export/EN-ZH/mobile; do not invent results; concise English report and website-root changed-files-only ZIP, no Git commits. | Updated active regressions and new focused Node/Chromium suites; see `docs/quality/TEST_REPORT_CURRENT.md` for exact scope and unresolved checks. The former Round36 visual/complex test fixtures were updated to the new five-mode and consistent-parameter expectations. Frozen tool icons unchanged. |
 
 **Recommended next cut:** Global plotting time/evaluation cap and cancellation across many simultaneous vector/domain objects; improve adaptive sampling around poles and branch cuts, then evaluate optional legends. Maintain backward compatibility and no unauthorized glyph changes.
+
+
+## Round 39 — 3D plotting foundation, visual corrections and export (2026-11-14)
+
+All **R01–R243** remain authoritative. Separate architectural additions from post-deployment corrections. This round is a bounded CPU-only 3D foundation; it does not claim GPU acceleration, perfect 3D transparency or complete hidden-surface correctness. No unrelated icons changed.
+
+### Structural development — R244–R253
+
+| ID | Requirement | Scope and boundary |
+|---:|---|---|
+| R244 | Provide a 3D switch under Interface. In 3D, only plotting is valid. | Implemented a separate `scene3d` document payload, no Geometry or Diagrams in 3D. 2D objects are untouched when switching, saved/loaded together under optional v1 extension. |
+| R245 | Offer four 3D plot modes: function, parametric surfaces, implicit surfaces, vector fields. | Four numerical modes implemented with bounded CPU sampling. Three input components for parametric surfaces/vector fields. 3D uses x,y,z and, for parametric surfaces, u,v. |
+| R246 | Dedicated 3D settings for projection, reference cube, lighting and transparency. | Perspective/orthographic projection, yaw/pitch/zoom camera, cube, basic face illumination and opacity. Camera orbit by dragging and zoom by scrolling. These are visualization controls, not physically accurate rendering. |
+| R247 | Finite 3D regions and editable object properties. | Finite x/y/z bounds (u/v for parametric surfaces), editable through object Properties with an explicit validated redraw. Vector-field density/normalization, visible/hidden controls and per-object color included. |
+| R248 | Performance-aware 3D architecture and heavy-scene tests. | Pure CPU sampling and SVG projection with per-scene limits (12,000 faces / 2,400 lines), mesh cache, deterministic validation. No GPU, workers or parallel processing delivered; global 3D scene cap fails closed on export. |
+| R249 | Preserve undo/redo, JSON persistence, SVG/raster output and 2D content on 3D switch. | Integrated 3D with existing validation/history/export. Legacy JSON without `scene3d` accepted. When scene exceeds limits or image representation is incomplete, image export blocked. |
+| R250 | Sharper domain coloring and plotted-object performance. | Expanded color resolution 32–1024, default 768; validated pixel cap and cached raster generation. CPU and memory increase with detail. Larger global-plotting optimization remains open. |
+| R251 | More useful but restrained Interface settings. | Added Canvas coordinates and Reduced motion alongside Font/Auto Pan; no extra decorative controls. |
+| R252 | Add high plotting-evaluation budgets without internal mismatch. | Standard 20k/40k/80k extended with 250k/500k/1M; model, JSON Schema and real numeric samplers must agree. No claim of immediate responsiveness at highest choices. |
+| R253 | Bilingual tutorial and named-import/schema regression coverage. | Current bilingual user tutorial now explains all four 3D modes, saved regions, switching, camera, export, and performance limitations. |
+
+### A posteriori visual and compatibility amendments — R254–R261
+
+| ID | Reported discrepancy | Corrective rule |
+|---:|---|---|
+| R254 | Ray and Line look too similar to Vector because they have arrowheads. | Only the explicitly identified Ray and Line tool glyphs remove arrowheads. Vector retains its arrowhead. Two construction-point hints remain in their correct interior positions. |
+| R255 | Line–circle intersections icon does not depict the construction. | Corrected only this explicitly authorized glyph; existing icon snapshot regression updated. |
+| R256 | Legacy parametric fields `x(u)`, `y(v)` may no longer work. | Preserve existing interpretation that the two historical fields share one parameter (`u=v`); current 2D UI uses a single t/u/v symbol for both coordinates. |
+| R257 | JSON file downloads reuse a generic filename. | Include local date and time (`mathillustrator_YYYYMMDD_HHMMSS.json`). |
+| R258 | Snap and Show checkboxes waste space in two columns. | Use a compact three-column layout when the available width permits; avoid oversized labels. |
+| R259 | Plot component labels lack `=`. | Display e.g. `F(z) =`, `X(x, y) =`, `Y(x, y) =` and matching 3D component labels. |
+| R260 | Plot-mode selector shifts when parametric symbol appears. | Reserve the symbol's position to the left of the stable mode selector; only the symbol becomes visually hidden when not applicable. |
+| R261 | Domain coloring appears low-resolution and very slow at some resolutions. | Increased resolution with finite pixel budgets, retained cache/clear invalidation and performance safeguards. Device-dependent high-resolution latency remains a known limitation. |
+
+### Process and delivery — R262
+
+Cohesive scope; maintain this cumulative requirements document and `docs/quality/TEST_REPORT_CURRENT.md`. Run actual Node and Chromium tests, test a dense scene, user-visible bilingual tutorial, imports and exports, JSON version compatibility, rollback and image exports; record partial/unexecuted runs honestly. Deliver only changed/new `mathillustrator/` files relative to website root in ZIP; do not modify MathReader or commit Git. Responses in this and future chats remain concise English.
+
+**Recommended next cut:** Profile and improve global scene-budget performance/cancellation, replace CPU 3D painter artifacts where feasible (depth buffer/WebGL only if tested), and expand 3D surface sampling quality without changing existing glyphs.

@@ -38,7 +38,7 @@ def run():
             assert param['parameter']=='v' and param['xExpr']=='2v*cos(v)' and param['yExpr']=='2v*sin(v)',param
             assert p.locator('#drawing path[data-id="'+param['id']+'"]').count()>0
             add(p,'implicit','x^2+y^2=4')
-            assert p.locator('#properties').get_by_text('F(x, y)',exact=True).count()==1
+            assert p.locator('#properties').get_by_text('F(x, y) =',exact=True).count()==1
             field=add(p,'vectorField','-y','x')
             assert field['type']=='vectorField' and field['density']==12 and field['normalized'] is False
             assert field['region']['xMin']<field['region']['xMax']

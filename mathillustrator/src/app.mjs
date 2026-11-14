@@ -1,10 +1,11 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round38';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round39';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,PLOT3D_MODES} from './plot3d.mjs';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round29';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
@@ -24,11 +25,11 @@ const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<path d="M3 17L17 20L20 6L6 3Z"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="6" r="2" fill="currentColor"/>',polygon:'<path d="M6 3L18 3L22 12L18 21L6 21L2 12Z"/><circle cx="6" cy="3" r="1.5" fill="currentColor"/><circle cx="18" cy="3" r="1.5" fill="currentColor"/><circle cx="22" cy="12" r="1.5" fill="currentColor"/><circle cx="18" cy="21" r="1.5" fill="currentColor"/><circle cx="6" cy="21" r="1.5" fill="currentColor"/><circle cx="2" cy="12" r="1.5" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
 glyph.parallelogram='<path d="M3 18L16 18L21 6L8 6Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="16" cy="18" r="2" fill="currentColor"/><circle cx="21" cy="6" r="2" fill="currentColor"/>';
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/><circle cx="7.5" cy="16.5" r="2" fill="currentColor" stroke="none"/><circle cx="16.5" cy="7.5" r="2" fill="currentColor" stroke="none"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
+glyph.line='<path d="M3.5 20.5L20.5 3.5"/><circle cx="7.5" cy="16.5" r="2" fill="currentColor" stroke="none"/><circle cx="16.5" cy="7.5" r="2" fill="currentColor" stroke="none"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
 glyph.arrow='<path d="M3 20L21 4M13 4h8v8"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>';
 glyph.bezier='<path d="M3 19C5 4 19 4 21 19"/><path d="M3 19L5 4M19 4L21 19" stroke-dasharray="2 2"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="5" cy="4" r="2" fill="currentColor"/><circle cx="19" cy="4" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';
 glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
-glyph.ray='<path d="M4 19L21 3m-7 0h7v7"/><circle cx="4" cy="19" r="2" fill="currentColor" stroke="none"/><circle cx="12.5" cy="11" r="2" fill="currentColor" stroke="none"/>'; 
+glyph.ray='<path d="M4 20L21 3"/><circle cx="4" cy="20" r="2" fill="currentColor" stroke="none"/><circle cx="12.5" cy="11.5" r="2" fill="currentColor" stroke="none"/>' 
 glyph.perpBisector='<path d="M4 12H20M12 3V21"/><path d="M12 15H15V12"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.circleDiameter='<circle cx="12" cy="12" r="8"/><path d="M4 12H20"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.circleThrough3='<circle cx="12" cy="12" r="9"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/><circle cx="3" cy="12" r="2" fill="currentColor"/>';
@@ -76,7 +77,7 @@ function appendColorSwatches(parent,{scope,property,apply}){
 glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r="2" fill="currentColor"/>';
 glyph.perpendicularThrough='<path d="M2 18H22M12 2V22M12 15H15V18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
-glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="5.753" cy="16.998" r="2" fill="currentColor" stroke="none"/><circle cx="18.247" cy="7.002" r="2" fill="currentColor" stroke="none"/>';
+glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 18L23 6"/><circle cx="5" cy="15.82" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="8.18" r="1.8" fill="currentColor" stroke="none"/>';
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
@@ -106,7 +107,9 @@ function initialSiteTheme(){
  }
  return 'dark'; // The site's default navy appearance; the user's explicit choice remains authoritative.
 }
-let uiPrefs={language:'en',font:'system',autoPan:true,sections:[],geometryGroups:[],collapsed:{},essentialGeometry:true};
+let selected3d=null, cameraDrag=null;
+const in3D=()=>doc.settings.plot3dEnabled===true;
+let uiPrefs={language:'en',font:'system',autoPan:true,showCoordinates:true,reduceMotion:false,sections:[],geometryGroups:[],collapsed:{},essentialGeometry:true};
 function notice(msg){const e=$('toast');e.textContent=msg;e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
@@ -496,7 +499,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='domainColoring'){
   const region=o.region,key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,doc.settings.plotBudget]);
   const uri=plotCache.get(key,()=>{
-   const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??128,mode:o.colorMode??'phase-modulus',maxEvaluations:doc.settings.plotBudget});
+   const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:doc.settings.plotBudget});
    if(result.limited){limitedPlotKeys.add(key);return '';}
    limitedPlotKeys.delete(key);
    const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
@@ -529,7 +532,24 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  // than here: subsequent arrow/node strokes could otherwise obscure them.
 
 }
+function draw3DScene(svg){
+ const result=project3DScene(doc.scene3d,size.w,size.h);
+ // CPU painter's algorithm, capped; no GPU or depth buffer is claimed.
+ svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));
+ function line(a,b,attrs={}){return el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],...attrs});}
+ for(const [a,b] of result.cube)svg.append(line(a,b,{stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
+ function shadedColor(hex,shade){const channels=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));return `rgb(${channels.map(c=>Math.round(c+(255-c)*(.1+.56*shade))).join(',')})`;}
+ for(const face of result.faces){const path=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
+  svg.append(el('polygon',{points:path,fill:shadedColor(face.color,face.shade),opacity:face.opacity,stroke:'none','pointer-events':'none'}));}
+ for(const field of result.lines){const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+  if(len<.5)continue;svg.append(line(a,b,{stroke:field.color,'stroke-width':1.5,opacity:field.opacity,'pointer-events':'none'}));
+  const head=6,ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
+  svg.append(el('polygon',{points:points.map(p=>p.join(',')).join(' '),fill:field.color,opacity:field.opacity,'pointer-events':'none'}));}
+ plotLimitedInScene=result.limited;
+ return result;
+}
 function draw(svg,{exporting=false}={}){
+ if(in3D()){svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);draw3DScene(svg);return;}
  svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);
  drawBackground(svg,!exporting||doc.settings.exportGuides,exporting);
  const resolver=createResolver(doc);
@@ -688,7 +708,7 @@ function draw(svg,{exporting=false}={}){
   }
  }
 }
-function render(){if(frame){cancelAnimationFrame(frame);frame=0;}const start=performance.now(),svg=$('drawing');svg.replaceChildren();plotLimitedInScene=false;draw(svg);lastRender=performance.now()-start;$('render-info').textContent=`${doc.objects.length} objects · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`;}
+function render(){if(frame){cancelAnimationFrame(frame);frame=0;}const start=performance.now(),svg=$('drawing');svg.replaceChildren();plotLimitedInScene=false;draw(svg);lastRender=performance.now()-start;$('render-info').textContent=`${in3D()?`${doc.scene3d?.plots.length||0} 3D plots`:`${doc.objects.length} objects`} · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`;}
 function scheduleRender(){if(!frame)frame=requestAnimationFrame(render);}
 function currentObject(o){return get(doc,o.id)===o;}
 // The object list is a fixed-height window. Thousands of objects should not
@@ -741,7 +761,23 @@ function openObjectMenu(o,trigger){
  menu.querySelector('button:not(:disabled)')?.focus();
 }
 
+function render3DList(){
+ const root=$('objects-3d');root.hidden=false;root.replaceChildren();$('object-count').textContent=String(doc.scene3d?.plots.length||0);
+ $('objects').hidden=true;const filter=($('object-search').value||'').trim().toLowerCase();
+ if(!doc.scene3d)return;
+ for(const plot of [...doc.scene3d.plots].reverse()){
+  if(filter&&!`${plot.name} ${plot.kind} ${plot.a}`.toLowerCase().includes(filter))continue;
+  const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);if(selected3d===plot.id)row.classList.add('selected');
+  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;const summary=document.createElement('small');summary.textContent=plot.a;info.append(name,summary);
+  row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
+  const hide=document.createElement('button');hide.textContent=plot.hidden?'Show':'Hide';hide.title='Toggle 3D plot visibility';hide.onclick=e=>{e.stopPropagation();update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);live.hidden=!live.hidden;});};
+  const del=document.createElement('button');del.textContent='×';del.title='Delete 3D plot';del.onclick=e=>{e.stopPropagation();update(()=>{doc.scene3d.plots=doc.scene3d.plots.filter(p=>p.id!==plot.id);if(selected3d===plot.id)selected3d=null;});};
+  row.append(info,hide,del);root.append(row);
+ }
+}
 function renderList({resetScroll=false}={}){
+ if(in3D()){render3DList();return;}
+ $('objects').hidden=false;$('objects-3d').hidden=true;
  closeObjectMenu();
  const wrapper=$('objects');
  $('object-count').textContent=String(doc.objects.length);
@@ -759,6 +795,7 @@ function renderList({resetScroll=false}={}){
  renderListWindow();
 }
 function renderListWindow(){
+ if(in3D())return;
  const wrapper=$('objects'),count=listedObjects.length,scroll=Math.max(0,wrapper.scrollTop),height=Math.max(90,wrapper.clientHeight);
  const visibilityIndex=new Map(doc.objects.map(o=>[o.id,o]));
  const first=Math.min(count,Math.max(0,Math.floor(scroll/LIST_ROW_HEIGHT)-LIST_OVERSCAN));
@@ -768,7 +805,7 @@ function renderListWindow(){
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
   const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
-  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'⇀',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
+  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'━',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'•─',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
  if(o.type==='polyline'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M2 19L9 3L15 18L22 4"/></svg>'); }
  if(o.type==='circleIntersection'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="6" cy="17" r="1.7" fill="currentColor"/><circle cx="18" cy="7" r="1.7" fill="currentColor"/></svg>'); }
  row.append(glyph);
@@ -837,7 +874,30 @@ function renderBulkProperties(root,objects){
  addNumber('pointSize','Point size',1,100,1);
  root.append(grid);
 }
+function renderProperties3D(root){
+ const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
+ const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id)throw Error('3D plot changed while editing.');fn(live);});
+ field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
+ const componentLabels=selectedPlot.kind==='surface3d'?['z(x, y) =']:selectedPlot.kind==='parametric3d'?['X(u, v) =','Y(u, v) =','Z(u, v) =']:selectedPlot.kind==='implicit3d'?['F(x, y, z) =']:['X(x, y, z) =','Y(x, y, z) =','Z(x, y, z) ='];
+ for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
+ const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
+ for(const key of fields)field(root,key,selectedPlot[key],'number',value=>edit(p=>{p[key]=value;}),{step:.1});
+ const block=document.createElement('div');block.className='plot-region-editor';const subtitle=document.createElement('h4');subtitle.textContent='3D drawing region';block.append(subtitle);
+ const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
+  const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'number',()=>true,{step:.1});values[key].onchange=()=>{};
+ }
+ const button=document.createElement('button');button.type='button';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,Number(node.value)]));});block.append(button);root.append(block);
+ if(selectedPlot.kind==='vector3d'){
+  field(root,'Arrow density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
+  const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,' Normalize vector lengths');root.append(label);
+ }
+ field(root,'Surface color',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
+ field(root,'Object opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
+ localizeUI(root,uiPrefs.language);
+}
 function renderProperties(){
+ if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
+
  const root=$('properties');root.replaceChildren();const objects=activeSelection();
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
@@ -927,19 +987,19 @@ function renderProperties(){
   field(root,'Parameter start',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
   field(root,'Parameter end',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
  }
- if(o.type==='implicit')field(root,'F(x, y)',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
+ if(o.type==='implicit')field(root,'F(x, y) =',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
  if(o.type==='vectorField'){
-  field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
-  field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
+  field(root,'X(x, y) =',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
+  field(root,'Y(x, y) =',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
   field(root,'Arrow density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
   const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' '+translated('Normalize vector lengths',uiPrefs.language)));root.append(check);
  }
  if(o.type==='domainColoring'){
-  field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
+  field(root,'F(z) =',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
   const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
   const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
-  field(root,'Coloring resolution',o.resolution??128,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>256)throw Error('Resolution must be 32–256.');live.resolution=v;}),{min:32,max:256,step:16});
+  field(root,'Coloring resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>1024)throw Error('Resolution must be 32–1024.');live.resolution=v;}),{min:32,max:1024,step:64});
  }
  if(['vectorField','domainColoring'].includes(o.type)){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
@@ -1001,6 +1061,7 @@ function updateModeLabel(t){
  $('drawing').setAttribute('aria-label','Interactive mathematical drawing canvas · '+localized+': '+help);
 }
 function selectTool(t){
+ if(in3D())return;
  if(!TOOLS.includes(t))return;
  if(drag)cancelDrag();tool=t;gridSnapOverride=['node','morphism'].includes(t);clearDraft();$('drawing').dataset.tool=t;
  if($('snap'))$('snap').checked=gridSnapOverride;
@@ -1038,10 +1099,40 @@ function syncGeometryVisibility(){
  for(const button of document.querySelectorAll('[data-advanced-geometry]'))button.hidden=only&&button.dataset.advancedGeometry==='true';
  if(only&&document.querySelector(`[data-tool-choice="${tool}"]`)?.hidden)selectTool('select');
 }
+function syncPlotModeControl(){
+ const plotInput=$('command'),plotY=$('command-y'),plotZ=$('command-z'),mode=$('plot-mode').value,symbol=$('parameter-symbol'),three=in3D();
+ const multiple=['parametric','vectorField','parametric3d','vector3d'].includes(mode);
+ plotY.hidden=!multiple;plotZ.hidden=!three||!['parametric3d','vector3d'].includes(mode);
+ symbol.hidden=mode!=='parametric';
+ const placeholders={function:'sin(x)',parametric:`cos(${symbol.value})`,implicit:'x^2+y^2=1',vectorField:'-y',domainColoring:'z^2+1',surface3d:'sin(x)*cos(y)',parametric3d:'cos(u)*sin(v)',implicit3d:'x^2+y^2+z^2=4',vector3d:'-y'};
+ plotInput.placeholder=placeholders[mode]||'Expression';plotY.placeholder=mode==='parametric'?`sin(${symbol.value})`:mode==='vectorField'?'x':mode==='parametric3d'?'sin(u)*sin(v)':'x';
+ plotZ.placeholder=mode==='parametric3d'?'cos(v)':'z';
+ plotInput.setAttribute('aria-label',mode==='vectorField'?'X(x, y) =':mode==='domainColoring'?'F(z) =':mode==='parametric'?`x(${symbol.value}) =`:three?'3D first component':'Function or construction command');
+ plotY.setAttribute('aria-label',mode==='vectorField'?'Y(x, y) =':mode==='parametric'?`y(${symbol.value}) =`:three?'3D second component':'Second component');
+}
+function sync3DInterface(){
+ const enabled=in3D();document.documentElement.classList.toggle('three-d',enabled);$('scene3d-enable').checked=enabled;
+ $('objects').hidden=enabled;$('objects-3d').hidden=!enabled;
+ const options=doc.scene3d?.options;
+ if(options)for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting']]){
+  const input=$(id);if(input.type==='checkbox')input.checked=options[key];else input.value=options[key];
+ }
+ const select=$('plot-mode'),prior=select.value,desired=enabled?
+  [['surface3d','Function'],['parametric3d','Parametric surface'],['implicit3d','Implicit surface'],['vector3d','Vector field']]:
+  [['function','Function'],['parametric','Parametric'],['implicit','Implicit'],['vectorField','Vector field'],['domainColoring','Domain coloring']];
+ if(select.options.length!==desired.length||[...select.options].some((e,i)=>e.value!==desired[i][0])){
+  select.replaceChildren();for(const [value,label] of desired){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
+  select.value=desired.some(([key])=>key===prior)?prior:desired[0][0];
+  select.dispatchEvent(new Event('input'));
+ }
+ syncPlotModeControl();
+ $('mode-label').textContent=enabled?'3D · drag to orbit, scroll to zoom':'Select · drag points to edit';
+}
 function syncSettings(){
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
+ sync3DInterface();
  $('snap').checked=gridSnapOverride??doc.settings.snap;
  $('export-region').querySelector('option[value="page"]').disabled=doc.settings.page==='infinite';
  // Legacy `settings.modules` is preserved in v1 project files, but no longer
@@ -1075,6 +1166,10 @@ function setupSettings(){
    if(k==='page'&&value==='infinite')doc.settings.exportRegion='viewport';
   },['exportRegion','exportGuides','exportScale','exportTransparent'].includes(k)?{refreshList:false,renderCanvas:false}:{});
  }
+ for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting']]){
+  $(id).onchange=()=>update(()=>{if(!in3D())throw Error('Enable 3D first.');const node=$(id);doc.scene3d.options[key]=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;});
+ }
+ $('scene3d-enable').onchange=()=>{const state=$('scene3d-enable').checked;const success=update(()=>{if(state&&!doc.scene3d)doc.scene3d=newScene3D();doc.settings.plot3dEnabled=state;selected3d=null;});if(success)sync3DInterface();};
  const theme=$('theme');theme.value=initialSiteTheme();
  document.documentElement.dataset.theme=theme.value;theme.onchange=()=>{document.documentElement.dataset.theme=theme.value;safeStorageSet(SETTINGS,JSON.stringify({theme:theme.value}));};
 }
@@ -1229,6 +1324,8 @@ function constructionVertex(world){
 }
 function afterOneConstruction(){if(uiPrefs.autoPan!==false)selectTool('pan');}
 function pointerDown(e){
+ if(in3D()){if(e.button!==0||cameraDrag)return;const [x,y]=xyEvent(e);cameraDrag={pointerId:e.pointerId,x,y,yaw:doc.scene3d.options.yaw,pitch:doc.scene3d.options.pitch};try{$('drawing').setPointerCapture(e.pointerId);}catch{}return;}
+
  if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;
  // Touch drawing must wait for release; otherwise the first finger of a pinch
  // silently inserts a point/vertex before the second pointer arrives.
@@ -1396,6 +1493,8 @@ function performConstructionTap(e,pt){
  }
 }
 function pointerMove(e){
+ if(in3D()){if(cameraDrag?.pointerId===e.pointerId){const [x,y]=xyEvent(e);const o=doc.scene3d.options;o.yaw=Math.max(-180,Math.min(180,cameraDrag.yaw+(x-cameraDrag.x)*.32));o.pitch=Math.max(-89,Math.min(89,cameraDrag.pitch+(y-cameraDrag.y)*.28));scheduleRender();}return;}
+
  if(e.pointerType==='touch') {
   if(touchBlocked)return;
   if(pendingTouchTap?.pointerId===e.pointerId){
@@ -1442,6 +1541,8 @@ function cancelDrag(){
  renderAll();
 }
 function pointerUp(e){
+ if(in3D()){if(cameraDrag?.pointerId===e.pointerId){const before=cameraDrag;cameraDrag=null;try{if($('drawing').hasPointerCapture(e.pointerId))$('drawing').releasePointerCapture(e.pointerId);}catch{}const o=doc.scene3d.options,nextYaw=o.yaw,nextPitch=o.pitch;o.yaw=before.yaw;o.pitch=before.pitch;if(e.type==='pointerup')update(()=>{o.yaw=nextYaw;o.pitch=nextPitch;});else scheduleRender();}return;}
+
  if(e?.pointerType==='touch'){
   const tap=pendingTouchTap?.pointerId===e.pointerId?pendingTouchTap:null;
   if(tap)pendingTouchTap=null;
@@ -1515,8 +1616,10 @@ function pointerUp(e){
  }
  scheduleRender();
 }
-function onWheel(e){if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;e.preventDefault();if(drag)cancelDrag();const [x,y]=xyEvent(e),before=unproject(x,y),wheelPixels=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?Math.max(1,size.h):1),factor=Math.exp(-Math.max(-200,Math.min(200,wheelPixels))*.0013);view.scale=Math.max(5,Math.min(1000,view.scale*factor));const after=unproject(x,y);view.cx+=before[0]-after[0];view.cy+=before[1]-after[1];scheduleRender();}
-function fit(){
+function onWheel(e){if(in3D()){e.preventDefault();const zoom=doc.scene3d.options.zoom,delta=Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0013);update(()=>{doc.scene3d.options.zoom=Math.max(.25,Math.min(5,zoom*delta));},{refreshList:false});return;}
+if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;e.preventDefault();if(drag)cancelDrag();const [x,y]=xyEvent(e),before=unproject(x,y),wheelPixels=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?Math.max(1,size.h):1),factor=Math.exp(-Math.max(-200,Math.min(200,wheelPixels))*.0013);view.scale=Math.max(5,Math.min(1000,view.scale*factor));const after=unproject(x,y);view.cx+=before[0]-after[0];view.cy+=before[1]-after[1];scheduleRender();}
+function fit(){if(in3D()){update(()=>{doc.scene3d.options.zoom=1;});return;}
+
  if(drag)cancelDrag();
  const result=fitSceneView(doc,createResolver(doc),size);
  view={cx:result.cx,cy:result.cy,scale:result.scale};
@@ -1562,6 +1665,7 @@ function renderTrash(){
   row.append(title,button);root.append(row);
  }
 }
+function datedProjectName(){const now=new Date(),pad=n=>String(n).padStart(2,'0');return `mathillustrator_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);}
 function svgString(){
  const svg=el('svg',{xmlns:NS,width:size.w,height:size.h,viewBox:`0 0 ${size.w} ${size.h}`});plotLimitedInScene=false;draw(svg,{exporting:true});
@@ -1689,12 +1793,12 @@ function rasterSupported(type){
 }
 let exportBusy=false;
 function setupExport(){
- const opts=[['SVG','svg',!plotLimitedInScene],['PNG','png',!plotLimitedInScene&&rasterSupported('png')],['JPEG','jpeg',!plotLimitedInScene&&!doc.settings.exportTransparent&&rasterSupported('jpeg')],['WebP','webp',!plotLimitedInScene&&rasterSupported('webp')],['TikZ / PGF','tikz',canTikz()],['tikz-cd (semantic)','tikzcd',canExportTikzCd(doc)],['JSON project','json',true],['PDF','pdf',false],['Asymptote','asy',false],['GIF / video','animation',false]];
+ const opts=[['SVG','svg',!plotLimitedInScene],['PNG','png',!plotLimitedInScene&&rasterSupported('png')],['JPEG','jpeg',!plotLimitedInScene&&!doc.settings.exportTransparent&&rasterSupported('jpeg')],['WebP','webp',!plotLimitedInScene&&rasterSupported('webp')],['TikZ / PGF','tikz',!in3D()&&canTikz()],['tikz-cd (semantic)','tikzcd',!in3D()&&canExportTikzCd(doc)],['JSON project','json',true],['PDF','pdf',false],['Asymptote','asy',false],['GIF / video','animation',false]];
  const root=$('export-options');root.replaceChildren();for(const [name,type,supported]of opts){
   const b=document.createElement('button');b.textContent=name;b.disabled=!supported||exportBusy;b.title=supported?'Export current illustration':type==='jpeg'&&doc.settings.exportTransparent?'JPEG cannot preserve transparency; choose PNG, WebP or SVG.':'Not implemented or not representable in current scene';
   b.onclick=async()=>{if(exportBusy)return;exportBusy=true;for(const other of root.querySelectorAll('button'))other.disabled=true;try{
     if(['svg','png','jpeg','webp'].includes(type))await exportImage(type);
-    else if(type==='json')download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),'mathillustrator.json');
+    else if(type==='json')download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
     else if(type==='tikz')download(new Blob([asTikz()],{type:'text/plain'}),'mathillustrator.tex');
     else if(type==='tikzcd')download(new Blob([exportTikzCd(doc)],{type:'text/plain'}),'mathillustrator-tikzcd.tex');
     $('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();
@@ -1720,6 +1824,7 @@ function setupInterface(){
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
  $('auto-pan').checked=uiPrefs.autoPan!==false;$('auto-pan').onchange=()=>{uiPrefs.autoPan=$('auto-pan').checked;savePrefs();};
+ for(const [id,key,className] of [['show-coordinates','showCoordinates','hide-coordinates'],['reduce-motion','reduceMotion','reduced-motion']]){const input=$(id);input.checked=key==='showCoordinates'?uiPrefs[key]!==false:uiPrefs[key]===true;const apply=()=>document.documentElement.classList.toggle(className,key==='showCoordinates'?!input.checked:input.checked);input.onchange=()=>{uiPrefs[key]=input.checked;apply();savePrefs();};apply();}
  function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
  const languageSwitch=$('ui-language');
@@ -2109,38 +2214,37 @@ function initialise(){
   if(!dirty){saveStatus('No unsaved local changes');return;}clearTimeout(saveTimer);persistNow();};
  $('object-search').oninput=()=>renderList({resetScroll:true});
  const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode'),symbol=$('parameter-symbol');
- function syncPlotMode(){
-  const mode=plotMode.value,two=['parametric','vectorField'].includes(mode);
-  plotY.hidden=!two;symbol.hidden=mode!=='parametric';
-  plotInput.setAttribute('aria-label',mode==='parametric'?`Parametric x(${symbol.value})`:mode==='vectorField'?'Vector X(x, y)':mode==='domainColoring'?'Complex F(z)':mode==='implicit'?'Implicit equation':'Function or construction command');
-  plotInput.placeholder=mode==='parametric'?`cos(${symbol.value})`:mode==='vectorField'?'-y':mode==='domainColoring'?'z^2+1':mode==='implicit'?'x^2+y^2=1':'sin(x)';
-  plotY.placeholder=mode==='parametric'?`sin(${symbol.value})`:mode==='vectorField'?'x':'';
- }
+ function syncPlotMode(){syncPlotModeControl();}
  plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});
  symbol.addEventListener('change',()=>{for(const input of [plotInput,plotY])input.value=['t','u','v'].reduce((v,ch)=>renameCurveParameter(v,ch,symbol.value),input.value);syncPlotMode();});syncPlotMode();
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
+  let raisedDomainBudget=false;
   const success=update(()=>{
    let curve;
-   if(mode==='parametric'){parseParametric(value,y,symbol.value);curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:symbol.value,tMin:0,tMax:2*Math.PI});}
+   if(in3D()){const c=$('command-z').value.trim();if(!doc.scene3d)doc.scene3d=newScene3D();const plot=add3DPlot(doc.scene3d,mode,[value,y,c]);selected3d=plot.id;}
+   else if(mode==='parametric'){parseParametric(value,y,symbol.value);curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:symbol.value,tMin:0,tMax:2*Math.PI});}
    else if(mode==='implicit'){parseImplicit(value);curve=append(doc,{type:'implicit',expr:value});}
    else if(mode==='vectorField'||mode==='domainColoring'){
     if(mode==='vectorField')parseVectorField(value,y);else parseComplexExpression(value);
     // The first region is a snapshot of the visible canvas, not a moving viewport.
     const a=unproject(0,size.h),b=unproject(size.w,0);
     const region={xMin:a[0],xMax:b[0],yMin:a[1],yMax:b[1]};validatePlotRegion(region);
-    curve=mode==='vectorField'?append(doc,{type:mode,xExpr:value,yExpr:y,region,density:12,normalized:false}):append(doc,{type:mode,expr:value,region,resolution:128,colorMode:'phase-modulus'});
+    if(mode==='domainColoring'&&doc.settings.plotBudget<1000000){doc.settings.plotBudget=1000000;raisedDomainBudget=true;}
+    const aspect=(region.yMax-region.yMin)/(region.xMax-region.xMin);
+    const resolution=mode==='domainColoring'?Math.min(768,Math.max(32,Math.floor(Math.sqrt(900000/aspect)/16)*16)):0;
+    curve=mode==='vectorField'?append(doc,{type:mode,xExpr:value,yExpr:y,region,density:12,normalized:false}):append(doc,{type:mode,expr:value,region,resolution,colorMode:'phase-modulus'});
    }else{
     const construction=/^(?:[A-Za-z][A-Za-z0-9_]*\s*=\s*\(|[A-Za-z][A-Za-z0-9_]*\s*\(x\)\s*=|(?:Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint|Parallel|Perpendicular|Intersect|RegularPolygon|Morphism)\s*\()/i;
     if(construction.test(value))curve=command(doc,value);
     else {const expr=value.replace(/^y\s*=\s*/i,'');parseExpression(expr);curve=append(doc,{type:'function',expr});}
    }
-   selected=curve.id;
+   if(!in3D())selected=curve.id;
   });
-  if(success){plotInput.value='';plotY.value='';selectTool('select');}
+  if(success){plotInput.value='';plotY.value='';$('command-z').value='';if(!in3D())selectTool('select');if(raisedDomainBudget)notice('High-resolution domain coloring raised Plot budget to 1,000,000 evaluations. Adjust it in Plotting settings.');}
  };
  $('new').onclick=()=>{if(!window.confirm('Start a new illustration? Download the current project first if needed.'))return;update(()=>{doc=newDoc();selected=null;view={cx:0,cy:0,scale:48};});};
  $('open').onclick=()=>$('open-file').click();$('open-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12e6)throw Error('Project JSON exceeds 12 MB safety limit.');const readingRevision=documentRevision,readingGeneration=documentGeneration;const imported=validateDoc(JSON.parse(await file.text()));if(readingRevision!==documentRevision||readingGeneration!==documentGeneration)throw Error('The current project changed while reading this file. Import canceled to protect newer edits.');if(!window.confirm('Replace the current illustration with this JSON project?'))return;update(()=>{doc=imported;selected=null;});notice('Project opened.');}catch(err){notice('Open failed: '+err.message);}finally{e.target.value='';}};
- $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),'mathillustrator.json');
+ $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
  $('export-open').onclick=()=>{if(drag)cancelDrag();setupExport();$('export-menu').hidden=!$('export-menu').hidden;$('export-backdrop').hidden=$('export-menu').hidden;if($('export-menu').hidden)exportAbortToken++;else $('export-close').focus();};$('export-close').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
  $('export-backdrop').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
  $('help').onclick=()=>window.open('tutorial.html','_blank','noopener');$('show-hidden').onchange=()=>renderList({resetScroll:true});
@@ -2170,7 +2274,7 @@ function initialise(){
    lastStored=latest;clearTimeout(saveTimer);dirty=false;setStorageConflict(false);saveStatus('Same project synchronized');
   }else setStorageConflict(true);
  });
- $('zoom-out').onclick=()=>{if(drag)cancelDrag();view.scale=Math.max(5,view.scale/1.3);render();};$('zoom-in').onclick=()=>{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();};$('zoom-reset').onclick=()=>{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();};$('fit').onclick=fit;
+ $('zoom-out').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.max(.25,doc.scene3d.options.zoom/1.3);});else{if(drag)cancelDrag();view.scale=Math.max(5,view.scale/1.3);render();}};$('zoom-in').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.min(5,doc.scene3d.options.zoom*1.3);});else{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();}};$('zoom-reset').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=1;doc.scene3d.options.yaw=-38;doc.scene3d.options.pitch=26;});else{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();}};$('fit').onclick=fit;
  const mobile=window.matchMedia('(max-width:700px)');
  const refreshPanelWidths=setupPanelResizing(mobile);
  const propertyLayout=setupPropertiesLayout(mobile);

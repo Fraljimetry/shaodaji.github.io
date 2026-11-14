@@ -85,7 +85,7 @@ function compile(source,variables,complex=false){
  const result=expr(0);if(i!==ts.length)throw Error('Unexpected token: '+ts[i].value);return result;
 }
 export function parseCurveExpression(source,variables=['x']){
- if(!Array.isArray(variables)||variables.some(v=>!['x','y','t','u','v'].includes(v)))throw Error('Invalid expression variables.');
+ if(!Array.isArray(variables)||variables.some(v=>!['x','y','z','t','u','v'].includes(v)))throw Error('Invalid expression variables.');
  return compile(source,variables);
 }
 /** parameter undefined means compatibility with imported legacy u=v curves only. */
@@ -150,7 +150,7 @@ export function domainColor(re,im,mode='phase-modulus'){
 }
 export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
  validatePlotRegion(region);
- if(!Number.isInteger(resolution)||resolution<32||resolution>256||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
+ if(!Number.isInteger(resolution)||resolution<32||resolution>1024||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
  const height=Math.max(16,Math.round(resolution*(region.yMax-region.yMin)/(region.xMax-region.xMin)));
  const width=resolution;if(width*height>maxEvaluations)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
  const rgba=new Uint8ClampedArray(width*height*4);
@@ -165,7 +165,7 @@ export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus
 export function sampleParametricPlot(fn,start,end,project,{quality='balanced',maxEvaluations=80000}={}){
  if(typeof fn!=='function'||typeof project!=='function'||!valid(start)||!valid(end)||start>=end||Math.abs(start)>1e6||Math.abs(end)>1e6)throw Error('Invalid parameter range.');
  const levels={fast:[180,3],balanced:[420,5],detailed:[850,7]};if(!levels[quality])throw Error('Invalid plotting detail.');
- if(!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>100000)throw Error('Invalid plotting budget.');
+ if(!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>1000000)throw Error('Invalid plotting budget.');
  const [steps,depth]=levels[quality],segments=[];let evaluations=0,limited=false,breaks=0,chain=[];
  const flush=()=>{if(chain.length>1)segments.push(chain);chain=[];};
  const sample=s=>{if(evaluations>=maxEvaluations){limited=true;return null;}evaluations++;try{const p=fn(s);if(!Array.isArray(p)||p.length!==2||!p.every(valid))return null;const q=project(p);return Array.isArray(q)&&q.length===2&&q.every(x=>valid(x)&&Math.abs(x)<1e7)?q:null;}catch{return null;}};
@@ -193,7 +193,7 @@ export function sampleParametricPlot(fn,start,end,project,{quality='balanced',ma
 export function sampleImplicitPlot(fn,xAtPx,yAtPx,width,height,{quality='balanced',cellPx=12,maxEvaluations=80000}={}){
  if(typeof fn!=='function'||typeof xAtPx!=='function'||typeof yAtPx!=='function'||!valid(width)||!valid(height)||width<=0||height<=0||width>10000||height>10000)throw Error('Invalid implicit viewport.');
  if(!['fast','balanced','detailed'].includes(quality)||!Number.isInteger(cellPx)||cellPx<6||cellPx>24)throw Error('Invalid implicit plot detail.');
- if(!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>100000)throw Error('Invalid plotting budget.');
+ if(!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>1000000)throw Error('Invalid plotting budget.');
  const factor={fast:1.5,balanced:1,detailed:.7}[quality],step=cellPx*factor;
  const nx=Math.max(1,Math.ceil(width/step)),ny=Math.max(1,Math.ceil(height/step));
  if((nx+1)*(ny+1)>maxEvaluations)return {segments:[],evaluations:0,breaks:0,limited:true};

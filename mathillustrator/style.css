@@ -496,3 +496,29 @@ html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;borde
 .plot-region-editor .field{min-width:0;margin:0;}
 .plot-region-editor input{width:100%;min-width:0;box-sizing:border-box;}
 .plot-region-editor .region-redraw{grid-column:1/-1;margin-top:5px;}
+
+/* Round39: compact 3-column toggles with equal-width alignment. */
+.settings-subsection[aria-label="Snap"],.settings-subsection[aria-label="Show"]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:4px;align-items:center}
+.settings-subsection[aria-label="Snap"]>h4,.settings-subsection[aria-label="Show"]>h4,.settings-subsection>.field{grid-column:1/-1}
+.settings-subsection[aria-label="Snap"]>.check,.settings-subsection[aria-label="Show"]>.check{margin:5px 0!important;min-width:0;white-space:nowrap;font-size:10px!important;gap:2px!important}
+.settings-subsection[aria-label="Snap"]>.check input,.settings-subsection[aria-label="Show"]>.check input{width:13px;height:13px;min-width:13px;margin-right:1px}
+.command-heading #parameter-symbol[hidden]{display:block!important;visibility:hidden;pointer-events:none}
+.command-heading #parameter-symbol{order:0;flex:none;margin-left:auto!important}
+.command-heading #plot-mode{order:1;flex:none;margin-left:0!important}
+html.hide-coordinates .canvas-footer #coords{visibility:hidden}
+html.reduced-motion *,html.reduced-motion *::before,html.reduced-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+/* Round39: 3D is an isolated plotting workspace. Existing 2D objects stay in JSON. */
+#settings-3d{display:none}
+html.three-d #settings-3d{display:block}
+html.three-d .toolgroup{display:none!important}
+html.three-d .geometry-options{display:none!important}
+html.three-d #objects{display:none!important}
+html:not(.three-d) #objects-3d{display:none!important}
+html.three-d #drawing{cursor:grab}
+html.three-d #drawing:active{cursor:grabbing}
+#objects-3d .object{min-height:46px}
+#objects-3d .object button{padding:4px}
+.checks-3d{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.checks-3d .check{display:flex!important;gap:4px;font-size:11px!important;white-space:nowrap}
+#plot-inputs input{box-sizing:border-box}

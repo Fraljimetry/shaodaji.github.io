@@ -64,7 +64,7 @@ test('Round38 native v1 model and schema agree; malformed fields never persist',
  assert.ok(d.objects.every(o=>o.style.stroke==='#000000'));
  const schema=JSON.parse(fs.readFileSync(new URL('../docs/schemas/project-v1.schema.json',import.meta.url)));
  for(const kind of ['parametric','vectorField','domainColoring'])assert.ok(schema.$defs.object.properties.type.enum.includes(kind));
- for(const [i,patch] of [[0,{parameter:'x'}],[0,{yExpr:'sin(u)'}],[1,{density:100}],[1,{normalized:'true'}],[1,{region:{...region,xMin:9}}],[2,{expr:'fetch(z)'}],[2,{colorMode:'fancy'}],[2,{resolution:1024}]]){
+ for(const [i,patch] of [[0,{parameter:'x'}],[0,{yExpr:'sin(u)'}],[1,{density:100}],[1,{normalized:'true'}],[1,{region:{...region,xMin:9}}],[2,{expr:'fetch(z)'}],[2,{colorMode:'fancy'}],[2,{resolution:2048}]]){
   const bad=clone(d);Object.assign(bad.objects[i],patch);assert.throws(()=>validateDoc(bad),JSON.stringify(patch));
  }
  // Imported legacy dual-named one-parameter objects remain loadable unchanged.

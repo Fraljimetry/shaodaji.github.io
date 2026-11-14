@@ -9,7 +9,7 @@ export function sampleExplicitPlot(fn, xAtPixel, yAtWorld, width, height, option
  if(!Object.hasOwn(modes,quality))throw Error('Unsupported plot quality.');
  const chosen=modes[quality],step=Math.max(chosen.minStep,Math.ceil(width/chosen.maxSamples)),depth=options.depth??chosen.depth;
  const maxEvaluations=options.maxEvaluations??80000;
- if(!Number.isInteger(maxEvaluations)||maxEvaluations<10||maxEvaluations>100000)throw Error('Invalid plot evaluation budget.');
+ if(!Number.isInteger(maxEvaluations)||maxEvaluations<10||maxEvaluations>1000000)throw Error('Invalid plot evaluation budget.');
  if(!Number.isInteger(depth)||depth<0||depth>9)throw Error('Invalid subdivision limit.');
  const segments=[];let current=[],evaluations=0,breaks=0,limited=false;
  const flush=()=>{if(current.length>1)segments.push(current);current=[];};

@@ -13,7 +13,7 @@ MathIllustrator is a local-first, static-browser editor at `/mathillustrator/`. 
 
 Enter `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` in the construction box, or use the diagram tools to create a node with label `\\frac{A_1}{B_2}`. Consult the concise [user guide](tutorial.html) for usage and the [live feature catalog](docs/planning/features.json) for current limits.
 
-**Not yet implemented:** general 3D plotting, interactive parameter sliders, general implicit/symbolic geometry, PDE solvers, full MathReader-style movable/dockable *main* Objects/Tools panels, complete Chinese translation, arbitrary TeX packages, and universal TikZ support. The earlier Drawing preset selector and toolkit visibility checkboxes are intentionally hidden; tools remain reachable through the collapsible palette, with all four tool sections available.
+**Not yet implemented:** GPU/WebGL 3D acceleration, exact hidden-surface elimination, interactive parameter sliders, general implicit/symbolic geometry, PDE solvers, full MathReader-style movable/dockable *main* Objects/Tools panels, complete Chinese translation, arbitrary TeX packages, and universal TikZ support. The earlier Drawing preset selector and toolkit visibility checkboxes are intentionally hidden; tools remain reachable through the collapsible palette, with all four tool sections available.
 
 ## Install a changed-files-only overlay
 
@@ -61,3 +61,10 @@ See [`docs/planning/USER_REQUIREMENTS.md`](docs/planning/USER_REQUIREMENTS.md) f
 ### Round 38: bounded 2D plotting (five modes)
 
 In Construction input, choose Function (`sin(x)`), Parametric (x=`cos(t)`, y=`sin(t)`, one selected t/u/v parameter and range), Implicit (`x^2+y^2=1`), Vector field (X=`-y`, Y=`x`, adjustable arrow density and normalization), or Domain coloring (`z^2+1`, complex i and color schemes). These are locally evaluated, bounded numerical paths, vector arrows, and embedded-PNG colorings. New fields capture the visible canvas rectangle, with a deliberate Redraw button for editing x/y bounds. All expression modes support pi/e, safe implicit multiplication and strict parsing. Complex singular/isolated zero contour topology is not certified. For accurate editing, retain JSON; SVG/raster export fails closed on plot-limit warnings. The pre-existing command language is still accepted in Function mode. Technical constraints and verification appear in `docs/planning/USER_REQUIREMENTS.md` and `docs/quality/TEST_REPORT_CURRENT.md`.
+
+
+### Round 39: plotting-only 3D foundation and 2D corrections
+
+Use **Interface → 3D plotting mode** to switch between independently retained 2D objects and a separate 3D plot scene. In 3D, no geometry or diagram construction is available; the command selector offers function surfaces, parametric surfaces, implicit surfaces, and vector fields. The scene has explicit finite bounds, camera orbit/zoom, perspective/orthographic projection, reference cube, basic illumination, transparency and detail settings. 3D output is a bounded local **CPU-generated SVG projection**, not WebGL or a general 3D modeller. Very large scenes are deliberately refused when they exceed the face budget; validation and export must not claim incomplete results as valid.
+
+Domain coloring now supports 32–1024 horizontal pixels (default 768), with per-object budget validation; large values may take noticeable time. Plotting budgets include 20k/40k/80k/250k/500k/1M. Exported editable JSON uses a local date-time suffix. Existing 2D documents and older shared `u=v` parametric expressions are preserved, and other tool icons remain unchanged except the explicitly requested Ray, Line and Line–circle intersections glyphs.
