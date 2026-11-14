@@ -81,7 +81,7 @@ function appendColorSwatches(parent,{scope,property,apply}){
 glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.perpendicularThrough='<path d="M2 18H22M12 2V22M12 15H15V18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
-glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 18L23 6"/><circle cx="5" cy="15.82" r="2" fill="currentColor" stroke="none"/><circle cx="19" cy="8.18" r="2" fill="currentColor" stroke="none"/>';
+glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M2 12H22"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';
 // Three construction clicks = exactly three identical 2px filled markers.
 // The dashed-looking diagonal is the internal bisector of the right angle.
 glyph.angleBisector='<path d="M6 5V19H20M6 19L17 8"/><circle cx="6" cy="5" r="2" fill="currentColor"/><circle cx="6" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';
@@ -96,7 +96,7 @@ const r50Glyph=(path,markers)=>path+markers.map(([x,y])=>`<circle cx="${x}" cy="
 Object.assign(glyph,{
  pointOnObject:r50Glyph('<path d="M2 18Q10 2 22 8"/>',[[13.04,6.72]]),
  tangentCircle:'<circle cx="15" cy="13" r="6"/><path d="M15 3L10.2 9.4M15 3L19.8 9.4"/><circle cx="15" cy="3" r="2" fill="currentColor" stroke="none"/><circle cx="10.2" cy="9.4" r="2" fill="currentColor" stroke="none"/><circle cx="19.8" cy="9.4" r="2" fill="currentColor" stroke="none"/>',
- circularArc:r50Glyph('<path d="M3.54 16.08A9 9 0 1 1 20.86 11.44"/>',[[3.54,16.08],[10.44,4.14],[20.86,11.44]]),
+ circularArc:r50Glyph('<path d="M4 16A8 8 0 0 1 20 16"/>',[[4,16],[12,8],[20,16]]),
  parabola:'<path d="M3 11.2Q12 18.4 21 11.2M2 20H22"/><circle cx="12" cy="8" r="2" fill="currentColor" stroke="none"/>',
  hyperbola:'<path d="M7.2 6.6C9.1 8.8 10.2 10.3 10.6 12C10.2 13.7 9.1 15.2 7.2 17.4M16.8 6.6C14.9 8.8 13.8 10.3 13.4 12C13.8 13.7 14.9 15.2 16.8 17.4"/><circle cx="5" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="8.3" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="15.7" cy="12" r="2" fill="currentColor" stroke="none"/>',
  generalIntersection:'<path d="M2 17Q12 5 22 17M3 5Q12 17 21 5"/><circle cx="12" cy="11" r="2" fill="currentColor" stroke="none"/>',

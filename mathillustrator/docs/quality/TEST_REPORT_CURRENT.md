@@ -1028,3 +1028,14 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Chromium (local isolated source fixtures):** `browser_round51m_glyph_properties.py`, `browser_round51b_geometry_sweep.py` (43 Geometry buttons and circle inversion), `browser_round51l_glyph_consistency.py`, `browser_round51_temp4.py` and `browser_smoke.py` all **PASS**. The new test checks the actual selected Point + Polygon mixed inspector rather than CSS-only mockup.
 
 **Limit:** hosted site, device-specific font layouts and cross-browser behavior were not checked; this is a focused appearance regression cut, not a full geometry correctness certification.
+
+
+## Round 51N — Upright glyphs and actual right Settings grid repair (2026-11-14)
+
+**Confirmed root cause:** Round 51M fixed the selected-object `.properties` grid, whereas the user's screenshot was the persistent right-panel **New object style** grid. Its existing `style-pointsize` third-row area collided with the later right-panel rules placing Opacity and Width in row three. The new right-panel-specific CSS reserves a separate fourth row for Point size and aligns its numeric input.
+
+**Changes:** Upright symmetric `circularArc` and horizontal `circleIntersection` SVGs in `src/app.mjs`; fourth-row right-panel layout in `style.css`; fresh asset query cache tag in `index.html` and corresponding offline browser-fixture normalization; `round33_tool_icons.json` hash approval; new rendered-layout Chromium regression test. No construction/model/export changes.
+
+**Tests:** `node --test tests/*.test.mjs` **345/345 PASS**, zero skips/failures; `node --check src/app.mjs` PASS. Isolated real Chromium: `browser_round51n_arc_style.py` PASS at 1450/980/700 CSS px (the 700px drawer explicitly opened); `browser_smoke.py` PASS; `browser_round51b_geometry_sweep.py` PASS (43 tools plus circle inversion JSON, undo/redo); `browser_round51_temp4.py` PASS on separate retest. Its first run encountered a transient Playwright `Locator.click: Element is not visible` during SVG redraw; this was not reproduced on immediate isolated retest, not counted as an application fix.
+
+**Limits:** Locally inlined Chromium, not deployed-host HTTP/cache validation, other browser engines, or exhaustive Geometry algorithms.

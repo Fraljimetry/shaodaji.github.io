@@ -1101,3 +1101,11 @@ The user explicitly requested removal of **Intersection Point** because **Genera
 - Bulk Properties: when selected objects include a point and a fill-bearing shape, Point size must have its own **fourth grid row**, never sharing the Opacity or Line width row; keep the Point size field within the inspector.
 - All other tool glyphs, model data, selected/undo/export behavior and both left/right icon mappings remain unchanged.
 - Acceptance: actual Chromium marker/arc checks, selection of a Point + Polygon and bounding-box non-overlap; existing 43-tool Geometry and historical layout regressions; full Node suite.
+
+
+## Round 51N — Upright construction glyphs and New object style overlap (2026-11-14)
+
+- R401: **Circular arc** glyph must be upright rather than tilted. Draw a centered upper semicircular arc with three equal filled markers at the start, top (through-point) and end.
+- R402: **Line–circle intersections** glyph must show a horizontal line through a circle, with two markers exactly at the circle's left and right intersections, not a slanted chord.
+- R403: **New object style** in the right Tools/Settings panel must place Point size *below* Opacity and Line width, never overlapping their label text. This is distinct from the selected-object Properties panel addressed in R51M. Use an explicit fourth grid row, with a full-width Point size slot and aligned numeric input, including narrower widths.
+- R404: Verify actual Chromium label/input rectangles, not merely CSS declaration or a mock selected-object inspector. Keep left/right SVG parity, existing geometry constructors, imports, and undo/redo unchanged.

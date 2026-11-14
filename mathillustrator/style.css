@@ -775,3 +775,21 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  width:56px!important;min-width:0!important;max-width:56px!important;
  justify-self:end;box-sizing:border-box;
 }
+
+/* R51N: new-object style belongs to the right panel, not the selected-objects
+   inspector. Explicit fourth row prevents Point size from sharing row three
+   with Opacity and Line width. Scope to the actual static Settings markup. */
+.rightpanel .settings-sections .style-controls-grid:has(#point-size),
+.rightpanel .style-controls-grid:has(#point-size) {
+ grid-template-rows:auto auto auto auto;align-items:start;row-gap:8px;
+}
+.rightpanel .style-controls-grid:has(#point-size)>.style-opacity{grid-area:3/1/4/2;}
+.rightpanel .style-controls-grid:has(#point-size)>.style-width{grid-area:3/2/4/3;}
+.rightpanel .style-controls-grid:has(#point-size)>.style-pointsize{grid-area:4/1/5/3;min-width:0;}
+.rightpanel .style-controls-grid:has(#point-size)>.style-pointsize>.field{
+ display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:8px;align-items:center;
+ min-width:0;min-height:30px;margin:0;
+}
+.rightpanel .style-controls-grid:has(#point-size) #point-size{
+ width:56px;min-width:0;max-width:56px;box-sizing:border-box;justify-self:end;
+}
