@@ -12,7 +12,7 @@ export const R50_TYPES=['pointOnObject','tangentCircle','circularArc','parabola'
 export const R50_POINT_TYPES=['pointOnObject','generalIntersection','triangleCenter'];
 export const R50_CURVE_TYPES=['circularArc','parabola','hyperbola','transformCopy','locus','fixedAngle'];
 export const TRANSFORM_MODES=['reflect','rotate','translate','dilate','invert'];
-export const CENTER_KINDS=['centroid','circumcenter','incenter','orthocenter'];
+export const CENTER_KINDS=['centroid','circumcenter','incenter','orthocenter','excenterA','excenterB','excenterC'];
 export function circum(p){if(!p||p.length!==3||!p.every(coord))return null;
  const [a,b,c]=p,u=sub(b,a),v=sub(c,a),det=2*cross(u,v);
  if(Math.abs(det)<1e-10*Math.max(1,norm(u)*norm(v)))return null;
@@ -25,6 +25,12 @@ export function triangleCenter(p,kind){if(!p||p.length!==3||!p.every(coord))retu
  if(kind==='circumcenter')return C?.center||null;
  if(kind==='orthocenter')return C?sub(add(add(a,b),c),mul(C.center,2)):null;
  if(kind==='incenter'&&C&&per>1e-10)return mul(add(add(mul(a,sa),mul(b,sb)),mul(c,sc)),1/per);
+ if(['excenterA','excenterB','excenterC'].includes(kind)&&C){
+  const i={excenterA:0,excenterB:1,excenterC:2}[kind],w=[sa,sb,sc].map((v,j)=>j===i?-v:v),den=w[0]+w[1]+w[2];
+  // Negative barycentric weight at the chosen opposite vertex.
+  // Flipping the numerator and denominator gives the usual excenter.
+  if(Math.abs(den)>1e-10)return mul(add(add(mul(a,w[0]),mul(b,w[1])),mul(c,w[2])),1/den);
+ }
  return null;
 }
 export function circleArcPoints(points,count=96){const c=circum(points);if(!c)return [];

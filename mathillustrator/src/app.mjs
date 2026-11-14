@@ -105,7 +105,7 @@ Object.assign(glyph,{
  translation:'<path d="M6 7H12M4 17H10M8.2 15.2l3.6 3.6M11.8 15.2l-3.6 3.6"/><circle cx="6" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="4" cy="17" r="2" fill="currentColor" stroke="none"/>',
  dilation:'<path d="M4 12H20M18.2 10.2l3.6 3.6M21.8 10.2l-3.6 3.6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/>',
  locus:'<path d="M2 18C7 3 10 20 14 10S19 8 22 5" stroke-dasharray="2 2"/><circle cx="14" cy="10" r="2" fill="currentColor" stroke="none"/>',
- fixedLength:r50Glyph('<path d="M4 20L20 4M7.5 13.5L10.5 16.5M13.5 7.5L16.5 10.5"/>',[[4,20],[20,4]]),
+ fixedLength:r50Glyph('<path d="M4 20L20 4M9 12L12 15M12 9L15 12"/>',[[4,20],[20,4]]),
  fixedAngle:'<path d="M3.5 5L8.5 19H21M7.15 15.23A4 4 0 0 1 12.5 19M6.35 12.97A6.4 6.4 0 0 1 14.9 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="19" r="2" fill="currentColor" stroke="none"/><circle cx="21" cy="19" r="2" fill="currentColor" stroke="none"/>',
  triangleCenter:r50Glyph('<path d="M12 3L21 20H3Z M12 3V20 M3 20L16.5 11.5 M21 20L7.5 11.5"/><circle cx="12" cy="14.33" r="2" fill="none"/>',[[12,3],[21,20],[3,20]]),
  circleInversion:'<circle cx="12" cy="12" r="8.5"/><path d="M12 12H15.2M19.2 10.2l3.6 3.6M22.8 10.2l-3.6 3.6"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="15.2" cy="12" r="2" fill="currentColor" stroke="none"/>'
@@ -326,6 +326,13 @@ function drawBackground(svg,includeGrid=true,exporting=false,guidesOnly=false){i
  let step=Number(settings.snapStep)||.5;while(step*view.scale<24)step*=2;while(step*view.scale>100)step/=2;
  if(settings.grid){const g=el('g',{'stroke':'#9daec1','stroke-width':.65,opacity:.28,'pointer-events':'none'});for(let x=Math.ceil(minX/step)*step,n=0;x<=maxX&&n<150;x+=step,n++){const [sx]=project([x,0]);g.append(el('line',{x1:sx,y1:0,x2:sx,y2:size.h}));}for(let y=Math.ceil(minY/step)*step,n=0;y<=maxY&&n<150;y+=step,n++){const [,sy]=project([0,y]);g.append(el('line',{x1:0,y1:sy,x2:size.w,y2:sy}));}svg.append(g);}
  if(settings.showAxes){const [zx,zy]=project([0,0]),g=el('g',{stroke:'#738396','stroke-width':1,'pointer-events':'none'});if(zx>=0&&zx<=size.w)g.append(el('line',{x1:zx,y1:0,x2:zx,y2:size.h}));if(zy>=0&&zy<=size.h)g.append(el('line',{x1:0,y1:zy,x2:size.w,y2:zy}));svg.append(g);}
+ // Construction axes are virtual, immutable objects: reuse the visible guides
+ // rather than introducing draggable, serialized, or duplicate lines.
+ // Do not place any hit overlay in exports or over normal editable objects.
+ if(settings.showAxes&&!exporting){const [zx,zy]=project([0,0]);const hits=el('g',{stroke:'transparent','stroke-width':12,'pointer-events':'none'});
+  if(zy>=0&&zy<=size.h)hits.append(el('line',{x1:0,y1:zy,x2:size.w,y2:zy,'data-axis':'axis-x','pointer-events':'stroke'}));
+  if(zx>=0&&zx<=size.w)hits.append(el('line',{x1:zx,y1:0,x2:zx,y2:size.h,'data-axis':'axis-y','pointer-events':'stroke'}));svg.append(hits);
+ }
 }
 function attr(o,selectHighlight=false){return {stroke:o.style?.stroke||'#000000','stroke-width':Math.max(.15,Number(o.style?.width)||2)+(selectHighlight?0.6:0),fill:o.style?.fill||'none',opacity:o.style?.opacity??1};}
 /** Explicit author newlines are SVG text lines, not collapsed whitespace.
@@ -501,12 +508,12 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const [cx,cy]=project([f.cx,f.cy]);
   if(bboxOutsideViewport([[cx-outerX,cy-outerY],[cx+outerX,cy+outerY]],size.w,size.h,cullMargin))return;
   item=mk('ellipse',{cx,cy,rx:f.rx*view.scale,ry:f.ry*view.scale,
-   transform:`rotate(${-f.angle*180/Math.PI} ${cx} ${cy})`,'fill-opacity':.20});
+   transform:`rotate(${-f.angle*180/Math.PI} ${cx} ${cy})`,'fill-opacity':.20,fill:o.ellipseFilled===false?'none':sty.fill});
  }else if(o.type==='ellipse'&&coords?.length===2){
   const a=coords[0],b=coords[1],rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
   // Render historical v1 flattened ellipses as their limiting line, not invisible SVG ellipses.
   item=rx<1e-7||ry<1e-7 ?mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'})
-   :mk('ellipse',{cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2,rx,ry,'fill-opacity':.20});
+   :mk('ellipse',{cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2,rx,ry,'fill-opacity':.20,fill:o.ellipseFilled===false?'none':sty.fill});
  }else if(['rectangle','parallelogram'].includes(o.type)&&p.every(Boolean)){
   const vertices=shapeVerticesFromPoints(o.type,p).map(project);
   if(vertices.length&&bboxOutsideViewport(vertices,size.w,size.h,cullMargin))return;
@@ -1036,7 +1043,7 @@ function render3DList(){
   if(filter&&!`${plot.name} ${plot.kind} ${plot.a}`.toLowerCase().includes(filter))continue;
   const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);row.dataset.locked=plot.locked?'true':'false';
   if(plot.hidden)row.classList.add('hidden');if(selected3d===plot.id)row.classList.add('selected');
-  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;name.title=plot.name;const summary=document.createElement('small');summary.textContent=compactSubtitle(plot.a);summary.title=plot.a;info.append(name,summary);
+  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;name.title=plot.name;const summary=document.createElement('small');summary.textContent=compactSubtitle(plot.a);summary.title=plot.a;info.append(name);if(summary.textContent.trim())info.append(summary);
   row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
   function action(label,callback,disabled=false){
    const button=document.createElement('button');button.type='button';button.className='plot3d-action';button.title=translated(label,uiPrefs.language);button.setAttribute('aria-label',translated(label,uiPrefs.language));button.disabled=disabled;
@@ -1089,12 +1096,12 @@ function compactSubtitle(value){
  return full.length>34?full.slice(0,31)+'…':full;
 }
 function shortObjectSubtitle(o){
- const labels={midpoint:'Midpoint',pointOnObject:'On object',intersection:'Intersection',
+ const labels={midpoint:'',pointOnObject:'',intersection:'',
   circleIntersection:'Line–circle',circleCircleIntersection:'Circle–circle',generalIntersection:'Curve intersection',
   perpendicularFoot:'Perpendicular foot',perpBisector:'Perp. bisector',parallelThrough:'Parallel',
   perpendicularThrough:'Perpendicular',angleBisector:'Angle bisector',circleThrough3:'3-point circle',
   circleDiameter:'Diameter circle',circularArc:'Circular arc',triangleCenter:'Triangle center',
-  fixedLength:'Fixed length',fixedAngle:'Fixed angle',tangentCircle:'Circle tangent',
+  fixedLength:'',fixedAngle:'',tangentCircle:'',
   transformCopy:o.transform==='invert'?'Circle inversion':`Transformation: ${o.transform||'copy'}`,
   locus:'Locus',parallelogram:'Parallelogram',regularPolygon:`${o.sides} sides`};
  if(o.type==='point')return o.xy.map(formatCoordinate).join(', ');
@@ -1102,7 +1109,7 @@ function shortObjectSubtitle(o){
  if(o.type==='function'||o.type==='implicit'||o.type==='domainColoring')return compactSubtitle(o.expr||o.type);
  if(o.type==='parametric')return 'Parametric curve';
  if(o.type==='vectorField')return 'Vector field';
- return compactSubtitle(labels[o.type]||o.type.replace(/([a-z])([A-Z])/g,'$1 $2'));
+ return Object.hasOwn(labels,o.type)?compactSubtitle(labels[o.type]):'';
 }
 // Use one authoritative SVG for Geometry/Diagram tools and their Objects-list
 // rows. Plotting modes have a separate set of five semantic SVG glyphs.
@@ -1159,7 +1166,7 @@ function renderListWindow(){
   else if(Object.hasOwn(PLOTTING_GLYPHS,o.type))objectIcon.innerHTML=plotGlyphSvg(o.type);
   else throw Error('Missing matching Objects-list icon for '+o.type);
   row.append(addObjectOrderGrip(row,o.id,'2d'),objectIcon);
-  const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;strong.title=o.name;const small=document.createElement('small');const fullDescription=desc(o);small.textContent=shortObjectSubtitle(o);small.title=fullDescription;label.append(strong,small);row.append(label);
+  const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;strong.title=o.name;const small=document.createElement('small');const fullDescription=desc(o);small.textContent=shortObjectSubtitle(o);small.title=fullDescription;label.append(strong);if(small.textContent.trim())label.append(small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
   more.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();openObjectMenu(o,more);}};
@@ -1357,7 +1364,7 @@ function renderProperties(){
  }
  if(o.type==='triangleCenter'){
   const label=document.createElement('label');label.className='field';label.textContent='Center';const pick=document.createElement('select');
-  for(const kind of ['centroid','circumcenter','incenter','orthocenter']){const opt=document.createElement('option');opt.value=kind;opt.textContent=kind[0].toUpperCase()+kind.slice(1);pick.append(opt);}
+  for(const kind of ['centroid','circumcenter','incenter','orthocenter','excenterA','excenterB','excenterC']){const opt=document.createElement('option');opt.value=kind;opt.textContent=kind.startsWith('excenter')?'Excenter '+kind.at(-1):kind[0].toUpperCase()+kind.slice(1);pick.append(opt);}
   pick.value=o.centerKind;pick.onchange=()=>edit(live=>{live.centerKind=pick.value;});label.append(pick);root.append(label);
  }
  if(['point','node','text'].includes(o.type)){
@@ -1479,8 +1486,8 @@ function renderProperties(){
  }
  if(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node'].includes(o.type)){
   const fillSlot=styleSlot('fill');
-  field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>live.style.fill=v));
-  appendColorSwatches(fillSlot,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;})});
+  field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>{live.style.fill=v;if(live.type==='ellipse')live.ellipseFilled=true;}));
+  appendColorSwatches(fillSlot,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;if(live.type==='ellipse')live.ellipseFilled=true;})});
  }
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
@@ -1512,7 +1519,7 @@ const toolInstructions={
  locus:'Click a dependent point, then a point constrained to an object.',
  fixedLength:'Click the first point, then a direction point; enter a length.',
  fixedAngle:'Click a ray reference point, then a vertex; enter an angle (degrees).',
- triangleCenter:'Click three noncollinear triangle vertices; center kind can be changed in Properties.',perpendicularFoot:'Click a source point, then a straight line, ray or segment; the foot remains dynamically attached.',angleBisector:'Click three points; the second point is the vertex of the angle.',parallelThrough:'Click a point, then a straight line, segment, or ray.',perpendicularThrough:'Click a point, then a straight line, segment, or ray.',intersection:'Click two crossing straight objects.',circleIntersection:'Click a straight object and a circle; both intersections are created when available.',midpoint:'Click two points; the midpoint follows both.',ray:'Click the start, then the direction point.',perpBisector:'Click two points; the bisector stays perpendicular as they move.',circleDiameter:'Click two opposite ends of a diameter.',circleThrough3:'Click three noncollinear points.',triangle:'Click three vertices.',quadrilateral:'Click four vertices.',spline:'Click at least three points; Enter finishes.',closedSpline:'Click at least three points; Enter closes smoothly.',select:'Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click an edge start, edge end, then a point indicating perpendicular height.',parallelogram:'Click three consecutive vertices.'};
+ triangleCenter:'Click three noncollinear triangle vertices; center kind can be changed in Properties.',perpendicularFoot:'Click a source point, then a straight line, ray or segment; the foot remains dynamically attached.',angleBisector:'Click three points; the second point is the vertex of the angle.',parallelThrough:'Click a point, then a straight line, segment, or ray.',perpendicularThrough:'Click a point, then a straight line, segment, or ray.',intersection:'Click two crossing straight objects.',circleIntersection:'Click a straight object and a circle; both intersections are created when available.',midpoint:'Click two points; the midpoint follows both.',ray:'Click the start, then the direction point.',perpBisector:'Click two points; the bisector stays perpendicular as they move.',circleDiameter:'Click two opposite ends of a diameter.',circleThrough3:'Click three noncollinear points.',triangle:'Click three vertices.',quadrilateral:'Click four vertices.',spline:'Click at least three points; Enter finishes.',closedSpline:'Click at least three points; click the starting point to close smoothly.',select:'Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.',pan:'Drag the canvas.',polygon:'Click vertices; click the starting point to close.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click an edge start, edge end, then a point indicating perpendicular height.',parallelogram:'Click three consecutive vertices.'};
 function updateModeLabel(t){
  const label=toolGroups['basic-tools'].concat(toolGroups['construction-tools'],toolGroups['diagram-tools']).find(([id])=>id===t)?.[1]||t;
  const localized=translated(label,uiPrefs.language),help=toolInstructions[t]||'Click the canvas.';
@@ -1627,7 +1634,7 @@ function setupSettings(){
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
  preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.snapObjects=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='avoid';});};
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
-  $(id).onchange=()=>update(()=>{
+  if(!$(id))continue;$(id).onchange=()=>update(()=>{
    const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
    const value=input.type==='checkbox'?input.checked:(input.type==='number'||['exportScale','plotBudget'].includes(k))?Number(input.value):input.value;
    if(input.type==='number'&&!finite(value))throw Error('Value must be finite.');
@@ -1893,11 +1900,21 @@ function r50Number(message,defaultValue,convert=1){
 function constructionHit(e,accept=()=>true){
  const svg=$('drawing'),seen=new Set();
  const ids=[e.constructionHitId,e.target.closest?.('[data-id]')?.dataset.id];
+ // Prefer actual document objects; only fall back to immutable guides if the
+ // pointer lies on the displayed x or y axis. At the origin a second click
+ // naturally chooses the *other* axis for an axis-axis intersection.
+ const axisHits=[];
+ if(doc.settings.showAxes&&!in3D()){
+  const [sx,sy]=xyEvent(e),[zx,zy]=project([0,0]);
+  if(Math.abs(sy-zy)<=7)axisHits.push('axis-x');
+  if(Math.abs(sx-zx)<=7)axisHits.push('axis-y');
+  if(draftReference&&axisHits.includes(draftReference)&&axisHits.length===2)axisHits.reverse();
+ }
  for(const node of document.elementsFromPoint(e.clientX,e.clientY)){
   const target=node.closest?.('[data-id]');
   if(target&&svg.contains(target))ids.push(target.dataset.id);
  }
- for(const id of ids){
+ for(const id of [...ids,...axisHits]){
   if(!id||seen.has(id))continue;
   seen.add(id);
   const o=get(doc,id);if(o&&accept(o))return id;
@@ -2056,7 +2073,7 @@ function performConstructionTap(e,pt){
   if(draftPoints.length===2&&!focalEllipse([...draftPoints,vertex])&&focalEllipse([...draftPoints,raw]))vertex=raw;
   if(draftPoints.length===1&&Math.hypot(vertex[0]-draftPoints[0][0],vertex[1]-draftPoints[0][1])*view.scale<1){notice('Choose a second focus away from the first.');return;}
   draftPoints.push(vertex);
-  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeFocalEllipseRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
+  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeFocalEllipseRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs,ellipseFilled:false}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
   scheduleRender();
  }else if(['segment','arrow','line','ray','perpBisector','midpoint','circle','circleDiameter','regularPolygon','fixedLength','fixedAngle'].includes(tool)){
   if(!draftStart){draftStart=pt;scheduleRender();}else{const a=draftStart;draftStart=null;if(['fixedLength','fixedAngle'].includes(tool)){
@@ -2068,8 +2085,9 @@ function performConstructionTap(e,pt){
     checkNewGeometry('circle',[a,pt]);const refs=makeRefs([a,pt]);checkNewRefs('circle',refs);
     const center=append(doc,{type:'midpoint',refs}).id;
     selected=append(doc,{type:'circle',refs:[center,refs[0]]}).id;
-   })&&afterOneConstruction();else if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;appendDerivedShapeEdges(doc,selected);})&&afterOneConstruction();else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
+   })&&afterOneConstruction();else if(tool==='regularPolygon'){const sidesText=window.prompt('Number of polygon sides (3–100):',String(doc.settings.polygonSides||6));if(sidesText===null)return;const sides=Number(sidesText);if(!Number.isInteger(sides)||sides<3||sides>100){notice('Regular polygon sides must be 3–100.');return;}update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides}).id;appendDerivedShapeEdges(doc,selected);})&&afterOneConstruction();}else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
  }else if(['rectangle','parallelogram','polygon','polyline','bezier','angle','angleBisector','triangleCenter','circularArc','hyperbola','triangle','quadrilateral','circleThrough3','spline','closedSpline'].includes(tool)){
+  if(['polygon','closedSpline'].includes(tool)&&draftPoints.length>=3&&Math.hypot(...[pt[0]-draftPoints[0][0],pt[1]-draftPoints[0][1]])*view.scale<=12){finishDraft();return;}
   if(draftPoints.length===0||Math.hypot(pt[0]-draftPoints.at(-1)[0],pt[1]-draftPoints.at(-1)[1])>1e-8)draftPoints.push(pt);
   if((['rectangle','parallelogram'].includes(tool)&&draftPoints.length===3)||(tool==='bezier'&&draftPoints.length===4)||(['angle','angleBisector','circularArc','hyperbola','triangleCenter'].includes(tool)&&draftPoints.length===3)||(tool==='circleThrough3'&&draftPoints.length===3)||(tool==='triangle'&&draftPoints.length===3)||(tool==='quadrilateral'&&draftPoints.length===4))finishDraft();else scheduleRender();
  }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
@@ -2380,12 +2398,12 @@ function asTikz(){
    const f=focalEllipse(p);if(!f)continue;
    const angle=(f.angle*180/Math.PI).toFixed(5);
    lines.push(`\\begin{scope}[shift={${texPoint([f.cx,f.cy])}},rotate=${angle}]`);
-   lines.push(`\\draw[${style},fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}] (0,0) ellipse (${f.rx.toFixed(5)}cm and ${f.ry.toFixed(5)}cm);`);
+   lines.push(`\\draw[${style},${o.ellipseFilled===false?'fill=none':`fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}`}] (0,0) ellipse (${f.rx.toFixed(5)}cm and ${f.ry.toFixed(5)}cm);`);
    lines.push('\\end{scope}');
   }else if(o.type==='ellipse'&&p.length===2&&p.every(Boolean)){
    const cx=(p[0][0]+p[1][0])/2,cy=(p[0][1]+p[1][1])/2,rx=Math.abs(p[1][0]-p[0][0])/2,ry=Math.abs(p[1][1]-p[0][1])/2;
    if(rx<1e-9||ry<1e-9)lines.push(`\\draw[${style}] ${texPoint(p[0])} -- ${texPoint(p[1])};`);
-   else lines.push(`\\draw[${style},fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}] ${texPoint([cx,cy])} ellipse (${rx.toFixed(5)}cm and ${ry.toFixed(5)}cm);`);
+   else lines.push(`\\draw[${style},${o.ellipseFilled===false?'fill=none':`fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}`}] ${texPoint([cx,cy])} ellipse (${rx.toFixed(5)}cm and ${ry.toFixed(5)}cm);`);
   }else if(['rectangle','parallelogram'].includes(o.type)&&p.every(Boolean)){
    const vertices=shapeVerticesFromPoints(o.type,p);if(vertices.length)lines.push(`\\draw[${style},fill=${rgb(o.style.fill)},fill opacity=${(.24*o.style.opacity).toFixed(3)}] ${vertices.map(texPoint).join(' -- ')} -- cycle;`);
   }else if(['polygon','polyline'].includes(o.type)&&p.every(Boolean)){
@@ -2817,7 +2835,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  svg.addEventListener('contextmenu',e=>e.preventDefault());
  svg.addEventListener('wheel',onWheel,{passive:false});svg.addEventListener('dblclick',e=>{
   if(in3D())return; // 3D camera interactions must never clear 2D selection.
-  if(['polygon','polyline','spline','closedSpline'].includes(tool)){e.preventDefault();finishDraft();}
+  if(['polyline','spline'].includes(tool)){e.preventDefault();finishDraft();}
   else if(tool==='select'){e.preventDefault();/* Navigation is handled by the second verified pointer hit. */}
   else if(tool==='pan'){e.preventDefault();select(null);}
  });
@@ -2850,7 +2868,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    if(drawingContext){e.preventDefault();deleteSelected();}
   }
   else if(e.key==='Escape'){if(drag)cancelDrag();clearDraft();select(null);selectTool('select');}
-  else if(e.key==='Enter'&&['polygon','polyline','spline','closedSpline'].includes(tool)){finishDraft();}
+  else if(e.key==='Enter'&&['polyline','spline'].includes(tool)){finishDraft();}
   else{const next=canvasShortcut(e,document.activeElement,$('drawing'));if(next){e.preventDefault();selectTool(next);}}
  });
  $('undo').onclick=undo;$('redo').onclick=redo;

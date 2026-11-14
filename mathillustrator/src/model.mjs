@@ -65,8 +65,16 @@ export const PRESET_MODULES = {
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
 export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','perpendicularFoot',...R50_TYPES,'intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','parametric','implicit','vectorField','domainColoring','node','morphism'];
+export const AXIS_OBJECTS=Object.freeze({
+ 'axis-x':Object.freeze({id:'axis-x',type:'axis',name:'x-axis',hidden:false,locked:true}),
+ 'axis-y':Object.freeze({id:'axis-y',type:'axis',name:'y-axis',hidden:false,locked:true})
+});
+export const AXIS_LINES=Object.freeze({
+ 'axis-x':Object.freeze({a:[0,0],d:[1,0],domain:'infinite',length:1}),
+ 'axis-y':Object.freeze({a:[0,0],d:[0,1],domain:'infinite',length:1})
+});
 export const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot',...R50_POINT_TYPES]);
-export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','tangentCircle','fixedLength']);
+export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','tangentCircle','fixedLength','axis']);
 /** Shared geometry roles: derived intersections and centers are ordinary points,
  * and every computable straight construction can serve as a supporting line.
  * Reject unresolved/degenerate geometry rather than relying on a short UI list. */
@@ -131,7 +139,7 @@ export function clone(x){return JSON.parse(JSON.stringify(x));}
 export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'avoid',snapAnchors:true,snapObjects:true,polygonSides:6,plot3dEnabled:false,modules:{...PRESET_MODULES.General}},scene3d:newScene3D(),objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
-export function get(doc,id){return doc.objects.find(o=>o.id===id);}
+export function get(doc,id){return AXIS_OBJECTS[id]||doc.objects.find(o=>o.id===id);}
 /** Owned polygon/rectangle sides inherit their owner's canvas visibility.
  * Other dependent constructions remain individually visible when the user
  * hides an anchor or source. No ownership/visibility fields are rewritten. */
@@ -358,7 +366,7 @@ export function intersectCircles(a,b){
  * No recursion on user-created point graphs: 10,000-deep chains stay bounded.
  */
 export function createResolver(doc){
- const objects=new Map(doc.objects.map(o=>[o.id,o])),cache=new Map(),lines=new Map();
+ const objects=new Map([...Object.values(AXIS_OBJECTS).map(o=>[o.id,o]),...doc.objects.map(o=>[o.id,o])]),cache=new Map(),lines=new Map(Object.entries(AXIS_LINES));
  const side=o=>derivedSidePoints(o,objects.get(o.edgeOf),ref=>cache.get(ref)||null);
  const pointForLine=ref=>cache.get(ref)||null;
  pointForLine.side=side;
@@ -406,7 +414,8 @@ export function createResolver(doc){
      p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
     }
     if(STRAIGHT_TYPES.has(obj.type)){
-     if(obj.type==='tangentCircle'){
+     if(obj.type==='axis'){/* fixed world-coordinate line */}
+     else if(obj.type==='tangentCircle'){
       const point=cache.get(obj.refs?.[0]),circle=circleGeometry(objects.get(obj.refs?.[1]),id=>cache.get(id)),tangents=circleTangents(point,circle);
       const target=tangents[obj.branch===1?1:0],d=target&&point?[target[0]-point[0],target[1]-point[1]]:null,len=d&&Math.hypot(...d);
       lines.set(current,len>1e-9?{a:[...point],d:[d[0]/len,d[1]/len],domain:'infinite',length:len}:null);
@@ -653,7 +662,7 @@ export function validateDoc(raw){
  if(!d.settings.modules||typeof d.settings.modules!=='object'||Object.keys(PRESET_MODULES.General).some(k=>typeof d.settings.modules[k]!=='boolean'))throw Error('Invalid tool visibility settings.');
  if(d.settings.page==='infinite'&&d.settings.exportRegion==='page')throw Error('Page-only export requires a finite page frame.');
  if(!['viewport','page'].includes(d.settings.exportRegion)||typeof d.settings.showLabels!=='boolean'||typeof d.settings.snapAnchors!=='boolean')throw Error('Invalid extended settings.');
- const objects=new Map(d.objects.map(o=>[o.id,o]));
+ const objects=new Map([...Object.values(AXIS_OBJECTS).map(o=>[o.id,o]),...d.objects.map(o=>[o.id,o])]);
  for(const o of d.objects)if(o.edgeOf!==undefined){
   const owner=objects.get(o.edgeOf);
   if(!owner||!['polygon','rectangle','parallelogram','regularPolygon'].includes(owner.type))throw Error('Segment edge has no supported owner.');
@@ -695,6 +704,6 @@ export function validateDoc(raw){
   }
   if(o.type!=='regularPolygon')checkNewGeometry(o.type,p);
  }
- const state=new Map();for(const id of ids){if(state.get(id)===2)continue;const stack=[[id,false]];while(stack.length){const [current,done]=stack.pop();if(done){state.set(current,2);continue;}const old=state.get(current);if(old===2)continue;if(old===1)throw Error('Cyclic object dependency.');state.set(current,1);stack.push([current,true]);for(const ref of objects.get(current).refs||[])if(state.get(ref)!==2)stack.push([ref,false]);}}
+ const state=new Map();for(const id of ids){if(state.get(id)===2)continue;const stack=[[id,false]];while(stack.length){const [current,done]=stack.pop();if(done){state.set(current,2);continue;}const old=state.get(current);if(old===2)continue;if(old===1)throw Error('Cyclic object dependency.');state.set(current,1);stack.push([current,true]);for(const ref of objects.get(current).refs||[])if(!AXIS_OBJECTS[ref]&&state.get(ref)!==2)stack.push([ref,false]);}}
  return d;
 }

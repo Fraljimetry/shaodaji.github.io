@@ -1132,3 +1132,17 @@ The user explicitly requested removal of **Intersection Point** because **Genera
 - New 2D parametric curves exclusively use `t`, with `x(t)` and `y(t)` inputs and compact side-by-side `t min`/`t max`. Remove the visible parameter-choice control. Imported curves with legacy `u`/`v` syntax remain renderable and are converted atomically on expression edit rather than silently modified on load.
 - 2D and 3D region editors have no Redraw Region button. Press Enter in any bound to validate and commit the complete draft atomically; blur alone must not commit. Invalid edits leave model bounds unchanged. Double-click a numeric bound's caption to prepare symmetric `[-r,+r]` ranges on every plot axis without committing until Enter.
 - Retain undo/redo, persistence, plotting semantics and compatibility. Expand browser regression to cover ranges, invalid input, parameter labels and 3D.
+
+
+## Round 51S — coordinate axes as construction objects (2026-11-14)
+- Treat visible 2D x and y coordinate axes as fixed, mathematically infinite, selectable construction supports, usable by Point on Object, General Intersection and all operations accepting a straight supporting line (including perpendicular foot, reflection and line–circle intersection).
+- Axis selection must work on the displayed guides, without creating duplicate drawn objects, draggable lines, extra list entries or allocating persistent numeric object IDs. Axis-linked derived objects must remain valid through drag, undo/redo, import/export and toggling Show axes.
+- Maintain backward-compatible JSON v1; reference virtual axes through stable reserved `axis-x` and `axis-y` IDs and reject illegal use of axes as point references or serialized editable objects.
+
+
+## Round 51T — Geometry audit requirements (2026-11-14)
+
+User requests recorded, with implemented items distinguished from unresolved ones:
+- **Implemented R51T:** suppress empty/redundant Objects-list subtitles; remove global regular polygon sides control and prompt for sides for each new regular polygon; default new focal ellipses to no fill without changing imported older ellipse styles; permit triangle excenters A/B/C via Properties with dynamic dependencies; finish polygons/closed splines by re-clicking first point instead of Enter/double click; bring the two perpendicular ticks in the fixed-length tool glyph closer together.
+- **Not yet implemented / requires focused follow-up cuts:** fixed-length construction should create draggable endpoint constrained to chosen length after first-point and length entry; fixed-angle should create movable endpoint constrained to invisible angle ray; tangent-circle should show both tangent points; hyperbola should extend to the viewport as parabola does; selected construction references should stay visibly emphasized until canvas double-click or new selection; General Intersection must accept any eligible geometry curves and transformed/point sources with robust zero-dimensional semantics; retain line–circle intersections for straight/round combinations; improve polyline snapping to existing point anchors; freehand arrowhead placement must use post-smoothing geometry; more complete Geometry subtle-regression audit.
+- **Compatibility:** new `ellipseFilled:false` only for newly drawn ellipses, with old ellipse records preserved; existing `polygonSides` setting stays accepted by JSON import and presets even though its visible control is removed.

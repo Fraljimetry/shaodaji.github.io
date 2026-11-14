@@ -1071,3 +1071,20 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Verification:** `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` **345/345 PASS** (0 failures). Actual Chromium, isolated inline source: `tests/browser_round51r_plot_consistency.py` **2D PASS / 3D PASS**, checking new constructions, caption text, 2D parametric grid, symmetric range draft, Enter atomic commit, invalid entry rollback, 2D undo/redo, and absence of redraw buttons. Browser fixture runs against this current tree, not the hosted deployment.
 
 **Compatibility notes:** Obsolete archived browser scripts expecting a selectable u/v parameter or Redraw Region button intentionally no longer match this UI and must be updated before inclusion in a comprehensive browser batch. Preserved parser acceptance of u/v for historical documents. Symmetric range shortcut requires a literal finite numeric field value (rather than a symbolic pi expression). No fresh GPU-level overlapping-surface benchmark or exhaustive geometry sweep in this UI-focused cut.
+
+
+## Round 51S — coordinate axes as fixed construction supports (2026-11-14)
+**Changes:** `src/model.mjs` provides immutable virtual `axis-x` and `axis-y` lines at world-coordinate zero, ordinary geometric-line resolution, validation for axis references, and deterministic dependency resolution. `src/app.mjs` adds transparent axis-only construction hit areas matching visible guides, prioritizes real document objects, and supports choosing either axis at the origin. No extra drawable objects or schema version changes. `tests/round51s_axes.test.mjs` and `tests/browser_round51s_axes.py` added. No Git commits.
+
+**Verification:** Node `--test tests/*.test.mjs` **348/348 PASS**. Chromium inline-source `browser_round51s_axes.py` **PASS** (point-on-x-axis, general intersection of axes, undo/redo, hidden/re-enabled axis hit regions, no runtime errors), `browser_smoke.py` **PASS**, `browser_round51h_derived_geometry.py` **PASS**, `browser_round51r_plot_consistency.py` **PASS**. Actual hosted deployment not checked; 3D is not altered. Virtual-axis dependency validity is independent of Show axes visibility. Axis Point on Object currently uses the preexisting infinite-line 30-world-unit sampling span for parameterization; extending the sampled extent to arbitrary coordinates is a separate refinement.
+
+
+## Round 51T — Geometry cleanup focused verification (2026-11-14)
+
+**Changed:** `src/app.mjs`, `src/geometry_round50.mjs`, `index.html`; new tests `tests/round51t_geometry_consistency.test.mjs` and `tests/browser_round51t_geometry.py`.
+
+**PASS:** `node --check` of changed ES modules; Node suite 350/350 passed (348 prior + 2 new), isolated Chromium browser smoke passed, Round51S axes Chromium regression passed, and Round51T focused Chromium tests passed (first-point polygon closure, Enter disabled, per-polygon side dialog, unfilled new ellipse, startup exceptions absent).
+
+**Subtle cases tested:** excenter coordinates for three orientations; model validation persistence for added center variants; collinear and missing-input excenter failures; click-on-start vs Enter closure; 7-sided regular polygon with removed global control; SVG `fill=none` for newly created ellipses.
+
+**Not certified:** full legacy Chromium regression matrix, TikZ export fidelity beyond source inspection, all Geometry construction tools, 3D performance, fixed-length and fixed-angle new interaction, tangent points, infinite hyperbola, selection highlighting, general intersection / transformed curve corner cases, and freehand arrow correction. These are open next-cut items, not marked PASS.
