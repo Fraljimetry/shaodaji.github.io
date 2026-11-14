@@ -132,7 +132,7 @@ glyph.tangentCircle=glyphCrossSectionCircle(...tangentCenter,tangentRadius)+tang
 // The vertices are unmarked; each focus is detached from both branches.
 glyph.hyperbola='<path d="M2 4Q14 12 2 20M22 4Q10 12 22 20"/>'+glyphDots([[3.3,12],[20.7,12]]);
 // No hollow image point or cross: every transformation uses filled points.
-glyph.translation='<path d="M3.5 6H19.5M4.5 18H20.5"/>'+glyphDots([[3.5,6],[19.5,6],[4.5,18],[20.5,18]]);
+glyph.translation='<path d="M2 6H16.5M8.5 18H23"/>'+glyphDots([[2,6],[16.5,6],[8.5,18],[23,18]]);
 glyph.reflection='<path d="M12 2V22M4 12H20"/>'+glyphDots([[5,12],[19,12]]);
 glyph.rotation='<path d="M22 12A10 10 0 0 0 12 2"/>'+glyphDots([[12,12],[22,12],[12,2]]);
 glyph.dilation='<path d="M4 12H21"/>'+glyphDots([[4,12],[11,12],[21,12]]);
@@ -141,7 +141,12 @@ glyph.dilation='<path d="M4 12H21"/>'+glyphDots([[4,12],[11,12],[21,12]]);
 glyph.circleInversion=glyphCrossSectionCircle(9,12,9)+'<path d="M9 12H22.5"/>'+glyphDots([[9,12],[15,12],[22.5,12]]);
 // Replace each *filled* glyph circle radius including older shared glyphs;
 // geometric outlines with no fill remain unchanged.
-for(const type of Object.keys(glyph))glyph[type]=glyph[type].replace(/(<circle\b[^>]*\br=")[^"]+("[^>]*\bfill="currentColor"[^>]*>)/g,`$1${GLYPH_POINT_RADIUS}$2`);
+for(const type of Object.keys(glyph))glyph[type]=glyph[type].replace(/<circle\b[^>]*\bfill="currentColor"[^>]*\/>/g,tag=>{
+ // A filled point must never inherit SVG's outline stroke: the extra stroke
+ // made 2.8-unit points look larger than neighbouring 2.8-unit points.
+ const scaled=tag.replace(/\br="[^"]+"/,`r="${GLYPH_POINT_RADIUS}"`);
+ return /\bstroke="[^"]+"/.test(scaled)?scaled.replace(/\bstroke="[^"]+"/,'stroke="none"'):scaled.replace(/\/>$/,' stroke="none"/>');
+});
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
  'construction-tools':[['point','Point'],['midpoint','Midpoint'],['pointOnObject','Point on object'],['angle','Angle'],['fixedLength','Fixed length'],['fixedAngle','Fixed angle'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Line'],['perpBisector','Perpendicular bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['perpendicularFoot','Perpendicular foot'],['angleBisector','Angle bisector'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circularArc','Circular arc'],['ellipse','Ellipse'],['tangentCircle','Tangents to circle'],['parabola','Parabola'],['hyperbola','Hyperbola'],['triangle','Triangle'],['rectangle','Rectangle'],['parallelogram','Parallelogram'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['triangleCenter','Triangle centers'],['circleIntersection','Line–circle intersections'],['circleCircleIntersection','Circle–circle intersections'],['generalIntersection','General intersection'],['translation','Translation'],['reflection','Reflection'],['rotation','Rotation'],['dilation','Dilation'],['circleInversion','Circle inversion'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve'],['locus','Locus / trace']],

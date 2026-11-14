@@ -22,7 +22,7 @@ def run():
     const res={trans,translationDots:dots(svg('translation')),rotationArc:rotation.getTotalLength(),invRadius:+ring.getAttribute('r'),invMarkers:ip,radii};
     return res;
    }''')
-   assert len(result['trans'])==1 and result['trans'][0]>=31.5,result
+   assert len(result['trans'])==1 and result['trans'][0]>=28.5,result
    assert len(result['translationDots'])==4,result
    assert result['rotationArc']>14.9,result
    assert result['invRadius']>=9,result

@@ -1083,3 +1083,11 @@ No changes to Geometry construction, exported project format, SVG/JSON naming, o
 ## Round 51K — Remove redundant Intersection Point palette button (2026-11-14)
 
 The user explicitly requested removal of **Intersection Point** because **General Intersection** is available. Removed only its button from the Intersections subsection and legacy construction-tool listing. The General Intersection tool remains. The existing `intersection` model type, imported JSON, resolver, rendering, dependency handling, undo/redo and historical saved objects remain supported. The three visible Intersections tools are Line–circle intersections, Circle–circle intersections and General Intersection; the Geometry palette now has 43 entries. No mathematical geometry algorithm or project schema was changed. Full numerical equivalence for all line/ray/segment domain cases and tangencies is not implied by this palette-only change.
+
+
+## Round 51L — actual SVG point-size uniformity and separated Translation segments (2026-11-14)
+
+- R396: Uniformity must refer to the *visible* circle marker diameter, not merely its `r` attribute. A filled marker must have radius 2.8 (matching Point) **and no inherited outline stroke**, across all Geometry glyphs and both panels. Fixed: SVG glyph normalization now ensures `stroke="none"` for every filled point, including older shape icons. Distinct non-filled geometric circles remain outlines.
+- R397: Translation's two depicted segments were nearly aligned. Keep both longer, but increase their horizontal displacement: upper segment `(2,6)`–`(16.5,6)`, lower segment `(8.5,18)`–`(23,18)`. Both measure 14.5 units, with 6.5 horizontal shift. Other transformations retained.
+- Keep Intersection Point removed from the visible palette, but legacy intersection objects remain loadable and have their existing icon fallback.
+- Acceptance: real Chromium verifies every Geometry marker's computed stroke and 5.6-unit bounding-box diameter, Translation end coordinates and line lengths, left/right SVG parity; run full Node suite and startup.

@@ -1006,3 +1006,12 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Change:** Removed `intersection` from both Geometry palette registrations in `src/app.mjs`. Retained the historical object type for imported and existing diagrams. General Intersection remains the user-facing general-purpose choice. Updated the current 43-tool browser palette regression.
 
 **Executed:** `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` **345/345 PASS**, no skips; headless local Chromium `browser_round51b_geometry_sweep.py` PASS (43 entries, removal, selection/order, inversion, undo/redo, JSON), `browser_smoke.py` PASS (startup and exports). No live hosted-site verification. Historical `browser_round25_dynamic_lines.py` still targets the now-removed palette button and needs migration before it can serve as a current UI regression; it was not run in this cut. No claim of exact numerical equivalence for all degenerate intersections.
+
+
+## Round 51L — visible point-size consistency and Translation separation (2026-11-14)
+
+**Root cause:** Previous glyph normalization changed only the SVG `r` attribute. Older markers without `stroke="none"` inherited the global SVG `stroke:currentColor; stroke-width:1.7`, appearing visibly larger than identically sized filled circles. The normalized marker tags now always set `stroke="none"`; outline circles remain unchanged.
+
+**Translation:** two 14.5-unit horizontal strokes, displaced by 6.5 units horizontally and 12 vertically, with four equal filled endpoint markers. Neither image nor object model logic changed.
+
+**Verification:** `node --test tests/*.test.mjs` (345 tests baseline, final gate below); focused actual Chromium `browser_round51l_glyph_consistency.py` checks all 43 Geometry icons and their filled-circle `getComputedStyle(stroke)` plus SVG bounding boxes; earlier 51J, 51B, 51E parity and startup checks rerun. Updated old 51E test to recognize Intersection Point's R51K palette removal while keeping imported historical objects. Browser harness version parsing updated for the newest `index.html` cache URL. Offline locally inlined Chromium; deployed site unverified.

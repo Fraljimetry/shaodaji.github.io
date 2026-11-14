@@ -70,6 +70,10 @@ def main():
             # tool glyph. Transformed images map to their specific transform.
             all_types='point midpoint segment arrow line ray perpBisector angleBisector parallelThrough perpendicularThrough perpendicularFoot pointOnObject tangentCircle circularArc parabola hyperbola generalIntersection locus fixedLength fixedAngle triangleCenter intersection circleIntersection circleCircleIntersection circle circleThrough3 ellipse rectangle parallelogram polygon polyline bezier angle regularPolygon spline freehand text node morphism'.split()
             for typ in all_types:
+                if typ=='intersection':
+                    # Legacy intersection stays importable but its palette button was deliberately removed in R51K.
+                    assert page.locator('[data-tool-choice="intersection"]').count()==0
+                    continue
                 icon=page.evaluate('t=>window.__round51eIcon({type:t})',typ)
                 assert icon['type'] is not None and icon['svg'],typ
                 right=page.locator(f'[data-tool-choice="{icon["type"]}"] svg')
