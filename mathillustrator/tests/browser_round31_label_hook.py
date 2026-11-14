@@ -49,7 +49,7 @@ def run():
   hook=page.locator('#drawing .morphism-tail-hook')
   assert hook.count()==1
   d=hook.get_attribute('d')
-  assert d.count(' C')==2 and d.startswith('M'),d
+  assert d.count(' A')==1 and d.startswith('M'),d
   hook_box=hook.bounding_box();assert hook_box and hook_box['height']>5 and hook_box['width']>4,hook_box
   style.select_option('hook-dashed')
   assert page.locator('#drawing .morphism-tail-hook').count()==1

@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round31">
+  <link rel="stylesheet" href="./style.css?cut=round33">
 </head>
 <body>
   <header class="appbar">
@@ -55,8 +55,8 @@
       <div class="scrollpanel" id="panel-sections">
         <div class="preset" hidden><label for="preset" hidden>Drawing preset</label><select id="preset"></select></div>
         <section class="toolgroup" data-tool-module="basic"><h3>Basic</h3><div class="toolgrid" id="basic-tools"></div></section>
-        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><label class="geometry-mode"><input type="checkbox" id="geometry-essential" checked> Essential only</label><div class="geometry-categories" id="construction-tools"></div></section>
         <section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section>
+        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><label class="geometry-mode"><input type="checkbox" id="geometry-essential" checked> Essential only</label><div class="geometry-categories" id="construction-tools"></div></section>
         <section class="settings-collection" data-section-id="settings"><h3>Settings</h3><div id="settings-sections" class="settings-sections">
         <section class="controls"><h3>Plotting</h3>
           <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label>
@@ -109,6 +109,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round32"></script>
+  <script type="module" src="./src/app.mjs?cut=round33"></script>
 </body>
 </html>

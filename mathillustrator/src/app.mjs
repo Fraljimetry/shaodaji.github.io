@@ -1,6 +1,6 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,appendDerivedShapeEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round32';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round32';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round33';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round33';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
@@ -8,7 +8,7 @@ import {localizeUI,translated} from './i18n.mjs?cut=round29';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round28';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
-import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset} from './diagram_routing.mjs';
+import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round33';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
@@ -21,7 +21,7 @@ const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="9" cy="4" r="1.6" fill="currentColor"/><circle cx="21" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><path d="M12 12L12 3" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
+glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
 glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
 glyph.ray='<path d="M4 19L21 3m-7 0h7v7"/><circle cx="4" cy="19" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.perpBisector='<path d="M4 12H20M12 3V21"/><path d="M12 15H15V12"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
@@ -29,7 +29,7 @@ glyph.circleDiameter='<circle cx="12" cy="12" r="8"/><path d="M4 12H20"/><circle
 glyph.circleThrough3='<circle cx="12" cy="12" r="9"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/><circle cx="3" cy="12" r="2" fill="currentColor"/>';
 glyph.triangle='<path d="M12 3L21 20H3Z"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="20" r="2" fill="currentColor"/><circle cx="3" cy="20" r="2" fill="currentColor"/>';
 glyph.spline='<path d="M3 19Q7 2 12 12T21 4"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>';
-glyph.closedSpline='<path d="M4 17C2 11 7 4 12 6C17 8 21 6 20 13C19 20 8 22 4 17Z"/><circle cx="4" cy="17" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="13" r="2" fill="currentColor" stroke="none"/>'; 
+glyph.closedSpline='<path d="M4 18C1 14 3 8 8 8C11 8 11 2 15 4C18 5 21 9 20 12C19 15 23 19 18 20C13 23 9 18 4 18Z"/><circle cx="4" cy="18" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="4" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/><circle cx="3" cy="7" r="2" fill="currentColor"/><circle cx="16" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/><circle cx="7" cy="21" r="2" fill="currentColor"/>';
 // A fixed, keyboard-operable palette only changes ordinary document colors.
 // Custom hues remain available via native <input type=color> controls.
@@ -237,7 +237,7 @@ function drawBackground(svg,includeGrid=true,exporting=false){if(!(exporting&&do
  if(settings.grid){const g=el('g',{'stroke':'#9daec1','stroke-width':.65,opacity:.28});for(let x=Math.ceil(minX/step)*step,n=0;x<=maxX&&n<150;x+=step,n++){const [sx]=project([x,0]);g.append(el('line',{x1:sx,y1:0,x2:sx,y2:size.h}));}for(let y=Math.ceil(minY/step)*step,n=0;y<=maxY&&n<150;y+=step,n++){const [,sy]=project([0,y]);g.append(el('line',{x1:0,y1:sy,x2:size.w,y2:sy}));}svg.append(g);}
  if(settings.showAxes){const [zx,zy]=project([0,0]),g=el('g',{stroke:'#738396','stroke-width':1});if(zx>=0&&zx<=size.w)g.append(el('line',{x1:zx,y1:0,x2:zx,y2:size.h}));if(zy>=0&&zy<=size.h)g.append(el('line',{x1:0,y1:zy,x2:size.w,y2:zy}));svg.append(g);}
 }
-function attr(o,selectHighlight=false){return {stroke:selectHighlight?'#7e66df':o.style?.stroke||'#3657ad','stroke-width':Math.max(.15,Number(o.style?.width)||2)+(selectHighlight?1:0),fill:o.style?.fill||'none',opacity:o.style?.opacity??1};}
+function attr(o,selectHighlight=false){return {stroke:o.style?.stroke||'#000000','stroke-width':Math.max(.15,Number(o.style?.width)||2)+(selectHighlight?0.6:0),fill:o.style?.fill||'none',opacity:o.style?.opacity??1};}
 /** Explicit author newlines are SVG text lines, not collapsed whitespace.
  * Keep single-line text as one text node for compatibility and DOM economy.
  * Only visual layout changes; JSON always retains the original author string.
@@ -289,7 +289,7 @@ function geometryLabelAnchor(o,resolver){
  return project([p.reduce((sum,pt)=>sum+pt[0],0)/p.length,p.reduce((sum,pt)=>sum+pt[1],0)/p.length]);
 }
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
- if(o.hidden||o.style?.opacity===0)return;
+ if(!isObjectVisible(doc,o,resolver.object))return;
  const isSel=(selectedIds.has(o.id)||selected===o.id)&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
  const coords=p.every(Boolean)?p.map(project):null;
  // Avoid building large, fully offscreen SVG subtrees. This is deliberately
@@ -308,7 +308,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const reach=doc.settings.showLabels?Math.max(50,displayedLabel.length*14+18):0;
   // Offscreen point culling preserves visible labels that reach into the frame.
   if(x < -radius-reach || x > size.w+radius || y < -radius-22 || y > size.h+radius+22)return;
-  item=el('circle',{cx:x,cy:y,r:radius,stroke:isSel?'#7e66df':o.style.stroke,fill:o.style.stroke,'stroke-width':1,opacity:sty.opacity});
+  item=el('circle',{cx:x,cy:y,r:radius,stroke:o.style.stroke,fill:o.style.stroke,'stroke-width':1,opacity:sty.opacity});
   if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;
    if(o.pointLabel&&o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
    else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
@@ -379,7 +379,9 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const a=route.points[0],b=route.points.at(-1),curve=auto?null:arrowCurve(a,b,o.bend||0);
   if(!auto&&!curve)return;
   const routed=route.status==='routed';
-  const d=auto?pathData(route.points):`M${a[0].toFixed(2)} ${a[1].toFixed(2)} Q${curve.control[0].toFixed(2)} ${curve.control[1].toFixed(2)} ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
+  const hook=['hook','hook-dashed'].includes(o.arrowStyle)?hookTailGeometry(a,auto?route.points[1]:curve.control,!!o.swap):null;
+  const pathStart=hook?.shaftStart||a;
+  const d=auto?pathData(hook?[pathStart,...route.points.slice(1)]:route.points):`M${pathStart[0].toFixed(2)} ${pathStart[1].toFixed(2)} Q${curve.control[0].toFixed(2)} ${curve.control[1].toFixed(2)} ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
   const headFrom=auto?route.points.at(-2):curve.control;
   const head=arrowHeadPoints(b,headFrom,o.style.width),blocked=['blocked','crossing','capacity'].includes(route.status);
   item=el('g',{'data-id':o.id,'data-route-status':route.status});
@@ -392,16 +394,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(['dashed','hook-dashed'].includes(o.arrowStyle))path.setAttribute('stroke-dasharray','7 5');
   if(o.arrowStyle==='dotted')path.setAttribute('stroke-dasharray','2 5');
   item.append(path);
-  if(['hook','hook-dashed'].includes(o.arrowStyle)){
-   const from=auto?route.points[1]:curve.control,len=Math.hypot(from[0]-a[0],from[1]-a[1]);
-   if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;
-    // A TeX-style hooked tail is an open *parenthesis*, not a loop or spur.
-    // End tangent is precisely the shaft tangent; cap size on short routes.
-    const scale=Math.min(1,len/28);
-    const at=(u,n)=>[(a[0]+ux*u*scale-uy*n*scale).toFixed(2),(a[1]+uy*u*scale+ux*n*scale).toFixed(2)].join(' ');
-    item.append(mk('path',{class:'morphism-tail-hook',d:`M${at(3,-14)} C${at(-5,-14)} ${at(-11,-8)} ${at(-11,-3)} C${at(-11,0)} ${at(-6,0)} ${at(0,0)}`,fill:'none','stroke-linecap':'round'}));
-   }
-  }
+  if(hook)item.append(mk('path',{class:'morphism-tail-hook',d:hook.d,fill:'none','stroke-linecap':'round'}));
   if(o.arrowStyle==='tail'){const from=auto?route.points[1]:curve.control;const len=Math.hypot(from[0]-a[0],from[1]-a[1]);if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;item.append(mk('line',{x1:a[0]-uy*6,y1:a[1]+ux*6,x2:a[0]+uy*6,y2:a[1]-ux*6}));}}
   if(o.arrowStyle==='twohead'){const first=arrowHeadPoints(a,auto?route.points[1]:curve.control,o.style.width);if(first.length)item.append(el('polygon',{points:first.map(q=>q.join(',')).join(' '),fill:o.style.stroke,'pointer-events':'none'}));}
   if(head.length)item.append(el('polygon',{class:'arrowhead',points:head.map(q=>q.join(',')).join(' '),fill:blocked?'#b45309':o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));
@@ -679,8 +672,9 @@ function renderList({resetScroll=false}={}){
  // Build the name index once. Search descriptions with many live references must
  // not call an O(scene-size) lookup for every name in every row.
  const nameById=filter?new Map(doc.objects.map(o=>[o.id,o.name])):null;
+ const visibilityIndex=new Map(doc.objects.map(o=>[o.id,o]));
  listedObjects=[...doc.objects].reverse().filter(o=>
-  (showHidden||!o.hidden)&&(!filter||`${o.name} ${desc(o,nameById)}`.toLowerCase().includes(filter)));
+  (showHidden||isObjectVisible(doc,o,id=>visibilityIndex.get(id)))&&(!filter||`${o.name} ${desc(o,nameById)}`.toLowerCase().includes(filter)));
  const previous=resetScroll?0:wrapper.scrollTop;
  renderListWindow();
  wrapper.scrollTop=previous;
@@ -689,13 +683,14 @@ function renderList({resetScroll=false}={}){
 }
 function renderListWindow(){
  const wrapper=$('objects'),count=listedObjects.length,scroll=Math.max(0,wrapper.scrollTop),height=Math.max(90,wrapper.clientHeight);
+ const visibilityIndex=new Map(doc.objects.map(o=>[o.id,o]));
  const first=Math.min(count,Math.max(0,Math.floor(scroll/LIST_ROW_HEIGHT)-LIST_OVERSCAN));
  const last=Math.min(count,Math.ceil((scroll+height)/LIST_ROW_HEIGHT)+LIST_OVERSCAN);
  const fragment=document.createDocumentFragment();
  function spacer(px){const e=document.createElement('div');e.className='list-spacer';e.style.height=px+'px';e.setAttribute('aria-hidden','true');return e;}
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
-  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(o.hidden?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
+  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
   const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',polyline:'⌁',ray:'⇀',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';row.append(glyph);
   const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;const small=document.createElement('small');small.textContent=desc(o);label.append(strong,small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
@@ -808,7 +803,7 @@ function renderProperties(){
   pick.value=o.fontFamily||(['text'].includes(o.type)?'Arial, sans-serif':'Georgia, serif');pick.onchange=()=>edit(live=>live.fontFamily=pick.value);family.append(pick);root.append(family);
  }
  if(['text','node'].includes(o.type))field(root,'Font size',o.fontSize||18,'number',v=>edit(live=>{if(!finite(v)||v<5||v>200)throw Error('Font size must be 5–200.');live.fontSize=v;}),{min:5,max:200,step:1});
- if(o.type==='node'){const border=document.createElement('label');border.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
+ if(o.type==='node'){const border=document.createElement('label');border.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
  if(o.type==='morphism'){
   const arrowLabel=document.createElement('label');arrowLabel.className='field';arrowLabel.textContent='Arrow style';const arrowChoice=document.createElement('select');for(const [value,label] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['hook','Hooked'],['hook-dashed','Hook dashed'],['twohead','Two heads'],['tail','Tail bar']]){const option=document.createElement('option');option.value=value;option.textContent=label;arrowChoice.append(option);}arrowChoice.value=o.arrowStyle||'solid';arrowChoice.onchange=()=>edit(live=>live.arrowStyle=arrowChoice.value);arrowLabel.append(arrowChoice);root.append(arrowLabel);
 
@@ -836,7 +831,7 @@ function renderProperties(){
   field(root,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
  }
  if(o.type==='function')field(root,'y(x) =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
- if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');live.sides=v;}),{step:1,min:3,max:100});
+ if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  // Compact appearance controls reuse the existing transaction handlers. Keep
  // fill absent for ineligible types and preserve the existing field order.
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';

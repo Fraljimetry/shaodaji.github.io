@@ -104,7 +104,7 @@ def run():
     paths=page.locator('#drawing g[data-id="o3"] path').all()
     assert paths,kind
     if kind in ('hook','hook-dashed'):
-     assert len(paths)>=2 and ' C' in paths[1].get_attribute('d'),kind
+     assert len(paths)>=2 and ' A' in paths[1].get_attribute('d'),kind
      assert not page.locator('#drawing g[data-id="o3"] circle').count(),kind
    # Direct vs routing variants; no crashes in EN or ZH.
    for route in ('direct','avoid','avoid-crossings','scene-crossings'):

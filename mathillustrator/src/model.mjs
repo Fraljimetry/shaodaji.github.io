@@ -27,12 +27,12 @@ export function derivedSidePoints(edge,owner,at){
 export const VERSION = 1;
 export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
-  General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
-  'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#172b4d',fill:'#e6eef9',opacity:1,width:2,pointSize:5},
-  'Research diagram': {grid:false,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',showAxes:false,stroke:'#263342',fill:'#d9e8f4',opacity:1,width:2,pointSize:5},
-  'Analysis / plots': {grid:true,snap:true,snapStep:0.5,correction:'gentle',plotQuality:'detailed',showAxes:true,stroke:'#3761b8',fill:'#b6c9f9',opacity:1,width:2,pointSize:4},
-  'Free illustration': {grid:false,snap:false,snapStep:0.5,correction:'off',plotQuality:'balanced',showAxes:false,stroke:'#353e50',fill:'#d7e2f4',opacity:1,width:2,pointSize:5},
-  'Commutative diagrams': {grid:false,snap:true,snapStep:1,correction:'off',plotQuality:'balanced',showAxes:false,stroke:'#1d3557',fill:'#ffffff',opacity:1,width:1.6,pointSize:5},
+  General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Research diagram': {grid:false,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Analysis / plots': {grid:true,snap:true,snapStep:0.5,correction:'gentle',plotQuality:'detailed',showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:4},
+  'Free illustration': {grid:false,snap:false,snapStep:0.5,correction:'off',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Commutative diagrams': {grid:false,snap:true,snapStep:1,correction:'off',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:1.6,pointSize:5},
 };
 export const PRESET_MODULES = {
  General:{basic:true,construction:true,illustration:true,diagram:true},
@@ -87,6 +87,16 @@ export function newDoc(){return {format:'mathillustrator-project',version:VERSIO
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return doc.objects.find(o=>o.id===id);}
+/** Owned polygon/rectangle sides inherit their owner's canvas visibility.
+ * Other dependent constructions remain individually visible when the user
+ * hides an anchor or source. No ownership/visibility fields are rewritten. */
+export function isObjectVisible(doc,object,ownerLookup=null){
+ if(!object||object.hidden||object.style?.opacity===0)return false;
+ if(!object.edgeOf)return true;
+ // Resolver/index lookups are O(1); avoid quadratic passes over dense scenes.
+ const owner=ownerLookup?ownerLookup(object.edgeOf):get(doc,object.edgeOf);
+ return !!owner&&!owner.hidden&&owner.style?.opacity!==0;
+}
 export function byName(doc,name){return doc.objects.find(o=>o.name===name);}
 export function nextId(doc){if(!Number.isSafeInteger(doc.nextId)||doc.nextId>Number.MAX_SAFE_INTEGER-1)throw Error('Object ID capacity exceeded.');return 'o'+doc.nextId++;}
 /** Naming affects future automatic names only. Never rename references or existing objects. */
@@ -139,6 +149,29 @@ export function appendDerivedShapeEdges(doc,ownerId){
  const count=owner.type==='rectangle'?4:owner.sides;
  if(doc.objects.length+count>10000||doc.nextId+count>Number.MAX_SAFE_INTEGER-1)throw Error('Derived sides exceed object capacity.');
  return Array.from({length:count},(_,i)=>append(doc,{type:'segment',refs:[...owner.refs],edgeOf:ownerId,edgeIndex:i}).id);
+}
+/** Resize new regular polygons without leaving stale derived sides or severing
+ * independent downstream constructions. Legacy polygon objects (no sides) stay
+ * legacy. User-deleted side slots remain deleted when the polygon is enlarged.
+ * Call inside the editor's one-transaction update/rollback boundary. */
+export function resizeRegularPolygon(doc,ownerId,nextSides){
+ const owner=get(doc,ownerId);
+ if(owner?.type!=='regularPolygon'||!Number.isInteger(nextSides)||nextSides<3||nextSides>100)throw Error('Regular polygon sides must be 3–100.');
+ const previous=owner.sides;
+ if(previous===nextSides)return;
+ const edges=doc.objects.filter(o=>o.type==='segment'&&o.edgeOf===ownerId&&o.edgeIndex!==undefined);
+ const removed=edges.filter(o=>o.edgeIndex>=nextSides);
+ for(const edge of removed){
+  const deps=affected(doc,edge.id);
+  if(deps.size!==1||edge.locked)throw Error('Unlock/delete dependent objects before removing a polygon side.');
+ }
+ const count=nextSides>previous&&edges.length?nextSides-previous:0;
+ if(doc.objects.length-removed.length+count>10000||doc.nextId+count>Number.MAX_SAFE_INTEGER-1)throw Error('Polygon side capacity exceeded.');
+ owner.sides=nextSides;
+ const deleteIds=new Set(removed.map(o=>o.id));
+ if(deleteIds.size)doc.objects=doc.objects.filter(o=>!deleteIds.has(o.id));
+ if(edges.length&&nextSides>previous)for(let i=previous;i<nextSides;i++)
+  append(doc,{type:'segment',refs:[...owner.refs],edgeOf:ownerId,edgeIndex:i});
 }
 export function addPoint(doc,p,name){if(!safeCoord(p))throw Error('Point coordinates must be finite.');return append(doc,{type:'point',name,xy:clone(p)});}
 /** Freeze the displayed radii of legacy v1 point/midpoint objects which were

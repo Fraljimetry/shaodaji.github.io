@@ -1,6 +1,6 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round32';
-import {regularPolygonVertices} from './model.mjs?cut=round32';
+export {regularPolygonVertices} from './model.mjs?cut=round33';
+import {regularPolygonVertices,isObjectVisible} from './model.mjs?cut=round33';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -76,7 +76,7 @@ export function worldBounds(doc,resolver){
  for(const o of doc.objects){
   // Bounds must represent what users can actually see. Fully transparent
   // outliers and morphisms whose endpoint node is hidden cannot affect Fit.
-  if(o.hidden||o.style?.opacity===0)continue;
+  if(!isObjectVisible(doc,o,resolver.object))continue;
   if(o.type==='morphism'&&o.refs?.some(id=>{
    const node=resolver.object(id);
    return !node||node.hidden||node.style?.opacity===0;
@@ -165,7 +165,7 @@ export function fitSceneView(doc,resolver,size){
  const bounds=worldBounds(doc,resolver);
  if(!bounds)return {cx:0,cy:0,scale:48,clipped:false};
  let left=5,right=5,top=5,bottom=5;
- for(const o of doc.objects){if(o.hidden||o.style?.opacity===0)continue;
+ for(const o of doc.objects){if(!isObjectVisible(doc,o,resolver.object))continue;
   if(o.type==='node'){
    // Same measuring helper used by SVG drawing and semantic arrow clipping.
    const b=nodeBoxForFit(o.text,o.fontSize||17);
@@ -394,7 +394,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
   offer([a[0]+u*dx,a[1]+u*dy],o);
  };
  for(const o of objects){
-  if(!o||o.hidden||o.style?.opacity===0)continue;
+  if(!o||o.hidden||o.style?.opacity===0||o.edgeOf&&(!resolver.object?.(o.edgeOf)||resolver.object(o.edgeOf).hidden||resolver.object(o.edgeOf).style?.opacity===0))continue;
   if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
    offer(resolver.at?.(o.id),o,2);continue;
   }

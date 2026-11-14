@@ -179,3 +179,20 @@ export function labelDragOffset(baseX,baseY,start,end){
  const clamp=v=>Math.max(-300,Math.min(300,Math.round(v*10)/10));
  return [clamp(baseX+end[0]-start[0]),clamp(baseY+end[1]-start[1])];
 }
+
+/** An inset, true semicircular TeX-style hook. Both upper and lower variants
+ * turn smoothly into the shaft's positive tangent; the whole loop is kept
+ * strictly in front of its start node's clipped border. Reversing the label
+ * side mirrors the hook; only the first route segment is shortened. */
+export function hookTailGeometry(start,next,swapped=false){
+ if(!finitePoint(start)||!finitePoint(next))return null;
+ const dx=next[0]-start[0],dy=next[1]-start[1],len=Math.hypot(dx,dy);
+ if(len<8)return null;
+ const radius=Math.min(8,(len-2)/3);if(radius<2)return null;
+ const ux=dx/len,uy=dy/len,normal=[-uy,ux];
+ const shaftStart=[start[0]+ux*radius,start[1]+uy*radius];
+ const side=swapped?1:-1;
+ const head=[shaftStart[0]+normal[0]*side*2*radius,shaftStart[1]+normal[1]*side*2*radius];
+ const d=`M${head[0].toFixed(2)} ${head[1].toFixed(2)} A${radius.toFixed(2)} ${radius.toFixed(2)} 0 0 ${swapped?1:0} ${shaftStart[0].toFixed(2)} ${shaftStart[1].toFixed(2)}`;
+ return {d,shaftStart,radius};
+}

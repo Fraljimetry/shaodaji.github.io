@@ -33,8 +33,8 @@ def run():
         page.wait_for_function("document.querySelector('[data-tool-choice=point]') !== null")
         assert page.locator('[data-color-swatches="default"]').count()==2
         assert page.locator('[data-color-swatches="default"] button').count()==20
-        assert page.locator('#default-stroke').input_value()=='#3657ad'
-        assert checked(page,'default','stroke').count()==0,'custom default must not pretend a palette color is selected'
+        assert page.locator('#default-stroke').input_value()=='#000000'
+        assert checked(page,'default','stroke').count()==0,'black is not an offered swatch; custom default must not pretend it is selected'
         assert swatch(page,'default','stroke','#ef4444').get_attribute('aria-label')=='Red'
         assert swatch(page,'default','stroke','#ffffff').get_attribute('type')=='button'
         swatch(page,'default','stroke','#ef4444').click()
@@ -75,11 +75,11 @@ def run():
         box=page.locator('#drawing').bounding_box()
         page.mouse.click(box['x']+box['width']*.57,box['y']+box['height']*.54)
         page.mouse.click(box['x']+box['width']*.67,box['y']+box['height']*.63)
-        assert len(snapshot(page)['objects'])==4 and snapshot(page)['objects'][-1]['type']=='rectangle'
-        page.locator('#objects .object').first.click()
+        assert len(snapshot(page)['objects'])==8 and sum(o['type']=='segment' for o in snapshot(page)['objects'])==4 and next(o for o in snapshot(page)['objects'] if o['type']=='rectangle')
+        page.locator('#objects .object').filter(has_text='Rectangle').first.click()
         assert page.locator('[data-color-swatches="object"][data-color-property="fill"]').count()==1
         swatch(page,'object','fill','#eab308').click()
-        assert snapshot(page)['objects'][-1]['style']['fill']=='#eab308'
+        assert next(o for o in snapshot(page)['objects'] if o['type']=='rectangle')['style']['fill']=='#eab308'
         # Repeated locale changes must translate group/button names, no duplicates.
         for locale, name in [('zh','红色'),('en','Red'),('zh','红色'),('en','Red')]:
             page.locator('#ui-language').select_option(locale)

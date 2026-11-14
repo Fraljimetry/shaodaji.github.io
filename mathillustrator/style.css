@@ -467,3 +467,9 @@ html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;borde
 .style-controls-grid .style-pointsize > .field > input[type=number]{
   width:56px;min-width:0;max-width:56px;justify-self:end;align-self:center;margin:0;
 }
+
+/* Round 33: only inspector toggles; no oversized implicit check labels. */
+.properties > .check{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:1.25;margin:5px 0 7px;font-weight:400;white-space:normal}
+.properties > .check input[type=checkbox]{box-sizing:border-box;flex:0 0 12px;width:12px;height:12px;min-width:12px;min-height:12px;margin:0;padding:0;vertical-align:middle}
+/* The purple outline stays outside objects; their own stroke and fill are untouched. */
+#drawing .selected-shape{filter:drop-shadow(0 0 2px #7e66df90)}
