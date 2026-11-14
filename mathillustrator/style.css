@@ -529,3 +529,27 @@ html.three-d .settings-2d-only{display:none!important}
 .properties.properties-3d > .field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,53%);align-items:center;column-gap:6px}
 .properties.properties-3d > .field > :is(input,select){box-sizing:border-box;width:100%!important;min-width:0;max-width:100%!important;flex:none!important;justify-self:stretch}
 .properties.properties-3d > .field > input[type=color]{padding:2px}
+
+/* Round 43: four Interface choices form the requested 2-by-2 grid below Font. */
+.interface-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:8px;row-gap:5px;align-items:center;margin-top:7px}
+.rightpanel .settings-sections .interface-check-grid>.check{display:flex;gap:4px;align-items:center;margin:3px 0;min-width:0;font-size:10.5px;line-height:1.25;white-space:normal}
+.interface-check-grid>.check input{flex:none;min-width:13px;width:13px;height:13px;margin:0}
+/* Region caption covers full width; the six range fields become exactly 3 rows by 2. */
+.plot-region-editor>h4{grid-column:1/-1;margin:0 0 3px;font-size:12px;line-height:1.3}
+.plot-region-editor>.field{display:flex;gap:4px;align-items:center;font-size:10px}
+.plot-region-editor>.field>input{width:100%;min-width:0;flex:1 1 65%;font-size:11px;padding:5px}
+/* Four symmetric 3D guide switches; no old 2D-only settings appear. */
+#settings-3d .checks-3d{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:7px;row-gap:4px}
+#settings-3d .checks-3d>.check{min-width:0;white-space:normal;font-size:10.5px!important}
+/* Compact per-plot palette with the same colors and dimensions as 2D swatches. */
+.properties-3d>.plot3d-color-row>.field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,53%);align-items:center;gap:6px}
+.properties-3d>.plot3d-color-row>.field>input[type=color]{width:100%;height:30px;box-sizing:border-box;padding:2px}
+.properties-3d>.plot3d-color-row>.color-swatches{display:grid;grid-template-columns:repeat(5,20px);gap:4px;justify-content:end;margin:4px 0 8px}
+#objects-3d .object{gap:3px}
+#objects-3d .object .object-label{margin-right:auto;min-width:0}
+#objects-3d .object .plot3d-action{flex:0 0 25px;width:25px;height:29px;display:grid;place-items:center;padding:3px;border-radius:5px;color:var(--ink)}
+#objects-3d .object .plot3d-action svg{width:17px;height:17px;pointer-events:none}
+#objects-3d .object .plot3d-action:focus-visible{outline:2px solid var(--accent);outline-offset:0}
+#objects-3d .object[data-locked="true"] .object-label strong::after{content:""}
+
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

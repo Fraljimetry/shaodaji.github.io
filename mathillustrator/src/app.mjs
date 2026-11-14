@@ -4,7 +4,7 @@ import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegac
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES} from './plot3d.mjs?cut=round42';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression} from './plot3d.mjs?cut=round43';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round40';
@@ -48,13 +48,13 @@ const COMMON_COLORS=[
 function syncColorSwatches(){
  for(const group of document.querySelectorAll('[data-color-swatches]')){
   const role=group.dataset.colorSwatches,property=group.dataset.colorProperty;
-  const value=role==='default'?doc.settings[property]:role==='bulk'?commonValue(compatibleObjects(activeSelection(),property),property):get(doc,selected)?.style?.[property];
+  const value=role==='plot3d'?doc.scene3d?.plots.find(plot=>plot.id===selected3d)?.color:role==='default'?doc.settings[property]:role==='bulk'?commonValue(compatibleObjects(activeSelection(),property),property):get(doc,selected)?.style?.[property];
   if(typeof value!=='string')continue;
   for(const button of group.querySelectorAll('button[data-color]'))
    button.setAttribute('aria-pressed',String(button.dataset.color===value.toLowerCase()));
   // The property pane may keep keyboard focus after a transaction; update its
   // live picker without replacing the focused swatch or invalidating handlers.
-  if(role==='object'||role==='bulk'){
+  if(role==='object'||role==='bulk'||role==='plot3d'){
    const picker=group.previousElementSibling?.querySelector('input[type=color]');
    if(picker&&picker!==document.activeElement)picker.value=value;
   }
@@ -63,7 +63,7 @@ function syncColorSwatches(){
 function appendColorSwatches(parent,{scope,property,apply}){
  const group=document.createElement('div');group.className='color-swatches';group.dataset.colorSwatches=scope;
  group.dataset.colorProperty=property;group.setAttribute('role','group');
- group.setAttribute('aria-label',property==='stroke'?'Stroke colors':'Fill colors');
+ group.setAttribute('aria-label',scope==='plot3d'?'Surface colors':property==='stroke'?'Stroke colors':'Fill colors');
  for(const [name,hex] of COMMON_COLORS){
   const button=document.createElement('button');button.type='button';button.className='color-swatch';
   button.dataset.color=hex;button.style.setProperty('--swatch',hex);
@@ -534,7 +534,9 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
 }
 function draw3DBase(svg,result){
  svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));
+ for(const [a,b] of result.gridLines||[])svg.append(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#a9b3be','stroke-width':.7,opacity:.5,'pointer-events':'none'}));
  for(const [a,b] of result.cube)svg.append(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
+ for(const axis of result.axesLines||[])svg.append(el('line',{x1:axis.from[0],y1:axis.from[1],x2:axis.to[0],y2:axis.to[1],stroke:axis.color,'stroke-width':1.8,'pointer-events':'none'}));
 }
 function face3DElement(face){
  const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
@@ -828,18 +830,35 @@ function openObjectMenu(o,trigger){
  menu.querySelector('button:not(:disabled)')?.focus();
 }
 
+// The existing 2D menu icon paths are reused here; no legacy tool icon is changed.
+const PLOT3D_ACTION_PATHS={
+ Hide:'<path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7"/><path d="M9.9 5.2a10.9 10.9 0 0 1 2.1-.2c4.9 0 8.9 4.7 10 7a15 15 0 0 1-3.6 4.5M6 6.1C3.8 7.7 2.6 10 2 12c1.1 2.3 5.1 7 10 7 1.5 0 2.9-.4 4.1-1.1"/>',
+ Show:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+ Lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+ Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
+ Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'
+};
 function render3DList(){
  const root=$('objects-3d');root.hidden=false;root.replaceChildren();$('object-count').textContent=String(doc.scene3d?.plots.length||0);
- $('objects').hidden=true;const filter=($('object-search').value||'').trim().toLowerCase();
+ $('objects').hidden=true;const filter=($('object-search').value||'').trim().toLowerCase(),showHidden=$('show-hidden').checked;
  if(!doc.scene3d)return;
  for(const plot of [...doc.scene3d.plots].reverse()){
+  if(!showHidden&&plot.hidden)continue;
   if(filter&&!`${plot.name} ${plot.kind} ${plot.a}`.toLowerCase().includes(filter))continue;
-  const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);if(selected3d===plot.id)row.classList.add('selected');
+  const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);row.dataset.locked=plot.locked?'true':'false';
+  if(plot.hidden)row.classList.add('hidden');if(selected3d===plot.id)row.classList.add('selected');
   const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;const summary=document.createElement('small');summary.textContent=plot.a;info.append(name,summary);
   row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
-  const hide=document.createElement('button');hide.textContent=plot.hidden?'Show':'Hide';hide.title='Toggle 3D plot visibility';hide.onclick=e=>{e.stopPropagation();update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);live.hidden=!live.hidden;if(!live.hidden)enforce3DVisibility(doc.scene3d,live.id);});};
-  const del=document.createElement('button');del.textContent='×';del.title='Delete 3D plot';del.onclick=e=>{e.stopPropagation();update(()=>{doc.scene3d.plots=doc.scene3d.plots.filter(p=>p.id!==plot.id);if(selected3d===plot.id)selected3d=null;});};
-  row.append(info,hide,del);root.append(row);
+  function action(label,callback,disabled=false){
+   const button=document.createElement('button');button.type='button';button.className='plot3d-action';button.title=translated(label,uiPrefs.language);button.setAttribute('aria-label',translated(label,uiPrefs.language));button.disabled=disabled;
+   button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg><span class="sr-only">${label}</span>`;
+   button.onclick=e=>{e.stopPropagation();callback();};row.append(button);
+  }
+  row.append(info);
+  action(plot.hidden?'Show':'Hide',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.hidden=!live.hidden;if(!live.hidden)enforce3DVisibility(doc.scene3d,live.id);}));
+  action(plot.locked?'Unlock':'Lock',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.locked=!live.locked;}));
+  action('Delete',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live||live.locked)throw Error('Unlock the 3D plot before deleting.');doc.scene3d.plots=doc.scene3d.plots.filter(p=>p.id!==plot.id);if(selected3d===plot.id)selected3d=null;}),plot.locked===true);
+  root.append(row);
  }
 }
 function renderList({resetScroll=false}={}){
@@ -944,17 +963,18 @@ function renderBulkProperties(root,objects){
 function renderProperties3D(root){
  root.classList.add('properties-3d');
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
- const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id)throw Error('3D plot changed while editing.');fn(live);});
+ if(selectedPlot.locked){const note=document.createElement('p');note.className='subtle';note.textContent=translated('Locked',uiPrefs.language);root.append(note);return;}
+ const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z) =']:selectedPlot.kind==='surface3d'?['z(x, y) =']:selectedPlot.kind==='parametric3d'?['X(u, v) =','Y(u, v) =','Z(u, v) =']:selectedPlot.kind==='implicit3d'?['F(x, y, z) =']:['X(x, y, z) =','Y(x, y, z) =','Z(x, y, z) ='];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
- for(const key of fields)field(root,key,selectedPlot[key],'number',value=>edit(p=>{p[key]=value;}),{step:.1});
+ for(const key of fields)field(root,key,selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}));
  const block=document.createElement('div');block.className='plot-region-editor';const subtitle=document.createElement('h4');subtitle.textContent='3D drawing region';block.append(subtitle);
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
-  const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'number',()=>true,{step:.1});values[key].onchange=()=>{};
+  const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true);values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
- const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,Number(node.value)]));});block.append(button);root.append(block);
+ const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));});block.append(button);root.append(block);
  if(selectedPlot.kind==='domain3d'){
   const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
   for(const [key,label] of [['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;heightSelect.append(opt);}
@@ -975,7 +995,9 @@ function renderProperties3D(root){
   field(root,'Arrow density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
   const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,' Normalize vector lengths');root.append(label);
  }
- field(root,'Surface color',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
+ const colorRow=document.createElement('div');colorRow.className='plot3d-color-row';root.append(colorRow);
+ field(colorRow,'Surface color',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
+ appendColorSwatches(colorRow,{scope:'plot3d',property:'color',apply:v=>edit(p=>{p.color=v;})});
  field(root,'Object opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
  localizeUI(root,uiPrefs.language);
 }
@@ -1202,7 +1224,7 @@ function sync3DInterface(){
  $('scene3d-theme').value=$('theme').value;
  $('scene3d-export-transparent').checked=!!doc.settings.exportTransparent;
  const options=doc.scene3d?.options;
- if(options)for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting']]){
+ if(options)for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting'],['scene3d-grid','grid'],['scene3d-axes','axes']]){
   const input=$(id);if(input.type==='checkbox')input.checked=options[key];else input.value=options[key];
  }
  const select=$('plot-mode'),prior=select.value,desired=enabled?
@@ -1254,7 +1276,7 @@ function setupSettings(){
    if(k==='page'&&value==='infinite')doc.settings.exportRegion='viewport';
   },['exportRegion','exportGuides','exportScale','exportTransparent'].includes(k)?{refreshList:false,renderCanvas:false}:{});
  }
- for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting']]){
+ for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting'],['scene3d-grid','grid'],['scene3d-axes','axes']]){
   $(id).onchange=()=>update(()=>{if(!in3D())throw Error('Enable 3D first.');const node=$(id);doc.scene3d.options[key]=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;});
  }
  $('scene3d-background').onchange=()=>update(()=>{doc.settings.background=$('scene3d-background').value;});
@@ -2163,7 +2185,10 @@ function setupPropertiesLayout(mobile){
  let preferred=normalizePropertiesLayout(uiPrefs.propertiesPanel),gesture=null;
  $('properties-undock').hidden=true;
  function limits(){
-  const fixed=[...left.children].filter(e=>e!==pane&&e.id!=='objects'&&!e.classList.contains('panel-resizer')).reduce((a,e)=>a+e.getBoundingClientRect().height,0);
+  // Both 2D and 3D object lists are flexible content, never fixed chrome.
+  // Counting the visible 3D list here makes the upper bound follow the drag,
+  // collapsing Properties to 38 px whenever the user drags its divider up.
+  const fixed=[...left.children].filter(e=>e!==pane&&!['objects','objects-3d'].includes(e.id)&&!e.classList.contains('panel-resizer')&&getComputedStyle(e).display!=='none').reduce((a,e)=>a+e.getBoundingClientRect().height,0);
   return fitDockPropertiesHeight(preferred.dockHeight,left.clientHeight,fixed);
  }
  function apply(){

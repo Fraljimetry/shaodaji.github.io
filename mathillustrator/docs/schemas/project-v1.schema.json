@@ -1364,6 +1364,12 @@
               "type": "number",
               "minimum": 0.25,
               "maximum": 5
+            },
+            "grid": {
+              "type": "boolean"
+            },
+            "axes": {
+              "type": "boolean"
             }
           }
         },
@@ -1511,6 +1517,9 @@
                 "type": "number",
                 "minimum": -10000,
                 "maximum": 10000
+              },
+              "locked": {
+                "type": "boolean"
               }
             },
             "allOf": [

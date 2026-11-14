@@ -4,8 +4,15 @@
 import {parseCurveExpression,parseComplexExpression,domainColor} from './plot_modes.mjs?cut=round39';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
 export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
-export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1};
+export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1,grid:false,axes:false};
 export const MAX_VISIBLE_3D_PLOTS=3;
+/** Safe, strict math-only bounds: π/e and arithmetic, no eval or variables. */
+export function parse3DRangeExpression(source){
+ const value=typeof source==='number'?source:parseCurveExpression(String(source),[])({});
+ if(!ok(value)||Math.abs(value)>10000)throw Error('3D region value must be finite and within ±10,000.');
+ return value;
+}
+
 /** Old projects may contain many visible plots: retain all entries but show at most three.
  * When activating a plot, hide the oldest visible instead of deleting data. */
 export function enforce3DVisibility(scene,preferredId=null){
@@ -48,7 +55,7 @@ export function parse3D(plot){
 }
 export function validate3D(scene){
  if(!scene||typeof scene!=='object'||Array.isArray(scene)||!Array.isArray(scene.plots)||scene.plots.length>80||!Number.isSafeInteger(scene.nextId)||scene.nextId<1)throw Error('Invalid 3D scene.');
- const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>96||!ok(o.zoom)||o.zoom<.25||o.zoom>5)throw Error('Invalid 3D camera or rendering options.');
+ const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>96||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
  const ids=new Set();let highest=0;
  for(const plot of scene.plots){
   if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>100||!color.test(plot.color)||!ok(plot.opacity)||plot.opacity<.05||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
@@ -56,6 +63,7 @@ export function validate3D(scene){
   for(const key of ['a','b','c'])if(typeof plot[key]!=='string'||(key==='a'||['parametric3d','vector3d'].includes(plot.kind))&&!plot[key].trim()||plot[key].length>400)throw Error('Invalid 3D expression.');
   const r=plot.bounds;if(!r||!['x','y','z'].every(axis=>ok(r[axis+'Min'])&&ok(r[axis+'Max'])&&Math.abs(r[axis+'Min'])<=1e4&&Math.abs(r[axis+'Max'])<=1e4&&r[axis+'Min']<r[axis+'Max']))throw Error('3D bounds must be ascending and within ±10,000.');
   if(plot.kind==='parametric3d'&&(!ok(plot.uMin)||!ok(plot.uMax)||!ok(plot.vMin)||!ok(plot.vMax)||plot.uMin>=plot.uMax||plot.vMin>=plot.vMax||[plot.uMin,plot.uMax,plot.vMin,plot.vMax].some(v=>Math.abs(v)>1e4)))throw Error('Invalid surface parameter ranges.');
+  if(plot.locked!==undefined&&typeof plot.locked!=='boolean')throw Error('Invalid 3D lock state.');
   if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!['phase-modulus','phase','contours'].includes(plot.colorMode)))throw Error('Invalid 3D complex coloring options.');
   if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'))throw Error('3D vector density must be 3–12.');
   parse3D(plot);
@@ -66,7 +74,7 @@ export function validate3D(scene){
 export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
  if(scene.plots.length>=80)throw Error('3D plot limit (80) reached.');
  const id=scene.nextId++,[a='',b='',c='']=inputs;
- const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false};
+ const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false,locked:false};
  if(kind==='parametric3d')Object.assign(plot,{uMin:0,uMax:2*Math.PI,vMin:0,vMax:2*Math.PI});
  if(kind==='vector3d')Object.assign(plot,{density:5,normalized:true});
  if(kind==='domain3d'){
@@ -88,7 +96,7 @@ const minus=(a,b)=>a.map((x,i)=>x-b[i]);
 export const MAX_3D_EVALUATIONS=230000;
 export const MAX_3D_FACES=66000;
 export const MAX_3D_LINES=4800;
-const MAX_MESH_FACES=24000;
+const MAX_MESH_FACES=MAX_3D_FACES;
 const MAX_MESH_CACHE_BYTES=128*1024*1024;
 function makeCamera(bounds,options,width,height){
  const yaw=options.yaw*Math.PI/180,pitch=options.pitch*Math.PI/180,cos=Math.cos(yaw),sin=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
@@ -165,7 +173,7 @@ export function* sample3DPlotSteps(plot,detail){
   // A consistent body diagonal partitions adjacent cubes into conforming tetrahedra.
   // The 2-versus-2 case must connect its four crossings cyclically; an arbitrary
   // edge-pair order creates crossing / inverted triangles and visible mesh holes.
-  const n=Math.min(30,Math.max(8,Math.round(detail*.65))),cube=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+  const n=Math.min(52,Math.max(8,Math.round(detail*.45+9))),cube=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
   const stride=n+1,values=new Float64Array(stride**3),index=(i,j,k)=>k*stride*stride+j*stride+i;
   const at=(i,j,k)=>[b.xMin+(b.xMax-b.xMin)*i/n,b.yMin+(b.yMax-b.yMin)*j/n,b.zMin+(b.zMax-b.zMin)*k/n];
   for(let k=0;k<=n;k++){
@@ -222,7 +230,7 @@ function storeMesh(key,mesh){const bytes=meshBytes(mesh);if(bytes>MAX_MESH_CACHE
 }
 function estimatedEvaluations(plot,detail){
  if(plot.kind==='vector3d')return plot.density**3;
- if(plot.kind==='implicit3d')return (Math.min(30,Math.max(8,Math.round(detail*.65)))+1)**3;
+ if(plot.kind==='implicit3d')return (Math.min(52,Math.max(8,Math.round(detail*.45+9)))+1)**3;
  return (Math.max(8,Math.min(96,detail))+1)**2;
 }
 /** Synchronous exports and cooperative screen rendering share EXACT geometry,
@@ -231,7 +239,7 @@ function estimatedEvaluations(plot,detail){
 function* project3DSceneSteps(scene,width,height){
  validate3D(scene);
  if(!ok(width)||!ok(height)||width<100||height<100)return {faces:[],lines:[],primitives:[],cube:[],evaluations:0,limited:false};
- const opt=scene.options,faces=[],lines=[],cube=[];
+ const opt=scene.options,faces=[],lines=[],cube=[],gridLines=[],axesLines=[];
  const active=scene.plots.filter(p=>!p.hidden),plots=active.slice(-MAX_VISIBLE_3D_PLOTS);
  // Mixed plots previously projected using the FIRST plot's bounds; this could
  // put later plots behind the camera, creating giant/inverted polygons or blanks.
@@ -244,16 +252,44 @@ function* project3DSceneSteps(scene,width,height){
  if(opt.cube){const v=[];for(let k=0;k<8;k++)v.push(camera.project([k&1?bounds.xMax:bounds.xMin,k&2?bounds.yMax:bounds.yMin,k&4?bounds.zMax:bounds.zMin]));
   for(let i=0;i<8;i++)for(const bit of [1,2,4])if(!(i&bit))cube.push([v[i],v[i|bit]]);
  }
+ // Optional guides: a z=0 grid and three color-distinguished coordinate axes.
+ // Plot and camera bounds are shared by every visible surface; guides never affect sampling.
+ const hasZero=axis=>bounds[axis+'Min']<=0&&bounds[axis+'Max']>=0;
+ if(opt.grid&&hasZero('z')){
+  for(let i=0;i<=8;i++){
+   const x=bounds.xMin+(bounds.xMax-bounds.xMin)*i/8;
+   const y=bounds.yMin+(bounds.yMax-bounds.yMin)*i/8;
+   gridLines.push([camera.project([x,bounds.yMin,0]),camera.project([x,bounds.yMax,0])]);
+   gridLines.push([camera.project([bounds.xMin,y,0]),camera.project([bounds.xMax,y,0])]);
+  }
+ }
+ if(opt.axes){for(const [axis,color] of [['x','#d76d6d'],['y','#4aa682'],['z','#638fde']]){
+  const dimensions=['x','y','z'].filter(other=>other!==axis);
+  if(!dimensions.every(hasZero))continue;
+  const from=[0,0,0],to=[0,0,0],index={x:0,y:1,z:2}[axis];from[index]=bounds[axis+'Min'];to[index]=bounds[axis+'Max'];
+  axesLines.push({from:camera.project(from),to:camera.project(to),color});
+ }}
  let count=0;
- for(const plot of plots){
-  // Fair allocation: adaptive refinement/retry avoids truncating an implicit
-  // surface half-way through the lattice, and prevents plot-order starvation.
+ for(const [plotIndex,plot] of plots.entries()){
+  // Use a FAIR face and sampling budget before the first expensive evaluation.
+  // A dense first implicit mesh must never starve all later surfaces or render
+  // only a broken first slice. Implicit complexity varies by formula, so a
+  // bounded refinement retry still handles unexpectedly intricate level sets.
   let effectiveDetail=Math.min(opt.detail,Math.floor(Math.sqrt(perPlotFaces/2))-1);
-  if(plot.kind==='implicit3d'||plot.kind==='vector3d')effectiveDetail=opt.detail;
+  if(plot.kind==='implicit3d'){
+   const maxCells=Math.min(52,Math.max(8,Math.floor(Math.sqrt(perPlotFaces/26))));
+   effectiveDetail=Math.min(opt.detail,Math.floor((maxCells-9)/.45));
+  }else if(plot.kind==='vector3d')effectiveDetail=opt.detail;
+  effectiveDetail=Math.max(8,effectiveDetail);
   let mesh;
-  for(let attempt=0;attempt<9;attempt++){
+  for(let attempt=0;attempt<12;attempt++){
    const predicted=estimatedEvaluations(plot,effectiveDetail);
-   if(evaluations+predicted>MAX_3D_EVALUATIONS){limited=true;break;}
+   const remaining=MAX_3D_EVALUATIONS-evaluations;
+   const share=Math.floor(remaining/Math.max(1,plots.length-plotIndex));
+   if(predicted>share&&effectiveDetail>8){
+    effectiveDetail=Math.max(8,Math.floor(effectiveDetail*.82));yield;continue;
+   }
+   if(predicted>remaining){limited=true;break;}
    const key=meshKey(plot,effectiveDetail);mesh=getCachedMesh(key);
    if(!mesh){const sampler=sample3DPlotSteps(plot,effectiveDetail);let next;
     do{next=sampler.next();if(!next.done)yield;}while(!next.done);
@@ -261,20 +297,21 @@ function* project3DSceneSteps(scene,width,height){
    }
    evaluations+=mesh.evaluations;
    if(!mesh.limited&&mesh.faces.length<=perPlotFaces)break;
-   if(effectiveDetail<=8||attempt===8){limited=true;break;}
-   effectiveDetail=Math.max(8,Math.floor(effectiveDetail*.8));mesh=null;
+   if(effectiveDetail<=8||attempt===11){limited=true;break;}
+   const faceRatio=Math.sqrt(perPlotFaces/Math.max(1,mesh.faces.length));
+   effectiveDetail=Math.max(8,Math.floor(effectiveDetail*Math.min(.85,.92*faceRatio)));mesh=null;
    yield;
   }
-  if(!mesh){limited=true;continue;}
-  limited||=mesh.limited||mesh.faces.length>perPlotFaces;
+  if(!mesh||mesh.limited||mesh.faces.length>perPlotFaces){limited=true;continue;}
   let plotFaceCount=0;
   for(const triangle of mesh.faces){
    if(plotFaceCount>=perPlotFaces){limited=true;break;}
    plotFaceCount++;
-   const projected=triangle.map(camera.project),v=triangle.map(camera.turn),normal=cross(minus(v[1],v[0]),minus(v[2],v[0]));
-   const length=Math.hypot(...normal),light=length?Math.abs((-.3*normal[0]+.45*normal[1]+.84*normal[2])/length):0;
-   // View-normalized Lambert intensity accounts for nonuniform axis ranges.
-   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.32+.68*light:1,color:triangle.color||plot.color,domainColoring:plot.kind==='domain3d',opacity:opt.opacity*plot.opacity});
+   const projected=triangle.map(camera.project),normal=cross(minus(triangle[1],triangle[0]),minus(triangle[2],triangle[0]));
+   const length=Math.hypot(...normal),light=length?Math.abs((.38*normal[0]+.44*normal[1]+.81*normal[2])/length):0;
+   // Stable world-anchored illumination: orbit changes view, NOT surface luminance.
+   // No order-, orientation- or camera-dependent brightness jumps on two-sided faces.
+   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.48+.52*light:1,color:triangle.color||plot.color,domainColoring:plot.kind==='domain3d',opacity:opt.opacity*plot.opacity});
    if((++count&63)===0)yield;
   }
   for(const segment of mesh.lines){
@@ -290,7 +327,7 @@ function* project3DSceneSteps(scene,width,height){
  // into the same far-to-near painter order. Transparent crossings remain approximate.
  const primitives=[...faces.map(face=>({kind:'face',value:face,depth:face.depth})),...lines.map(line=>({kind:'line',value:line,depth:line.depth}))];
  primitives.sort((a,b)=>a.depth-b.depth);
- return {faces,lines,primitives,cube,evaluations,limited};
+ return {faces,lines,primitives,cube,gridLines,axesLines,evaluations,limited};
 }
 export function project3DScene(scene,width,height){
  const generator=project3DSceneSteps(scene,width,height);let next;do{next=generator.next();}while(!next.done);return next.value;
