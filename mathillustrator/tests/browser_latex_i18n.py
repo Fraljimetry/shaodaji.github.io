@@ -15,7 +15,7 @@ def run():
   # Active UI contract: no preset selector is displayed. General tooling is
   # visible by default; tool groups remain independently hideable.
   assert page.locator('#preset').is_hidden()
-  for group in ('basic','construction','illustration','diagram'):
+  for group in ('basic','construction','diagram'):
    assert page.locator(f'[data-tool-module="{group}"]').is_visible(),group
   page.locator('[data-tool-module="construction"] > h3 > .section-toggle').click()
   assert page.locator('#construction-tools').is_hidden()

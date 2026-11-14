@@ -137,7 +137,8 @@
             "off",
             "gentle",
             "medium",
-            "strong"
+            "strong",
+            "ultra"
           ]
         },
         "showAxes": {
@@ -245,10 +246,14 @@
           "description": "Optional v1 extension; false if absent. Alpha-preserving SVG/PNG/WebP only; JPEG option disabled if true; editor background unchanged."
         },
         "namingConvention": {
-      "enum": ["pascal", "camel", "snake"],
-      "description": "Optional v1 display-name convention for newly created objects. New projects use pascal; legacy projects missing this field remain camel. Existing names and IDs are never modified."
-    },
-    "freehandClose": {
+          "enum": [
+            "pascal",
+            "camel",
+            "snake"
+          ],
+          "description": "Optional v1 display-name convention for newly created objects. New projects use pascal; legacy projects missing this field remain camel. Existing names and IDs are never modified."
+        },
+        "freehandClose": {
           "type": "string",
           "enum": [
             "open",
@@ -322,7 +327,11 @@
             "function",
             "node",
             "morphism",
-            "regularPolygon"
+            "regularPolygon",
+            "ray",
+            "perpBisector",
+            "circleThrough3",
+            "spline"
           ]
         },
         "style": {
@@ -427,7 +436,10 @@
         },
         "joinStyle": {
           "type": "string",
-          "enum": ["corner", "smooth"],
+          "enum": [
+            "corner",
+            "smooth"
+          ],
           "description": "Optional freehand-only v1 extension, valid only with closed=true. Omission retains legacy cyclic closure."
         },
         "arrowStyle": {
@@ -866,6 +878,90 @@
                   ]
                 }
               ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ray"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "perpBisector"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "circleThrough3"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "spline"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs"
+            ],
+            "properties": {
+              "refs": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 2000
+              }
             }
           }
         }

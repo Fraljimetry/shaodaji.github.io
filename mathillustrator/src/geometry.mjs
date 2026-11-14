@@ -91,6 +91,7 @@ export function worldBounds(doc,resolver){
   else if(o.type==='freehand')for(const p of o.path)put(p);
   else if(o.refs){const p=resolver.points(o);for(const x of p)put(x);
    if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean))for(const vertex of regularPolygonVertices(p[0],p[1],o.sides))put(vertex);
+   if(o.type==='circleThrough3'&&p.length===3&&p.every(Boolean)){const circle=circumcircle(p);if(circle){const [cx,cy]=circle.center,r=circle.radius;put([cx-r,cy-r]);put([cx+r,cy+r]);}}
    if(o.type==='circle'&&p.every(Boolean)){const r=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);put([p[0][0]-r,p[0][1]-r]);put([p[0][0]+r,p[0][1]+r]);}
    if(o.type==='ellipse'&&p.every(Boolean)){
     if(p.length===3){const e=focalEllipse(p);if(e){const x=Math.hypot(e.rx*Math.cos(e.angle),e.ry*Math.sin(e.angle)),y=Math.hypot(e.rx*Math.sin(e.angle),e.ry*Math.cos(e.angle));put([e.cx-x,e.cy-y]);put([e.cx+x,e.cy+y]);}}
@@ -195,7 +196,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse} from './model.mjs?cut=round22';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round23';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -210,6 +211,20 @@ export function bboxOutsideViewport(points,width,height,margin=0){
   minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);
  }
  return maxX < -margin || minX > width+margin || maxY < -margin || minY > height+margin;
+}
+/** A forward half-line clipped to the current viewport; never extends backward
+ * past its defining start, even when the origin is off screen. */
+export function clipRay(a,b,width,height){
+ if(!Array.isArray(a)||!Array.isArray(b)||![...a,...b,width,height].every(Number.isFinite)||width<=0||height<=0)return null;
+ const dx=b[0]-a[0],dy=b[1]-a[1];if(Math.hypot(dx,dy)<1e-12)return null;
+ let lo=0,hi=Infinity;
+ for(const [v,d,min,max] of [[a[0],dx,0,width],[a[1],dy,0,height]]){
+  if(Math.abs(d)<1e-12){if(v<min||v>max)return null;continue;}
+  const t1=(min-v)/d,t2=(max-v)/d;
+  lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));
+ }
+ if(!Number.isFinite(lo)||!Number.isFinite(hi)||hi<lo)return null;
+ return [[a[0]+dx*lo,a[1]+dy*lo],[a[0]+dx*hi,a[1]+dy*hi]];
 }
 export function circleOutsideViewport(center,radius,width,height,margin=0){
  if(!Array.isArray(center)||center.length!==2||![...center,radius,width,height,margin].every(Number.isFinite)||radius<0||margin<0||width<=0||height<=0)return false;
@@ -289,13 +304,27 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
   }
   const pts=resolver.points(o);
   if(!Array.isArray(pts)||!pts.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)))continue;
-  if(['segment','arrow','line'].includes(o.type)&&pts.length===2){segment(pts[0],pts[1],o,o.type==='line');continue;}
+  if(['segment','arrow','line','ray','perpBisector'].includes(o.type)&&pts.length===2){
+   if(o.type==='perpBisector'){
+    const [a,b]=pts,dx=b[0]-a[0],dy=b[1]-a[1];
+    segment([(a[0]+b[0])/2,(a[1]+b[1])/2],[(a[0]+b[0])/2-dy,(a[1]+b[1])/2+dx],o,true);
+   }else if(o.type==='ray'){
+    // Projection t>=0: a ray is not limited to its second anchor.
+    const [a,b]=pts,dx=b[0]-a[0],dy=b[1]-a[1],dd=dx*dx+dy*dy;
+    if(dd>1e-20){const t=Math.max(0,((point[0]-a[0])*dx+(point[1]-a[1])*dy)/dd);offer([a[0]+t*dx,a[1]+t*dy],o);}
+   }else segment(pts[0],pts[1],o,o.type==='line');
+   continue;
+  }
+  if(o.type==='circleThrough3'&&pts.length===3){
+   const circ=circumcircle(pts);if(circ){const [a,b]=[circ.center,circ.radius],d=Math.hypot(point[0]-a[0],point[1]-a[1]);if(d>1e-10)offer([a[0]+b*(point[0]-a[0])/d,a[1]+b*(point[1]-a[1])/d],o);}
+   continue;
+  }
   if(o.type==='circle'&&pts.length===2){
    const [a,b]=pts,r=Math.hypot(a[0]-b[0],a[1]-b[1]),d=Math.hypot(point[0]-a[0],point[1]-a[1]);
    if(r>1e-10&&d>1e-10)offer([a[0]+r*(point[0]-a[0])/d,a[1]+r*(point[1]-a[1])/d],o);
    continue;
   }
-  let path=pts,closed=o.type==='polygon'||o.type==='rectangle'||o.type==='regularPolygon';
+  let path=pts,closed=o.type==='polygon'||o.type==='rectangle'||o.type==='regularPolygon'||(o.type==='spline'&&o.closed===true);
   if(o.type==='regularPolygon'){path=regularPolygonVertices(pts[0],pts[1],o.sides);}
   if(o.type==='ellipse'&&pts.length===3){
    const e=focalEllipse(pts);if(!e)continue;
@@ -314,7 +343,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
    const [a,b,c,d]=pts;
    path=Array.from({length:65},(_,i)=>{const t=i/64,u=1-t;return [0,1].map(j=>u*u*u*a[j]+3*u*u*t*b[j]+3*u*t*t*c[j]+t*t*t*d[j]);});closed=false;
   }
-  if(!['polyline','polygon','angle','regularPolygon','rectangle','ellipse','bezier'].includes(o.type))continue;
+  if(!['polyline','polygon','spline','angle','regularPolygon','rectangle','ellipse','bezier'].includes(o.type))continue;
   for(let i=1;i<path.length;i++)segment(path[i-1],path[i],o);
   if(closed&&path.length>2)segment(path.at(-1),path[0],o);
  }

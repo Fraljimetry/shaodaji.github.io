@@ -6,7 +6,20 @@ from browser_smoke import inline_html, download, cmd
 
 
 def snapshot(page):
-    return json.loads(download(page,'Save').read_text())
+    # Chromium throttles a long burst of automatic downloads from one opaque
+    # origin. This suite inspects the exact JSON Blob produced by the *real*
+    # Save handler; native downloads are separately tested in browser_smoke.
+    return json.loads(page.evaluate("""async () => {
+      let saved=null;
+      const create=URL.createObjectURL, click=HTMLAnchorElement.prototype.click;
+      try {
+        URL.createObjectURL=blob=>{saved=blob;return 'blob:round23-inspection';};
+        HTMLAnchorElement.prototype.click=function(){if(this.download!=='mathillustrator.json')click.call(this);};
+        document.getElementById('save').click();
+        if(!saved)throw Error('Save did not produce JSON Blob');
+        return await saved.text();
+      } finally {URL.createObjectURL=create;HTMLAnchorElement.prototype.click=click;}
+    }"""))
 
 
 def assert_grid(page, selector, has_fill, has_pointsize, width):
@@ -27,11 +40,9 @@ def assert_grid(page, selector, has_fill, has_pointsize, width):
     assert abs(metrics['width']['y']-metrics['opacity']['y'])<=1,(width, metrics)
     assert metrics['width']['x']<metrics['opacity']['x'],(width, metrics)
     if has_fill:
-        if selector.startswith('#properties'):
-            assert metrics['fill']['y']>metrics['stroke']['y'],(width, metrics)
-        else:
-            assert abs(metrics['stroke']['y']-metrics['fill']['y'])<=1,(width, metrics)
-            assert metrics['stroke']['x']<metrics['fill']['x'],(width, metrics)
+        # Round 22: inspector and new-object palettes both use paired columns.
+        assert abs(metrics['stroke']['y']-metrics['fill']['y'])<=1,(width, metrics)
+        assert metrics['stroke']['x']<metrics['fill']['x'],(width, metrics)
     if has_pointsize:
         assert metrics['pointsize']['y']>metrics['opacity']['y'],(width,metrics)
 

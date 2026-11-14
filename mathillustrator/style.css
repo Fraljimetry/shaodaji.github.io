@@ -411,3 +411,8 @@ html[data-theme="dark"]{--accent:#81b8ec;--hover:#294967}
 
 /* Override legacy per-control caps; each Settings value shares its track. */
 .rightpanel .settings-sections .controls > .section-body > .field > :is(#polygon-sides,#export-scale,#theme){width:100%;max-width:100%;min-width:0;justify-self:stretch;flex:none}
+
+/* Round 23: compact tool-filter setting stays visible when Geometry is expanded. */
+.geometry-mode{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);padding:1px 2px 5px;cursor:pointer}
+.geometry-mode input{margin:0;width:14px;height:14px;flex:none}
+.tool[hidden]{display:none!important}

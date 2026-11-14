@@ -1,6 +1,6 @@
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:true,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#172b4d',fill:'#e6eef9',opacity:1,width:2,pointSize:5},
@@ -17,9 +17,9 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','function','node','morphism'];
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','circle','circleThrough3','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
 const POINT_LIKE = new Set(['point','midpoint']);
-const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
+const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,circle:2,circleThrough3:3,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.
  * The old two-reference rectangle-bounds ellipse is intentionally retained.
  * Return null rather than producing NaN/Infinity on collapsed input. */
@@ -31,6 +31,19 @@ export function focalEllipse(p){
  const b=Math.sqrt((a-c)*(a+c)),cx=(f1[0]+f2[0])/2,cy=(f1[1]+f2[1])/2;
  if(!Number.isFinite(b)||b<=0||![cx,cy].every(finite))return null;
  return {cx,cy,rx:a,ry:b,angle:Math.atan2(dy,dx)};
+}
+/** Unique circle through three noncollinear world points. Translated coordinates
+ * avoid cancellation of large absolute positions, and near-collinear clicks
+ * are rejected rather than creating an invisible huge radius. */
+export function circumcircle(points){
+ if(!Array.isArray(points)||points.length!==3||!points.every(safeCoord))return null;
+ const [a,b,c]=points,ux=b[0]-a[0],uy=b[1]-a[1],vx=c[0]-a[0],vy=c[1]-a[1];
+ const u2=ux*ux+uy*uy,v2=vx*vx+vy*vy,cross=ux*vy-uy*vx;
+ if(!Number.isFinite(cross)||Math.abs(cross)<=1e-9*Math.sqrt(u2*v2)||u2<1e-18||v2<1e-18)return null;
+ const x=(u2*vy-v2*uy)/(2*cross),y=(v2*ux-u2*vx)/(2*cross);
+ const center=[a[0]+x,a[1]+y],radius=Math.hypot(x,y);
+ if(!center.every(finite)||!finite(radius)||radius<1e-9)return null;
+ return {center,radius};
 }
 const HEX = /^#[0-9a-fA-F]{6}$/;
 /** Unicode scalar values admitted by XML 1.0; SVG exports are XML, not HTML.
@@ -134,9 +147,9 @@ export function guardAnchorMove(before,after,anchorId){
   const p=resolver.points(o);if(!p.every(Boolean))return null;
   if(o.type==='morphism')return Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9?'coincident diagram nodes':null;
   try{checkNewGeometry(o.type,p);}catch(e){return e.message;}
-  if(['polygon','polyline'].includes(o.type)){
+  if(['polygon','polyline','spline'].includes(o.type)){
    for(let i=1;i<p.length;i++)if(Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1])<1e-9)return 'consecutive vertices coincide';
-   if(o.type==='polygon'&&Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-9)return 'closing vertices coincide';
+   if((o.type==='polygon'||(o.type==='spline'&&o.closed))&&Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-9)return 'closing vertices coincide';
   }
   return null;
  }
@@ -184,7 +197,8 @@ export function parseExpression(source){
 }
 /** Reject invisible *new* geometry without invalidating legacy v1 projects on import. */
 export function checkNewGeometry(type,p){
- if(['segment','arrow','line','circle','regularPolygon'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(['segment','arrow','line','ray','perpBisector','midpoint','circle','regularPolygon'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(type==='circleThrough3'&&!circumcircle(p))throw Error('Choose three noncollinear points for a circle.');
  if(type==='ellipse'&&p.length===3&&!focalEllipse(p))throw Error('Ellipse needs two foci and a third point outside the focal segment.');
  if(type==='rectangle'&&(Math.abs(p[0][0]-p[1][0])<1e-9||Math.abs(p[0][1]-p[1][1])<1e-9))throw Error('Rectangle requires nonzero width and height.');
  if(type==='angle'&&(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9||Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1])<1e-9))throw Error('Angle requires distinct rays.');
@@ -225,7 +239,7 @@ export function validateDoc(raw){
   if(o.style.pointSize!==undefined&&(!POINT_LIKE.has(o.type)||!finite(o.style.pointSize)||o.style.pointSize<1||o.style.pointSize>100))throw Error('Object point size must be 1–100 on points or midpoints.');
   const len=o.type==='ellipse'&&o.refs?.length===3?3:REF_LENGTHS[o.type];
   if(len!==undefined){if(!Array.isArray(o.refs)||o.refs.length!==len||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid reference count for '+o.type);}
-  else if(o.type==='polygon'||o.type==='polyline'){if(!Array.isArray(o.refs)||o.refs.length<(o.type==='polygon'?3:2)||o.refs.length>2000||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid vertex references.');}
+  else if(o.type==='polygon'||o.type==='polyline'||o.type==='spline'){if(!Array.isArray(o.refs)||o.refs.length<(o.type==='polyline'?2:3)||o.refs.length>2000||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid vertex references.');}
   else if(o.refs!==undefined)throw Error('Unexpected object references.');
   if(o.type==='point'||o.type==='node'||o.type==='text'){if(!safeCoord(o.xy))throw Error('Invalid object coordinates.');}
   if(o.type==='freehand'&&(!Array.isArray(o.path)||o.path.length<2||o.path.length>20000||!o.path.every(safeCoord)))throw Error('Invalid freehand path.');
@@ -241,7 +255,7 @@ export function validateDoc(raw){
   if(o.type==='morphism'&&(o.text.length>1000||!finite(o.bend??0)||Math.abs(o.bend)>5||o.refs[0]===o.refs[1]))throw Error('Invalid morphism label or bend.');
   if(o.arrowStyle!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','hook','hook-dashed','twohead','tail'].includes(o.arrowStyle)))throw Error('Invalid diagram arrow style.');
   if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
-  if(o.closed!==undefined&&(o.type!=='freehand'||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
+  if(o.closed!==undefined&&(!['freehand','spline'].includes(o.type)||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
   if(o.joinStyle!==undefined&&(o.type!=='freehand'||o.closed!==true||!['smooth','corner'].includes(o.joinStyle)))throw Error('Invalid free curve join style.');
   if(o.swap!==undefined&&(o.type!=='morphism'||typeof o.swap!=='boolean'))throw Error('Invalid morphism label-side flag.');
   if(o.routing!==undefined&&(o.type!=='morphism'||!['direct','avoid','avoid-crossings','scene-crossings'].includes(o.routing)))throw Error('Invalid morphism routing mode.');
@@ -286,8 +300,17 @@ export function validateDoc(raw){
  for(const o of d.objects)for(const ref of o.refs||[]){const parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
   if(o.type==='morphism'?parent.type!=='node':!POINT_LIKE.has(parent.type))throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
- const resolver=d.objects.some(o=>o.type==='regularPolygon')?createResolver(d):null;
- for(const o of d.objects)if(o.type==='regularPolygon'){const p=resolver.points(o);if(!p.every(Boolean)||Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');}
+ const constrained=new Set(['regularPolygon','ray','perpBisector','circleThrough3','spline']);
+ const resolver=d.objects.some(o=>constrained.has(o.type))?createResolver(d):null;
+ for(const o of d.objects)if(constrained.has(o.type)){
+  const p=resolver.points(o);if(!p.every(Boolean))throw Error('Invalid construction anchors for '+o.type+'.');
+  if(o.type==='regularPolygon'&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');
+  if(o.type==='spline'){
+   for(let i=1;i<p.length;i++)if(Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1])<1e-9)throw Error('Spline needs distinct consecutive vertices.');
+   if(o.closed&&Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-9)throw Error('Closed spline must not repeat its first vertex.');
+  }
+  if(o.type!=='regularPolygon')checkNewGeometry(o.type,p);
+ }
  const state=new Map();for(const id of ids){if(state.get(id)===2)continue;const stack=[[id,false]];while(stack.length){const [current,done]=stack.pop();if(done){state.set(current,2);continue;}const old=state.get(current);if(old===2)continue;if(old===1)throw Error('Cyclic object dependency.');state.set(current,1);stack.push([current,true]);for(const ref of objects.get(current).refs||[])if(state.get(ref)!==2)stack.push([ref,false]);}}
  return d;
 }
