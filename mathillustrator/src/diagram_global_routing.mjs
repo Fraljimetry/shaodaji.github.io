@@ -4,7 +4,7 @@
  * NOT a global planar-graph optimizer. Existing routing modes are immutable.
  * All work is screen-space; the semantic graph and saved JSON are untouched.
  */
-import {routeDiagramEdge,polylineVisualConflicts} from './diagram_routing.mjs';
+import {routeDiagramEdge,polylineVisualConflicts} from './diagram_routing.mjs?cut=round54';
 export const MAX_SCENE_ARROWS=48;
 const finitePoint=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);
 const goodBox=b=>!!b&&Number.isFinite(b.width)&&Number.isFinite(b.height)&&b.width>0&&b.height>0;

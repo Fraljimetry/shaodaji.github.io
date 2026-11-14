@@ -120,6 +120,28 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round53-startup"></script>
+  <script>
+  // Real browser imports can fail before any module code executes, leaving an
+  // apparently empty tool panel. Show an actionable error without touching data.
+  (function(){
+    let failure='';
+    function describe(event){
+      const message=event?.message||event?.reason?.message||event?.reason||'';
+      if(message)failure=String(message).slice(0,350);
+      else if(event?.target?.src)failure='Failed to load '+event.target.src;
+    }
+    window.addEventListener('error',describe,true);
+    window.addEventListener('unhandledrejection',describe);
+    window.addEventListener('load',()=>setTimeout(()=>{
+      if(document.querySelector('#basic-tools button[data-tool-choice]'))return;
+      const banner=document.createElement('div');banner.id='mathillustrator-startup-error';
+      banner.setAttribute('role','alert');
+      banner.style.cssText='position:fixed;z-index:999999;inset:auto 12px 12px;max-width:800px;background:#7f1d1d;color:white;padding:16px;border:1px solid #fca5a5;border-radius:7px;font:14px/1.6 system-ui;white-space:pre-wrap';
+      banner.textContent='MathIllustrator failed to initialize (Round 54).\n'+(failure||'Module startup did not populate the tools.')+'\nCheck that all files from the Round 54 overlay were uploaded. Your saved projects have not been cleared.';
+      document.body.append(banner);
+    },4000));
+  })();
+  </script>
+  <script type="module" src="./src/app.mjs?cut=round54"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
  * obstacle-free two-turn corridor exists, keep a visibly warned direct path
  * rather than silently claiming the route was corrected.
  */
-import {edgeBetweenBoxes} from './diagram_layout.mjs';
+import {edgeBetweenBoxes} from './diagram_layout.mjs?cut=round54';
 const CLEARANCE=10;
 function finitePoint(p){return Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);}
 export function boxRect(center,box,margin=0){

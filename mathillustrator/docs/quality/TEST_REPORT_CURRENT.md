@@ -1116,3 +1116,10 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - Post-fix Node: **357/357 PASS** (`node --test tests/*.test.mjs`). Historical Round 51E/51F tests updated to accept the new cache key, without changing the functionality they assert.
 - Chromium: **PASS** isolated `tests/browser_smoke.py` (startup, populated tool palette, draw/edit/export, undo/redo), Round 52 diagram snap/glyph tests, and direct 47-tool initialization with no JavaScript page errors. Chromium tests use a self-contained local inline fixture, not the live URL.
 - Corrected a test-harness fragility: `browser_smoke.inline_html()` now replaces the actual versioned module entry using a checked regex instead of silently failing to inject JavaScript when the query string changes. This is test-only, not part of the deployed runtime.
+
+### Round 54 — Startup/import-graph repair
+- **User report:** Round 53's entry-only URL change did not fix the hosted missing-tool symptom. Exact hosted runtime failure was not accessible for inspection.
+- **Confirmed risk:** `index.html` previously changed the app URL while imports of changed `model.mjs`, `diagram_routing.mjs`, `i18n.mjs` and their transitive dependencies retained historical query keys. This permits mixed-version cached modules on deployment.
+- **Fix:** All first-party ES module dependency edges use `cut=round54`; entry is `cut=round54`. Added non-destructive startup diagnostic if the Basic tool grid never initializes.
+- **Tests:** `node --test tests/*.test.mjs` passes 358/358; isolated Chromium `browser_smoke.py` and `browser_round52_diagram.py` pass. Fixture repaired for the synchronized import graph.
+- **Limitation:** Hosted website not tested. Chromium network navigation blocked in test environment; isolated tests do not reproduce caching behavior from real hosting. If still failing, the visible diagnostic can identify the next actual error.

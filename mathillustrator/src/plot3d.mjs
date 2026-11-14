@@ -1,7 +1,7 @@
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
-import {parseCurveExpression,parseComplexExpression,domainColor} from './plot_modes.mjs?cut=round39';
+import {parseCurveExpression,parseComplexExpression,domainColor} from './plot_modes.mjs?cut=round54';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
 export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
 export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1,grid:false,axes:false};

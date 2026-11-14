@@ -1170,3 +1170,9 @@ User requests recorded, with implemented items distinguished from unresolved one
 
 - **A posteriori glitch amendment (critical):** The Round 52 release modified `src/app.mjs` without updating the `index.html` module script query. Production Chrome showed empty Basic/Diagrams/Geometry panels and empty Properties; stale cached entry modules are a plausible cause. Update the entry URL on every subsequent runtime release, including when the app module is the only changed source file. Never claim production cache behavior was tested locally.
 - **Process/quality:** Verify HTML module URLs against the shipped changes, run Node import/export validation and Chromium startup, and test that actual tool buttons exist after startup. Preserve local projects; never suggest clearing site storage as a refresh workaround.
+
+### Round 54 — Deployment startup recovery (2026-11-14)
+- User reports Round 53 did not restore the hosted tool palette; do not present a locally passing startup test as proof of production functionality.
+- Keep all first-party ES module import URLs in a release synchronized to one cache-version token, not only `index.html` or the entry module. Preserve the complete module graph and prevent stale mixed-version imports.
+- A failed module import or interrupted application initialization must surface a visible, non-destructive diagnostic rather than silently showing empty tool panels. Never delete saved local projects for startup recovery.
+- Browser fixture must include up-to-date module dependencies and fail if tool initialization is missing. Hosted deployment requires separate real-site confirmation.

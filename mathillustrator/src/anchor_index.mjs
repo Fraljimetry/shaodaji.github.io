@@ -1,4 +1,4 @@
-import {POINT_LIKE} from './model.mjs?cut=round51h';
+import {POINT_LIKE} from './model.mjs?cut=round54';
 /** Screen-space grid for point and midpoint picking/snapping.
  * Built lazily from a settled document/viewport. The caller invalidates after
  * any committed mutation, undo/import or pan/zoom. Never use to decide which
