@@ -1019,3 +1019,20 @@ The user requested a focused **glyph-correction round** rather than adding more 
 | R375 | Concise delivery: changes and ZIP only; change/new files under `mathillustrator/`, no commits. | **Maintained.** Full Node and local Chromium verification are reported in the existing current quality file. |
 
 **Boundaries:** timestamp naming applies to filenames, not metadata embedded in exported SVG/PNG/TeX; parallel downloads within the same second may receive the same suggested name and the browser decides how to disambiguate. SVG plot glyphs represent *types of plot*, not a preview of the user's actual expression. Cross-browser, hosted HTTP cache behavior and real GPU rendering remain outside this cut.
+
+
+## Round 51G — transformation sketch alignment and Geometry glyph uniformity (2026-11-14)
+
+The user supplied a hand sketch for the five **Transformation** glyphs and requested another strict geometry-icon cleanup. This cut is intentionally visual and consistency-focused.
+
+| ID | Requested behavior / constraint | Round 51G disposition |
+| --- | --- | --- |
+| R376 | Use the supplied sketch to correct the five Transformation glyphs. | **Implemented.** Translation, Reflection, Rotation, Dilation and Circle inversion were redrawn to follow the provided sketch logic. |
+| R377 | All glyph points should have the same size as Point. | **Implemented.** All filled point markers in glyphs now use the same radius as Point, including plotting-mode markers. |
+| R378 | Angle and Fixed angle should use the same tilt. | **Implemented.** Fixed angle now reuses the same ray tilt as Angle, with two arcs added. |
+| R379 | Remove the point on the horizontal line of Perpendicular foot. | **Implemented.** |
+| R380 | Tangents to circle should be truly tangent, with correctly placed tangent points. | **Implemented** in the glyph drawing. |
+| R381 | Hyperbola should show detached foci and vertices. | **Implemented.** |
+| R382 | Rectangle should be a non-square and not tilted. | **Implemented.** |
+| R383 | Remove the point on top of Regular polygon. | **Implemented.** The glyph keeps only the center point. |
+| R384 | Be more uniform in Geometry glyph design. | **Implemented** for point size, angle tilt, and related line/diagonal orientation. |

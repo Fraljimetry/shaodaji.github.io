@@ -933,3 +933,24 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Chromium:** **9 local isolated Chromium scripts PASS**: `browser_round51f_exports_plotglyphs.py` (five actual plotted objects, matching dropdown/Objects SVG, 2D/3D toggle, every Geometry marker size/diagonal, real downloaded SVG/PNG/JPEG/WebP/JSON/TikZ/tikz-cd and Save filenames with file signatures); `browser_smoke.py`; `browser_round50_geometry.py`; `browser_round51b_geometry_sweep.py` (44 selectable Geometry tools); `browser_round51c_subtle_geometry.py`; `browser_round51e_panel_glyphs.py` (32 constructed objects, transform parity); `browser_round47_order_geometry.py`; `browser_round48_lighting_layout.py`; and `browser_round28_quality.py`.
 
 **Self-critique and limitations:** The original source-inlining browser harness did not recognize the new `round51f` index token; it silently left an uninitialized app in its HTML fixture. This was fixed in `browser_smoke.py`, not treated as a product startup failure. An early tikz-cd download test stalled because the new test forgot to accept the import confirmation dialog; the harness was corrected and the full exporter test passed. The icon normalization does **not** change actual Geometry geometry/sampling algorithms or mean all 44 construction workflows have been exhaustively dragged/exported. Date/time is embedded in suggested **filenames** only; duplicate downloads in the same second rely on browser collision handling. No hosted HTTP test, Safari/Firefox, native touch or performance guarantee.
+
+
+## Round 51G — transformation sketch alignment and Geometry glyph uniformity (2026-11-14)
+
+**Baseline:** latest local Round 51 worktree with the accepted Round 51E and Round 51F overlays applied. Changed/new files only under `mathillustrator/`; no Git commits.
+
+**Implemented:**
+- Redrew the five Transformation glyphs in `src/app.mjs` according to the user-provided hand sketch.
+- Corrected Geometry glyph inconsistencies: Perpendicular foot lost the extra line-point, Tangents to circle now uses actual tangent geometry, Hyperbola separates foci and vertices, Rectangle is axis-aligned and non-square, and Regular polygon no longer has the top point.
+- Fixed-angle rays now share the same tilt as the Angle glyph.
+- All filled point markers in glyphs now use a uniform radius equal to the Point glyph, including plotting-mode markers.
+
+**Node:** `node --test tests/*.test.mjs` → **342 / 342 PASS**.
+
+**Chromium:** clean exit 0 for:
+1. `browser_round51b_geometry_sweep.py`
+2. `browser_round51e_panel_glyphs.py`
+3. `browser_round51f_exports_plotglyphs.py`
+4. `browser_smoke.py`
+
+**Coverage boundary:** this cut verifies glyph rendering, panel parity, export naming, and representative Geometry behavior. It does **not** newly prove every Geometry construction workflow or every numerical edge case.
