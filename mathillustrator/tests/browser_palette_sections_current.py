@@ -39,12 +39,12 @@ def run():
         assert not errors,errors
         assert page.locator('.module-controls').count()==0
         assert page.locator('[id^="module-"]').count()==0
-        assert sequence(page,'#panel-sections > .toolgroup')==['basic','geometry','diagrams','illustration']
+        assert sequence(page,'#panel-sections > .toolgroup')==['basic','diagrams','geometry']
         assert sequence(page,'#settings-sections > .controls')==['plotting','geometry-options','new-object-style','page-appearance','interface']
-        assert page.locator('.toolgroup > h3 > .section-toggle').count()==4
+        assert page.locator('.toolgroup > h3 > .section-toggle').count()==3
         assert page.locator('#settings-sections > .controls > h3 > .section-toggle').count()==5
         assert page.locator('.settings-collection > h3 > .section-toggle').count()==1
-        assert page.locator('.section-drag-handle').count()==13
+        assert page.locator('.section-drag-handle').count()==12
         assert page.locator('#construction-tools [data-tool-choice="point"]').is_visible()
         assert page.locator('#default-stroke').is_visible()
         assert page.locator('#ui-font').is_visible()
@@ -66,8 +66,8 @@ def run():
         assert page.locator('#drawing').get_attribute('data-tool')=='point','Collapsing UI changed active tool'
         toggle.click()
         # Alt+ArrowDown reorders accessible headings; no selection or project changes.
-        handle=section.locator(':scope > h3 > .section-drag-handle');handle.focus();handle.press('Alt+ArrowDown')
-        assert sequence(page,'#panel-sections > .toolgroup')==['basic','diagrams','geometry','illustration']
+        handle=section.locator(':scope > h3 > .section-drag-handle');handle.focus();handle.press('Alt+ArrowUp')
+        assert sequence(page,'#panel-sections > .toolgroup')==['basic','geometry','diagrams']
         assert page.locator('[data-section-id="settings"]').evaluate('(e)=>e.parentElement.lastElementChild===e')
         panel=page.locator('[data-section-id="plotting"]')
         panel.locator('.section-drag-handle').focus()
@@ -86,7 +86,7 @@ def run():
         # shim verifies restoration logic, NOT real-origin persistence.
         prefs=json.loads(page.evaluate('localStorage.getItem("mathillustrator-layout-v1")'))
         assert prefs['collapsed']['geometry-options'] is True
-        assert prefs['sections'].index('diagrams')<prefs['sections'].index('geometry')
+        assert prefs['sections'].index('geometry')<prefs['sections'].index('diagrams')
         project=snapshot(page)
         next_page=context.new_page();next_page.set_default_timeout(8000)
         next_page.on('pageerror',lambda e:errors.append(str(e)))
@@ -94,7 +94,7 @@ def run():
         next_page.set_content(fixture({'mathillustrator-layout-v1':json.dumps(prefs),
                                       'mathillustrator-project-v1':json.dumps(project)}),wait_until='load')
         page.close();page=next_page
-        assert sequence(page,'#panel-sections > .toolgroup')==['basic','diagrams','geometry','illustration']
+        assert sequence(page,'#panel-sections > .toolgroup')==['basic','geometry','diagrams']
         assert sequence(page,'#settings-sections > .controls')==['geometry-options','plotting','new-object-style','page-appearance','interface']
         assert page.locator('#freehand-close').is_hidden()
         assert page.locator('[data-section-id="settings"] .section-toggle').first.get_attribute('aria-expanded')=='true'
@@ -103,7 +103,7 @@ def run():
         # moves exactly one section and cannot escape its tool/settings group.
         page.locator('[data-section-id="geometry"] > h3 > .section-drag-handle').drag_to(
             page.locator('[data-section-id="basic"] .section-toggle'),target_position={'x':16,'y':2})
-        assert sequence(page,'#panel-sections > .toolgroup')==['geometry','basic','diagrams','illustration']
+        assert sequence(page,'#panel-sections > .toolgroup')==['geometry','basic','diagrams']
         page.locator('[data-section-id="plotting"] .section-drag-handle').drag_to(
             page.locator('[data-section-id="geometry-options"] .section-toggle'),target_position={'x':16,'y':2})
         assert sequence(page,'#settings-sections > .controls')==['plotting','geometry-options','new-object-style','page-appearance','interface']
@@ -161,11 +161,11 @@ def run():
         old_page=context.new_page();old_page.set_default_timeout(8000)
         old_page.on('pageerror',lambda e:errors.append(str(e)))
         old_page.set_content(fixture({'mathillustrator-layout-v1':json.dumps({
-            'language':'en','sections':['page-appearance','plotting-','geometry-options','illustration','basic','diagrams','geometry']})}),wait_until='load')
+            'language':'en','sections':['page-appearance','plotting-','geometry-options','basic','diagrams','geometry']})}),wait_until='load')
         assert sequence(old_page,'#settings-sections > .controls')==[
             'page-appearance','plotting','geometry-options','new-object-style','interface']
         assert sequence(old_page,'#panel-sections > .toolgroup')==[
-            'illustration','basic','diagrams','geometry']
+            'basic','diagrams','geometry']
         old_page.close()
         assert not errors,errors
         browser.close()

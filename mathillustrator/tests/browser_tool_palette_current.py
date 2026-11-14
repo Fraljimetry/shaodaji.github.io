@@ -30,7 +30,7 @@ def run():
         assert page.locator('#basic-tools [data-tool-choice="pan"]').count()==1
         assert page.locator('#module-basic').count()==0
         assert page.locator('.module-controls').count()==0
-        assert page.locator('#panel-sections > .toolgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.toolModule)')==['basic','construction','diagram']
+        assert page.locator('#panel-sections > .toolgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.toolModule)')==['basic','diagram','construction']
         assert page.locator('[data-tool-module="diagram"]').get_attribute('data-section-id')=='diagrams'
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-toggle > span:last-child').all_inner_texts()==['Points & lines','Circles & conics','Polygons','Curves']
         assert page.locator('[data-tool-choice]').evaluate_all('(nodes)=>new Set(nodes.map(n=>n.dataset.toolChoice)).size===nodes.length')

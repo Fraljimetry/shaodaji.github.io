@@ -94,12 +94,15 @@ def run():
         # A filled shape exposes both palette columns; references and type stay unchanged.
         cmd(page,'Q=(3,3)')
         cmd(page,'Rectangle(P,Q)')
+        # Round 32 attaches independently editable Segment sides; select the
+        # rectangle owner rather than the newest derived side.
+        page.locator('#object-search').fill('Rectangle')
         page.locator('#objects .object').first.click()
         assert_grid(page,object_grid,True,False,1440)
         assert page.locator('#properties [data-color-swatches="object"] button').count()==20
         swatch=page.locator('#properties [data-color-swatches="object"][data-color-property="fill"] button[data-color="#ef4444"]')
         swatch.click()
-        assert snapshot(page)['objects'][-1]['style']['fill']=='#ef4444'
+        assert next(o for o in snapshot(page)['objects'] if o['type']=='rectangle')['style']['fill']=='#ef4444'
         # Failed numeric edit and invalid import do not affect saved project state.
         good=snapshot(page)
         page.locator(object_grid+' .style-width input').fill('101')

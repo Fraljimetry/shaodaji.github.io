@@ -1,0 +1,2687 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Round34 dense diagram + dynamic geometry"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": false,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -8,
+        5
+      ],
+      "text": "\\log x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 1"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -4,
+        5
+      ],
+      "text": "\\sin x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 2"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        0,
+        5
+      ],
+      "text": "A_{ij}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 3"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        4,
+        5
+      ],
+      "text": "\\frac{n+1}{n}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 4"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        8,
+        5
+      ],
+      "text": "\\alpha\\to\\beta",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 5"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -8,
+        1.9
+      ],
+      "text": "\\log x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 6"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -4,
+        1.9
+      ],
+      "text": "\\sin x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 7"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        0,
+        1.9
+      ],
+      "text": "A_{ij}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 8"
+    },
+    {
+      "id": "o9",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        4,
+        1.9
+      ],
+      "text": "\\frac{n+1}{n}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 9"
+    },
+    {
+      "id": "o10",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        8,
+        1.9
+      ],
+      "text": "\\alpha\\to\\beta",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 10"
+    },
+    {
+      "id": "o11",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -8,
+        -1.2000000000000002
+      ],
+      "text": "\\log x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 11"
+    },
+    {
+      "id": "o12",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -4,
+        -1.2000000000000002
+      ],
+      "text": "\\sin x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 12"
+    },
+    {
+      "id": "o13",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        0,
+        -1.2000000000000002
+      ],
+      "text": "A_{ij}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 13"
+    },
+    {
+      "id": "o14",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        4,
+        -1.2000000000000002
+      ],
+      "text": "\\frac{n+1}{n}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 14"
+    },
+    {
+      "id": "o15",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        8,
+        -1.2000000000000002
+      ],
+      "text": "\\alpha\\to\\beta",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 15"
+    },
+    {
+      "id": "o16",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -8,
+        -4.300000000000001
+      ],
+      "text": "\\log x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 16"
+    },
+    {
+      "id": "o17",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        -4,
+        -4.300000000000001
+      ],
+      "text": "\\sin x",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 17"
+    },
+    {
+      "id": "o18",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        0,
+        -4.300000000000001
+      ],
+      "text": "A_{ij}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 18"
+    },
+    {
+      "id": "o19",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        4,
+        -4.300000000000001
+      ],
+      "text": "\\frac{n+1}{n}",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": true,
+      "name": "Node 19"
+    },
+    {
+      "id": "o20",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "node",
+      "xy": [
+        8,
+        -4.300000000000001
+      ],
+      "text": "\\alpha\\to\\beta",
+      "fontSize": 17,
+      "textMode": "latex",
+      "nodeBorder": false,
+      "name": "Node 20"
+    },
+    {
+      "id": "o21",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "avoid",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 21"
+    },
+    {
+      "id": "o22",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o1",
+        "o6"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "avoid",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 22"
+    },
+    {
+      "id": "o23",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o1",
+        "o7"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "avoid",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 23"
+    },
+    {
+      "id": "o24",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 24"
+    },
+    {
+      "id": "o25",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o2",
+        "o7"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 25"
+    },
+    {
+      "id": "o26",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o2",
+        "o8"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 26"
+    },
+    {
+      "id": "o27",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o3",
+        "o4"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 27"
+    },
+    {
+      "id": "o28",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o3",
+        "o8"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 28"
+    },
+    {
+      "id": "o29",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o3",
+        "o9"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 29"
+    },
+    {
+      "id": "o30",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o4",
+        "o5"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 30"
+    },
+    {
+      "id": "o31",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o4",
+        "o9"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 31"
+    },
+    {
+      "id": "o32",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o4",
+        "o10"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 32"
+    },
+    {
+      "id": "o33",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o5",
+        "o10"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "direct",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 33"
+    },
+    {
+      "id": "o34",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o6",
+        "o7"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 34"
+    },
+    {
+      "id": "o35",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o6",
+        "o11"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 35"
+    },
+    {
+      "id": "o36",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o6",
+        "o12"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 36"
+    },
+    {
+      "id": "o37",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o7",
+        "o8"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "avoid",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 37"
+    },
+    {
+      "id": "o38",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o7",
+        "o12"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "avoid",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 38"
+    },
+    {
+      "id": "o39",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o7",
+        "o13"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "avoid",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 39"
+    },
+    {
+      "id": "o40",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o8",
+        "o9"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 40"
+    },
+    {
+      "id": "o41",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o8",
+        "o13"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 41"
+    },
+    {
+      "id": "o42",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o8",
+        "o14"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 42"
+    },
+    {
+      "id": "o43",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o9",
+        "o10"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "direct",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 43"
+    },
+    {
+      "id": "o44",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o9",
+        "o14"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "direct",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 44"
+    },
+    {
+      "id": "o45",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o9",
+        "o15"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "direct",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 45"
+    },
+    {
+      "id": "o46",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o10",
+        "o15"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 46"
+    },
+    {
+      "id": "o47",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o11",
+        "o12"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 47"
+    },
+    {
+      "id": "o48",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o11",
+        "o16"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 48"
+    },
+    {
+      "id": "o49",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o11",
+        "o17"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 49"
+    },
+    {
+      "id": "o50",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o12",
+        "o13"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 50"
+    },
+    {
+      "id": "o51",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o12",
+        "o17"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 51"
+    },
+    {
+      "id": "o52",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o12",
+        "o18"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 52"
+    },
+    {
+      "id": "o53",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o13",
+        "o14"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "avoid",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 53"
+    },
+    {
+      "id": "o54",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o13",
+        "o18"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "avoid",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 54"
+    },
+    {
+      "id": "o55",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o13",
+        "o19"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "avoid",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 55"
+    },
+    {
+      "id": "o56",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o14",
+        "o15"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 56"
+    },
+    {
+      "id": "o57",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o14",
+        "o19"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 57"
+    },
+    {
+      "id": "o58",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o14",
+        "o20"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 58"
+    },
+    {
+      "id": "o59",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#cc8800",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o15",
+        "o20"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 59"
+    },
+    {
+      "id": "o60",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o16",
+        "o17"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 60"
+    },
+    {
+      "id": "o61",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#3657ad",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o17",
+        "o18"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": 0.5,
+      "routing": "direct",
+      "arrowStyle": "dotted",
+      "labelAvoid": true,
+      "name": "Morphism 61"
+    },
+    {
+      "id": "o62",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#16a34a",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o18",
+        "o19"
+      ],
+      "text": "",
+      "textMode": "latex",
+      "bend": -0.7,
+      "routing": "direct",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 62"
+    },
+    {
+      "id": "o63",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ef4444",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "morphism",
+      "refs": [
+        "o19",
+        "o20"
+      ],
+      "text": "\\phi",
+      "textMode": "latex",
+      "bend": 0,
+      "routing": "avoid",
+      "arrowStyle": "solid",
+      "labelAvoid": true,
+      "name": "Morphism 63"
+    },
+    {
+      "id": "o64",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G1",
+      "xy": [
+        -9,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o65",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G2",
+      "xy": [
+        -6.8,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o66",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G3",
+      "xy": [
+        -4.6,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o67",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G4",
+      "xy": [
+        -2.3999999999999995,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o68",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G5",
+      "xy": [
+        -0.1999999999999993,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o69",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G6",
+      "xy": [
+        2,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o70",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G7",
+      "xy": [
+        4.200000000000001,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o71",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G8",
+      "xy": [
+        6.400000000000002,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o72",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G9",
+      "xy": [
+        8.600000000000001,
+        -8
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o73",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G10",
+      "xy": [
+        -9,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o74",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G11",
+      "xy": [
+        -6.8,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o75",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G12",
+      "xy": [
+        -4.6,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o76",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G13",
+      "xy": [
+        -2.3999999999999995,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o77",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G14",
+      "xy": [
+        -0.1999999999999993,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o78",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G15",
+      "xy": [
+        2,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o79",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G16",
+      "xy": [
+        4.200000000000001,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o80",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G17",
+      "xy": [
+        6.400000000000002,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o81",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "G18",
+      "xy": [
+        8.600000000000001,
+        -10.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o82",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "regularPolygon",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "sides": 5,
+      "name": "RegularPolygon 82",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o83",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "edgeOf": "o82",
+      "edgeIndex": 0,
+      "name": "Segment 83",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o84",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "edgeOf": "o82",
+      "edgeIndex": 1,
+      "name": "Segment 84",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o85",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "edgeOf": "o82",
+      "edgeIndex": 2,
+      "name": "Segment 85",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o86",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "edgeOf": "o82",
+      "edgeIndex": 3,
+      "name": "Segment 86",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o87",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "edgeOf": "o82",
+      "edgeIndex": 4,
+      "name": "Segment 87",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o88",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "regularPolygon",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "sides": 6,
+      "name": "RegularPolygon 88",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o89",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "edgeOf": "o88",
+      "edgeIndex": 0,
+      "name": "Segment 89",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o90",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "edgeOf": "o88",
+      "edgeIndex": 1,
+      "name": "Segment 90",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o91",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "edgeOf": "o88",
+      "edgeIndex": 2,
+      "name": "Segment 91",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o92",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "edgeOf": "o88",
+      "edgeIndex": 3,
+      "name": "Segment 92",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o93",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "edgeOf": "o88",
+      "edgeIndex": 4,
+      "name": "Segment 93",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o94",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "edgeOf": "o88",
+      "edgeIndex": 5,
+      "name": "Segment 94",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o95",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "regularPolygon",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "sides": 7,
+      "name": "RegularPolygon 95",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o96",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 0,
+      "name": "Segment 96",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o97",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 1,
+      "name": "Segment 97",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o98",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 2,
+      "name": "Segment 98",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o99",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 3,
+      "name": "Segment 99",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o100",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 4,
+      "name": "Segment 100",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o101",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 5,
+      "name": "Segment 101",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o102",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "edgeOf": "o95",
+      "edgeIndex": 6,
+      "name": "Segment 102",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o103",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "rectangle",
+      "refs": [
+        "o64",
+        "o76"
+      ],
+      "name": "Rectangle 103",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o104",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o76"
+      ],
+      "edgeOf": "o103",
+      "edgeIndex": 0,
+      "name": "Segment 104",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o105",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o76"
+      ],
+      "edgeOf": "o103",
+      "edgeIndex": 1,
+      "name": "Segment 105",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o106",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o76"
+      ],
+      "edgeOf": "o103",
+      "edgeIndex": 2,
+      "name": "Segment 106",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o107",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o76"
+      ],
+      "edgeOf": "o103",
+      "edgeIndex": 3,
+      "name": "Segment 107",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o108",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "rectangle",
+      "refs": [
+        "o65",
+        "o77"
+      ],
+      "name": "Rectangle 108",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o109",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o65",
+        "o77"
+      ],
+      "edgeOf": "o108",
+      "edgeIndex": 0,
+      "name": "Segment 109",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o110",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o65",
+        "o77"
+      ],
+      "edgeOf": "o108",
+      "edgeIndex": 1,
+      "name": "Segment 110",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o111",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o65",
+        "o77"
+      ],
+      "edgeOf": "o108",
+      "edgeIndex": 2,
+      "name": "Segment 111",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o112",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o65",
+        "o77"
+      ],
+      "edgeOf": "o108",
+      "edgeIndex": 3,
+      "name": "Segment 112",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o113",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "rectangle",
+      "refs": [
+        "o66",
+        "o78"
+      ],
+      "name": "Rectangle 113",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o114",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o78"
+      ],
+      "edgeOf": "o113",
+      "edgeIndex": 0,
+      "name": "Segment 114",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o115",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o78"
+      ],
+      "edgeOf": "o113",
+      "edgeIndex": 1,
+      "name": "Segment 115",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o116",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o78"
+      ],
+      "edgeOf": "o113",
+      "edgeIndex": 2,
+      "name": "Segment 116",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o117",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o78"
+      ],
+      "edgeOf": "o113",
+      "edgeIndex": 3,
+      "name": "Segment 117",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o118",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o64",
+        "o65"
+      ],
+      "name": "Circle 118",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o119",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o66",
+        "o67"
+      ],
+      "name": "Circle 119",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o120",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o68",
+        "o69"
+      ],
+      "name": "Circle 120",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o121",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o64",
+        "o72"
+      ],
+      "name": "Segment 121",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o122",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o65",
+        "o73"
+      ],
+      "name": "Segment 122",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o123",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o66",
+        "o74"
+      ],
+      "name": "Segment 123",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o124",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o67",
+        "o75"
+      ],
+      "name": "Segment 124",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o125",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "midpoint",
+      "refs": [
+        "o64",
+        "o73"
+      ],
+      "name": "Midpoint 125",
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o126",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "midpoint",
+      "refs": [
+        "o65",
+        "o74"
+      ],
+      "name": "Midpoint 126",
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o127",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "midpoint",
+      "refs": [
+        "o66",
+        "o75"
+      ],
+      "name": "Midpoint 127",
+      "pointLabelMode": "latex"
+    }
+  ],
+  "nextId": 128
+}

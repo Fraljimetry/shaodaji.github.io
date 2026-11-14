@@ -97,7 +97,7 @@ export function polylineVisualConflicts(candidate,priorPaths,limit=8192){
 const MAX_PRIORS=128;
 export function routeDiagramEdge(a,b,fromBox,toBox,nodeObstacles=[],mode='direct',priorPaths=[]){
  if(!finitePoint(a)||!finitePoint(b))return {status:'invalid',points:[]};
- const ends=edgeBetweenBoxes(a,b,fromBox,toBox);
+ const ends=edgeBetweenBoxes(a,b,fromBox,toBox,4);
  if(!ends)return {status:'overlap',points:[]};
  const direct=[ends.start,ends.end];
  if(!['avoid','avoid-crossings'].includes(mode))return {status:'direct',points:direct};
@@ -123,8 +123,8 @@ export function routeDiagramEdge(a,b,fromBox,toBox,nodeObstacles=[],mode='direct
   const sa=Math.sign(lane-av),sb=Math.sign(lane-bv);if(!sa||!sb)continue;
   const trimA=alongY?fromBox.height/2:fromBox.width/2;
   const trimB=alongY?toBox.height/2:toBox.width/2;
-  const ptA=alongY?[a[0],av+sa*(trimA+2)]:[av+sa*(trimA+2),a[1]];
-  const ptB=alongY?[b[0],bv+sb*(trimB+2)]:[bv+sb*(trimB+2),b[1]];
+  const ptA=alongY?[a[0],av+sa*(trimA+4)]:[av+sa*(trimA+4),a[1]];
+  const ptB=alongY?[b[0],bv+sb*(trimB+4)]:[bv+sb*(trimB+4),b[1]];
   const cornerA=alongY?[a[0],lane]:[lane,a[1]],cornerB=alongY?[b[0],lane]:[lane,b[1]];
   const path=[ptA,cornerA,cornerB,ptB].filter((p,i,arr)=>!i||!samePoint(p,arr[i-1]));
   if(hitPath(path,obstacles))continue;

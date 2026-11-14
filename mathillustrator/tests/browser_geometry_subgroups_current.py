@@ -62,7 +62,7 @@ def run():
         circles.locator('> h4 > .section-drag-handle').drag_to(
             page.locator('[data-geometry-group="points-lines"] > h4 > .section-toggle'),target_position={'x':15,'y':2})
         assert order(page)==['circles-conics','points-lines','polygons','curves']
-        assert page.locator('#panel-sections > .toolgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.sectionId)')==['basic','geometry','diagrams']
+        assert page.locator('#panel-sections > .toolgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.sectionId)')==['basic','diagrams','geometry']
         assert snapshot(page)==original
         # Hide a category again and save UI preferences. Project JSON is unchanged.
         circles.locator('> h4 > .section-toggle').click()

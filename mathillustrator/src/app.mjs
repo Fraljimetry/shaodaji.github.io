@@ -1,4 +1,5 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
+import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
 import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round33';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round33';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
@@ -7,8 +8,8 @@ import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_la
 import {localizeUI,translated} from './i18n.mjs?cut=round29';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round28';
-import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
-import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round33';
+import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
+import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round34';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
@@ -75,7 +76,7 @@ glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
- 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Infinite line'],['perpBisector','Perp. bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circleCircleIntersection','Circle–circle intersections'],['ellipse','Ellipse'],['rectangle','Rectangle'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve']],
+ 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Line'],['perpBisector','Perpendicular bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circleCircleIntersection','Circle–circle intersections'],['ellipse','Ellipse'],['rectangle','Rectangle'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve']],
  'diagram-tools':[['node','Diagram node'],['morphism','Morphism'],['text','Text']]
 };
 // An interface-only visibility preference: advanced tools remain functional in
@@ -266,6 +267,33 @@ function labelBox(o){
  }
  return nodeBox(o.text,o.fontSize);
 }
+/** The visible object, not its invisible selectable hit rectangle, determines
+ * morphism endpoints. When a node has a border the border is the object;
+ * otherwise the target is its mathematical/plain text glyphs. */
+function arrowTargetBox(o){
+ if(o.nodeBorder)return labelBox(o);
+ if(o.textMode==='latex'&&mathReady()){
+  try{const m=mathMetrics(o.text,o.fontSize||17);return {width:Math.max(4,m.width),height:Math.max(4,m.height)};}
+  catch{return labelBox(o);}
+ }
+ return plainNodeInkBox(o.text,o.fontSize||17);
+}
+/** Iterate clip points with the quadratic control tangent, rather than
+ * clipping a curved arrow to the irrelevant node-center line. All paths and
+ * exports consume the same normalized endpoint pair. For bends=0 the exact
+ * straight-routing result is retained. */
+function curveEndpointRoute(from,to,fromBox,toBox,route,bend){
+ if(!route?.points||route.points.length!==2||!bend)return route;
+ let [start,end]=route.points;
+ for(let i=0;i<4;i++){
+  const curve=arrowCurve(start,end,bend);
+  if(!curve)break;
+  const s=boxEdgeToward(from,curve.control,fromBox,4),t=boxEdgeToward(to,curve.control,toBox,4);
+  if(!s||!t||Math.hypot(s[0]-t[0],s[1]-t[1])<7)break;
+  start=s;end=t;
+ }
+ return {...route,points:[start,end]};
+}
 function latexDisplay(o,x,y,fontSize,{anchor='start',vertical='baseline',color=o.style.stroke,opacity=o.style.opacity,exporting=false}={}){
  if(o.textMode!=='latex')return null;
  try{return renderLatexSvg(o.text,x,y,fontSize,{anchor,vertical,color,opacity});}
@@ -371,7 +399,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='morphism'&&coords?.length===2){
   const fromNode=resolver.object(o.refs[0]),toNode=resolver.object(o.refs[1]);
   if(!fromNode||!toNode||fromNode.hidden||toNode.hidden||fromNode.style.opacity===0||toNode.style.opacity===0)return;
-  const fromBox=labelBox(fromNode),toBox=labelBox(toNode);
+  const fromBox=arrowTargetBox(fromNode),toBox=arrowTargetBox(toNode);
   const auto=['avoid','avoid-crossings','scene-crossings'].includes(o.routing);
   const route=morphismRoutes?.get(o.id);
   if(!route)return; // Route was validated and frozen for this render in document order.
@@ -467,7 +495,7 @@ function draw(svg,{exporting=false}={}){
   diagramBoxes=new Map();for(const node of doc.objects){
    if(node.type!=='node'||node.hidden||node.style?.opacity===0)continue;
    const center=resolver.at(node.id);if(!center)continue;
-   diagramBoxes.set(node.id,boxRect(project(center),labelBox(node)));
+   diagramBoxes.set(node.id,boxRect(project(center),arrowTargetBox(node)));
   }
  }
  // Cut24: calculate routes ONCE in stable document order. Crossing reduction
@@ -480,10 +508,11 @@ function draw(svg,{exporting=false}={}){
   const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
   if(!from||!to||from.hidden||to.hidden||from.style?.opacity===0||to.style?.opacity===0)continue;
   const p=resolver.points(o);if(!p.every(Boolean))continue;
-  const a=project(p[0]),b=project(p[1]),fb=labelBox(from),tb=labelBox(to);
+  const a=project(p[0]),b=project(p[1]),fb=arrowTargetBox(from),tb=arrowTargetBox(to);
   const mode=o.routing||'direct';
   const obstacles=mode!=='direct'&&diagramBoxes?[...diagramBoxes].filter(([id])=>!o.refs.includes(id)).map(([,rect])=>rect):[];
-  const route=routeDiagramEdge(a,b,fb,tb,obstacles,mode==='scene-crossings'?'avoid':mode,mode==='avoid-crossings'?earlierArrowPaths:[]);
+  const baseRoute=routeDiagramEdge(a,b,fb,tb,obstacles,mode==='scene-crossings'?'avoid':mode,mode==='avoid-crossings'?earlierArrowPaths:[]);
+  const route=mode==='direct'?curveEndpointRoute(a,b,fb,tb,baseRoute,o.bend||0):baseRoute;
   morphismRoutes.set(o.id,route);
   let crossingPath=route.points;
   if(route.points.length>1){
@@ -509,7 +538,7 @@ function draw(svg,{exporting=false}={}){
  if(doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid!==false)){
   const nodeRects=[],nodeRectById=new Map(),entries=[];
   for(const o of doc.objects){if(o.type!=='node'||o.hidden||o.style?.opacity===0)continue;
-   const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),labelBox(o));nodeRects.push(r);nodeRectById.set(o.id,r);}
+   const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),arrowTargetBox(o));nodeRects.push(r);nodeRectById.set(o.id,r);}
   }
   // All visible diagram arrows are physical obstacles for semantic labels.
   // Sample direct quadratic paths; routed polylines use their real waypoints.
@@ -539,7 +568,7 @@ function draw(svg,{exporting=false}={}){
    const p=resolver.points(o);if(!p.every(Boolean))continue;
    const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
    if(!from||!to||from.hidden||to.hidden||from.style.opacity===0||to.style.opacity===0)continue;
-   const a=project(p[0]),b=project(p[1]),fb=labelBox(from),tb=labelBox(to);
+   const a=project(p[0]),b=project(p[1]),fb=arrowTargetBox(from),tb=arrowTargetBox(to);
    const auto=['avoid','avoid-crossings','scene-crossings'].includes(o.routing);
    const route=morphismRoutes.get(o.id);if(!route?.points.length)continue;
    const begin=route.points[0],finish=route.points.at(-1),curve=auto?null:arrowCurve(begin,finish,o.bend||0);
@@ -890,7 +919,8 @@ function populateTools(){
   const parent=id==='construction-tools'?geometryTargets.get(type):$(id);
   if(!parent)throw new Error('Missing Geometry category for '+type);
   const button=document.createElement('button');button.className='tool';button.dataset.toolChoice=type;
-  button.title=label;button.setAttribute('aria-label',label);
+  button.title=label+(shortcutForTool[type]?' ('+shortcutForTool[type]+')':'');button.setAttribute('aria-label',label);
+  if(shortcutForTool[type])button.setAttribute('aria-keyshortcuts',shortcutForTool[type]);
   button.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${glyph[type]}</svg><span>${label}</span>`;
   if(id==='construction-tools')button.dataset.advancedGeometry=String(!ESSENTIAL_GEOMETRY.has(type));
   button.onclick=()=>selectTool(type);parent.append(button);
@@ -1955,6 +1985,7 @@ function initialise(){
   }
   else if(e.key==='Escape'){if(drag)cancelDrag();clearDraft();select(null);selectTool('select');}
   else if(e.key==='Enter'&&['polygon','polyline','spline','closedSpline'].includes(tool)){finishDraft();}
+  else{const next=canvasShortcut(e,document.activeElement,$('drawing'));if(next){e.preventDefault();selectTool(next);}}
  });
  $('undo').onclick=undo;$('redo').onclick=redo;
  $('retry-autosave').onclick=()=>{if(storageConflict){saveStatus('Autosave paused · resolve conflict first');return;}

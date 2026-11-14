@@ -45,6 +45,29 @@ export function layoutNodeLabel(text,fontSize=17){
  return result;
 }
 export function nodeBox(text,fontSize=17){return layoutNodeLabel(text,fontSize);}
+/** Visual glyph bounds for borderless nodes, distinct from their generous
+ * selection rectangle. No SVG getBBox() during drawing/zoom, so it is stable
+ * in headless Chromium and during exports. Math glyphs use exact MathJax
+ * viewBox dimensions at the caller rather than this plain-text estimate. */
+export function plainNodeInkBox(text,fontSize=17){
+ const layout=layoutNodeLabel(text,fontSize),size=Number.isFinite(fontSize)&&fontSize>0?fontSize:17;
+ return {width:Math.max(4,...layout.lines.map(line=>measure(line,size))),
+  height:Math.max(size, (layout.lines.length-1)*layout.lineHeight+size*1.08)};
+}
+/** Where a curved arrow approaches an object from a control point. The
+ * rectangle covers the actual target (ink or visible border) plus a small
+ * consistent exterior gap. Reject non-finite and degenerate endpoints. */
+export function boxEdgeToward(center,toward,box,gap=4){
+ if(![...center,...toward,box.width,box.height,gap].every(Number.isFinite)||box.width<0||box.height<0||gap<0)return null;
+ const dx=toward[0]-center[0],dy=toward[1]-center[1],dist=Math.hypot(dx,dy);
+ if(dist<1e-7)return null;
+ const ux=dx/dist,uy=dy/dist;
+ const x=Math.abs(ux)<1e-10?Infinity:(box.width/2+gap)/Math.abs(ux);
+ const y=Math.abs(uy)<1e-10?Infinity:(box.height/2+gap)/Math.abs(uy);
+ const d=Math.min(x,y);
+ return [center[0]+d*ux,center[1]+d*uy];
+}
+
 export function nodeLayoutCacheStats(){return {entries:cache.size,limit:CACHE_LIMIT};}
 export function edgeBetweenBoxes(a,b,fromBox,toBox,margin=6){
  if(![...a,...b,fromBox.width,fromBox.height,toBox.width,toBox.height,margin].every(Number.isFinite))return null;
