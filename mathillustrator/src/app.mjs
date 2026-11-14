@@ -1,5 +1,5 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round28';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round30';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round28';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
@@ -13,7 +13,7 @@ import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
 import {createPlotCache} from './plot_cache.mjs';
-import {layoutMorphismLabels} from './morphism_label_layout.mjs';
+import {layoutMorphismLabels,strokeObstacleRectangles} from './morphism_label_layout.mjs?cut=round30';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs';
 import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round28';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
@@ -21,15 +21,15 @@ const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="9" cy="4" r="1.6" fill="currentColor"/><circle cx="21" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><path d="M12 12L12 3" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
+glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="8"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><path d="M12 12L12 3" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
 glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
-glyph.ray='<circle cx="4" cy="19" r="2"/><path d="M4 19L21 3m-7 0h7v7"/>';
-glyph.perpBisector='<path d="M3 16L21 8M8 3L16 21"/><path d="M10.64 12.61L12.25 16.27L15.91 14.64"/><circle cx="3" cy="16" r="2" fill="currentColor"/><circle cx="21" cy="8" r="2" fill="currentColor"/>';
-glyph.circleDiameter='<circle cx="12" cy="12" r="9"/><path d="M3 12H21"/><circle cx="3" cy="12" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/>';
+glyph.ray='<path d="M4 19L21 3m-7 0h7v7"/><circle cx="4" cy="19" r="2" fill="currentColor" stroke="none"/>'; 
+glyph.perpBisector='<path d="M4 12H20M12 3V21"/><path d="M12 15H15V12"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
+glyph.circleDiameter='<circle cx="12" cy="12" r="8"/><path d="M4 12H20"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.circleThrough3='<circle cx="12" cy="12" r="9"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/><circle cx="3" cy="12" r="2" fill="currentColor"/>';
 glyph.triangle='<path d="M12 3L21 20H3Z"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="20" r="2" fill="currentColor"/><circle cx="3" cy="20" r="2" fill="currentColor"/>';
 glyph.spline='<path d="M3 19Q7 2 12 12T21 4"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>';
-glyph.closedSpline='<path d="M3 18C1 8 8 4 12 8C16 13 21 2 22 10C24 22 14 21 9 18C6 16 5 21 3 18Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="12" cy="8" r="2" fill="currentColor"/><circle cx="22" cy="10" r="2" fill="currentColor"/>';
+glyph.closedSpline='<path d="M4 17C2 11 7 4 12 6C17 8 21 6 20 13C19 20 8 22 4 17Z"/><circle cx="4" cy="17" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="13" r="2" fill="currentColor" stroke="none"/>'; 
 glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/><circle cx="3" cy="7" r="2" fill="currentColor"/><circle cx="16" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/><circle cx="7" cy="21" r="2" fill="currentColor"/>';
 // A fixed, keyboard-operable palette only changes ordinary document colors.
 // Custom hues remain available via native <input type=color> controls.
@@ -514,10 +514,34 @@ function draw(svg,{exporting=false}={}){
  // best-effort placement of opted-in morphism labels. Use the same positions
  // for the editor and SVG/raster exports. This is presentation-only.
  let computedMorphismLabels=new Map();
- if(doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid)){
+ if(doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid!==false)){
   const nodeRects=[],nodeRectById=new Map(),entries=[];
   for(const o of doc.objects){if(o.type!=='node'||o.hidden||o.style?.opacity===0)continue;
    const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),labelBox(o));nodeRects.push(r);nodeRectById.set(o.id,r);}
+  }
+  // All visible diagram arrows are physical obstacles for semantic labels.
+  // Sample direct quadratic paths; routed polylines use their real waypoints.
+  // Never reserve the full diagonal bounding box, which would falsely block
+  // labels far away from a thin diagonal arrow.
+  const obstacleBudget=3000;
+  for(const edge of doc.objects){
+   if(edge.type!=='morphism'||edge.hidden||edge.style?.opacity===0||nodeRects.length>=obstacleBudget)continue;
+   const path=morphismRoutes.get(edge.id);
+   if(!path?.points?.length)continue;
+   let vertices=path.points;
+   if(!['avoid','avoid-crossings','scene-crossings'].includes(edge.routing)){
+    const a=vertices[0],b=vertices.at(-1),curve=arrowCurve(a,b,edge.bend||0);
+    if(curve)vertices=Array.from({length:25},(_,i)=>{const t=i/24,q=1-t;return [q*q*a[0]+2*q*t*curve.control[0]+t*t*b[0],q*q*a[1]+2*q*t*curve.control[1]+t*t*b[1]];});
+   }
+   const boxes=strokeObstacleRectangles(vertices,Math.max(3,(edge.style?.width??2)/2+2),Math.min(128,obstacleBudget-nodeRects.length));
+   nodeRects.push(...boxes);
+  }
+  // Text annotations are also visible diagram elements, not empty space.
+  for(const annotation of doc.objects){
+   if(annotation.type!=='text'||annotation.hidden||annotation.style?.opacity===0||nodeRects.length>=obstacleBudget)continue;
+   const at=resolver.at(annotation.id);if(!at)continue;
+   const [x,y]=project(at),b=labelBox(annotation);
+   nodeRects.push({left:x-3,right:x+b.width+3,top:y-b.height-3,bottom:y+4});
   }
   for(const o of doc.objects){if(o.type!=='morphism'||o.hidden||o.style?.opacity===0||!o.text)continue;
    const p=resolver.points(o);if(!p.every(Boolean))continue;
@@ -530,7 +554,7 @@ function draw(svg,{exporting=false}={}){
    if(!auto&&!curve)continue;
    const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
    const pos=auto?labelOnPolyline(route.points,t,distance,!!o.swap,dx,dy):labelOnQuadratic(begin,curve.control,finish,t,distance,!!o.swap,dx,dy);
-   if(pos)entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],auto:!!o.labelAvoid});
+   if(pos)entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],auto:o.labelAvoid!==false});
   }
   computedMorphismLabels=layoutMorphismLabels(entries,nodeRects,size.w,size.h);
  }
@@ -748,7 +772,7 @@ function renderProperties(){
  });
  const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
-  const mode=document.createElement('label');mode.className='field';mode.textContent='Point label format';const modeSelect=document.createElement('select');
+  const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.pointLabel||live.name);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
   field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex')validateLatexInput(v||live.name);live.pointLabel=v;}));
@@ -794,7 +818,7 @@ function renderProperties(){
   const arrowChecks=document.createElement('div');arrowChecks.className='morphism-arrow-checks';
   const collisionRow=document.createElement('label');collisionRow.className='check';
   const collisionCheck=document.createElement('input');collisionCheck.type='checkbox';collisionCheck.id='morphism-label-avoid';
-  collisionCheck.checked=!!o.labelAvoid;collisionCheck.onchange=()=>edit(live=>{live.labelAvoid=collisionCheck.checked;});
+  collisionCheck.checked=o.labelAvoid!==false;collisionCheck.onchange=()=>edit(live=>{live.labelAvoid=collisionCheck.checked;});
   collisionRow.append(collisionCheck,document.createTextNode(' Avoid collisions'));arrowChecks.append(collisionRow);
   const side=document.createElement('label');side.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;
   cb.onchange=()=>edit(live=>{live.swap=cb.checked;});side.append(cb,document.createTextNode(' Swap label side'));arrowChecks.append(side);
@@ -1087,10 +1111,10 @@ function pointerDown(e){
   const labelObject=labelId&&get(doc,labelId);
   if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey&&labelObject?.type==='morphism'&&!labelObject.locked&&labelObject.text){
    if(selected!==labelId)select(labelId);
-   const automatic=labelObject.labelAvoid?currentMorphismLabels.get(labelId):null;
+   const automatic=labelObject.labelAvoid!==false?currentMorphismLabels.get(labelId):null;
    drag={kind:'label',pointerId:e.pointerId,id:labelId,before:JSON.stringify(doc),
     sx,sy,offsetX:(labelObject.labelDx??0)+(automatic?.dx??0),
-    offsetY:(labelObject.labelDy??0)+(automatic?.dy??0),wasAuto:!!labelObject.labelAvoid};
+    offsetY:(labelObject.labelDy??0)+(automatic?.dy??0),wasAuto:labelObject.labelAvoid!==false};
    try{$('drawing').setPointerCapture(e.pointerId);}catch{}
    return;
   }
@@ -1206,9 +1230,9 @@ function performConstructionTap(e,pt){
   if((tool==='bezier'&&draftPoints.length===4)||(tool==='angle'&&draftPoints.length===3)||(tool==='circleThrough3'&&draftPoints.length===3)||(tool==='triangle'&&draftPoints.length===3)||(tool==='quadrilateral'&&draftPoints.length===4))finishDraft();else scheduleRender();
  }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
  else if(tool==='text'||tool==='node'){
-  const label=window.prompt(tool==='node'?'Diagram label (LaTeX):':'Text (plain or $LaTeX$):');
+  const label=window.prompt(tool==='node'?'Diagram label (LaTeX):':'Text (LaTeX):');
   if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else if(update(()=>{
-   let text=label,textMode=tool==='node'?'latex':'plain';
+   let text=label,textMode='latex';
    if(tool==='text'){
     const wrapped=label.trim().match(/^\$([^$]+)\$$/s)||label.trim().match(/^\\\(([\s\S]+)\\\)$/);
     if(wrapped){text=wrapped[1];textMode='latex';}
@@ -1560,7 +1584,8 @@ function setupInterface(){
  $('geometry-essential').checked=uiPrefs.essentialGeometry;
  $('geometry-essential').onchange=()=>{uiPrefs.essentialGeometry=$('geometry-essential').checked;syncGeometryVisibility();savePrefs();};
  syncGeometryVisibility();
- const properties=$('properties'),toggle=$('properties-toggle');toggle.onclick=()=>{if(toggle.disabled)return;const collapsed=!properties.hidden;properties.hidden=collapsed;toggle.textContent=collapsed?'+':'−';toggle.setAttribute('aria-expanded',String(!collapsed));};
+ // The docked Properties disclosure is exclusively owned by setupPropertiesLayout.
+ // A second click handler here used to toggle the pane back open immediately.
  // Only interface preferences change on disclosure/reorder: no undo entry, no
  // project mutation, no imported `settings.modules` rewrite, no lost selection.
  const palette=$('panel-sections'),settingsContent=$('settings-sections');

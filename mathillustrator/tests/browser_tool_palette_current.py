@@ -30,14 +30,13 @@ def run():
         assert page.locator('#basic-tools [data-tool-choice="pan"]').count()==1
         assert page.locator('#module-basic').count()==0
         assert page.locator('.module-controls').count()==0
-        assert page.locator('#panel-sections > .toolgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.toolModule)')==['basic','construction','diagram','illustration']
-        assert page.locator('[data-tool-module="illustration"] .section-toggle span').last.inner_text()=='Others'
-        assert page.locator('[data-tool-module="illustration"]').get_attribute('data-section-id')=='illustration'
+        assert page.locator('#panel-sections > .toolgroup').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.toolModule)')==['basic','construction','diagram']
+        assert page.locator('[data-tool-module="diagram"]').get_attribute('data-section-id')=='diagrams'
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-toggle > span:last-child').all_inner_texts()==['Points & lines','Circles & conics','Polygons','Curves']
         assert page.locator('[data-tool-choice]').evaluate_all('(nodes)=>new Set(nodes.map(n=>n.dataset.toolChoice)).size===nodes.length')
-        assert page.locator('button[data-tool-choice]').count()==18
+        assert page.locator('button[data-tool-choice]').count()==32
         # Source SVG icons must use filled rather than outline marker circles.
-        for name,min_markers in [('point',1),('segment',2),('circle',1),('polygon',4),('polyline',4),('angle',3),('regularPolygon',6),('bezier',2)]:
+        for name,min_markers in [('point',1),('segment',2),('circle',1),('polygon',4),('polyline',4),('angle',3),('regularPolygon',2),('bezier',2)]:
             marks=page.locator(f'[data-tool-choice="{name}"] svg circle[fill]')
             assert marks.count()>=min_markers, (name,marks.count())
             assert all(marks.nth(k).get_attribute('fill')=='currentColor' for k in range(marks.count())),name
@@ -77,11 +76,9 @@ def run():
         assert snapshot(page)==untouched,'Malformed import mutated project'
         # Chinese translation round-trips both new section/subgroup labels.
         page.locator('#ui-language').select_option('zh')
-        assert page.locator('[data-tool-module="illustration"] .section-toggle span').last.inner_text()=='其他'
         assert page.locator('#construction-tools > .geometry-subgroup > h4 .section-toggle > span:last-child').all_inner_texts()==['点与直线','圆与圆锥曲线','多边形','曲线']
         assert page.locator('#construction-tools [data-tool-choice="point"]').get_attribute('aria-label')=='点'
         page.locator('#ui-language').select_option('en')
-        assert page.locator('[data-tool-module="illustration"] .section-toggle span').last.inner_text()=='Others'
         # Sections remain scrollable and tool targets are not clipped at narrow widths.
         for width in (1440,700,390,320):
             page.set_viewport_size({'width':width,'height':860})
@@ -93,7 +90,7 @@ def run():
         # The section retains its legacy drag-order key. This opaque-origin
         # fixture cannot exercise real localStorage persistence; verify the
         # stored key in the static DOM without claiming an origin-level test.
-        assert page.locator('[data-tool-module="illustration"]').get_attribute('data-section-id')=='illustration'
+        assert page.locator('[data-tool-module="diagram"]').get_attribute('data-section-id')=='diagrams'
         assert not failures,failures
         browser.close()
     print('TOOL_PALETTE_PASS: taxonomy, moved Point, filled markers, undo/redo, import rollback, EN/ZH, legacy flags, 320–1440px')

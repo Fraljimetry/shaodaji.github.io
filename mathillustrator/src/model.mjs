@@ -86,6 +86,8 @@ export function append(doc,obj){
  const o={id,hidden:false,locked:false,style,...obj,name};
  if(POINT_LIKE.has(obj.type)&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
  else if(!POINT_LIKE.has(obj.type)&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
+ if(['text','node','morphism'].includes(obj.type)&&o.textMode===undefined)o.textMode='latex';
+ if(obj.type==='morphism'&&o.labelAvoid===undefined)o.labelAvoid=true;
  doc.objects.push(o);return o;
 }
 /** Actual editable segment objects for every side of a new free-vertex polygon.

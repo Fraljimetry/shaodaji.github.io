@@ -14,7 +14,7 @@ def run():
   project=json.loads((ROOT/'examples/geometry-demo.json').read_text());project['objects']=[]
   project['settings'].update(grid=False,showAxes=False,showLabels=False)
   def node(i,xy,text):return dict(id=f'o{i}',name=text,type='node',xy=xy,text=text,fontSize=17,hidden=False,locked=False,style={'stroke':'#3657ad','fill':'#ffffff','width':2,'opacity':1})
-  project['objects']=[node(1,[-4,0],'Source'),node(2,[4,0],'Target'),dict(id='o3',name='f arrow',type='morphism',refs=['o1','o2'],text='f',bend=0,routing='direct',hidden=False,locked=False,style={'stroke':'#3657ad','fill':'#ffffff','width':2,'opacity':1})];project['nextId']=4
+  project['objects']=[node(1,[-4,0],'Source'),node(2,[4,0],'Target'),dict(id='o3',name='f arrow',type='morphism',refs=['o1','o2'],text='f',bend=0,routing='direct',labelAvoid=False,hidden=False,locked=False,style={'stroke':'#3657ad','fill':'#ffffff','width':2,'opacity':1})];project['nextId']=4
   page.locator('#open-file').set_input_files({'name':'cut22.json','mimeType':'application/json','buffer':json.dumps(project).encode()});page.wait_for_timeout(100)
   page.locator('#object-search').fill('f arrow');page.locator('#objects .object').first.click();page.wait_for_timeout(110)
   handle=page.locator('#drawing [data-label-handle="o3"]');assert handle.count()==1,'selected labeled edge should expose draggable handle'

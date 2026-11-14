@@ -10,7 +10,9 @@ test('new mathematical mode is additive and does not silently migrate legacy tex
  const latex=append(doc,{type:'node',xy:[3,0],text:'\\frac{A_1}{B_2}',textMode:'latex'});
  const arrow=append(doc,{type:'morphism',refs:[legacy.id,latex.id],text:'f\\circ g',textMode:'latex'});
  assert.deepEqual(validateDoc(doc),doc);
- assert.equal(legacy.textMode,undefined);
+ assert.equal(legacy.textMode,'latex');
+ const importedLegacy=structuredClone(doc);delete importedLegacy.objects[0].textMode;
+ assert.equal(validateDoc(importedLegacy).objects[0].textMode,undefined,'old JSON without textMode is still plain and is not migrated');
  assert.equal(arrow.textMode,'latex');
  latex.textMode='mathjax';assert.throws(()=>validateDoc(doc),/label mode/);
  latex.textMode='latex';arrow.fontFamily='../../path';assert.throws(()=>validateDoc(doc),/label font/);

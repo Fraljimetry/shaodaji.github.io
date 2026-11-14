@@ -41,6 +41,27 @@ function makeIndex(){
   }
  };
 }
+/** Narrow collision obstacles along visible arrow routes, not the large bounding
+ * rectangle of a diagonal segment. Bounds are clipped to a work budget so
+ * extreme imported paths cannot freeze an interactive render. */
+export function strokeObstacleRectangles(points,padding=4,limit=128){
+ if(!Array.isArray(points)||!good(padding)||padding<0||padding>40||!Number.isInteger(limit)||limit<1||limit>4096)return [];
+ const boxes=[];
+ for(let i=1;i<points.length&&boxes.length<limit;i++){
+  const a=points[i-1],b=points[i];
+  if(!Array.isArray(a)||!Array.isArray(b)||a.length!==2||b.length!==2||![...a,...b].every(good))continue;
+  const len=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  const n=Math.max(1,Math.min(limit-boxes.length,Math.ceil(len/22)));
+  for(let j=0;j<n;j++){
+   const u=j/n,v=(j+1)/n;
+   const x=a[0]+(b[0]-a[0])*u,y=a[1]+(b[1]-a[1])*u;
+   const xx=a[0]+(b[0]-a[0])*v,yy=a[1]+(b[1]-a[1])*v;
+   boxes.push({left:Math.min(x,xx)-padding,top:Math.min(y,yy)-padding,right:Math.max(x,xx)+padding,bottom:Math.max(y,yy)+padding});
+  }
+ }
+ return boxes;
+}
+
 /** entries: [{id,text,x,y,auto}] in visible scene order.
  * rectangles: [{left,right,top,bottom}] from visible diagram nodes.
  * Selected manual edits are reserved before automatic labels.

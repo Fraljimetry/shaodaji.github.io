@@ -15,11 +15,11 @@ def run():
     assert page.locator(css).evaluate('n=>getComputedStyle(n).direction')=='ltr',css
    assert 'M3 10H21V20H3Z' in page.locator('#open path').get_attribute('d')
    # Geometry icons: circle-line intersections lie on both glyph elements,
-   # ellipse foci exactly c=sqrt(10^2-6^2)=8 from center.
+   # ellipse foci safely inside the low-eccentricity outline.
    page.locator('#geometry-essential').uncheck()
    ellipse=page.locator('[data-tool-choice="ellipse"] svg')
    x=ellipse.locator('circle').evaluate_all('(nodes)=>nodes.map(n=>+n.getAttribute("cx"))')
-   assert x==[4,20],x
+   assert x==[8,16],x
    for t in ['perpBisector','circleIntersection','perpendicularThrough','spline','closedSpline']:
     svg=page.locator(f'[data-tool-choice="{t}"] svg')
     assert svg.count()==1 and svg.locator('path').count()>=1,t

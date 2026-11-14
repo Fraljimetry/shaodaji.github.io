@@ -447,3 +447,11 @@ input[type=number]{direction:ltr;text-align:left;unicode-bidi:normal}
 .properties .morphism-arrow-checks .check{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:1.35;margin:0;white-space:normal}
 .properties .morphism-arrow-checks input{flex:none;margin:0;width:14px;height:14px}
 input[type=number],.properties input[type=number],.settings-sections input[type=number]{direction:ltr!important;unicode-bidi:normal!important;text-align:left!important}
+
+/* Round 30 — numeric value must start at the LEFT edge of its field.  The
+   native browser increment/decrement control stays at the RIGHT. */
+input[type=number],.properties input[type=number],.settings-sections input[type=number],
+.style-controls-grid input[type=number]{direction:ltr!important;text-align:left!important;text-indent:0!important;padding-left:7px!important;unicode-bidi:isolate!important}
+/* Less luminous export action on dark backgrounds, without affecting light theme. */
+html[data-theme=dark] #export-open{background:#3474b4;border-color:#3474b4;color:#fff}
+html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;border-color:#2b659d;color:#fff}

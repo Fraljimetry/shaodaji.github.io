@@ -90,7 +90,7 @@ def run():
    # Also start a drag directly on the label after deselection: no prior list click is required.
    stage=page.locator('#drawing').bounding_box()
    page.mouse.dblclick(stage['x']+30,stage['y']+30)
-   handle=page.locator('#drawing [data-label-handle="o3"]');x,y=bbox_center(handle)
+   page.locator('#drawing [data-label-handle="o3"]').wait_for(state='visible',timeout=5000);handle=page.locator('#drawing [data-label-handle="o3"]');x,y=bbox_center(handle)
    page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+13,y+8,steps=4);page.mouse.up()
    directly=json.loads(download(page,'Save').read_text())['objects'][-1]
    assert abs(directly.get('labelDx',0)-54)<=2,directly
