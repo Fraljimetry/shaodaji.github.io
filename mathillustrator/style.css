@@ -653,3 +653,58 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .interface-check-grid>.check:has(#scene3d-enable) {grid-column:1;grid-row:1;}
 .interface-check-grid>.check:has(#fast-3d-orbit) {grid-column:2;grid-row:1;}
 /* Unlike the 3D inspector, 2D vector retains its established two-column shape. */
+
+
+/* R49: one compact hierarchy for all stroke-only objects, including 2D vectors.
+   Stroke color occupies the left column and is centered; Width and Opacity
+   occupy equal-width inputs in the right column. Fill-bearing shapes keep
+   their pair of numeric fields below the two color controls. */
+.properties .style-controls-grid.stroke-only-grid {
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ grid-template-rows:repeat(3,minmax(0,auto));gap:7px 10px;align-items:start;min-width:0;
+}
+.properties .style-controls-grid.stroke-only-grid>.style-stroke {grid-area:1/1/4/2;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-color-range {grid-area:1/2/2/3;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-opacity {grid-area:2/2/3/3;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-width {grid-area:3/2/4/3;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-pointsize {grid-area:4/1/5/3;min-width:0;}
+/* For non-vector strokes no mode checkbox, opacity moves into the first row. */
+.properties .style-controls-grid.stroke-only-grid:not(:has(.style-color-range))>.style-opacity {grid-area:1/2/2/3;}
+.properties .style-controls-grid.stroke-only-grid:not(:has(.style-color-range))>.style-width {grid-area:2/2/3/3;}
+.properties .style-controls-grid.stroke-only-grid>.style-stroke>.field {display:flex;flex-direction:column;gap:5px;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-stroke input[type=color] {width:100%!important;max-width:100%;padding:2px;box-sizing:border-box;}
+.properties .style-controls-grid.stroke-only-grid>.style-stroke .color-swatches {
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;
+ width:min(100%,116px);margin:8px auto 0;justify-content:center;
+}
+.properties .style-controls-grid.stroke-only-grid>.style-stroke .color-swatch {width:100%;min-width:0;height:auto;aspect-ratio:1;max-width:20px;justify-self:center;}
+.properties .style-controls-grid.stroke-only-grid>.style-opacity>.field,
+.properties .style-controls-grid.stroke-only-grid>.style-width>.field {
+ display:grid;grid-template-columns:45px minmax(0,1fr);gap:4px;align-items:center;
+ font-size:11px;min-width:0;margin:0;white-space:nowrap;
+}
+.properties .style-controls-grid.stroke-only-grid>.style-opacity input,
+.properties .style-controls-grid.stroke-only-grid>.style-width input {
+ width:100%!important;max-width:100%!important;min-width:0;height:30px;box-sizing:border-box;
+ padding-inline:4px;align-self:stretch;
+}
+/* All fill-bearing shapes retain numeric controls beneath both color palettes. */
+.properties .style-controls-grid:has(.style-fill)>.style-width{grid-area:3/1/4/2;}
+.properties .style-controls-grid:has(.style-fill)>.style-opacity{grid-area:3/2/4/3;}
+/* 3D right column: aligned labels and equal length textboxes. */
+.properties-3d .plot-color-options>.field{
+ grid-template-columns:45px minmax(0,1fr);
+}
+/* Four 3D guide switches have the same density as Transparent background. */
+#settings-3d .checks-3d{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:1px 7px;margin:4px 0 6px;align-items:center;}
+#settings-3d .checks-3d>.check {display:flex;align-items:center;min-height:21px;
+ margin:0;padding:0;gap:5px;font-size:11px!important;line-height:1.2;white-space:nowrap;}
+#settings-3d .checks-3d>.check input {margin:0;flex:0 0 auto;}
+
+/* R49 input/keyboard order is Opacity then Width in both fill and stroke-only modes. */
+.properties .style-controls-grid:has(.style-fill)>.style-opacity{grid-area:3/1/4/2;}
+.properties .style-controls-grid:has(.style-fill)>.style-width{grid-area:3/2/4/3;}
+#default-opacity{grid-area:auto;}
+.rightpanel .style-controls-grid>.style-opacity{grid-area:3/1/4/2;}
+.rightpanel .style-controls-grid>.style-width{grid-area:3/2/4/3;}

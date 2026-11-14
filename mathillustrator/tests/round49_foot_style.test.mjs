@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {newDoc,addPoint,command,createResolver,validateDoc,clone,remove,TOOLS} from '../src/model.mjs';
+import {POINT_TYPES as SELECT_POINTS} from '../src/selection.mjs';
+const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
+test('R49 perpendicular foot uses exactly two refs, projects onto the full supporting line and preserves dependencies',()=>{
+ const d=newDoc(),a=addPoint(d,[0,0],'A'),b=addPoint(d,[2,0],'B'),p=addPoint(d,[5,4],'P');
+ const segment=command(d,'Segment(A,B)'),foot=command(d,`Foot(P,${segment.name})`);
+ assert.equal(foot.type,'perpendicularFoot');assert.deepEqual(foot.refs,[p.id,segment.id]);
+ assert.equal(foot.style.pointSize,d.settings.pointSize);assert.deepEqual(createResolver(d).at(foot.id),[5,0]);
+ assert.ok(TOOLS.includes('perpendicularFoot'));assert.ok(SELECT_POINTS.has('perpendicularFoot'));
+ p.xy=[1,3];assert.deepEqual(createResolver(d).at(foot.id),[1,0]);
+ b.xy=[0,2];assert.deepEqual(createResolver(d).at(foot.id),[0,3]);
+ const saved=validateDoc(clone(d));assert.deepEqual(createResolver(saved).at(foot.id),[0,3]);
+ assert.throws(()=>command(d,'Foot(P,P)'),/valid straight/i);
+ const before=JSON.stringify(d);assert.throws(()=>command(d,`Foot(UNKNOWN,${segment.name})`),/unknown construction reference/i);assert.equal(JSON.stringify(d),before);
+ assert.equal(remove(d,a.id),3);assert.equal(d.objects.some(o=>o.id===foot.id),false);
+});
+test('R49 perpendicular foot works with ray, line, nested feet and degeneracy rejects malformed references',()=>{
+ const d=newDoc(),a=addPoint(d,[0,0],'A'),b=addPoint(d,[0,2],'B'),p=addPoint(d,[4,5],'P');
+ const ray=command(d,'Line(A,B)'),foot=command(d,`Foot(P,${ray.name})`),second=command(d,`Foot(A,${ray.name})`);
+ assert.deepEqual(createResolver(d).at(foot.id),[0,5]);assert.deepEqual(createResolver(d).at(second.id),[0,0]);
+ const segment=command(d,'Segment(P,B)'),chained=command(d,`Foot(${foot.name},${segment.name})`);
+ assert.ok(createResolver(d).at(chained.id).every(Number.isFinite));
+ assert.doesNotThrow(()=>validateDoc(clone(d)));
+ const invalid=clone(d);invalid.objects.find(o=>o.id===chained.id).refs[1]=p.id;
+ assert.throws(()=>validateDoc(invalid),/reference target/i);
+ const cycle=clone(d);cycle.objects.find(o=>o.id===foot.id).refs[0]=chained.id;
+ assert.throws(()=>validateDoc(cycle));
+});

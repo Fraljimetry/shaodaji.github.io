@@ -72,7 +72,7 @@ def run():
    for i in range(1,3):
     result=same_line(f'#properties .plot-color-options>.field:nth-child({i+1})')
     assert result['input']['x']>result['label']['x']+result['label']['w']-1,result
-   line_width=page.locator('#properties .plot-color-options>.field').filter(has_text='Line width').locator('input')
+   line_width=page.locator('#properties .plot-color-options>.field').filter(has_text='Width').locator('input')
    assert line_width.input_value()=='1.5'
    print('stage width',flush=True);line_width.fill('5.5');line_width.press('Tab');ready()
    assert state()['scene3d']['plots'][-1]['lineWidth']==5.5

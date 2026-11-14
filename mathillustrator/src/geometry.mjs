@@ -1,6 +1,6 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round48';
-import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible} from './model.mjs?cut=round48';
+export {regularPolygonVertices} from './model.mjs?cut=round49';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible} from './model.mjs?cut=round49';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -81,7 +81,7 @@ export function worldBounds(doc,resolver){
    const node=resolver.object(id);
    return !node||node.hidden||node.style?.opacity===0;
   }))continue;
-  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node'].includes(o.type))put(resolver.at(o.id));
+  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','node'].includes(o.type))put(resolver.at(o.id));
   else if(o.type==='text')put(o.xy);
   else if(['vectorField','domainColoring'].includes(o.type)&&o.region){put([o.region.xMin,o.region.yMin]);put([o.region.xMax,o.region.yMax]);}
   else if(o.type==='freehand')for(const p of o.path)put(p);
@@ -173,7 +173,7 @@ export function fitSceneView(doc,resolver,size){
    const b=nodeBoxForFit(o.text,o.fontSize||17);
    left=Math.max(left,b.width/2);right=Math.max(right,b.width/2);
    top=Math.max(top,b.height/2);bottom=Math.max(bottom,b.height/2);
-  }else if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
+  }else if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot'].includes(o.type)){
    const r=o.style.pointSize??doc.settings.pointSize;
    left=Math.max(left,r);right=Math.max(right,r);top=Math.max(top,r);bottom=Math.max(bottom,r);
    if(doc.settings.showLabels){right=Math.max(right,10+String(o.name).length*7);top=Math.max(top,22);}
@@ -194,7 +194,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round48';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round49';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -397,7 +397,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
  };
  for(const o of objects){
   if(!o||o.hidden||o.style?.opacity===0||o.edgeOf&&(!resolver.object?.(o.edgeOf)||resolver.object(o.edgeOf).hidden||resolver.object(o.edgeOf).style?.opacity===0))continue;
-  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
+  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot'].includes(o.type)){
    offer(resolver.at?.(o.id),o,2);continue;
   }
   if(['text','node'].includes(o.type)){offer(o.xy,o,1);continue;}
