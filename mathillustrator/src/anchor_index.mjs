@@ -38,7 +38,6 @@ export function createAnchorIndex(doc,resolver,view,size,{cell=32}={}){
   const x0=Math.floor((sx-maxRadius)/cell),x1=Math.floor((sx+maxRadius)/cell);
   const y0=Math.floor((sy-maxRadius)/cell),y1=Math.floor((sy+maxRadius)/cell),found=[];
   for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)for(const q of buckets.get(key(x,y))||[]){
-   if(excluded?.has(q.id))continue;
    const d=Math.hypot(sx-q.x,sy-q.y);if(d<=q.radius)found.push({...q,d});
   }
   return found.sort((a,b)=>a.d-b.d||b.rank-a.rank).map(q=>q.id);

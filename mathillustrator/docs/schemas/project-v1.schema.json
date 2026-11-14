@@ -357,6 +357,7 @@
         "xy": {
           "$ref": "#/$defs/xy"
         },
+        "edgeOf": {"type":"string","pattern":"^o[1-9][0-9]*$","description":"Optional Round28 parent polygon ID for individually editable side segments. Full owner existence/type, adjacent vertex references and deletion cascade are checked by the model validator."},
         "branch": {"type":"integer","enum":[-1,1],"description":"Signed root along the oriented straight object for dynamic line-circle intersections."},
         "refs": {
           "type": "array",

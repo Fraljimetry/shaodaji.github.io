@@ -77,7 +77,7 @@ def run():
     page.locator('#ui-language').select_option(lang)
     assert page.locator('#properties label.field').filter(has_text=('显示标签' if lang=='zh' else 'Displayed label')).count()==1
    # Layout at desktop and mobile widths; Number spinners use RTL native input mode.
-   assert page.locator('#default-width').evaluate('e=>getComputedStyle(e).direction')=='rtl'
+   assert page.locator('#default-width').evaluate('e=>getComputedStyle(e).direction')=='ltr'
    page.set_viewport_size({'width':390,'height':780});page.locator('#right-collapse').click()
    assert page.locator('#default-color-swatches-fill button').count()==10
    for color in ('stroke','fill'):

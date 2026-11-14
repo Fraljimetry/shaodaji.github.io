@@ -84,7 +84,23 @@ export function append(doc,obj){
  const style={stroke:doc.settings.stroke,fill:doc.settings.fill,width:doc.settings.width,opacity:doc.settings.opacity};
  if(POINT_LIKE.has(obj.type))style.pointSize=doc.settings.pointSize;
  const o={id,hidden:false,locked:false,style,...obj,name};
+ if(POINT_LIKE.has(obj.type)&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
+ else if(!POINT_LIKE.has(obj.type)&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
  doc.objects.push(o);return o;
+}
+/** Actual editable segment objects for every side of a new free-vertex polygon.
+ * Side references share its vertices, so moving an anchor updates both the
+ * polygon and its individual sides. edgeOf records parent ownership for
+ * cascading deletion, while sides remain independently editable objects.
+ * Existing projects are intentionally not retroactively altered. */
+export function appendPolygonEdges(doc,polygonId){
+ const polygon=get(doc,polygonId);
+ if(!polygon||polygon.type!=='polygon'||!Array.isArray(polygon.refs)||polygon.refs.length<3)throw Error('Polygon edges require a valid polygon.');
+ if(doc.objects.length+polygon.refs.length>10000||doc.nextId+polygon.refs.length>Number.MAX_SAFE_INTEGER-1)throw Error('Polygon exceeds object capacity.');
+ const edges=[];
+ for(let i=0;i<polygon.refs.length;i++)
+  edges.push(append(doc,{type:'segment',refs:[polygon.refs[i],polygon.refs[(i+1)%polygon.refs.length]],edgeOf:polygonId}).id);
+ return edges;
 }
 export function addPoint(doc,p,name){if(!safeCoord(p))throw Error('Point coordinates must be finite.');return append(doc,{type:'point',name,xy:clone(p)});}
 /** Freeze the displayed radii of legacy v1 point/midpoint objects which were
@@ -100,7 +116,7 @@ export function preserveInheritedPointSizes(doc){
  return pinned;
 }
 
-export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);return append(doc,{type,refs,...opts});}
+export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);const obj=append(doc,{type,refs,...opts});if(type==='polygon')appendPolygonEdges(doc,obj.id);return obj;}
 /** Stable line descriptor. Supporting-line calculation is shared by rendering,
  * snapping, intersections, and validation; half-line/segment bounds are kept.
  * Input coordinates are world-space; no screen-space geometry leaks into JSON.
@@ -260,6 +276,8 @@ export function affected(doc,id){
  // Build a reverse adjacency index once. Repeated full-scene passes become quadratic
  // for deep midpoint chains and can stall deletion of a single root vertex.
  const reverse=new Map();for(const o of doc.objects)for(const ref of o.refs||[]){if(!reverse.has(ref))reverse.set(ref,[]);reverse.get(ref).push(o.id);}
+ // Owned edges also depend on their polygon for deletion, not for position.
+ for(const o of doc.objects)if(o.edgeOf){if(!reverse.has(o.edgeOf))reverse.set(o.edgeOf,[]);reverse.get(o.edgeOf).push(o.id);}
  const ids=new Set([id]),queue=[id];for(let i=0;i<queue.length;i++)for(const child of reverse.get(queue[i])||[])if(!ids.has(child)){ids.add(child);queue.push(child);}
  return ids;
 }
@@ -345,7 +363,7 @@ export function command(doc,source){
  m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
  if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
   if(parts.some(x=>!x)||parts.length<min||(!['polygon','polyline'].includes(type)&&(type==='ellipse'?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
-  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));return append(doc,{type,refs});
+  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);return result;
  }
  m=s.match(/^(Parallel|Perpendicular|Intersect)\s*\(\s*([A-Za-z][A-Za-z0-9_ ]*)\s*,\s*([A-Za-z][A-Za-z0-9_ ]*)\s*\)$/i);
  if(m){
@@ -395,6 +413,7 @@ export function validateDoc(raw){
   if(o.textMode!==undefined&&(!['text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.textMode)))throw Error('Invalid mathematical label mode.');
   if(o.branch!==undefined&&(!['circleIntersection','circleCircleIntersection'].includes(o.type)||![-1,1].includes(o.branch)))throw Error('Invalid circle intersection branch.');
   if(['circleIntersection','circleCircleIntersection'].includes(o.type)&&![-1,1].includes(o.branch))throw Error('Circle intersection branch is required.');
+  if(o.edgeOf!==undefined&&(o.type!=='segment'||typeof o.edgeOf!=='string'||!/^o[1-9]\d*$/.test(o.edgeOf)))throw Error('Invalid polygon edge owner.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
@@ -443,6 +462,12 @@ export function validateDoc(raw){
  if(d.settings.page==='infinite'&&d.settings.exportRegion==='page')throw Error('Page-only export requires a finite page frame.');
  if(!['viewport','page'].includes(d.settings.exportRegion)||typeof d.settings.showLabels!=='boolean'||typeof d.settings.snapAnchors!=='boolean')throw Error('Invalid extended settings.');
  const objects=new Map(d.objects.map(o=>[o.id,o]));
+ for(const o of d.objects)if(o.edgeOf!==undefined){
+  const polygon=objects.get(o.edgeOf);
+  if(!polygon||polygon.type!=='polygon')throw Error('Polygon edge has no owning polygon.');
+  const refs=polygon.refs||[];
+  if(!refs.some((id,i)=>o.refs[0]===id&&o.refs[1]===refs[(i+1)%refs.length]))throw Error('Polygon edge does not match its owner.');
+ }
  for(const o of d.objects)for(let i=0;i<(o.refs||[]).length;i++){const ref=o.refs[i],parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
   const wantLine=o.type==='intersection'||(o.type==='circleIntersection'&&i===0)||(['parallelThrough','perpendicularThrough'].includes(o.type)&&i===1);
   const wantCircle=o.type==='circleCircleIntersection'||(o.type==='circleIntersection'&&i===1);

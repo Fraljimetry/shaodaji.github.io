@@ -18,8 +18,8 @@ def run():
   box=page.locator('#drawing').bounding_box();cx=box['x']+box['width']/2;cy=box['y']+box['height']/2
   page.mouse.click(cx,cy);page.mouse.click(cx+95,cy);page.mouse.dblclick(cx,cy-95)
   page.wait_for_timeout(100)
-  assert page.locator('#object-count').inner_text()=='4',f"Polygon creation failed: {page.locator('#object-count').inner_text()}"
-  poly=project(page)['objects'][-1];assert poly['type']=='polygon' and len(poly['refs'])==3,poly
+  assert page.locator('#object-count').inner_text()=='7',f"Polygon creation failed: {page.locator('#object-count').inner_text()}"
+  objects=project(page)['objects'];poly=next(o for o in objects if o['type']=='polygon');assert len(poly['refs'])==3 and len([o for o in objects if o.get('edgeOf')==poly['id']])==3,poly
   page.locator('#basic-tools [data-tool-choice="select"]').click();page.wait_for_timeout(50)
   # Drag explicit anchor point A, then cancel via pointercancel. No partial edit is committed.
   item=page.locator('#drawing circle[data-id="o1"]');item.wait_for(state='visible',timeout=5000);r=item.bounding_box();x=r['x']+r['width']/2;y=r['y']+r['height']/2

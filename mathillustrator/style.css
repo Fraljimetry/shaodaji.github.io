@@ -438,3 +438,6 @@ input[type=number]{direction:rtl;text-align:right;font-variant-numeric:tabular-n
 .rightpanel .settings-sections .controls > .section-body > .field > #background{
   width:100%;max-width:100%;min-width:0;justify-self:stretch;flex:none;
 }
+
+/* Round 28 — numeric values on left, native up/down on right. */
+input[type=number]{direction:ltr;text-align:left;unicode-bidi:normal}

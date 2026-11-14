@@ -17,5 +17,5 @@ test('MI-RECT-072: rectangle with collapsed anchor is rejected without mutation'
 });
 test('MI-RECT-073: historical polygon rectangles remain valid',()=>{
  const doc=newDoc();for(const [name,xy] of [['A',[0,0]],['B',[2,0]],['C',[2,1]],['D',[0,1]]])addPoint(doc,xy,name);
- command(doc,'Polygon(A,B,C,D)');assert.equal(validateDoc(doc).objects.at(-1).type,'polygon');
+ const polygon=command(doc,'Polygon(A,B,C,D)');assert.equal(validateDoc(doc).objects.find(o=>o.id===polygon.id).type,'polygon');assert.equal(doc.objects.filter(o=>o.edgeOf===polygon.id).length,4);
 });

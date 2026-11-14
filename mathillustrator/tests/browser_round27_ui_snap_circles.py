@@ -69,6 +69,9 @@ def run():
    extra=[o for o in latest['objects'] if o['type']=='circle'][-2:]
    for o,label in zip(extra,['alpha','beta']):
     page.locator(f'#objects .object[data-id="{o["id"]}"]').click()
+    # The default is LaTeX in Round 28; explicitly choose plain rendering
+    # for this older SVG-text collision measurement fixture.
+    page.locator('#properties label.field').filter(has_text='Label format').locator('select').select_option('plain')
     label_input=page.locator('#properties label.field').filter(has_text='Displayed label').locator('input')
     label_input.fill(label);label_input.press('Tab')
    labels=page.locator('#drawing text.geometry-display-label')

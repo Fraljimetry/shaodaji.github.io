@@ -1,12 +1,12 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round27';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round27';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round27';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round28';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round28';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round27';
+import {localizeUI,translated} from './i18n.mjs?cut=round28';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round27';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round28';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
 import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset} from './diagram_routing.mjs';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
@@ -15,22 +15,22 @@ import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
 import {createPlotCache} from './plot_cache.mjs';
 import {layoutMorphismLabels} from './morphism_label_layout.mjs';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs';
-import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round27';
+import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round28';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="9" cy="4" r="1.6" fill="currentColor"/><circle cx="21" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="12.2" r="1.7" fill="currentColor" stroke="none"/><path d="M12 12.2L12 3" stroke-dasharray="2 2"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="1.5" fill="currentColor"/><circle cx="8.5" cy="19" r="1.6" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
-glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="1.7" fill="currentColor"/><circle cx="21" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="currentColor" stroke="none"/>';
+glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="12.2" r="2" fill="currentColor" stroke="none"/><path d="M12 12.2L12 3" stroke-dasharray="2 2"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
+glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
 glyph.ray='<circle cx="4" cy="19" r="2"/><path d="M4 19L21 3m-7 0h7v7"/>';
-glyph.perpBisector='<path d="M3 16L21 8M8 3L16 21"/><path d="M14.74 10.78l1.22 2.74-2.74 1.22"/><circle cx="3" cy="16" r="1.5" fill="currentColor"/><circle cx="21" cy="8" r="1.5" fill="currentColor"/>';
-glyph.circleDiameter='<circle cx="12" cy="12" r="9"/><path d="M3 12H21"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="21" cy="12" r="1.5" fill="currentColor"/>';
+glyph.perpBisector='<path d="M3 16L21 8M8 3L16 21"/><path d="M10.64 12.61L12.25 16.27L15.91 14.64"/><circle cx="3" cy="16" r="2" fill="currentColor"/><circle cx="21" cy="8" r="2" fill="currentColor"/>';
+glyph.circleDiameter='<circle cx="12" cy="12" r="9"/><path d="M3 12H21"/><circle cx="3" cy="12" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/>';
 glyph.circleThrough3='<circle cx="12" cy="12" r="9"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/><circle cx="3" cy="12" r="2" fill="currentColor"/>';
-glyph.triangle='<path d="M12 3L21 20H3Z"/><circle cx="12" cy="3" r="1.5" fill="currentColor"/><circle cx="21" cy="20" r="1.5" fill="currentColor"/><circle cx="3" cy="20" r="1.5" fill="currentColor"/>';
-glyph.spline='<path d="M2 19C9 3 13 23 22 4"/><circle cx="2" cy="19" r="1.5"/><circle cx="12" cy="14" r="1.5"/><circle cx="22" cy="4" r="1.5"/>';
-glyph.closedSpline='<path d="M3 12C2 0 19 -1 21 11C22 22 5 23 3 12Z"/>';
-glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/><circle cx="3" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="3" r="1.5" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/><circle cx="7" cy="21" r="1.5" fill="currentColor"/>';
+glyph.triangle='<path d="M12 3L21 20H3Z"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="20" r="2" fill="currentColor"/><circle cx="3" cy="20" r="2" fill="currentColor"/>';
+glyph.spline='<path d="M3 19Q7 2 12 12T21 4"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>';
+glyph.closedSpline='<path d="M3 18C1 8 8 4 12 8C16 13 21 2 22 10C24 22 14 21 9 18C6 16 5 21 3 18Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="12" cy="8" r="2" fill="currentColor"/><circle cx="22" cy="10" r="2" fill="currentColor"/>';
+glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/><circle cx="3" cy="7" r="2" fill="currentColor"/><circle cx="16" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/><circle cx="7" cy="21" r="2" fill="currentColor"/>';
 // A fixed, keyboard-operable palette only changes ordinary document colors.
 // Custom hues remain available via native <input type=color> controls.
 const COMMON_COLORS=[
@@ -69,9 +69,9 @@ function appendColorSwatches(parent,{scope,property,apply}){
  parent.append(group);syncColorSwatches();return group;
 }
 glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r="2" fill="currentColor"/>';
-glyph.perpendicularThrough='<path d="M2 9L22 9M12 2V22M12 9h5v5"/><circle cx="12" cy="16" r="1.7" fill="currentColor"/>';
-glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="1.7" fill="currentColor" stroke="none"/>';
-glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 15L23 9"/><circle cx="5.8" cy="13.7" r="2" fill="currentColor"/><circle cx="18.2" cy="10.3" r="2" fill="currentColor"/>';
+glyph.perpendicularThrough='<path d="M2 12H22M12 2V22M12 8H16V12"/><circle cx="12" cy="20" r="2" fill="currentColor"/>';
+glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
+glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 12H23"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
@@ -991,12 +991,13 @@ function finishDraft(){
   checkNewRefs(storedType,refs);
   if(type==='closedSpline'&&refs[0]===refs.at(-1))throw Error('Closed spline cannot duplicate the first vertex.');
   selected=append(doc,{type:storedType,refs,...(type==='closedSpline'?{closed:true}:{})}).id;
+  if(storedType==='polygon')appendPolygonEdges(doc,selected);
  });
  if(ok){draftPoints=[];afterOneConstruction();scheduleRender();}
 }
 function correctedPath(path){return smoothPath(path,doc.settings.correction,view.scale);}
 function freehandAttachment(world){
- return doc.settings.freehandClose==='near'
+ return doc.settings.freehandClose==='near'&&doc.settings.snapObjects===true
   ?nearestFreehandAttachment(world,doc.objects,createResolver(doc),view.scale):null;
 }
 function preparedFreehand(path,startAttachment=null){
@@ -1016,7 +1017,7 @@ function preparedFreehand(path,startAttachment=null){
 function objectPointAttachment(world,excluded=null){
  if(doc.settings.snapObjects!==true)return null;
  const candidates=excluded?doc.objects.filter(o=>!excluded.has(o.id)):doc.objects;
- return nearestFreehandAttachment(world,candidates,createResolver(doc),view.scale);
+ return nearestFreehandAttachment(world,candidates,createResolver(doc),view.scale,10);
 }
 function constructionPoint(world,excludeId=null){
  // Cache the dependency exclusion for a continuous drag. A point cannot attach
@@ -1027,7 +1028,11 @@ function constructionPoint(world,excludeId=null){
  const attached=objectPointAttachment(world,excluded);
  return attached?attached.world:snapPoint(world,doc.settings);
 }
-function constructionVertex(world){const anchor=nearestAnchor(world);return anchor?anchor.world:snapPoint(world,doc.settings);}
+function constructionVertex(world){
+ const anchor=nearestAnchor(world);if(anchor)return anchor.world;
+ const attached=objectPointAttachment(world);
+ return attached?attached.world:snapPoint(world,doc.settings);
+}
 function afterOneConstruction(){if(uiPrefs.autoPan!==false)selectTool('pan');}
 function pointerDown(e){
  if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;
@@ -1864,7 +1869,10 @@ function initialise(){
  window.addEventListener('pointercancel',endOutside);
 
  svg.addEventListener('contextmenu',e=>e.preventDefault());
- svg.addEventListener('wheel',onWheel,{passive:false});svg.addEventListener('dblclick',e=>{if(['polygon','polyline','spline','closedSpline'].includes(tool)){e.preventDefault();const [x,y]=xyEvent(e),p=constructionPoint(unproject(x,y));finishDraft();}});
+ svg.addEventListener('wheel',onWheel,{passive:false});svg.addEventListener('dblclick',e=>{
+  if(['polygon','polyline','spline','closedSpline'].includes(tool)){e.preventDefault();finishDraft();}
+  else if(['select','pan'].includes(tool)){e.preventDefault();select(null);}
+ });
  window.addEventListener('keydown',e=>{
   // Composition keys belong to the IME even inside the tikz-cd modal.
   // In particular Escape must not dismiss the importer mid-composition.

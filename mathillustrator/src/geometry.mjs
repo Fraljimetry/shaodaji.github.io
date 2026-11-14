@@ -463,6 +463,15 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
    const [a,b,c,d]=pts;
    path=Array.from({length:65},(_,i)=>{const t=i/64,u=1-t;return [0,1].map(j=>u*u*u*a[j]+3*u*u*t*b[j]+3*u*t*t*c[j]+t*t*t*d[j]);});closed=false;
   }
+  if(o.type==='angle'&&pts.length===3){
+   // The renderer paints only the circular angle arc, not the two defining
+   // control chords. Snap to that visible arc in its 26px screen-space radius.
+   const [a,b,c]=pts,first=Math.atan2(a[1]-b[1],a[0]-b[0]),second=Math.atan2(c[1]-b[1],c[0]-b[0]);
+   let sweep=(second-first+2*Math.PI)%(2*Math.PI);if(sweep>Math.PI)sweep-=2*Math.PI;
+   const radius=26/scale,count=Math.max(3,Math.ceil(Math.abs(sweep)*26/2));
+   path=Array.from({length:count+1},(_,i)=>[b[0]+radius*Math.cos(first+sweep*i/count),b[1]+radius*Math.sin(first+sweep*i/count)]);
+   closed=false;
+  }
   if(!['polyline','polygon','spline','angle','regularPolygon','rectangle','ellipse','bezier'].includes(o.type))continue;
   if(o.type==='spline'){
    // A spline's control polygon is generally nowhere near its actual visible
