@@ -1036,3 +1036,32 @@ The user supplied a hand sketch for the five **Transformation** glyphs and reque
 | R382 | Rectangle should be a non-square and not tilted. | **Implemented.** |
 | R383 | Remove the point on top of Regular polygon. | **Implemented.** The glyph keeps only the center point. |
 | R384 | Be more uniform in Geometry glyph design. | **Implemented** for point size, angle tilt, and related line/diagonal orientation. |
+
+
+## Round 51H — Derived points and lines should be usable everywhere (2026-11-14)
+
+**User requirement:** Points created by line/circle, circle/circle and general intersections, perpendicular projections, midpoints, triangle centers and point-on-object constraints must be treated as regular point operands. Geometric straight lines created by constructions (fixed-length, parallel/perpendicular lines and tangents) must be usable as line operands. Do not prevent mathematical constructions merely because the object is computed rather than directly drawn. Preserve dynamic dependencies, avoid coercing diagram nodes or curves into points/straight lines, and respect genuinely undefined or degenerate geometry.
+
+| ID | Scope | Implementation |
+| --- | --- | --- |
+| R385 | Remove restrictive type subsets from point-consuming tool click handlers. | **Implemented:** all resolved `POINT_LIKE` points can be used by Tangents to Circle, Parabola, Locus target, Rotation/Dilation center, Translation endpoints, and first point of Perpendicular Foot / Parallel / Perpendicular Through. |
+| R386 | Make constrained, computed and intersection points reliably pickable and snappable. | **Implemented:** one shared `POINT_LIKE` registry drives the spatial index, source qualification and command/model validation; no free-point re-creation when choosing an existing derived point. |
+| R387 | Treat computed straight tools as lines, not only primitives. | **Implemented:** one `geometricLine()` capability check uses the existing supporting-line resolver for straight/derived line types; strict invalid/degenerate rejection remains. Geometry source selection uses expected object roles even under overlapping markers. |
+| R388 | Fix missed clicks caused by asynchronous canvas redraw. | **Implemented:** construction taps use live SVG hit-stack fallback on background-targeted pointer events. Object selection respects tool-required geometric roles when multiple objects occupy the same pixel. |
+| R389 | Verify dynamic dependencies, Undo/Redo, JSON and compatibility. | **Implemented:** focused Node model/spatial-index tests and actual Chromium construction of circle intersections, tangents, rotation, translation and perpendicular foot. See latest verification report. |
+
+**Remaining beyond this cut:** a transformed *copy* of a point or line is currently a `transformCopy` object and is not automatically promoted to a primitive point/straight-line role; nonlinear plotting curves and arbitrary freehand paths likewise remain non-straight. These require separate explicit geometric contracts rather than unsafe point/line guessing.
+
+
+## Round 51I — mathematically grounded glyph corrections (2026-11-14)
+
+| ID | Requirement | Disposition |
+| --- | --- | --- |
+| R392 | All Geometry point markers should actually render at the same **larger** size, including transformation results; no crosses for transformations. | **Implemented:** one shared 2.4-unit SVG marker radius for every Geometry tool. The five transformation icons use filled points, not crosses, hollow markers, or dashed lines. Both tool and object panels use the same glyphs. |
+| R393 | Circle inversion glyph must be mathematically correct rather than merely pictorial. | **Implemented:** the depicted source and image lie on the same ray from the center, on opposite sides of the inversion circle boundary, with product of distances equal to squared radius; no spurious point on the circle. |
+| R394 | Tangents-to-circle glyph must show two true tangents from a clearly separated, tilted external point. | **Implemented:** two exact analytically computed tangent feet on the circle and both tangent lines. On-circle and orthogonality tests are run in Chromium. |
+| R395 | Hyperbola foci must be detached from both branches and vertices must not be marked. | **Implemented:** two separate branches with only their two foci marked outside the vertices; no marked vertices. Chromium verifies distance from each focus to the displayed branches. |
+| R396 | Actually redesign both Parametric and Implicit plotting glyphs. | **Implemented:** Parametric uses an open parameter-traced spiral with two endpoint markers; Implicit uses two nested closed level contours without parameter markers. Their SVGs appear consistently in the mode preview and plotted-object list. |
+| R397 | Critically validate the final rendered glyphs instead of passing stale source-string snapshot tests. | **Implemented:** new browser verification measures rendered SVG radii and geometric relationships directly. Existing glyph size test was updated from 2 to 2.4 rather than being waived. |
+
+**Scope:** glyph-only changes; no modification of mathematical construction algorithms or saved project schema. Continue exhaustive Geometry computation tests separately.

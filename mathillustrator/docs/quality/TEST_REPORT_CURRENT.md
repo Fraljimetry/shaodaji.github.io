@@ -954,3 +954,35 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 4. `browser_smoke.py`
 
 **Coverage boundary:** this cut verifies glyph rendering, panel parity, export naming, and representative Geometry behavior. It does **not** newly prove every Geometry construction workflow or every numerical edge case.
+
+
+## Round 51H — Derived point/line usability and overlap-safe picking (2026-11-14)
+
+**Baseline:** latest Round 51G source with no Git commits. All changes are under `mathillustrator/`.
+
+**Confirmed defects:**
+- `src/anchor_index.mjs` recognized only six point types, omitting `pointOnObject`, `triangleCenter` and `generalIntersection`; a rendered point could be unusable by snapping/picking.
+- New Construction handlers had independent short lists (e.g. Rotation/Dilation/Translation rejected `circleIntersection` and `circleCircleIntersection`); the model already supported their coordinates, but the UI did not.
+- On pointer hover/redraw, the event target sometimes became the SVG background `<rect>` even though the live hit stack contained the visible curve. This caused valid existing circles/lines to be rejected as absent.
+- Selecting an object where a point marker overlaps a circle could choose the wrong type; tools now resolve candidates by required geometric capability.
+
+**Fix:** exported one authoritative `POINT_LIKE` type set plus `geometricPoint`/`geometricLine` predicates in the model; used that set in the anchor index and all related UI construction handlers, without admitting diagram nodes, arbitrary curves or undefined geometries. Construction hit selection now searches a bounded SVG hit stack at pointer position, prioritizing the selected operation's required point/circle/line role and preserving underlying object references. Derived references are never converted to independent free points. Existing project schema, dynamic dependency behavior and exports remain unchanged.
+
+**Node:** `node --test tests/*.test.mjs` **345/345 PASS**. Three focused tests cover circle-intersection operands, dynamic graph propagation, constrained/center/midpoint/index coverage, line-role chaining, validation of forbidden reference types, and JSON roundtrip. Existing historic tests were updated only for the new `app.mjs` cache-version URL.
+
+**Chromium:** seven named local Playwright scripts passed independently: `browser_smoke.py`, `browser_round50_geometry.py`, `browser_round51b_geometry_sweep.py`, `browser_round51c_subtle_geometry.py`, `browser_round51e_panel_glyphs.py`, `browser_round51h_derived_geometry.py`, plus `browser_round51f_exports_plotglyphs.py` from the previous round if separately rerun. The new R51H script directly constructs two circle-circle intersections, uses them as source/center/endpoint for real Tangents, Rotation, Translation and Perpendicular Foot clicks, verifies overlap prioritization, undo/redo, and downloaded JSON. A concatenated batch of Chromium scripts reached the execution time limit before the last script; that script was rerun independently and passed. Browser assertions use local module-inlined production sources, not the hosted URL.
+
+**Self-critique / limits:** this is a role-consistency repair for currently supported geometry point and straight-line types, not an automatic symbolic conversion of arbitrary transformed shapes or plot traces to lines/points; near-tangency intersections and degenerate dynamic constructions may still be undefined. No claim of exhaustive 44-tool interaction across all gesture/undo/import combinations, multi-browser behavior or hosted HTTP deployment. No source-code mutation outside the scoped project and no Git commits.
+
+
+## Round 51I — glyph mathematics and final SVG validation (2026-11-14)
+
+**Source baseline:** latest Round 51H, with earlier Round 51E/F/G semantics retained. No Git commits.
+
+**Confirmed corrections:** Prior transformation results were still crosses; the earlier circle-inversion result lacked a clearly correct inverse pair. Tangent icon endpoints were visually near the circle but not validated as geometric tangencies. Hyperbola vertex/focus presentation was ambiguous. The old Parametric/Implicit pictograms had not satisfied the requested distinct treatment. This cut creates true analytic tangent feet, a true inverse point pair, detached hyperbola foci without vertex markers, filled-point transformations, and distinct plot mode imagery. It also enforces one actual 2.4 SVG point radius (not just a source comment). Both panels share the final glyph mapping.
+
+**Node:** `node --test tests/*.test.mjs` — **345/345 PASS**, zero failures/skips. `node --check src/app.mjs` — PASS.
+
+**Actual Chromium (locally inlined JS/CSS and Playwright):** `browser_round51i_glyph_geometry.py` PASS (displayed SVG point-radius equality, tangent-circle incidence and radius orthogonality, hyperbola focus-to-branch clearance, exact circle inversion relation, no transformation crosses/dashes/hollow markers, two distinct plotting styles); `browser_round51b_geometry_sweep.py` PASS (44 Geometry palette tools, basic inversion+undo/redo/JSON); `browser_round51e_panel_glyphs.py` PASS (left/right SVG parity); `browser_round51f_exports_plotglyphs.py` PASS (five plotting previews and object SVGs, timestamps on all supported exports); `browser_smoke.py` PASS (startup, construction, export, undo/redo).
+
+**Test fidelity:** An older Chromium script initially failed because it asserted a 2-unit radius after the requested increase; fixed to assert actual 2.4-unit SVG output. Unlike old static substring tests, the new numerical test checks the final rendered SVG. The isolated Chromium fixture does not prove public-server HTTP cache freshness or native-device appearance. Construction numerical edge cases outside this visual cut remain open.

@@ -16,9 +16,9 @@ CATEGORIES={
 }
 MARKERS={
  'pointOnObject':2,'tangentCircle':3,'circularArc':3,'parabola':1,
- 'hyperbola':4,'generalIntersection':1,'reflection':1,'rotation':2,
- 'translation':3,'dilation':2,'locus':1,'fixedLength':2,
- 'fixedAngle':3,'triangleCenter':3,'circleInversion':2,
+ 'hyperbola':2,'generalIntersection':1,'reflection':2,'rotation':3,
+ 'translation':4,'dilation':3,'locus':1,'fixedLength':2,
+ 'fixedAngle':3,'triangleCenter':3,'circleInversion':3,
 }
 
 def main():
@@ -50,7 +50,7 @@ def main():
     image=page.locator(f'[data-tool-choice="{tool}"] svg')
     circles=image.locator('circle[fill="currentColor"]')
     assert circles.count()==clicks,(tool,circles.count(),clicks)
-    assert circles.evaluate_all('(arr)=>arr.map(x=>x.getAttribute("r"))')==['2']*clicks,tool
+    assert circles.evaluate_all('(arr)=>arr.map(x=>x.getAttribute("r"))')==['2.4']*clicks,tool
     assert image.locator('path,ellipse,circle').count()>=2,tool
    for tool in ['reflection','rotation','translation','dilation','circleInversion']:
     image=page.locator(f'[data-tool-choice="{tool}"] svg')
@@ -59,7 +59,7 @@ def main():
    inversion=page.locator('[data-tool-choice="circleInversion"] svg')
    circles=inversion.locator('circle')
    radii=circles.evaluate_all('(arr)=>arr.map(e=>e.getAttribute("r"))')
-   assert '8.5' in radii,radii
+   assert '7.5' in radii,radii
    # Check displayed marker locations against the path geometry for tools in which
    # the clicked control points are supposed to lie on their depicted lines.
    geometry=page.evaluate('''() => {

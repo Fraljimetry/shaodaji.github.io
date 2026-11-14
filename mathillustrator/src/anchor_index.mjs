@@ -1,3 +1,4 @@
+import {POINT_LIKE} from './model.mjs?cut=round51h';
 /** Screen-space grid for point and midpoint picking/snapping.
  * Built lazily from a settled document/viewport. The caller invalidates after
  * any committed mutation, undo/import or pan/zoom. Never use to decide which
@@ -9,7 +10,7 @@ export function createAnchorIndex(doc,resolver,view,size,{cell=32}={}){
  const key=(x,y)=>`${x}:${y}`;
  for(let i=0;i<doc.objects.length;i++){
   const o=doc.objects[i];
-  if(o.hidden||o.style?.opacity===0||!['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot'].includes(o.type))continue;
+  if(o.hidden||o.style?.opacity===0||!POINT_LIKE.has(o.type))continue;
   const p=resolver.at(o.id);if(!p||!p.every(Number.isFinite))continue;
   const x=(p[0]-view.cx)*view.scale+size.w/2,y=(view.cy-p[1])*view.scale+size.h/2;
   if(!Number.isFinite(x)||!Number.isFinite(y))continue;

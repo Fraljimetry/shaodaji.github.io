@@ -29,10 +29,10 @@ test('R51F: each 2D plotting mode has a unique semantic SVG with the same previe
  assert.match(app,/preview\.innerHTML=three\?'':plotGlyphSvg\(mode\)/);
  assert.match(html,/<span id="plot-mode-preview" aria-hidden="true"><\/span>/);
  assert.match(css,/#plot-mode-preview svg/);
- assert.match(html,/src\/app\.mjs\?cut=round51f/);
+ assert.match(html,/src\/app\.mjs\?cut=round51i/);
 });
 
-test('R51F: Geometry markers have uniform 2-unit size and related diagonal tools use 45 degrees',()=>{
+test('R51I: Geometry markers have uniform 2.4-unit rendered size and related diagonal tools use 45 degrees',()=>{
  const base=app.match(/const glyph=\{([\s\S]*?)\};/)[1];
  const map=Object.fromEntries([...base.matchAll(/(\w+):'([^']+)'/g)].map(m=>[m[1],m[2]]));
  for(const m of app.matchAll(/glyph\.(\w+)='([^']+)'/g))map[m[1]]=m[2];
@@ -40,6 +40,9 @@ test('R51F: Geometry markers have uniform 2-unit size and related diagonal tools
   if(['select','pan','node','morphism','text','quadrilateral'].includes(type))continue;
   for(const match of svg.matchAll(/<circle\b[^>]*fill="currentColor"[^>]*>/g))assert.match(match[0],/r="2"/,type);
  }
+ assert.match(app,/const GLYPH_POINT_RADIUS=2\.4/);
+ assert.match(app,/glyph\.tangentCircle=glyphCrossSectionCircle/);
+ assert.match(app,/for\(const type of Object\.keys\(glyph\)\)/);
  assert.match(map.segment,/M4 20L20 4/);assert.match(map.midpoint,/M4 20L20 4/);assert.match(map.line,/M2 22L22 2/);
  assert.match(map.ray,/M4 20L22 2/);assert.match(map.arrow,/M4 20L20 4/);
  assert.match(app,/fixedLength:r50Glyph\('<path d="M4 20L20 4/);
