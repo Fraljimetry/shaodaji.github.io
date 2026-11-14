@@ -1,5 +1,5 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round30';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round31';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round28';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
@@ -36,7 +36,7 @@ glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/><circle cx="3" cy="7" r="2
 const COMMON_COLORS=[
  ['Ink','#111827'],['White','#ffffff'],['Gray','#94a3b8'],
  ['Red','#ef4444'],['Orange','#f97316'],['Yellow','#eab308'],
- ['Green','#22c55e'],['Sky','#0ea5e9'],['Blue','#3b82f6'],
+ ['Green','#22c55e'],['Cyan','#48b6c8'],['Blue','#3b82f6'],
  ['Purple','#a855f7']
 ];
 function syncColorSwatches(){
@@ -310,7 +310,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(x < -radius-reach || x > size.w+radius || y < -radius-22 || y > size.h+radius+22)return;
   item=el('circle',{cx:x,cy:y,r:radius,stroke:isSel?'#7e66df':o.style.stroke,fill:o.style.stroke,'stroke-width':1,opacity:sty.opacity});
   if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;
-   if(o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
+   if(o.pointLabel&&o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
    else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
  }else if(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough'].includes(o.type)){
   const line=resolver.line(o);if(!line)return;
@@ -395,10 +395,11 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(['hook','hook-dashed'].includes(o.arrowStyle)){
    const from=auto?route.points[1]:curve.control,len=Math.hypot(from[0]-a[0],from[1]-a[1]);
    if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;
-    const at=(u,n)=>[(a[0]+ux*u-uy*n).toFixed(2),(a[1]+uy*u+ux*n).toFixed(2)].join(' ');
-    // One continuous, tangent-aligned J-hook physically joins the arrow shaft.
-    // The former floating curl ended behind the endpoint and looked disconnected.
-    item.append(mk('path',{d:`M${at(8,-7)} C${at(-4,-7)} ${at(-8,0)} ${at(0,0)}`,fill:'none','stroke-linecap':'round'}));
+    // A TeX-style hooked tail is an open *parenthesis*, not a loop or spur.
+    // End tangent is precisely the shaft tangent; cap size on short routes.
+    const scale=Math.min(1,len/28);
+    const at=(u,n)=>[(a[0]+ux*u*scale-uy*n*scale).toFixed(2),(a[1]+uy*u*scale+ux*n*scale).toFixed(2)].join(' ');
+    item.append(mk('path',{class:'morphism-tail-hook',d:`M${at(3,-14)} C${at(-5,-14)} ${at(-11,-8)} ${at(-11,-3)} C${at(-11,0)} ${at(-6,0)} ${at(0,0)}`,fill:'none','stroke-linecap':'round'}));
    }
   }
   if(o.arrowStyle==='tail'){const from=auto?route.points[1]:curve.control;const len=Math.hypot(from[0]-a[0],from[1]-a[1]);if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;item.append(mk('line',{x1:a[0]-uy*6,y1:a[1]+ux*6,x2:a[0]+uy*6,y2:a[1]-ux*6}));}}
@@ -740,14 +741,14 @@ function renderBulkProperties(root,objects){
  const slot=(name)=>{const e=document.createElement('div');e.className='style-slot style-'+name;grid.append(e);return e;};
  function addColor(property,label){
   if(!compatibleObjects(objects,property).length)return;
-  const target=slot(property),value=commonValue(compatibleObjects(objects,property),property);
+  const target=slot(property.toLowerCase()),value=commonValue(compatibleObjects(objects,property),property);
   const control=field(target,label,value||compatibleObjects(objects,property)[0].style[property],'color',v=>edit(property,v));
   if(value===null)control.closest('label').dataset.mixed='true';
   appendColorSwatches(target,{scope:'bulk',property,apply:v=>edit(property,v)});
  }
  function addNumber(property,label,min,max,step){
   if(!compatibleObjects(objects,property).length)return;
-  const target=slot(property),value=commonValue(compatibleObjects(objects,property),property);
+  const target=slot(property.toLowerCase()),value=commonValue(compatibleObjects(objects,property),property);
   const control=field(target,label,value===null?'':value,'number',v=>edit(property,v,{min,max,label}),{min,max,step});
   if(value===null){control.placeholder=translated('Mixed',uiPrefs.language);control.dataset.mixed='true';}
  }
@@ -774,8 +775,8 @@ function renderProperties(){
  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
-  modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.pointLabel||live.name);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
-  field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex')validateLatexInput(v||live.name);live.pointLabel=v;}));
+  modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex'&&live.pointLabel)validateLatexInput(live.pointLabel);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
+  field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex'&&v)validateLatexInput(v);live.pointLabel=v;}));
  }
  // Diagram nodes, morphisms and Text already use their editable 'text' property.
  // All other shapes now expose optional independent on-canvas labels, never names/IDs.
@@ -1479,7 +1480,7 @@ function canTikz(){
  // TeX collapses leading/trailing and repeated spaces even when SVG preserves them.
  const safeText=s=>typeof s==='string'&&/^[\x20-\x7e]*$/.test(s)&&!/(^ | $| {2,})/.test(s);
  return doc.objects.every(o=>o.hidden||o.style?.opacity===0||(
-  (!o.displayLabel||!doc.settings.showLabels)&&(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)||!doc.settings.showLabels||(o.pointLabelMode!=='latex'&&safeText(o.pointLabel||o.name)))&&
+  (!o.displayLabel||!doc.settings.showLabels)&&(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)||!doc.settings.showLabels||(!(o.pointLabel&&o.pointLabelMode==='latex')&&safeText(o.pointLabel||o.name)))&&
   (!['text','node','morphism'].includes(o.type)||(o.textMode!=='latex'&&safeText(o.text)))&&
   (o.type!=='node'||layoutNodeLabel(o.text,o.fontSize||17).lines.length===1)&&(o.type!=='morphism'||(o.arrowStyle===undefined||o.arrowStyle==='solid')&&(o.routing??'direct')==='direct'&&(o.labelT??.5)===.5&&(o.labelDistance??17)===17&&(o.labelDx??0)===0&&(o.labelDy??0)===0&&(!o.labelAvoid||!o.text))&&['point','midpoint','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','node','morphism'].includes(o.type)&&(o.type!=='freehand'||false)&&(o.type!=='morphism'||o.hidden||o.refs.every(id=>get(doc,id)?.type==='node'&&!get(doc,id)?.hidden&&get(doc,id)?.style?.opacity!==0))));}
 function asTikz(){
