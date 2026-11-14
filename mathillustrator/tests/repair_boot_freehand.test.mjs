@@ -25,7 +25,7 @@ test('near-endpoint tangent versus corner control the actual SVG seam',()=>{
  const cusp=closeFreehandStroke(near,'near',48);
  const smoothedD=smoothCurveSvg(tangential,true,smooth.joinStyle);
  const cornerD=smoothCurveSvg(near,true,cusp.joinStyle);
- assert.match(smoothedD,/ Z$/);assert.match(cornerD,/ L0 0 Z$/);
+ assert.match(smoothedD,/ Z$/);assert.match(cornerD,/ C[\d.\s-]+ 0 0 Z$/);assert.match(cornerD, / C[^C]+ 0 0 Z$/);
  assert.ok(!cornerD.includes('NaN'));
 });
 

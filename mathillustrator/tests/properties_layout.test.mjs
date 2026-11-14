@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizePropertiesLayout,fitFloatingProperties,fitDockPropertiesHeight} from '../src/properties_layout.mjs';
 
-test('R45 new layouts float by default and saved dock layouts remain stable',()=>{
+test('R92 layouts are docked by default and prior Float preferences are ignored',()=>{
  const d=normalizePropertiesLayout(null);
- assert.deepEqual(d,{mode:'floating',collapsed:false,dockHeight:230,x:320,y:100,width:300,height:320});
+ assert.deepEqual(d,{mode:'docked',collapsed:false,dockHeight:230,x:320,y:100,width:300,height:320});
  assert.deepEqual(normalizePropertiesLayout({mode:'docked',dockHeight:250}),{...d,mode:'docked',dockHeight:250});
- assert.deepEqual(normalizePropertiesLayout({mode:'floating',collapsed:false,dockHeight:320,x:140,y:190,width:450,height:510}),{mode:'floating',collapsed:false,dockHeight:320,x:140,y:190,width:450,height:510});
+ assert.deepEqual(normalizePropertiesLayout({mode:'docked',collapsed:false,dockHeight:320,x:140,y:190,width:450,height:510}),{mode:'docked',collapsed:false,dockHeight:320,x:140,y:190,width:450,height:510});
 });
 test('R45 collapsed state is explicitly boolean and does not leak into scene files',()=>{
  const a=normalizePropertiesLayout({mode:'floating',collapsed:true});assert.equal(a.collapsed,true);

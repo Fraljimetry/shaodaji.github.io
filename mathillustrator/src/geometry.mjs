@@ -45,7 +45,7 @@ function ultraSmoothPath(raw,scale){
  const length=cumulative.at(-1);
  if(!Number.isFinite(length)||length<3)return raw;
  // Never amplify tiny paths or accumulate more than 4096 output points.
- const count=Math.min(4096,Math.max(3,Math.ceil(length/2.5)+1));
+ const count=Math.min(4096,Math.max(3,Math.ceil(length/3.8)+1));
  const step=length/(count-1),sampled=[];
  let segment=1;
  for(let i=0;i<count;i++){
@@ -58,7 +58,7 @@ function ultraSmoothPath(raw,scale){
  }
  // A wide, zero-phase filter suppresses hand tremor instead of merely rounding
  // the corners of each tremor. Adapt to short strokes to avoid shrinking them away.
- const sigma=Math.min(9,Math.max(1.5,length/12));
+ const sigma=Math.min(14,Math.max(2.5,length/10));
  const radius=Math.min(count-1,Math.ceil(3*sigma/step));
  const weights=Array.from({length:radius+1},(_,k)=>Math.exp(-.5*(k*step/sigma)**2));
  const result=sampled.map((p,i)=>{
@@ -195,7 +195,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse} from './model.mjs?cut=round19';
+import {focalEllipse} from './model.mjs?cut=round22';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -330,9 +330,25 @@ export function smoothCurveSvg(points,closed=false,joinStyle='smooth'){
  const fmt=v=>Number(v.toFixed(3));
  const xy=v=>`${fmt(v[0])} ${fmt(v[1])}`;
  if(p.length===2)return `M${xy(p[0])} L${xy(p[1])}${closed?' Z':''}`;
- // A corner join must not apply cross-seam Catmull–Rom tangents.
- // Keep the final stroke point exactly where the user released the pen.
- if(closed&&joinStyle==='corner')return smoothCurveSvg(p,false)+` L${xy(p[0])} Z`;
+ // For a non-tangent near-closure, preserve the intentional corner at the
+ // pen-down position, but round the *gap* instead of returning along a rigid
+ // straight segment (which created a visible jerk at the pen-up position).
+ // Work entirely in rendered coordinates; never change the saved samples.
+ if(closed&&joinStyle==='corner'){
+  const first=p[0],end=p.at(-1),before=p.at(-2),gap=Math.hypot(end[0]-first[0],end[1]-first[1]);
+  if(gap<1e-6)return smoothCurveSvg(p,false)+' Z';
+  const tangent=[end[0]-before[0],end[1]-before[1]],norm=Math.hypot(...tangent);
+  const dist=Math.min(16,gap*.9),unit=norm>1e-9?tangent.map(v=>v/norm):[(first[0]-end[0])/gap,(first[1]-end[1])/gap];
+  const control1=[end[0]+unit[0]*dist,end[1]+unit[1]*dist];
+  // The incoming handle remains biased toward the seam, preserving a cusp
+  // when the start/end tangents are not nearly tangent.
+  const start=[p[1][0]-first[0],p[1][1]-first[1]],startLength=Math.hypot(...start);
+  const finish=startLength>1e-9?[start[0]/startLength,start[1]/startLength]:[(first[0]-end[0])/gap,(first[1]-end[1])/gap];
+  const toward=[(first[0]-end[0])/gap,(first[1]-end[1])/gap];
+  const arrival=[toward[0]*.65+finish[0]*.35,toward[1]*.65+finish[1]*.35];
+  const control2=[first[0]-arrival[0]*dist*.55,first[1]-arrival[1]*dist*.55];
+  return smoothCurveSvg(p,false)+` C${xy(control1)} ${xy(control2)} ${xy(first)} Z`;
+ }
  // A duplicated final vertex is common in natural closed pen strokes. Its
  // zero-length final segment otherwise forms an artificial flat spot.
  if(closed&&p.length>3&&Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-8)p.pop();

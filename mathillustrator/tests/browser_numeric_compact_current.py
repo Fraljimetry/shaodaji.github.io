@@ -1,4 +1,4 @@
-"""Round 11: bounded numeric controls fit content without altering transactions.
+"""Round 22: numeric properties stay compact; settings share aligned select widths.
 
 Isolated Chromium source fixture (not a live hosted-site test).
 """
@@ -19,7 +19,7 @@ def check_compact(page, selector, max_width, viewport):
       return {width:e.width,x:e.x,right:e.right, hostRight:h.right,panelRight:panel.right,
         font:getComputedStyle(el).fontSize,visible:getComputedStyle(el).display!=='none'};
     }''')
-    assert rect['visible'] and 67 <= rect['width'] <= max_width, (viewport,selector,rect)
+    assert rect['visible'] and (46 if ('.style-' in selector or selector in ('#default-width','#default-opacity','#point-size')) else 67) <= rect['width'] <= max_width, (viewport,selector,rect)
     assert rect['right'] <= rect['hostRight'] + 1 and rect['right'] <= rect['panelRight'] + 1, (viewport,selector,rect)
     return rect
 
@@ -35,7 +35,7 @@ def run():
         page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
         page.wait_for_function("!!document.querySelector('[data-tool-choice=point]')")
         defaults=['#polygon-sides','#snap-step','#default-width','#default-opacity','#point-size','#theme','#export-scale']
-        widths={'#polygon-sides':96,'#snap-step':126,'#default-width':100,'#default-opacity':100,'#point-size':100,'#theme':98,'#export-scale':126}
+        widths={'#polygon-sides':164,'#snap-step':126,'#default-width':100,'#default-opacity':100,'#point-size':100,'#theme':164,'#export-scale':164}
         for selector in defaults: check_compact(page,selector,widths[selector],1440)
         cmd(page,'P=(1,2)')
         page.locator('#objects .object').first.click()

@@ -2,7 +2,7 @@
 export const VERSION = 1;
 export const TOOLS = ['select','pan','point','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','node','morphism'];
 export const PRESETS = {
-  General: {grid:true,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
+  General: {grid:true,snap:true,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#172b4d',fill:'#e6eef9',opacity:1,width:2,pointSize:5},
   'Research diagram': {grid:false,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',showAxes:false,stroke:'#263342',fill:'#d9e8f4',opacity:1,width:2,pointSize:5},
   'Analysis / plots': {grid:true,snap:true,snapStep:0.5,correction:'gentle',plotQuality:'detailed',showAxes:true,stroke:'#3761b8',fill:'#b6c9f9',opacity:1,width:2,pointSize:4},

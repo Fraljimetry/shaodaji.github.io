@@ -11,7 +11,7 @@ const safe=(v,fallback,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min
 export function normalizePropertiesLayout(raw){
  const o=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  return {
-  mode:o.mode==='docked'?'docked':'floating',
+  mode:'docked',
   collapsed:o.collapsed===true,
   dockHeight:safe(o.dockHeight,PROPERTY_DOCK_DEFAULT,PROPERTY_DOCK_MIN,1000),
   x:safe(o.x,320,0,10000),y:safe(o.y,100,0,10000),

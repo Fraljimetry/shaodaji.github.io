@@ -1,11 +1,12 @@
-import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,focalEllipse,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round19';
-import {smoothCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round19';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
+import {TOOLS,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,focalEllipse,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round22';
+import {smoothCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round22';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round22';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round20';
+import {localizeUI,translated} from './i18n.mjs?cut=round22';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round19';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round22';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
 import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset} from './diagram_routing.mjs';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
@@ -14,8 +15,7 @@ import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
 import {createPlotCache} from './plot_cache.mjs';
 import {layoutMorphismLabels} from './morphism_label_layout.mjs';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs';
-import {PROPERTY_DOCK_DEFAULT, PROPERTY_DOCK_MIN, normalizePropertiesLayout, fitFloatingProperties, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round19';
-import {normalizeFloatingPanel,fitFloatingPanel,FLOAT_PANEL_MIN_W,FLOAT_PANEL_MIN_H,FLOAT_PANEL_MAX_W,FLOAT_PANEL_MAX_H} from './floating_panels.mjs';
+import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round22';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
@@ -33,13 +33,13 @@ const COMMON_COLORS=[
 function syncColorSwatches(){
  for(const group of document.querySelectorAll('[data-color-swatches]')){
   const role=group.dataset.colorSwatches,property=group.dataset.colorProperty;
-  const value=role==='default'?doc.settings[property]:get(doc,selected)?.style?.[property];
+  const value=role==='default'?doc.settings[property]:role==='bulk'?commonValue(compatibleObjects(activeSelection(),property),property):get(doc,selected)?.style?.[property];
   if(typeof value!=='string')continue;
   for(const button of group.querySelectorAll('button[data-color]'))
    button.setAttribute('aria-pressed',String(button.dataset.color===value.toLowerCase()));
   // The property pane may keep keyboard focus after a transaction; update its
   // live picker without replacing the focused swatch or invalidating handlers.
-  if(role==='object'){
+  if(role==='object'||role==='bulk'){
    const picker=group.previousElementSibling?.querySelector('input[type=color]');
    if(picker&&picker!==document.activeElement)picker.value=value;
   }
@@ -69,6 +69,7 @@ const geometryCategories=[
 ];
 const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null;
 let currentMorphismLabels=new Map();
+const selectedIds=new Set();
 let trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
 const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1',TRASH='mathillustrator-trash-v1';
 /** Existing editor choice wins; otherwise follow the site theme key when present. */
@@ -118,6 +119,26 @@ function persistNow(){
  }catch(e){saveStatus('Save coordination failed · download JSON',true);notice('Save coordination failed: '+e.message);return false;}
 }
 function enqueueSave(){dirty=true;saveStatus('Local changes pending…');clearTimeout(saveTimer);saveTimer=setTimeout(persistNow,400);}
+function activeSelection(){
+ // Reconcile stale ids after import, undo, deletion and project replacement.
+ const ids=new Set(doc.objects.map(o=>o.id));
+ for(const id of selectedIds)if(!ids.has(id))selectedIds.delete(id);
+ if(selected&&ids.has(selected))selectedIds.add(selected);
+ if(!selectedIds.has(selected))selected=[...selectedIds].at(-1)||null;
+ return doc.objects.filter(o=>selectedIds.has(o.id));
+}
+function setSelection(ids,primary=null){
+ const available=new Set(doc.objects.map(o=>o.id));
+ selectedIds.clear();
+ for(const id of ids)if(available.has(id))selectedIds.add(id);
+ selected=primary&&selectedIds.has(primary)?primary:[...selectedIds].at(-1)||null;
+ renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();
+}
+function selectToggle(id){
+ if(!id)return;
+ const next=toggleIds(selectedIds,id);
+ setSelection(next,next.has(id)?id:(selected!==id?selected:null));
+}
 function recordUndo(before){
  history.push(before);let evicted=false;
  const bytes=()=>history.reduce((sum,s)=>sum+s.length*2,0);
@@ -126,7 +147,7 @@ function recordUndo(before){
  future=[];syncHistory();
 }
 function syncHistory(){$('undo').disabled=!history.length;$('redo').disabled=!future.length;}
-function restore(s){doc=validateDoc(JSON.parse(s));documentRevision++;documentGeneration++;selected=null;clearDraft();enqueueSave();renderAll();}
+function restore(s){doc=validateDoc(JSON.parse(s));documentRevision++;documentGeneration++;selected=null;activeSelection();clearDraft();enqueueSave();renderAll();}
 function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.push(JSON.stringify(doc));restore(history.pop());syncHistory();}
 function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
 let pendingPropertiesFrame=0;
@@ -143,13 +164,21 @@ function refreshAfterMutation(forceProperties=false){
 }
 function update(mutator,{refreshList=true,renderCanvas=true}={}){
  if(drag)cancelDrag(); // A document mutation must not leave an old gesture able to commit later.
- const old=JSON.stringify(doc),previousSelected=selected,beforeDoc=doc;
+ const old=JSON.stringify(doc),previousSelected=selected,previousIds=new Set(selectedIds),beforeDoc=doc;
  // A rejected edit rolls back JSON but does not replace the *logical* project.
  // The still-focused controls must be able to resolve their live object by ID
  // until the deferred property-pane refresh. A genuinely new/imported project
  // instead increments documentGeneration, invalidating all old controls.
- try{mutator();validateDoc(doc);}catch(e){doc=JSON.parse(old);selected=previousSelected;notice(e.message);if(renderCanvas)refreshAfterMutation(true);else syncSettings();return false;}
- const replaced=doc!==beforeDoc;if(replaced){documentGeneration++;clearDraft();}
+ try{mutator();validateDoc(doc);}catch(e){doc=JSON.parse(old);selected=previousSelected;selectedIds.clear();for(const id of previousIds)selectedIds.add(id);notice(e.message);if(renderCanvas)refreshAfterMutation(true);else syncSettings();return false;}
+ const replaced=doc!==beforeDoc;
+ if(replaced){documentGeneration++;selectedIds.clear();selected=null;clearDraft();}
+ else {
+  for(const id of selectedIds)if(!get(doc,id))selectedIds.delete(id);
+  if(selected!==previousSelected&&selected&&get(doc,selected)){
+   selectedIds.clear();selectedIds.add(selected); // A newly made or explicitly switched primary object.
+  }
+  activeSelection();
+ }
  if(JSON.stringify(doc)!==old){recordUndo(old);documentRevision++;enqueueSave();}
  if(refreshList)refreshAfterMutation(replaced||selected!==previousSelected);else{syncSettings();if(renderCanvas)render();}return true;
 }
@@ -215,7 +244,7 @@ function latexDisplay(o,x,y,fontSize,{anchor='start',vertical='baseline',color=o
 }
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
  if(o.hidden||o.style?.opacity===0)return;
- const isSel=selected===o.id&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
+ const isSel=(selectedIds.has(o.id)||selected===o.id)&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
  const coords=p.every(Boolean)?p.map(project):null;
  // Avoid building large, fully offscreen SVG subtrees. This is deliberately
  // conservative: control-point hulls bound Béziers, and labels/node boxes are
@@ -347,7 +376,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }
  // Hit paths are appended above the semantic group for easier line selection.
  // Keep the label handle above those transparent paths so it remains draggable.
- if(isSel&&o.type==='morphism'){
+ if(isSel&&selectedIds.size<=1&&o.type==='morphism'){
   const handle=item.querySelector('[data-label-handle]');if(handle)svg.append(handle);
  }
 }
@@ -456,6 +485,7 @@ function draw(svg,{exporting=false}={}){
   }
   // Live feedback uses the same a-priori correction as the committed stroke.
   // Drafts are never added to the document or the export SVG.
+  if(drag?.kind==='marquee'){const m=drag;svg.append(el('rect',{class:'selection-marquee',x:Math.min(m.sx,m.ex),y:Math.min(m.sy,m.ey),width:Math.abs(m.ex-m.sx),height:Math.abs(m.ey-m.sy),'pointer-events':'none'}));}
   if(drag?.kind==='freehand'&&drag.path.length>1){
    const {prepared,begin,finish}=preparedFreehand(drag.path,drag.startAttachment);
    const pts=prepared.path.map(project);
@@ -541,17 +571,17 @@ function renderListWindow(){
  function spacer(px){const e=document.createElement('div');e.className='list-spacer';e.style.height=px+'px';e.setAttribute('aria-hidden','true');return e;}
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
-  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(o.id===selected?' selected':'')+(o.hidden?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
+  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(o.hidden?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
   const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',polyline:'⌁',freehand:'∿',text:'T',function:'ƒ',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';row.append(glyph);
   const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;const small=document.createElement('small');small.textContent=desc(o);label.append(strong,small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
   more.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();openObjectMenu(o,more);}};
   row.append(more);
-  row.onclick=()=>{if(currentObject(o))select(o.id);};
+  row.onclick=e=>{if(currentObject(o)){if(e.ctrlKey||e.metaKey||e.shiftKey)selectToggle(o.id);else select(o.id);}};
   row.onkeydown=e=>{
    if(e.target!==row||!currentObject(o))return;
-   if(e.key==='Enter'||e.key===' '){e.preventDefault();select(o.id);focusListIndex(i);}
+   if(e.key==='Enter'||e.key===' '){e.preventDefault();if(e.ctrlKey||e.metaKey||e.shiftKey)selectToggle(o.id);else select(o.id);focusListIndex(i);}
    else if(['ArrowUp','ArrowDown','Home','End'].includes(e.key)){
     e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?count-1:Math.min(count-1,Math.max(0,i+(e.key==='ArrowDown'?1:-1)));
     select(listedObjects[next].id);focusListIndex(next);
@@ -573,8 +603,45 @@ function focusListIndex(index){
  target?.focus();
 }
 function field(parent,label,value,type,onChange,opts={}){const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');wrap.textContent=label;const input=document.createElement(type==='multiline'?'textarea':'input');if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}input.value=String(value??'');if(opts.step)input.step=opts.step;if(opts.min!==undefined)input.min=opts.min;if(opts.max!==undefined)input.max=opts.max;let accepted=input.value;input.onchange=()=>{if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}const next=input.value;if(onChange(type==='number'?Number(next):next)===false)input.value=accepted;else accepted=next;};wrap.append(input);parent.append(wrap);return input;}
+function renderBulkProperties(root,objects){
+ const editable=objects.filter(o=>!o.locked),locked=objects.length-editable.length;
+ const header=document.createElement('div');header.className='bulk-heading';
+ header.setAttribute('role','status');header.textContent=uiPrefs.language==='zh'?`已选 ${objects.length} 个${locked?` · 锁定 ${locked} 个`:''}`:`${objects.length} selected${locked?` · ${locked} locked`:''}`;
+ root.append(header);
+ if(!editable.length)return;
+ const generation=documentGeneration,ids=objects.map(o=>o.id);
+ const edit=(property,value,bounds=null)=>update(()=>{
+  if(bounds&&(!finite(value)||value<bounds.min||value>bounds.max))throw Error(`${bounds.label}: ${bounds.min}–${bounds.max}.`);
+  if(documentGeneration!==generation||ids.length!==activeSelection().length||ids.some(id=>!selectedIds.has(id)))throw Error('Selection changed while editing.');
+  const indexed=new Map(doc.objects.map(o=>[o.id,o]));
+  const targets=compatibleObjects(ids.map(id=>indexed.get(id)).filter(Boolean),property);
+  if(!targets.length)throw Error('No editable objects for this style.');
+  for(const obj of targets)obj.style[property]=value;
+ });
+ const grid=document.createElement('div');grid.className='style-controls-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','Selected objects appearance');
+ const slot=(name)=>{const e=document.createElement('div');e.className='style-slot style-'+name;grid.append(e);return e;};
+ function addColor(property,label){
+  if(!compatibleObjects(objects,property).length)return;
+  const target=slot(property),value=commonValue(compatibleObjects(objects,property),property);
+  const control=field(target,label,value||compatibleObjects(objects,property)[0].style[property],'color',v=>edit(property,v));
+  if(value===null)control.closest('label').dataset.mixed='true';
+  appendColorSwatches(target,{scope:'bulk',property,apply:v=>edit(property,v)});
+ }
+ function addNumber(property,label,min,max,step){
+  if(!compatibleObjects(objects,property).length)return;
+  const target=slot(property),value=commonValue(compatibleObjects(objects,property),property);
+  const control=field(target,label,value===null?'':value,'number',v=>edit(property,v,{min,max,label}),{min,max,step});
+  if(value===null){control.placeholder=translated('Mixed',uiPrefs.language);control.dataset.mixed='true';}
+ }
+ addColor('stroke','Stroke');addColor('fill','Fill');
+ addNumber('width','Line width',.1,100,.5);addNumber('opacity','Opacity',0,1,.1);
+ addNumber('pointSize','Point radius',1,100,1);
+ root.append(grid);
+}
 function renderProperties(){
- const root=$('properties');root.replaceChildren();const o=get(doc,selected);
+ const root=$('properties');root.replaceChildren();const objects=activeSelection();
+ if(objects.length>1){renderBulkProperties(root,objects);return;}
+ const o=objects[0]||get(doc,selected);
  if(!o)return;
  if(o.locked){const p=document.createElement('p');p.className='subtle';p.textContent='Locked';root.append(p);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
@@ -660,9 +727,9 @@ function renderProperties(){
  actions.append(del,focus,down,up);root.append(actions);
 }
 function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
-function select(id){selected=id;renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();}
+function select(id){setSelection(id?[id]:[],id);}
 function clearDraft(){draftStart=null;draftPoints=[];draftNode=null;hover=null;pendingTouchTap=null;}
-const toolInstructions={select:'Drag objects to edit; Ctrl-click cycles overlapping objects.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click opposite corners.'};
+const toolInstructions={select:'Ctrl/Shift-click to add; drag empty canvas to select a rectangle.',pan:'Drag the canvas.',polygon:'Click vertices; Enter finishes.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click opposite corners.'};
 function updateModeLabel(t){
  const label=toolGroups['basic-tools'].concat(toolGroups['construction-tools'],toolGroups['illustration-tools'],toolGroups['diagram-tools']).find(([id])=>id===t)?.[1]||t;
  const localized=translated(label,uiPrefs.language),help=toolInstructions[t]||'Click the canvas.';
@@ -781,6 +848,30 @@ function makeRefs(pts){
  });
  return pts.map((pt,i)=>existing[i]||addPoint(doc,pt).id);
 }
+function makeFocalEllipseRefs(pts){
+ // Geometry and snapping must agree. Snapshot existing anchors first, and
+ // fall back to the exact requested coordinates for a third point if snapping
+ // it would collapse an otherwise valid ellipse onto the focal segment.
+ const anchors=doc.settings.snapAnchors?currentAnchorIndex():null;
+ const snapped=pts.map(pt=>{
+  if(!anchors)return null;
+  const [sx,sy]=project(pt),near=anchors.nearest(sx,sy,12);
+  return near&&Math.hypot(sx-near.x,sy-near.y)<12?near.id:null;
+ });
+ const at=id=>get(doc,id)&&position(doc,id);
+ let resolved=pts.map((pt,i)=>snapped[i]?(at(snapped[i])||pt):pt);
+ // Do not merge two genuinely distinct foci simply because the second
+ // click falls inside the existing-anchor snapping radius.
+ if(Math.hypot(resolved[0][0]-resolved[1][0],resolved[0][1]-resolved[1][1])*view.scale<1&&
+    Math.hypot(pts[0][0]-pts[1][0],pts[0][1]-pts[1][1])*view.scale>=1){
+  snapped[1]=null;resolved=pts.map((pt,i)=>snapped[i]?(at(snapped[i])||pt):pt);
+ }
+ if(!focalEllipse(resolved)&&focalEllipse(pts)){
+  // Third-point snap takes priority for correction; never alter selected foci.
+  snapped[2]=null;
+ }
+ return pts.map((pt,i)=>snapped[i]||addPoint(doc,pt).id);
+}
 function checkNewRefs(type,refs){
  // Reject new collapsed edges while leaving imported legacy v1 projects intact.
  const resolver=createResolver(doc),p=refs.map(id=>resolver.at(id));checkNewGeometry(type,p);
@@ -867,9 +958,13 @@ function pointerDown(e){
    return;
   }
   const id=hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null;
-  if(e.shiftKey||e.altKey){drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};}
-  else if(e.ctrlKey||e.metaKey){select(stackedSelection(e,sx,sy));}
-  else{select(id);const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&['point','node','text'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};}
+  if(e.altKey){drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};}
+  else if(id&&(e.ctrlKey||e.metaKey||e.shiftKey)){
+   // Preserve overlapping-object cycling with Ctrl; Shift targets the topmost hit.
+   selectToggle((e.ctrlKey||e.metaKey)?stackedSelection(e,sx,sy)||id:id);
+  }else if(!id&&e.pointerType!=='touch'){
+   drag={kind:'marquee',pointerId:e.pointerId,sx,sy,ex:sx,ey:sy,additive:!!(e.shiftKey||e.ctrlKey||e.metaKey)};
+  }else{select(id);const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&['point','node','text'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};}
  }else if(tool==='pan'){
   const id=uiPrefs.autoPan!==false?(hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null):null;
   const obj=id&&get(doc,id);
@@ -883,8 +978,16 @@ function pointerDown(e){
 function performConstructionTap(e,pt){
  if(tool==='point'){const ok=update(()=>selected=addPoint(doc,pt).id);if(ok)afterOneConstruction();}
  else if(tool==='ellipse'){
-  draftPoints.push(pt);
-  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
+  const [sx,sy]=xyEvent(e),raw=unproject(sx,sy);
+  // A 12px point snap can otherwise collapse a nearby second focus or pull
+  // the third click onto the line between foci. Use the actual tap only when
+  // it makes a mathematically valid construction and is not a duplicate tap.
+  let vertex=pt;
+  if(draftPoints.length===1&&Math.hypot(vertex[0]-draftPoints[0][0],vertex[1]-draftPoints[0][1])<1e-9&&Math.hypot(raw[0]-draftPoints[0][0],raw[1]-draftPoints[0][1])*view.scale>=3)vertex=raw;
+  if(draftPoints.length===2&&!focalEllipse([...draftPoints,vertex])&&focalEllipse([...draftPoints,raw]))vertex=raw;
+  if(draftPoints.length===1&&Math.hypot(vertex[0]-draftPoints[0][0],vertex[1]-draftPoints[0][1])*view.scale<1){notice('Choose a second focus away from the first.');return;}
+  draftPoints.push(vertex);
+  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeFocalEllipseRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
   scheduleRender();
  }else if(['segment','arrow','line','circle','rectangle','regularPolygon'].includes(tool)){
   if(!draftStart){draftStart=pt;scheduleRender();}else{const a=draftStart;draftStart=null;if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;})&&afterOneConstruction();else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
@@ -893,13 +996,22 @@ function performConstructionTap(e,pt){
   if((tool==='bezier'&&draftPoints.length===4)||(tool==='angle'&&draftPoints.length===3))finishDraft();else scheduleRender();
  }else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
  else if(tool==='text'||tool==='node'){
-  const label=window.prompt(tool==='node'?'Diagram node label (TeX source or text):':'Text label (plain text):');
-  if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else if(update(()=>{if(tool==='node')validateLatexInput(label);selected=append(doc,{type:tool,xy:pt,text:label,textMode:tool==='node'?'latex':'plain',fontSize:tool==='node'?17:18}).id;}))afterOneConstruction();}
+  const label=window.prompt(tool==='node'?'Diagram label (LaTeX):':'Text (plain or $LaTeX$):');
+  if(label!==null&&label.trim()){const limit=tool==='node'?1000:2000;if(label.length>limit)notice(`Label exceeds ${limit} characters. Nothing was added.`);else if(update(()=>{
+   let text=label,textMode=tool==='node'?'latex':'plain';
+   if(tool==='text'){
+    const wrapped=label.trim().match(/^\$([^$]+)\$$/s)||label.trim().match(/^\\\(([\s\S]+)\\\)$/);
+    if(wrapped){text=wrapped[1];textMode='latex';}
+    else if(/^\\[a-zA-Z]+/.test(label.trim()))textMode='latex';
+   }
+   if(textMode==='latex')validateLatexInput(text);
+   selected=append(doc,{type:tool,xy:pt,text,textMode,fontSize:tool==='node'?17:18}).id;
+  }))afterOneConstruction();}
  }else if(tool==='morphism'){
   const id=e.target.closest('[data-id]')?.dataset.id,node=get(doc,id);
   if(node?.type!=='node'){notice('Choose a diagram node.');return;}
   if(!draftNode){draftNode=id;draftStart=node.xy;scheduleRender();}
-  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Arrow label (TeX source or text):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:label.trim()?'latex':'plain',bend:0,swap:false}).id;})&&afterOneConstruction();}}}
+  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Morphism label (LaTeX):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:'latex',bend:0,swap:false}).id;})&&afterOneConstruction();}}}
  }
 }
 function pointerMove(e){
@@ -921,6 +1033,7 @@ function pointerMove(e){
   if(obj&&['point','node','text'].includes(obj.type))drag={kind:'point',pointerId:e.pointerId,id:pending.id,before:JSON.stringify(doc),sx:pending.sx,sy:pending.sy,moved:true,excluded:affected(doc,pending.id)};
   else drag={kind:'selected-object',pointerId:e.pointerId,id:pending.id};
  }
+ if(drag?.kind==='marquee'){drag.ex=sx;drag.ey=sy;}
  if(drag?.kind==='pan'){view.cx=drag.cx-(sx-drag.sx)/view.scale;view.cy=drag.cy+(sy-drag.sy)/view.scale;}
  else if(drag?.kind==='point'){
   if(Math.hypot(sx-drag.sx,sy-drag.sy)>3)drag.moved=true;
@@ -974,6 +1087,22 @@ function pointerUp(e){
   // The final pointer-up position may not have had a preceding pointermove.
   view.cx=completed.cx-(endX-completed.sx)/view.scale;
   view.cy=completed.cy+(endY-completed.sy)/view.scale;
+ }
+ if(completed.kind==='marquee'){
+  const canvas=$('drawing').getBoundingClientRect(),rects=new Map();
+  for(const node of $('drawing').querySelectorAll('[data-id].clickable')){
+   const id=node.dataset.id,o=get(doc,id);
+   if(!o||o.hidden||o.style?.opacity===0)continue;
+   const b=node.getBoundingClientRect();if(!b.width&&!b.height)continue;
+   const local={left:b.left-canvas.left,top:b.top-canvas.top,right:b.right-canvas.left,bottom:b.bottom-canvas.top};
+   const old=rects.get(id);
+   rects.set(id,old?{left:Math.min(old.left,local.left),top:Math.min(old.top,local.top),right:Math.max(old.right,local.right),bottom:Math.max(old.bottom,local.bottom)}:local);
+  }
+  const found=windowSelection(rects,[completed.sx,completed.sy],[endX,endY]);
+  if(found.length||Math.hypot(endX-completed.sx,endY-completed.sy)>4){
+   const next=completed.additive?new Set([...selectedIds,...found]):new Set(found);
+   setSelection(next,found.at(-1)||selected);
+  }else if(!completed.additive)select(null);
  }
  if(completed.kind==='label'){
   const before=completed.before,o=get(doc,completed.id);
@@ -1441,300 +1570,82 @@ function setupPanelResizing(mobile){
 }
 
 
-/** R45: independent docked-height split and floating Properties inspector.
- * Layout lives only in local UI preferences, never in project JSON/history. */
+/** Round 22: permanently docked inspector; sizing is browser-only and undo-free. */
 function setupPropertiesLayout(mobile){
- const pane=$('properties-dock'),left=document.querySelector('.leftpanel'),head=$('properties-head');
- const toggle=$('properties-toggle'),dockButton=$('properties-undock'),split=$('properties-splitter'),corner=$('properties-corner');
- let preferred=normalizePropertiesLayout(uiPrefs.propertiesPanel),active=null;
- $('properties').hidden=preferred.collapsed;toggle.textContent=preferred.collapsed?'+':'−';
- const desktop=()=>!mobile.matches;
- const copy=o=>({...o});
- const barHeight=()=>document.querySelector('.appbar').getBoundingClientRect().height;
- function maxDock(){
-  const fixed=[...left.children].filter(el=>el!==pane&&el.id!=='objects'&&!el.classList.contains('panel-resizer')).reduce((total,el)=>total+el.getBoundingClientRect().height,0);
+ const pane=$('properties-dock'),left=document.querySelector('.leftpanel'),panel=$('properties');
+ const toggle=$('properties-toggle'),split=$('properties-splitter');
+ let preferred=normalizePropertiesLayout(uiPrefs.propertiesPanel),gesture=null;
+ $('properties-undock').hidden=true;
+ function limits(){
+  const fixed=[...left.children].filter(e=>e!==pane&&e.id!=='objects'&&!e.classList.contains('panel-resizer')).reduce((a,e)=>a+e.getBoundingClientRect().height,0);
   return fitDockPropertiesHeight(preferred.dockHeight,left.clientHeight,fixed);
  }
- function floatingGeometry(from=preferred){
-  return fitFloatingProperties(from,window.innerWidth,window.innerHeight,barHeight());
+ function apply(){
+  if(pane.parentElement!==left)left.append(pane);
+  document.body.classList.remove('properties-floating','properties-moving','properties-resizing');
+  panel.hidden=preferred.collapsed;toggle.disabled=false;toggle.textContent=panel.hidden?'+':'−';
+  toggle.setAttribute('aria-expanded',String(!panel.hidden));
+  toggle.setAttribute('aria-label',translated(panel.hidden?'Expand Properties':'Collapse Properties',uiPrefs.language));
+  toggle.title=toggle.getAttribute('aria-label');
+  pane.classList.toggle('is-folded',panel.hidden);
+  for(const property of ['left','top','width','height'])pane.style.removeProperty(property);
+  const h=limits();pane.style.setProperty('--mi-properties-height',`${h.height}px`);
+  split.setAttribute('aria-valuemin',String(h.min));split.setAttribute('aria-valuemax',String(h.max));
+  split.setAttribute('aria-valuenow',String(h.height));
+  split.setAttribute('aria-valuetext',`${h.height} ${translated('pixels',uiPrefs.language)}`);
+  split.setAttribute('aria-label',translated('Resize Properties height',uiPrefs.language));
+  split.tabIndex=!mobile.matches&&!panel.hidden&&!document.body.classList.contains('left-collapsed')?0:-1;
  }
- function updateAria(){
-  const language=uiPrefs.language;
-  const h=maxDock();
-  split.setAttribute('aria-valuemin',String(h.min));
-  split.setAttribute('aria-valuemax',String(h.max));
-  split.setAttribute('aria-valuenow',String(Math.min(h.height,Math.round(pane.getBoundingClientRect().height)||h.height)));
-  split.setAttribute('aria-valuetext',`${Math.round(pane.getBoundingClientRect().height)} ${translated('pixels',language)}`);
-  split.setAttribute('aria-label',translated('Resize Properties height',language));
-  corner.setAttribute('aria-label',translated('Resize floating Properties panel',language));
-  head.setAttribute('aria-label',translated('Move Properties panel',language));
-  const floating=preferred.mode==='floating';
-  dockButton.textContent=translated(floating?'Dock':'Float',language);
-  dockButton.title=translated(floating?'Dock Properties panel':'Float Properties panel',language);
-  dockButton.setAttribute('aria-label',dockButton.title);
-  toggle.title=translated($('properties').hidden?'Expand Properties':'Collapse Properties',language);
-  toggle.setAttribute('aria-label',toggle.title);
-  toggle.setAttribute('aria-expanded',String(!$('properties').hidden));
-  corner.setAttribute('aria-valuetext',`${Math.round(pane.getBoundingClientRect().width)} × ${Math.round(pane.getBoundingClientRect().height)} ${translated('pixels',language)}`);
- }
- function apply(next=preferred){
-  const floating=desktop()&&next.mode==='floating';
-  $('properties').hidden=floating?false:next.collapsed;toggle.disabled=floating;toggle.textContent=$('properties').hidden?'+':'−';
-  document.body.classList.toggle('properties-floating',floating);
-  // Reparent only for actual floating mode. The left sidebar is a z-indexed
-  // stacking context and could otherwise hide the inspector behind Tools.
-  const parent=floating?document.body:left;
-  if(pane.parentElement!==parent)parent.append(pane);
-  pane.classList.toggle('is-folded',$('properties').hidden);
-  head.tabIndex=floating?0:-1;corner.tabIndex=floating&&!$('properties').hidden?0:-1;
-  if(floating){
-   const g=floatingGeometry(next);
-   pane.style.left=`${g.x}px`;pane.style.top=`${g.y}px`;
-   pane.style.width=`${g.width}px`;pane.style.height=`${g.height}px`;
-   pane.style.removeProperty('--mi-properties-height');
-   split.tabIndex=-1;
-  }else{
-   pane.style.removeProperty('left');pane.style.removeProperty('top');pane.style.removeProperty('width');pane.style.removeProperty('height');
-   pane.style.setProperty('--mi-properties-height',`${maxDock().height}px`);
-   split.tabIndex=desktop()&&!$('properties').hidden&&!document.body.classList.contains('left-collapsed')?0:-1;
-  }
-  // Mobile uses the native drawer and cannot expose a floating canvas overlay.
-  if(mobile.matches){split.tabIndex=-1;corner.tabIndex=-1;head.tabIndex=-1;}
-  updateAria();
- }
- function commit(next){
-  preferred=normalizePropertiesLayout(next);
-  uiPrefs.propertiesPanel=copy(preferred);savePrefs();apply();
- }
- function stop(save=false){
-  if(!active)return;
-  const {id,handle,preview}=active;
-  active=null;document.body.classList.remove('properties-moving','properties-resizing');
-  if(save&&preview)commit(preview);else apply();
-  if(handle.hasPointerCapture?.(id))handle.releasePointerCapture(id);
- }
- function gesture(handle,kind,event){
-  if(!desktop()||active||!event.isPrimary||event.button!==0)return;
-  if(kind==='move'&&(preferred.mode!=='floating'||event.target.closest('button,input,select,textarea,a')))return;
-  if(kind==='resize'&&(preferred.mode!=='floating'||$('properties').hidden))return;
-  if(kind==='split'&&(preferred.mode!=='docked'||$('properties').hidden||document.body.classList.contains('left-collapsed')))return;
-  event.preventDefault();event.stopPropagation();
-  const rect=pane.getBoundingClientRect();
-  active={kind,handle,id:event.pointerId,x:event.clientX,y:event.clientY,rect,
-   before:copy(preferred),preview:null};
-  handle.setPointerCapture(event.pointerId);
-  document.body.classList.add(kind==='move'?'properties-moving':'properties-resizing');
- }
- function track(event){
-  if(!active||event.pointerId!==active.id)return;
-  const g=active,dx=event.clientX-g.x,dy=event.clientY-g.y;
-  let next={...g.before};
-  if(g.kind==='move'){
-   next.x=g.rect.left+dx;next.y=g.rect.top+dy;
-   // Clamp previews to the viewport without rewriting historical saved size.
-   const bounded=fitFloatingProperties(next,window.innerWidth,window.innerHeight,barHeight());
-   next.x=bounded.x;next.y=bounded.y;
-  }else if(g.kind==='resize'){
-   next.width=Math.max(260,Math.min(600,Math.round(g.rect.width+dx)));
-   next.height=Math.max(180,Math.min(720,Math.round(g.rect.height+dy)));
-  }else if(g.kind==='split'){
-   const h=maxDock();next.dockHeight=Math.max(h.min,Math.min(h.max,Math.round(g.rect.height-dy)));
-  }
-  g.preview=next;
-  // A dragged docked pane must not save until pointerup.
-  applyPreview(next);
- }
- function applyPreview(next){
-  if(active?.kind==='split'){
-   pane.style.setProperty('--mi-properties-height',`${next.dockHeight}px`);
-   updateAria();
-  }else if(active){
-   const rect=fitFloatingProperties(next,window.innerWidth,window.innerHeight,barHeight());
-   for(const [key,value] of Object.entries({left:rect.x,top:rect.y,width:rect.width,height:rect.height}))pane.style[key]=`${value}px`;
-   updateAria();
-  }
- }
- for(const [handle,kind] of [[head,'move'],[corner,'resize'],[split,'split']]){
-  handle.addEventListener('pointerdown',event=>gesture(handle,kind,event));
-  handle.addEventListener('pointermove',track);
-  handle.addEventListener('pointerup',event=>{if(active?.handle===handle&&active.id===event.pointerId){event.preventDefault();stop(true);}});
-  handle.addEventListener('pointercancel',event=>{if(active?.id===event.pointerId)stop();});
-  handle.addEventListener('lostpointercapture',event=>{if(active?.id===event.pointerId)stop();});
- }
- split.addEventListener('keydown',event=>{
-  if(!desktop()||active||preferred.mode!=='docked'||$('properties').hidden)return;
-  if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
-  event.preventDefault();event.stopPropagation();
-  const h=maxDock(),step=event.shiftKey?24:8;
-  const target=event.key==='Home'?h.min:event.key==='End'?h.max:h.height+(event.key==='ArrowUp'?step:-step);
-  commit({...preferred,dockHeight:Math.max(h.min,Math.min(h.max,target))});
+ function commit(next){preferred=normalizePropertiesLayout(next);uiPrefs.propertiesPanel={...preferred};savePrefs();apply();}
+ function cancel(){if(!gesture)return;const {id}=gesture;gesture=null;document.body.classList.remove('properties-resizing');if(split.hasPointerCapture?.(id))split.releasePointerCapture(id);apply();}
+ split.addEventListener('pointerdown',e=>{
+  if(mobile.matches||gesture||panel.hidden||document.body.classList.contains('left-collapsed')||e.button!==0||!e.isPrimary)return;
+  e.preventDefault();gesture={id:e.pointerId,y:e.clientY,height:limits().height,preview:null};
+  split.setPointerCapture(e.pointerId);document.body.classList.add('properties-resizing');
  });
- split.addEventListener('dblclick',event=>{if(desktop()&&preferred.mode==='docked'&&!$('properties').hidden){event.preventDefault();commit({...preferred,dockHeight:PROPERTY_DOCK_DEFAULT});}});
- head.addEventListener('keydown',event=>{
-  if(!desktop()||preferred.mode!=='floating'||active||!event.altKey)return;
-  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
-  event.preventDefault();event.stopPropagation();
-  const step=event.shiftKey?24:8,g=floatingGeometry();
-  const candidate={...preferred,x:event.key==='Home'?360:g.x+(event.key==='ArrowRight'?step:event.key==='ArrowLeft'?-step:0),
-   y:event.key==='Home'?Math.max(110,barHeight()+5):g.y+(event.key==='ArrowDown'?step:event.key==='ArrowUp'?-step:0)};
-  const fitted=fitFloatingProperties(candidate,window.innerWidth,window.innerHeight,barHeight());
-  commit({...candidate,x:fitted.x,y:fitted.y});
+ split.addEventListener('pointermove',e=>{
+  if(!gesture||e.pointerId!==gesture.id)return;
+  const h=limits(),height=Math.max(h.min,Math.min(h.max,Math.round(gesture.height+gesture.y-e.clientY)));
+  gesture.preview=height;pane.style.setProperty('--mi-properties-height',`${height}px`);
+  split.setAttribute('aria-valuenow',String(height));
  });
- corner.addEventListener('keydown',event=>{
-  if(!desktop()||preferred.mode!=='floating'||$('properties').hidden||active)return;
-  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
-  event.preventDefault();event.stopPropagation();
-  const step=event.shiftKey?24:8,g=floatingGeometry();
-  const candidate={...preferred,width:event.key==='Home'?330:g.width+(event.key==='ArrowRight'?step:event.key==='ArrowLeft'?-step:0),
-   height:event.key==='Home'?420:g.height+(event.key==='ArrowDown'?step:event.key==='ArrowUp'?-step:0)};
-  commit({...candidate,width:Math.max(260,Math.min(600,candidate.width)),height:Math.max(180,Math.min(720,candidate.height))});
+ split.addEventListener('pointerup',e=>{if(!gesture||gesture.id!==e.pointerId)return;const height=gesture.preview;cancel();if(height!==null)commit({...preferred,dockHeight:height});});
+ for(const eventName of ['pointercancel','lostpointercapture'])split.addEventListener(eventName,e=>{if(gesture?.id===e.pointerId)cancel();});
+ split.addEventListener('keydown',e=>{
+  if(mobile.matches||gesture||panel.hidden||!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;
+  e.preventDefault();e.stopPropagation();const h=limits(),step=e.shiftKey?24:8;
+  const height=e.key==='Home'?h.min:e.key==='End'?h.max:h.height+(e.key==='ArrowUp'?step:-step);
+  commit({...preferred,dockHeight:Math.max(h.min,Math.min(h.max,height))});
  });
- dockButton.addEventListener('click',()=>{
-  if(active)stop();
-  const mode=preferred.mode==='floating'?'docked':'floating';
-  commit({...preferred,mode});
-  dockButton.focus({preventScroll:true});
- });
- toggle.addEventListener('click',()=>{commit({...preferred,collapsed:$('properties').hidden});});
- window.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();stop();}},true);
- window.addEventListener('blur',()=>stop());
- window.addEventListener('resize',()=>{if(active)stop();apply();});
- mobile.addEventListener('change',()=>{if(active)stop();apply();});
- $('ui-language').addEventListener('change',()=>apply());
- $('left-collapse').addEventListener('click',()=>queueMicrotask(()=>apply()));
- apply();
- return {apply};
+ split.addEventListener('dblclick',e=>{if(!mobile.matches&&!panel.hidden){e.preventDefault();commit({...preferred,dockHeight:PROPERTY_DOCK_DEFAULT});}});
+ toggle.addEventListener('click',()=>commit({...preferred,collapsed:!panel.hidden}));
+ window.addEventListener('keydown',e=>{if(gesture&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();cancel();}},true);
+ window.addEventListener('blur',cancel);window.addEventListener('resize',()=>{cancel();apply();});
+ mobile.addEventListener('change',()=>{cancel();apply();});
+ $('ui-language').addEventListener('change',apply);
+ $('left-collapse').addEventListener('click',()=>queueMicrotask(apply));
+ apply();return {apply};
 }
-
-/** Round 17 — independently detachable Objects/Tools shells.
- * All state is UI-only; the canvas and project JSON are never reparented. */
-function setupDockablePanels(mobile,propertiesLayout,refreshPanelWidths){
+/** Objects and Tools stay docked; only the established sidebars/drawers resize/collapse. */
+function setupDockablePanels(mobile,propertiesLayout){
  const workspace=document.querySelector('.workspace');
- const original={left:document.querySelector('.leftpanel'),right:document.querySelector('.rightpanel')};
- const records={};let active=null,zOrder=16;
- const top=()=>document.querySelector('.appbar').getBoundingClientRect().height;
- const desktop=()=>!mobile.matches;
- function updateGrid(){
-  if(!desktop()){workspace.style.removeProperty('grid-template-columns');return;}
-  const lw=document.body.classList.contains('left-collapsed')||records.left.preferred.mode==='floating'?'52px':'var(--mi-left-width,310px)';
-  const rw=document.body.classList.contains('right-collapsed')||records.right.preferred.mode==='floating'?'52px':'var(--mi-right-width,305px)';
-  workspace.style.gridTemplateColumns=`${lw} minmax(240px,1fr) ${rw}`;
+ for(const side of ['left','right']){
+  const button=$(side==='left'?'objects-undock':'tools-undock');button.hidden=true;
  }
- function updateAria(r){
-  const float=r.preferred.mode==='floating';
-  const verb=translated(float?'Dock':'Float',uiPrefs.language);
-  const subject=translated(r.side==='left'?'Objects':'Tools',uiPrefs.language);
-  r.button.textContent=verb;
-  r.button.title=translated(float?'Dock '+(r.side==='left'?'Objects':'Tools')+' panel':'Float '+(r.side==='left'?'Objects':'Tools')+' panel',uiPrefs.language);r.button.setAttribute('aria-label',r.button.title);
-  r.placeholderButton.title=r.button.title;r.placeholderButton.setAttribute('aria-label',r.button.title);
-  r.placeholderButton.textContent=subject;
-  r.head.setAttribute('aria-label',translated('Move '+(r.side==='left'?'Objects':'Tools')+' panel',uiPrefs.language));
-  r.corner.setAttribute('aria-label',translated('Resize floating '+(r.side==='left'?'Objects':'Tools')+' panel',uiPrefs.language));
-  const rect=r.pane.getBoundingClientRect();
-  r.corner.setAttribute('aria-valuetext',`${Math.round(rect.width)} × ${Math.round(rect.height)} ${translated('pixels',uiPrefs.language)}`);
- }
- function apply(r){
-  const floated=desktop()&&r.preferred.mode==='floating';
-  const focusedInside=r.pane.contains(document.activeElement);
-  r.placeholder.classList.toggle('is-active',floated);
-  document.body.classList.toggle(r.side==='left'?'objects-floating':'tools-floating',floated);
-  if(floated){
-   if(r.pane.parentElement!==document.body)document.body.append(r.pane);
-   const geometry=fitFloatingPanel(r.preferred,window.innerWidth,window.innerHeight,top(),r.side);
-   Object.assign(r.pane.style,{left:`${geometry.x}px`,top:`${geometry.y}px`,width:`${geometry.width}px`,height:`${geometry.height}px`});
-  }else{
-   if(r.pane.parentElement!==workspace)workspace.insertBefore(r.pane,r.placeholder.nextSibling);
-   for(const name of ['left','top','width','height','zIndex'])r.pane.style.removeProperty(name==='zIndex'?'z-index':name);
+ function apply(){
+  document.body.classList.remove('objects-floating','tools-floating','floating-panel-moving','floating-panel-resizing');
+  const left=document.querySelector('.leftpanel'),right=document.querySelector('.rightpanel');
+  for(const pane of [left,right]){
+   if(pane.parentElement!==workspace){if(pane===left)workspace.prepend(pane);else workspace.append(pane);}
+   pane.classList.remove('floating-panel','floating-objects','floating-tools');
+   for(const name of ['left','top','width','height','z-index'])pane.style.removeProperty(name);
   }
-  r.pane.classList.toggle('floating-panel',floated);
-  r.pane.classList.toggle('floating-objects',floated&&r.side==='left');
-  r.pane.classList.toggle('floating-tools',floated&&r.side==='right');
-  r.head.tabIndex=floated?0:-1;r.corner.tabIndex=floated?0:-1;
-  r.button.hidden=!desktop();
-  // A floating panel can become a closed mobile drawer during viewport change.
-  // Redirect any now-invisible keyboard focus to its visible drawer trigger.
-  if(mobile.matches&&focusedInside&&!document.body.classList.contains(r.side==='left'?'mobile-left-open':'mobile-right-open')){
-   $(r.side==='left'?'left-collapse':'right-collapse').focus({preventScroll:true});
-  }
-  updateAria(r);
- }
- function applyAll(){
-  if(active)cancel();
-  for(const r of Object.values(records))apply(r);
-  updateGrid();
+  if(mobile.matches)workspace.style.removeProperty('grid-template-columns');
+  else workspace.style.gridTemplateColumns=`${document.body.classList.contains('left-collapsed')?'52px':'var(--mi-left-width,310px)'} minmax(240px,1fr) ${document.body.classList.contains('right-collapsed')?'52px':'var(--mi-right-width,305px)'}`;
   propertiesLayout.apply();
-  refreshPanelWidths();
  }
- function persist(r,next){
-  r.preferred=normalizeFloatingPanel(next,r.side);
-  uiPrefs.floatingPanels={...(uiPrefs.floatingPanels&&typeof uiPrefs.floatingPanels==='object'&&!Array.isArray(uiPrefs.floatingPanels)?uiPrefs.floatingPanels:{}),[r.side]:{...r.preferred}};
-  savePrefs();applyAll();
- }
- function cancel(save=false){
-  if(!active)return;
-  const {r,handle,id,preview}=active;
-  active=null;document.body.classList.remove('floating-panel-moving','floating-panel-resizing');
-  if(handle.hasPointerCapture?.(id))handle.releasePointerCapture(id);
-  if(save&&preview)persist(r,preview);else applyAll();
- }
- function track(event){
-  if(!active||active.id!==event.pointerId)return;
-  const g=active,dx=event.clientX-g.startX,dy=event.clientY-g.startY;
-  const candidate={...g.r.preferred};
-  if(g.kind==='move'){candidate.x=g.rect.x+dx;candidate.y=g.rect.y+dy;}
-  else{candidate.width=Math.max(FLOAT_PANEL_MIN_W,Math.min(FLOAT_PANEL_MAX_W,Math.round(g.rect.width+dx)));
-   candidate.height=Math.max(FLOAT_PANEL_MIN_H,Math.min(FLOAT_PANEL_MAX_H,Math.round(g.rect.height+dy)));}
-  const fit=fitFloatingPanel(candidate,window.innerWidth,window.innerHeight,top(),g.r.side);
-  if(g.kind==='move'){candidate.x=fit.x;candidate.y=fit.y;}
-  g.preview=candidate;
-  Object.assign(g.r.pane.style,{left:`${fit.x}px`,top:`${fit.y}px`,width:`${fit.width}px`,height:`${fit.height}px`});
-  updateAria(g.r);
- }
- for(const [side,pane]of Object.entries(original)){
-  const name=side==='left'?'Objects':'Tools';const heading=pane.querySelector('.panelhead');
-  const r={side,pane,head:heading,button:$(side==='left'?'objects-undock':'tools-undock'),preferred:normalizeFloatingPanel(uiPrefs.floatingPanels?.[side],side)};
-  const placeholder=document.createElement('div');placeholder.className=`dock-placeholder dock-placeholder-${side}`;
-  const restore=document.createElement('button');restore.type='button';restore.className='dock-restore';restore.setAttribute('aria-controls',side==='left'?'objects':'panel-sections');
-  placeholder.append(restore);workspace.insertBefore(placeholder,pane);
-  const corner=document.createElement('div');corner.className='floating-panel-corner';corner.tabIndex=-1;corner.setAttribute('role','group');corner.title='Drag to resize; arrow keys to adjust';pane.append(corner);
-  Object.assign(r,{placeholder,placeholderButton:restore,corner});records[side]=r;
-  function dockOrFloat(){if(active)cancel();persist(r,{...r.preferred,mode:r.preferred.mode==='floating'?'docked':'floating'});r.button.focus({preventScroll:true});}
-  r.button.addEventListener('click',dockOrFloat);restore.addEventListener('click',()=>{if(r.preferred.mode==='floating'){persist(r,{...r.preferred,mode:'docked'});r.button.focus({preventScroll:true});}});
-  function begin(handle,kind,event){
-   if(!desktop()||r.preferred.mode!=='floating'||active||!event.isPrimary||event.button!==0)return;
-   if(kind==='move'&&event.target.closest('button,input,select,textarea,a,[contenteditable]'))return;
-   event.preventDefault();event.stopPropagation();
-   active={r,handle,id:event.pointerId,kind,startX:event.clientX,startY:event.clientY,rect:pane.getBoundingClientRect(),preview:null};
-   handle.setPointerCapture(event.pointerId);
-   document.body.classList.add(kind==='move'?'floating-panel-moving':'floating-panel-resizing');
-  }
-  for(const [handle,kind]of [[heading,'move'],[corner,'resize']]){
-   handle.addEventListener('pointerdown',event=>begin(handle,kind,event));
-   handle.addEventListener('pointermove',track);
-   handle.addEventListener('pointerup',event=>{if(active?.handle===handle&&active.id===event.pointerId){event.preventDefault();cancel(true);}});
-   handle.addEventListener('pointercancel',event=>{if(active?.handle===handle&&active.id===event.pointerId)cancel();});
-   handle.addEventListener('lostpointercapture',event=>{if(active?.handle===handle&&active.id===event.pointerId)cancel();});
-  }
-  heading.addEventListener('keydown',event=>{
-   if(!desktop()||r.preferred.mode!=='floating'||active||!event.altKey||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
-   event.preventDefault();event.stopPropagation();const delta=event.shiftKey?24:8;
-   const g=fitFloatingPanel(r.preferred,window.innerWidth,window.innerHeight,top(),r.side);
-   const next={...r.preferred,x:event.key==='Home'?(side==='left'?80:670):g.x+(event.key==='ArrowRight'?delta:event.key==='ArrowLeft'?-delta:0),y:event.key==='Home'?top()+16:g.y+(event.key==='ArrowDown'?delta:event.key==='ArrowUp'?-delta:0)};
-   const fit=fitFloatingPanel(next,window.innerWidth,window.innerHeight,top(),r.side);persist(r,{...next,x:fit.x,y:fit.y});
-  });
-  corner.addEventListener('keydown',event=>{
-   if(!desktop()||r.preferred.mode!=='floating'||active||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key))return;
-   event.preventDefault();event.stopPropagation();const delta=event.shiftKey?24:8;
-   const g=fitFloatingPanel(r.preferred,window.innerWidth,window.innerHeight,top(),r.side);
-   persist(r,{...r.preferred,width:event.key==='Home'?340:Math.max(FLOAT_PANEL_MIN_W,Math.min(FLOAT_PANEL_MAX_W,g.width+(event.key==='ArrowRight'?delta:event.key==='ArrowLeft'?-delta:0))),height:event.key==='Home'?580:Math.max(FLOAT_PANEL_MIN_H,Math.min(FLOAT_PANEL_MAX_H,g.height+(event.key==='ArrowDown'?delta:event.key==='ArrowUp'?-delta:0)))});
-  });
- }
- window.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();cancel();}},true);
- window.addEventListener('blur',()=>cancel());
- window.addEventListener('resize',applyAll);
- mobile.addEventListener('change',applyAll);
- $('ui-language').addEventListener('change',applyAll);
- applyAll();return {apply:applyAll};
+ window.addEventListener('resize',apply);mobile.addEventListener('change',apply);
+ apply();return {apply};
 }
 
 function initialise(){
@@ -1798,7 +1709,7 @@ function initialise(){
    const drawingContext=active===document.body||active===$('drawing')||!!active?.classList?.contains('object');
    if(drawingContext){e.preventDefault();deleteSelected();}
   }
-  else if(e.key==='Escape'){cancelDrag();draftStart=null;draftPoints=[];draftNode=null;selectTool('select');}
+  else if(e.key==='Escape'){if(drag)cancelDrag();draftStart=null;draftPoints=[];draftNode=null;select(null);selectTool('select');}
   else if(e.key==='Enter'&&['polygon','polyline'].includes(tool)){finishDraft();}
  });
  $('undo').onclick=undo;$('redo').onclick=redo;
@@ -1815,7 +1726,7 @@ function initialise(){
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!window.confirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};
- $('conflict-load').onclick=()=>{if(!window.confirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];selected=null;syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
+ $('conflict-load').onclick=()=>{if(!window.confirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!window.confirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode){clearDraft();scheduleRender();}});
  document.addEventListener('visibilitychange',()=>{
