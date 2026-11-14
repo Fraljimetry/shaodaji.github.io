@@ -1,12 +1,12 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round26';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round26';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round26';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round27';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round27';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round27';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round26';
+import {localizeUI,translated} from './i18n.mjs?cut=round27';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round26';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round27';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
 import {boxRect,routeDiagramEdge,pathData,labelOnPolyline,labelOnQuadratic,labelDragOffset} from './diagram_routing.mjs';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs';
@@ -15,22 +15,22 @@ import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs';
 import {createPlotCache} from './plot_cache.mjs';
 import {layoutMorphismLabels} from './morphism_label_layout.mjs';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs';
-import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round26';
+import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round27';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="9" cy="4" r="1.6" fill="currentColor"/><circle cx="21" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="3" r="1.4" fill="currentColor"/><circle cx="20.6" cy="9.5" r="1.4" fill="currentColor"/><circle cx="17.5" cy="20" r="1.4" fill="currentColor"/><circle cx="6.5" cy="20" r="1.4" fill="currentColor"/><circle cx="3.4" cy="9.5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="1.5" fill="currentColor"/><circle cx="8.5" cy="19" r="1.6" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
-glyph.midpoint='<circle cx="5" cy="16" r="2"/><circle cx="19" cy="8" r="2"/><path d="M5 16L19 8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>';
+glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="12.2" r="1.7" fill="currentColor" stroke="none"/><path d="M12 12.2L12 3" stroke-dasharray="2 2"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="1.5" fill="currentColor"/><circle cx="8.5" cy="19" r="1.6" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
+glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="1.7" fill="currentColor"/><circle cx="21" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="currentColor" stroke="none"/>';
 glyph.ray='<circle cx="4" cy="19" r="2"/><path d="M4 19L21 3m-7 0h7v7"/>';
-glyph.perpBisector='<path d="M3 18L21 6M7 3L17 21M10 9l3 2-2 3"/>';
+glyph.perpBisector='<path d="M3 16L21 8M8 3L16 21"/><path d="M14.74 10.78l1.22 2.74-2.74 1.22"/><circle cx="3" cy="16" r="1.5" fill="currentColor"/><circle cx="21" cy="8" r="1.5" fill="currentColor"/>';
 glyph.circleDiameter='<circle cx="12" cy="12" r="9"/><path d="M3 12H21"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="21" cy="12" r="1.5" fill="currentColor"/>';
 glyph.circleThrough3='<circle cx="12" cy="12" r="9"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="12" r="2" fill="currentColor"/><circle cx="3" cy="12" r="2" fill="currentColor"/>';
 glyph.triangle='<path d="M12 3L21 20H3Z"/><circle cx="12" cy="3" r="1.5" fill="currentColor"/><circle cx="21" cy="20" r="1.5" fill="currentColor"/><circle cx="3" cy="20" r="1.5" fill="currentColor"/>';
 glyph.spline='<path d="M2 19C9 3 13 23 22 4"/><circle cx="2" cy="19" r="1.5"/><circle cx="12" cy="14" r="1.5"/><circle cx="22" cy="4" r="1.5"/>';
 glyph.closedSpline='<path d="M3 12C2 0 19 -1 21 11C22 22 5 23 3 12Z"/>';
-glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/>';
+glyph.quadrilateral='<path d="M3 7L16 3L21 19L7 21Z"/><circle cx="3" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="3" r="1.5" fill="currentColor"/><circle cx="21" cy="19" r="1.5" fill="currentColor"/><circle cx="7" cy="21" r="1.5" fill="currentColor"/>';
 // A fixed, keyboard-operable palette only changes ordinary document colors.
 // Custom hues remain available via native <input type=color> controls.
 const COMMON_COLORS=[
@@ -70,11 +70,12 @@ function appendColorSwatches(parent,{scope,property,apply}){
 }
 glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r="2" fill="currentColor"/>';
 glyph.perpendicularThrough='<path d="M2 9L22 9M12 2V22M12 9h5v5"/><circle cx="12" cy="16" r="1.7" fill="currentColor"/>';
+glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="1.7" fill="currentColor" stroke="none"/>';
 glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 15L23 9"/><circle cx="5.8" cy="13.7" r="2" fill="currentColor"/><circle cx="18.2" cy="10.3" r="2" fill="currentColor"/>';
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
- 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Infinite line'],['perpBisector','Perp. bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['ellipse','Ellipse'],['rectangle','Rectangle'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve']],
+ 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Infinite line'],['perpBisector','Perp. bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circleCircleIntersection','Circle–circle intersections'],['ellipse','Ellipse'],['rectangle','Rectangle'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve']],
  'diagram-tools':[['node','Diagram node'],['morphism','Morphism'],['text','Text']]
 };
 // An interface-only visibility preference: advanced tools remain functional in
@@ -82,7 +83,7 @@ const toolGroups={
 const ESSENTIAL_GEOMETRY=new Set(['point','segment','arrow','line','angle','circle','ellipse','rectangle','polygon','regularPolygon','polyline','bezier','spline','freehand']);
 const geometryCategories=[
  {id:'points-lines',title:'Points & lines',tools:['point','midpoint','segment','ray','arrow','line','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','angle']},
- {id:'circles-conics',title:'Circles & conics',tools:['circle','circleDiameter','circleThrough3','ellipse']},
+ {id:'circles-conics',title:'Circles & conics',tools:['circle','circleDiameter','circleThrough3','circleCircleIntersection','ellipse']},
  {id:'polygons',title:'Polygons',tools:['rectangle','triangle','quadrilateral','polygon','regularPolygon']},
  {id:'curves',title:'Curves',tools:['polyline','bezier','spline','closedSpline','freehand']}
 ];
@@ -213,6 +214,7 @@ function desc(o,nameById=null){if(o.type==='point')return `(${o.xy.map(formatCoo
  if(o.type==='perpBisector')return 'perpendicular bisector';
  if(o.type==='parallelThrough')return 'parallel to '+(nameById?.get(o.refs?.[1])||'line');
  if(o.type==='perpendicularThrough')return 'perpendicular to '+(nameById?.get(o.refs?.[1])||'line');
+ if(o.type==='circleCircleIntersection')return 'circle-circle intersection '+(o.branch===-1?'−':'+')+' of '+(o.refs||[]).map(id=>nameById?.get(id)||'?').join(' and ');
  if(o.type==='circleIntersection')return 'circle intersection '+(o.branch===-1?'−':'+')+' of '+(o.refs||[]).map(id=>nameById?.get(id)||'?').join(' and ');
  if(o.type==='intersection')return 'intersection of '+(o.refs||[]).map(id=>nameById?.get(id)||'?').join(' and ');
  if(o.type==='spline')return o.closed?'closed spline':'spline';
@@ -269,6 +271,22 @@ function latexDisplay(o,x,y,fontSize,{anchor='start',vertical='baseline',color=o
  catch(error){if(exporting)throw Error('Cannot export LaTeX label "'+o.name+'": '+error.message);
   return el('text',{x,y,fill:'#b45309','font-size':12,'pointer-events':'none'},'⚠ TeX');}
 }
+/** A single anchor rule shared by displayed-label layout, canvas and SVG export.
+ * Do not use raw SVG bounding boxes: they depend on frame-specific DOM state. */
+function geometryLabelAnchor(o,resolver){
+ if(o.type==='function'){
+  try{const y=parseExpression(o.expr)(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
+ }
+ if(o.type==='freehand')return o.path?.length?project(o.path[Math.floor(o.path.length/2)]):null;
+ if(['parallelThrough','perpendicularThrough'].includes(o.type)){
+  const line=resolver.line(o);return line?project(line.a):null;
+ }
+ const p=resolver.points(o);
+ if(!p.length||!p.every(Boolean))return null;
+ if(o.type==='ellipse'&&p.length===3)return project([(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2]);
+ if(o.type==='circle'||o.type==='regularPolygon')return project(p[0]);
+ return project([p.reduce((sum,pt)=>sum+pt[0],0)/p.length,p.reduce((sum,pt)=>sum+pt[1],0)/p.length]);
+}
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
  if(o.hidden||o.style?.opacity===0)return;
  const isSel=(selectedIds.has(o.id)||selected===o.id)&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
@@ -282,7 +300,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  if(o.type==='circle'&&coords?.length===2&&circleOutsideViewport(coords[0],
     Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),size.w,size.h,cullMargin))return;
  const mk=(tag,a)=>el(tag,{...sty,...a});let item=null;
- if(['point','midpoint','intersection','circleIntersection'].includes(o.type)){
+ if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
   const pt=resolver.at(o.id);if(!pt)return;const [x,y]=project(pt);
   const radius=Number(o.style.pointSize??doc.settings.pointSize)||5;
   const displayedLabel=o.pointLabel||o.name;
@@ -414,21 +432,12 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }
  // Optional geometric labels follow the referenced world anchors on every redraw.
  // SVG export uses the exact same path; project JSON stores only author text/mode.
- if(doc.settings.showLabels&&o.displayLabel&& !['point','midpoint','intersection','circleIntersection','node','morphism','text'].includes(o.type)){
-  let anchor=null;
-  if(o.type==='function'){
-   try{const y=parseExpression(o.expr)(view.cx);if(Number.isFinite(y))anchor=project([view.cx,y]);}catch{}
-  }else if(o.type==='freehand')anchor=o.path?.length?project(o.path[Math.floor(o.path.length/2)]):null;
-  else if(['parallelThrough','perpendicularThrough'].includes(o.type)){const line=resolver.line(o);if(line)anchor=project(line.a);}
-  else if(p.length&&p.every(Boolean)){
-   if(o.type==='ellipse'&&p.length===3)anchor=project([(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2]);
-   else if(o.type==='circle'||o.type==='regularPolygon')anchor=project(p[0]);
-   else anchor=project([p.reduce((s,q)=>s+q[0],0)/p.length,p.reduce((s,q)=>s+q[1],0)/p.length]);
-  }
+ if(doc.settings.showLabels&&o.displayLabel&& !['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node','morphism','text'].includes(o.type)){
+  const anchor=geometryLabelAnchor(o,resolver);
   if(anchor&&anchor.every(Number.isFinite)&&anchor[0]>-250&&anchor[0]<size.w+250&&anchor[1]>-100&&anchor[1]<size.h+100){
-   const [x,y]=[anchor[0]+9,anchor[1]-10],mode=o.displayLabelMode||'plain';
-   const label=mode==='latex'?latexDisplay({...o,text:o.displayLabel,textMode:'latex'},x,y,13,{exporting})
-    :el('text',{x,y,'font-size':13,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},o.displayLabel);
+   const placed=labelPositions?.get(o.id),[x,y]=placed?[placed.x,placed.y]:[anchor[0]+9,anchor[1]-10],mode=o.displayLabelMode||'plain';
+   const label=mode==='latex'?latexDisplay({...o,text:o.displayLabel,textMode:'latex'},x,y,13,{anchor:placed?.anchor||'start',exporting})
+    :el('text',{x,y,'text-anchor':placed?.anchor||'start','font-size':13,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},o.displayLabel);
    if(label){label.setAttribute('pointer-events','none');label.setAttribute('class','geometry-display-label');svg.append(label);}
   }
  }
@@ -514,10 +523,18 @@ function draw(svg,{exporting=false}={}){
  if(doc.settings.showLabels&&doc.settings.labelPlacement==='avoid'){
   const build=()=>{
    const entries=[];
-   for(const o of doc.objects){if(!['point','midpoint','intersection','circleIntersection'].includes(o.type)||o.hidden||o.style?.opacity===0)continue;
+   for(const o of doc.objects){if(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)||o.hidden||o.style?.opacity===0)continue;
     const p=resolver.at(o.id);if(!p)continue;const [x,y]=project(p);
     if(x < -100||x > size.w+100||y < -100||y > size.h+100)continue;
     entries.push({id:o.id,x,y,text:o.pointLabel||o.name});
+   }
+   // Geometry display labels join the same collision budget as point labels;
+   // new projects avoid text-to-text overlaps without changing author content.
+   for(const o of doc.objects){
+    if(o.hidden||o.style?.opacity===0||!o.displayLabel||['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node','morphism','text'].includes(o.type))continue;
+    const anchor=geometryLabelAnchor(o,resolver);
+    if(!anchor||!anchor.every(Number.isFinite)||anchor[0]<-100||anchor[0]>size.w+100||anchor[1]<-100||anchor[1]>size.h+100)continue;
+    entries.push({id:o.id,x:anchor[0],y:anchor[1],text:o.displayLabel});
    }
    return layoutPointLabels(entries,size.w,size.h);
   };
@@ -713,7 +730,7 @@ function renderProperties(){
   fn(live);
  });
  const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
- if(['point','midpoint','intersection','circleIntersection'].includes(o.type)){
+ if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Point label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.pointLabel||live.name);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
@@ -721,7 +738,7 @@ function renderProperties(){
  }
  // Diagram nodes, morphisms and Text already use their editable 'text' property.
  // All other shapes now expose optional independent on-canvas labels, never names/IDs.
- if(!['point','midpoint','intersection','circleIntersection','node','morphism','text'].includes(o.type)){
+ if(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node','morphism','text'].includes(o.type)){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const select=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
   select.value=o.displayLabelMode||'plain';select.onchange=()=>edit(live=>{if(select.value==='latex'&&live.displayLabel)validateLatexInput(live.displayLabel);live.displayLabelMode=select.value;});mode.append(select);root.append(mode);
@@ -785,13 +802,13 @@ function renderProperties(){
  }
  field(styleSlot('width'),'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
- if(['point','midpoint','intersection','circleIntersection'].includes(o.type))field(styleSlot('pointsize'),'Point radius',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point radius must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
+ if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type))field(styleSlot('pointsize'),'Point radius',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point radius must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  const actions=document.createElement('div');actions.className='props-actions';
  const del=document.createElement('button');del.textContent='Delete + dependents';del.onclick=()=>{if(currentObject(o)&&selected===o.id)deleteSelected();};
  const up=document.createElement('button');up.textContent='Bring forward';up.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>=0&&n<doc.objects.length-1)doc.objects.splice(n,2,doc.objects[n+1],live);});
  const down=document.createElement('button');down.textContent='Send backward';down.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>0)doc.objects.splice(n-1,2,live,doc.objects[n-1]);});
- const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=['point','midpoint','intersection','circleIntersection','node'].includes(live.type)?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
+ const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node'].includes(live.type)?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
  actions.append(del,focus,down,up);root.append(actions);
 }
 function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
@@ -851,7 +868,7 @@ function syncSettings(){
  // polygon sides or point-label visibility. Page/export/theme are independent.
  const matching=Object.entries(PRESETS).find(([name,preset])=>Object.entries(preset).every(([k,v])=>doc.settings[k]===v)
   &&Object.entries(PRESET_MODULES[name]).every(([k,v])=>doc.settings.modules[k]===v)
-  &&doc.settings.snapAnchors===true&&doc.settings.snapObjects===true&&doc.settings.polygonSides===6&&doc.settings.showLabels===true&&doc.settings.labelPlacement==='standard');
+  &&doc.settings.snapAnchors===true&&doc.settings.snapObjects===true&&doc.settings.polygonSides===6&&doc.settings.showLabels===true&&doc.settings.labelPlacement==='avoid');
  syncColorSwatches();
  $('preset').value=matching?.[0]||'Custom';
 }
@@ -863,7 +880,7 @@ function setupSettings(){
  }
 
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
- preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.snapObjects=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='standard';});};
+ preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.snapObjects=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='avoid';});};
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   $(id).onchange=()=>update(()=>{
    const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
@@ -1066,12 +1083,27 @@ function pointerDown(e){
 }
 function performConstructionTap(e,pt){
  if(tool==='point'){const ok=update(()=>selected=addPoint(doc,pt).id);if(ok)afterOneConstruction();}
- else if(['parallelThrough','perpendicularThrough','intersection','circleIntersection'].includes(tool)){
+ else if(['parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection'].includes(tool)){
   const [sx,sy]=xyEvent(e);
   // A nearby anchor takes priority for the first point; straight objects
   // are selected from the SVG hit-path, not by their label or object order.
   const hit=e.constructionHitId||e.target.closest?.('[data-id]')?.dataset.id||null;
   const clicked=get(doc,hit),line=clicked&&createResolver(doc).line(clicked);
+  if(tool==='circleCircleIntersection'){
+   const candidate=clicked&&['circle','circleThrough3'].includes(clicked.type)?clicked:null;
+   if(!candidate){notice('Choose an existing circle.');return;}
+   if(!draftReference){draftReference=candidate.id;scheduleRender();return;}
+   const first=get(doc,draftReference);
+   if(!first||first.id===candidate.id){notice('Choose a different circle.');return;}
+   const ok=update(()=>{
+    const resolver=createResolver(doc);
+    const roots=intersectCircles(circleGeometry(first,id=>resolver.at(id)),circleGeometry(candidate,id=>resolver.at(id)));
+    if(!roots.minus&&!roots.plus)throw Error('These circles do not intersect at a unique point or pair.');
+    for(const branch of roots.tangent?[-1]:[-1,1])if((branch===-1?roots.minus:roots.plus))
+     selected=append(doc,{type:'circleCircleIntersection',refs:[first.id,candidate.id],branch}).id;
+   });
+   if(ok){clearDraft();afterOneConstruction();}scheduleRender();return;
+  }
   if(tool==='circleIntersection'){
    const candidate=clicked&&(STRAIGHT_TYPES.has(clicked.type)||['circle','circleThrough3'].includes(clicked.type))?clicked:null;
    if(!candidate){notice('Choose a straight object or circle.');return;}
@@ -1106,7 +1138,7 @@ function performConstructionTap(e,pt){
    const id=hitTestPoint(sx,sy),anchor=id&&get(doc,id);
    // If there is no existing point, the first tap defines a new free point,
    // but it is inserted only on successful completion in one undo step.
-   draftReference=anchor&&['point','midpoint','intersection','circleIntersection'].includes(anchor.type)?id:'new';
+   draftReference=anchor&&['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(anchor.type)?id:'new';
    draftStart=draftReference==='new'?pt:position(doc,draftReference);
    scheduleRender();return;
   }
@@ -1384,7 +1416,7 @@ const texPoint=tikzPoint;
 function canTikz(){
  // Screen-space collision-avoidance offsets cannot be represented by the
  // restricted world-space TikZ point-label exporter. Never silently revert.
- if(doc.objects.some(o=>!o.hidden&&o.style?.opacity!==0&&['parallelThrough','perpendicularThrough','intersection','circleIntersection'].includes(o.type)))return false;
+ if(doc.objects.some(o=>!o.hidden&&o.style?.opacity!==0&&['parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)))return false;
  if(doc.settings.showLabels&&doc.settings.labelPlacement==='avoid'&&doc.objects.some(o=>!o.hidden&&o.style?.opacity!==0&&['point','midpoint'].includes(o.type)))return false;
  if(tikzGeometryIssue(doc))return false;
  // Plain-text TikZ targets pdfLaTeX: reject unsupported Unicode/control labels
@@ -1392,7 +1424,7 @@ function canTikz(){
  // TeX collapses leading/trailing and repeated spaces even when SVG preserves them.
  const safeText=s=>typeof s==='string'&&/^[\x20-\x7e]*$/.test(s)&&!/(^ | $| {2,})/.test(s);
  return doc.objects.every(o=>o.hidden||o.style?.opacity===0||(
-  (!o.displayLabel||!doc.settings.showLabels)&&(!['point','midpoint','intersection','circleIntersection'].includes(o.type)||!doc.settings.showLabels||(o.pointLabelMode!=='latex'&&safeText(o.pointLabel||o.name)))&&
+  (!o.displayLabel||!doc.settings.showLabels)&&(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)||!doc.settings.showLabels||(o.pointLabelMode!=='latex'&&safeText(o.pointLabel||o.name)))&&
   (!['text','node','morphism'].includes(o.type)||(o.textMode!=='latex'&&safeText(o.text)))&&
   (o.type!=='node'||layoutNodeLabel(o.text,o.fontSize||17).lines.length===1)&&(o.type!=='morphism'||(o.arrowStyle===undefined||o.arrowStyle==='solid')&&(o.routing??'direct')==='direct'&&(o.labelT??.5)===.5&&(o.labelDistance??17)===17&&(o.labelDx??0)===0&&(o.labelDy??0)===0&&(!o.labelAvoid||!o.text))&&['point','midpoint','segment','arrow','line','circle','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','freehand','text','node','morphism'].includes(o.type)&&(o.type!=='freehand'||false)&&(o.type!=='morphism'||o.hidden||o.refs.every(id=>get(doc,id)?.type==='node'&&!get(doc,id)?.hidden&&get(doc,id)?.style?.opacity!==0))));}
 function asTikz(){
@@ -1401,7 +1433,7 @@ function asTikz(){
  const rgb=color=>`{rgb,255:red,${parseInt(color.slice(1,3),16)};green,${parseInt(color.slice(3,5),16)};blue,${parseInt(color.slice(5,7),16)}}`;
  for(const o of doc.objects){if(o.hidden||o.style?.opacity===0)continue;
   const style=`draw=${rgb(o.style.stroke)},line width=${(o.style.width*.75).toFixed(4)}pt,opacity=${o.style.opacity}`;
-  const p=resolver.points(o);if(['point','midpoint','intersection','circleIntersection'].includes(o.type)){
+  const p=resolver.points(o);if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){
    const xy=resolver.at(o.id);if(!xy)continue;lines.push(`\\fill[fill=${rgb(o.style.stroke)},opacity=${o.style.opacity}] ${texPoint(xy)} circle (${((o.style.pointSize??doc.settings.pointSize)*.75).toFixed(3)}pt);`);
    if(doc.settings.showLabels)lines.push(`\\node[above right,opacity=${o.style.opacity}] at ${texPoint(xy)} {${latexEscape(o.pointLabel||o.name)}};`);
   }else if(['segment','arrow','line'].includes(o.type)&&p.length===2&&p.every(Boolean)){

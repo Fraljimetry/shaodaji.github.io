@@ -9,7 +9,7 @@ export function createAnchorIndex(doc,resolver,view,size,{cell=32}={}){
  const key=(x,y)=>`${x}:${y}`;
  for(let i=0;i<doc.objects.length;i++){
   const o=doc.objects[i];
-  if(o.hidden||o.style?.opacity===0||!['point','midpoint','intersection','circleIntersection'].includes(o.type))continue;
+  if(o.hidden||o.style?.opacity===0||!['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type))continue;
   const p=resolver.at(o.id);if(!p||!p.every(Number.isFinite))continue;
   const x=(p[0]-view.cx)*view.scale+size.w/2,y=(view.cy-p[1])*view.scale+size.h/2;
   if(!Number.isFinite(x)||!Number.isFinite(y))continue;

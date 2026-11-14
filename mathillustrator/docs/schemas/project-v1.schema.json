@@ -341,7 +341,8 @@
             "parallelThrough",
             "perpendicularThrough",
             "intersection",
-            "circleIntersection"
+            "circleIntersection",
+            "circleCircleIntersection"
           ]
         },
         "style": {
@@ -558,6 +559,10 @@
               "text"
             ]
           }
+        },
+        {
+          "if": {"properties":{"type":{"const":"circleCircleIntersection"}}},
+          "then": {"required":["refs","branch"],"properties":{"refs":{"type":"array","minItems":2,"maxItems":2},"branch":{"enum":[-1,1]}}}
         },
         {
           "if": {"properties":{"type":{"const":"circleIntersection"}}},

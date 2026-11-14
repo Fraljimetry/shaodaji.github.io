@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round24">
+  <link rel="stylesheet" href="./style.css?cut=round27">
 </head>
 <body>
   <header class="appbar">
@@ -74,7 +74,7 @@
           <div class="settings-subsection" role="group" aria-label="Show"><h4>Show</h4>
             <label class="check"><input id="grid" type="checkbox"> Grid</label>
             <label class="check"><input id="axes" type="checkbox"> Axes</label><label class="check"><input id="labels" type="checkbox"> Labels</label>
-            <label class="field">Point label placement <select id="label-placement"><option value="standard">Standard</option><option value="avoid">Avoid overlap</option></select></label>
+            <label class="field">Label placement <select id="label-placement"><option value="standard">Standard</option><option value="avoid">Avoid overlap</option></select></label>
           </div>
           
         </section>
@@ -109,6 +109,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round26"></script>
+  <script type="module" src="./src/app.mjs?cut=round27"></script>
 </body>
 </html>

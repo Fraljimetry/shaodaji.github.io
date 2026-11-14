@@ -1,6 +1,6 @@
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#172b4d',fill:'#e6eef9',opacity:1,width:2,pointSize:5},
@@ -17,10 +17,10 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circle','circleThrough3','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
-const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection']);
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
+const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection']);
 export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough']);
-const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
+const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.
  * The old two-reference rectangle-bounds ellipse is intentionally retained.
  * Return null rather than producing NaN/Infinity on collapsed input. */
@@ -58,7 +58,7 @@ export function xmlTextSafe(value){
  return true;
 }
 export function clone(x){return JSON.parse(JSON.stringify(x));}
-export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'standard',snapAnchors:true,snapObjects:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
+export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'avoid',snapAnchors:true,snapObjects:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return doc.objects.find(o=>o.id===id);}
@@ -182,6 +182,25 @@ export function intersectLineCircle(line,circle){
  return {minus:point(t-h),plus:point(t+h),tangent};
 }
 
+/** Two circle crossings, signed relative to the oriented center baseline.
+ * Negative is the right-hand branch from first center to second center;
+ * positive is the left-hand branch. Tangency has only the minus branch.
+ * Coincident circles have infinitely many roots and must be rejected. */
+export function intersectCircles(a,b){
+ const none={minus:null,plus:null,tangent:false};
+ if(!a||!b||!safeCoord(a.center)||!safeCoord(b.center)||!finite(a.radius)||!finite(b.radius)||a.radius<=1e-9||b.radius<=1e-9)return none;
+ const dx=b.center[0]-a.center[0],dy=b.center[1]-a.center[1],distance=Math.hypot(dx,dy),r=a.radius,R=b.radius;
+ const tolerance=Math.max(1e-11,Math.max(r,R,distance)*1e-10);
+ if(!Number.isFinite(distance)||distance<=tolerance||distance>r+R+tolerance||distance<Math.abs(r-R)-tolerance)return none;
+ const ux=dx/distance,uy=dy/distance;
+ const along=(r*r-R*R+distance*distance)/(2*distance),height2=r*r-along*along;
+ const hTol=Math.max(1e-12,r*r*1e-10);
+ if(!Number.isFinite(height2)||height2 < -hTol)return none;
+ const height=height2<=hTol?0:Math.sqrt(height2),middle=[a.center[0]+along*ux,a.center[1]+along*uy];
+ const root=sign=>{const pt=[middle[0]-sign*height*uy,middle[1]+sign*height*ux];return safeCoord(pt)?pt:null;};
+ return {minus:root(-1),plus:root(1),tangent:height2<=hTol};
+}
+
 /** Iterative dependency resolution, including mixed point/line references.
  * No recursion on user-created point graphs: 10,000-deep chains stay bounded.
  */
@@ -204,6 +223,12 @@ export function createResolver(doc){
     }
     if(obj.type==='intersection'&&obj.refs?.length===2)
      p=intersectStraightLines(lines.get(obj.refs[0]),lines.get(obj.refs[1]));
+    if(obj.type==='circleCircleIntersection'&&obj.refs?.length===2){
+     const first=circleGeometry(objects.get(obj.refs[0]),ref=>cache.get(ref)||null);
+     const second=circleGeometry(objects.get(obj.refs[1]),ref=>cache.get(ref)||null);
+     const roots=intersectCircles(first,second);
+     p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
+    }
     if(obj.type==='circleIntersection'&&obj.refs?.length===2){
      const circle=circleGeometry(objects.get(obj.refs[1]),ref=>cache.get(ref)||null);
      const roots=intersectLineCircle(lines.get(obj.refs[0]),circle);
@@ -249,7 +274,7 @@ export function guardAnchorMove(before,after,anchorId){
  function defect(o,resolver){
   if(!o.refs)return null;
   if(STRAIGHT_TYPES.has(o.type))return resolver.line(o)?null:'degenerate source line';
-  if(['intersection','circleIntersection'].includes(o.type))return resolver.at(o.id)?null:'intersection no longer lies on both source objects';
+  if(['intersection','circleIntersection','circleCircleIntersection'].includes(o.type))return resolver.at(o.id)?null:'intersection no longer lies on both source objects';
   const p=resolver.points(o);if(!p.every(Boolean))return null;
   if(o.type==='morphism')return Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9?'coincident diagram nodes':null;
   try{checkNewGeometry(o.type,p);}catch(e){return e.message;}
@@ -364,12 +389,12 @@ export function validateDoc(raw){
   if(['text','node'].includes(o.type)){if(!xmlTextSafe(o.text))throw Error('Text contains characters illegal in SVG XML.');if(o.text.length>(o.type==='text'?2000:1000)||!finite(o.fontSize??18)||o.fontSize<5||o.fontSize>200)throw Error('Invalid text label.');}
   if(o.pointLabel!==undefined&&(!POINT_LIKE.has(o.type)||typeof o.pointLabel!=='string'||o.pointLabel.length>1000||!xmlTextSafe(o.pointLabel)))throw Error('Invalid point label text.');
   if(o.pointLabelMode!==undefined&&(!POINT_LIKE.has(o.type)||!['plain','latex'].includes(o.pointLabelMode)))throw Error('Invalid point label mode.');
-  if(o.displayLabel!==undefined&&(['point','midpoint','circleIntersection','text','node','morphism'].includes(o.type)||typeof o.displayLabel!=='string'||o.displayLabel.length>1000||!xmlTextSafe(o.displayLabel)))throw Error('Invalid object display label.');
-  if(o.displayLabelMode!==undefined&&(['point','midpoint','circleIntersection','text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.displayLabelMode)))throw Error('Invalid object display label format.');
+  if(o.displayLabel!==undefined&&(['point','midpoint','circleIntersection','circleCircleIntersection','text','node','morphism'].includes(o.type)||typeof o.displayLabel!=='string'||o.displayLabel.length>1000||!xmlTextSafe(o.displayLabel)))throw Error('Invalid object display label.');
+  if(o.displayLabelMode!==undefined&&(['point','midpoint','circleIntersection','circleCircleIntersection','text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.displayLabelMode)))throw Error('Invalid object display label format.');
   if(o.fontFamily!==undefined&&(!['text','node','morphism'].includes(o.type)||!['Georgia, serif','Arial, sans-serif','Consolas, monospace','Verdana, sans-serif','Trebuchet MS, sans-serif','Palatino Linotype, serif','Times New Roman, serif'].includes(o.fontFamily)))throw Error('Invalid label font.');
   if(o.textMode!==undefined&&(!['text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.textMode)))throw Error('Invalid mathematical label mode.');
-  if(o.branch!==undefined&&(o.type!=='circleIntersection'||![-1,1].includes(o.branch)))throw Error('Invalid circle intersection branch.');
-  if(o.type==='circleIntersection'&&![-1,1].includes(o.branch))throw Error('Circle intersection branch is required.');
+  if(o.branch!==undefined&&(!['circleIntersection','circleCircleIntersection'].includes(o.type)||![-1,1].includes(o.branch)))throw Error('Invalid circle intersection branch.');
+  if(['circleIntersection','circleCircleIntersection'].includes(o.type)&&![-1,1].includes(o.branch))throw Error('Circle intersection branch is required.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
@@ -420,15 +445,15 @@ export function validateDoc(raw){
  const objects=new Map(d.objects.map(o=>[o.id,o]));
  for(const o of d.objects)for(let i=0;i<(o.refs||[]).length;i++){const ref=o.refs[i],parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
   const wantLine=o.type==='intersection'||(o.type==='circleIntersection'&&i===0)||(['parallelThrough','perpendicularThrough'].includes(o.type)&&i===1);
-  const wantCircle=o.type==='circleIntersection'&&i===1;
+  const wantCircle=o.type==='circleCircleIntersection'||(o.type==='circleIntersection'&&i===1);
   const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):POINT_LIKE.has(parent.type);
   if(!valid)throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
- const constrained=new Set(['regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection','circleIntersection']);
+ const constrained=new Set(['regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection']);
  const resolver=d.objects.some(o=>constrained.has(o.type))?createResolver(d):null;
  for(const o of d.objects)if(constrained.has(o.type)){
   if(STRAIGHT_TYPES.has(o.type)){if(!resolver.line(o))throw Error('Invalid line dependencies for '+o.type+'.');continue;}
-  if(['intersection','circleIntersection'].includes(o.type)){if(!resolver.at(o.id))throw Error('Intersection is undefined on the selected source domains.');continue;}
+  if(['intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){if(!resolver.at(o.id))throw Error('Intersection is undefined on the selected source domains.');continue;}
   const p=resolver.points(o);if(!p.every(Boolean))throw Error('Invalid construction anchors for '+o.type+'.');
   if(o.type==='regularPolygon'&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');
   if(o.type==='spline'){

@@ -427,3 +427,14 @@ input[type=number]{direction:rtl;text-align:right;font-variant-numeric:tabular-n
 .object-tools label input[type=checkbox]{margin:0;vertical-align:middle;flex:none}
 .header-actions #ui-language{box-sizing:border-box;height:33px;min-height:33px;line-height:20px;padding-top:4px;padding-bottom:4px;align-self:center;vertical-align:middle}
 @media(max-width:700px){.header-actions #ui-language{min-height:36px;height:36px}}
+
+/* Round 27 — square palette tiles, distributed spacing, aligned background picker. */
+.style-controls-grid .color-swatches,.properties .style-controls-grid .color-swatches{
+  display:grid;grid-template-columns:repeat(5,20px);justify-content:space-between;gap:4px 0;width:100%;max-width:100%;
+}
+.style-controls-grid .color-swatch,.properties .style-controls-grid .color-swatch{
+  width:20px;height:20px;min-width:20px;min-height:20px;aspect-ratio:1;
+}
+.rightpanel .settings-sections .controls > .section-body > .field > #background{
+  width:100%;max-width:100%;min-width:0;justify-self:stretch;flex:none;
+}
