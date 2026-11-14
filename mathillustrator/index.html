@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round39">
+  <link rel="stylesheet" href="./style.css?cut=round42">
 </head>
 <body>
   <header class="appbar">
@@ -58,7 +58,7 @@
         <section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section>
         <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><label class="geometry-mode"><input type="checkbox" id="geometry-essential" checked> Essential only</label><div class="geometry-categories" id="construction-tools"></div></section>
         <section class="settings-collection" data-section-id="settings"><h3>Settings</h3><div id="settings-sections" class="settings-sections">
-        <section class="controls"><h3>Plotting</h3>
+        <section class="controls settings-2d-only"><h3>Plotting</h3>
           <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label>
           <label class="field">Evaluation budget <select id="plot-budget"><option value="20000">20,000</option><option value="40000">40,000</option><option value="80000">80,000</option><option value="250000">250,000</option><option value="500000">500,000</option><option value="1000000">1,000,000</option></select></label>
           <label class="field">Implicit grid (px) <input id="implicit-grid" type="number" min="6" max="24" step="1"></label>
@@ -82,14 +82,17 @@
         </section>
         <section class="controls settings-3d" id="settings-3d"><h3>3D visualization</h3>
           <label class="field">Projection <select id="scene3d-projection"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
-          <label class="field">Mesh detail <input id="scene3d-detail" type="number" min="8" max="44" step="1"></label>
+          <label class="field">Mesh detail <input id="scene3d-detail" type="number" min="8" max="96" step="1"></label>
           <label class="field">View yaw (°) <input id="scene3d-yaw" type="number" min="-180" max="180" step="1"></label>
           <label class="field">View pitch (°) <input id="scene3d-pitch" type="number" min="-89" max="89" step="1"></label>
           <label class="field">Surface opacity <input id="scene3d-opacity" type="number" min="0.05" max="1" step="0.05"></label>
           <div class="checks-3d"><label class="check"><input id="scene3d-cube" type="checkbox"> Reference cube</label><label class="check"><input id="scene3d-lighting" type="checkbox"> Lighting</label></div>
-          <p class="compact-help">Drag the canvas to orbit. Scroll to zoom. 3D objects are separate from preserved 2D drawings.</p>
+          <label class="field">Background <input id="scene3d-background" type="color"></label>
+          <label class="field">Raster resolution <select id="scene3d-export-scale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+          <label class="field">Theme <select id="scene3d-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+          <label class="check"><input id="scene3d-export-transparent" type="checkbox"> Transparent background</label>
         </section>
-        <section class="controls"><h3>New object style</h3>
+        <section class="controls settings-2d-only"><h3>New object style</h3>
           <label class="field">Object naming <select id="naming-convention" aria-label="Automatic object naming"><option value="pascal">PascalCase</option><option value="camel">camelCase</option><option value="snake">snake_case</option></select></label>
           <div class="style-controls-grid" role="group" aria-label="New object appearance">
             <div class="style-slot style-stroke"><label class="field">Stroke <input id="default-stroke" type="color"></label><div id="default-color-swatches-stroke"></div></div>
@@ -99,7 +102,7 @@
             <div class="style-slot style-pointsize"><label class="field">Point size <input id="point-size" type="number" min="1" max="100" step="1"></label></div>
           </div>
         </section>
-        <section class="controls"><h3>Page & appearance</h3>
+        <section class="controls settings-2d-only"><h3>Page & appearance</h3>
           <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4</option><option value="a3">A3</option><option value="a5">A5</option><option value="letter">Letter</option><option value="legal">Legal</option><option value="tabloid">Tabloid</option><option value="square">Square</option><option value="widescreen">16:9</option></select></label>
           <label class="field">Image bounds <select id="export-region"><option value="viewport">View</option><option value="page">Page</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Grid/axes in export</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent background</label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Theme <select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
           <label class="field">Background <input id="background" type="color"></label>
@@ -121,6 +124,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round41"></script>
+  <script type="module" src="./src/app.mjs?cut=round42"></script>
 </body>
 </html>

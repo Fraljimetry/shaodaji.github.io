@@ -33,6 +33,8 @@ test('Round41 partial cell clipping retains finite surface slices without crossi
 test('Round41 per-scene work cap limits dense implicit projects and refuses incomplete exports',()=>{
  const scene=newScene3D();scene.options.detail=44;
  for(let i=0;i<80;i++)add3DPlot(scene,'implicit3d',[`x^2+y^2+z^2=${1+(i%15)/4}`]);
+ // Pre-R42 imported project with 80 visible entries must render safely, then normalize.
+ for(const p of scene.plots)p.hidden=false;
  const render=project3DScene(scene,900,700);
  assert.equal(render.limited,true);
  assert.ok(render.evaluations<=MAX_3D_EVALUATIONS);

@@ -38,10 +38,12 @@ test('Round39 3D singularities and resource caps fail closed under dense scene',
  const s=newScene3D();const f=add3DPlot(s,'surface3d',['1/(x-x)']);assert.equal(sample3DPlot(f,44).faces.length,0);
  s.plots.length=0;s.nextId=1;
  for(let i=0;i<25;i++)add3DPlot(s,'surface3d',[`sin(x+${i/10})*cos(y)`]);
+ // Simulate a pre-R42 legacy scene with more than three unhidden entries.
+ for(const p of s.plots)p.hidden=false;
  s.options.detail=30;
  const result=project3DScene(s,1400,900);
  assert.equal(result.limited,true,'Global 3D geometry budget must prevent false-success heavy exports');
- assert.ok(result.faces.length<=12000,'Global face cap');
+ assert.ok(result.faces.length<=66000,'Global face cap');
  assert.ok(result.evaluations<25*31*31,'Global scene stops sampling on limit');
  assert.ok(result.faces.every(f=>f.points.every(p=>p.every(Number.isFinite))));
 });

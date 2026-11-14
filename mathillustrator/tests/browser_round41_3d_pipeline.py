@@ -45,8 +45,7 @@ def run():
    with page.expect_download(timeout=15000) as save:page.locator('#save').click()
    saved=json.loads(save.value.path().read_text())
    assert saved['scene3d']['plots'][0]['kind']=='implicit3d'
-   # Stress 80 overlapping implicit surfaces; a tight global per-scene budget
-   # must mark its preview as incomplete and prevent a misleading image export.
+   # Import 80 legacy visible objects: only three remain displayed, all 80 saved.
    heavy=json.loads(json.dumps(saved))
    heavy['scene3d']['plots']=[dict(saved['scene3d']['plots'][0],id=i+1,name=f'Implicit {i+1}',a=f'x^2+y^2+z^2={1+i%9}') for i in range(80)]
    heavy['scene3d']['nextId']=81
@@ -54,12 +53,12 @@ def run():
    page.locator('#open-file').set_input_files({'name':'stress.json','mimeType':'application/json','buffer':json.dumps(heavy).encode()})
    page.wait_for_function('JSON.parse(window.__round36Snapshot()).scene3d.plots.length === 80',timeout=18000)
    finished()
-   assert 'PLOT LIMIT' in page.locator('#render-info').inner_text()
-   assert page.locator('#drawing polygon').count()<=12000
+   assert sum(not p["hidden"] for p in snapshot()["scene3d"]["plots"])==3
+   assert page.locator('#drawing polygon').count()<=66000
    with page.expect_download(timeout=15000) as project:page.locator('#save').click()
    assert len(json.loads(project.value.path().read_text())['scene3d']['plots'])==80
    page.locator('#export-open').click()
-   assert page.locator('#export-options button').filter(has_text='SVG').is_disabled(), 'Incomplete 3D scene must disable SVG export'
+   assert page.locator('#export-options button').filter(has_text='SVG').is_enabled(), 'Three complete 3D surfaces should remain exportable'
    page.locator('#export-close').click()
    # Repeated orbit commands and an immediate 2D-mode switch cancel ongoing 3D
    # painting; no old polygon must reappear after the new scene is committed.
@@ -73,7 +72,7 @@ def run():
    finished()
    assert len(snapshot()['scene3d']['plots'])==1 and page.locator('#drawing polygon').count()>=500
    assert not exceptions,exceptions
-   print('PASS ROUND41_3D_CHROMIUM: watertight implicit preview, left drag, SVG/JSON/persistence, global-cap export refusal, obsolete render cancellation, 2D isolation',flush=True)
+   print('PASS ROUND41_3D_CHROMIUM: watertight implicit preview, left drag, SVG/JSON/persistence, legacy-scene auto-hide and bounded complete export, obsolete render cancellation, 2D isolation',flush=True)
   finally: browser.close()
 
 if __name__=='__main__':run()

@@ -522,3 +522,10 @@ html.three-d #drawing:active{cursor:grabbing}
 .checks-3d{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .checks-3d .check{display:flex!important;gap:4px;font-size:11px!important;white-space:nowrap}
 #plot-inputs input{box-sizing:border-box}
+
+/* Round 42: genuine 3D-specific settings without disturbing 2D layouts. */
+html.three-d .settings-2d-only{display:none!important}
+/* Keep a common label/control edge and equal widths for every 3D property. */
+.properties.properties-3d > .field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,53%);align-items:center;column-gap:6px}
+.properties.properties-3d > .field > :is(input,select){box-sizing:border-box;width:100%!important;min-width:0;max-width:100%!important;flex:none!important;justify-self:stretch}
+.properties.properties-3d > .field > input[type=color]{padding:2px}

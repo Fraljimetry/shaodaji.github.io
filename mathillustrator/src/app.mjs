@@ -4,7 +4,7 @@ import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegac
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,PLOT3D_MODES} from './plot3d.mjs?cut=round41';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES} from './plot3d.mjs?cut=round42';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round40';
@@ -176,7 +176,7 @@ function recordUndo(before){
  future=[];syncHistory();
 }
 function syncHistory(){$('undo').disabled=!history.length;$('redo').disabled=!future.length;}
-function restore(s){doc=validateDoc(JSON.parse(s));documentRevision++;documentGeneration++;selected=null;activeSelection();clearDraft();enqueueSave();renderAll();}
+function restore(s){doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;activeSelection();clearDraft();enqueueSave();renderAll();}
 function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.push(JSON.stringify(doc));restore(history.pop());syncHistory();}
 function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
 let pendingPropertiesFrame=0;
@@ -198,7 +198,7 @@ function update(mutator,{refreshList=true,renderCanvas=true}={}){
  // The still-focused controls must be able to resolve their live object by ID
  // until the deferred property-pane refresh. A genuinely new/imported project
  // instead increments documentGeneration, invalidating all old controls.
- try{mutator();validateDoc(doc);}catch(e){doc=JSON.parse(old);selected=previousSelected;selectedIds.clear();for(const id of previousIds)selectedIds.add(id);notice(e.message);if(renderCanvas)refreshAfterMutation(true);else syncSettings();return false;}
+ try{mutator();if(in3D()&&doc.scene3d)enforce3DVisibility(doc.scene3d,selected3d);validateDoc(doc);}catch(e){doc=JSON.parse(old);selected=previousSelected;selectedIds.clear();for(const id of previousIds)selectedIds.add(id);notice(e.message);if(renderCanvas)refreshAfterMutation(true);else syncSettings();return false;}
  const replaced=doc!==beforeDoc;
  if(replaced){documentGeneration++;selectedIds.clear();selected=null;clearDraft();}
  else {
@@ -759,7 +759,7 @@ function render(){
   const paint=()=>{
    sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
    const fragment=document.createDocumentFragment();
-   const end=Math.min(result.primitives.length,next+400);
+   const end=Math.min(result.primitives.length,next+500);
    for(;next<end;next++)append3DPrimitive(fragment,result.primitives[next]);
    svg.append(fragment);
    if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
@@ -837,7 +837,7 @@ function render3DList(){
   const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);if(selected3d===plot.id)row.classList.add('selected');
   const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;const summary=document.createElement('small');summary.textContent=plot.a;info.append(name,summary);
   row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
-  const hide=document.createElement('button');hide.textContent=plot.hidden?'Show':'Hide';hide.title='Toggle 3D plot visibility';hide.onclick=e=>{e.stopPropagation();update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);live.hidden=!live.hidden;});};
+  const hide=document.createElement('button');hide.textContent=plot.hidden?'Show':'Hide';hide.title='Toggle 3D plot visibility';hide.onclick=e=>{e.stopPropagation();update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);live.hidden=!live.hidden;if(!live.hidden)enforce3DVisibility(doc.scene3d,live.id);});};
   const del=document.createElement('button');del.textContent='×';del.title='Delete 3D plot';del.onclick=e=>{e.stopPropagation();update(()=>{doc.scene3d.plots=doc.scene3d.plots.filter(p=>p.id!==plot.id);if(selected3d===plot.id)selected3d=null;});};
   row.append(info,hide,del);root.append(row);
  }
@@ -942,6 +942,7 @@ function renderBulkProperties(root,objects){
  root.append(grid);
 }
 function renderProperties3D(root){
+ root.classList.add('properties-3d');
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id)throw Error('3D plot changed while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
@@ -981,7 +982,7 @@ function renderProperties3D(root){
 function renderProperties(){
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
 
- const root=$('properties');root.replaceChildren();const objects=activeSelection();
+ const root=$('properties');root.classList.remove('properties-3d');root.replaceChildren();const objects=activeSelection();
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
  if(!o)return;
@@ -1196,6 +1197,10 @@ function syncPlotModeControl(){
 function sync3DInterface(){
  const enabled=in3D();document.documentElement.classList.toggle('three-d',enabled);$('scene3d-enable').checked=enabled;
  $('objects').hidden=enabled;$('objects-3d').hidden=!enabled;
+ $('scene3d-background').value=doc.settings.background;
+ $('scene3d-export-scale').value=String(doc.settings.exportScale);
+ $('scene3d-theme').value=$('theme').value;
+ $('scene3d-export-transparent').checked=!!doc.settings.exportTransparent;
  const options=doc.scene3d?.options;
  if(options)for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting']]){
   const input=$(id);if(input.type==='checkbox')input.checked=options[key];else input.value=options[key];
@@ -1209,7 +1214,7 @@ function sync3DInterface(){
   select.dispatchEvent(new Event('input'));
  }
  syncPlotModeControl();
- $('mode-label').textContent=enabled?'3D · drag to orbit, scroll to zoom':'Select · drag points to edit';
+ $('mode-label').textContent=enabled?'3D':'Select · drag points to edit';
 }
 function syncSettings(){
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
@@ -1252,6 +1257,10 @@ function setupSettings(){
  for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting']]){
   $(id).onchange=()=>update(()=>{if(!in3D())throw Error('Enable 3D first.');const node=$(id);doc.scene3d.options[key]=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;});
  }
+ $('scene3d-background').onchange=()=>update(()=>{doc.settings.background=$('scene3d-background').value;});
+ $('scene3d-export-scale').onchange=()=>update(()=>{doc.settings.exportScale=Number($('scene3d-export-scale').value);},{refreshList:false,renderCanvas:false});
+ $('scene3d-export-transparent').onchange=()=>update(()=>{doc.settings.exportTransparent=$('scene3d-export-transparent').checked;},{refreshList:false,renderCanvas:false});
+ $('scene3d-theme').onchange=()=>{$('theme').value=$('scene3d-theme').value;$('theme').onchange();};
  $('scene3d-enable').onchange=()=>{const state=$('scene3d-enable').checked;const success=update(()=>{if(state&&!doc.scene3d)doc.scene3d=newScene3D();doc.settings.plot3dEnabled=state;selected3d=null;});if(success)sync3DInterface();};
  const theme=$('theme');theme.value=initialSiteTheme();
  document.documentElement.dataset.theme=theme.value;theme.onchange=()=>{document.documentElement.dataset.theme=theme.value;safeStorageSet(SETTINGS,JSON.stringify({theme:theme.value}));};
@@ -2238,7 +2247,7 @@ function initialise(){
    const index=entries.indexOf(document.activeElement);if(entries.length)entries[e.key==='Home'?0:e.key==='End'?entries.length-1:(index+entries.length+(['ArrowDown','ArrowRight'].includes(e.key)?1:-1))%entries.length].focus();}});
  let old=null;
  try{old=localStorage.getItem(STORAGE);lastStored=old;saveStatus(old?'Recovered local project':'Local backup ready');}catch(e){saveStatus('Not saved locally · download JSON');notice('Browser storage is restricted: use Save to download JSON.');}
- if(old){try{doc=upgradeRecoveredLegacyPalette(validateDoc(JSON.parse(old)));}catch(e){setStorageConflict(true,'corrupt');notice('Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.');}}
+ if(old){try{doc=upgradeRecoveredLegacyPalette(validateDoc(JSON.parse(old)));if(doc.scene3d)enforce3DVisibility(doc.scene3d);}catch(e){setStorageConflict(true,'corrupt');notice('Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.');}}
  try{const stored=JSON.parse(localStorage.getItem(TRASH)||'[]');if(Array.isArray(stored))trash=stored.filter(e=>e&&Array.isArray(e.objects)&&Number.isFinite(e.at)).slice(0,20);}catch{}renderTrash();
  const mathjax=window.MathJax;
  if(mathjax?.startup?.promise)mathjax.startup.promise.then(()=>{renderAll();}).catch(e=>notice('LaTeX renderer failed: '+e.message));
@@ -2327,7 +2336,7 @@ function initialise(){
   if(success){plotInput.value='';plotY.value='';$('command-z').value='';if(!in3D())selectTool('select');if(raisedDomainBudget)notice('High-resolution domain coloring raised Plot budget to 1,000,000 evaluations. Adjust it in Plotting settings.');}
  };
  $('new').onclick=()=>{if(!window.confirm('Start a new illustration? Download the current project first if needed.'))return;update(()=>{doc=newDoc();selected=null;view={cx:0,cy:0,scale:48};});};
- $('open').onclick=()=>$('open-file').click();$('open-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12e6)throw Error('Project JSON exceeds 12 MB safety limit.');const readingRevision=documentRevision,readingGeneration=documentGeneration;const imported=validateDoc(JSON.parse(await file.text()));if(readingRevision!==documentRevision||readingGeneration!==documentGeneration)throw Error('The current project changed while reading this file. Import canceled to protect newer edits.');if(!window.confirm('Replace the current illustration with this JSON project?'))return;update(()=>{doc=imported;selected=null;});notice('Project opened.');}catch(err){notice('Open failed: '+err.message);}finally{e.target.value='';}};
+ $('open').onclick=()=>$('open-file').click();$('open-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12e6)throw Error('Project JSON exceeds 12 MB safety limit.');const readingRevision=documentRevision,readingGeneration=documentGeneration;const imported=validateDoc(JSON.parse(await file.text()));if(imported.scene3d)enforce3DVisibility(imported.scene3d);if(readingRevision!==documentRevision||readingGeneration!==documentGeneration)throw Error('The current project changed while reading this file. Import canceled to protect newer edits.');if(!window.confirm('Replace the current illustration with this JSON project?'))return;update(()=>{doc=imported;selected=null;});notice('Project opened.');}catch(err){notice('Open failed: '+err.message);}finally{e.target.value='';}};
  $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
  $('export-open').onclick=()=>{if(drag)cancelDrag();setupExport();$('export-menu').hidden=!$('export-menu').hidden;$('export-backdrop').hidden=$('export-menu').hidden;if($('export-menu').hidden)exportAbortToken++;else $('export-close').focus();};$('export-close').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
  $('export-backdrop').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
@@ -2335,7 +2344,7 @@ function initialise(){
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!window.confirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};
- $('conflict-load').onclick=()=>{if(!window.confirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
+ $('conflict-load').onclick=()=>{if(!window.confirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!window.confirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}});
  document.addEventListener('visibilitychange',()=>{
