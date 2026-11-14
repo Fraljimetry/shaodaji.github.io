@@ -19,7 +19,7 @@ def run():
   page.locator('#object-search').fill('f arrow');page.locator('#objects .object').first.click();page.wait_for_timeout(110)
   handle=page.locator('#drawing [data-label-handle="o3"]');assert handle.count()==1,'selected labeled edge should expose draggable handle'
   initial=page.locator('#drawing g[data-id="o3"] path').first.get_attribute('d')
-  x=float(handle.get_attribute('cx'));y=float(handle.get_attribute('cy'));bbox=page.locator('#drawing').bounding_box();px=bbox['x']+x;py=bbox['y']+y
+  rect=handle.bounding_box();px=rect['x']+rect['width']/2;py=rect['y']+rect['height']/2
   page.mouse.move(px,py);page.mouse.down();page.mouse.move(px+47,py+26,steps=4);page.wait_for_timeout(130)
   during=float(page.locator('#drawing g[data-id="o3"] text').get_attribute('x'))
   page.mouse.up();page.wait_for_timeout(140)
@@ -35,8 +35,7 @@ def run():
   page.locator('#object-search').fill('f arrow');page.locator('#objects .object').first.click();page.wait_for_timeout(60)
   assert abs(float(page.get_by_label('Label shift X (px)').input_value())-47)<=1
   # Interrupted gesture must restore original committed offsets with no extra history.
-  handle=page.locator('#drawing [data-label-handle="o3"]');x=float(handle.get_attribute('cx'));y=float(handle.get_attribute('cy'));bbox=page.locator('#drawing').bounding_box()
-  px=bbox['x']+x;py=bbox['y']+y
+  handle=page.locator('#drawing [data-label-handle="o3"]');rect=handle.bounding_box();px=rect['x']+rect['width']/2;py=rect['y']+rect['height']/2
   page.mouse.move(px,py);page.mouse.down();page.mouse.move(px+70,py+20,steps=4);page.wait_for_timeout(90)
   page.evaluate("window.dispatchEvent(new Event('blur'))");page.wait_for_timeout(100)
   assert abs(float(page.get_by_label('Label shift X (px)').input_value())-47)<=1,'blur should roll back preview'
@@ -54,8 +53,7 @@ def run():
   new_project['objects'][-1]['labelDy']=-0.125
   page.locator('#open-file').set_input_files({'name':'fractional.json','mimeType':'application/json','buffer':json.dumps(new_project).encode()});page.wait_for_timeout(110)
   page.locator('#object-search').fill('f arrow');page.locator('#objects .object').first.click();page.wait_for_timeout(60)
-  handle=page.locator('#drawing [data-label-handle="o3"]');x=float(handle.get_attribute('cx'));y=float(handle.get_attribute('cy'));bbox=page.locator('#drawing').bounding_box()
-  px=bbox['x']+x;py=bbox['y']+y
+  handle=page.locator('#drawing [data-label-handle="o3"]');rect=handle.bounding_box();px=rect['x']+rect['width']/2;py=rect['y']+rect['height']/2
   page.mouse.click(px,py);page.wait_for_timeout(70)
   page.keyboard.down('Control');page.mouse.click(px,py);page.keyboard.up('Control');page.wait_for_timeout(70)
   page.locator('#save').click()

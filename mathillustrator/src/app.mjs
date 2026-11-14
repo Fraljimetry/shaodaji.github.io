@@ -4,7 +4,7 @@ import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,n
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round28';
+import {localizeUI,translated} from './i18n.mjs?cut=round29';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round28';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes} from './diagram_layout.mjs';
@@ -21,7 +21,7 @@ const plotCache=createPlotCache();
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="3.3" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',segment:'<path d="M3 20L21 4"/><circle cx="3" cy="20" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/>',rectangle:'<rect x="4" y="5" width="16" height="14"/>',polygon:'<path d="M3 18L9 4L21 10L18 21Z"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="9" cy="4" r="1.6" fill="currentColor"/><circle cx="21" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="21" r="1.6" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="1.6" fill="currentColor"/><circle cx="8" cy="5" r="1.6" fill="currentColor"/><circle cx="14" cy="13" r="1.6" fill="currentColor"/><circle cx="21" cy="4" r="1.6" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.6 9.5L17.5 20H6.5L3.4 9.5Z"/><circle cx="12" cy="12.2" r="2" fill="currentColor" stroke="none"/><path d="M12 12.2L12 3" stroke-dasharray="2 2"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
+glyph.line='<path d="M3.5 20.5L20.5 3.5M3.5 14.5V20.5H9.5M14.5 3.5H20.5V9.5"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 3L20.56 9.22L17.29 19.28L6.71 19.28L3.44 9.22Z"/><path d="M12 12L12 3" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="1" y="8" width="5" height="8"/><rect x="18" y="8" width="5" height="8"/><path d="M6 12h12l-4-4m4 4-4 4"/>';
 glyph.midpoint='<path d="M3 19L21 5"/><circle cx="3" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';
 glyph.ray='<circle cx="4" cy="19" r="2"/><path d="M4 19L21 3m-7 0h7v7"/>';
 glyph.perpBisector='<path d="M3 16L21 8M8 3L16 21"/><path d="M10.64 12.61L12.25 16.27L15.91 14.64"/><circle cx="3" cy="16" r="2" fill="currentColor"/><circle cx="21" cy="8" r="2" fill="currentColor"/>';
@@ -69,9 +69,9 @@ function appendColorSwatches(parent,{scope,property,apply}){
  parent.append(group);syncColorSwatches();return group;
 }
 glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r="2" fill="currentColor"/>';
-glyph.perpendicularThrough='<path d="M2 12H22M12 2V22M12 8H16V12"/><circle cx="12" cy="20" r="2" fill="currentColor"/>';
+glyph.perpendicularThrough='<path d="M2 18H22M12 2V22M12 15H15V18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
-glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 12H23"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="2" fill="currentColor" stroke="none"/>';
+glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="5.753" cy="16.998" r="2" fill="currentColor" stroke="none"/><circle cx="18.247" cy="7.002" r="2" fill="currentColor" stroke="none"/>';
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
@@ -90,6 +90,7 @@ const geometryCategories=[
 const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null;
 let currentMorphismLabels=new Map();
 const selectedIds=new Set();
+let gridSnapOverride=null; // transient tool-context preference, never written into project JSON
 let draftReference=null,trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
 const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1',TRASH='mathillustrator-trash-v1';
 /** Existing editor choice wins; otherwise follow the site theme key when present. */
@@ -391,7 +392,15 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(['dashed','hook-dashed'].includes(o.arrowStyle))path.setAttribute('stroke-dasharray','7 5');
   if(o.arrowStyle==='dotted')path.setAttribute('stroke-dasharray','2 5');
   item.append(path);
-  if(['hook','hook-dashed'].includes(o.arrowStyle)){const from=auto?route.points[1]:curve.control;const len=Math.hypot(from[0]-a[0],from[1]-a[1]);if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;item.append(mk('path',{d:`M${a[0]-uy*7} ${a[1]+ux*7} Q${a[0]-ux*6-uy*8} ${a[1]-uy*6+ux*8} ${a[0]-ux*6} ${a[1]-uy*6}`,fill:'none'}));}}
+  if(['hook','hook-dashed'].includes(o.arrowStyle)){
+   const from=auto?route.points[1]:curve.control,len=Math.hypot(from[0]-a[0],from[1]-a[1]);
+   if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;
+    const at=(u,n)=>[(a[0]+ux*u-uy*n).toFixed(2),(a[1]+uy*u+ux*n).toFixed(2)].join(' ');
+    // One continuous, tangent-aligned J-hook physically joins the arrow shaft.
+    // The former floating curl ended behind the endpoint and looked disconnected.
+    item.append(mk('path',{d:`M${at(8,-7)} C${at(-4,-7)} ${at(-8,0)} ${at(0,0)}`,fill:'none','stroke-linecap':'round'}));
+   }
+  }
   if(o.arrowStyle==='tail'){const from=auto?route.points[1]:curve.control;const len=Math.hypot(from[0]-a[0],from[1]-a[1]);if(len>1){const ux=(from[0]-a[0])/len,uy=(from[1]-a[1])/len;item.append(mk('line',{x1:a[0]-uy*6,y1:a[1]+ux*6,x2:a[0]+uy*6,y2:a[1]-ux*6}));}}
   if(o.arrowStyle==='twohead'){const first=arrowHeadPoints(a,auto?route.points[1]:curve.control,o.style.width);if(first.length)item.append(el('polygon',{points:first.map(q=>q.join(',')).join(' '),fill:o.style.stroke,'pointer-events':'none'}));}
   if(head.length)item.append(el('polygon',{class:'arrowhead',points:head.map(q=>q.join(',')).join(' '),fill:blocked?'#b45309':o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));
@@ -400,16 +409,22 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    if(pos){const placed=morphismLabels?.get(o.id),[lx,ly]=placed?[placed.x,placed.y]:pos;
     if(placed?.status==='crowded'){item.setAttribute('data-label-collision','unresolved');
      item.append(el('title',{},'Label collision remains: no clear location among the supported candidates. Adjust the label manually.'));}
-    if(o.textMode==='latex')item.append(latexDisplay(o,lx,ly,15,{anchor:'middle',color:placed?.status==='crowded'?'#b45309':o.style.stroke,exporting}));
-    else{const label=el('text',{'xml:space':'preserve',x:lx,y:ly,'font-size':15,'font-family':o.fontFamily||'Georgia, serif','text-anchor':'middle',fill:placed?.status==='crowded'?'#b45309':o.style.stroke,'paint-order':'stroke','stroke':exporting&&doc.settings.exportTransparent?'none':doc.settings.background,'stroke-width':4,opacity:sty.opacity});
-     appendTextLines(label,o.text,lx,ly,15,{centered:true});item.append(label);}
-    // Editing-only handle: never exported and never part of the semantic graph.
-    // The root SVG captures the pointer, so a redraw cannot orphan the gesture.
-    if(isSel&&!o.locked&&tool==='select'){
-     const handle=el('circle',{'data-label-handle':o.id,'data-id':o.id,cx:lx+12,cy:ly-14,r:7,
-      fill:'#fff',stroke:'#6b51cd','stroke-width':2,'aria-label':'Drag arrow label','pointer-events':'all'});
-     handle.append(el('title',{},'Drag to reposition arrow label; Undo restores its former position'));
-     item.append(handle);
+    const label=o.textMode==='latex'?latexDisplay(o,lx,ly,15,{anchor:'middle',color:placed?.status==='crowded'?'#b45309':o.style.stroke,exporting})
+      :el('text',{'xml:space':'preserve',x:lx,y:ly,'font-size':15,'font-family':o.fontFamily||'Georgia, serif','text-anchor':'middle',fill:placed?.status==='crowded'?'#b45309':o.style.stroke,'paint-order':'stroke','stroke':exporting&&doc.settings.exportTransparent?'none':doc.settings.background,'stroke-width':4,opacity:sty.opacity});
+    if(o.textMode!=='latex')appendTextLines(label,o.text,lx,ly,15,{centered:true});
+    item.append(label);
+    if(!exporting&&!o.locked&&tool==='select'){
+     // The drawn glyph can contain unpainted holes (e.g. \varphi). A transparent
+     // hit box across its real text bounds makes the visible label draggable
+     // directly, with no separate circle or exported editing artifact.
+     const metrics=o.textMode==='latex'?mathMetrics(o.text,15):null;
+     const w=Math.max(12,metrics?.width??Math.min(400,o.text.length*8.5));
+     const h=Math.max(16,metrics?.height??18);
+     const top=metrics?ly-metrics.ascent:ly-14;
+     const hit=el('rect',{x:lx-w/2-4,y:top-4,width:w+8,height:h+8,
+      fill:'transparent','pointer-events':'all','data-id':o.id,'data-label-handle':o.id,
+      'aria-label':'Drag arrow label'});
+     hit.style.cursor='move';item.append(hit);
     }
    }
   }
@@ -443,8 +458,10 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }
  // Hit paths are appended above the semantic group for easier line selection.
  // Keep the label handle above those transparent paths so it remains draggable.
- if(isSel&&selectedIds.size<=1&&o.type==='morphism'){
-  const handle=item.querySelector('[data-label-handle]');if(handle)svg.append(handle);
+ if(!exporting&&tool==='select'&&o.type==='morphism'){
+  // Keep the actual label above transparent arrow hit paths; place only its
+  // invisible text-sized hit box on top. No visible grab handle is drawn.
+  const hit=item.querySelector('[data-label-handle]');if(hit)svg.append(hit);
  }
 }
 function draw(svg,{exporting=false}={}){
@@ -712,12 +729,12 @@ function renderBulkProperties(root,objects){
  }
  addColor('stroke','Stroke');addColor('fill','Fill');
  addNumber('width','Line width',.1,100,.5);addNumber('opacity','Opacity',0,1,.1);
- addNumber('pointSize','Point radius',1,100,1);
+ addNumber('pointSize','Point size',1,100,1);
  root.append(grid);
 }
 function renderProperties(){
  const root=$('properties');root.replaceChildren();const objects=activeSelection();
- if(objects.length>1){renderBulkProperties(root,objects);return;}
+ if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
  if(!o)return;
  if(o.locked){const p=document.createElement('p');p.className='subtle';p.textContent='Locked';root.append(p);return;}
@@ -774,16 +791,19 @@ function renderProperties(){
   routeSelect.value=o.routing||'direct';routeSelect.onchange=()=>edit(live=>{live.routing=routeSelect.value;});
   routeRow.append(routeSelect);root.append(routeRow);
 
+  const arrowChecks=document.createElement('div');arrowChecks.className='morphism-arrow-checks';
   const collisionRow=document.createElement('label');collisionRow.className='check';
   const collisionCheck=document.createElement('input');collisionCheck.type='checkbox';collisionCheck.id='morphism-label-avoid';
   collisionCheck.checked=!!o.labelAvoid;collisionCheck.onchange=()=>edit(live=>{live.labelAvoid=collisionCheck.checked;});
-  collisionRow.append(collisionCheck,document.createTextNode(' Avoid collisions'));root.append(collisionRow);
+  collisionRow.append(collisionCheck,document.createTextNode(' Avoid collisions'));arrowChecks.append(collisionRow);
+  const side=document.createElement('label');side.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;
+  cb.onchange=()=>edit(live=>{live.swap=cb.checked;});side.append(cb,document.createTextNode(' Swap label side'));arrowChecks.append(side);
+  root.append(arrowChecks);
 
   field(root,'Label position',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
   field(root,'Label distance (px)',o.labelDistance??17,'number',v=>edit(live=>{if(!finite(v)||v<0||v>200)throw Error('Label distance must be 0–200 px.');live.labelDistance=v;}),{min:0,max:200,step:1});
   field(root,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
   field(root,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
-  const side=document.createElement('label');side.className='check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;cb.onchange=()=>edit(live=>live.swap=cb.checked);side.append(cb,document.createTextNode(' Swap label side'));root.append(side);
  }
  if(o.type==='function')field(root,'y(x) =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');live.sides=v;}),{step:1,min:3,max:100});
@@ -802,14 +822,15 @@ function renderProperties(){
  }
  field(styleSlot('width'),'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
- if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type))field(styleSlot('pointsize'),'Point radius',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point radius must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
+ if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection'].includes(o.type))field(styleSlot('pointsize'),'Point size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
+ localizeUI(root,uiPrefs.language);
  const actions=document.createElement('div');actions.className='props-actions';
  const del=document.createElement('button');del.textContent='Delete + dependents';del.onclick=()=>{if(currentObject(o)&&selected===o.id)deleteSelected();};
  const up=document.createElement('button');up.textContent='Bring forward';up.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>=0&&n<doc.objects.length-1)doc.objects.splice(n,2,doc.objects[n+1],live);});
  const down=document.createElement('button');down.textContent='Send backward';down.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>0)doc.objects.splice(n-1,2,live,doc.objects[n-1]);});
  const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=['point','midpoint','intersection','circleIntersection','circleCircleIntersection','node'].includes(live.type)?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
- actions.append(del,focus,down,up);root.append(actions);
+ actions.append(del,focus,down,up);root.append(actions);localizeUI(root,uiPrefs.language);
 }
 function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
 function select(id){setSelection(id?[id]:[],id);}
@@ -824,7 +845,8 @@ function updateModeLabel(t){
 }
 function selectTool(t){
  if(!TOOLS.includes(t))return;
- if(drag)cancelDrag();tool=t;clearDraft();$('drawing').dataset.tool=t;
+ if(drag)cancelDrag();tool=t;gridSnapOverride=['node','morphism'].includes(t);clearDraft();$('drawing').dataset.tool=t;
+ if($('snap'))$('snap').checked=gridSnapOverride;
  document.querySelectorAll('[data-tool-choice]').forEach(b=>{const active=b.dataset.toolChoice===t;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');});
  updateModeLabel(t);scheduleRender();
 }
@@ -860,6 +882,7 @@ function syncSettings(){
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
+ $('snap').checked=gridSnapOverride??doc.settings.snap;
  $('export-region').querySelector('option[value="page"]').disabled=doc.settings.page==='infinite';
  // Legacy `settings.modules` is preserved in v1 project files, but no longer
  // hides a tool: section disclosure is independent, local interface state.
@@ -888,6 +911,7 @@ function setupSettings(){
    if(input.type==='number'&&!finite(value))throw Error('Value must be finite.');
    if(k==='pointSize'&&value!==doc.settings.pointSize)preserveInheritedPointSizes(doc);
    doc.settings[k]=value;
+   if(k==='snap')gridSnapOverride=null; // manual choice wins until a new tool is selected
    if(k==='page'&&value==='infinite')doc.settings.exportRegion='viewport';
   },['exportRegion','exportGuides','exportScale','exportTransparent'].includes(k)?{refreshList:false,renderCanvas:false}:{});
  }
@@ -1019,6 +1043,7 @@ function objectPointAttachment(world,excluded=null){
  const candidates=excluded?doc.objects.filter(o=>!excluded.has(o.id)):doc.objects;
  return nearestFreehandAttachment(world,candidates,createResolver(doc),view.scale,10);
 }
+function effectiveSnapSettings(){return gridSnapOverride===null?doc.settings:{...doc.settings,snap:gridSnapOverride};}
 function constructionPoint(world,excludeId=null){
  // Cache the dependency exclusion for a continuous drag. A point cannot attach
  // to itself or to a moving segment/ellipse that refers to that same point.
@@ -1026,12 +1051,12 @@ function constructionPoint(world,excludeId=null){
  const anchor=nearestAnchor(world,excluded);
  if(anchor)return anchor.world;
  const attached=objectPointAttachment(world,excluded);
- return attached?attached.world:snapPoint(world,doc.settings);
+ return attached?attached.world:snapPoint(world,effectiveSnapSettings());
 }
 function constructionVertex(world){
  const anchor=nearestAnchor(world);if(anchor)return anchor.world;
  const attached=objectPointAttachment(world);
- return attached?attached.world:snapPoint(world,doc.settings);
+ return attached?attached.world:snapPoint(world,effectiveSnapSettings());
 }
 function afterOneConstruction(){if(uiPrefs.autoPan!==false)selectTool('pan');}
 function pointerDown(e){
@@ -1060,7 +1085,8 @@ function pointerDown(e){
   // This must be checked before the generic overlapping-object selection logic.
   const labelId=e.target.closest('[data-label-handle]')?.getAttribute('data-label-handle');
   const labelObject=labelId&&get(doc,labelId);
-  if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey&&labelObject?.type==='morphism'&&selected===labelId&&!labelObject.locked&&labelObject.text){
+  if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey&&labelObject?.type==='morphism'&&!labelObject.locked&&labelObject.text){
+   if(selected!==labelId)select(labelId);
    const automatic=labelObject.labelAvoid?currentMorphismLabels.get(labelId):null;
    drag={kind:'label',pointerId:e.pointerId,id:labelId,before:JSON.stringify(doc),
     sx,sy,offsetX:(labelObject.labelDx??0)+(automatic?.dx??0),
@@ -1221,7 +1247,7 @@ function pointerMove(e){
  if(drag?.kind==='pan'){view.cx=drag.cx-(sx-drag.sx)/view.scale;view.cy=drag.cy+(sy-drag.sy)/view.scale;}
  else if(drag?.kind==='point'){
   if(Math.hypot(sx-drag.sx,sy-drag.sy)>3)drag.moved=true;
-  if(drag.moved){const o=get(doc,drag.id);if(o)o.xy=o.type==='point'?constructionPoint(world,drag.id):snapPoint(world,doc.settings);}
+  if(drag.moved){const o=get(doc,drag.id);if(o)o.xy=o.type==='point'?constructionPoint(world,drag.id):snapPoint(world,effectiveSnapSettings());}
  }
  else if(drag?.kind==='label'){
   const offset=labelDragOffset(drag.offsetX,drag.offsetY,[drag.sx,drag.sy],[sx,sy]);
@@ -1300,7 +1326,7 @@ function pointerUp(e){
  }
  if(completed.kind==='point'){
   const moved=get(doc,completed.id);
-  if(moved&&released.every(finite)&&(completed.moved||Math.hypot(endX-completed.sx,endY-completed.sy)>3))moved.xy=moved.type==='point'?constructionPoint(released,completed.id):snapPoint(released,doc.settings);
+  if(moved&&released.every(finite)&&(completed.moved||Math.hypot(endX-completed.sx,endY-completed.sy)>3))moved.xy=moved.type==='point'?constructionPoint(released,completed.id):snapPoint(released,effectiveSnapSettings());
   const before=completed.before;
   try{validateDoc(doc);guardAnchorMove(JSON.parse(before),doc,completed.id);}catch(err){doc=JSON.parse(before);documentGeneration++;notice('Move rejected: '+err.message);renderAll();return;}
   if(JSON.stringify(doc)!==before){recordUndo(before);documentRevision++;enqueueSave();}

@@ -441,3 +441,9 @@ input[type=number]{direction:rtl;text-align:right;font-variant-numeric:tabular-n
 
 /* Round 28 — numeric values on left, native up/down on right. */
 input[type=number]{direction:ltr;text-align:left;unicode-bidi:normal}
+
+/* Round 29: diagram controls and signed number text; no RTL text reversal. */
+.properties .morphism-arrow-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0 11px;align-items:center}
+.properties .morphism-arrow-checks .check{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:1.35;margin:0;white-space:normal}
+.properties .morphism-arrow-checks input{flex:none;margin:0;width:14px;height:14px}
+input[type=number],.properties input[type=number],.settings-sections input[type=number]{direction:ltr!important;unicode-bidi:normal!important;text-align:left!important}

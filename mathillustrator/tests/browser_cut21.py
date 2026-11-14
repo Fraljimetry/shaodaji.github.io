@@ -31,7 +31,7 @@ def run():
   label_shift.fill('48');label_shift.dispatch_event('change');page.wait_for_timeout(100)
   shifted=float(page.locator('#drawing g[data-id="o4"] text').get_attribute('x'))
   assert shifted>float(initial_label)+45,(initial_label,shifted)
-  pos=page.get_by_label('Label position on arrow (0.05–0.95)')
+  pos=page.get_by_label('Label position')
   pos.fill('0.2');pos.dispatch_event('change');page.wait_for_timeout(100)
   assert page.locator('#drawing g[data-id="o4"] text').count()==1
   page.locator('#export-open').click()
@@ -53,8 +53,8 @@ def run():
   assert page.locator('#drawing g[data-id="o4"]').get_attribute('data-route-status')=='routed'
   # Invalid properties cannot leave an altered drawing or an extra undo step.
   page.locator('#object-search').fill('arrow f');page.locator('#objects .object').first.click()
-  pos=page.get_by_label('Label position on arrow (0.05–0.95)');pos.fill('8');pos.dispatch_event('change')
-  assert float(page.get_by_label('Label position on arrow (0.05–0.95)').input_value())==.2
+  pos=page.get_by_label('Label position');pos.fill('8');pos.dispatch_event('change')
+  assert float(page.get_by_label('Label position').input_value())==.2
   assert not errors,errors
   print('CUT21_BROWSER_PASS: route around node; label shift/position; SVG+JSON fidelity; TikZ gating; undo; hidden obstacle; rejected property')
   browser.close()

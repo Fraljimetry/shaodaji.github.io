@@ -30,8 +30,7 @@ def run():
   page.locator('#object-search').fill('automatic g');page.locator('#objects .object').first.click();page.wait_for_timeout(120)
   assert page.locator('#morphism-label-avoid').is_checked()
   handle=page.locator('#drawing [data-label-handle="o4"]');assert handle.count()==1
-  x=float(handle.get_attribute('cx'));y=float(handle.get_attribute('cy'));bb=page.locator('#drawing').bounding_box()
-  px=bb['x']+x;py=bb['y']+y
+  bb=handle.bounding_box();px=bb['x']+bb['width']/2;py=bb['y']+bb['height']/2
   page.mouse.click(px,py);page.wait_for_timeout(90)
   assert page.locator('#morphism-label-avoid').is_checked(),'stationary click must preserve automatic mode'
   page.mouse.move(px,py);page.mouse.down();page.mouse.move(px+35,py+17,steps=3);page.mouse.up();page.wait_for_timeout(150)
@@ -62,8 +61,7 @@ def run():
   # Cancel a label drag after it temporarily switched to manual mode.
   page.locator('#object-search').fill('automatic g');page.locator('#objects .object').first.click();page.wait_for_timeout(60)
   handle=page.locator('#drawing [data-label-handle="o4"]')
-  x=float(handle.get_attribute('cx'));y=float(handle.get_attribute('cy'));bb=page.locator('#drawing').bounding_box()
-  px=bb['x']+x;py=bb['y']+y
+  bb=handle.bounding_box();px=bb['x']+bb['width']/2;py=bb['y']+bb['height']/2
   page.mouse.move(px,py);page.mouse.down();page.mouse.move(px+24,py+18,steps=3)
   page.evaluate("window.dispatchEvent(new Event('blur'))");page.wait_for_timeout(110)
   assert page.locator('#morphism-label-avoid').is_checked(),'aborted drag should restore automatic mode'
