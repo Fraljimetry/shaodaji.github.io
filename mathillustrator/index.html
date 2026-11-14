@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round43">
+  <link rel="stylesheet" href="./style.css?cut=round44">
 </head>
 <body>
   <header class="appbar">
@@ -56,7 +56,7 @@
         <div class="preset" hidden><label for="preset" hidden>Drawing preset</label><select id="preset"></select></div>
         <section class="toolgroup" data-tool-module="basic"><h3>Basic</h3><div class="toolgrid" id="basic-tools"></div></section>
         <section class="toolgroup" data-tool-module="diagram"><h3>Diagrams</h3><div class="toolgrid" id="diagram-tools"></div></section>
-        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><label class="geometry-mode"><input type="checkbox" id="geometry-essential" checked> Essential only</label><div class="geometry-categories" id="construction-tools"></div></section>
+        <section class="toolgroup" data-tool-module="construction"><h3>Geometry</h3><div class="geometry-categories" id="construction-tools"></div></section>
         <section class="settings-collection" data-section-id="settings"><h3>Settings</h3><div id="settings-sections" class="settings-sections">
         <section class="controls settings-2d-only"><h3>Plotting</h3>
           <label class="field">Plot detail <select id="plot-quality"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label>
@@ -82,14 +82,11 @@
         </section>
         <section class="controls settings-3d" id="settings-3d"><h3>3D visualization</h3>
           <label class="field">Projection <select id="scene3d-projection"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
-          <label class="field">Mesh detail <input id="scene3d-detail" type="number" min="8" max="96" step="1"></label>
-          <label class="field">View yaw (°) <input id="scene3d-yaw" type="number" min="-180" max="180" step="1"></label>
-          <label class="field">View pitch (°) <input id="scene3d-pitch" type="number" min="-89" max="89" step="1"></label>
-          <label class="field">Surface opacity <input id="scene3d-opacity" type="number" min="0.05" max="1" step="0.05"></label>
+          <div class="compact-numeric-grid"><label class="field">Mesh detail <input id="scene3d-detail" type="number" min="8" max="96" step="1"></label><label class="field">Surface opacity <input id="scene3d-opacity" type="number" min="0.05" max="1" step="0.05"></label><label class="field">View yaw (°) <input id="scene3d-yaw" type="number" min="-180" max="180" step="1"></label><label class="field">View pitch (°) <input id="scene3d-pitch" type="number" min="-89" max="89" step="1"></label></div>
           <div class="checks-3d"><label class="check"><input id="scene3d-cube" type="checkbox"> Reference cube</label><label class="check"><input id="scene3d-lighting" type="checkbox"> Lighting</label><label class="check"><input id="scene3d-grid" type="checkbox"> Grid</label><label class="check"><input id="scene3d-axes" type="checkbox"> Axes</label></div>
-          <label class="field">Background <input id="scene3d-background" type="color"></label>
           <label class="field">Raster resolution <select id="scene3d-export-scale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
           <label class="field">Theme <select id="scene3d-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+          <label class="field">Background <input id="scene3d-background" type="color"></label>
           <label class="check"><input id="scene3d-export-transparent" type="checkbox"> Transparent background</label>
         </section>
         <section class="controls settings-2d-only"><h3>New object style</h3>
@@ -109,7 +106,7 @@
         </section>
         <section class="controls"><h3>Interface</h3>
           <label class="field">Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option><option value="verdana">Verdana</option><option value="trebuchet">Trebuchet</option><option value="palatino">Palatino</option><option value="times">Times</option></select></label>
-          <div class="interface-check-grid"><label class="check"><input type="checkbox" id="scene3d-enable"> 3D plotting mode</label><label class="check settings-2d-only"><input type="checkbox" id="auto-pan" checked> Auto Pan / Move</label><label class="check"><input type="checkbox" id="show-coordinates" checked> Canvas coordinates</label><label class="check"><input type="checkbox" id="reduce-motion"> Reduced motion</label></div>
+          <div class="interface-check-grid"><label class="check"><input type="checkbox" id="scene3d-enable"> 3D plotting mode</label><label class="check settings-2d-only"><input type="checkbox" id="auto-pan" checked> Auto Pan / Move</label><label class="check"><input type="checkbox" id="auto-diagram-labels" checked> Auto-place arrow labels</label><label class="check"><input type="checkbox" id="tooltips" checked> Tooltips</label></div>
           
         </section>
         </div></section>
@@ -123,6 +120,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round43"></script>
+  <script type="module" src="./src/app.mjs?cut=round44"></script>
 </body>
 </html>

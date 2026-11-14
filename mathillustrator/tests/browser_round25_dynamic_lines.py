@@ -11,7 +11,7 @@ def run():
    errors=[];page.on('pageerror',lambda exc:errors.append(str(exc)))
    page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
    page.locator('#auto-pan').uncheck()
-   page.locator('#geometry-essential').uncheck()
+   assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    for title in ('Parallel through point','Perpendicular through point','Intersection point'):
     assert page.get_by_role('button',name=title).is_visible(),title
    for text in ['A=(0,0)','B=(4,0)','C=(1,-3)','D=(1,3)','E=(0,2)','Line(A,B)','Line(C,D)']:
@@ -61,7 +61,7 @@ def run():
    touch=browser.new_page(viewport={'width':1200,'height':790},has_touch=True,accept_downloads=True)
    touch_errors=[];touch.on('pageerror',lambda exc:touch_errors.append(str(exc)))
    touch.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
-   touch.locator('#auto-pan').uncheck();touch.locator('#geometry-essential').uncheck()
+   touch.locator('#auto-pan').uncheck();assert touch.locator('[data-tool-choice="midpoint"]').is_visible()
    for text in ['TA=(0,0)','TB=(4,0)','TE=(0,2)','Line(TA,TB)']:cmd(touch,text)
    origin=touch.locator('#drawing').bounding_box();ox=origin['x']+origin['width']/2;oy=origin['y']+origin['height']/2
    touch.locator('[data-tool-choice="parallelThrough"]').click()

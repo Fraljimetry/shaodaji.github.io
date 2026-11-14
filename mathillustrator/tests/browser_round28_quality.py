@@ -16,14 +16,14 @@ def run():
    assert 'M3 10H21V20H3Z' in page.locator('#open path').get_attribute('d')
    # Geometry icons: circle-line intersections lie on both glyph elements,
    # ellipse foci safely inside the low-eccentricity outline.
-   page.locator('#geometry-essential').uncheck()
+   assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    ellipse=page.locator('[data-tool-choice="ellipse"] svg')
    x=ellipse.locator('circle').evaluate_all('(nodes)=>nodes.map(n=>+n.getAttribute("cx"))')
    assert x==[8,16],x
    for t in ['perpBisector','circleIntersection','perpendicularThrough','spline','closedSpline']:
     svg=page.locator(f'[data-tool-choice="{t}"] svg')
     assert svg.count()==1 and svg.locator('path').count()>=1,t
-    assert all(abs(r-2)<.01 for r in svg.locator('circle[fill="currentColor"]').evaluate_all('(nodes)=>nodes.map(n=>+n.getAttribute("r"))')),t
+    assert all(abs(r-(1.8 if t=="circleIntersection" else 2))<.01 for r in svg.locator('circle[fill="currentColor"]').evaluate_all('(nodes)=>nodes.map(n=>+n.getAttribute("r"))')),t
    # Polygon command creates side segments and can undo all together.
    page.locator('#auto-pan').uncheck()
    for text in ['A=(0,0)','B=(4,0)','C=(3,3)','D=(0,2)','Polygon(A,B,C,D)']:

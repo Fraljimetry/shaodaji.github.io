@@ -11,7 +11,7 @@ def run():
    errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
    assert page.locator('[data-tool-choice="circleIntersection"]').count()==1
-   page.locator('#auto-pan').uncheck();page.locator('#geometry-essential').uncheck()
+   page.locator('#auto-pan').uncheck();assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    assert page.get_by_role('button',name='Line–circle intersections').is_visible()
    for text in ['A=(-4,0)','B=(4,0)','C=(0,0)','D=(0,2)','Line(A,B)','Circle(C,D)']:
     cmd(page,text)
@@ -56,7 +56,7 @@ def run():
    touch=browser.new_page(viewport={'width':1200,'height':790},has_touch=True,accept_downloads=True)
    terr=[];touch.on('pageerror',lambda e:terr.append(str(e)))
    touch.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
-   touch.locator('#auto-pan').uncheck();touch.locator('#geometry-essential').uncheck()
+   touch.locator('#auto-pan').uncheck();assert touch.locator('[data-tool-choice="midpoint"]').is_visible()
    for item in ['P=(-4,0)','Q=(4,0)','O=(0,0)','R=(0,2)','Line(P,Q)','Circle(O,R)']:cmd(touch,item)
    tb=touch.locator('#drawing').bounding_box();tx=tb['x']+tb['width']/2;ty=tb['y']+tb['height']/2
    touch.locator('[data-tool-choice="circleIntersection"]').click()

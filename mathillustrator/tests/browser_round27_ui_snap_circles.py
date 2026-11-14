@@ -26,7 +26,7 @@ def run():
    assert abs(dims['background'][0]-dims['theme'][0])<1.2,dims
    assert abs(dims['background'][1]-dims['theme'][1])<1.2,dims
    # Real clicks on two circles in advanced mode; one transaction creates both.
-   page.locator('#auto-pan').uncheck();page.locator('#geometry-essential').uncheck()
+   page.locator('#auto-pan').uncheck();assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    assert page.get_by_role('button',name='Circle–circle intersections').is_visible()
    for text in ['A=(-1,0)','B=(-1,3)','C=(2,0)','D=(2,3)','Circle(A,B)','Circle(C,D)']:
     cmd(page,text)

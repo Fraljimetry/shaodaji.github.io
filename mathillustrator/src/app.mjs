@@ -109,7 +109,7 @@ function initialSiteTheme(){
 }
 let selected3d=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
-let uiPrefs={language:'en',font:'system',autoPan:true,showCoordinates:true,reduceMotion:false,sections:[],geometryGroups:[],collapsed:{},essentialGeometry:true};
+let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,showTooltips:true,sections:[],geometryGroups:[],collapsed:{}};
 function notice(msg){const e=$('toast');e.textContent=msg;e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
@@ -399,7 +399,17 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='spline'&&coords?.length>=3){item=mk('path',{d:smoothCurveSvg(coords,!!o.closed),fill:'none'});
  }else if(o.type==='bezier'&&coords?.length===4){item=mk('path',{d:`M${coords[0].join(' ')} C${coords[1].join(' ')},${coords[2].join(' ')},${coords[3].join(' ')}`,fill:'none'});
  }else if(o.type==='angle'&&coords?.length===3){const [a,b,c]=coords,r=26,theta1=Math.atan2(a[1]-b[1],a[0]-b[0]),theta2=Math.atan2(c[1]-b[1],c[0]-b[0]);let delta=(theta2-theta1+Math.PI*2)%(Math.PI*2);if(delta>Math.PI)delta-=2*Math.PI;const start=[b[0]+r*Math.cos(theta1),b[1]+r*Math.sin(theta1)],end=[b[0]+r*Math.cos(theta1+delta),b[1]+r*Math.sin(theta1+delta)];item=mk('path',{d:`M${start.join(' ')} A${r} ${r} 0 0 ${delta>0?1:0} ${end.join(' ')}`,fill:'none'});
- }else if(o.type==='freehand'&&o.path?.length>1){const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;item=mk('path',{d:freehandCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
+ }else if(o.type==='freehand'&&o.path?.length>1){
+  const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;
+  const path=mk('path',{d:freehandCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
+  const dash={dashed:'7 5',dotted:'1.5 5'}[o.curveLine];if(dash)path.setAttribute('stroke-dasharray',dash);
+  if((o.curveArrows||'none')==='none'){item=path;}else{
+   item=el('g');item.append(path);const direction=o.curveArrows;
+   const headAt=(index,step)=>{const tip=pathCoords[index];let from=null;for(let i=index+step;i>=0&&i<pathCoords.length;i+=step){if(Math.hypot(pathCoords[i][0]-tip[0],pathCoords[i][1]-tip[1])>2){from=pathCoords[i];break;}}
+    const head=from?arrowHeadPoints(tip,from,o.style.width):[];
+    if(head.length)item.append(el('polygon',{class:'arrowhead freehand-arrowhead',points:head.map(p=>p.join(',')).join(' '),fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));};
+   if(direction==='both')headAt(0,1);headAt(pathCoords.length-1,-1);
+  }
  }else if(o.type==='text'){const [x,y]=project(o.xy),fontSize=o.fontSize||18;if(textOutside(x,y,o.text,fontSize))return;
   if(o.textMode==='latex'){item=latexDisplay(o,x,y,fontSize,{exporting});if(!exporting)item.setAttribute('pointer-events','visiblePainted');}
   else{item=el('text',{'xml:space':'preserve',x,y,'font-size':fontSize,'font-family':o.fontFamily||'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity});
@@ -617,7 +627,7 @@ function draw(svg,{exporting=false}={}){
  // best-effort placement of opted-in morphism labels. Use the same positions
  // for the editor and SVG/raster exports. This is presentation-only.
  let computedMorphismLabels=new Map();
- if(doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid!==false)){
+ if(uiPrefs.autoDiagramLabels!==false&&doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid!==false)){
   const nodeRects=[],nodeRectById=new Map(),entries=[];
   for(const o of doc.objects){if(o.type!=='node'||o.hidden||o.style?.opacity===0)continue;
    const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),arrowTargetBox(o));nodeRects.push(r);nodeRectById.set(o.id,r);}
@@ -656,8 +666,10 @@ function draw(svg,{exporting=false}={}){
    const begin=route.points[0],finish=route.points.at(-1),curve=auto?null:arrowCurve(begin,finish,o.bend||0);
    if(!auto&&!curve)continue;
    const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
-   const pos=auto?labelOnPolyline(route.points,t,distance,!!o.swap,dx,dy):labelOnQuadratic(begin,curve.control,finish,t,distance,!!o.swap,dx,dy);
-   if(pos)entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],auto:o.labelAvoid!==false});
+   const place=at=>auto?labelOnPolyline(route.points,t,at,!!o.swap,dx,dy):labelOnQuadratic(begin,curve.control,finish,t,at,!!o.swap,dx,dy);
+   const pos=place(distance),far=place(distance+1);
+   if(pos){const sideNormal=far?[far[0]-pos[0],far[1]-pos[1]]:null;
+    entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],sideNormal,auto:o.labelAvoid!==false&&uiPrefs.autoDiagramLabels!==false});}
   }
   computedMorphismLabels=layoutMorphismLabels(entries,nodeRects,size.w,size.h);
  }
@@ -1050,6 +1062,11 @@ function renderProperties(){
  }
  if(['text','node'].includes(o.type))field(root,'Font size',o.fontSize||18,'number',v=>edit(live=>{if(!finite(v)||v<5||v>200)throw Error('Font size must be 5–200.');live.fontSize=v;}),{min:5,max:200,step:1});
  if(o.type==='node'){const border=document.createElement('label');border.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
+ if(o.type==='freehand'){
+  const makeChoice=(title,value,options,prop)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);for(const [key,caption] of options){const option=document.createElement('option');option.value=key;option.textContent=translated(caption,uiPrefs.language);choice.append(option);}choice.value=value;choice.onchange=()=>edit(live=>{live[prop]=choice.value;});label.append(choice);root.append(label);};
+  makeChoice('Curve line',o.curveLine||'solid',[['solid','Solid'],['dashed','Dashed'],['dotted','Dotted']],'curveLine');
+  makeChoice('Curve arrows',o.curveArrows||'none',[['none','No arrows'],['end','End arrow'],['both','Both ends']],'curveArrows');
+ }
  if(o.type==='morphism'){
   const arrowLabel=document.createElement('label');arrowLabel.className='field';arrowLabel.textContent='Arrow style';const arrowChoice=document.createElement('select');for(const [value,label] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['hook','Hooked'],['hook-dashed','Hook dashed'],['twohead','Two heads'],['tail','Tail bar']]){const option=document.createElement('option');option.value=value;option.textContent=label;arrowChoice.append(option);}arrowChoice.value=o.arrowStyle||'solid';arrowChoice.onchange=()=>edit(live=>live.arrowStyle=arrowChoice.value);arrowLabel.append(arrowChoice);root.append(arrowLabel);
 
@@ -1071,10 +1088,11 @@ function renderProperties(){
   cb.onchange=()=>edit(live=>{live.swap=cb.checked;});side.append(cb,document.createTextNode(' Swap label side'));arrowChecks.append(side);
   root.append(arrowChecks);
 
-  field(root,'Label position',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
-  field(root,'Label distance (px)',o.labelDistance??17,'number',v=>edit(live=>{if(!finite(v)||v<0||v>200)throw Error('Label distance must be 0–200 px.');live.labelDistance=v;}),{min:0,max:200,step:1});
-  field(root,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
-  field(root,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
+  const numericGrid=document.createElement('div');numericGrid.className='compact-numeric-grid diagram-numeric-grid';numericGrid.setAttribute('role','group');numericGrid.setAttribute('aria-label','Arrow label positioning');root.append(numericGrid);
+  field(numericGrid,'Label position',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
+  field(numericGrid,'Label distance (px)',o.labelDistance??17,'number',v=>edit(live=>{if(!finite(v)||v<0||v>200)throw Error('Label distance must be 0–200 px.');live.labelDistance=v;}),{min:0,max:200,step:1});
+  field(numericGrid,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
+  field(numericGrid,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
  }
  if(o.type==='function')field(root,'y =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
  if(o.type==='parametric'){
@@ -1200,10 +1218,15 @@ function populateTools(){
  selectTool('select');
 }
 function syncGeometryVisibility(){
- const only=uiPrefs.essentialGeometry!==false;
- const input=$('geometry-essential');if(input)input.checked=only;
- for(const button of document.querySelectorAll('[data-advanced-geometry]'))button.hidden=only&&button.dataset.advancedGeometry==='true';
- if(only&&document.querySelector(`[data-tool-choice="${tool}"]`)?.hidden)selectTool('select');
+ // Round 44: every Geometry tool is permanently available; no essential subset.
+ for(const button of document.querySelectorAll('[data-advanced-geometry]'))button.hidden=false;
+}
+function syncTooltips(){
+ for(const button of document.querySelectorAll('[data-tool-choice]')){
+  if(button.hasAttribute('title'))button.dataset.fullTooltip=button.getAttribute('title');
+  if(uiPrefs.showTooltips===false)button.removeAttribute('title');
+  else if(button.dataset.fullTooltip)button.title=button.dataset.fullTooltip;
+ }
 }
 function syncPlotModeControl(){
  const plotInput=$('command'),plotY=$('command-y'),plotZ=$('command-z'),mode=$('plot-mode').value,symbol=$('parameter-symbol'),three=in3D();
@@ -1886,7 +1909,9 @@ function asTikz(){
    lines.push(`\\draw[${style}] ${texPoint([b[0]+r*Math.cos(one),b[1]+r*Math.sin(one)])} arc (${(one*180/Math.PI).toFixed(5)}:${((one+d)*180/Math.PI).toFixed(5)}:${r}cm);`);
   }else if(o.type==='freehand'&&o.path.length>1){
    const chosen=o.path;
-   lines.push(`\\draw[${style}] ${chosen.map(texPoint).join(' -- ')};`);
+   const pattern={dashed:',dashed',dotted:',dotted'}[o.curveLine]||'';
+   const arrows={end:',->',both:',<->'}[o.curveArrows]||'';
+   lines.push(`\\draw[${style}${pattern}${arrows}] ${chosen.map(texPoint).join(' -- ')};`);
   }else if(o.type==='text')lines.push(`\\node[anchor=west,text=${rgb(o.style.stroke)},opacity=${o.style.opacity}] at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='node')lines.push(`\\node[${o.nodeBorder?`draw=${rgb(o.style.stroke)},rounded corners,`:''}inner sep=5pt,opacity=${o.style.opacity}] (mi${o.id}) at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='morphism')continue;
@@ -1935,11 +1960,16 @@ function trapDialogTab(e,overlay){
 function savePrefs(){try{localStorage.setItem('mathillustrator-layout-v1',JSON.stringify(uiPrefs));}catch{notice('Layout preferences could not be saved.');}}
 function setupInterface(){
  try{const prefs=JSON.parse(localStorage.getItem('mathillustrator-layout-v1')||'{}');if(prefs&&typeof prefs==='object')uiPrefs={...uiPrefs,...prefs};}catch{}
+ // Retire preferences whose controls no longer exist; do not persist stale toggles.
+ for(const key of ['showCoordinates','reduceMotion','essentialGeometry'])delete uiPrefs[key];
  const fontMap={system:'system-ui, sans-serif',serif:'Georgia, serif',sans:'Arial, sans-serif',mono:'Consolas, monospace',verdana:'Verdana, sans-serif',trebuchet:'Trebuchet MS, sans-serif',palatino:'Palatino Linotype, serif',times:'Times New Roman, serif'};
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
  $('auto-pan').checked=uiPrefs.autoPan!==false;$('auto-pan').onchange=()=>{uiPrefs.autoPan=$('auto-pan').checked;savePrefs();};
- for(const [id,key,className] of [['show-coordinates','showCoordinates','hide-coordinates'],['reduce-motion','reduceMotion','reduced-motion']]){const input=$(id);input.checked=key==='showCoordinates'?uiPrefs[key]!==false:uiPrefs[key]===true;const apply=()=>document.documentElement.classList.toggle(className,key==='showCoordinates'?!input.checked:input.checked);input.onchange=()=>{uiPrefs[key]=input.checked;apply();savePrefs();};apply();}
+ for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['tooltips','showTooltips']]){
+  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels')scheduleRender();else syncTooltips();};
+ }
+ syncTooltips();
  function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
  const languageSwitch=$('ui-language');
@@ -1948,9 +1978,6 @@ function setupInterface(){
  languageSwitch.addEventListener('click',event=>{if(event.detail!==0){languageSwitch.value=languageSwitch.value==='zh'?'en':'zh';languageSwitch.dispatchEvent(new Event('change',{bubbles:true}));}});
  languageSwitch.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();languageSwitch.value=languageSwitch.value==='zh'?'en':'zh';languageSwitch.dispatchEvent(new Event('change',{bubbles:true}));}});
  $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();renderList();};applyLanguage();
- if(typeof uiPrefs.essentialGeometry!=='boolean')uiPrefs.essentialGeometry=true;
- $('geometry-essential').checked=uiPrefs.essentialGeometry;
- $('geometry-essential').onchange=()=>{uiPrefs.essentialGeometry=$('geometry-essential').checked;syncGeometryVisibility();savePrefs();};
  syncGeometryVisibility();
  // The docked Properties disclosure is exclusively owned by setupPropertiesLayout.
  // A second click handler here used to toggle the pane back open immediately.

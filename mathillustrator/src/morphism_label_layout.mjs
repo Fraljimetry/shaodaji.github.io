@@ -80,8 +80,14 @@ export function layoutMorphismLabels(entries,rectangles,width,height){
  }
  for(const e of valid.filter(e=>e.auto)){
   let best=null,score=Infinity,overlap=Infinity;
-  for(let i=0;i<MOVES.length;i++){
-   const [dx,dy]=MOVES[i],x=e.x+dx,y=e.y+dy,b=textBounds(e,x,y);
+  // When a side normal is supplied, search along the selected side only.
+  // Plain screen-space offsets could leap back across a morphism after Swap.
+  const side=Array.isArray(e.sideNormal)&&e.sideNormal.length===2&&e.sideNormal.every(good)&&Math.abs(Math.hypot(...e.sideNormal)-1)<.01?e.sideNormal:null;
+  const moves=side?[[0,0],[-24,0],[24,0],[0,24],[-48,0],[48,0],[-24,24],[24,24],[0,48],[-48,24],[48,24],[-72,0],[72,0],[0,72]]:MOVES;
+  for(let i=0;i<moves.length;i++){
+   const [along,out]=moves[i];const dx=side?side[1]*along+side[0]*out:along;
+   const dy=side?-side[0]*along+side[1]*out:out;
+   const x=e.x+dx,y=e.y+dy,b=textBounds(e,x,y);
    const area=index.overlap(b);
    const outside=Math.max(0,-b.left)+Math.max(0,b.right-width)+Math.max(0,-b.top)+Math.max(0,b.bottom-height);
    const s=area*2+outside*24+Math.hypot(dx,dy)*.05+i*.001;

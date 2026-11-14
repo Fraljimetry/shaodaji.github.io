@@ -47,7 +47,7 @@ def run():
    blank=diagram_project();blank['objects']=[];blank['nextId']=1
    import_project(page,blank)
    page.locator('#auto-pan').uncheck()
-   page.locator('#geometry-essential').uncheck()
+   assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    page.locator('[data-tool-choice="regularPolygon"]').click()
    stage=page.locator('#drawing').bounding_box();cx=stage['x']+stage['width']/2;cy=stage['y']+stage['height']/2
    page.mouse.click(cx-36,cy+25);page.mouse.click(cx+90,cy+25)

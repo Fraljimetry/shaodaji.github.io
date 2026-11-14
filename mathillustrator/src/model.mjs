@@ -553,6 +553,8 @@ export function validateDoc(raw){
   if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
   if(o.closed!==undefined&&(!['freehand','spline'].includes(o.type)||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
   if(o.joinStyle!==undefined&&(o.type!=='freehand'||o.closed!==true||!['smooth','corner'].includes(o.joinStyle)))throw Error('Invalid free curve join style.');
+  if(o.curveLine!==undefined&&(o.type!=='freehand'||!['solid','dashed','dotted'].includes(o.curveLine)))throw Error('Invalid free curve line pattern.');
+  if(o.curveArrows!==undefined&&(o.type!=='freehand'||!['none','end','both'].includes(o.curveArrows)))throw Error('Invalid free curve arrow count.');
   if(o.swap!==undefined&&(o.type!=='morphism'||typeof o.swap!=='boolean'))throw Error('Invalid morphism label-side flag.');
   if(o.routing!==undefined&&(o.type!=='morphism'||!['direct','avoid','avoid-crossings','scene-crossings'].includes(o.routing)))throw Error('Invalid morphism routing mode.');
   if(o.labelAvoid!==undefined&&(o.type!=='morphism'||typeof o.labelAvoid!=='boolean'))throw Error('Invalid morphism label avoidance flag.');

@@ -21,7 +21,7 @@ def run():
    errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.on('dialog',lambda d:d.accept('X' if d.type=='prompt' else None))
    page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
-   assert page.locator('#geometry-essential').is_checked(), 'Essential only default should be enabled'
+   assert page.locator('#geometry-essential').count()==0 and page.locator('[data-tool-choice="midpoint"]').is_visible()
    assert page.locator('#snap').is_checked() is False
    page.locator('#auto-pan').uncheck()
    page.locator('[data-tool-choice="node"]').click()
@@ -119,11 +119,11 @@ def run():
    assert page.locator('#properties').get_by_text('切换标签侧').count()==1
    page.locator('#ui-language').select_option('en')
    # Chosen geometry icons actually mark their geometric defining points.
-   page.locator('#geometry-essential').uncheck()
+   assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    for name in ('regularPolygon','perpendicularThrough','circleIntersection'):
     button=page.locator(f'[data-tool-choice="{name}"] svg')
     assert button.count()==1 and button.locator('circle').count()>=1,name
-    assert all(abs(r-2)<.01 for r in button.locator('circle[fill="currentColor"]').evaluate_all('(es)=>es.map(e=>+e.getAttribute("r"))')),name
+    assert all(abs(r-(1.8 if name=='circleIntersection' else 2))<.01 for r in button.locator('circle[fill="currentColor"]').evaluate_all('(es)=>es.map(e=>+e.getAttribute("r"))')),name
    page.set_viewport_size({'width':390,'height':780});assert page.locator('#drawing').is_visible()
    assert not errors,errors
    print('ROUND29_CHROMIUM_PASS: icon geometry, snap grid by tool, manual override, label direct drag, no ghost circle, signed values, checkbox grouping/swap, all arrow styles/routing modes, EN/ZH, undo/redo, mobile')

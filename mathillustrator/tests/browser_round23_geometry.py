@@ -14,19 +14,15 @@ def run():
    html=inline_html(legacy_search_expanded=False)
    shim="""<script>(function(){const storage=new Map();Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k),clear:()=>storage.clear()}})})();</script>"""
    page.set_content(html.replace('<head>', '<head>'+shim,1),wait_until='load')
-   page.wait_for_selector('#geometry-essential')
-   assert page.locator('#geometry-essential').is_checked()
-   assert page.locator('[data-tool-choice="midpoint"]').is_hidden()
+   assert page.locator('#geometry-essential').count()==0
+   assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    assert page.locator('[data-tool-choice="freehand"]').locator('xpath=ancestor::section[@data-geometry-group]').get_attribute('data-geometry-group')=='curves'
    assert page.locator('[data-tool-choice="text"]').locator('xpath=ancestor::div[@id="diagram-tools"]').count()==1
    assert page.locator('#illustration-tools').count()==0
    original=json.loads(download(page,'Save').read_text())
-   page.locator('#geometry-essential').uncheck()
    assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    assert page.locator('[data-tool-choice="closedSpline"]').is_visible()
    assert original==json.loads(download(page,'Save').read_text())
-   layout=json.loads(page.evaluate('localStorage.getItem("mathillustrator-layout-v1")'))
-   assert layout['essentialGeometry'] is False
    page.locator('#auto-pan').uncheck()
    box=page.locator('#drawing').bounding_box();cx=box['x']+box['width']/2;cy=box['y']+box['height']/2
    P=[(cx-160,cy+80),(cx-20,cy+80),(cx-90,cy-70),(cx+110,cy-80)]
@@ -55,8 +51,7 @@ def run():
    assert len([o for o in before['objects'] if o['type']=='spline'])==1
    page.locator('#redo').click()
    assert json.loads(download(page,'Save').read_text())==saved
-   page.locator('#geometry-essential').check()
-   assert page.locator('[data-tool-choice="perpBisector"]').is_hidden()
+   assert page.locator('[data-tool-choice="perpBisector"]').is_visible()
    assert page.locator('#drawing [data-id="'+by_type('perpBisector')[0]['id']+'"] ').count()>0
    assert json.loads(download(page,'Save').read_text())==saved
    page.locator('#export-open').click()
@@ -66,14 +61,13 @@ def run():
    assert 'data-id="'+by_type('spline')[0]['id']+'"' in svg
    assert 'data-id="'+by_type('ray')[0]['id']+'"' in svg
    # A failed 3-point circle never appends phantom anchors or adds history.
-   page.locator('#geometry-essential').uncheck()
    construct('circleThrough3',[0,1,0]);assert page.locator('#toast').is_visible()
    assert json.loads(download(page,'Save').read_text())==saved
    for lang in ('zh','en'):
     page.locator('#ui-language').select_option(lang)
-    assert page.locator('#geometry-essential').locator('xpath=ancestor::label').inner_text().strip()==('仅基本工具' if lang=='zh' else 'Essential only')
+    assert page.locator('[data-tool-choice="midpoint"]').is_visible()
    page.set_viewport_size({'width':390,'height':780});page.locator('#right-collapse').click()
-   assert page.locator('#geometry-essential').count()==1
+   assert page.locator('#geometry-essential').count()==0
    assert page.locator('[data-tool-choice="closedSpline"]').count()==1
    assert not errors,errors
    guide=browser.new_page(viewport={'width':430,'height':850});guide.set_content((ROOT/'tutorial.html').read_text(),wait_until='load')
@@ -84,7 +78,7 @@ def run():
    assert guide.locator('#zh-guide .guide-points li').count()>=20
    assert not guide.locator('#zh-guide').is_hidden()
    guide.close();page.close()
-   print('ROUND23_GEOMETRY_CHROMIUM_PASS: 9 tool additions, 2 splines, essential/full, persisted JSON, undo/redo, failed constructions, export, EN/ZH, 390px, tutorial font/bullets')
+   print('ROUND23_GEOMETRY_CHROMIUM_PASS: 9 tool additions, 2 splines, always-full Geometry, persisted JSON, undo/redo, failed constructions, export, EN/ZH, 390px, tutorial font/bullets')
   finally:browser.close()
 
 if __name__=='__main__':run()

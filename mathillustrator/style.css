@@ -505,8 +505,6 @@ html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;borde
 .command-heading #parameter-symbol[hidden]{display:block!important;visibility:hidden;pointer-events:none}
 .command-heading #parameter-symbol{order:0;flex:none;margin-left:auto!important}
 .command-heading #plot-mode{order:1;flex:none;margin-left:0!important}
-html.hide-coordinates .canvas-footer #coords{visibility:hidden}
-html.reduced-motion *,html.reduced-motion *::before,html.reduced-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 
 /* Round39: 3D is an isolated plotting workspace. Existing 2D objects stay in JSON. */
 #settings-3d{display:none}
@@ -553,3 +551,29 @@ html.three-d .settings-2d-only{display:none!important}
 #objects-3d .object[data-locked="true"] .object-label strong::after{content:""}
 
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Round 44 — one shared alignment system across the 2D and 3D inspectors.
+   Color inputs expose the full control cell; native swatch remains clickable.
+   Two short numbers per row instead of four wasted full-width rows. */
+.rightpanel .settings-sections .controls > .section-body > .field > :is(#background,#scene3d-background){
+ box-sizing:border-box;width:100%;max-width:100%;min-width:0;justify-self:stretch;height:30px;min-height:30px;padding:2px;
+}
+.rightpanel .settings-sections .controls > .section-body > .field > :is(#theme,#scene3d-theme){width:100%;max-width:100%;min-width:0}
+.compact-numeric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 9px;align-items:start;min-width:0;margin:7px 0 9px}
+.compact-numeric-grid>.field,.properties .compact-numeric-grid>.field,
+.rightpanel .settings-sections .controls .section-body>.compact-numeric-grid>.field{
+ display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;margin:0;font-size:11px;line-height:1.3;overflow-wrap:normal;
+}
+.compact-numeric-grid>.field>input[type=number],
+.rightpanel .settings-sections .controls .section-body>.compact-numeric-grid>.field>input[type=number],
+.properties .compact-numeric-grid>.field>input[type=number]{box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:30px;height:30px;font-size:12px;margin:0;flex:none}
+/* The right edge of Name, Curve line, Curve arrows, Arrow style, routing,
+   and other top-level controls stays on the same vertical grid line. */
+.properties:not(.properties-3d)>.field:not(.multiline-field){
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,53%);align-items:center;column-gap:7px;min-width:0;
+}
+.properties:not(.properties-3d)>.field:not(.multiline-field)>:is(input,select){box-sizing:border-box;width:100%;max-width:100%;min-width:0;justify-self:stretch;flex:none}
+.properties:not(.properties-3d)>.field.multiline-field{display:block}
+.properties .diagram-numeric-grid{margin-top:8px;margin-bottom:11px}
+/* No accidental label overflow at narrower widths: labels stay above numbers. */
+@media(max-width:360px){.compact-numeric-grid{column-gap:5px}.compact-numeric-grid>.field{font-size:10.5px}}
