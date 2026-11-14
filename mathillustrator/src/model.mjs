@@ -1,4 +1,4 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,polylineCrossings,r50SourceShape} from './geometry_round50.mjs';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,polylineCrossings,r50SourceShape,r50Shape} from './geometry_round50.mjs?cut=round51b';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round48';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round39';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -47,7 +47,7 @@ export function derivedSidePoints(edge,owner,at){
  return i<vertices.length?[vertices[i],vertices[(i+1)%vertices.length]]:null;
 }
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','perpendicularFoot',...R50_TYPES,'reflection','rotation','translation','dilation','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','perpendicularFoot',...R50_TYPES,'reflection','rotation','translation','dilation','circleInversion','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',plotBudget:1000000,implicitGrid:12,showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
@@ -446,6 +446,7 @@ export function guardAnchorMove(before,after,anchorId){
  const watched=affected(after,anchorId),oldResolver=createResolver(before),newResolver=createResolver(after);
  function defect(o,resolver){
   if(!o.refs)return null;
+  if(o.type==='transformCopy'&&o.transform==='invert')return r50Shape(o,resolver,96).some(p=>p&&p.every(Number.isFinite))?null:'circle inversion has no finite image';
   if(STRAIGHT_TYPES.has(o.type))return resolver.line(o)?null:'degenerate source line';
   if(['intersection','circleIntersection','circleCircleIntersection','perpendicularFoot'].includes(o.type))return resolver.at(o.id)?null:'intersection no longer lies on both source objects';
   const p=resolver.points(o);if(!p.every(Boolean))return null;
@@ -669,7 +670,7 @@ export function validateDoc(raw){
  }
  for(const o of d.objects)for(let i=0;i<(o.refs||[]).length;i++){const ref=o.refs[i],parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
   const wantLine=o.type==='parabola'&&i===1||o.type==='transformCopy'&&o.transform==='reflect'&&i===1||o.type==='intersection'||(o.type==='circleIntersection'&&i===0)||(['parallelThrough','perpendicularThrough','perpendicularFoot'].includes(o.type)&&i===1);
-  const wantCircle=o.type==='tangentCircle'&&i===1||o.type==='circleCircleIntersection'||(o.type==='circleIntersection'&&i===1);
+  const wantCircle=o.type==='transformCopy'&&o.transform==='invert'&&i===1||o.type==='tangentCircle'&&i===1||o.type==='circleCircleIntersection'||(o.type==='circleIntersection'&&i===1);
   const wantAny=o.type==='pointOnObject'||o.type==='generalIntersection'||o.type==='locus'&&i===0||o.type==='transformCopy'&&i===0;
   const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):wantAny?true:POINT_LIKE.has(parent.type);
   if(!valid)throw Error('Invalid reference target for '+o.type);}
@@ -679,6 +680,7 @@ export function validateDoc(raw){
  for(const o of d.objects)if(constrained.has(o.type)||o.edgeIndex!==undefined){
   if(STRAIGHT_TYPES.has(o.type)){if(!resolver.line(o))throw Error('Invalid line dependencies for '+o.type+'.');continue;}
   if(['intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)){if(!resolver.at(o.id))throw Error('Intersection is undefined on the selected source domains.');continue;}
+  if(o.type==='transformCopy'&&o.transform==='invert'&&!r50Shape(o,resolver,96).some(p=>p&&p.every(Number.isFinite)))throw Error('Circle inversion has no finite image.');
   if(['pointOnObject','generalIntersection','tangentCircle','transformCopy','locus','parabola'].includes(o.type))continue;
   const p=resolver.points(o);if(!p.every(Boolean))throw Error('Invalid construction anchors for '+o.type+'.');
   if(o.type==='regularPolygon'&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');

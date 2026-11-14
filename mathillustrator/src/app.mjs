@@ -1,17 +1,17 @@
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round39';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs';
+import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round51b';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {measureGeometry} from './geometry_measurements.mjs';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round51b';
 import {reorderVisible,shiftVisible} from './object_order.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round50';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round49';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round51b';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round51b';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round48';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round49';
+import {localizeUI,translated} from './i18n.mjs?cut=round51b';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round38';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
@@ -88,41 +88,43 @@ glyph.angleBisector='<path d="M6 5V19H20M6 19L17 8"/><circle cx="6" cy="5" r="2"
 // Two construction clicks: source point and existing straight object. The computed foot is not a control click.
 glyph.perpendicularFoot='<path d="M3 19H21M10 3V19M10 15H14V19"/><circle cx="10" cy="3" r="2" fill="currentColor"/><circle cx="19" cy="19" r="2" fill="currentColor"/>';
 glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>';
-// Round 50: new glyphs only. Each filled control marker represents one
-// construction click; computed points/centers/arc samples are never extra dots.
+// Round 51: redraw only the Round 50+ construction glyphs. Uniform 2px
+// filled dots mark user clicks, not computed points. Paths and dots share
+// the same world->icon geometry; e.g. focus and directrix are not on a parabola.
 const r50Glyph=(path,markers)=>path+markers.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2" fill="currentColor" stroke="none"/>`).join('');
 Object.assign(glyph,{
- pointOnObject:r50Glyph('<path d="M3 18L22 7M12 2V22"/>',[[5,17],[12,12]]),
- tangentCircle:r50Glyph('<circle cx="14" cy="14" r="8"/><path d="M2 4L22 18"/>',[[2,4],[14,6]]),
- circularArc:r50Glyph('<path d="M3 19A12 12 0 0 1 21 6"/>',[[3,19],[13,7],[21,6]]),
- parabola:r50Glyph('<path d="M4 3Q12 29 20 3M2 20H22"/>',[[12,7],[20,20]]),
- hyperbola:r50Glyph('<path d="M9 2Q1 12 9 22M15 2Q23 12 15 22"/>',[[6,12],[18,12],[10,19]]),
- generalIntersection:r50Glyph('<circle cx="10" cy="12" r="8"/><path d="M1 19L23 5"/>',[[4,15],[19,9]]),
- reflection:r50Glyph('<path d="M12 2V22M2 7L9 12M22 7L15 12"/>',[[6,12],[12,19]]),
- rotation:r50Glyph('<path d="M3 16A10 10 0 1 1 19 20M18 15L19 20L14 20"/>',[[6,17],[12,12]]),
- translation:r50Glyph('<path d="M3 20L12 12M12 12L21 4M16 4H21V9"/>',[[3,20],[12,12],[21,4]]),
- dilation:r50Glyph('<path d="M3 20L11 12L21 2"/>',[[3,20],[11,12]]),
- locus:r50Glyph('<path d="M2 21Q7 5 12 12T22 3" stroke-dasharray="2 2"/>',[[5,15],[17,8]]),
- fixedLength:r50Glyph('<path d="M3 18L21 6M10 13L12 16M14 10L16 13"/>',[[3,18],[21,6]]),
- fixedAngle:r50Glyph('<path d="M3 19H21M3 19L9 2M7 16A5 5 0 0 0 8 19"/>',[[9,2],[3,19]]),
- triangleCenter:r50Glyph('<path d="M12 3L22 21H2Z M12 3L12 21M2 21L17 12M22 21L7 12"/>',[[12,3],[22,21],[2,21]])
+ pointOnObject:r50Glyph('<path d="M2 19L22 5"/>',[[5,16.9],[15,9.9]]),
+ tangentCircle:r50Glyph('<circle cx="15" cy="14" r="7"/><path d="M2 3L8.68 17.01 M2 3L16.93 7.27"/>',[[2,3],[15,7]]),
+ circularArc:r50Glyph('<path d="M3.54 16.08A9 9 0 1 1 20.86 11.44"/>',[[3.54,16.08],[10.44,4.14],[20.86,11.44]]),
+ parabola:r50Glyph('<path d="M3 10.625Q12 17.375 21 10.625 M2 20H22"/>',[[12,8],[19,20]]),
+ hyperbola:r50Glyph('<path d="M7.37 5.9Q10.63 12 7.37 18.1 M16.63 5.9Q13.37 12 16.63 18.1"/>',[[6,12],[18,12],[15,12]]),
+ generalIntersection:r50Glyph('<path d="M2 5L22 19 M2 19L22 5"/><circle cx="12" cy="12" r="2.2" fill="none"/>',[[4,6.4],[20,6.4]]),
+ reflection:r50Glyph('<path d="M12 2V22 M5 7H19" stroke-dasharray="2 2"/><circle cx="19" cy="7" r="2.2" fill="none"/>',[[5,7],[12,18]]),
+ rotation:r50Glyph('<path d="M19 12A7 7 0 0 0 12 5 M12 5l4.5 0.4-1.8 3.7"/><circle cx="12" cy="5" r="2.2" fill="none"/>',[[19,12],[12,12]]),
+ translation:r50Glyph('<path d="M6 6H16 M12 2l4 4-4 4 M4 17H14" stroke-dasharray="2.5 2"/><circle cx="14" cy="17" r="2.2" fill="none"/>',[[4,17],[6,6],[16,6]]),
+ dilation:r50Glyph('<path d="M4 12H20"/><circle cx="20" cy="12" r="2.2" fill="none"/>',[[10,12],[4,12]]),
+ locus:r50Glyph('<path d="M2 19C8 19 8 3 14 7S18 18 22 4" stroke-dasharray="2 2"/><path d="M3 3L21 21"/>',[[2,19],[12,12]]),
+ fixedLength:r50Glyph('<path d="M4 17L14.6 10.375 M14.6 10.375L20 7" stroke-dasharray="3 2"/><path d="M9.5 12l2 3"/>',[[4,17],[20,7]]),
+ fixedAngle:r50Glyph('<path d="M5 3V19H21 M5 12A7 7 0 0 1 12 19"/><path d="M5 19L19 14" stroke-dasharray="2 2"/>',[[5,3],[5,19]]),
+ triangleCenter:r50Glyph('<path d="M12 3L21 20H3Z M12 3V20 M3 20L16.5 11.5 M21 20L7.5 11.5"/><circle cx="12" cy="14.33" r="2" fill="none"/>',[[12,3],[21,20],[3,20]]),
+ circleInversion:r50Glyph('<circle cx="12" cy="12" r="7"/><path d="M12 12L21 8" stroke-dasharray="2 2"/><circle cx="16.55" cy="9.98" r="2.2" fill="none"/>',[[21,8],[12,5]])
 });
 const toolGroups={
  'basic-tools':[['select','Move'],['pan','Pan']],
- 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Line'],['perpBisector','Perpendicular bisector'],['angleBisector','Angle bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['perpendicularFoot','Perpendicular foot'],['pointOnObject','Point on object'],['fixedLength','Fixed length'],['fixedAngle','Fixed angle'],['generalIntersection','General intersection'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['angle','Angle'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circleCircleIntersection','Circle–circle intersections'],['ellipse','Ellipse'],['tangentCircle','Tangents to circle'],['circularArc','Circular arc'],['parabola','Parabola'],['hyperbola','Hyperbola'],['rectangle','Rectangle'],['parallelogram','Parallelogram'],['triangle','Triangle'],['quadrilateral','Quadrilateral'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve'],['locus','Locus / trace']],
- 'transform-tools':[['reflection','Reflection'],['rotation','Rotation'],['translation','Translation'],['dilation','Dilation'],['triangleCenter','Triangle centers']],
+ 'construction-tools':[['point','Point'],['midpoint','Midpoint'],['pointOnObject','Point on object'],['angle','Angle'],['fixedLength','Fixed length'],['fixedAngle','Fixed angle'],['segment','Segment'],['ray','Ray'],['arrow','Vector'],['line','Line'],['perpBisector','Perpendicular bisector'],['parallelThrough','Parallel through point'],['perpendicularThrough','Perpendicular through point'],['perpendicularFoot','Perpendicular foot'],['angleBisector','Angle bisector'],['circle','Circle'],['circleDiameter','Diameter circle'],['circleThrough3','3-point circle'],['circularArc','Circular arc'],['ellipse','Ellipse'],['tangentCircle','Tangents to circle'],['parabola','Parabola'],['hyperbola','Hyperbola'],['triangle','Triangle'],['rectangle','Rectangle'],['parallelogram','Parallelogram'],['polygon','Polygon'],['regularPolygon','Regular polygon'],['triangleCenter','Triangle centers'],['intersection','Intersection point'],['circleIntersection','Line–circle intersections'],['circleCircleIntersection','Circle–circle intersections'],['generalIntersection','General intersection'],['translation','Translation'],['reflection','Reflection'],['rotation','Rotation'],['dilation','Dilation'],['circleInversion','Circle inversion'],['polyline','Polyline'],['bezier','Bézier'],['spline','Spline'],['closedSpline','Closed spline'],['freehand','Free curve'],['locus','Locus / trace']],
+ 'transform-tools':[],
  'diagram-tools':[['node','Diagram node'],['morphism','Morphism'],['text','Text']]
 };
 // An interface-only visibility preference: advanced tools remain functional in
 // existing projects and are never lost from JSON, undo history or SVG export.
 const ESSENTIAL_GEOMETRY=new Set(['point','segment','arrow','line','angle','circle','ellipse','rectangle','parallelogram','polygon','regularPolygon','polyline','bezier','spline','freehand']);
 const geometryCategories=[
- {id:'basic-points',title:'Points & measurements',tools:['point','midpoint','pointOnObject','fixedLength','fixedAngle','angle']},
- {id:'lines-constructions',title:'Lines & constructions',tools:['segment','ray','arrow','line','perpBisector','angleBisector','parallelThrough','perpendicularThrough','perpendicularFoot']},
- {id:'circles-conics',title:'Circles & conics',tools:['circle','circleDiameter','circleThrough3','circleCircleIntersection','tangentCircle','circularArc','ellipse','parabola','hyperbola']},
- {id:'polygons-centers',title:'Polygons & centers',tools:['rectangle','parallelogram','triangle','quadrilateral','polygon','regularPolygon','triangleCenter']},
- {id:'intersections',title:'Intersections',tools:['intersection','circleIntersection','generalIntersection']},
- {id:'transformations',title:'Transformations',tools:['reflection','rotation','translation','dilation']},
+ {id:'basic-points',title:'Points & measurements',tools:['point','midpoint','pointOnObject','angle','fixedLength','fixedAngle']},
+ {id:'lines-constructions',title:'Lines & constructions',tools:['segment','ray','arrow','line','perpBisector','parallelThrough','perpendicularThrough','perpendicularFoot','angleBisector']},
+ {id:'circles-conics',title:'Circles & conics',tools:['circle','circleDiameter','circleThrough3','circularArc','ellipse','tangentCircle','parabola','hyperbola']},
+ {id:'polygons-centers',title:'Polygons & centers',tools:['triangle','rectangle','parallelogram','polygon','regularPolygon','triangleCenter']},
+ {id:'intersections',title:'Intersections',tools:['intersection','circleIntersection','circleCircleIntersection','generalIntersection']},
+ {id:'transformations',title:'Transformations',tools:['translation','reflection','rotation','dilation','circleInversion']},
  {id:'curves',title:'Curves & loci',tools:['polyline','bezier','spline','closedSpline','freehand','locus']}
 ];
 const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null,lastMovePointerHitId=null;
@@ -348,6 +350,12 @@ function latexDisplay(o,x,y,fontSize,{anchor='start',vertical='baseline',color=o
 /** A single anchor rule shared by displayed-label layout, canvas and SVG export.
  * Do not use raw SVG bounding boxes: they depend on frame-specific DOM state. */
 function geometryLabelAnchor(o,resolver){
+ // A transformed copy's label belongs to its *image*, not to the midpoint of
+ // the source and its transformation reference (which may be a circle/line).
+ if(o.type==='transformCopy'){
+  const image=r50Shape(o,resolver,96).filter(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite));
+  return image.length?project(image[Math.floor((image.length-1)/2)]):null;
+ }
  if(o.type==='function'){
   try{const y=parseExpression(o.expr)(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
  }
@@ -409,9 +417,20 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
  }else if(['circularArc','parabola','hyperbola','transformCopy','fixedAngle','locus'].includes(o.type)){
   const path=o.type==='locus'?r50Locus(o):r50Shape(o,resolver,Math.min(160,Math.max(80,Math.ceil(size.w/7))));
-  if(path.length===1){const [x,y]=project(path[0]);item=mk('circle',{cx:x,cy:y,r:4,fill:o.style.stroke});}
-  else if(path.length>1){const coords=path.map(project).filter(pt=>pt.every(Number.isFinite));
-   if(coords.length>1)item=mk('polyline',{points:coords.map(pt=>pt.join(',')).join(' '),fill:'none'});}
+  if(path.length===1&&Array.isArray(path[0])){const [x,y]=project(path[0]);item=mk('circle',{cx:x,cy:y,r:4,fill:o.style.stroke});}
+  else if(path.length>1){
+   const pieces=[];let current=[];
+   for(const point of path){
+    const xy=point?.length===2?project(point):null;
+    if(xy?.every(Number.isFinite))current.push(xy);
+    else {if(current.length>1)pieces.push(current);current=[];}
+   }
+   if(current.length>1)pieces.push(current);
+   if(pieces.length){
+    if(pieces.length===1)item=mk('polyline',{points:pieces[0].map(pt=>pt.join(',')).join(' '),fill:'none'});
+    else {item=mk('g',{});for(const part of pieces)item.append(el('polyline',{points:part.map(pt=>pt.join(',')).join(' '),fill:'none'}));}
+   }
+  }
  }else if(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','tangentCircle','fixedLength'].includes(o.type)){
   const line=resolver.line(o);if(!line)return;
   let a=project(line.a),b=project([line.a[0]+line.d[0]*line.length,line.a[1]+line.d[1]*line.length]);
@@ -1381,6 +1400,7 @@ const toolInstructions={
  parabola:'Click focus point, then a directrix line.',hyperbola:'Click two foci, then a point on the hyperbola.',
  generalIntersection:'Click two different curves to construct their crossings.',
  reflection:'Click a geometric object, then a mirror line.',
+ circleInversion:'Choose an object, then an inversion circle. The circle center has no image.',
  rotation:'Click a geometric object, then a center; enter the rotation angle (degrees).',
  translation:'Click an object, then a translation start and end point.',
  dilation:'Click a geometric object, then a center; enter a scale factor.',
@@ -1762,7 +1782,7 @@ function r50ObjectTap(e,pt){
   if(!snapped){notice('Choose a point on the selected object.');return;}
   if(update(()=>{selected=append(doc,{type:'pointOnObject',refs:[source.id],parameter:snapped.parameter}).id;})){clearDraft();afterOneConstruction();}scheduleRender();return;
  }
- if(['tangentCircle','parabola','reflection','rotation','translation','dilation','locus','generalIntersection'].includes(mode)){
+ if(['tangentCircle','parabola','reflection','rotation','translation','dilation','circleInversion','locus','generalIntersection'].includes(mode)){
   if(!draftReference){
    const source=pointHit||obj;
    const needsPoint=['tangentCircle','parabola','locus'].includes(mode);
@@ -1797,6 +1817,12 @@ function r50ObjectTap(e,pt){
    if(!roots.length){notice('No sampled crossing was found. Try another pair of curves.');return;}
    if(update(()=>{for(let i=0;i<roots.length;i++)selected=append(doc,{type:'generalIntersection',refs:[first.id,ref.id],rootIndex:i}).id;})){clearDraft();afterOneConstruction();}return;
   }
+  if(mode==='circleInversion'){
+   if(!['circle','circleThrough3'].includes(ref.type)){notice('Choose an inversion circle.');return;}
+   const proposed={type:'transformCopy',refs:[first.id,ref.id],transform:'invert',amount:0};
+   if(!r50Shape(proposed,createResolver(doc),96).some(p=>p&&p.every(Number.isFinite))){notice('This inversion has no finite geometry (the circle center has no image).');return;}
+   if(update(()=>{selected=append(doc,proposed).id;})){clearDraft();afterOneConstruction();}return;
+  }
   const transform={reflection:'reflect',rotation:'rotate',dilation:'dilate'}[mode];
   if(transform==='reflect'&&!STRAIGHT_TYPES.has(ref.type)){notice('Choose a mirror line.');return;}
   if(transform!=='reflect'&&!['point','midpoint','pointOnObject','triangleCenter'].includes(ref.type)){notice('Choose a center point.');return;}
@@ -1806,7 +1832,7 @@ function r50ObjectTap(e,pt){
  }
 }
 function performConstructionTap(e,pt){
- if(['pointOnObject','tangentCircle','parabola','generalIntersection','reflection','rotation','translation','dilation','locus'].includes(tool)){r50ObjectTap(e,pt);return;}
+ if(['pointOnObject','tangentCircle','parabola','generalIntersection','reflection','rotation','translation','dilation','circleInversion','locus'].includes(tool)){r50ObjectTap(e,pt);return;}
  if(tool==='point'){const ok=update(()=>selected=addPoint(doc,pt).id);if(ok)afterOneConstruction();}
  else if(['parallelThrough','perpendicularThrough','perpendicularFoot','intersection','circleIntersection','circleCircleIntersection'].includes(tool)){
   const [sx,sy]=xyEvent(e);

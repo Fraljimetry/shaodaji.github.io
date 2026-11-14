@@ -11,7 +11,7 @@ const unit=a=>{const n=norm(a);return n>1e-10?mul(a,1/n):null};
 export const R50_TYPES=['pointOnObject','tangentCircle','circularArc','parabola','hyperbola','generalIntersection','transformCopy','locus','fixedLength','fixedAngle','triangleCenter'];
 export const R50_POINT_TYPES=['pointOnObject','generalIntersection','triangleCenter'];
 export const R50_CURVE_TYPES=['circularArc','parabola','hyperbola','transformCopy','locus','fixedAngle'];
-export const TRANSFORM_MODES=['reflect','rotate','translate','dilate'];
+export const TRANSFORM_MODES=['reflect','rotate','translate','dilate','invert'];
 export const CENTER_KINDS=['centroid','circumcenter','incenter','orthocenter'];
 export function circum(p){if(!p||p.length!==3||!p.every(coord))return null;
  const [a,b,c]=p,u=sub(b,a),v=sub(c,a),det=2*cross(u,v);
@@ -85,12 +85,18 @@ export function transformPoint(p,mode,source,amount,other){if(!coord(p)||!coord(
  if(mode==='rotate'&&finite(amount)){const v=sub(p,source),c=Math.cos(amount),s=Math.sin(amount);result=add(source,[c*v[0]-s*v[1],s*v[0]+c*v[1]]);}
  if(mode==='translate'&&coord(other))result=add(p,sub(other,source));
  if(mode==='dilate'&&finite(amount))result=add(source,mul(sub(p,source),amount));
+ // Inversion in a circle centered at `source` with radius `amount`:
+ // I(P) = C + R²(P-C)/|P-C|². The center has no finite image.
+ if(mode==='invert'&&finite(amount)&&amount>1e-9){
+  const v=sub(p,source),d2=dot(v,v);
+  if(d2>1e-18)result=add(source,mul(v,amount*amount/d2));
+ }
  return coord(result)?result:null;
 }
 export function polylineCrossings(a,b){if(a?.length<2||b?.length<2)return [];
  const result=[];
  for(let i=1;i<a.length;i++)for(let j=1;j<b.length;j++){
-  const p=a[i-1],u=sub(a[i],p),q=b[j-1],v=sub(b[j],q),det=cross(u,v);if(Math.abs(det)<1e-10)continue;
+  const p=a[i-1],q=b[j-1];if(!coord(p)||!coord(a[i])||!coord(q)||!coord(b[j]))continue;const u=sub(a[i],p),v=sub(b[j],q),det=cross(u,v);if(Math.abs(det)<1e-10)continue;
   const w=sub(q,p),t=cross(w,v)/det,s=cross(w,u)/det;
   if(t>=-1e-9&&t<=1+1e-9&&s>=-1e-9&&s<=1+1e-9){const root=add(p,mul(u,t));
    if(coord(root)&&!result.some(x=>norm(sub(x,root))<1e-4))result.push(root);}
@@ -111,6 +117,41 @@ export function r50Shape(o,resolver,samples=120){if(!o)return [];
   const src=resolver.object(o.refs[0]);if(!src||src.id===o.id)return [];
   const anchor=resolver.at(o.refs[1]);let other=null;
   if(o.transform==='reflect'){const line=resolver.line(o.refs[1]);if(!line)return [];return r50SourceShape(src,resolver,samples).map(p=>transformPoint(p,'reflect',line.a,0,add(line.a,line.d))).filter(coord);}
+  if(o.transform==='invert'){
+   const circle=resolver.circle(o.refs[1]);if(!circle||!coord(circle.center)||!(circle.radius>1e-9))return [];
+   const isPoint=['point','midpoint','perpendicularFoot','pointOnObject','triangleCenter','intersection','circleIntersection','circleCircleIntersection','generalIntersection'].includes(src.type);
+   const sourcePath=r50SourceShape(src,resolver,Math.max(96,samples));
+   if(!sourcePath.length)return [];
+   // Straight edges become circular arcs after inversion. Subdivide BEFORE
+   // inversion; simply joining transformed polygon vertices is incorrect.
+   const sampled=[];const line=resolver.line(src);
+   const needsSubdivision=!!line||['polygon','rectangle','parallelogram','regularPolygon','polyline'].includes(src.type);
+   for(let i=0;i<sourcePath.length;i++){
+    const current=sourcePath[i];if(!coord(current)){sampled.push(null);continue;}
+    if(i&&needsSubdivision&&coord(sourcePath[i-1])){
+     const previous=sourcePath[i-1],length=norm(sub(current,previous));
+     const pieces=Math.min(96,Math.max(1,Math.ceil(length/Math.max(circle.radius*.12,.1))));
+     for(let j=1;j<pieces;j++)sampled.push(add(previous,mul(sub(current,previous),j/pieces)));
+    }
+    sampled.push(current);
+   }
+   const result=[];const radius=circle.radius,limit=1e6;
+   for(let i=0;i<sampled.length;i++){
+    const p=sampled[i];
+    const transformed=coord(p)?transformPoint(p,'invert',circle.center,radius):null;
+    // Keep separators: dropping a singular sample and joining its neighbors
+    // creates a false line passing through infinity.
+    result.push(transformed&&norm(sub(transformed,circle.center))<limit?transformed:null);
+    if(i&&coord(sampled[i-1])&&coord(p)&&result.at(-2)&&result.at(-1)){
+     const ab=sub(p,sampled[i-1]),d2=dot(ab,ab);
+     const t=d2>1e-18?Math.max(0,Math.min(1,dot(sub(circle.center,sampled[i-1]),ab)/d2)):0;
+     const closest=add(sampled[i-1],mul(ab,t));
+     if(norm(sub(closest,circle.center))<Math.max(1e-8,radius*1e-5))result.splice(result.length-1,0,null);
+    }
+   }
+   // A singularity is not a valid isolated point; regular samples survive.
+   return isPoint?result.filter(coord):result;
+  }
   if(o.transform==='translate')other=resolver.at(o.refs[2]);
   return r50SourceShape(src,resolver,samples).map(p=>transformPoint(p,o.transform,anchor,o.amount,other)).filter(coord);
  }

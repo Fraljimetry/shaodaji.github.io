@@ -832,3 +832,33 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - `browser_round47_order_geometry.py`: 2D/3D ordering, undo/redo and fixed existing glyph coverage.
 
 **Environment/provenance:** 9 independent Chromium scripts, clean exit 0, plus 325 Node tests. Chromium runs the unchanged page behavior with modules inlined by the local fixture; the fixture was updated to include the new pure measurement module. This does **not** verify the deployed URL, hosted HTTP imports/cache, Safari/Firefox, physical touch double-tap or high-end GPU/3D FPS. Real heavy implicit mesh and transparent overlapping-surface depth accuracy are **not** claimed fixed. General Intersection and Locus remain finite numerical samples; no complete adversarial construction, drag, cancellation or performance sweep was performed in this cut. Continue in small focused rounds.
+
+## Round 51B — Geometry palette order, redrawn glyphs and circle inversion (2026-11-14)
+
+**Input baseline:** The supplied authoritative Round 50 ZIP (`mathillustrator(5).zip`) with the accepted Round 51 temp4 changed-file overlay applied. No source files were taken from an older round, no Git commands mutated the repository, and no additional site-root files were changed.
+
+**Implementation/confirmed defects:**
+- Existing Round 50 pictograms had genuinely displaced user-click markers relative to their indicated mathematical objects; all 14 Round 50 glyphs were rebuilt, plus a new Circle inversion glyph. These 15 icons have the exact required marker counts and consistent 2px markers. Constructed outputs use hollow markers rather than additional filled control dots. Existing older palette icons were not altered.
+- Polygons & centers mistakenly placed Rectangle and Parallelogram before Triangle and still exposed the redundant Quadrilateral button. Now Triangle comes first, Quadrilateral is removed from the palette and new-tool registry, and every subsection has an explicit simple-to-advanced order. Existing saved polygons remain compatible.
+- New Circle inversion uses the mathematically correct inverse radius relationship with the defining circle, dynamically recomputes when source or defining points move, rejects invalid reference types and finite images at the circle center, samples transformed straight edges as curved paths, and keeps paths split at singularities. JSON and SVG use the same model/renderer as on-screen, including Undo/Redo. A transformed copy's displayed label now anchors to the computed image rather than its source/reference midpoint.
+- Previously the sampled intersection helper assumed all path entries were finite; inversion paths intentionally contain null gap sentinels at poles. The intersection helper now skips those invalid segments rather than passing them to vector arithmetic or inventing a bridge across infinity.
+
+**Node:** `node --test mathillustrator/tests/*.test.mjs` → **333 / 333 PASS**, no failures, no skipped tests. Adds 8 focused `round51b_circle_inversion.test.mjs` regressions (mode/registration, involution, singularity, curved segment images, inverse-circle analytic geometry, dynamic radius/point links and JSON round-trip, invalid references, move guard).
+
+**Real Chromium (Playwright + installed headless Chromium; locally inlined production modules and CSS):** The following 10 independent scripts passed with clean process exit 0:
+1. `browser_smoke.py` — real startup, construction/selection, exports, undo/redo;
+2. `browser_round49_layout_geometry.py` — point/line tool, 2D vector and 3D layout;
+3. `browser_round50_geometry.py` — original 14 glyph counts, tangents and triangle centers;
+4. `browser_round51_temp4.py` — all temp4 regressions, measurements and layout;
+5. `browser_round51b_geometry_sweep.py` — all **44** live Geometry tool buttons across **7** subsections in correct order, selectability, 15 accurate glyph marker counts/sizes, geometric path-marker alignment for selected tools, actual Circle inversion of point and segment, undo/redo, downloaded JSON and singular-center rejection;
+6. `browser_round47_order_geometry.py` — construction and layer order;
+7. `browser_round48_lighting_layout.py` — 3D lighting/rotation layout and persistence;
+8. `browser_round46_color_layout.py` — color/2D/3D UI state;
+9. `browser_round43_temp3_3d.py` — 3D geometry/camera, mixed surfaces and JSON/SVG;
+10. `browser_round40_2d_backdrop.py` — 2D backdrop and SVG ordering.
+
+**Coverage distinction:** Every one of the 44 Geometry palette tools was individually located, selected and checked for layout/order in Chromium, and the complete existing Node regression suite passed. Actual construction, edit, drag, multi-selection, undo/redo and JSON/SVG end-to-end behavior of **all 44 individual tools** has **not** been exhaustively exercised in this cut. Newly added circle inversion and selected Round 50 tools received real construction/undo/save coverage; the full cross-product of 44 workflows is an open follow-up. The glyph-path alignment assertion covers representative line/point semantics, not a pixel-perfect mathematical proof for every new control path. Exact arbitrary-curve intersections, near-tangent root tracking, Locus continuity under dependent singularities, 3D implicit mesh gaps, translucent overlapping surfaces and GPU-quality performance remain open; **no 3D rendering fixes claimed**. No live hosted-URL, Safari/Firefox, touch-device or production GPU-depth-buffer evaluation was performed.
+
+**Packaging:** changed/new paths only under `mathillustrator/`; audit excludes Python `__pycache__`, logs/screenshots and unrelated MathReader/root files. Both required planning and quality Markdown files updated; fresh cache-busted import URLs aligned and source checked; actual HTTP module loading could not be verified here (local loopback was blocked by browser administrator policy), no Git commits.
+
+**Local HTTP check limitation:** A separate development-server HTTP Chromium navigation was attempted but the sandbox browser returned `net::ERR_BLOCKED_BY_ADMINISTRATOR` on `http://127.0.0.1:<ephemeral-port>/mathillustrator/`; this environmental block is not interpreted as an application regression or a PASS. The 10 successful Chromium scripts use module-inlined test fixtures. New import cache-bust paths are therefore statically validated and fixture-tested, not verified against the production HTTP cache.
