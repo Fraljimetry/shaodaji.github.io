@@ -32,16 +32,17 @@ def run():
    add('parametric3d','cos(u)*sin(v)','sin(u)*sin(v)','cos(v)')
    add('domain3d','z^2+1')
    assert len(snap()['scene3d']['plots'])==3 and sum(not o['hidden'] for o in snap()['scene3d']['plots'])==3
-   # User screenshot: opacity numeric field must reach same right edge as select above.
+   # Round46 supersedes the full-width opacity expectation: it is intentionally
+   # compact in the right column, while color occupies the left.
    dim=page.evaluate('''() => {
-    const fields=[...document.querySelectorAll('#properties > label.field')];
     const b=s=>{const r=s.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}};
-    const scheme=fields.find(f=>f.textContent.includes('Color scheme')).querySelector('select');
-    const opacity=fields.find(f=>f.textContent.includes('Object opacity')).querySelector('input');
-    return {a:b(scheme),o:b(opacity)};
+    const left=document.querySelector('#properties .plot-color-slot');
+    const right=document.querySelector('#properties .plot-color-options');
+    return {left:b(left),right:b(right),picker:b(left.querySelector('input[type=color]')),opacity:b(right.querySelector('input[type=number]'))};
    }''')
-   assert abs(dim['a']['right']-dim['o']['right'])<2,dim
-   assert abs(dim['a']['width']-dim['o']['width'])<2,dim
+   assert abs(dim['left']['width']-dim['right']['width'])<2,dim
+   assert abs(dim['left']['width']-dim['picker']['width'])<2,dim
+   assert abs(dim['right']['width']-dim['opacity']['width'])<2,dim
    # The visual multi-surface test is modest enough for actual Chromium.
    page.locator('#scene3d-detail').fill('56');page.locator('#scene3d-detail').dispatch_event('change')
    finished()

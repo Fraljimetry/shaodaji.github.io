@@ -636,6 +636,10 @@
             "latex"
           ],
           "description": "Optional point/midpoint label math renderer. Absence means legacy plain text."
+        },
+        "colorRange": {
+          "type": "boolean",
+          "description": "Optional 2D vector-field magnitude color ramp; omitted means legacy solid stroke."
         }
       },
       "allOf": [
@@ -1475,7 +1479,8 @@
                 "enum": [
                   "phase-modulus",
                   "phase",
-                  "contours"
+                  "contours",
+                  "solid"
                 ]
               },
               "density": {
@@ -1520,6 +1525,10 @@
               },
               "locked": {
                 "type": "boolean"
+              },
+              "colorRange": {
+                "type": "boolean",
+                "description": "Optional red-purple-blue height (surfaces) or magnitude (vectors) ramp; omitted preserves old colors."
               }
             },
             "allOf": [

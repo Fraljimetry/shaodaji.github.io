@@ -26,7 +26,7 @@ def run():
     if c is not None:page.locator('#command-z').fill(c)
     page.locator('#command-form button').click();finished()
    interface=page.locator('.interface-check-grid')
-   assert interface.locator('input[type=checkbox]').count()==4
+   assert interface.locator('input[type=checkbox]').count()==5
    assert page.evaluate("() => getComputedStyle(document.querySelector('.interface-check-grid')).gridTemplateColumns.split(' ').length")==2
    assert rect('.interface-check-grid')['y']>rect('#ui-font')['y']
    page.locator('#scene3d-enable').check();finished()
@@ -52,9 +52,12 @@ def run():
    assert math.isclose(scene()['plots'][0]['bounds']['yMax'],math.e)
    region=page.locator('#properties .plot-region-editor');region.locator('input').nth(1).fill('alert(1)');region.locator('button').click()
    assert math.isclose(scene()['plots'][0]['bounds']['xMax'],math.pi),'bad expression must rollback atomically'
-   # Domain-color and real-color palettes stay aligned with standard 2D ten swatches.
-   assert page.locator('#properties .plot3d-color-row .color-swatch').count()==10
-   color=page.locator('#properties .plot3d-color-row .color-swatch[data-color="#ef4444"]');color.click();finished()
+   # Domain phases still take priority; selecting new Single color enables the
+   # 10-swatch palette without overriding the legacy phase default silently.
+   assert page.locator('#properties .plot-color-slot .color-swatch').count()==10
+   assert page.locator('#properties .plot-color-slot input[type=color]').is_disabled()
+   page.locator('#properties select').filter(has=page.locator('option[value="solid"]')).select_option('solid');finished()
+   color=page.locator('#properties .plot-color-slot .color-swatch[data-color="#ef4444"]');color.click();finished()
    assert scene()['plots'][0]['color']=='#ef4444'
    # World-fixed lighting: compare all polygons' color histograms at different yaw.
    page.locator('#scene3d-projection').select_option('orthographic');finished()

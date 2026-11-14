@@ -577,3 +577,37 @@ html.three-d .settings-2d-only{display:none!important}
 .properties .diagram-numeric-grid{margin-top:8px;margin-bottom:11px}
 /* No accidental label overflow at narrower widths: labels stay above numbers. */
 @media(max-width:360px){.compact-numeric-grid{column-gap:5px}.compact-numeric-grid>.field{font-size:10.5px}}
+
+/* Round 46: compact, centered palette in the LEFT half, field options in the RIGHT. */
+.properties-3d>.plot-color-grid,.properties .vector-style-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;min-width:0;margin:8px 0 10px;align-items:start;
+}
+.properties-3d .plot-color-slot,.properties-3d .plot-color-options{min-width:0}
+.properties-3d .plot-color-slot>.field,.properties .vector-style-grid .style-stroke>.field{
+ display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:0;margin:0;font-size:11px;
+}
+.properties-3d .plot-color-slot input[type=color],.properties .vector-style-grid .style-stroke input[type=color]{
+ width:100%!important;max-width:100%!important;min-height:29px;padding:2px;box-sizing:border-box;
+}
+.properties-3d .plot-color-slot .color-swatches,.properties .vector-style-grid .style-stroke .color-swatches{
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:min(100%,140px);max-width:100%;margin:9px auto 0;justify-content:center;
+}
+.properties-3d .plot-color-slot .color-swatch,.properties .vector-style-grid .style-stroke .color-swatch{
+ width:100%;min-width:0;height:20px;min-height:20px;
+}
+.properties-3d .plot-color-options{display:flex;flex-direction:column;gap:12px;padding-top:2px}
+.properties-3d .plot-color-options>.check,.properties .vector-style-grid .style-color-range>.check{display:flex;align-items:center;gap:5px;min-width:0;margin:0;font-size:11px;white-space:normal}
+.properties-3d .plot-color-options>.field{display:flex;flex-direction:column;gap:5px;align-items:stretch;margin:0;min-width:0;font-size:11px}
+.properties-3d .plot-color-options>.field>input{width:100%!important;max-width:100%!important;min-width:0;box-sizing:border-box}
+.properties .vector-style-grid{grid-template-rows:auto auto auto}
+.properties .vector-style-grid .style-stroke{grid-area:1/1/4/2}
+.properties .vector-style-grid .style-color-range{grid-area:1/2/2/3}
+.properties .vector-style-grid .style-opacity{grid-area:2/2/3/3}
+.properties .vector-style-grid .style-width{grid-area:3/2/4/3}
+.properties .vector-style-grid .style-opacity>.field,.properties .vector-style-grid .style-width>.field{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.properties .vector-style-grid .style-opacity input,.properties .vector-style-grid .style-width input{box-sizing:border-box;width:100%;max-width:100%}
+.properties-3d>.parametric-range-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:8px 0 11px;min-width:0}
+.properties-3d>.parametric-range-grid>.field{display:flex;flex-direction:column;gap:4px;min-width:0;margin:0;font-size:11px}
+.properties-3d>.parametric-range-grid>.field>input{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+/* A 3D-only checkbox fills the fourth interface cell, not the 2D setting grid. */
+html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}

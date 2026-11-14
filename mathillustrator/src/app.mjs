@@ -1,13 +1,13 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round45';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round46';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression} from './plot3d.mjs?cut=round45';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round46';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round40';
+import {localizeUI,translated} from './i18n.mjs?cut=round46';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round38';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
@@ -109,7 +109,7 @@ function initialSiteTheme(){
 }
 let selected3d=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
-let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,showTooltips:true,sections:[],geometryGroups:[],collapsed:{}};
+let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,showTooltips:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 function notice(msg){const e=$('toast');e.textContent=msg;e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
@@ -498,14 +498,19 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const region=o.region,options={density:o.density,normalized:o.normalized,maxEvaluations:doc.settings.plotBudget};
   const result=sampleVectorField(parseVectorField(o.xExpr,o.yExpr),region,options);
   if(result.limited)plotLimitedInScene=true;
-  const parts=[];
+  const parts=[],colored=o.colorRange===true;
+  const magnitudes=colored?result.arrows.map(arrow=>arrow.magnitude):[];
+  const low=magnitudes.length?Math.min(...magnitudes):0,high=magnitudes.length?Math.max(...magnitudes):1;
+  if(colored)item=mk('g',{fill:'none'});
   for(const arrow of result.arrows){
    const a=project(arrow.start),b=project(arrow.end),len=Math.hypot(b[0]-a[0],b[1]-a[1]);
    if(len<1||!Number.isFinite(len)||len>1e5)continue;
    const dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len,h=Math.min(9,Math.max(4,len*.28));
-   parts.push(`M${a[0].toFixed(2)} ${a[1].toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}M${(b[0]-h*dx+h*.42*dy).toFixed(2)} ${(b[1]-h*dy-h*.42*dx).toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}L${(b[0]-h*dx-h*.42*dy).toFixed(2)} ${(b[1]-h*dy+h*.42*dx).toFixed(2)}`);
+   const d=`M${a[0].toFixed(2)} ${a[1].toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}M${(b[0]-h*dx+h*.42*dy).toFixed(2)} ${(b[1]-h*dy-h*.42*dx).toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}L${(b[0]-h*dx-h*.42*dy).toFixed(2)} ${(b[1]-h*dy+h*.42*dx).toFixed(2)}`;
+   if(colored)item.append(el('path',{d,stroke:rampColor(arrow.magnitude,low,high),'stroke-width':sty['stroke-width'],fill:'none'}));
+   else parts.push(d);
   }
-  item=mk('path',{d:parts.join(''),fill:'none'});
+  if(!colored)item=mk('path',{d:parts.join(''),fill:'none'});
  }else if(o.type==='domainColoring'){
   const region=o.region,key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,doc.settings.plotBudget]);
   const uri=plotCache.get(key,()=>{
@@ -524,8 +529,8 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');svg.append(item);
  if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)){
-  const path=item.tagName.toLowerCase()==='g'?item.querySelector('path'):item;
-  if(path){const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
+  const paths=o.type==='vectorField'&&o.colorRange===true?[...item.querySelectorAll('path')]:[item.tagName.toLowerCase()==='g'?item.querySelector('path'):item];
+  for(const path of paths){if(!path)continue;const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
  }
  // Optional geometric labels follow the referenced world anchors on every redraw.
  // SVG export uses the exact same path; project JSON stores only author text/mode.
@@ -552,7 +557,7 @@ function face3DElement(face){
  const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
  const rgb=[1,3,5].map(i=>parseInt(face.color.slice(i,i+2),16));
  // Domain phase colors retain their identity while receiving subtle depth shading.
- const fill=face.domainColoring?`rgb(${rgb.map(v=>Math.round(v*(.82+.18*face.shade))).join(',')})`:
+ const fill=(face.domainColoring||face.rangeColor)?`rgb(${rgb.map(v=>Math.round(v*(.82+.18*face.shade))).join(',')})`:
   `rgb(${rgb.map(v=>Math.round(v+(255-v)*(.1+.56*face.shade))).join(',')})`;
  return el('polygon',{points,fill,opacity:face.opacity,stroke:'none','pointer-events':'none'});
 }
@@ -759,7 +764,7 @@ function render(){
  // A camera move, a new document, or a mode switch invalidates every pending
  // sample and DOM batch. Exports always use the independent synchronous path.
  const epoch=sceneRenderEpoch;
- const snapshot=JSON.parse(JSON.stringify(doc.scene3d)),interactive=!!cameraDrag;
+ const snapshot=JSON.parse(JSON.stringify(doc.scene3d)),interactive=!!cameraDrag&&uiPrefs.fast3DOrbit!==false;
  sceneRenderTask=create3DProjectionTask(snapshot,size.w,size.h,{interactive});
  sceneRenderPending=true;
  $('render-info').textContent=`${snapshot.plots.length} 3D plots · rendering…`;
@@ -1006,7 +1011,8 @@ function renderProperties3D(root){
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z) =']:selectedPlot.kind==='surface3d'?['z(x, y) =']:selectedPlot.kind==='parametric3d'?['X(u, v) =','Y(u, v) =','Z(u, v) =']:selectedPlot.kind==='implicit3d'?['F(x, y, z) =']:['X(x, y, z) =','Y(x, y, z) =','Z(x, y, z) ='];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
- for(const key of fields)field(root,key,selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}));
+ if(fields.length){const rangeGrid=document.createElement('div');rangeGrid.className='parametric-range-grid';rangeGrid.setAttribute('role','group');rangeGrid.setAttribute('aria-label','Surface parameter ranges');root.append(rangeGrid);
+  for(const key of fields)field(rangeGrid,key,selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}));}
  const block=document.createElement('div');block.className='plot-region-editor';const subtitle=document.createElement('h4');subtitle.textContent='3D drawing region';block.append(subtitle);
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true);values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
@@ -1025,17 +1031,24 @@ function renderProperties3D(root){
    }
   });height.append(heightSelect);root.append(height);
   const colors=document.createElement('label');colors.className='field';colors.textContent='Color scheme';const select=document.createElement('select');
-  for(const [key,label] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
-  select.value=selectedPlot.colorMode;select.onchange=()=>edit(p=>{p.colorMode=select.value;});colors.append(select);root.append(colors);
+  for(const [key,label] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['solid','Single color']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
+  select.value=selectedPlot.colorMode;select.onchange=()=>{if(edit(p=>{p.colorMode=select.value;})!==false)renderProperties();};colors.append(select);root.append(colors);
  }
  if(selectedPlot.kind==='vector3d'){
   field(root,'Arrow density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
   const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,' Normalize vector lengths');root.append(label);
  }
- const colorRow=document.createElement('div');colorRow.className='plot3d-color-row';root.append(colorRow);
- field(colorRow,'Surface color',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
- appendColorSwatches(colorRow,{scope:'plot3d',property:'color',apply:v=>edit(p=>{p.color=v;})});
- field(root,'Object opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
+ const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
+ const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
+ const solidAllowed=selectedPlot.kind!=='domain3d'||selectedPlot.colorMode==='solid';
+ const solidPicker=field(colorSlot,selectedPlot.kind==='vector3d'?'Vector color':'Surface color',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
+ solidPicker.disabled=selectedPlot.colorRange===true||!solidAllowed;
+ const swatches=appendColorSwatches(colorSlot,{scope:'plot3d',property:'color',apply:v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('Select Single color and disable Multi-color first.');p.color=v;})});
+ for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;
+ const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
+ const rangeLabel=document.createElement('label');rangeLabel.className='check';const range=document.createElement('input');range.type='checkbox';range.checked=selectedPlot.colorRange===true;
+ range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}solidPicker.disabled=range.checked||!solidAllowed;for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;};rangeLabel.append(range,document.createTextNode(' '+(selectedPlot.kind==='vector3d'?'Color range':'Multi-color')));right.append(rangeLabel);
+ field(right,'Object opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
  localizeUI(root,uiPrefs.language);
 }
 function renderProperties(){
@@ -1178,9 +1191,17 @@ function renderProperties(){
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';
  styleGrid.setAttribute('role','group');styleGrid.setAttribute('aria-label','Object appearance');
  function styleSlot(name){const slot=document.createElement('div');slot.className='style-slot style-'+name;styleGrid.append(slot);return slot;}
+ if(o.type==='vectorField')styleGrid.classList.add('vector-style-grid');
  const strokeSlot=styleSlot('stroke');
- field(strokeSlot,'Stroke',o.style.stroke,'color',v=>edit(live=>live.style.stroke=v));
- appendColorSwatches(strokeSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.style.stroke=v;})});
+ const picker=field(strokeSlot,o.type==='vectorField'?'Vector color':'Stroke',o.style.stroke,'color',v=>edit(live=>live.style.stroke=v));
+ picker.disabled=o.type==='vectorField'&&o.colorRange===true;
+ const swatches=appendColorSwatches(strokeSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{if(live.type==='vectorField'&&live.colorRange)throw Error('Disable Color range to select a single color.');live.style.stroke=v;})});
+ if(o.type==='vectorField'){
+  for(const button of swatches.querySelectorAll('button'))button.disabled=o.colorRange===true;
+  const mode=styleSlot('color-range'),label=document.createElement('label');label.className='check';
+  const check=document.createElement('input');check.type='checkbox';check.checked=o.colorRange===true;
+  check.onchange=()=>{if(edit(live=>{live.colorRange=check.checked;})===false){check.checked=!check.checked;return;}picker.disabled=check.checked;for(const button of swatches.querySelectorAll('button'))button.disabled=check.checked;};label.append(check,' '+translated('Color range',uiPrefs.language));mode.append(label);
+ }
  if(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node'].includes(o.type)){
   const fillSlot=styleSlot('fill');
   field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>live.style.fill=v));
@@ -2013,8 +2034,8 @@ function setupInterface(){
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
  $('auto-pan').checked=uiPrefs.autoPan!==false;$('auto-pan').onchange=()=>{uiPrefs.autoPan=$('auto-pan').checked;savePrefs();};
- for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['tooltips','showTooltips']]){
-  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels')scheduleRender();else syncTooltips();};
+ for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['tooltips','showTooltips'],['fast-3d-orbit','fast3DOrbit']]){
+  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels'||key==='fast3DOrbit')scheduleRender();else syncTooltips();};
  }
  syncTooltips();
  function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}

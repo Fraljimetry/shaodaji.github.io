@@ -52,7 +52,7 @@ def run():
             group.get_by_role('button',name='Redraw region').click()
             field=state(p)['objects'][-1]
             assert field['region']=={'xMin':-2,'xMax':2,'yMin':-3,'yMax':3},field
-            p.locator('#properties input[type=checkbox]').last.check()
+            p.locator('#properties label.check').filter(has_text='Normalize vector lengths').locator('input').check()
             assert state(p)['objects'][-1]['normalized'] is True
             add(p,'domainColoring','z^2+I')
             color=state(p)['objects'][-1]

@@ -537,13 +537,14 @@ export function validateDoc(raw){
    if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Vector field requires two components.');
    parseVectorField(o.xExpr,o.yExpr);
    if(!Number.isInteger(o.density)||o.density<3||o.density>40||typeof o.normalized!=='boolean')throw Error('Invalid vector field settings.');
+   if(o.colorRange!==undefined&&typeof o.colorRange!=='boolean')throw Error('Invalid vector color range.');
   }else{
    if(typeof o.expr!=='string'||!['phase-modulus','phase','contours'].includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
    parseComplexExpression(o.expr);
    if(!Number.isInteger(o.resolution??128)||(o.resolution??768)<32||(o.resolution??768)>1024)throw Error('Invalid domain resolution.');
   }
  }
- if(o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
+ if(o.type!=='vectorField'&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
  if(o.type!=='parametric'&&o.parameter!==undefined)throw Error('Unexpected parametric symbol.');
  if(!['parametric','vectorField'].includes(o.type)&&(o.xExpr!==undefined||o.yExpr!==undefined)||o.type!=='parametric'&&(o.tMin!==undefined||o.tMax!==undefined))throw Error('Unexpected parametric properties.');
 

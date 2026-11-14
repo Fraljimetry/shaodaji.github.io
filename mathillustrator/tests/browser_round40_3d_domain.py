@@ -18,6 +18,7 @@ def run():
    page.locator('#command').fill('z^2+1');page.locator('#command-form button').click()
    plot=snapshot()['scene3d']['plots'][0]
    assert plot['kind']=='domain3d' and plot['heightMode']=='modulus' and plot['bounds']['zMax']>=32
+   page.wait_for_function("document.querySelectorAll('#drawing polygon').length > 100",timeout=45000)
    assert page.locator('#drawing polygon').count()>100
    height=page.locator('#properties select').filter(has=page.locator('option[value="argument"]'))
    height.select_option('argument')
