@@ -136,9 +136,13 @@ glyph.translation='<path d="M2 6H16.5M8.5 18H23"/>'+glyphDots([[2,6],[16.5,6],[8
 glyph.reflection='<path d="M12 2V22M4 12H20"/>'+glyphDots([[5,12],[19,12]]);
 glyph.rotation='<path d="M22 12A10 10 0 0 0 12 2"/>'+glyphDots([[12,12],[22,12],[12,2]]);
 glyph.dilation='<path d="M4 12H21"/>'+glyphDots([[4,12],[11,12],[21,12]]);
-// Circle radius 9 at C=(9,12), P=(15.75,12), image P'=(21,12).
-// |CP|*|CP'|=6.75*12=9^2, with an unclipped rightmost marker.
-glyph.circleInversion=glyphCrossSectionCircle(9,12,9)+'<path d="M9 12H21"/>'+glyphDots([[9,12],[15.75,12],[21,12]]);
+// Circle inversion: the center is deliberately NOT marked or connected.
+// C=(8.5,12), R=7.5; P=(13.1,12), P'=C+(R²/4.6,0).
+// Both P and P' have the common glyph marker radius 2.8 and fit the 24x24 viewBox.
+// The short horizontal segment joins only the paired inversion points.
+const inversionGlyphInsideX=13.1;
+const inversionGlyphOutsideX=8.5+7.5**2/4.6;
+glyph.circleInversion=glyphCrossSectionCircle(8.5,12,7.5)+`<path d="M${inversionGlyphInsideX} 12H${inversionGlyphOutsideX}"/>`+glyphDots([[inversionGlyphInsideX,12],[inversionGlyphOutsideX,12]]);
 // Replace each *filled* glyph circle radius including older shared glyphs;
 // geometric outlines with no fill remain unchanged.
 for(const type of Object.keys(glyph))glyph[type]=glyph[type].replace(/<circle\b[^>]*\bfill="currentColor"[^>]*\/>/g,tag=>{

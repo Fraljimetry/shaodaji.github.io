@@ -1188,3 +1188,7 @@ User requests recorded, with implemented items distinguished from unresolved one
 ### Round 56 — Direct morphism arrows only (2026-11-14)
 - Remove Arrow routing entirely from Properties. New and existing morphisms display directly, with manual Curve / bend shaping; never use automatic node/crossing rerouting or rectangular routing.
 - Keep Swap label side and user-adjustable label positioning. Preserve historical routing values in project JSON without rewriting them on load; render them using Direct.
+
+## Round 57 — Circle inversion glyph (2026-11-14)
+
+- Render only the inversion circle and two horizontally aligned source/image points joined directly by a segment, with **no marked center or segment to the center**. Inversion distances must satisfy CP × CP′ = R²; markers must be visibly separated and stay inside the glyph. No unrelated glyphs changed.

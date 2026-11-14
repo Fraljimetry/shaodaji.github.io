@@ -1144,3 +1144,7 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - PASS: 361/361 Node tests (`node --test tests/*.test.mjs`).
 - PASS: focused Chromium inline-module browser startup, node-to-node morphism construction, default direct, absent routing selector, Curve / bend, Swap label side.
 - LIMITATION: Chromium real-HTTP navigation blocked by execution environment (`net::ERR_BLOCKED_BY_ADMINISTRATOR`); hosted deployment not verified.
+
+## Round 57 — Circle inversion glyph (2026-11-14)
+
+- Rebuilt glyph with an unmarked circle center, two non-overlapping inverse points, and a horizontal point-to-point segment. Added Node source/geometry/bounds regression (`round57_inversion_glyph.test.mjs`). Final verification: `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` 362/362 PASS; actual Chromium `browser_round57_inversion_glyph.py` PASS (rendered icon, center unmarked, inverse-point separation, no clipping, matching left/right instances). Hosted deployment not checked.
