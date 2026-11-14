@@ -624,3 +624,25 @@ All **R01–R213** requirements, including existing limitations and the no-unapp
 | R223 | Separate structural design from post-hoc bugs in this **same cumulative requirements file**; maintain tests and quality report, concise English release message, changed-files-only ZIP, no Git commits. | Maintained here; authoritative output is `mathillustrator/` relative. Actual verification counts, first-pass defects and hosted-origin limits are recorded in `TEST_REPORT_CURRENT.md`, not represented as assumptions. |
 
 **Next work:** multi-object plot stress and global time budget/cancellation, curve snapping, viewport-specific implicit adaptivity, numerical singularities and implicit topology. Preserve tool icons without user authorization. New plotting features are not a promise of exact symbolic geometry or unrestricted computation.
+
+## Round 37 — consented construction glyph corrections and legacy default-color recovery (2026-11-14)
+
+All **R01–R223** remain binding. This round contains **a posteriori UI/behavior amendments**, not a new structural Geometry/plotting feature. Preserve all unmentioned tool glyph markup, existing saved object colors and user-defined project styles.
+
+### A posteriori amendments — R224–R228
+
+| ID | Reported problem / design principle | Implemented scope and boundaries |
+|---:|---|---|
+| R224 | Quadrilateral and Polygon look too similar. Quadrilateral glyph should be unmistakably **concave**; Polygon should no longer depict a quadrilateral, preferably a hexagon. | Authorized glyph changes only: four control points outlining a non-convex quadrilateral; six vertex controls outlining a hexagonal example for the arbitrary-vertex Polygon tool. Actual canvas constructions stay unchanged; Polygon still accepts variable vertex counts. |
+| R225 | Ray must show its second selection point **inside** the ray, not at the arrow tip; Line must show two **interior** selected points rather than points at its ends. | Authorized Ray/Line glyph changes only. Ray control points have equal marker radii; Line shows two points inside its two-headed infinite line. Vector still shows start and end controls; unchanged. |
+| R226 | Glyphs should implicitly communicate which points to choose, with sensible dot sizes and no unauthorized icon redesign. | Preserve frozen snapshot hashes for every other registered tool icon. Update only the four explicitly authorized glyph hashes (quadrilateral/polygon/ray/line). The regular polygon remains a special two-click center/vertex tool, not a six-click Polygon; no unrelated SVG path alterations. |
+| R227 | New objects **still look blue** despite repeated default-black fixes. Trace and correct actual persistence rather than repeating a claim about pristine projects. | Root cause: locally recovered projects retained the original R31 **blue/tinted preset stroke+fill pairs** in `settings`, and `append()` inherits the recovered defaults. On **local autosave recovery only**, exact historical preset pairs now become black `#000000` for **future objects**. Existing objects, IDs, styles and imported JSON remain unchanged. Explicitly custom nonmatching defaults remain untouched and the color pickers still control future colors. One exact historical color pair could also represent deliberate customization and cannot be distinguished; this bounded recovery rule is documented. No bulk silent recoloring. |
+| R228 | Screenshots show strokes/markers cut off at the right edge of several icons. | Introduce a uniform 1.5-unit SVG viewBox breathing room on each tool tile, with original path data frozen outside approved changes. This reduces the rendered glyph's scale slightly instead of clipping stroke caps or rightmost control dots; selected icons and mobile layout still use the same tile sizes. Node/Chromium checks cover bounds at 1440, 980, and 390 px. |
+
+### Verification / process — R229
+
+| ID | Requirement | Release evidence |
+|---:|---|---|
+| R229 | Preserve cumulative documentation, current quality evidence, concise English release note, root-relative **changed-files-only** MathIllustrator overlay, and no Git commits. | Targeted Node/Chromium tests added; frozen approved glyph snapshot updated. Tested local-storage migration and object-color preservation, mobile viewport, undo/history and neighboring geometry/diagram/plotting suites. Do not imply a live-site cache, physical device, or user workspace was tested. |
+
+**Next suggested cut:** Reproduce and correct any remaining real-site color/style-cache mismatch with a concrete exported project and browser evidence, and stress-test dense geometry/plotting without further icon redesign without consent.

@@ -102,6 +102,24 @@ export function xmlTextSafe(value){
  }
  return true;
 }
+/** A one-time compatibility correction for browser-autorecovered old projects.
+ * The original default presets shipped blue-tinted stroke/fill pairs. Since
+ * they are indistinguishable from manual settings, only migrate exact known
+ * historical pairs; never recolor existing objects or alter imported JSON.
+ * Choosing a new color in Settings continues to override the default. */
+const LEGACY_PRESET_COLORS=[
+ ['#3657ad','#b6c9f9'],['#172b4d','#e6eef9'],
+ ['#263342','#d9e8f4'],['#3761b8','#b6c9f9'],
+ ['#353e50','#d7e2f4'],['#1d3557','#ffffff']
+];
+export function upgradeRecoveredLegacyPalette(project){
+ const defaults=project?.settings;
+ if(defaults&&LEGACY_PRESET_COLORS.some(([stroke,fill])=>
+    defaults.stroke.toLowerCase()===stroke&&defaults.fill.toLowerCase()===fill)){
+  defaults.stroke='#000000';defaults.fill='#000000';
+ }
+ return project;
+}
 export function clone(x){return JSON.parse(JSON.stringify(x));}
 export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'avoid',snapAnchors:true,snapObjects:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
