@@ -1176,3 +1176,10 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Keep all first-party ES module import URLs in a release synchronized to one cache-version token, not only `index.html` or the entry module. Preserve the complete module graph and prevent stale mixed-version imports.
 - A failed module import or interrupted application initialization must surface a visible, non-destructive diagnostic rather than silently showing empty tool panels. Never delete saved local projects for startup recovery.
 - Browser fixture must include up-to-date module dependencies and fail if tool initialization is missing. Hosted deployment requires separate real-site confirmation.
+
+
+## Round 55 — geometry module deployment contract (2026-11-14)
+
+- Production error: `geometry_round50.mjs` did not export `generalCrossings` while `app.mjs` and `model.mjs` required it. Original source ZIP contained an obsolete geometry module; Round 51U updated it but Round 52–54 overlay releases omitted the module.
+- Requirement: all required changed source dependencies must accompany website-root overlays, and browser startup must be tested with real URL-based ES module imports, not only inline/data URL rewrites.
+- Fix: ship the matching geometry module and version both import edges; preserve project data and geometry behavior.

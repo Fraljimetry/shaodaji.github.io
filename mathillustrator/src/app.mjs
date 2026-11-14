@@ -1,5 +1,5 @@
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round54';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round54';
+import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round55-geometry-contract';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round54';
 import {measureGeometry} from './geometry_measurements.mjs?cut=round54';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';

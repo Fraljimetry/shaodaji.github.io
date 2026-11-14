@@ -1123,3 +1123,12 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - **Fix:** All first-party ES module dependency edges use `cut=round54`; entry is `cut=round54`. Added non-destructive startup diagnostic if the Basic tool grid never initializes.
 - **Tests:** `node --test tests/*.test.mjs` passes 358/358; isolated Chromium `browser_smoke.py` and `browser_round52_diagram.py` pass. Fixture repaired for the synchronized import graph.
 - **Limitation:** Hosted website not tested. Chromium network navigation blocked in test environment; isolated tests do not reproduce caching behavior from real hosting. If still failing, the visible diagnostic can identify the next actual error.
+
+
+## Round 55 — missing ES module export deployment failure
+
+- **Reproduced from user screenshot:** production error `The requested module './geometry_round50.mjs?cut=round54' does not provide an export named 'generalCrossings'`.
+- **Root cause:** original source ZIP used the older `geometry_round50.mjs` (14,083 bytes), whereas Round 51U introduced the needed export (17,180 bytes); later Round 52–54 overlays omitted this dependency. Previous inline Chromium smoke tests had the updated local file and thus missed this deployment mismatch.
+- **Repair:** Round 55 includes the correct `geometry_round50.mjs`, updates versioned imports in `app.mjs` and `model.mjs`, updates `index.html`, and adds a module export contract test. Browser startup must be verified by loading HTTP URLs, not just inlined bundles.
+
+- **Verification (Round 55):** Node 359/359 PASS. Real Chromium HTTP navigation was attempted but blocked by environment policy (`ERR_BLOCKED_BY_ADMINISTRATOR`); therefore production behavior is not independently confirmed. The prior inline Chromium harness cannot prove deployed HTTP import correctness.

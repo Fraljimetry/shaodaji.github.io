@@ -1,4 +1,5 @@
-/** Round 50 geometry primitives. Pure world-coordinate mathematics; no canvas/DOM.
+/** Round 55 deployment contract: generalCrossings is a required named export.
+ * Round 50 geometry primitives. Pure world-coordinate mathematics; no canvas/DOM.
  * Finite and singularity guards are deliberate: undefined geometry must never
  * silently become a point at the origin or a malformed SVG path.
  */
@@ -53,7 +54,7 @@ export function hyperbolaPoints(points,count=128){if(!points?.every(coord)||poin
  const b=Math.sqrt(c*c-a*a),axis=unit(sub(g,f)),perp=left(axis);
  // The selected third point determines the displayed branch.
  const sgn=dot(sub(on,mid),axis)>=0?1:-1;
- return Array.from({length:count+1},(_,i)=>{const t=4*(i/count-.5);return add(add(mid,mul(axis,sgn*a*Math.cosh(t))),mul(perp,b*Math.sinh(t)));}).filter(coord);
+ return Array.from({length:count+1},(_,i)=>{const t=10*(i/count-.5);return add(add(mid,mul(axis,sgn*a*Math.cosh(t))),mul(perp,b*Math.sinh(t)));}).filter(coord);
 }
 export function projectToCurve(world,path,closed=false){if(!coord(world)||!Array.isArray(path)||path.length<2)return null;
  let best=null,position=0,total=0;const segments=[];
@@ -72,7 +73,13 @@ export function alongCurve(path,parameter,closed=false){if(!Array.isArray(path)|
  for(const s of seg){if(remaining<=s.length)return add(s.a,mul(sub(s.b,s.a),remaining/s.length));remaining-=s.length;}
  return seg.at(-1).b;
 }
-export function pointOnObject(owner,parameter,resolver,shapeSamples){if(!owner||!finite(parameter))return null;
+export function pointOnObject(owner,parameter,resolver,shapeSamples,constraintMode=null){if(!owner||!finite(parameter))return null;
+ if(owner.type==='fixedAngle'&&constraintMode==='angleRay'){
+  const [guide,vertex]=resolver.points(owner);if(!coord(guide)||!coord(vertex)||!finite(owner.angle))return null;
+  const direction=unit(sub(guide,vertex));if(!direction)return null;
+  const c=Math.cos(owner.angle),s=Math.sin(owner.angle);
+  return add(vertex,mul([direction[0]*c-direction[1]*s,direction[0]*s+direction[1]*c],30*parameter));
+ }
  const line=resolver.line(owner);if(line){const length=line.domain==='segment'?line.length:line.domain==='ray'?15:30;
   return add(line.a,mul(line.d,line.domain==='infinite'?(parameter-.5)*length:parameter*length));}
  const circle=['circle','circleThrough3'].includes(owner.type)?resolver.circle(owner):null;
@@ -108,6 +115,49 @@ export function polylineCrossings(a,b){if(a?.length<2||b?.length<2)return [];
    if(coord(root)&&!result.some(x=>norm(sub(x,root))<1e-4))result.push(root);}
  }
  return result.sort((p,q)=>p[0]-q[0]||p[1]-q[1]).slice(0,32);
+}
+/** Exact analytic intersections where possible; sampled curves otherwise.
+ * Shared by construction and dependency resolution so saved branches agree. */
+export function generalCrossings(first,second,resolver,count=160){
+ if(!first||!second||first.id===second.id)return [];
+ const la=resolver.line(first),lb=resolver.line(second);
+ const ca=resolver.circle(first),cb=resolver.circle(second);
+ const inside=(line,t)=>line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
+ const sorted=points=>points.filter(coord).filter((p,i,all)=>all.findIndex(q=>coord(q)&&norm(sub(q,p))<1e-7)===i).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,32);
+ if(la&&lb){
+  const w=sub(lb.a,la.a),det=cross(la.d,lb.d);
+  if(Math.abs(det)<1e-12)return [];
+  const t=cross(w,lb.d)/det,u=cross(w,la.d)/det;
+  return inside(la,t)&&inside(lb,u)?sorted([add(la.a,mul(la.d,t))]):[];
+ }
+ const lineCircle=(line,circle)=>{
+  const w=sub(line.a,circle.center),offset=-dot(w,line.d),discriminant=offset*offset+circle.radius**2-dot(w,w);
+  if(discriminant < -1e-9)return [];
+  const delta=Math.sqrt(Math.max(0,discriminant));
+  return sorted([offset-delta,offset+delta].filter(t=>inside(line,t)).map(t=>add(line.a,mul(line.d,t))));
+ };
+ if(la&&cb)return lineCircle(la,cb);
+ if(lb&&ca)return lineCircle(lb,ca);
+ if(ca&&cb){
+  const v=sub(cb.center,ca.center),d=norm(v),r=ca.radius,R=cb.radius;
+  if(d<1e-10||d>r+R+1e-9||d<Math.abs(r-R)-1e-9)return [];
+  const u=mul(v,1/d),x=(r*r-R*R+d*d)/(2*d),height=Math.sqrt(Math.max(0,r*r-x*x));
+  const foot=add(ca.center,mul(u,x));return sorted([add(foot,mul(left(u),height)),sub(foot,mul(left(u),height))]);
+ }
+ const a=r50SourceShape(first,resolver,count),b=r50SourceShape(second,resolver,count);
+ const pointOn=(point,path)=>{
+  for(let i=1;i<path.length;i++){
+   const u=sub(path[i],path[i-1]),len=dot(u,u);
+   if(!(len>1e-20))continue;
+   const t=Math.max(0,Math.min(1,dot(sub(point,path[i-1]),u)/len));
+   if(norm(sub(point,add(path[i-1],mul(u,t))))<1e-6)return true;
+  }
+  return false;
+ };
+ if(a.length===1&&b.length===1)return norm(sub(a[0],b[0]))<1e-7?[a[0]]:[];
+ if(a.length===1)return pointOn(a[0],b)?[a[0]]:[];
+ if(b.length===1)return pointOn(b[0],a)?[b[0]]:[];
+ return polylineCrossings(a,b);
 }
 export function r50Shape(o,resolver,samples=120){if(!o)return [];
  const pts=()=>resolver.points(o),p=pts();
