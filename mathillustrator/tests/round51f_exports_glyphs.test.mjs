@@ -26,10 +26,10 @@ test('R51F: each 2D plotting mode has a unique semantic SVG with the same previe
  for(const type of ['function','parametric','implicit','vectorField','domainColoring'])assert.match(app,new RegExp(`\\b${type}:'<`));
  assert.match(app,/function plotGlyphSvg\(type\)/);
  assert.match(app,/objectIcon\.innerHTML=plotGlyphSvg\(o\.type\)/);
- assert.match(app,/preview\.innerHTML=three\?'':plotGlyphSvg\(mode\)/);
+ assert.match(app,/preview\.innerHTML=plotGlyphSvg\(mode\)/);
  assert.match(html,/<span id="plot-mode-preview" aria-hidden="true"><\/span>/);
  assert.match(css,/#plot-mode-preview svg/);
- assert.match(html,/src\/app\.mjs\?cut=round51l/);
+ assert.match(html,/src\/app\.mjs\?cut=round53-startup/);
 });
 
 test('R51I: Geometry markers have uniform 2.8-unit rendered size and related diagonal tools use 45 degrees',()=>{

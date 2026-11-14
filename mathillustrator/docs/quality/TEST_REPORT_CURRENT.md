@@ -1106,3 +1106,13 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Regression:** Node 354/354 PASS before Round52 additions; Round52 two new Node tests PASS, including legacy routing compatibility, bounded route smoothing and invalid input. Chromium isolated startup/export/undo and Round52 icon/grid-snap test PASS; Round51U interaction test PASS. Re-run the full suite after these final follow-up adjustments. Remaining: browser visual validation of scene-wide routing around densely packed nodes, smooth-route arrowhead/label exact-position fidelity, and historic browser tests referencing removed controls.
 
 **Final Round 52 execution:** 356/356 Node tests PASS; Chromium `browser_round52_diagram.py`, `browser_round52_routing.py`, `browser_round51u_interactions.py`, and `browser_smoke.py` PASS. Verified new morphism 1px width, 10px label distance, default Automatic route, two routing UI choices, checkbox placement, Automatic/Direct label-avoidance toggle and forced diagram snapping. The first attempt at `browser_round52_routing.py` assumed diagram-node creation did not auto-switch tools; updated the test to reselect Node and reran PASS (no application bug).
+
+## Round 53 — Startup entry cache correction
+
+- User screenshot: page shell and static Settings visible, but the Basic/Diagrams/Geometry tool lists, canvas and Properties were empty. These parts depend on JavaScript initialization.
+- Confirmed in previous overlay: `src/app.mjs` was modified in Round 52 while `index.html` still requested `app.mjs?cut=round51u...`, so Chrome could reuse an earlier cached entry module on the unchanged URL.
+- Fix: advance the entry URL to `?cut=round53-startup`. No project-schema, storage, or geometry semantics changed.
+- Root-cause caveat: this is a confirmed cache-versioning defect, not a direct diagnosis of the user's production browser console. A live deployment/browser-cache reproduction was not available; exact hosted failure remains unconfirmed.
+- Post-fix Node: **357/357 PASS** (`node --test tests/*.test.mjs`). Historical Round 51E/51F tests updated to accept the new cache key, without changing the functionality they assert.
+- Chromium: **PASS** isolated `tests/browser_smoke.py` (startup, populated tool palette, draw/edit/export, undo/redo), Round 52 diagram snap/glyph tests, and direct 47-tool initialization with no JavaScript page errors. Chromium tests use a self-contained local inline fixture, not the live URL.
+- Corrected a test-harness fragility: `browser_smoke.inline_html()` now replaces the actual versioned module entry using a checked regex instead of silently failing to inject JavaScript when the query string changes. This is test-only, not part of the deployed runtime.

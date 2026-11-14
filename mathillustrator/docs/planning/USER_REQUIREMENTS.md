@@ -1165,3 +1165,8 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Diagram node, morphism and text tools enforce grid snapping, including when the ordinary setting is off; other tools retain the saved project snap preference. Snap is visibly checked and disabled in diagram mode without rewriting persisted preferences.
 - Fix the clipped outermost circle-inversion glyph point without changing other glyphs. Preserve user-selected morphism color when swapping label sides or when label placement is crowded. New morphisms use 1px stroke and closer (10px) label offset; old ones retain their explicit width/distance or the historical 17px fallback.
 - Automatic routes use curved joins rather than sharp rectangular turns; collision/crossing avoidance remains bounded and best-effort (48-arrow global limit). Future improvement: validate displayed rounded strokes against obstacles and refine label arc-distance fidelity for complex routes.
+
+## Round 53 — Startup recovery after Round 52
+
+- **A posteriori glitch amendment (critical):** The Round 52 release modified `src/app.mjs` without updating the `index.html` module script query. Production Chrome showed empty Basic/Diagrams/Geometry panels and empty Properties; stale cached entry modules are a plausible cause. Update the entry URL on every subsequent runtime release, including when the app module is the only changed source file. Never claim production cache behavior was tested locally.
+- **Process/quality:** Verify HTML module URLs against the shipped changes, run Node import/export validation and Chromium startup, and test that actual tool buttons exist after startup. Preserve local projects; never suggest clearing site storage as a refresh workaround.
