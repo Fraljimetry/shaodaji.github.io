@@ -164,7 +164,15 @@ export function r50SourceShape(o,resolver,count=120){if(!o)return [];
   const c=resolver.circle(o);return c?Array.from({length:count+1},(_,i)=>add(c.center,mul([Math.cos(tau*i/count),Math.sin(tau*i/count)],c.radius))):[];
  }
  if(o.type==='ellipse'){
-  const p=resolver.points(o);if(p.length!==3)return [];
+  const p=resolver.points(o);
+  // Legacy v1 stored ellipse corners instead of two foci and a curve point.
+  // The renderer still draws these: geometry consumers must see the same path.
+  if(p.length===2&&p.every(coord)){
+   const [a,b]=p,c=mul(add(a,b),.5),rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
+   if(rx<1e-7||ry<1e-7)return [a,b]; // Matches the rendered limiting line.
+   return Array.from({length:count+1},(_,i)=>[c[0]+rx*Math.cos(tau*i/count),c[1]+ry*Math.sin(tau*i/count)]);
+  }
+  if(p.length!==3)return [];
   const [f,g,q]=p;if(![f,g,q].every(coord))return [];const mid=mul(add(f,g),.5),axis=unit(sub(g,f))||[1,0];
   const c=norm(sub(g,f))/2,a=(norm(sub(q,f))+norm(sub(q,g)))/2,b=Math.sqrt(Math.max(0,a*a-c*c));if(b<1e-9)return [];
   const perp=left(axis);return Array.from({length:count+1},(_,i)=>add(add(mid,mul(axis,a*Math.cos(tau*i/count))),mul(perp,b*Math.sin(tau*i/count))));
@@ -176,7 +184,13 @@ export function r50SourceShape(o,resolver,count=120){if(!o)return [];
   return Array.from({length:n+1},(_,i)=>add(center,mul([Math.cos(t+tau*i/n),Math.sin(t+tau*i/n)],r)));
  }
  if(['rectangle','parallelogram'].includes(o.type)){
-  const p=resolver.points(o);if(!p.every(coord)||p.length<3)return [];
+  const p=resolver.points(o);if(!p.every(coord))return [];
+  if(o.type==='rectangle'&&p.length===2){
+   const [a,b]=p,minX=Math.min(a[0],b[0]),maxX=Math.max(a[0],b[0]),minY=Math.min(a[1],b[1]),maxY=Math.max(a[1],b[1]);
+   if(maxX-minX<1e-9||maxY-minY<1e-9)return [];
+   return [[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY],[minX,minY]];
+  }
+  if(p.length!==3)return [];
   const [a,b,c]=p;if(o.type==='parallelogram'){const d=add(a,sub(c,b));return [a,b,c,d,a];}
   const d=sub(b,a),side=unit(left(d));if(!side)return [];
   const h=dot(sub(c,b),side),v=mul(side,h);return [a,b,add(b,v),add(a,v),a];

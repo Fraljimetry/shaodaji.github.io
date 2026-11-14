@@ -961,3 +961,18 @@ The user supplied a screenshot of the Polygons & centers palette and explicitly 
 | R362 | Do not introduce hidden fallbacks, alter existing icons or unrelated 3D pipeline, commit to Git, or ship unrelated files. | This cut touches only changed source/docs/tests under `mathillustrator/`. Existing 3D rendering limitations, exact General Intersection tangencies and Locus continuity remain queued for dedicated cuts. |
 
 **Second-order fix:** a transformed-copy label previously anchored to an average of its *source* references instead of the resulting image; calculate the anchor from the actual transformed path, including circle inversions. Preserve legacy document semantics. On visually discontinuous inversion images, the renderer/export now emits separate SVG polylines rather than connecting a missing point across a pole.
+
+
+## Round 51C — User feedback, canvas navigation, labels and subtle Geometry compatibility (2026-11-14)
+
+The user reports that Round 51's object double-click navigation did **not** work reliably in practice: single-click in Move must select without navigation; **two real successive clicks on the same visible object** must reveal/focus the matching row in left-side Objects, even when a search filter excludes it. Never rely solely on the DOM `dblclick` target after the SVG redraw, which can replace the target element. Exclude a drag or two different objects from double-click detection; reset gesture history on tool switches and document restoration. Must test *real pointer sequences*, including point and curved objects.
+
+Object-list subtitles must be **ultra concise** (generally a short geometry name, not verbose construction prose). Every summary must have a meaningful full hover title. For two-circle and line-circle intersections, **never** show `?` or unexplained `+`/`−` branch signs, and never refer to unknown parents as if known. Display two distinguishable object names in their main title; use a short type subtitle, with actual defining names available on hover. Avoid ungrounded placeholder references anywhere user-facing.
+
+**All newly created label-capable objects**—Geometry points/shapes/curves, Text, Diagram nodes, Morphisms, and imported `tikz-cd` morphisms whether labelled or empty—must default to LaTeX. Their unique **Name** remains ordinary untypeset text. Legacy imported JSON explicitly set to Plain must remain Plain, and pre-format legacy labels without a mode must retain historical rendering unless the user opts in. Name and optional displayed label are independent. The LaTeX setting must not silently rewrite existing label text.
+
+In Settings → Show, put **Label placement** above Grid / Axes / Labels checkboxes. Tutorials are for end users: give steps and short examples, not release notes or developer QA remarks (like past icon, palette or input alignment changes). Preserve bilingual English/Chinese user guidance. Detailed implementation notes and test caveats belong in documentation, not the live tutorial.
+
+**Second-order Geometry audit:** account for old, still-rendered 2-point rectangle and 2-point ellipse representations when newer numerical construction tools call `r50SourceShape` for intersections, constrained points or circle inversion. Sampling must be consistent with the existing renderer, dynamically follow their original anchors, and fail conservatively for degenerate bounds. Keep backwards-compatible project JSON, no silent format rewrite.
+
+**Self-critique (mandatory at each cut):** name the precise defect reproduced, distinguish algorithmic checks from actual browser interactions and live-host verification, list uncovered edge cases openly, and avoid presenting palette-selection checks as exhaustive construction validation.

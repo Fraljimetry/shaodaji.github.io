@@ -36,3 +36,10 @@ test('Chinese UI dictionary is reversible; maths and user text stay untouched',(
  assert.equal(translated('Arrow label','en'),'Arrow label');
  assert.equal(translated('\\frac{a}{b}','zh'),'\\frac{a}{b}');
 });
+
+test('Round51C: imported unlabelled morphisms also default to LaTeX without changing source',()=>{
+ const project=importTikzCd('\\begin{tikzcd}\nA \\arrow[r] & B\n\\end{tikzcd}');
+ const morph=project.objects.find(o=>o.type==='morphism');
+ assert.ok(morph);assert.equal(morph.text,'');assert.equal(morph.textMode,'latex');
+ assert.ok(validateDoc(project));
+});
