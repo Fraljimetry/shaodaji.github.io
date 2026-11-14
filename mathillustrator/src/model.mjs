@@ -1,4 +1,4 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,polylineCrossings,r50SourceShape,r50Shape} from './geometry_round50.mjs?cut=round51c';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape} from './geometry_round50.mjs?cut=round51u';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round48';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round39';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -169,13 +169,13 @@ export function append(doc,obj){
  // only ambiguity when crossing conventions, with a single scene scan.
  if(doc.objects.some(o=>o.name===name||(!obj.name&&o.name.toLowerCase()===name.toLowerCase())))throw Error('Name already in use: '+name);
  doc.nextId++;
- const style={stroke:doc.settings.stroke,fill:doc.settings.fill,width:doc.settings.width,opacity:doc.settings.opacity};
+ const style={stroke:doc.settings.stroke,fill:doc.settings.fill,width:obj.type==='morphism'?1:doc.settings.width,opacity:doc.settings.opacity};
  if(POINT_LIKE.has(obj.type))style.pointSize=doc.settings.pointSize;
  const o={id,hidden:false,locked:false,style,...obj,name};
  if(POINT_LIKE.has(obj.type)&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
  else if(!POINT_LIKE.has(obj.type)&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
  if(['text','node','morphism'].includes(obj.type)&&o.textMode===undefined)o.textMode='latex';
- if(obj.type==='morphism'&&o.labelAvoid===undefined)o.labelAvoid=true;
+ if(obj.type==='morphism'){if(o.labelAvoid===undefined)o.labelAvoid=true;if(o.routing===undefined)o.routing='scene-crossings';if(o.labelDistance===undefined)o.labelDistance=10;}
  doc.objects.push(o);return o;
 }
 /** Actual editable segment objects for every side of a new free-vertex polygon.
@@ -388,11 +388,11 @@ export function createResolver(doc){
     if(obj.type==='triangleCenter')p=triangleCenter(obj.refs.map(r=>cache.get(r)),obj.centerKind||'centroid');
     if(obj.type==='pointOnObject'&&obj.refs?.length===1){
      const ref=objects.get(obj.refs[0]),r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circleGeometry(typeof o==='string'?objects.get(o):o,id=>cache.get(id)||null),points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
-     p=pointOnObject(ref,obj.parameter,r,r50SourceShape);
+     p=pointOnObject(ref,obj.parameter,r,r50SourceShape,obj.constraintMode);
     }
     if(obj.type==='generalIntersection'&&obj.refs?.length===2){
      const r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circleGeometry(typeof o==='string'?objects.get(o):o,id=>cache.get(id)||null),points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
-     const roots=polylineCrossings(r50SourceShape(objects.get(obj.refs[0]),r,96),r50SourceShape(objects.get(obj.refs[1]),r,96));
+     const roots=generalCrossings(objects.get(obj.refs[0]),objects.get(obj.refs[1]),r,160);
      p=roots[obj.rootIndex||0]||null;
     }
     if(obj.type==='perpendicularFoot'&&obj.refs?.length===2){
@@ -559,6 +559,7 @@ export function validateDoc(raw){
   if(!o.style||!HEX.test(o.style.stroke)||!HEX.test(o.style.fill)||!finite(o.style.width)||o.style.width<0.1||o.style.width>100||!finite(o.style.opacity)||o.style.opacity<0||o.style.opacity>1)throw Error('Invalid object style or color.');
   if(R50_TYPES.includes(o.type)){
    if(o.type==='pointOnObject'&&(!finite(o.parameter)||o.parameter<0||o.parameter>1))throw Error('Invalid constrained point parameter.');
+   if(o.type==='pointOnObject'&&o.constraintMode!==undefined&&o.constraintMode!=='angleRay')throw Error('Invalid constrained-point mode.');
    if(o.type==='transformCopy'&&(!TRANSFORM_MODES.includes(o.transform)||!finite(o.amount??0)||(o.transform==='dilate'&&Math.abs(o.amount)<1e-9)))throw Error('Invalid transformation parameters.');
    if(o.type==='triangleCenter'&&!CENTER_KINDS.includes(o.centerKind))throw Error('Invalid triangle center kind.');
    if(o.type==='generalIntersection'&&(!Number.isInteger(o.rootIndex)||o.rootIndex<0||o.rootIndex>31))throw Error('Invalid curve intersection branch.');

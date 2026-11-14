@@ -144,6 +144,22 @@ export function routeDiagramEdge(a,b,fromBox,toBox,nodeObstacles=[],mode='direct
  if(crossingAware&&bestCrossings>0)return {status:'crossing',points:chosen,crossings:bestCrossings};
  return {status:'routed',points:chosen};
 }
+/** Visually smooth automatic routes while preserving the bounded obstacle-search
+ * corridor. Corners are rounded within 6px of each vertex (10px clearance),
+ * so the displayed route never contains a sharp rectangular turn. */
+export function smoothRoutePath(points){
+ if(!Array.isArray(points)||points.length<2||!points.every(finitePoint))return '';
+ const fmt=p=>p.map(x=>x.toFixed(2)).join(' ');
+ let result='M'+fmt(points[0]);
+ for(let i=1;i<points.length-1;i++){
+  const prev=points[i-1],at=points[i],next=points[i+1];
+  const a=Math.hypot(at[0]-prev[0],at[1]-prev[1]),b=Math.hypot(next[0]-at[0],next[1]-at[1]);
+  if(a<1e-6||b<1e-6){result+='L'+fmt(at);continue;}
+  const r=Math.min(6,a/4,b/4),before=[at[0]+(prev[0]-at[0])*r/a,at[1]+(prev[1]-at[1])*r/a],after=[at[0]+(next[0]-at[0])*r/b,at[1]+(next[1]-at[1])*r/b];
+  result+='L'+fmt(before)+'Q'+fmt(at)+' '+fmt(after);
+ }
+ return result+'L'+fmt(points.at(-1));
+}
 export function pathData(points){
  return points.map((p,i)=>(i?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ');
 }
