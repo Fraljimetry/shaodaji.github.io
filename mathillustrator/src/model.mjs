@@ -1,3 +1,4 @@
+import {parseParametric,parseImplicit} from './plot_modes.mjs';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -46,12 +47,12 @@ export function derivedSidePoints(edge,owner,at){
 export const VERSION = 1;
 export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
-  General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
-  'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
-  'Research diagram': {grid:false,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
-  'Analysis / plots': {grid:true,snap:true,snapStep:0.5,correction:'gentle',plotQuality:'detailed',showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:4},
-  'Free illustration': {grid:false,snap:false,snapStep:0.5,correction:'off',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
-  'Commutative diagrams': {grid:false,snap:true,snapStep:1,correction:'off',plotQuality:'balanced',showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:1.6,pointSize:5},
+  General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Research diagram': {grid:false,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Analysis / plots': {grid:true,snap:true,snapStep:0.5,correction:'gentle',plotQuality:'detailed',plotBudget:80000,implicitGrid:12,showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:4},
+  'Free illustration': {grid:false,snap:false,snapStep:0.5,correction:'off',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
+  'Commutative diagrams': {grid:false,snap:true,snapStep:1,correction:'off',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:1.6,pointSize:5},
 };
 export const PRESET_MODULES = {
  General:{basic:true,construction:true,illustration:true,diagram:true},
@@ -61,7 +62,7 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','parametric','implicit','node','morphism'];
 const POINT_LIKE = new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection']);
 export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough']);
 const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
@@ -519,6 +520,14 @@ export function validateDoc(raw){
   if(o.edgeIndex!==undefined&&(o.type!=='segment'||!o.edgeOf||!Number.isInteger(o.edgeIndex)||o.edgeIndex<0||o.edgeIndex>99))throw Error('Invalid derived edge index.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
+ if(o.type==='parametric'){
+  if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Parametric curve requires x(u) and y(v).');
+  parseParametric(o.xExpr,o.yExpr);
+  if(!finite(o.tMin)||!finite(o.tMax)||o.tMin>=o.tMax||Math.abs(o.tMin)>1e6||Math.abs(o.tMax)>1e6)throw Error('Parameter range must be finite, ascending and within ±1,000,000.');
+ }
+ if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr);}
+ if(o.type!=='parametric'&&(o.xExpr!==undefined||o.yExpr!==undefined||o.tMin!==undefined||o.tMax!==undefined))throw Error('Unexpected parametric properties.');
+
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
   if(o.type==='morphism'&&(o.text.length>1000||!finite(o.bend??0)||Math.abs(o.bend)>5||o.refs[0]===o.refs[1]))throw Error('Invalid morphism label or bend.');
   if(o.arrowStyle!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','hook','hook-dashed','twohead','tail'].includes(o.arrowStyle)))throw Error('Invalid diagram arrow style.');
@@ -545,6 +554,10 @@ export function validateDoc(raw){
  if(d.settings.freehandClose===undefined)d.settings.freehandClose='open';
  if(!['open','near','always'].includes(d.settings.freehandClose))throw Error('Invalid free curve closure.');
  if(d.settings.plotQuality===undefined)d.settings.plotQuality='balanced';
+ if(d.settings.plotBudget===undefined)d.settings.plotBudget=80000;
+ if(![20000,40000,80000].includes(d.settings.plotBudget))throw Error('Plot evaluation budget must be 20k, 40k or 80k.');
+ if(d.settings.implicitGrid===undefined)d.settings.implicitGrid=12;
+ if(!Number.isInteger(d.settings.implicitGrid)||d.settings.implicitGrid<6||d.settings.implicitGrid>24)throw Error('Implicit plot grid must be 6–24 px.');
  if(!['fast','balanced','detailed'].includes(d.settings.plotQuality))throw Error('Plot detail must be Fast, Balanced or Detailed.');
  if(d.settings.polygonSides===undefined)d.settings.polygonSides=6;
  if(!Number.isInteger(d.settings.polygonSides)||d.settings.polygonSides<3||d.settings.polygonSides>100)throw Error('Default regular polygon sides must be 3–100.');

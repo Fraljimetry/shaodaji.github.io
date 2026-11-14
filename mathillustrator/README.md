@@ -56,3 +56,8 @@ See [the current verification report](docs/quality/TEST_REPORT_CURRENT.md) for e
 ### Product requirements (single living register)
 
 See [`docs/planning/USER_REQUIREMENTS.md`](docs/planning/USER_REQUIREMENTS.md) for the full, maintained user requirement inventory, delivery status and future acceptance gates.
+
+
+### Round 36: bounded 2D plot modes
+
+In Construction input, choose Function (`sin(x)`), Parametric (x=`cos(u)`, y=`sin(v)`, with shared u=v parameter range editable in Properties), or Implicit (`x^2+y^2=1`; omitted equals sign means zero). These are locally evaluated numerical paths with configurable plot detail/budget/grid. Complex singular/isolated zero contour topology is not certified. For accurate editing, retain JSON; SVG/raster export fails closed on plot-limit warnings. The pre-existing command language is still accepted in Function mode. Technical constraints and verification appear in `docs/planning/USER_REQUIREMENTS.md` and `docs/quality/TEST_REPORT_CURRENT.md`.

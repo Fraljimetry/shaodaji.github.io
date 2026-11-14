@@ -476,3 +476,16 @@ html[data-theme=dark] #export-open:hover:not(:disabled){background:#2b659d;borde
 
 /* Round 35: measurements are live, read-only values; not editable numeric inputs. */
 .properties .field .measurement-value{display:block;flex:0 1 53%;max-width:53%;min-width:0;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--subtle);color:var(--ink);text-align:left;font-variant-numeric:tabular-nums;font-size:12px;user-select:text}
+
+/* Round 36: tighter but symmetric five-column swatches (previously full-bleed). */
+.style-controls-grid .color-swatches,.properties .style-controls-grid .color-swatches{
+ grid-template-columns:repeat(5,20px);justify-content:space-between;column-gap:4px;
+ width:calc(100% - 12px);max-width:156px;margin-left:auto;margin-right:auto;
+}
+/* Compact plot mode aligned to Construction input label, not a new toolbar row. */
+.command-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.command-heading label{margin:0;white-space:nowrap}
+.command-heading select{font-size:11px;max-width:54%;height:28px;padding:3px 5px}
+#plot-inputs{display:flex;gap:4px;flex:1;min-width:0}
+#command-form #plot-inputs input{flex:1;min-width:0;width:100%;font-size:12px}
+#command-y[hidden]{display:none}

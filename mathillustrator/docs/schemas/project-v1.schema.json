@@ -239,6 +239,8 @@
           "maximum": 4,
           "description": "Optional v1; defaults to 2. PNG/JPEG/WebP pixel-resolution multiplier (not calibrated DPI)."
         },
+        "plotBudget": {"enum":[20000,40000,80000]},
+        "implicitGrid": {"type":"integer","minimum":6,"maximum":24},
         "plotQuality": {
           "enum": [
             "fast",
@@ -332,6 +334,8 @@
             "freehand",
             "text",
             "function",
+            "parametric",
+            "implicit",
             "node",
             "morphism",
             "regularPolygon",
@@ -407,8 +411,12 @@
         "expr": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 400
+          "maxLength": 801
         },
+        "xExpr": {"type":"string","minLength":1,"maxLength":400},
+        "yExpr": {"type":"string","minLength":1,"maxLength":400},
+        "tMin": {"type":"number","minimum":-1000000,"maximum":1000000},
+        "tMax": {"type":"number","minimum":-1000000,"maximum":1000000},
         "bend": {
           "type": "number",
           "minimum": -5,
@@ -934,15 +942,15 @@
           "if": {
             "properties": {
               "type": {
-                "const": "function"
+                "enum": ["function","implicit"]
               }
             }
           },
-          "then": {
-            "required": [
-              "expr"
-            ]
-          }
+          "then": {"required": ["expr"]}
+        },
+        {
+          "if": {"properties": {"type": {"const":"parametric"}}},
+          "then": {"required": ["xExpr","yExpr","tMin","tMax"]}
         },
         {
           "if": {

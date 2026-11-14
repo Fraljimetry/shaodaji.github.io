@@ -1,9 +1,10 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round35';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round36';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round35';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
+import {parseParametric,parseImplicit,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round29';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
@@ -215,6 +216,8 @@ function screenPoints(o){const p=points(doc,o);return p.every(Boolean)?p.map(pro
 function desc(o,nameById=null){if(o.type==='point')return `(${o.xy.map(formatCoordinate).join(', ')})`;
  if(o.type==='midpoint')return `Midpoint(${o.refs?.map(id=>nameById?.get(id)||get(doc,id)?.name||'?').join(', ')})`;
  if(o.type==='function')return `y = ${o.expr}`;
+ if(o.type==='parametric')return `x(u) = ${o.xExpr}; y(v) = ${o.yExpr}, u=v ∈ [${o.tMin}, ${o.tMax}]`;
+ if(o.type==='implicit')return o.expr.includes('=')?o.expr:`${o.expr} = 0`;
  if(o.type==='circleThrough3')return 'circle through 3 points';
  if(o.type==='perpBisector')return 'perpendicular bisector';
  if(o.type==='parallelThrough')return 'parallel to '+(nameById?.get(o.refs?.[1])||'line');
@@ -310,6 +313,8 @@ function geometryLabelAnchor(o,resolver){
  if(o.type==='function'){
   try{const y=parseExpression(o.expr)(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
  }
+ if(o.type==='parametric'){try{return project(parseParametric(o.xExpr,o.yExpr)((o.tMin+o.tMax)/2));}catch{return null;}}
+ if(o.type==='implicit')return null;
  if(o.type==='freehand')return o.path?.length?project(o.path[Math.floor(o.path.length/2)]):null;
  if(['parallelThrough','perpendicularThrough'].includes(o.type)){
   const line=resolver.line(o);return line?project(line.a):null;
@@ -459,10 +464,13 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
     }
    }
   }
- }else if(o.type==='function'){
-  const key=JSON.stringify([o.expr,doc.settings.plotQuality,view.cx,view.cy,view.scale,size.w,size.h]);
+ }else if(['function','parametric','implicit'].includes(o.type)){
+  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.tMin,o.tMax,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
   const path=plotCache.get(key,()=>{
-   const f=parseExpression(o.expr),plot=sampleExplicitPlot(f,px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,{quality:doc.settings.plotQuality});
+   const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
+   const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
+    o.type==='parametric'?sampleParametricPlot(parseParametric(o.xExpr,o.yExpr),o.tMin,o.tMax,project,options):
+    sampleImplicitPlot(parseImplicit(o.expr),px=>unproject(px,0)[0],py=>unproject(0,py)[1],size.w,size.h,{...options,cellPx:doc.settings.implicitGrid??12});
    if(plot.limited){limitedPlotKeys.add(key);while(limitedPlotKeys.size>32)limitedPlotKeys.delete(limitedPlotKeys.values().next().value);}
    else limitedPlotKeys.delete(key);
    return plotPath(plot.segments);
@@ -472,7 +480,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
 
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');svg.append(item);
- if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','bezier','angle','morphism'].includes(o.type)){
+ if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','bezier','angle','morphism'].includes(o.type)){
   const path=item.tagName.toLowerCase()==='g'?item.querySelector('path'):item;
   if(path){const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
  }
@@ -730,7 +738,10 @@ function renderListWindow(){
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
   const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
-  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'⇀',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';row.append(glyph);
+  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'⟷',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'⇀',perpBisector:'⟂',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
+ if(o.type==='polyline'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M2 19L9 3L15 18L22 4"/></svg>'); }
+ if(o.type==='circleIntersection'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="6" cy="17" r="1.7" fill="currentColor"/><circle cx="18" cy="7" r="1.7" fill="currentColor"/></svg>'); }
+ row.append(glyph);
   const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;const small=document.createElement('small');small.textContent=desc(o);label.append(strong,small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
@@ -869,7 +880,14 @@ function renderProperties(){
   field(root,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
   field(root,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
  }
- if(o.type==='function')field(root,'y(x) =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
+ if(o.type==='function')field(root,'y =',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
+ if(o.type==='parametric'){
+  field(root,'x(u) =',o.xExpr,'text',v=>edit(live=>{parseParametric(v,live.yExpr);live.xExpr=v;}));
+  field(root,'y(v) =',o.yExpr,'text',v=>edit(live=>{parseParametric(live.xExpr,v);live.yExpr=v;}));
+  field(root,'Parameter start',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
+  field(root,'Parameter end',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
+ }
+ if(o.type==='implicit')field(root,'F(x, y) = 0',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  if(o.type==='segment'||o.type==='angle'){
   const p=createResolver(doc).points(o);let measured=null;
@@ -955,7 +973,7 @@ function syncGeometryVisibility(){
  if(only&&document.querySelector(`[data-tool-choice="${tool}"]`)?.hidden)selectTool('select');
 }
 function syncSettings(){
- for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
  $('snap').checked=gridSnapOverride??doc.settings.snap;
@@ -980,10 +998,10 @@ function setupSettings(){
 
  const preset=$('preset');for(const name of [...Object.keys(PRESETS),'Custom']){const option=document.createElement('option');option.value=name;option.textContent=name;if(name==='Custom')option.disabled=true;preset.append(option);}
  preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.snapObjects=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='avoid';});};
- for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
+ for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   $(id).onchange=()=>update(()=>{
    const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
-   const value=input.type==='checkbox'?input.checked:(input.type==='number'||k==='exportScale')?Number(input.value):input.value;
+   const value=input.type==='checkbox'?input.checked:(input.type==='number'||['exportScale','plotBudget'].includes(k))?Number(input.value):input.value;
    if(input.type==='number'&&!finite(value))throw Error('Value must be finite.');
    if(k==='pointSize'&&value!==doc.settings.pointSize)preserveInheritedPointSizes(doc);
    doc.settings[k]=value;
@@ -2024,7 +2042,30 @@ function initialise(){
  $('retry-autosave').onclick=()=>{if(storageConflict){saveStatus('Autosave paused · resolve conflict first');return;}
   if(!dirty){saveStatus('No unsaved local changes');return;}clearTimeout(saveTimer);persistNow();};
  $('object-search').oninput=()=>renderList({resetScroll:true});
- $('command-form').onsubmit=e=>{e.preventDefault();const input=$('command'),value=input.value;const success=update(()=>selected=command(doc,value).id);if(success){input.value='';selectTool('select');}};
+ const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode');
+ function syncPlotMode(){
+  const mode=plotMode.value;plotY.hidden=mode!=='parametric';
+  plotInput.setAttribute('aria-label',mode==='parametric'?'Parametric x(u)':mode==='implicit'?'Implicit equation':'Function or construction command');
+  plotInput.placeholder=mode==='parametric'?'cos(u)':mode==='implicit'?'x^2 + y^2 = 1':'sin(x)';
+  plotY.placeholder='sin(v)';
+  // An empty input stays empty: placeholders demonstrate the syntax; they are not saved data.
+ }
+ plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});syncPlotMode();
+ $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
+  const success=update(()=>{
+   let curve;
+   if(mode==='parametric'){parseParametric(value,y);curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,tMin:0,tMax:2*Math.PI});}
+   else if(mode==='implicit'){parseImplicit(value);curve=append(doc,{type:'implicit',expr:value});}
+   else{
+    // Preserve the complete existing command grammar in Function mode.
+    const construction=/^(?:[A-Za-z][A-Za-z0-9_]*\s*=\s*\(|[A-Za-z][A-Za-z0-9_]*\s*\(x\)\s*=|(?:Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|Midpoint|Parallel|Perpendicular|Intersect|RegularPolygon|Morphism)\s*\()/i;
+    if(construction.test(value))curve=command(doc,value);
+    else {const expr=value.replace(/^y\s*=\s*/i,'');parseExpression(expr);curve=append(doc,{type:'function',expr});}
+   }
+   selected=curve.id;
+  });
+  if(success){plotInput.value='';plotY.value='';selectTool('select');}
+ };
  $('new').onclick=()=>{if(!window.confirm('Start a new illustration? Download the current project first if needed.'))return;update(()=>{doc=newDoc();selected=null;view={cx:0,cy:0,scale:48};});};
  $('open').onclick=()=>$('open-file').click();$('open-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12e6)throw Error('Project JSON exceeds 12 MB safety limit.');const readingRevision=documentRevision,readingGeneration=documentGeneration;const imported=validateDoc(JSON.parse(await file.text()));if(readingRevision!==documentRevision||readingGeneration!==documentGeneration)throw Error('The current project changed while reading this file. Import canceled to protect newer edits.');if(!window.confirm('Replace the current illustration with this JSON project?'))return;update(()=>{doc=imported;selected=null;});notice('Project opened.');}catch(err){notice('Open failed: '+err.message);}finally{e.target.value='';}};
  $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),'mathillustrator.json');
