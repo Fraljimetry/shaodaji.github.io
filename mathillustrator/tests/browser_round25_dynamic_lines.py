@@ -50,7 +50,7 @@ def run():
    assert len(json.loads(download(page,'Save').read_text())['objects'])==before+2
    # EN -> ZH leaves all tool groups and derived points accessible.
    page.locator('#ui-language').select_option('zh')
-   assert page.get_by_role('button',name='交点').count()==1
+   assert page.get_by_role('button',name='交点',exact=True).count()==1
    page.locator('#ui-language').select_option('en')
    # Unsupported TikZ must be explicitly disabled, while SVG remains available.
    page.locator('#export-open').click();assert page.get_by_role('button',name='TikZ / PGF').is_disabled()

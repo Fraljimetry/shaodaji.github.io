@@ -86,7 +86,7 @@ export function worldBounds(doc,resolver){
    const node=resolver.object(id);
    return !node||node.hidden||node.style?.opacity===0;
   }))continue;
-  if(['point','midpoint','intersection','node'].includes(o.type))put(resolver.at(o.id));
+  if(['point','midpoint','intersection','circleIntersection','node'].includes(o.type))put(resolver.at(o.id));
   else if(o.type==='text')put(o.xy);
   else if(o.type==='freehand')for(const p of o.path)put(p);
   else if(o.refs){const p=resolver.points(o);for(const x of p)put(x);
@@ -176,7 +176,7 @@ export function fitSceneView(doc,resolver,size){
    const b=nodeBoxForFit(o.text,o.fontSize||17);
    left=Math.max(left,b.width/2);right=Math.max(right,b.width/2);
    top=Math.max(top,b.height/2);bottom=Math.max(bottom,b.height/2);
-  }else if(['point','midpoint','intersection'].includes(o.type)){
+  }else if(['point','midpoint','intersection','circleIntersection'].includes(o.type)){
    const r=o.style.pointSize??doc.settings.pointSize;
    left=Math.max(left,r);right=Math.max(right,r);top=Math.max(top,r);bottom=Math.max(bottom,r);
    if(doc.settings.showLabels){right=Math.max(right,10+String(o.name).length*7);top=Math.max(top,22);}
@@ -197,7 +197,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round25';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round26';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -233,9 +233,9 @@ export function circleOutsideViewport(center,radius,width,height,margin=0){
 }
 
 /** Decide free-stroke closure in screen pixels without mutating pen samples.
- * A near-endpoint loop becomes a corner unless its entering/leaving tangents
- * are almost parallel.  Invalid / abbreviated strokes always remain open.
- * Rendering and export must honor the same joinStyle.
+ * The historical corner/smooth metadata remains stable in saved documents;
+ * the freehand renderer now aggressively blends both seam sides regardless
+ * of that legacy flag. Invalid / abbreviated strokes stay open.
  */
 export function closeFreehandStroke(path,mode='near',scale=50){
  const open={path,closed:false};
@@ -261,6 +261,67 @@ export function closeFreehandStroke(path,mode='near',scale=50){
  const start=direction(true),end=direction(false);
  const tangent=gap<=18&&start&&end&&start[0]*end[0]+start[1]*end[1]>=Math.cos(Math.PI/9);
  return {path,closed:true,joinStyle:tangent?'smooth':'corner'};
+}
+
+/** Render freehand closed seams using a locally low-passed *periodic* curve.
+ * SmoothCurveSvg's old corner branch inserts a cubic only between the last and
+ * first stored points; it does not repair the two incoming tangents and can
+ * leave the conspicuous wedge users see at closure. Instead, work in screen
+ * coordinates, sample by arc length (independent of pen event rate), blur a
+ * broad neighborhood on BOTH sides of the join, then use periodic Catmull-Rom
+ * cubics. No author samples are modified; preview, scene, and SVG export share
+ * this exact renderer. Open strokes retain the previous behavior.
+ * Bounded at 4096 samples and 3-sigma local neighborhoods.
+ */
+export function freehandCurveSvg(points,closed=false){
+ if(!closed)return smoothCurveSvg(points,false);
+ if(!Array.isArray(points)||points.length<4)return smoothCurveSvg(points,closed);
+ const p=points.filter(q=>Array.isArray(q)&&q.length===2&&q.every(Number.isFinite));
+ if(p.length<4)return smoothCurveSvg(p,closed);
+ if(Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-8)p.pop();
+ const n=p.length;
+ if(n<3)return smoothCurveSvg(p,true);
+ const lengths=[0];
+ for(let i=0;i<n;i++){
+  const a=p[i],b=p[(i+1)%n];
+  lengths.push(lengths.at(-1)+Math.hypot(a[0]-b[0],a[1]-b[1]));
+ }
+ const perimeter=lengths.at(-1),gap=lengths.at(-1)-lengths.at(-2);
+ if(!Number.isFinite(perimeter)||perimeter<9)return smoothCurveSvg(p,true);
+ const count=Math.min(4096,Math.max(12,Math.ceil(perimeter/3.2)));
+ const spacing=perimeter/count,sampled=[];
+ let segment=0;
+ for(let i=0;i<count;i++){
+  const distance=i*spacing;
+  while(segment<n-1&&lengths[segment+1]<distance)segment++;
+  const a=p[segment],b=p[(segment+1)%n];
+  const span=lengths[segment+1]-lengths[segment];
+  const t=span>1e-10?(distance-lengths[segment])/span:0;
+  sampled.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);
+ }
+ // Wide enough to eliminate the hook rather than merely rounding its tip.
+ // Constrain the window on tiny shapes so the whole figure is not erased.
+ const sigma=Math.min(34,Math.max(8,perimeter*.035));
+ const window=Math.min(130,perimeter*.22);
+ const middle=(perimeter-gap/2)%perimeter;
+ const radius=Math.min(Math.floor(count/2),Math.ceil(3*sigma/spacing));
+ const weights=Array.from({length:radius+1},(_,i)=>Math.exp(-.5*(i*spacing/sigma)**2));
+ const distanceToSeam=s=>{
+  const x=Math.abs(s-middle);return Math.min(x,perimeter-x);
+ };
+ const result=sampled.map((point,i)=>{
+  const distance=distanceToSeam(i*spacing);
+  if(distance>=window)return point;
+  let x=0,y=0,total=0;
+  for(let k=-radius;k<=radius;k++){
+   const q=sampled[(i+k+count)%count],weight=weights[Math.abs(k)];
+   x+=q[0]*weight;y+=q[1]*weight;total+=weight;
+  }
+  const u=Math.max(0,Math.min(1,(distance-window*.25)/(window*.75)));
+  const fade=1-(u*u*(3-2*u));
+  return [point[0]*(1-fade)+x/total*fade,point[1]*(1-fade)+y/total*fade];
+ });
+ return smoothCurveSvg(result,true);
 }
 
 /** Magnetic free-curve endpoint attraction (screen-space tolerance).
@@ -290,7 +351,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
  };
  for(const o of objects){
   if(!o||o.hidden||o.style?.opacity===0)continue;
-  if(['point','midpoint','intersection'].includes(o.type)){
+  if(['point','midpoint','intersection','circleIntersection'].includes(o.type)){
    offer(resolver.at?.(o.id),o,2);continue;
   }
   if(['text','node'].includes(o.type)){offer(o.xy,o,1);continue;}

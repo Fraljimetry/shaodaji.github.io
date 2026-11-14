@@ -99,7 +99,7 @@
           "type": "number",
           "minimum": 1,
           "maximum": 100,
-          "description": "Optional per-point radius in CSS px; valid only for point/midpoint/intersection objects. Older v1 objects may omit it; while untouched they display the current legacy pointSize default. When the user changes the new-object point-size default, MathIllustrator first pins those existing objects to their prior displayed radius using this optional field, preserving appearance."
+          "description": "Optional per-point radius in CSS px; valid only for point/midpoint/intersection/circleIntersection objects. Older v1 objects may omit it; while untouched they display the current legacy pointSize default. When the user changes the new-object point-size default, MathIllustrator first pins those existing objects to their prior displayed radius using this optional field, preserving appearance."
         }
       }
     },
@@ -340,7 +340,8 @@
             "spline",
             "parallelThrough",
             "perpendicularThrough",
-            "intersection"
+            "intersection",
+            "circleIntersection"
           ]
         },
         "style": {
@@ -355,6 +356,7 @@
         "xy": {
           "$ref": "#/$defs/xy"
         },
+        "branch": {"type":"integer","enum":[-1,1],"description":"Signed root along the oriented straight object for dynamic line-circle intersections."},
         "refs": {
           "type": "array",
           "items": {
@@ -362,7 +364,7 @@
             "pattern": "^o[1-9][0-9]*$"
           },
           "maxItems": 2000,
-          "description": "Existing v1 point-anchored objects reference points/midpoints/intersections. Round25 parallelThrough/perpendicularThrough require [point reference, straight-line object reference]; intersection requires [straight object reference, straight object reference]. Straight sources include segment, arrow, line, ray, perpBisector and the new through-point lines. References are stable IDs, validated for target type, acyclicity and live geometry in the model."
+          "description": "Existing v1 point-anchored objects reference points/midpoints/intersections. Round25 parallelThrough/perpendicularThrough require [point reference, straight-line object reference]; intersection requires two straight objects. Round26 circleIntersection requires [straight object reference, circle reference] and signed branch ±1. Straight sources include segment, arrow, line, ray, perpBisector and the new through-point lines. References are stable IDs, validated for target type, acyclicity and live geometry in the model."
         },
         "path": {
           "type": "array",
@@ -556,6 +558,10 @@
               "text"
             ]
           }
+        },
+        {
+          "if": {"properties":{"type":{"const":"circleIntersection"}}},
+          "then": {"required":["refs","branch"],"properties":{"refs":{"type":"array","minItems":2,"maxItems":2},"branch":{"enum":[-1,1]}}}
         },
         {
           "if": {
