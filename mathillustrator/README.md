@@ -9,6 +9,7 @@ MathIllustrator is a local-first, static-browser editor at `/mathillustrator/`. 
 - **Real locally typeset LaTeX mathematics** in new diagram nodes and arrow labels, plus optional point labels and other text objects. MathJax glyphs become SVG paths, not plain-text TeX. Existing JSON labels with no `textMode` retain their original plain-text appearance.
 - English/Chinese interface with a reusable translation module (**partial coverage**: some runtime warnings, prompts and accessibility copy remain English). Ordinary text objects have editable font family/size; MathJax mathematical fonts remain fixed.
 - Settings, collapsible/reorderable right-panel tool sections and four independently rearrangeable Geometry categories, resizable desktop sidebars, a resizable docked or freely movable floating Properties inspector, Recently Deleted, automatic Point → Move, and locally stored interface preferences.
+- **3D view:** world-fixed stronger diffuse multicolor lighting, 5×2 centered square swatches, editable 3D vector line width, inline 2×2 parametric bounds, and dedicated Fast 3D orbit. CPU/SVG limitations still apply.
 - Editable native JSON projects, SVG, PNG, WebP and conditional JPEG/TikZ/semantic `tikz-cd` exports. Representations that cannot preserve the current scene are explicitly refused/disabled rather than silently simplified.
 
 Enter `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` in the construction box, or use the diagram tools to create a node with label `\\frac{A_1}{B_2}`. Consult the concise [user guide](tutorial.html) for usage and the [live feature catalog](docs/planning/features.json) for current limits.
@@ -17,7 +18,7 @@ Enter `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` in the construction box, or use the d
 
 ## Install a changed-files-only overlay
 
-Extract the supplied ZIP **at the website repository root**. It must preserve `mathillustrator/...` paths. Overlays do not replace unrelated MathReader files or root-site navigation. The latest overlay requires the existing verified Cut 25 site plus earlier maintenance/UI overlay(s); do not apply an older ZIP afterward. In particular, Cuts 07 and 11 are already represented in the verified cumulative site and must not be reinstalled.
+Extract the supplied ZIP **at the website repository root**. It must preserve `mathillustrator/...` paths. Overlays do not replace unrelated MathReader files or root-site navigation. The Round 48 overlay requires the verified Round 47 tree (or the full preceding overlay chain); do not apply an older ZIP afterward. In particular, Cuts 07 and 11 are already represented in the verified cumulative site and must not be reinstalled.
 
 ## Organized project structure
 

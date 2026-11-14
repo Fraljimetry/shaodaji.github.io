@@ -75,7 +75,7 @@ export function validate3D(scene){
   if(plot.locked!==undefined&&typeof plot.locked!=='boolean')throw Error('Invalid 3D lock state.');
   if(plot.colorRange!==undefined&&typeof plot.colorRange!=='boolean')throw Error('Invalid 3D color range flag.');
   if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!['phase-modulus','phase','contours','solid'].includes(plot.colorMode)))throw Error('Invalid 3D complex coloring options.');
-  if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'))throw Error('3D vector density must be 3–12.');
+  if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'||(plot.lineWidth!==undefined&&(!ok(plot.lineWidth)||plot.lineWidth<.1||plot.lineWidth>12))))throw Error('3D vector density must be 3–12 and line width 0.1–12.');
   parse3D(plot);
  }
  if(scene.nextId<=highest)throw Error('Invalid next 3D ID.');
@@ -86,7 +86,7 @@ export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
  const id=scene.nextId++,[a='',b='',c='']=inputs;
  const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false,locked:false,colorRange:false};
  if(kind==='parametric3d')Object.assign(plot,{uMin:0,uMax:2*Math.PI,vMin:0,vMax:2*Math.PI});
- if(kind==='vector3d')Object.assign(plot,{density:5,normalized:true});
+ if(kind==='vector3d')Object.assign(plot,{density:5,normalized:true,lineWidth:1.5});
  if(kind==='domain3d'){
   Object.assign(plot,{heightMode:'modulus',colorMode:'phase-modulus'});
   // Choose a finite initial z range from the complex function, rather than
@@ -370,7 +370,7 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
    const length=Math.hypot(...normal),light=length?Math.abs((.38*normal[0]+.44*normal[1]+.81*normal[2])/length):0;
    // Stable world-anchored illumination: orbit changes view, NOT surface luminance.
    // No order-, orientation- or camera-dependent brightness jumps on two-sided faces.
-   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.48+.52*light:1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
+   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.26+.74*Math.pow(light,.82):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
    if((++count&63)===0)yield;
   }
   const magnitudes=plot.colorRange?mesh.lines.map(entry=>entry.magnitude).filter(Number.isFinite):[];
@@ -379,7 +379,7 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
    if(lines.length>=MAX_3D_LINES){limited=true;break;}
    const endpoints=segment.endpoints||segment, p=endpoints.map(camera.project);
    const fieldColor=plot.colorRange?rampColor(segment.magnitude,minimum,maximum):plot.color;
-   lines.push({start:p[0],end:p[1],depth:(p[0][2]+p[1][2])/2,color:fieldColor,opacity:opt.opacity*plot.opacity});
+   lines.push({start:p[0],end:p[1],depth:(p[0][2]+p[1][2])/2,color:fieldColor,opacity:opt.opacity*plot.opacity,width:plot.lineWidth??1.5});
    if((++count&63)===0)yield;
   }
   if(lines.length>=MAX_3D_LINES)limited=true;

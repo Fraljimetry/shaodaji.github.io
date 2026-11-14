@@ -1,4 +1,4 @@
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round47';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round48';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round39';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments

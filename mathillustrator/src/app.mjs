@@ -1,14 +1,14 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {reorderVisible,shiftVisible} from './object_order.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round47';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round48';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round48';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round47';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round48';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round47';
+import {localizeUI,translated} from './i18n.mjs?cut=round48';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round38';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
@@ -561,15 +561,16 @@ function face3DElement(face){
  const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
  const rgb=[1,3,5].map(i=>parseInt(face.color.slice(i,i+2),16));
  // Domain phase colors retain their identity while receiving subtle depth shading.
- const fill=(face.domainColoring||face.rangeColor)?`rgb(${rgb.map(v=>Math.round(v*(.82+.18*face.shade))).join(',')})`:
+ const fill=face.rangeColor?`rgb(${rgb.map(v=>Math.round(v*(.38+.62*face.shade))).join(',')})`:
+  face.domainColoring?`rgb(${rgb.map(v=>Math.round(v*(.74+.26*face.shade))).join(',')})`:
   `rgb(${rgb.map(v=>Math.round(v+(255-v)*(.1+.56*face.shade))).join(',')})`;
  return el('polygon',{points,fill,opacity:face.opacity,stroke:'none','pointer-events':'none'});
 }
 function line3DElements(field){
  const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
  if(len<.5)return [];
- const shaft=el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:field.color,'stroke-width':1.5,opacity:field.opacity,'pointer-events':'none'});
- const head=6,ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
+ const shaft=el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:field.color,'stroke-width':field.width??1.5,opacity:field.opacity,'pointer-events':'none'});
+ const head=6*Math.max(.7,Math.min(2,Math.sqrt((field.width??1.5)/1.5))),ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
  return [shaft,el('polygon',{points:points.map(p=>p.join(',')).join(' '),fill:field.color,opacity:field.opacity,'pointer-events':'none'})];
 }
 function append3DPrimitive(target,primitive){
@@ -1093,7 +1094,8 @@ function renderProperties3D(root){
  const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
  const rangeLabel=document.createElement('label');rangeLabel.className='check';const range=document.createElement('input');range.type='checkbox';range.checked=selectedPlot.colorRange===true;
  range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}solidPicker.disabled=range.checked||!solidAllowed;for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;};rangeLabel.append(range,document.createTextNode(' '+(selectedPlot.kind==='vector3d'?'Color range':'Multi-color')));right.append(rangeLabel);
- field(right,'Object opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
+ field(right,'Opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
+ if(selectedPlot.kind==='vector3d')field(right,'Line width',selectedPlot.lineWidth??1.5,'number',v=>edit(p=>{p.lineWidth=v;}),{min:.1,max:12,step:.5});
  localizeUI(root,uiPrefs.language);
 }
 function renderProperties(){

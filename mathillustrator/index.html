@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round47">
+  <link rel="stylesheet" href="./style.css?cut=round48">
 </head>
 <body>
   <header class="appbar">
@@ -106,7 +106,7 @@
         </section>
         <section class="controls"><h3>Interface</h3>
           <label class="field">Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option><option value="verdana">Verdana</option><option value="trebuchet">Trebuchet</option><option value="palatino">Palatino</option><option value="times">Times</option></select></label>
-          <div class="interface-check-grid"><label class="check"><input type="checkbox" id="scene3d-enable"> 3D plotting mode</label><label class="check settings-2d-only"><input type="checkbox" id="auto-pan" checked> Auto Pan / Move</label><label class="check"><input type="checkbox" id="auto-diagram-labels" checked> Auto-place arrow labels</label><label class="check"><input type="checkbox" id="tooltips" checked> Tooltips</label><label class="check settings-3d"><input type="checkbox" id="fast-3d-orbit" checked> Fast 3D orbit</label></div>
+          <div class="interface-check-grid"><label class="check"><input type="checkbox" id="scene3d-enable"> 3D plotting mode</label><label class="check settings-3d"><input type="checkbox" id="fast-3d-orbit" checked> Fast 3D orbit</label><label class="check settings-2d-only"><input type="checkbox" id="auto-pan" checked> Auto Pan / Move</label><label class="check"><input type="checkbox" id="auto-diagram-labels" checked> Auto-place arrow labels</label><label class="check"><input type="checkbox" id="tooltips" checked> Tooltips</label></div>
           
         </section>
         </div></section>
@@ -120,6 +120,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round47"></script>
+  <script type="module" src="./src/app.mjs?cut=round48"></script>
 </body>
 </html>
