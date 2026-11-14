@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round23">
+  <link rel="stylesheet" href="./style.css?cut=round24">
 </head>
 <body>
   <header class="appbar">
@@ -73,7 +73,7 @@
           </div>
           <div class="settings-subsection" role="group" aria-label="Show"><h4>Show</h4>
             <label class="check"><input id="grid" type="checkbox"> Grid</label>
-            <label class="check"><input id="axes" type="checkbox"> Axes</label><label class="check"><input id="labels" type="checkbox"> Point labels</label>
+            <label class="check"><input id="axes" type="checkbox"> Axes</label><label class="check"><input id="labels" type="checkbox"> Labels</label>
             <label class="field">Point label placement <select id="label-placement"><option value="standard">Standard</option><option value="avoid">Avoid overlap</option></select></label>
           </div>
           
@@ -89,12 +89,12 @@
           </div>
         </section>
         <section class="controls"><h3>Page & appearance</h3>
-          <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4</option><option value="letter">Letter</option></select></label>
+          <label class="field">Canvas <select id="page"><option value="infinite">Infinite</option><option value="a4">A4</option><option value="a3">A3</option><option value="a5">A5</option><option value="letter">Letter</option><option value="legal">Legal</option><option value="tabloid">Tabloid</option><option value="square">Square</option><option value="widescreen">16:9</option></select></label>
           <label class="field">Image bounds <select id="export-region"><option value="viewport">View</option><option value="page">Page</option></select></label><label class="check"><input id="export-guides" type="checkbox"> Grid/axes in export</label><label class="check"><input id="export-transparent" type="checkbox"> Transparent background</label><label class="field">Raster resolution <select id="export-scale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Theme <select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
           <label class="field">Background <input id="background" type="color"></label>
         </section>
         <section class="controls"><h3>Interface</h3>
-          <label class="field">Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option></select></label>
+          <label class="field">Font <select id="ui-font"><option value="system">System</option><option value="serif">Serif</option><option value="sans">Sans-serif</option><option value="mono">Monospace</option><option value="verdana">Verdana</option><option value="trebuchet">Trebuchet</option><option value="palatino">Palatino</option><option value="times">Times</option></select></label>
           <label class="check"><input type="checkbox" id="auto-pan" checked> Auto Pan / Move</label>
           
         </section>
@@ -109,6 +109,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>window.MathJax={svg:{fontCache:'local'},tex:{packages:['base','ams']},startup:{typeset:false}};</script>
   <script defer src="./vendor/mathjax-tex-svg.js"></script>
-  <script type="module" src="./src/app.mjs?cut=round23"></script>
+  <script type="module" src="./src/app.mjs?cut=round24"></script>
 </body>
 </html>

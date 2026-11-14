@@ -2,7 +2,7 @@
 export const VERSION = 1;
 export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
-  General: {grid:true,snap:true,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
+  General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#172b4d',fill:'#e6eef9',opacity:1,width:2,pointSize:5},
   'Research diagram': {grid:false,snap:true,snapStep:0.5,correction:'medium',plotQuality:'balanced',showAxes:false,stroke:'#263342',fill:'#d9e8f4',opacity:1,width:2,pointSize:5},
   'Analysis / plots': {grid:true,snap:true,snapStep:0.5,correction:'gentle',plotQuality:'detailed',showAxes:true,stroke:'#3761b8',fill:'#b6c9f9',opacity:1,width:2,pointSize:4},
@@ -57,7 +57,7 @@ export function xmlTextSafe(value){
  return true;
 }
 export function clone(x){return JSON.parse(JSON.stringify(x));}
-export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:false,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'standard',snapAnchors:true,snapObjects:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
+export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'standard',snapAnchors:true,snapObjects:true,polygonSides:6,modules:{...PRESET_MODULES.General}},objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return doc.objects.find(o=>o.id===id);}
@@ -247,7 +247,9 @@ export function validateDoc(raw){
   if(['text','node'].includes(o.type)){if(!xmlTextSafe(o.text))throw Error('Text contains characters illegal in SVG XML.');if(o.text.length>(o.type==='text'?2000:1000)||!finite(o.fontSize??18)||o.fontSize<5||o.fontSize>200)throw Error('Invalid text label.');}
   if(o.pointLabel!==undefined&&(!POINT_LIKE.has(o.type)||typeof o.pointLabel!=='string'||o.pointLabel.length>1000||!xmlTextSafe(o.pointLabel)))throw Error('Invalid point label text.');
   if(o.pointLabelMode!==undefined&&(!POINT_LIKE.has(o.type)||!['plain','latex'].includes(o.pointLabelMode)))throw Error('Invalid point label mode.');
-  if(o.fontFamily!==undefined&&(!['text','node','morphism'].includes(o.type)||!['Georgia, serif','Arial, sans-serif','Consolas, monospace'].includes(o.fontFamily)))throw Error('Invalid label font.');
+  if(o.displayLabel!==undefined&&(['point','midpoint','text','node','morphism'].includes(o.type)||typeof o.displayLabel!=='string'||o.displayLabel.length>1000||!xmlTextSafe(o.displayLabel)))throw Error('Invalid object display label.');
+  if(o.displayLabelMode!==undefined&&(['point','midpoint','text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.displayLabelMode)))throw Error('Invalid object display label format.');
+  if(o.fontFamily!==undefined&&(!['text','node','morphism'].includes(o.type)||!['Georgia, serif','Arial, sans-serif','Consolas, monospace','Verdana, sans-serif','Trebuchet MS, sans-serif','Palatino Linotype, serif','Times New Roman, serif'].includes(o.fontFamily)))throw Error('Invalid label font.');
   if(o.textMode!==undefined&&(!['text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.textMode)))throw Error('Invalid mathematical label mode.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
@@ -268,7 +270,7 @@ export function validateDoc(raw){
  if(!Number.isFinite(max)||d.nextId<=max)throw Error('Invalid nextId counter.');
  if(!HEX.test(d.settings.background)||!HEX.test(d.settings.stroke)||!HEX.test(d.settings.fill))throw Error('Invalid scene color.');
  if(!finite(d.settings.snapStep)||d.settings.snapStep<1e-6||d.settings.snapStep>1000)throw Error('Snap interval must be between 0.000001 and 1000.');
- if(!['infinite','a4','letter'].includes(d.settings.page)||!['off','gentle','medium','strong','ultra'].includes(d.settings.correction)||typeof d.settings.grid!=='boolean'||typeof d.settings.snap!=='boolean'||typeof d.settings.showAxes!=='boolean')throw Error('Invalid document settings.');
+ if(!['infinite','a3','a4','a5','letter','legal','tabloid','square','widescreen'].includes(d.settings.page)||!['off','gentle','medium','strong','ultra'].includes(d.settings.correction)||typeof d.settings.grid!=='boolean'||typeof d.settings.snap!=='boolean'||typeof d.settings.showAxes!=='boolean')throw Error('Invalid document settings.');
  if(!finite(d.settings.width)||d.settings.width<0.1||d.settings.width>100||!finite(d.settings.opacity)||d.settings.opacity<0||d.settings.opacity>1||!finite(d.settings.pointSize)||d.settings.pointSize<1||d.settings.pointSize>100)throw Error('Invalid drawing defaults.');
  // Optional v1 extensions are given defaults when opening older v1 projects.
  // Legacy naming defaults to camelCase; no existing object names are rewritten.

@@ -416,3 +416,14 @@ html[data-theme="dark"]{--accent:#81b8ec;--hover:#294967}
 .geometry-mode{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);padding:1px 2px 5px;cursor:pointer}
 .geometry-mode input{margin:0;width:14px;height:14px;flex:none}
 .tool[hidden]{display:none!important}
+
+/* Round 24 — exact compact appearance, native steppers on the left, responsive header. */
+.style-controls-grid .color-swatches,.properties .style-controls-grid .color-swatches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:100%;max-width:100%}
+.style-controls-grid .color-swatch,.properties .style-controls-grid .color-swatch{width:100%;min-width:0;min-height:20px;height:20px}
+/* Chromium positions the native number spin buttons at the start edge for RTL.
+   Value glyphs remain legible with explicit right alignment and numeric bidi. */
+input[type=number]{direction:rtl;text-align:right;font-variant-numeric:tabular-nums}
+.object-tools label{display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;line-height:1.2}
+.object-tools label input[type=checkbox]{margin:0;vertical-align:middle;flex:none}
+.header-actions #ui-language{box-sizing:border-box;height:33px;min-height:33px;line-height:20px;padding-top:4px;padding-bottom:4px;align-self:center;vertical-align:middle}
+@media(max-width:700px){.header-actions #ui-language{min-height:36px;height:36px}}

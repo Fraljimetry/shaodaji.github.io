@@ -169,7 +169,13 @@
           "enum": [
             "infinite",
             "a4",
-            "letter"
+            "a3",
+            "a5",
+            "letter",
+            "legal",
+            "tabloid",
+            "square",
+            "widescreen"
           ]
         },
         "background": {
@@ -467,9 +473,23 @@
           "enum": [
             "Georgia, serif",
             "Arial, sans-serif",
-            "Consolas, monospace"
+            "Consolas, monospace",
+            "Verdana, sans-serif",
+            "Trebuchet MS, sans-serif",
+            "Palatino Linotype, serif",
+            "Times New Roman, serif"
           ],
           "description": "Optional plain-text font; mathematical SVG uses its bundled mathematical glyphs."
+        },
+        "displayLabel": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional displayed label for geometric objects, separate from their stable semantic names."
+        },
+        "displayLabelMode": {
+          "type": "string",
+          "enum": ["plain", "latex"],
+          "description": "Optional mathematical label mode for geometric objects."
         },
         "pointLabel": {
           "type": "string",

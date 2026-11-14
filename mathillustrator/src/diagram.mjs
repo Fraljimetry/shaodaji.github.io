@@ -1,5 +1,5 @@
 /** Restricted, deterministic tikz-cd interchange. Never evaluates TeX. */
-import {newDoc, append, PRESETS} from './model.mjs?cut=round23';
+import {newDoc, append, PRESETS} from './model.mjs?cut=round24';
 const CELL_X=3.5,CELL_Y=2.4;
 function fail(msg){throw Error('tikz-cd: '+msg);}
 function splitTopLevel(input,separator){

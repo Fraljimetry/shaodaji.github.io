@@ -103,7 +103,8 @@ export function worldBounds(doc,resolver){
 }
 export function pageRect(size,page){
  if(page==='infinite')return null;
- const aspect=page==='a4'?297/210:11/8.5;
+ const aspect=({a3:420/297,a4:297/210,a5:210/148,letter:11/8.5,legal:14/8.5,tabloid:17/11,square:1,widescreen:16/9})[page];
+ if(!Number.isFinite(aspect))return null;
  let w=Math.min(size.w*0.84,size.h*0.84*aspect),h=w/aspect;
  return {x:(size.w-w)/2,y:(size.h-h)/2,width:w,height:h,aspect};
 }
@@ -196,7 +197,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round23';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round24';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
