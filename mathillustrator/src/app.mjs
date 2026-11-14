@@ -4,7 +4,7 @@ import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegac
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,PLOT3D_MODES} from './plot3d.mjs?cut=round40';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,PLOT3D_MODES} from './plot3d.mjs?cut=round41';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round40';
@@ -532,19 +532,33 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  // than here: subsequent arrow/node strokes could otherwise obscure them.
 
 }
+function draw3DBase(svg,result){
+ svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));
+ for(const [a,b] of result.cube)svg.append(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
+}
+function face3DElement(face){
+ const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
+ const rgb=[1,3,5].map(i=>parseInt(face.color.slice(i,i+2),16));
+ // Domain phase colors retain their identity while receiving subtle depth shading.
+ const fill=face.domainColoring?`rgb(${rgb.map(v=>Math.round(v*(.82+.18*face.shade))).join(',')})`:
+  `rgb(${rgb.map(v=>Math.round(v+(255-v)*(.1+.56*face.shade))).join(',')})`;
+ return el('polygon',{points,fill,opacity:face.opacity,stroke:'none','pointer-events':'none'});
+}
+function line3DElements(field){
+ const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+ if(len<.5)return [];
+ const shaft=el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:field.color,'stroke-width':1.5,opacity:field.opacity,'pointer-events':'none'});
+ const head=6,ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
+ return [shaft,el('polygon',{points:points.map(p=>p.join(',')).join(' '),fill:field.color,opacity:field.opacity,'pointer-events':'none'})];
+}
+function append3DPrimitive(target,primitive){
+ if(primitive.kind==='face')target.append(face3DElement(primitive.value));
+ else for(const child of line3DElements(primitive.value))target.append(child);
+}
 function draw3DScene(svg){
  const result=project3DScene(doc.scene3d,size.w,size.h);
- // CPU painter's algorithm, capped; no GPU or depth buffer is claimed.
- svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));
- function line(a,b,attrs={}){return el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],...attrs});}
- for(const [a,b] of result.cube)svg.append(line(a,b,{stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
- function shadedColor(hex,shade){const channels=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));return `rgb(${channels.map(c=>Math.round(c+(255-c)*(.1+.56*shade))).join(',')})`;}
- for(const face of result.faces){const path=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
-  svg.append(el('polygon',{points:path,fill:face.domainColoring?face.color:shadedColor(face.color,face.shade),opacity:face.opacity,stroke:'none','pointer-events':'none'}));}
- for(const field of result.lines){const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
-  if(len<.5)continue;svg.append(line(a,b,{stroke:field.color,'stroke-width':1.5,opacity:field.opacity,'pointer-events':'none'}));
-  const head=6,ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
-  svg.append(el('polygon',{points:points.map(p=>p.join(',')).join(' '),fill:field.color,opacity:field.opacity,'pointer-events':'none'}));}
+ draw3DBase(svg,result);
+ for(const primitive of result.primitives)append3DPrimitive(svg,primitive);
  plotLimitedInScene=result.limited;
  return result;
 }
@@ -711,7 +725,57 @@ function draw(svg,{exporting=false}={}){
   }
  }
 }
-function render(){if(frame){cancelAnimationFrame(frame);frame=0;}const start=performance.now(),svg=$('drawing');svg.replaceChildren();plotLimitedInScene=false;draw(svg);lastRender=performance.now()-start;$('render-info').textContent=`${in3D()?`${doc.scene3d?.plots.length||0} 3D plots`:`${doc.objects.length} objects`} · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`;}
+let sceneRenderEpoch=0,sceneRenderFrame=0,sceneRenderTask=null,sceneRenderPending=false;
+function cancelSceneRender(){
+ sceneRenderPending=false;
+ ++sceneRenderEpoch;
+ if(sceneRenderFrame){cancelAnimationFrame(sceneRenderFrame);sceneRenderFrame=0;}
+ if(sceneRenderTask){sceneRenderTask.cancel();sceneRenderTask=null;}
+}
+function render(){
+ if(frame){cancelAnimationFrame(frame);frame=0;}
+ cancelSceneRender();
+ const start=performance.now(),svg=$('drawing');plotLimitedInScene=false;
+ if(!in3D()){
+  svg.replaceChildren();draw(svg);lastRender=performance.now()-start;
+  $('render-info').textContent=`${doc.objects.length} objects · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`;
+  return;
+ }
+ // Keep the previous complete scene visible while building the next frame.
+ // A camera move, a new document, or a mode switch invalidates every pending
+ // sample and DOM batch. Exports always use the independent synchronous path.
+ const epoch=sceneRenderEpoch;
+ const snapshot=JSON.parse(JSON.stringify(doc.scene3d));
+ sceneRenderTask=create3DProjectionTask(snapshot,size.w,size.h);
+ sceneRenderPending=true;
+ $('render-info').textContent=`${snapshot.plots.length} 3D plots · rendering…`;
+ const paintResult=result=>{
+  if(epoch!==sceneRenderEpoch)return;
+  sceneRenderTask=null;
+  svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);
+  svg.replaceChildren();draw3DBase(svg,result);
+  plotLimitedInScene=result.limited;
+  let next=0;
+  const paint=()=>{
+   sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
+   const fragment=document.createDocumentFragment();
+   const end=Math.min(result.primitives.length,next+400);
+   for(;next<end;next++)append3DPrimitive(fragment,result.primitives[next]);
+   svg.append(fragment);
+   if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
+   else{sceneRenderPending=false;if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;$('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;}
+  };
+  paint();
+ };
+ const compute=()=>{
+  sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
+  try{const state=sceneRenderTask.step(7);
+   if(state.done)paintResult(state.result);
+   else sceneRenderFrame=requestAnimationFrame(compute);
+  }catch(e){sceneRenderTask=null;sceneRenderPending=false;svg.replaceChildren(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));$('render-info').textContent='3D rendering failed';notice('3D rendering failed: '+e.message);}
+ };
+ compute();
+}
 function scheduleRender(){if(!frame)frame=requestAnimationFrame(render);}
 function currentObject(o){return get(doc,o.id)===o;}
 // The object list is a fixed-height window. Thousands of objects should not
@@ -889,7 +953,7 @@ function renderProperties3D(root){
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'number',()=>true,{step:.1});values[key].onchange=()=>{};
  }
- const button=document.createElement('button');button.type='button';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,Number(node.value)]));});block.append(button);root.append(block);
+ const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,Number(node.value)]));});block.append(button);root.append(block);
  if(selectedPlot.kind==='domain3d'){
   const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
   for(const [key,label] of [['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;heightSelect.append(opt);}
@@ -1512,7 +1576,7 @@ function performConstructionTap(e,pt){
  }
 }
 function pointerMove(e){
- if(in3D()){if(cameraDrag?.pointerId===e.pointerId){const [x,y]=xyEvent(e);const o=doc.scene3d.options;o.yaw=Math.max(-180,Math.min(180,cameraDrag.yaw+(x-cameraDrag.x)*.32));o.pitch=Math.max(-89,Math.min(89,cameraDrag.pitch+(y-cameraDrag.y)*.28));scheduleRender();}return;}
+ if(in3D()){if(cameraDrag?.pointerId===e.pointerId){const [x,y]=xyEvent(e);const o=doc.scene3d.options;o.yaw=Math.max(-180,Math.min(180,cameraDrag.yaw-(x-cameraDrag.x)*.32));o.pitch=Math.max(-89,Math.min(89,cameraDrag.pitch+(y-cameraDrag.y)*.28));scheduleRender();}return;}
 
  if(e.pointerType==='touch') {
   if(touchBlocked)return;
@@ -1812,9 +1876,10 @@ function rasterSupported(type){
 }
 let exportBusy=false;
 function setupExport(){
- const opts=[['SVG','svg',!plotLimitedInScene],['PNG','png',!plotLimitedInScene&&rasterSupported('png')],['JPEG','jpeg',!plotLimitedInScene&&!doc.settings.exportTransparent&&rasterSupported('jpeg')],['WebP','webp',!plotLimitedInScene&&rasterSupported('webp')],['TikZ / PGF','tikz',!in3D()&&canTikz()],['tikz-cd (semantic)','tikzcd',!in3D()&&canExportTikzCd(doc)],['JSON project','json',true],['PDF','pdf',false],['Asymptote','asy',false],['GIF / video','animation',false]];
+ const ready=!plotLimitedInScene&&!sceneRenderPending;
+ const opts=[['SVG','svg',ready],['PNG','png',ready&&rasterSupported('png')],['JPEG','jpeg',ready&&!doc.settings.exportTransparent&&rasterSupported('jpeg')],['WebP','webp',ready&&rasterSupported('webp')],['TikZ / PGF','tikz',!in3D()&&canTikz()],['tikz-cd (semantic)','tikzcd',!in3D()&&canExportTikzCd(doc)],['JSON project','json',true],['PDF','pdf',false],['Asymptote','asy',false],['GIF / video','animation',false]];
  const root=$('export-options');root.replaceChildren();for(const [name,type,supported]of opts){
-  const b=document.createElement('button');b.textContent=name;b.disabled=!supported||exportBusy;b.title=supported?'Export current illustration':type==='jpeg'&&doc.settings.exportTransparent?'JPEG cannot preserve transparency; choose PNG, WebP or SVG.':'Not implemented or not representable in current scene';
+  const b=document.createElement('button');b.textContent=name;b.disabled=!supported||exportBusy;b.title=supported?'Export current illustration':sceneRenderPending&&['svg','png','jpeg','webp'].includes(type)?'Wait for 3D rendering to finish':type==='jpeg'&&doc.settings.exportTransparent?'JPEG cannot preserve transparency; choose PNG, WebP or SVG.':'Not implemented or not representable in current scene';
   b.onclick=async()=>{if(exportBusy)return;exportBusy=true;for(const other of root.querySelectorAll('button'))other.disabled=true;try{
     if(['svg','png','jpeg','webp'].includes(type))await exportImage(type);
     else if(type==='json')download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());

@@ -72,6 +72,9 @@ export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
 function finitePoint(p){return Array.isArray(p)&&p.length===3&&p.every(v=>ok(v)&&Math.abs(v)<1e6);}
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const minus=(a,b)=>a.map((x,i)=>x-b[i]);
+export const MAX_3D_EVALUATIONS=60000;
+export const MAX_3D_FACES=12000;
+export const MAX_3D_LINES=2400;
 function makeCamera(bounds,options,width,height){
  const yaw=options.yaw*Math.PI/180,pitch=options.pitch*Math.PI/180,cos=Math.cos(yaw),sin=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const center=['x','y','z'].map(axis=>(bounds[axis+'Min']+bounds[axis+'Max'])/2),span=['x','y','z'].map(axis=>(bounds[axis+'Max']-bounds[axis+'Min'])/2);
@@ -85,84 +88,183 @@ function makeCamera(bounds,options,width,height){
  return {project,turn};
 }
 function inBounds(p,b){return p.every((value,i)=>value>=b[['xMin','yMin','zMin'][i]]&&value<=b[['xMax','yMax','zMax'][i]]);}
-/** Generate bounded planar triangles, world-space curve segments, and vector strokes.
- * Candidate counts are capped and nonfinite cells never bridge discontinuities. */
-export function sample3DPlot(plot,detail){
- const fn=parse3D(plot),b=plot.bounds;const faces=[],lines=[],cap=18000;let evaluations=0,limited=false;
+// Clipping instead of dropping entire cells at a finite plot region boundary.
+// Operates on world-space geometry before camera projection, so exports and
+// interactive drawing agree and never invent geometry beyond the stated bounds.
+function clipTriangle(points,b){
+ if(points.every(p=>inBounds(p,b)))return [points];
+ let polygon=points;
+ for(const axis of ['x','y','z'])for(const min of [true,false]){
+  const dimension={x:0,y:1,z:2}[axis],edge=b[axis+(min?'Min':'Max')],sign=min?1:-1,next=[];
+  for(let i=0;i<polygon.length;i++){
+   const a=polygon[i],c=polygon[(i+1)%polygon.length],da=(a[dimension]-edge)*sign,dc=(c[dimension]-edge)*sign,insideA=da>=0,insideC=dc>=0;
+   if(insideA!==insideC){const t=da/(da-dc);next.push(a.map((v,j)=>v+(c[j]-v)*t));}
+   if(insideC)next.push(c);
+  }
+  polygon=next;if(polygon.length<3)return [];
+ }
+ const triangles=[];for(let i=1;i+1<polygon.length;i++)triangles.push([polygon[0],polygon[i],polygon[i+1]]);
+ return triangles;
+}
+function validTriangle(a,b,c){
+ const n=cross(minus(b,a),minus(c,a));return Number.isFinite(n[0])&&Math.hypot(...n)>1e-11;
+}
+/** Cooperative CPU sampler. Every iteration yields after bounded rows / layers.
+ * Consumers may abandon the generator at any point; partial meshes never enter
+ * the cache or exports. The synchronous public sampler drains the same work. */
+export function* sample3DPlotSteps(plot,detail){
+ const fn=parse3D(plot),b=plot.bounds,faces=[],lines=[],cap=18000;let evaluations=0,limited=false;
  const safeEval=(...args)=>{evaluations++;let value;try{value=fn(...args);}catch{return null;}return finitePoint(value)?value:null;};
- const pushTriangle=(a,c,d)=>{if(faces.length>=cap){limited=true;return;}if([a,c,d].every(finitePoint)&&[a,c,d].every(p=>inBounds(p,b))){
-  const face=[a,c,d];if(plot.kind==='domain3d'){
-   // The visible color follows the function phase, independent of the height mode.
-   const rgb=a.domainRGB;if(rgb)face.color='#'+rgb.slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('');
-  }faces.push(face);
- }};
+ const pushTriangle=(a,c,d)=>{
+  if(![a,c,d].every(finitePoint))return;
+  // Preserve per-face phase colors across any region-clipped subtriangles.
+  const rgb=plot.kind==='domain3d'?a.domainRGB:null;
+  const faceColor=rgb?'#'+rgb.slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join(''):null;
+  for(const vertices of clipTriangle([a,c,d],b)){
+   if(!validTriangle(...vertices))continue;
+   if(faces.length>=cap){limited=true;return;}
+   if(faceColor)vertices.color=faceColor;
+   faces.push(vertices);
+  }
+ };
  if(['surface3d','parametric3d','domain3d'].includes(plot.kind)){
   const n=Math.max(8,Math.min(44,detail)),vertices=[];
-  for(let j=0;j<=n;j++){const row=[];for(let i=0;i<=n;i++){
-   const x=plot.kind!=='parametric3d'?b.xMin+(b.xMax-b.xMin)*i/n:plot.uMin+(plot.uMax-plot.uMin)*i/n;
-   const y=plot.kind!=='parametric3d'?b.yMin+(b.yMax-b.yMin)*j/n:plot.vMin+(plot.vMax-plot.vMin)*j/n;
-   row.push(safeEval(x,y));
-  }vertices.push(row);}
-  for(let j=0;j<n;j++)for(let i=0;i<n;i++){const [a,c,d,e]=[vertices[j][i],vertices[j][i+1],vertices[j+1][i+1],vertices[j+1][i]];if(!a||!c||!d||!e)continue;
-   // Skip excessive triangle jumps around poles rather than bridge invalid geometry.
-   const maxEdge=Math.max(...[[a,c],[c,d],[d,e],[e,a]].map(([p,q])=>Math.hypot(...minus(p,q))));
-   if(maxEdge>Math.max(b.xMax-b.xMin,b.yMax-b.yMin,b.zMax-b.zMin)*1.5)continue;
-   // A phase-height branch cut jumps by nearly 2π across neighboring vertices.
-   // Do not draw artificial vertical cliffs connecting unrelated sheets.
-   if(plot.kind==='domain3d'&&plot.heightMode==='argument'&&Math.max(...[a,c,d,e].map(p=>p[2]))-Math.min(...[a,c,d,e].map(p=>p[2]))>Math.PI)continue;
-   pushTriangle(a,c,d);pushTriangle(a,d,e);
+  for(let j=0;j<=n;j++){
+   const row=[];for(let i=0;i<=n;i++){
+    const x=plot.kind!=='parametric3d'?b.xMin+(b.xMax-b.xMin)*i/n:plot.uMin+(plot.uMax-plot.uMin)*i/n;
+    const y=plot.kind!=='parametric3d'?b.yMin+(b.yMax-b.yMin)*j/n:plot.vMin+(plot.vMax-plot.vMin)*j/n;
+    row.push(safeEval(x,y));
+   }vertices.push(row);yield;
+  }
+  for(let j=0;j<n&&!limited;j++){
+   for(let i=0;i<n;i++){
+    const [a,c,d,e]=[vertices[j][i],vertices[j][i+1],vertices[j+1][i+1],vertices[j+1][i]];
+    if(!a||!c||!d||!e)continue;
+    const maxEdge=Math.max(...[[a,c],[c,d],[d,e],[e,a]].map(([p,q])=>Math.hypot(...minus(p,q))));
+    if(maxEdge>Math.max(b.xMax-b.xMin,b.yMax-b.yMin,b.zMax-b.zMin)*1.5)continue;
+    if(plot.kind==='domain3d'&&plot.heightMode==='argument'&&Math.max(...[a,c,d,e].map(p=>p[2]))-Math.min(...[a,c,d,e].map(p=>p[2]))>Math.PI)continue;
+    pushTriangle(a,c,d);pushTriangle(a,d,e);
+   }yield;
   }
  }else if(plot.kind==='implicit3d'){
-  // Six tetrahedra per cube, sharing all grid samples; bounded marching tetrahedra.
+  // A consistent body diagonal partitions adjacent cubes into conforming tetrahedra.
+  // The 2-versus-2 case must connect its four crossings cyclically; an arbitrary
+  // edge-pair order creates crossing / inverted triangles and visible mesh holes.
   const n=Math.min(22,Math.max(8,Math.round(detail*.65))),cube=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
   const stride=n+1,values=new Float64Array(stride**3),index=(i,j,k)=>k*stride*stride+j*stride+i;
   const at=(i,j,k)=>[b.xMin+(b.xMax-b.xMin)*i/n,b.yMin+(b.yMax-b.yMin)*j/n,b.zMin+(b.zMax-b.zMin)*k/n];
-  for(let k=0;k<=n;k++)for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){
-   let value;try{value=fn(...at(i,j,k));}catch{value=NaN;}evaluations++;values[index(i,j,k)]=ok(value)?value:NaN;
+  for(let k=0;k<=n;k++){
+   for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){
+    let value;try{value=fn(...at(i,j,k));}catch{value=NaN;}evaluations++;values[index(i,j,k)]=ok(value)?value:NaN;
+   }yield;
   }
-  const pairs=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
-  for(let k=0;k<n;k++)for(let j=0;j<n;j++)for(let i=0;i<n;i++){
-   const pts=cube.map(([dx,dy,dz])=>at(i+dx,j+dy,k+dz)),v=cube.map(([dx,dy,dz])=>values[index(i+dx,j+dy,k+dz)]);
-   for(const ids of tets){const z=ids.map(q=>v[q]);if(z.some(x=>!ok(x)))continue;const changes=[];
-    for(const [a,c] of pairs){if((z[a]<0)!==(z[c]<0)){const x=ids[a],y=ids[c],f=z[a]/(z[a]-z[c]);changes.push(pts[x].map((v,d)=>v+(pts[y][d]-v)*f));}}
-    if(changes.length===3)pushTriangle(...changes);else if(changes.length===4){pushTriangle(changes[0],changes[1],changes[2]);pushTriangle(changes[0],changes[2],changes[3]);}
-   }
+  for(let k=0;k<n&&!limited;k++)for(let j=0;j<n&&!limited;j++){
+   for(let i=0;i<n&&!limited;i++){
+    const pts=cube.map(([dx,dy,dz])=>at(i+dx,j+dy,k+dz)),v=cube.map(([dx,dy,dz])=>values[index(i+dx,j+dy,k+dz)]);
+    for(const ids of tets){const z=ids.map(q=>v[q]);if(z.some(x=>!ok(x)))continue;
+     const inside=[],outside=[];for(let m=0;m<4;m++)(z[m]<0?inside:outside).push(m);
+     if(inside.length===0||outside.length===0)continue;
+     const edge=(u,w)=>{const from=ids[u],to=ids[w],t=z[u]/(z[u]-z[w]);return pts[from].map((a,d)=>a+(pts[to][d]-a)*t);};
+     if(inside.length===1){const a=inside[0];pushTriangle(edge(a,outside[0]),edge(a,outside[1]),edge(a,outside[2]));}
+     else if(outside.length===1){const a=outside[0];pushTriangle(edge(a,inside[0]),edge(a,inside[2]),edge(a,inside[1]));}
+     else{
+      const [a,c]=inside,[d,e]=outside;
+      const p=edge(a,d),q=edge(a,e),r=edge(c,e),s=edge(c,d);
+      pushTriangle(p,q,r);pushTriangle(p,r,s);
+     }
+    }
+   }yield;
   }
  }else if(plot.kind==='vector3d'){
-  const n=plot.density;for(let k=0;k<n;k++)for(let j=0;j<n;j++)for(let i=0;i<n;i++){
-   const center=['x','y','z'].map((axis,index)=>b[axis+'Min']+(b[axis+'Max']-b[axis+'Min'])*( [i,j,k][index]+.5)/n);
-   let vec;try{vec=fn(...center);}catch{}evaluations++;
-   if(!finitePoint(vec))continue;const mag=Math.hypot(...vec);if(mag<1e-10||!ok(mag))continue;
-   const unit=vec.map(v=>v/mag),length=Math.min(...['x','y','z'].map(axis=>(b[axis+'Max']-b[axis+'Min'])/n))*.35*(plot.normalized?1:Math.min(1.8,mag));
-   lines.push([center.map((v,q)=>v-unit[q]*length*.5),center.map((v,q)=>v+unit[q]*length*.5)]);
+  const n=plot.density;for(let k=0;k<n;k++){
+   for(let j=0;j<n;j++)for(let i=0;i<n;i++){
+    const center=['x','y','z'].map((axis,index)=>b[axis+'Min']+(b[axis+'Max']-b[axis+'Min'])*([i,j,k][index]+.5)/n);
+    let vec;try{vec=fn(...center);}catch{}evaluations++;
+    if(!finitePoint(vec))continue;const mag=Math.hypot(...vec);if(mag<1e-10||!ok(mag))continue;
+    const unit=vec.map(v=>v/mag),length=Math.min(...['x','y','z'].map(axis=>(b[axis+'Max']-b[axis+'Min'])/n))*.35*(plot.normalized?1:Math.min(1.8,mag));
+    const endpoints=[center.map((v,q)=>v-unit[q]*length*.5),center.map((v,q)=>v+unit[q]*length*.5)];
+    if(endpoints.every(p=>inBounds(p,b)))lines.push(endpoints);
+   }yield;
   }
  }
  return {faces,lines,evaluations,limited};
 }
-/* Reuse world meshes during camera orbit. This avoids costly resampling on every
- * pointermove; cache size is bounded even in documents with many plot objects. */
+export function sample3DPlot(plot,detail){const generator=sample3DPlotSteps(plot,detail);let next;do{next=generator.next();}while(!next.done);return next.value;}
+
+/** World mesh LRU is reusable during orbit and bounded independently of scene size. */
 const meshCache=new Map();
-function cachedMesh(plot,detail){
- const key=JSON.stringify([plot,detail]);if(meshCache.has(key)){const entry=meshCache.get(key);meshCache.delete(key);meshCache.set(key,entry);return entry;}
- const result=sample3DPlot(plot,detail);meshCache.set(key,result);
- while(meshCache.size>12)meshCache.delete(meshCache.keys().next().value);
- return result;
+const meshKey=(plot,detail)=>JSON.stringify([plot,detail]);
+function getCachedMesh(key){
+ if(!meshCache.has(key))return null;
+ const mesh=meshCache.get(key);meshCache.delete(key);meshCache.set(key,mesh);return mesh;
 }
-/** Project and depth-sort for an SVG painter's algorithm; no false GPU claims. */
-export function project3DScene(scene,width,height){
- validate3D(scene);if(!ok(width)||!ok(height)||width<100||height<100)return {faces:[],lines:[],cube:[],evaluations:0,limited:false};
+function storeMesh(key,mesh){meshCache.set(key,mesh);while(meshCache.size>12)meshCache.delete(meshCache.keys().next().value);}
+function estimatedEvaluations(plot,detail){
+ if(plot.kind==='vector3d')return plot.density**3;
+ if(plot.kind==='implicit3d')return (Math.min(22,Math.max(8,Math.round(detail*.65)))+1)**3;
+ return (Math.max(8,Math.min(44,detail))+1)**2;
+}
+/** Synchronous exports and cooperative screen rendering share EXACT geometry,
+ * clipping, sorting, and work limits. SVG is not a Z-buffer; crossing translucent
+ * surfaces still have painter-order artifacts. */
+function* project3DSceneSteps(scene,width,height){
+ validate3D(scene);
+ if(!ok(width)||!ok(height)||width<100||height<100)return {faces:[],lines:[],primitives:[],cube:[],evaluations:0,limited:false};
  const opt=scene.options,faces=[],lines=[],cube=[],bounds=scene.plots.find(p=>!p.hidden)?.bounds||defaultBounds3D();
  const camera=makeCamera(bounds,opt,width,height);let evaluations=0,limited=false;
  if(opt.cube){const v=[];for(let k=0;k<8;k++)v.push(camera.project([k&1?bounds.xMax:bounds.xMin,k&2?bounds.yMax:bounds.yMin,k&4?bounds.zMax:bounds.zMin]));
   for(let i=0;i<8;i++)for(const bit of [1,2,4])if(!(i&bit))cube.push([v[i],v[i|bit]]);
  }
- for(const plot of scene.plots){if(plot.hidden)continue;const result=cachedMesh(plot,opt.detail);evaluations+=result.evaluations;limited||=result.limited;
-  for(const tri of result.faces){if(faces.length>=12000){limited=true;break;}const projected=tri.map(camera.project),normal=cross(minus(tri[1],tri[0]),minus(tri[2],tri[0]));const length=Math.hypot(...normal),shade=length?Math.abs(normal[0]*.35+normal[1]*.4+normal[2]*.85)/length:0;
-   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.4+.6*shade:1,color:tri.color||plot.color,domainColoring:plot.kind==='domain3d',opacity:opt.opacity*plot.opacity});
+ let count=0;
+ for(const plot of scene.plots){
+  if(plot.hidden)continue;
+  const predicted=estimatedEvaluations(plot,opt.detail);
+  if(evaluations+predicted>MAX_3D_EVALUATIONS){limited=true;break;}
+  const key=meshKey(plot,opt.detail);let mesh=getCachedMesh(key);
+  if(!mesh){const sampler=sample3DPlotSteps(plot,opt.detail);let next;
+   do{next=sampler.next();if(!next.done)yield;}while(!next.done);
+   mesh=next.value;storeMesh(key,mesh);
   }
-  for(const line of result.lines){if(lines.length>=2400){limited=true;break;}const p=line.map(camera.project);lines.push({start:p[0],end:p[1],depth:(p[0][2]+p[1][2])/2,color:plot.color,opacity:plot.opacity});}
-  if(limited&&faces.length>=12000)break;
+  evaluations+=mesh.evaluations;limited||=mesh.limited;
+  for(const triangle of mesh.faces){
+   if(faces.length>=MAX_3D_FACES){limited=true;break;}
+   const projected=triangle.map(camera.project),v=triangle.map(camera.turn),normal=cross(minus(v[1],v[0]),minus(v[2],v[0]));
+   const length=Math.hypot(...normal),light=length?Math.abs((-.3*normal[0]+.45*normal[1]+.84*normal[2])/length):0;
+   // View-normalized Lambert intensity accounts for nonuniform axis ranges.
+   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.32+.68*light:1,color:triangle.color||plot.color,domainColoring:plot.kind==='domain3d',opacity:opt.opacity*plot.opacity});
+   if((++count&63)===0)yield;
+  }
+  for(const segment of mesh.lines){
+   if(lines.length>=MAX_3D_LINES){limited=true;break;}
+   const p=segment.map(camera.project);lines.push({start:p[0],end:p[1],depth:(p[0][2]+p[1][2])/2,color:plot.color,opacity:plot.opacity});
+   if((++count&63)===0)yield;
+  }
+  if((faces.length>=MAX_3D_FACES)||(lines.length>=MAX_3D_LINES))break;
+  yield;
  }
  faces.sort((a,b)=>a.depth-b.depth);lines.sort((a,b)=>a.depth-b.depth);
- return {faces,lines,cube,evaluations,limited};
+ // Vector strokes are no longer all drawn on top of every surface: mix them
+ // into the same far-to-near painter order. Transparent crossings remain approximate.
+ const primitives=[...faces.map(face=>({kind:'face',value:face,depth:face.depth})),...lines.map(line=>({kind:'line',value:line,depth:line.depth}))];
+ primitives.sort((a,b)=>a.depth-b.depth);
+ return {faces,lines,primitives,cube,evaluations,limited};
+}
+export function project3DScene(scene,width,height){
+ const generator=project3DSceneSteps(scene,width,height);let next;do{next=generator.next();}while(!next.done);return next.value;
+}
+/** Asynchronous caller owns the lifecycle. One step performs at most its frame
+ * allowance of small generator units; cancel() discards all partial work. */
+export function create3DProjectionTask(scene,width,height){
+ const generator=project3DSceneSteps(scene,width,height);let cancelled=false,done=false,result=null;
+ return {
+  get done(){return done;},get cancelled(){return cancelled;},get result(){return result;},
+  cancel(){cancelled=true;result=null;generator.return();},
+  step(milliseconds=7){
+   if(cancelled)return {done:true,cancelled:true,result:null};
+   if(done)return {done:true,cancelled:false,result};
+   const deadline=performance.now()+Math.max(0,Math.min(20,milliseconds));let next;
+   do{next=generator.next();if(next.done){done=true;result=next.value;break;}}while(performance.now()<deadline);
+   return {done,cancelled:false,result};
+  }
+ };
 }
