@@ -1065,3 +1065,21 @@ The user supplied a hand sketch for the five **Transformation** glyphs and reque
 | R397 | Critically validate the final rendered glyphs instead of passing stale source-string snapshot tests. | **Implemented:** new browser verification measures rendered SVG radii and geometric relationships directly. Existing glyph size test was updated from 2 to 2.4 rather than being waived. |
 
 **Scope:** glyph-only changes; no modification of mathematical construction algorithms or saved project schema. Continue exhaustive Geometry computation tests separately.
+
+
+## Round 51J — Plotting glyph and transformation scale corrections (2026-11-14)
+
+| ID | User requirement | Implementation |
+| --- | --- | --- |
+| R395 | Translation glyph's paired horizontal segments are too short. | Both segments now span 16 of 24 glyph units and retain the four symmetric, filled endpoint markers. |
+| R396 | Rotation and Circle inversion need larger radii. | Rotation arc radius is 10 units; Circle inversion circumference radius is 9 units. The latter satisfies the exact inversion product `CP × CP′ = 9²`, with neither source nor image on the circle. |
+| R397 | Geometry glyph point sizes still appear inconsistent. | One runtime `GLYPH_POINT_RADIUS=2.8` applies to all filled Geometry markers, including the standalone Point tool, in the shared tool/list glyph definitions. Explicit DOM assertions check every rendered Geometry icon. |
+| R398 | Parametric mode needs a more circular spiral with no point markers. | A smooth Archimedean spiral with over two circular turns, sampled to a continuous SVG cubic path; no filled circles or point markers. |
+| R399 | Implicit mode should use an elliptic curve. | Draws an authentic nonsingular real Weierstrass elliptic cubic `y²=x³−3x+1` with a compact oval and separate unbounded component (clipped to icon bounds), not an ellipse or generic nested contour. |
+
+No changes to Geometry construction, exported project format, SVG/JSON naming, or other tool icons. Existing left Objects and right Tools panels reuse the same icon factories.
+
+
+## Round 51K — Remove redundant Intersection Point palette button (2026-11-14)
+
+The user explicitly requested removal of **Intersection Point** because **General Intersection** is available. Removed only its button from the Intersections subsection and legacy construction-tool listing. The General Intersection tool remains. The existing `intersection` model type, imported JSON, resolver, rendering, dependency handling, undo/redo and historical saved objects remain supported. The three visible Intersections tools are Line–circle intersections, Circle–circle intersections and General Intersection; the Geometry palette now has 43 entries. No mathematical geometry algorithm or project schema was changed. Full numerical equivalence for all line/ray/segment domain cases and tangencies is not implied by this palette-only change.

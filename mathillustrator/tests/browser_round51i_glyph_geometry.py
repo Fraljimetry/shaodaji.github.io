@@ -32,7 +32,7 @@ def run():
    assert all(abs(x['dot'])<1e-7 and x['onCircle']<1e-7 for x in result['orthogonality']),result['orthogonality']
    assert all(x>3.2 for x in result['hyperDistances']),result['hyperDistances']
    v=result['inversion'];assert abs(v['d1']*v['d2']-v['r']**2)<1e-7,v
-   assert result['radiusCounts']==['2.4'],result['radiusCounts']
+   assert result['radiusCounts']==['2.8'],result['radiusCounts']
    assert all(not x['crosses'] and not x['hollow'] and not x['dashes'] for x in result['transformations']),result['transformations']
    # Both plotting modes show distinct, non-equivalent mathematical diagrams.
    from pathlib import Path
@@ -40,8 +40,8 @@ def run():
    source=Path(__file__).resolve().parents[1].joinpath('src','app.mjs').read_text()
    plots={key:re.search(rf"{key}:'([^']+)'",source).group(1) for key in ['parametric','implicit']}
    assert plots['parametric'] and plots['implicit'] and plots['parametric']!=plots['implicit'],plots
-   assert plots['parametric'].count('<circle')==2 and plots['implicit'].count('<circle')==0,plots
+   assert plots['parametric'].count('<circle')==0 and plots['implicit'].count('<circle')==0,plots
    assert not errors,errors
-   print('ROUND51I_CHROMIUM_PASS: uniform 2.4 SVG markers; analytic two-circle-contact tangents; detached hyperbola foci; true inversion P/P\'; five cross-free transforms; distinct parametric and implicit diagrams')
+   print('ROUND51I_CHROMIUM_PASS: uniform 2.8 SVG markers; analytic two-circle-contact tangents; detached hyperbola foci; true inversion P/P\'; five cross-free transforms; distinct parametric and implicit diagrams')
   finally:browser.close()
 if __name__=='__main__':run()

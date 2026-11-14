@@ -47,7 +47,7 @@ def main():
    print('5 live plot-mode SVG previews and matching Objects-list glyphs PASS',flush=True)
    # Ensure the uniform size contract is true of rendered geometry icons.
    geometry=page.locator('[data-geometry-group] .tool svg')
-   wrong=geometry.evaluate_all('''items=>items.flatMap(svg=>[...svg.querySelectorAll('circle[fill="currentColor"]')].filter(c=>+c.getAttribute('r')!==2.4).map(c=>svg.closest('[data-tool-choice]')?.dataset.toolChoice))''')
+   wrong=geometry.evaluate_all('''items=>items.flatMap(svg=>[...svg.querySelectorAll('circle[fill="currentColor"]')].filter(c=>+c.getAttribute('r')!==2.8).map(c=>svg.closest('[data-tool-choice]')?.dataset.toolChoice))''')
    assert not wrong,wrong
    for tool,d in [('segment','M4 20L20 4'),('midpoint','M4 20L20 4'),('line','M2 22L22 2'),('ray','M4 20L22 2'),('arrow','M4 20L20 4'),('fixedLength','M4 20L20 4')]:
     assert d in page.locator(f'[data-tool-choice="{tool}"] svg').inner_html(),tool

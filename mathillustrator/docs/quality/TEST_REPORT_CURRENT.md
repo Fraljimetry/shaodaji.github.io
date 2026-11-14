@@ -986,3 +986,23 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Actual Chromium (locally inlined JS/CSS and Playwright):** `browser_round51i_glyph_geometry.py` PASS (displayed SVG point-radius equality, tangent-circle incidence and radius orthogonality, hyperbola focus-to-branch clearance, exact circle inversion relation, no transformation crosses/dashes/hollow markers, two distinct plotting styles); `browser_round51b_geometry_sweep.py` PASS (44 Geometry palette tools, basic inversion+undo/redo/JSON); `browser_round51e_panel_glyphs.py` PASS (left/right SVG parity); `browser_round51f_exports_plotglyphs.py` PASS (five plotting previews and object SVGs, timestamps on all supported exports); `browser_smoke.py` PASS (startup, construction, export, undo/redo).
 
 **Test fidelity:** An older Chromium script initially failed because it asserted a 2-unit radius after the requested increase; fixed to assert actual 2.4-unit SVG output. Unlike old static substring tests, the new numerical test checks the final rendered SVG. The isolated Chromium fixture does not prove public-server HTTP cache freshness or native-device appearance. Construction numerical edge cases outside this visual cut remain open.
+
+
+## Round 51J — Glyph scale and mathematical shape regressions (2026-11-14)
+
+**Baseline:** Round 51H worktree with authoritative Round 51I overlay replayed before editing. Changed/new files only under `mathillustrator/`; no commits.
+
+**Implementation:** Increased both translation lines from 7 to 16 glyph units; enlarged the rotation circular arc to radius 10 and inversion circle to radius 9, preserving exact radial inversion. Geometry tool markers are all drawn at radius 2.8 via the same final SVG factory shared by tool and Objects panels. Parametric is a smooth, 2.075-turn Archimedean spiral with no point markers; Implicit depicts `y²=x³−3x+1` with three SVG subpaths (compact oval, separate upper and lower noncompact branches). Bumped the application script URL to Round 51J to avoid stale browser cache and updated the local test fixture mapping.
+
+**Node:** `node --test tests/*.test.mjs` → **345/345 PASS**, zero skips/failures.
+
+**Real Chromium, offline inlined module fixture:** `browser_round51j_glyph_geometry.py`, `browser_round51b_geometry_sweep.py`, `browser_round51i_glyph_geometry.py`, `browser_round51f_exports_plotglyphs.py` and `browser_round51e_panel_glyphs.py` all PASS. Checks cover live DOM radius uniformity across all 44 Geometry palette icons, translation path length, rotation arc length, exact inversion distance product, actual plotting preview paths, point-free spiral smoothness, two elliptic curve components and viewBox limits, left/right icon parity, and export compatibility. No hosted HTTP, non-Chromium browser or exhaustive construction/drag test was claimed.
+
+**Self-critique:** Earlier point uniformity checks relied partly on literal source glyph definitions, but final glyphs are overridden at runtime; the new browser DOM assertions use the actual final SVG. The mathematical elliptic curve is visually condensed to fit a 27-unit icon, so very fine curvature cannot be discerned at tiny screen sizes.
+
+
+## Round 51K — Intersection Point palette simplification (2026-11-14)
+
+**Change:** Removed `intersection` from both Geometry palette registrations in `src/app.mjs`. Retained the historical object type for imported and existing diagrams. General Intersection remains the user-facing general-purpose choice. Updated the current 43-tool browser palette regression.
+
+**Executed:** `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` **345/345 PASS**, no skips; headless local Chromium `browser_round51b_geometry_sweep.py` PASS (43 entries, removal, selection/order, inversion, undo/redo, JSON), `browser_smoke.py` PASS (startup and exports). No live hosted-site verification. Historical `browser_round25_dynamic_lines.py` still targets the now-removed palette button and needs migration before it can serve as a current UI regression; it was not run in this cut. No claim of exact numerical equivalence for all degenerate intersections.
