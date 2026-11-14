@@ -218,7 +218,15 @@ export function sample3DPlot(plot,detail){const generator=sample3DPlotSteps(plot
 const meshCache=new Map();let meshCacheBytes=0;
 export function meshCacheStats(){return {entries:meshCache.size,estimatedBytes:meshCacheBytes,limitBytes:MAX_MESH_CACHE_BYTES};}
 function meshBytes(mesh){return mesh.faces.length*3*3*8+mesh.lines.length*2*3*8+mesh.faces.length*48+mesh.lines.length*32;}
-const meshKey=(plot,detail)=>JSON.stringify([plot,detail]);
+// Cache only the inputs that affect sampled geometry (and phase colors).
+// Name, opacity, visibility, solid color and the edit Lock must NOT trigger
+// an expensive new implicit solve when their controls change.
+export const meshKey=(plot,detail)=>JSON.stringify([
+ plot.kind,plot.a,plot.b,plot.c,plot.bounds,
+ plot.kind==='parametric3d'?[plot.uMin,plot.uMax,plot.vMin,plot.vMax]:null,
+ plot.kind==='vector3d'?[plot.density,plot.normalized]:null,
+ plot.kind==='domain3d'?[plot.heightMode,plot.colorMode]:null,detail
+]);
 function getCachedMesh(key){
  if(!meshCache.has(key))return null;
  const mesh=meshCache.get(key);meshCache.delete(key);meshCache.set(key,mesh);return mesh;
@@ -236,10 +244,14 @@ function estimatedEvaluations(plot,detail){
 /** Synchronous exports and cooperative screen rendering share EXACT geometry,
  * clipping, sorting, and work limits. SVG is not a Z-buffer; crossing translucent
  * surfaces still have painter-order artifacts. */
-function* project3DSceneSteps(scene,width,height){
+function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
  validate3D(scene);
  if(!ok(width)||!ok(height)||width<100||height<100)return {faces:[],lines:[],primitives:[],cube:[],evaluations:0,limited:false};
  const opt=scene.options,faces=[],lines=[],cube=[],gridLines=[],axesLines=[];
+ // A bounded, transient complete mesh during orbit: never spend high-detail
+ // sampling or full SVG construction on each pointer movement. Export and
+ // the settled view retain the user-selected resolution.
+ const renderDetail=interactive?Math.min(opt.detail,12):opt.detail;
  const active=scene.plots.filter(p=>!p.hidden),plots=active.slice(-MAX_VISIBLE_3D_PLOTS);
  // Mixed plots previously projected using the FIRST plot's bounds; this could
  // put later plots behind the camera, creating giant/inverted polygons or blanks.
@@ -275,11 +287,11 @@ function* project3DSceneSteps(scene,width,height){
   // A dense first implicit mesh must never starve all later surfaces or render
   // only a broken first slice. Implicit complexity varies by formula, so a
   // bounded refinement retry still handles unexpectedly intricate level sets.
-  let effectiveDetail=Math.min(opt.detail,Math.floor(Math.sqrt(perPlotFaces/2))-1);
+  let effectiveDetail=Math.min(renderDetail,Math.floor(Math.sqrt(perPlotFaces/2))-1);
   if(plot.kind==='implicit3d'){
    const maxCells=Math.min(52,Math.max(8,Math.floor(Math.sqrt(perPlotFaces/26))));
-   effectiveDetail=Math.min(opt.detail,Math.floor((maxCells-9)/.45));
-  }else if(plot.kind==='vector3d')effectiveDetail=opt.detail;
+   effectiveDetail=Math.min(renderDetail,Math.floor((maxCells-9)/.45));
+  }else if(plot.kind==='vector3d')effectiveDetail=renderDetail;
   effectiveDetail=Math.max(8,effectiveDetail);
   let mesh;
   for(let attempt=0;attempt<12;attempt++){
@@ -334,8 +346,8 @@ export function project3DScene(scene,width,height){
 }
 /** Asynchronous caller owns the lifecycle. One step performs at most its frame
  * allowance of small generator units; cancel() discards all partial work. */
-export function create3DProjectionTask(scene,width,height){
- const generator=project3DSceneSteps(scene,width,height);let cancelled=false,done=false,result=null;
+export function create3DProjectionTask(scene,width,height,{interactive=false}={}){
+ const generator=project3DSceneSteps(scene,width,height,{interactive});let cancelled=false,done=false,result=null;
  return {
   get done(){return done;},get cancelled(){return cancelled;},get result(){return result;},
   cancel(){cancelled=true;result=null;generator.return();},

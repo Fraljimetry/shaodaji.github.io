@@ -1,10 +1,10 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round40';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round45';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression} from './plot3d.mjs?cut=round43';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression} from './plot3d.mjs?cut=round45';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
 import {localizeUI,translated} from './i18n.mjs?cut=round40';
@@ -739,7 +739,7 @@ function draw(svg,{exporting=false}={}){
   }
  }
 }
-let sceneRenderEpoch=0,sceneRenderFrame=0,sceneRenderTask=null,sceneRenderPending=false;
+let sceneRenderEpoch=0,sceneRenderFrame=0,sceneRenderTask=null,sceneRenderPending=false,orbitRenderQueued=false;
 function cancelSceneRender(){
  sceneRenderPending=false;
  ++sceneRenderEpoch;
@@ -759,15 +759,18 @@ function render(){
  // A camera move, a new document, or a mode switch invalidates every pending
  // sample and DOM batch. Exports always use the independent synchronous path.
  const epoch=sceneRenderEpoch;
- const snapshot=JSON.parse(JSON.stringify(doc.scene3d));
- sceneRenderTask=create3DProjectionTask(snapshot,size.w,size.h);
+ const snapshot=JSON.parse(JSON.stringify(doc.scene3d)),interactive=!!cameraDrag;
+ sceneRenderTask=create3DProjectionTask(snapshot,size.w,size.h,{interactive});
  sceneRenderPending=true;
  $('render-info').textContent=`${snapshot.plots.length} 3D plots · rendering…`;
  const paintResult=result=>{
   if(epoch!==sceneRenderEpoch)return;
   sceneRenderTask=null;
   svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);
-  svg.replaceChildren();draw3DBase(svg,result);
+  // Stage an entire frame off-DOM. Painting chunks directly into the visible
+  // SVG caused black/white flicker and dramatic apparent lighting changes
+  // (front faces appeared only after hundreds of earlier, farther faces).
+  const staged=el('g');draw3DBase(staged,result);
   plotLimitedInScene=result.limited;
   let next=0;
   const paint=()=>{
@@ -775,9 +778,15 @@ function render(){
    const fragment=document.createDocumentFragment();
    const end=Math.min(result.primitives.length,next+500);
    for(;next<end;next++)append3DPrimitive(fragment,result.primitives[next]);
-   svg.append(fragment);
+   staged.append(fragment);
    if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
-   else{sceneRenderPending=false;if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;$('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;}
+   else{
+    // One atomic replacement: no half-lit or partly missing 3D scene.
+    svg.replaceChildren(staged);sceneRenderPending=false;
+    if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;
+    $('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?' · drag preview':''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;
+    if(cameraDrag&&orbitRenderQueued){orbitRenderQueued=false;scheduleRender();}
+   }
   };
   paint();
  };
@@ -790,7 +799,12 @@ function render(){
  };
  compute();
 }
-function scheduleRender(){if(!frame)frame=requestAnimationFrame(render);}
+function scheduleRender(){
+ // Do not repeatedly discard expensive implicit-surface work while orbiting.
+ // Finish a small, complete preview, then take the most recent camera pose.
+ if(in3D()&&cameraDrag&&sceneRenderPending){orbitRenderQueued=true;return;}
+ if(!frame)frame=requestAnimationFrame(render);
+}
 function currentObject(o){return get(doc,o.id)===o;}
 // The object list is a fixed-height window. Thousands of objects should not
 // construct thousands of DOM rows on every selection or imported document.
@@ -869,7 +883,18 @@ function render3DList(){
   row.append(info);
   action(plot.hidden?'Show':'Hide',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.hidden=!live.hidden;if(!live.hidden)enforce3DVisibility(doc.scene3d,live.id);}));
   action(plot.locked?'Unlock':'Lock',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live)throw Error('3D plot changed.');live.locked=!live.locked;}));
-  action('Delete',()=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===plot.id);if(!live||live.locked)throw Error('Unlock the 3D plot before deleting.');doc.scene3d.plots=doc.scene3d.plots.filter(p=>p.id!==plot.id);if(selected3d===plot.id)selected3d=null;}),plot.locked===true);
+  action('Delete',()=>{
+   const live=doc.scene3d.plots.find(p=>p.id===plot.id);
+   if(!live||live.locked){notice('Unlock the 3D plot before deleting.');return;}
+   const removed=clone(live);
+   const success=update(()=>{
+    const current=doc.scene3d.plots.find(p=>p.id===plot.id);
+    if(!current||current.locked)throw Error('Unlock the 3D plot before deleting.');
+    doc.scene3d.plots=doc.scene3d.plots.filter(p=>p.id!==plot.id);
+    if(selected3d===plot.id)selected3d=null;
+   });
+   if(success){trash.unshift({at:Date.now(),objects:[],plots3d:[removed]});trash=trash.slice(0,20);persistTrash();notice('3D plot moved to Recently Deleted.');}
+  },plot.locked===true);
   root.append(row);
  }
 }
@@ -1300,7 +1325,15 @@ function setupSettings(){
   },['exportRegion','exportGuides','exportScale','exportTransparent'].includes(k)?{refreshList:false,renderCanvas:false}:{});
  }
  for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting'],['scene3d-grid','grid'],['scene3d-axes','axes']]){
-  $(id).onchange=()=>update(()=>{if(!in3D())throw Error('Enable 3D first.');const node=$(id);doc.scene3d.options[key]=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;});
+  $(id).onchange=()=>{
+   if(!in3D()||!doc.scene3d)return;
+   const node=$(id),value=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;
+   // A committed numeric field fires change again when a later button is
+   // pressed (blur). Rebuilding the 3D list on that pointerdown detached the
+   // target Lock/Delete button before pointerup and silently lost the click.
+   if(Object.is(doc.scene3d.options[key],value))return;
+   update(()=>{doc.scene3d.options[key]=value;});
+  };
  }
  $('scene3d-background').onchange=()=>update(()=>{doc.settings.background=$('scene3d-background').value;});
  $('scene3d-export-scale').onchange=()=>update(()=>{doc.settings.exportScale=Number($('scene3d-export-scale').value);},{refreshList:false,renderCanvas:false});
@@ -1461,7 +1494,7 @@ function constructionVertex(world){
 }
 function afterOneConstruction(){if(uiPrefs.autoPan!==false)selectTool('pan');}
 function pointerDown(e){
- if(in3D()){if(e.button!==0||cameraDrag)return;const [x,y]=xyEvent(e);cameraDrag={pointerId:e.pointerId,x,y,yaw:doc.scene3d.options.yaw,pitch:doc.scene3d.options.pitch};try{$('drawing').setPointerCapture(e.pointerId);}catch{}return;}
+ if(in3D()){if(e.button!==0||cameraDrag)return;const [x,y]=xyEvent(e);cameraDrag={pointerId:e.pointerId,x,y,yaw:doc.scene3d.options.yaw,pitch:doc.scene3d.options.pitch};orbitRenderQueued=false;if(sceneRenderPending)cancelSceneRender();try{$('drawing').setPointerCapture(e.pointerId);}catch{}return;}
 
  if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;
  // Touch drawing must wait for release; otherwise the first finger of a pinch
@@ -1678,7 +1711,7 @@ function cancelDrag(){
  renderAll();
 }
 function pointerUp(e){
- if(in3D()){if(cameraDrag?.pointerId===e.pointerId){const before=cameraDrag;cameraDrag=null;try{if($('drawing').hasPointerCapture(e.pointerId))$('drawing').releasePointerCapture(e.pointerId);}catch{}const o=doc.scene3d.options,nextYaw=o.yaw,nextPitch=o.pitch;o.yaw=before.yaw;o.pitch=before.pitch;if(e.type==='pointerup')update(()=>{o.yaw=nextYaw;o.pitch=nextPitch;});else scheduleRender();}return;}
+ if(in3D()){if(cameraDrag?.pointerId===e.pointerId){const before=cameraDrag;cameraDrag=null;orbitRenderQueued=false;try{if($('drawing').hasPointerCapture(e.pointerId))$('drawing').releasePointerCapture(e.pointerId);}catch{}const o=doc.scene3d.options,nextYaw=o.yaw,nextPitch=o.pitch;o.yaw=before.yaw;o.pitch=before.pitch;if(e.type==='pointerup')update(()=>{o.yaw=nextYaw;o.pitch=nextPitch;});else scheduleRender();}return;}
 
  if(e?.pointerType==='touch'){
   const tap=pendingTouchTap?.pointerId===e.pointerId?pendingTouchTap:null;
@@ -1782,20 +1815,34 @@ function renderTrash(){
  for(const [index,entry] of trash.entries()){
   const row=document.createElement('div');row.className='trash-row';
   const title=document.createElement('span');title.className='trash-names';
-  const names=entry.objects.map(o=>typeof o.name==='string'&&o.name.trim()?o.name.trim():o.id).filter(Boolean);
-  title.textContent=`${names.join(', ')||entry.objects.length+' object(s)'} · ${new Date(entry.at).toLocaleString()}`;
+  const plots3d=Array.isArray(entry.plots3d)?entry.plots3d:[];
+  const names=[...entry.objects,...plots3d].map(o=>typeof o.name==='string'&&o.name.trim()?o.name.trim():o.id).filter(Boolean);
+  title.textContent=`${plots3d.length?'3D · ':''}${names.join(', ')||entry.objects.length+' object(s)'} · ${new Date(entry.at).toLocaleString()}`;
   title.title=names.join(', ');
   const button=document.createElement('button');button.textContent='Restore';
   button.onclick=()=>{
    if(storageConflict){notice('Resolve the other-tab conflict before restoring.');return;}
    const source=trash[index];if(!source)return;
-   if(source.objects.some(o=>get(doc,o.id)||doc.objects.some(existing=>existing.name===o.name))){notice('Restore blocked: an object ID or name is already used.');return;}
-   // The deletion snapshot retains dependencies. Validate the entire candidate before removing trash.
+   const restored3d=Array.isArray(source.plots3d)?source.plots3d:[];
+   if(source.objects.some(o=>get(doc,o.id)||doc.objects.some(existing=>existing.name===o.name))
+      ||restored3d.some(o=>doc.scene3d?.plots.some(p=>p.id===o.id||p.name===o.name))){
+    notice('Restore blocked: an object ID or name is already used.');return;
+   }
+   // Both 2D and 3D deletion snapshots must restore transactionally; a
+   // rejected schema or full 3D plot list leaves Recently Deleted untouched.
    const ok=update(()=>{
-    doc.objects.push(...clone(source.objects));
-    const maximum=Math.max(...source.objects.map(o=>Number(o.id.slice(1))));
-    if(!Number.isSafeInteger(maximum))throw Error('Invalid restored identifier.');
-    doc.nextId=Math.max(doc.nextId,maximum+1);
+    if(source.objects.length){
+     doc.objects.push(...clone(source.objects));
+     const maximum=Math.max(...source.objects.map(o=>Number(o.id.slice(1))));
+     if(!Number.isSafeInteger(maximum))throw Error('Invalid restored identifier.');
+     doc.nextId=Math.max(doc.nextId,maximum+1);
+    }
+    if(restored3d.length){
+     if(!doc.scene3d)doc.scene3d=newScene3D();
+     doc.scene3d.plots.push(...clone(restored3d));
+     doc.scene3d.nextId=Math.max(doc.scene3d.nextId,...restored3d.map(p=>p.id+1));
+     enforce3DVisibility(doc.scene3d,restored3d.at(-1).id);
+    }
    });
    if(ok){trash.splice(index,1);persistTrash();}
   };
