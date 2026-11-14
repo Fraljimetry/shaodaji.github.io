@@ -6,7 +6,7 @@ import {smoothRoutePath} from '../src/diagram_routing.mjs';
 test('Round 52 defaults for new morphisms; original styles of loaded documents remain untouched',()=>{
  const d=newDoc();const a=append(d,{type:'node',xy:[0,0],text:'A'}),b=append(d,{type:'node',xy:[3,0],text:'B'});
  const m=append(d,{type:'morphism',refs:[a.id,b.id],text:'f'});
- assert.equal(m.routing,'scene-crossings');assert.equal(m.style.width,1);assert.equal(m.labelDistance,10);assert.equal(m.labelAvoid,true);
+ assert.equal(m.routing,'direct');assert.equal(m.style.width,1);assert.equal(m.labelDistance,10);assert.equal(m.labelAvoid,true);
  m.routing='avoid';m.labelDistance=17;m.style.width=2;
  assert.equal(validateDoc(d).objects.at(-1).routing,'avoid');
  assert.equal(validateDoc(d).objects.at(-1).style.width,2);

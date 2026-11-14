@@ -1183,3 +1183,8 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Production error: `geometry_round50.mjs` did not export `generalCrossings` while `app.mjs` and `model.mjs` required it. Original source ZIP contained an obsolete geometry module; Round 51U updated it but Round 52–54 overlay releases omitted the module.
 - Requirement: all required changed source dependencies must accompany website-root overlays, and browser startup must be tested with real URL-based ES module imports, not only inline/data URL rewrites.
 - Fix: ship the matching geometry module and version both import edges; preserve project data and geometry behavior.
+
+
+### Round 56 — Direct morphism arrows only (2026-11-14)
+- Remove Arrow routing entirely from Properties. New and existing morphisms display directly, with manual Curve / bend shaping; never use automatic node/crossing rerouting or rectangular routing.
+- Keep Swap label side and user-adjustable label positioning. Preserve historical routing values in project JSON without rewriting them on load; render them using Direct.

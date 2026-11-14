@@ -1,4 +1,4 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape} from './geometry_round50.mjs?cut=round55-geometry-contract';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape} from './geometry_round50.mjs?cut=round56-direct-only';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round54';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round54';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -175,7 +175,7 @@ export function append(doc,obj){
  if(POINT_LIKE.has(obj.type)&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
  else if(!POINT_LIKE.has(obj.type)&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
  if(['text','node','morphism'].includes(obj.type)&&o.textMode===undefined)o.textMode='latex';
- if(obj.type==='morphism'){if(o.labelAvoid===undefined)o.labelAvoid=true;if(o.routing===undefined)o.routing='scene-crossings';if(o.labelDistance===undefined)o.labelDistance=10;}
+ if(obj.type==='morphism'){if(o.labelAvoid===undefined)o.labelAvoid=true;if(o.routing===undefined)o.routing='direct';if(o.labelDistance===undefined)o.labelDistance=10;}
  doc.objects.push(o);return o;
 }
 /** Actual editable segment objects for every side of a new free-vertex polygon.

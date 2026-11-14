@@ -1,5 +1,5 @@
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round54';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round55-geometry-contract';
+import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round56-direct-only';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round54';
 import {measureGeometry} from './geometry_measurements.mjs?cut=round54';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
@@ -566,7 +566,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const fromNode=resolver.object(o.refs[0]),toNode=resolver.object(o.refs[1]);
   if(!fromNode||!toNode||fromNode.hidden||toNode.hidden||fromNode.style.opacity===0||toNode.style.opacity===0)return;
   const fromBox=arrowTargetBox(fromNode),toBox=arrowTargetBox(toNode);
-  const auto=['avoid','avoid-crossings','scene-crossings'].includes(o.routing);
+  const auto=false; // Round 56: legacy routing codes are rendered as Direct.
   const route=morphismRoutes?.get(o.id);
   if(!route)return; // Route was validated and frozen for this render in document order.
   if(!route.points.length)return; // Historical overlapping boxes retain semantic edge but have no drawable path.
@@ -727,7 +727,7 @@ function draw(svg,{exporting=false}={}){
  // Build obstacle rectangles once per drawing, and only when the author enables
  // obstacle-aware routing. Standard diagrams pay none of this extra work.
  let diagramBoxes=null;
- if(doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&['avoid','avoid-crossings','scene-crossings'].includes(o.routing))){
+ if(false){ // No obstacle routing in Round 56; retained only for legacy source compatibility.
   diagramBoxes=new Map();for(const node of doc.objects){
    if(node.type!=='node'||node.hidden||node.style?.opacity===0)continue;
    const center=resolver.at(node.id);if(!center)continue;
@@ -745,7 +745,7 @@ function draw(svg,{exporting=false}={}){
   if(!from||!to||from.hidden||to.hidden||from.style?.opacity===0||to.style?.opacity===0)continue;
   const p=resolver.points(o);if(!p.every(Boolean))continue;
   const a=project(p[0]),b=project(p[1]),fb=arrowTargetBox(from),tb=arrowTargetBox(to);
-  const mode=o.routing||'direct';
+  const mode='direct'; // Even imported legacy modes draw directly; stored values are untouched.
   const obstacles=mode!=='direct'&&diagramBoxes?[...diagramBoxes].filter(([id])=>!o.refs.includes(id)).map(([,rect])=>rect):[];
   const baseRoute=routeDiagramEdge(a,b,fb,tb,obstacles,mode==='scene-crossings'?'avoid':mode,mode==='avoid-crossings'?earlierArrowPaths:[]);
   const route=mode==='direct'?curveEndpointRoute(a,b,fb,tb,baseRoute,o.bend||0):baseRoute;
@@ -763,7 +763,7 @@ function draw(svg,{exporting=false}={}){
  }
  // Cut25 opt-in whole-scene refinement. It examines later arrows as well as
  // earlier ones, but never changes routes for objects in legacy modes.
- if(routeEntries.some(e=>e.mode==='scene-crossings')){
+ if(false){ // Global rerouting is disabled.
   const globallyRefined=optimizeGlobalArrowRoutes(routeEntries,morphismRoutes);
   for(const [id,route] of globallyRefined)morphismRoutes.set(id,route);
  }
@@ -786,7 +786,7 @@ function draw(svg,{exporting=false}={}){
    const path=morphismRoutes.get(edge.id);
    if(!path?.points?.length)continue;
    let vertices=path.points;
-   if(!['avoid','avoid-crossings','scene-crossings'].includes(edge.routing)){
+   if(true){ // All arrows use the direct quadratic geometry.
     const a=vertices[0],b=vertices.at(-1),curve=arrowCurve(a,b,edge.bend||0);
     if(curve)vertices=Array.from({length:25},(_,i)=>{const t=i/24,q=1-t;return [q*q*a[0]+2*q*t*curve.control[0]+t*t*b[0],q*q*a[1]+2*q*t*curve.control[1]+t*t*b[1]];});
    }
@@ -805,7 +805,7 @@ function draw(svg,{exporting=false}={}){
    const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
    if(!from||!to||from.hidden||to.hidden||from.style.opacity===0||to.style.opacity===0)continue;
    const a=project(p[0]),b=project(p[1]),fb=arrowTargetBox(from),tb=arrowTargetBox(to);
-   const auto=['avoid','avoid-crossings','scene-crossings'].includes(o.routing);
+   const auto=false; // Round 56: legacy routing codes are rendered as Direct.
    const route=morphismRoutes.get(o.id);if(!route?.points.length)continue;
    const begin=route.points[0],finish=route.points.at(-1),curve=auto?null:arrowCurve(begin,finish,o.bend||0);
    if(!auto&&!curve)continue;
@@ -1408,15 +1408,7 @@ function renderProperties(){
   const arrowLabel=document.createElement('label');arrowLabel.className='field';arrowLabel.textContent='Arrow style';const arrowChoice=document.createElement('select');for(const [value,label] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['hook','Hooked'],['hook-dashed','Hook dashed'],['twohead','Two heads'],['tail','Tail bar']]){const option=document.createElement('option');option.value=value;option.textContent=label;arrowChoice.append(option);}arrowChoice.value=o.arrowStyle||'solid';arrowChoice.onchange=()=>edit(live=>live.arrowStyle=arrowChoice.value);arrowLabel.append(arrowChoice);root.append(arrowLabel);
 
   field(root,'Curve / bend',o.bend||0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>5)throw Error('Bend range: −5 to 5.');live.bend=v;}),{min:-5,max:5,step:.1});
-  const routeRow=document.createElement('label');routeRow.className='field routing-field';routeRow.textContent='Arrow routing';
-  const routeSelect=document.createElement('select');routeSelect.id='morphism-routing';
-  for(const [value,text] of [['scene-crossings','Automatic'],['direct','Direct']]){
-   const option=document.createElement('option');option.value=value;option.textContent=translated(text,uiPrefs.language);routeSelect.append(option);
-  }
-  // The 4 legacy routing codes remain valid in JSON; old avoidance modes show as Automatic without mutation.
-  routeSelect.value=(o.routing==='direct'||!o.routing)?'direct':'scene-crossings';routeSelect.onchange=()=>edit(live=>{live.routing=routeSelect.value;live.labelAvoid=routeSelect.value==='scene-crossings';});
-  routeRow.append(routeSelect);root.append(routeRow);
-
+  // Round 56: Arrow routing is always Direct. Use Curve / bend for manual adjustment.
   const side=document.createElement('label');side.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;
   cb.onchange=()=>edit(live=>{live.swap=cb.checked;});side.append(cb,document.createTextNode(' Swap label side'));root.append(side);
 
@@ -2148,7 +2140,7 @@ function performConstructionTap(e,pt){
   const id=e.target.closest('[data-id]')?.dataset.id,node=get(doc,id);
   if(node?.type!=='node'){notice('Choose a diagram node.');return;}
   if(!draftNode){draftNode=id;draftStart=node.xy;scheduleRender();}
-  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Morphism label (LaTeX):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:'latex',bend:0,swap:false,routing:'scene-crossings',labelDistance:10,style:{stroke:doc.settings.stroke,fill:doc.settings.fill,width:1,opacity:doc.settings.opacity}}).id;})&&afterOneConstruction();}}}
+  else{const start=draftNode;draftNode=null;draftStart=null;if(start!==id){const label=window.prompt('Morphism label (LaTeX):','');if(label!==null){if(label.length>1000)notice('Morphism label exceeds 1000 characters. Nothing was added.');else update(()=>{if(label.trim())validateLatexInput(label);selected=append(doc,{type:'morphism',refs:[start,id],text:label,textMode:'latex',bend:0,swap:false,routing:'direct',labelDistance:10,style:{stroke:doc.settings.stroke,fill:doc.settings.fill,width:1,opacity:doc.settings.opacity}}).id;})&&afterOneConstruction();}}}
  }
 }
 function r50MoveConstrained(o,world){

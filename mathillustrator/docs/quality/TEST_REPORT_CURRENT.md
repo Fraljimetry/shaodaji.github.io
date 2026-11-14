@@ -1132,3 +1132,15 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - **Repair:** Round 55 includes the correct `geometry_round50.mjs`, updates versioned imports in `app.mjs` and `model.mjs`, updates `index.html`, and adds a module export contract test. Browser startup must be verified by loading HTTP URLs, not just inlined bundles.
 
 - **Verification (Round 55):** Node 359/359 PASS. Real Chromium HTTP navigation was attempted but blocked by environment policy (`ERR_BLOCKED_BY_ADMINISTRATOR`); therefore production behavior is not independently confirmed. The prior inline Chromium harness cannot prove deployed HTTP import correctness.
+
+
+### Round 56 — Direct-only arrows
+- Replaced automatic path selection with direct quadratic morphism geometry even for imported legacy routing values. Removed routing selector, retained curve/bend and label controls.
+- New regression: `tests/round56_direct_only.test.mjs`.
+- Legacy browser routing-select tests are obsolete and not evidence of current behavior.
+
+- Full Node suite updated for Round 56 entrypoint and current direct-only defaults; historical legacy JSON values remain accepted.
+
+- PASS: 361/361 Node tests (`node --test tests/*.test.mjs`).
+- PASS: focused Chromium inline-module browser startup, node-to-node morphism construction, default direct, absent routing selector, Curve / bend, Swap label side.
+- LIMITATION: Chromium real-HTTP navigation blocked by execution environment (`net::ERR_BLOCKED_BY_ADMINISTRATOR`); hosted deployment not verified.
