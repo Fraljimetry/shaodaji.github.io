@@ -78,7 +78,7 @@ function appendColorSwatches(parent,{scope,property,apply}){
  }
  parent.append(group);syncColorSwatches();return group;
 }
-glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="18" r="2" fill="currentColor"/>';
+glyph.parallelThrough='<path d="M2 7L22 7M2 18L22 18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.perpendicularThrough='<path d="M2 18H22M12 2V22M12 15H15V18"/><circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleCircleIntersection='<circle cx="8" cy="12" r="7"/><circle cx="16" cy="12" r="7"/><circle cx="12" cy="6.26" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="17.74" r="2" fill="currentColor" stroke="none"/>';
 glyph.circleIntersection='<circle cx="12" cy="12" r="8"/><path d="M1 18L23 6"/><circle cx="5" cy="15.82" r="2" fill="currentColor" stroke="none"/><circle cx="19" cy="8.18" r="2" fill="currentColor" stroke="none"/>';
@@ -94,7 +94,7 @@ glyph.intersection='<path d="M3 3L21 21M21 3L3 21"/><circle cx="12" cy="12" r="2
 // placement over a rigid marker-per-click convention.
 const r50Glyph=(path,markers)=>path+markers.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2" fill="currentColor" stroke="none"/>`).join('');
 Object.assign(glyph,{
- pointOnObject:r50Glyph('<path d="M2 18Q10 2 22 8"/>',[[6.25,11.38],[13.04,6.72]]),
+ pointOnObject:r50Glyph('<path d="M2 18Q10 2 22 8"/>',[[13.04,6.72]]),
  tangentCircle:'<circle cx="15" cy="13" r="6"/><path d="M15 3L10.2 9.4M15 3L19.8 9.4"/><circle cx="15" cy="3" r="2" fill="currentColor" stroke="none"/><circle cx="10.2" cy="9.4" r="2" fill="currentColor" stroke="none"/><circle cx="19.8" cy="9.4" r="2" fill="currentColor" stroke="none"/>',
  circularArc:r50Glyph('<path d="M3.54 16.08A9 9 0 1 1 20.86 11.44"/>',[[3.54,16.08],[10.44,4.14],[20.86,11.44]]),
  parabola:'<path d="M3 11.2Q12 18.4 21 11.2M2 20H22"/><circle cx="12" cy="8" r="2" fill="currentColor" stroke="none"/>',
@@ -106,7 +106,7 @@ Object.assign(glyph,{
  dilation:'<path d="M4 12H20M18.2 10.2l3.6 3.6M21.8 10.2l-3.6 3.6"/><circle cx="4" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/>',
  locus:'<path d="M2 18C7 3 10 20 14 10S19 8 22 5" stroke-dasharray="2 2"/><circle cx="14" cy="10" r="2" fill="currentColor" stroke="none"/>',
  fixedLength:r50Glyph('<path d="M4 20L20 4M7.5 13.5L10.5 16.5M13.5 7.5L16.5 10.5"/>',[[4,20],[20,4]]),
- fixedAngle:'<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19M6.1 12.8Q10.9 11.2 14.7 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="19" r="2" fill="currentColor" stroke="none"/><circle cx="21" cy="19" r="2" fill="currentColor" stroke="none"/>',
+ fixedAngle:'<path d="M3.5 5L8.5 19H21M7.15 15.23A4 4 0 0 1 12.5 19M6.35 12.97A6.4 6.4 0 0 1 14.9 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="19" r="2" fill="currentColor" stroke="none"/><circle cx="21" cy="19" r="2" fill="currentColor" stroke="none"/>',
  triangleCenter:r50Glyph('<path d="M12 3L21 20H3Z M12 3V20 M3 20L16.5 11.5 M21 20L7.5 11.5"/><circle cx="12" cy="14.33" r="2" fill="none"/>',[[12,3],[21,20],[3,20]]),
  circleInversion:'<circle cx="12" cy="12" r="8.5"/><path d="M12 12H15.2M19.2 10.2l3.6 3.6M22.8 10.2l-3.6 3.6"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="15.2" cy="12" r="2" fill="currentColor" stroke="none"/>'
 });
@@ -118,7 +118,7 @@ const glyphDots=(positions)=>positions.map(([x,y])=>glyphDot(x,y)).join('');
 const glyphCrossSectionCircle=(cx,cy,r)=>`<circle cx="${cx}" cy="${cy}" r="${r}"/>`;
 const angleBase='<path d="M3.5 5L8.5 19H21"/>';
 glyph.angle=angleBase+'<path d="M7 14.8Q10.6 13.8 12.6 19"/>'+glyphDots([[3.5,5],[8.5,19],[21,19]]);
-glyph.fixedAngle=angleBase+'<path d="M7 14.8Q10.6 13.8 12.6 19M6.1 12.8Q10.9 11.2 14.7 19"/>'+glyphDots([[3.5,5],[8.5,19],[21,19]]);
+glyph.fixedAngle=angleBase+'<path d="M7.15 15.23A4 4 0 0 1 12.5 19M6.35 12.97A6.4 6.4 0 0 1 14.9 19"/>'+glyphDots([[3.5,5],[8.5,19],[21,19]]);
 // Same source construction shown by a more distant, oblique external point.
 // Circle C=(15.8,14), R=6; the tangent feet satisfy CT perpendicular PT.
 const tangentCenter=[15.8,14], tangentRadius=6, tangentSource=[2.8,3.2];

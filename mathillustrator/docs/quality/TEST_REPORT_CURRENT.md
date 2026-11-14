@@ -1015,3 +1015,16 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Translation:** two 14.5-unit horizontal strokes, displaced by 6.5 units horizontally and 12 vertically, with four equal filled endpoint markers. Neither image nor object model logic changed.
 
 **Verification:** `node --test tests/*.test.mjs` (345 tests baseline, final gate below); focused actual Chromium `browser_round51l_glyph_consistency.py` checks all 43 Geometry icons and their filled-circle `getComputedStyle(stroke)` plus SVG bounding boxes; earlier 51J, 51B, 51E parity and startup checks rerun. Updated old 51E test to recognize Intersection Point's R51K palette removal while keeping imported historical objects. Browser harness version parsing updated for the newest `index.html` cache URL. Offline locally inlined Chromium; deployed site unverified.
+
+
+## Round 51M — glyph and bulk inspector fixes (2026-11-14)
+
+**Confirmed source defects:** Point on object had two markers instead of one; Parallel through point marked the lower instead of the upper line; Fixed angle's two quadratic arcs were not precisely concentric; inherited Properties grid rules placed Point size into the same third row as Opacity/Width for a mixed Point + Polygon selection.
+
+**Changes:** fixed the three glyph sources in `src/app.mjs`; added an explicit non-overlapping fourth Properties grid track in `style.css`; approved changed glyph hash for Parallel through point; updated historical Geometry browser marker assertions; added `browser_round51m_glyph_properties.py` to check rendered glyph geometry and actual Ctrl-multiselection Point + Polygon Properties rectangle placement. No document model or export schema changes.
+
+**Node:** `node --test tests/*.test.mjs`: **345/345 PASS**, zero failures/skips. `node --check src/app.mjs`: PASS.
+
+**Chromium (local isolated source fixtures):** `browser_round51m_glyph_properties.py`, `browser_round51b_geometry_sweep.py` (43 Geometry buttons and circle inversion), `browser_round51l_glyph_consistency.py`, `browser_round51_temp4.py` and `browser_smoke.py` all **PASS**. The new test checks the actual selected Point + Polygon mixed inspector rather than CSS-only mockup.
+
+**Limit:** hosted site, device-specific font layouts and cross-browser behavior were not checked; this is a focused appearance regression cut, not a full geometry correctness certification.

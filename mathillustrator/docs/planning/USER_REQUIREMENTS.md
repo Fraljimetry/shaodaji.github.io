@@ -1091,3 +1091,13 @@ The user explicitly requested removal of **Intersection Point** because **Genera
 - R397: Translation's two depicted segments were nearly aligned. Keep both longer, but increase their horizontal displacement: upper segment `(2,6)`–`(16.5,6)`, lower segment `(8.5,18)`–`(23,18)`. Both measure 14.5 units, with 6.5 horizontal shift. Other transformations retained.
 - Keep Intersection Point removed from the visible palette, but legacy intersection objects remain loadable and have their existing icon fallback.
 - Acceptance: real Chromium verifies every Geometry marker's computed stroke and 5.6-unit bounding-box diameter, Translation end coordinates and line lengths, left/right SVG parity; run full Node suite and startup.
+
+
+## Round 51M — point/parallel/fixed-angle glyphs and bulk point-size collision (2026-11-14)
+
+- Point on object glyph: **one** filled marker, exactly on the depicted curve (the source curve itself is not another point).
+- Parallel through point: move its filled marker to the **upper parallel line**.
+- Fixed angle: retain Angle's ray tilt; replace the two inexact quadratic curves with concentric circular arcs about the common angle vertex, radii 4 and 6.4 (separation 2.4).
+- Bulk Properties: when selected objects include a point and a fill-bearing shape, Point size must have its own **fourth grid row**, never sharing the Opacity or Line width row; keep the Point size field within the inspector.
+- All other tool glyphs, model data, selected/undo/export behavior and both left/right icon mappings remain unchanged.
+- Acceptance: actual Chromium marker/arc checks, selection of a Point + Polygon and bounding-box non-overlap; existing 43-tool Geometry and historical layout regressions; full Node suite.

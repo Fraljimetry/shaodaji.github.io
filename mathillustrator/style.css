@@ -755,3 +755,23 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .command-heading #plot-mode-preview{order:2;display:grid;place-items:center;flex:0 0 23px;width:23px;height:26px;color:var(--ink);pointer-events:none}
 .command-heading #plot-mode-preview svg{display:block;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .command-heading #plot-mode{max-width:48%;min-width:0}
+
+/* Round 51M: explicit fourth track prevents Point size overlapping the third-row
+   Opacity/Width controls in fill-bearing and narrow Properties inspectors. */
+.properties .style-controls-grid:not(.stroke-only-grid):has(>.style-pointsize) {
+ grid-template-rows:auto auto auto auto;align-items:start;
+}
+.properties .style-controls-grid:has(>.style-fill)>.style-pointsize {
+ grid-area:4/1/5/3;min-width:0;
+}
+.properties .style-controls-grid:not(:has(>.style-fill)):not(.stroke-only-grid)>.style-pointsize {
+ grid-area:4/1/5/3;min-width:0;
+}
+.properties .style-controls-grid>.style-pointsize>.field {
+ display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:8px;
+ min-width:0;align-items:center;
+}
+.properties .style-controls-grid>.style-pointsize>.field>input[type=number] {
+ width:56px!important;min-width:0!important;max-width:56px!important;
+ justify-self:end;box-sizing:border-box;
+}

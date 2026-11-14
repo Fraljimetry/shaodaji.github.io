@@ -15,7 +15,7 @@ CATEGORIES={
  'curves':['polyline','bezier','spline','closedSpline','freehand','locus'],
 }
 MARKERS={
- 'pointOnObject':2,'tangentCircle':3,'circularArc':3,'parabola':1,
+ 'pointOnObject':1,'tangentCircle':3,'circularArc':3,'parabola':1,
  'hyperbola':2,'generalIntersection':1,'reflection':2,'rotation':3,
  'translation':4,'dilation':3,'locus':1,'fixedLength':2,
  'fixedAngle':3,'triangleCenter':3,'circleInversion':3,

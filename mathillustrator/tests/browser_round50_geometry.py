@@ -15,7 +15,7 @@ def main():
    page.wait_for_timeout(200)
    snapshot=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
    count=lambda typ:len([o for o in snapshot()['objects'] if o['type']==typ])
-   clicks={'pointOnObject':2,'tangentCircle':3,'circularArc':3,'parabola':1,'hyperbola':4,'generalIntersection':1,'reflection':1,'rotation':2,'translation':3,'dilation':2,'locus':1,'fixedLength':2,'fixedAngle':3,'triangleCenter':3,'circleInversion':2}
+   clicks={'pointOnObject':1,'tangentCircle':3,'circularArc':3,'parabola':1,'hyperbola':4,'generalIntersection':1,'reflection':1,'rotation':2,'translation':3,'dilation':2,'locus':1,'fixedLength':2,'fixedAngle':3,'triangleCenter':3,'circleInversion':2}
    assert page.locator('[data-geometry-group]').count()==7
    for typ,click_count in clicks.items():
     tool=page.locator('[data-tool-choice="'+typ+'"]')
