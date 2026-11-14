@@ -75,6 +75,10 @@ def run():
             p.locator('#new').click()
             assert len(state(p)['objects'])==0
             p.locator('#open-file').set_input_files({'name':'fields.json','mimeType':'application/json','buffer':json.dumps(d).encode()})
+            # File input reads asynchronously; allow the actual replacement transaction to finish.
+            for _ in range(20):
+                if state(p)['objects']==d['objects']:break
+                p.wait_for_timeout(100)
             assert state(p)['objects']==d['objects']
             p.locator('#ui-language').select_option('zh')
             assert '向量场' in p.locator('#plot-mode option').all_text_contents()

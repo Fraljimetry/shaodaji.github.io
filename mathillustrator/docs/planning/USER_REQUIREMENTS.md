@@ -720,3 +720,26 @@ All **R01–R243** remain authoritative. Separate architectural additions from p
 Cohesive scope; maintain this cumulative requirements document and `docs/quality/TEST_REPORT_CURRENT.md`. Run actual Node and Chromium tests, test a dense scene, user-visible bilingual tutorial, imports and exports, JSON version compatibility, rollback and image exports; record partial/unexecuted runs honestly. Deliver only changed/new `mathillustrator/` files relative to website root in ZIP; do not modify MathReader or commit Git. Responses in this and future chats remain concise English.
 
 **Recommended next cut:** Profile and improve global scene-budget performance/cancellation, replace CPU 3D painter artifacts where feasible (depth buffer/WebGL only if tested), and expand 3D surface sampling quality without changing existing glyphs.
+
+
+## Round 40 — Complex 3D domain coloring and 2D backdrop order (2026-11-14)
+
+All prior requirements R01–R262 and tool-icon freeze remain authoritative. Scope is deliberately limited to the two user-requested corrections/additions, not a GPU/3D-architecture rewrite.
+
+### Structural development — R263–R265
+
+| ID | Requirement | Implemented scope |
+|---:|---|---|
+| R263 | Add domain coloring to 3D; the vertical coordinate may represent the modulus or argument of a complex function. | Fifth 3D-only plot mode `domain3d`, safe expression in `z`, phase-colored CPU triangulation, selected plot Properties choosing modulus or argument, and preserving color schemes. Finite x/y bounds, sampled initial modulus-height z extent, automatic ±π argument-height range when switching defaults, explicit redraw, history, JSON and SVG/raster exports reuse 3D workflows. |
+| R264 | Keep 3D complex plotting bounded and performant. | Uses existing mesh detail (8–44), cached CPU samples, scene triangle cap (12k), finite-coordinate rejection and argument-branch-cut gaps. No GPU acceleration, pixel-perfect coloring, certified poles/branch cuts, or true depth-buffer occlusion. Clipped samples are intentionally omitted. |
+| R265 | Explain both 3D height choices and their numerical limitations in the bilingual tutorial. | Updated maintained EN/ZH tutorial and README; labels added to translator, and v1 JSON Schema permits/validates optional 3D coloring properties. Earlier 3D project shape remains valid. |
+
+### A posteriori correction — R266
+
+| ID | Reported discrepancy | Corrective rule |
+|---:|---|---|
+| R266 | 2D domain-color images cover the coordinate grid and axes; they should be in the backdrop. | Render all visible 2D domain-color images immediately above the background, then grid/axes (when enabled), then all other drawable objects. Use same ordering for exports and editing; pointer-free guides do not obstruct selection. Preserve authored colors, formulas and region data. |
+
+### Process, verification and next-chat handoff — R267
+
+Update the current quality report with executed regressions and any unverified behavior. Changed/new files only under `mathillustrator/` relative to website root, no Git commits, no unapproved tool icons. Concise English response and a ready-to-copy new-chat prompt. Next cohesive cut: profile 3D depth handling/mesh performance and introduce global cancellation for expensive plots without breaking 2D/3D persistence.

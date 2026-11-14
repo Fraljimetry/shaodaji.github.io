@@ -26,7 +26,7 @@ def run():
             p.locator('#scene3d-enable').check()
             assert p.locator('html').get_attribute('class') and 'three-d' in p.locator('html').get_attribute('class')
             assert p.locator('.toolgroup:visible').count()==0
-            assert p.locator('#plot-mode option').count()==4
+            assert p.locator('#plot-mode option').count()==5
             assert p.locator('#objects-3d').is_visible()
             def add(mode,a,b=None,c=None):
                 p.locator('#plot-mode').select_option(mode)
@@ -63,7 +63,7 @@ def run():
             p.locator('#new').click();assert len(saved(p)['scene3d']['plots'])==0
             p.locator('#open-file').set_input_files({'name':'restored.json','mimeType':'application/json','buffer':json.dumps(project).encode()})
             assert len(saved(p)['scene3d']['plots'])==4
-            assert p.locator('#plot-mode option').count()==4
+            assert p.locator('#plot-mode option').count()==5
             p.locator('#ui-language').select_option('zh')
             p.set_viewport_size({'width':390,'height':810})
             assert p.locator('#drawing').count()==1

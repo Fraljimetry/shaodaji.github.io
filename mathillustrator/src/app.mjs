@@ -1,13 +1,13 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round39';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round40';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round38';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,PLOT3D_MODES} from './plot3d.mjs';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,PLOT3D_MODES} from './plot3d.mjs?cut=round40';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round39';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
-import {localizeUI,translated} from './i18n.mjs?cut=round29';
+import {localizeUI,translated} from './i18n.mjs?cut=round40';
 import {compareAndWrite,coordinateSave} from './storage.mjs';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round38';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs';
@@ -240,15 +240,15 @@ function desc(o,nameById=null){if(o.type==='point')return `(${o.xy.map(formatCoo
  return o.type;
 }
 function simple(a,b){return Math.round(a*100)/100===Math.round(b*100)/100;}
-function drawBackground(svg,includeGrid=true,exporting=false){if(!(exporting&&doc.settings.exportTransparent))svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background||'#fff'}));
- const settings=doc.settings;if(settings.page!=='infinite'&&!exporting){
+function drawBackground(svg,includeGrid=true,exporting=false,guidesOnly=false){if(!guidesOnly&&!(exporting&&doc.settings.exportTransparent))svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background||'#fff'}));
+ const settings=doc.settings;if(!guidesOnly&&settings.page!=='infinite'&&!exporting){
   const r=pageRect(size,settings.page);svg.append(el('rect',{x:r.x,y:r.y,width:r.width,height:r.height,fill:'none',stroke:'#94a3b8','stroke-width':1.5,'stroke-dasharray':'5 4',opacity:.8}));
  }
  if(!includeGrid)return;
  const minX=view.cx-size.w/(2*view.scale),maxX=view.cx+size.w/(2*view.scale),minY=view.cy-size.h/(2*view.scale),maxY=view.cy+size.h/(2*view.scale);
  let step=Number(settings.snapStep)||.5;while(step*view.scale<24)step*=2;while(step*view.scale>100)step/=2;
- if(settings.grid){const g=el('g',{'stroke':'#9daec1','stroke-width':.65,opacity:.28});for(let x=Math.ceil(minX/step)*step,n=0;x<=maxX&&n<150;x+=step,n++){const [sx]=project([x,0]);g.append(el('line',{x1:sx,y1:0,x2:sx,y2:size.h}));}for(let y=Math.ceil(minY/step)*step,n=0;y<=maxY&&n<150;y+=step,n++){const [,sy]=project([0,y]);g.append(el('line',{x1:0,y1:sy,x2:size.w,y2:sy}));}svg.append(g);}
- if(settings.showAxes){const [zx,zy]=project([0,0]),g=el('g',{stroke:'#738396','stroke-width':1});if(zx>=0&&zx<=size.w)g.append(el('line',{x1:zx,y1:0,x2:zx,y2:size.h}));if(zy>=0&&zy<=size.h)g.append(el('line',{x1:0,y1:zy,x2:size.w,y2:zy}));svg.append(g);}
+ if(settings.grid){const g=el('g',{'stroke':'#9daec1','stroke-width':.65,opacity:.28,'pointer-events':'none'});for(let x=Math.ceil(minX/step)*step,n=0;x<=maxX&&n<150;x+=step,n++){const [sx]=project([x,0]);g.append(el('line',{x1:sx,y1:0,x2:sx,y2:size.h}));}for(let y=Math.ceil(minY/step)*step,n=0;y<=maxY&&n<150;y+=step,n++){const [,sy]=project([0,y]);g.append(el('line',{x1:0,y1:sy,x2:size.w,y2:sy}));}svg.append(g);}
+ if(settings.showAxes){const [zx,zy]=project([0,0]),g=el('g',{stroke:'#738396','stroke-width':1,'pointer-events':'none'});if(zx>=0&&zx<=size.w)g.append(el('line',{x1:zx,y1:0,x2:zx,y2:size.h}));if(zy>=0&&zy<=size.h)g.append(el('line',{x1:0,y1:zy,x2:size.w,y2:zy}));svg.append(g);}
 }
 function attr(o,selectHighlight=false){return {stroke:o.style?.stroke||'#000000','stroke-width':Math.max(.15,Number(o.style?.width)||2)+(selectHighlight?0.6:0),fill:o.style?.fill||'none',opacity:o.style?.opacity??1};}
 /** Explicit author newlines are SVG text lines, not collapsed whitespace.
@@ -540,7 +540,7 @@ function draw3DScene(svg){
  for(const [a,b] of result.cube)svg.append(line(a,b,{stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
  function shadedColor(hex,shade){const channels=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));return `rgb(${channels.map(c=>Math.round(c+(255-c)*(.1+.56*shade))).join(',')})`;}
  for(const face of result.faces){const path=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
-  svg.append(el('polygon',{points:path,fill:shadedColor(face.color,face.shade),opacity:face.opacity,stroke:'none','pointer-events':'none'}));}
+  svg.append(el('polygon',{points:path,fill:face.domainColoring?face.color:shadedColor(face.color,face.shade),opacity:face.opacity,stroke:'none','pointer-events':'none'}));}
  for(const field of result.lines){const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
   if(len<.5)continue;svg.append(line(a,b,{stroke:field.color,'stroke-width':1.5,opacity:field.opacity,'pointer-events':'none'}));
   const head=6,ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
@@ -551,7 +551,8 @@ function draw3DScene(svg){
 function draw(svg,{exporting=false}={}){
  if(in3D()){svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);draw3DScene(svg);return;}
  svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);
- drawBackground(svg,!exporting||doc.settings.exportGuides,exporting);
+ // Complex-plane rasters are a backdrop: grid/axes and all foreground objects must remain legible.
+ drawBackground(svg,false,exporting);
  const resolver=createResolver(doc);
  // Build obstacle rectangles once per drawing, and only when the author enables
  // obstacle-aware routing. Standard diagrams pay none of this extra work.
@@ -674,7 +675,9 @@ function draw(svg,{exporting=false}={}){
  // Exports may run while an editing gesture is active. Never overwrite the
  // on-screen drag handle's automatic-placement state with export-only layout.
  if(!exporting)currentMorphismLabels=computedMorphismLabels;
- for(const o of doc.objects)renderObject(svg,o,resolver,exporting,labels,diagramBoxes,computedMorphismLabels,morphismRoutes);
+ for(const o of doc.objects)if(o.type==='domainColoring')renderObject(svg,o,resolver,exporting,labels,diagramBoxes,computedMorphismLabels,morphismRoutes);
+ drawBackground(svg,!exporting||doc.settings.exportGuides,exporting,true);
+ for(const o of doc.objects)if(o.type!=='domainColoring')renderObject(svg,o,resolver,exporting,labels,diagramBoxes,computedMorphismLabels,morphismRoutes);
  // Keep labels legible above subsequently painted diagram nodes and routes;
  // preserve the relative order of all authored labels. SVG export uses this
  // same painted order. Only the transparent handles are editor-only.
@@ -878,7 +881,7 @@ function renderProperties3D(root){
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id)throw Error('3D plot changed while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
- const componentLabels=selectedPlot.kind==='surface3d'?['z(x, y) =']:selectedPlot.kind==='parametric3d'?['X(u, v) =','Y(u, v) =','Z(u, v) =']:selectedPlot.kind==='implicit3d'?['F(x, y, z) =']:['X(x, y, z) =','Y(x, y, z) =','Z(x, y, z) ='];
+ const componentLabels=selectedPlot.kind==='domain3d'?['F(z) =']:selectedPlot.kind==='surface3d'?['z(x, y) =']:selectedPlot.kind==='parametric3d'?['X(u, v) =','Y(u, v) =','Z(u, v) =']:selectedPlot.kind==='implicit3d'?['F(x, y, z) =']:['X(x, y, z) =','Y(x, y, z) =','Z(x, y, z) ='];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
  for(const key of fields)field(root,key,selectedPlot[key],'number',value=>edit(p=>{p[key]=value;}),{step:.1});
@@ -887,6 +890,22 @@ function renderProperties3D(root){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'number',()=>true,{step:.1});values[key].onchange=()=>{};
  }
  const button=document.createElement('button');button.type='button';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,Number(node.value)]));});block.append(button);root.append(block);
+ if(selectedPlot.kind==='domain3d'){
+  const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
+  for(const [key,label] of [['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;heightSelect.append(opt);}
+  heightSelect.value=selectedPlot.heightMode;heightSelect.onchange=()=>edit(p=>{const was=p.heightMode,next=heightSelect.value;p.heightMode=next;
+   if(was==='modulus'&&next==='argument'&&p.bounds.zMin===0){p.bounds.zMin=-Math.PI;p.bounds.zMax=Math.PI;}
+   else if(was==='argument'&&next==='modulus'&&Math.abs(p.bounds.zMin+Math.PI)<1e-9&&Math.abs(p.bounds.zMax-Math.PI)<1e-9){
+    const f=parseComplexExpression(p.a);let max=0;for(let j=0;j<=6;j++)for(let i=0;i<=6;i++){
+     const x=p.bounds.xMin+(p.bounds.xMax-p.bounds.xMin)*i/6,y=p.bounds.yMin+(p.bounds.yMax-p.bounds.yMin)*j/6;
+     try{const h=Math.hypot(...f(x,y));if(Number.isFinite(h)&&h<=1e4)max=Math.max(max,h);}catch{}
+    }p.bounds.zMin=0;p.bounds.zMax=Math.max(4,Math.min(1e4,Math.ceil(max*1.05)));
+   }
+  });height.append(heightSelect);root.append(height);
+  const colors=document.createElement('label');colors.className='field';colors.textContent='Color scheme';const select=document.createElement('select');
+  for(const [key,label] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
+  select.value=selectedPlot.colorMode;select.onchange=()=>edit(p=>{p.colorMode=select.value;});colors.append(select);root.append(colors);
+ }
  if(selectedPlot.kind==='vector3d'){
   field(root,'Arrow density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
   const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,' Normalize vector lengths');root.append(label);
@@ -1104,10 +1123,10 @@ function syncPlotModeControl(){
  const multiple=['parametric','vectorField','parametric3d','vector3d'].includes(mode);
  plotY.hidden=!multiple;plotZ.hidden=!three||!['parametric3d','vector3d'].includes(mode);
  symbol.hidden=mode!=='parametric';
- const placeholders={function:'sin(x)',parametric:`cos(${symbol.value})`,implicit:'x^2+y^2=1',vectorField:'-y',domainColoring:'z^2+1',surface3d:'sin(x)*cos(y)',parametric3d:'cos(u)*sin(v)',implicit3d:'x^2+y^2+z^2=4',vector3d:'-y'};
+ const placeholders={function:'sin(x)',parametric:`cos(${symbol.value})`,implicit:'x^2+y^2=1',vectorField:'-y',domainColoring:'z^2+1',domain3d:'z^2+1',surface3d:'sin(x)*cos(y)',parametric3d:'cos(u)*sin(v)',implicit3d:'x^2+y^2+z^2=4',vector3d:'-y'};
  plotInput.placeholder=placeholders[mode]||'Expression';plotY.placeholder=mode==='parametric'?`sin(${symbol.value})`:mode==='vectorField'?'x':mode==='parametric3d'?'sin(u)*sin(v)':'x';
  plotZ.placeholder=mode==='parametric3d'?'cos(v)':'z';
- plotInput.setAttribute('aria-label',mode==='vectorField'?'X(x, y) =':mode==='domainColoring'?'F(z) =':mode==='parametric'?`x(${symbol.value}) =`:three?'3D first component':'Function or construction command');
+ plotInput.setAttribute('aria-label',mode==='vectorField'?'X(x, y) =':['domainColoring','domain3d'].includes(mode)?'F(z) =':mode==='parametric'?`x(${symbol.value}) =`:three?'3D first component':'Function or construction command');
  plotY.setAttribute('aria-label',mode==='vectorField'?'Y(x, y) =':mode==='parametric'?`y(${symbol.value}) =`:three?'3D second component':'Second component');
 }
 function sync3DInterface(){
@@ -1118,7 +1137,7 @@ function sync3DInterface(){
   const input=$(id);if(input.type==='checkbox')input.checked=options[key];else input.value=options[key];
  }
  const select=$('plot-mode'),prior=select.value,desired=enabled?
-  [['surface3d','Function'],['parametric3d','Parametric surface'],['implicit3d','Implicit surface'],['vector3d','Vector field']]:
+  [['surface3d','Function'],['parametric3d','Parametric surface'],['implicit3d','Implicit surface'],['vector3d','Vector field'],['domain3d','Domain coloring']]:
   [['function','Function'],['parametric','Parametric'],['implicit','Implicit'],['vectorField','Vector field'],['domainColoring','Domain coloring']];
  if(select.options.length!==desired.length||[...select.options].some((e,i)=>e.value!==desired[i][0])){
   select.replaceChildren();for(const [value,label] of desired){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}

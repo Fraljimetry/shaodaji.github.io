@@ -1395,7 +1395,8 @@
                   "surface3d",
                   "parametric3d",
                   "implicit3d",
-                  "vector3d"
+                  "vector3d",
+                  "domain3d"
                 ]
               },
               "name": {
@@ -1458,6 +1459,19 @@
                   }
                 }
               },
+              "heightMode": {
+                "enum": [
+                  "modulus",
+                  "argument"
+                ]
+              },
+              "colorMode": {
+                "enum": [
+                  "phase-modulus",
+                  "phase",
+                  "contours"
+                ]
+              },
               "density": {
                 "type": "integer",
                 "minimum": 3,
@@ -1498,7 +1512,27 @@
                 "minimum": -10000,
                 "maximum": 10000
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "domain3d"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "heightMode",
+                    "colorMode"
+                  ]
+                }
+              }
+            ]
           }
         }
       }

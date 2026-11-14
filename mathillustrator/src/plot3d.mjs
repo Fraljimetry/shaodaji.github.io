@@ -1,14 +1,20 @@
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
-import {parseCurveExpression} from './plot_modes.mjs?cut=round39';
+import {parseCurveExpression,parseComplexExpression,domainColor} from './plot_modes.mjs?cut=round39';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
-export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d'];
+export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
 export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1};
 export const defaultBounds3D=()=>({xMin:-4,xMax:4,yMin:-4,yMax:4,zMin:-4,zMax:4});
 export const newScene3D=()=>({plots:[],nextId:1,options:{...DEFAULT_3D_OPTIONS}});
 const color=/^#[0-9a-fA-F]{6}$/;
 export function parse3D(plot){
+ if(plot.kind==='domain3d'){
+  const fn=parseComplexExpression(plot.a);
+  return (x,y)=>{const [re,im]=fn(x,y);if(!ok(re)||!ok(im))return [x,y,NaN];
+   const z=plot.heightMode==='argument'?Math.atan2(im,re):Math.hypot(re,im);
+   const result=[x,y,z];result.domainRGB=domainColor(re,im,plot.colorMode);return result;};
+ }
  if(plot.kind==='surface3d'){
   const f=parseCurveExpression(plot.a,['x','y']);return (x,y)=>[x,y,f({x,y})];
  }
@@ -37,6 +43,7 @@ export function validate3D(scene){
   for(const key of ['a','b','c'])if(typeof plot[key]!=='string'||(key==='a'||['parametric3d','vector3d'].includes(plot.kind))&&!plot[key].trim()||plot[key].length>400)throw Error('Invalid 3D expression.');
   const r=plot.bounds;if(!r||!['x','y','z'].every(axis=>ok(r[axis+'Min'])&&ok(r[axis+'Max'])&&Math.abs(r[axis+'Min'])<=1e4&&Math.abs(r[axis+'Max'])<=1e4&&r[axis+'Min']<r[axis+'Max']))throw Error('3D bounds must be ascending and within ±10,000.');
   if(plot.kind==='parametric3d'&&(!ok(plot.uMin)||!ok(plot.uMax)||!ok(plot.vMin)||!ok(plot.vMax)||plot.uMin>=plot.uMax||plot.vMin>=plot.vMax||[plot.uMin,plot.uMax,plot.vMin,plot.vMax].some(v=>Math.abs(v)>1e4)))throw Error('Invalid surface parameter ranges.');
+  if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!['phase-modulus','phase','contours'].includes(plot.colorMode)))throw Error('Invalid 3D complex coloring options.');
   if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'))throw Error('3D vector density must be 3–12.');
   parse3D(plot);
  }
@@ -46,9 +53,20 @@ export function validate3D(scene){
 export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
  if(scene.plots.length>=80)throw Error('3D plot limit (80) reached.');
  const id=scene.nextId++,[a='',b='',c='']=inputs;
- const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false};
+ const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false};
  if(kind==='parametric3d')Object.assign(plot,{uMin:0,uMax:2*Math.PI,vMin:0,vMax:2*Math.PI});
  if(kind==='vector3d')Object.assign(plot,{density:5,normalized:true});
+ if(kind==='domain3d'){
+  Object.assign(plot,{heightMode:'modulus',colorMode:'phase-modulus'});
+  // Choose a finite initial z range from the complex function, rather than
+  // clipping a typical |z²+1| surface to the old generic [-4,4] cube.
+  const f=parseComplexExpression(a);let maxHeight=0;
+  for(let j=0;j<=6;j++)for(let i=0;i<=6;i++){
+   const x=bounds.xMin+(bounds.xMax-bounds.xMin)*i/6,y=bounds.yMin+(bounds.yMax-bounds.yMin)*j/6;
+   try{const value=f(x,y),height=Math.hypot(...value);if(ok(height)&&height<=1e4)maxHeight=Math.max(maxHeight,height);}catch{}
+  }
+  plot.bounds.zMin=0;plot.bounds.zMax=Math.max(4,Math.min(10000,Math.ceil(maxHeight*1.05)));
+ }
  parse3D(plot);scene.plots.push(plot);validate3D(scene);return plot;
 }
 function finitePoint(p){return Array.isArray(p)&&p.length===3&&p.every(v=>ok(v)&&Math.abs(v)<1e6);}
@@ -72,18 +90,26 @@ function inBounds(p,b){return p.every((value,i)=>value>=b[['xMin','yMin','zMin']
 export function sample3DPlot(plot,detail){
  const fn=parse3D(plot),b=plot.bounds;const faces=[],lines=[],cap=18000;let evaluations=0,limited=false;
  const safeEval=(...args)=>{evaluations++;let value;try{value=fn(...args);}catch{return null;}return finitePoint(value)?value:null;};
- const pushTriangle=(a,c,d)=>{if(faces.length>=cap){limited=true;return;}if([a,c,d].every(finitePoint)&&[a,c,d].every(p=>inBounds(p,b)))faces.push([a,c,d]);};
- if(['surface3d','parametric3d'].includes(plot.kind)){
+ const pushTriangle=(a,c,d)=>{if(faces.length>=cap){limited=true;return;}if([a,c,d].every(finitePoint)&&[a,c,d].every(p=>inBounds(p,b))){
+  const face=[a,c,d];if(plot.kind==='domain3d'){
+   // The visible color follows the function phase, independent of the height mode.
+   const rgb=a.domainRGB;if(rgb)face.color='#'+rgb.slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('');
+  }faces.push(face);
+ }};
+ if(['surface3d','parametric3d','domain3d'].includes(plot.kind)){
   const n=Math.max(8,Math.min(44,detail)),vertices=[];
   for(let j=0;j<=n;j++){const row=[];for(let i=0;i<=n;i++){
-   const x=plot.kind==='surface3d'?b.xMin+(b.xMax-b.xMin)*i/n:plot.uMin+(plot.uMax-plot.uMin)*i/n;
-   const y=plot.kind==='surface3d'?b.yMin+(b.yMax-b.yMin)*j/n:plot.vMin+(plot.vMax-plot.vMin)*j/n;
+   const x=plot.kind!=='parametric3d'?b.xMin+(b.xMax-b.xMin)*i/n:plot.uMin+(plot.uMax-plot.uMin)*i/n;
+   const y=plot.kind!=='parametric3d'?b.yMin+(b.yMax-b.yMin)*j/n:plot.vMin+(plot.vMax-plot.vMin)*j/n;
    row.push(safeEval(x,y));
   }vertices.push(row);}
   for(let j=0;j<n;j++)for(let i=0;i<n;i++){const [a,c,d,e]=[vertices[j][i],vertices[j][i+1],vertices[j+1][i+1],vertices[j+1][i]];if(!a||!c||!d||!e)continue;
    // Skip excessive triangle jumps around poles rather than bridge invalid geometry.
    const maxEdge=Math.max(...[[a,c],[c,d],[d,e],[e,a]].map(([p,q])=>Math.hypot(...minus(p,q))));
    if(maxEdge>Math.max(b.xMax-b.xMin,b.yMax-b.yMin,b.zMax-b.zMin)*1.5)continue;
+   // A phase-height branch cut jumps by nearly 2π across neighboring vertices.
+   // Do not draw artificial vertical cliffs connecting unrelated sheets.
+   if(plot.kind==='domain3d'&&plot.heightMode==='argument'&&Math.max(...[a,c,d,e].map(p=>p[2]))-Math.min(...[a,c,d,e].map(p=>p[2]))>Math.PI)continue;
    pushTriangle(a,c,d);pushTriangle(a,d,e);
   }
  }else if(plot.kind==='implicit3d'){
@@ -132,7 +158,7 @@ export function project3DScene(scene,width,height){
  }
  for(const plot of scene.plots){if(plot.hidden)continue;const result=cachedMesh(plot,opt.detail);evaluations+=result.evaluations;limited||=result.limited;
   for(const tri of result.faces){if(faces.length>=12000){limited=true;break;}const projected=tri.map(camera.project),normal=cross(minus(tri[1],tri[0]),minus(tri[2],tri[0]));const length=Math.hypot(...normal),shade=length?Math.abs(normal[0]*.35+normal[1]*.4+normal[2]*.85)/length:0;
-   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.4+.6*shade:1,color:plot.color,opacity:opt.opacity*plot.opacity});
+   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.4+.6*shade:1,color:tri.color||plot.color,domainColoring:plot.kind==='domain3d',opacity:opt.opacity*plot.opacity});
   }
   for(const line of result.lines){if(lines.length>=2400){limited=true;break;}const p=line.map(camera.project);lines.push({start:p[0],end:p[1],depth:(p[0][2]+p[1][2])/2,color:plot.color,opacity:plot.opacity});}
   if(limited&&faces.length>=12000)break;
