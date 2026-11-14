@@ -29,7 +29,7 @@ def main():
     assert left['x']+left['width']<=opacity['x']+2,(left,opacity)
     assert overlap(left,opacity)<1 and overlap(left,width)<1,(left,opacity,width)
     assert abs(opacity['x']-width['x'])<1.5 and abs(opacity['width']-width['width'])<1.5
-    left_input=bbox(root+' .style-stroke input[type=color]');assert abs(left_input['width']-left['width'])<2
+    left_input=bbox(root+' .style-stroke input[type=color]');assert left_input['width']<50 and left_input['x']>left['x']+left['width']*.4
     a=bbox(root+' .style-opacity input');b=bbox(root+' .style-width input')
     assert abs(a['width']-b['width'])<1.5 and abs(a['x']-b['x'])<1.5,(a,b)
     assert a['width']>22,(a,b)

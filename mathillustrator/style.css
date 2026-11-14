@@ -708,3 +708,41 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 #default-opacity{grid-area:auto;}
 .rightpanel .style-controls-grid>.style-opacity{grid-area:3/1/4/2;}
 .rightpanel .style-controls-grid>.style-width{grid-area:3/2/4/3;}
+
+/* Round 51 temp4: color picker beside Stroke (never a full-width lower row).
+   Preserve the shared 5×2 palette and equal-height numeric controls. */
+.properties .style-controls-grid.stroke-only-grid>.style-stroke>.field,
+.properties .vector-style-grid .style-stroke>.field,
+.properties-3d .plot-color-slot>.field {
+ display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+ gap:5px;min-height:30px;margin:0;white-space:nowrap;
+}
+.properties .style-controls-grid.stroke-only-grid>.style-stroke input[type=color],
+.properties .vector-style-grid .style-stroke input[type=color],
+.properties-3d .plot-color-slot input[type=color] {
+ box-sizing:border-box;width:39px!important;max-width:39px!important;
+ min-width:39px;height:29px;min-height:29px;padding:2px;margin-left:auto;
+}
+/* Measurements have precisely the standard Properties input width and height.
+   Read-only values are presented as selectable text, not editable state. */
+.properties>.measurement-field>.measurement-value {
+ display:block;flex:0 0 53%;width:53%;max-width:53%;height:32px;
+ min-width:0;box-sizing:border-box;padding:6px 7px;border:1px solid var(--border);
+ border-radius:6px;background:var(--subtle);color:var(--ink);font:inherit;
+ font-size:12px;font-variant-numeric:tabular-nums;text-align:left;cursor:text;
+}
+/* Two equally wide columns, each with fixed-size range captions, from u/v
+   parameters through x/y/z redraw bounds. No per-label intrinsic shifting. */
+.properties .plot-region-editor>.field,
+.properties-3d>.parametric-range-grid>.field {
+ display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;
+ column-gap:5px;min-width:0;margin:0;font-size:11px;white-space:nowrap;
+}
+.properties .plot-region-editor>.field>input,
+.properties-3d>.parametric-range-grid>.field>input {
+ width:100%;min-width:0;max-width:100%;height:30px;box-sizing:border-box;
+ margin:0;padding:4px 5px;font-variant-numeric:tabular-nums;
+}
+/* One-line summaries are visually brief; full text remains in title tooltips. */
+.objects .object .object-label small,
+#objects-3d .object .object-label small {display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

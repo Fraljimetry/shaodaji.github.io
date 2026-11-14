@@ -1,6 +1,7 @@
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round39';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
+import {measureGeometry} from './geometry_measurements.mjs';
 import {reorderVisible,shiftVisible} from './object_order.mjs';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs';
 import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round50';
@@ -124,7 +125,7 @@ const geometryCategories=[
  {id:'transformations',title:'Transformations',tools:['reflection','rotation','translation','dilation']},
  {id:'curves',title:'Curves & loci',tools:['polyline','bezier','spline','closedSpline','freehand','locus']}
 ];
-const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null;
+const touchContacts=new Set();let touchBlocked=false,pendingTouchTap=null,lastMovePointerHitId=null;
 let currentMorphismLabels=new Map();
 const selectedIds=new Set();
 let gridSnapOverride=null; // transient tool-context preference, never written into project JSON
@@ -974,7 +975,7 @@ function render3DList(){
   if(filter&&!`${plot.name} ${plot.kind} ${plot.a}`.toLowerCase().includes(filter))continue;
   const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);row.dataset.locked=plot.locked?'true':'false';
   if(plot.hidden)row.classList.add('hidden');if(selected3d===plot.id)row.classList.add('selected');
-  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;const summary=document.createElement('small');summary.textContent=plot.a;info.append(name,summary);
+  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;name.title=plot.name;const summary=document.createElement('small');summary.textContent=compactSubtitle(plot.a);summary.title=plot.a;info.append(name,summary);
   row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
   function action(label,callback,disabled=false){
    const button=document.createElement('button');button.type='button';button.className='plot3d-action';button.title=translated(label,uiPrefs.language);button.setAttribute('aria-label',translated(label,uiPrefs.language));button.disabled=disabled;
@@ -1019,6 +1020,26 @@ function renderList({resetScroll=false}={}){
  // Programmatic scroll position restoration may change the visible range.
  renderListWindow();
 }
+/** Compact one-line summaries retain complete source text on hover. */
+function compactSubtitle(value){
+ const full=String(value??'').replace(/\s+/g,' ').trim();
+ return full.length>62?full.slice(0,59)+'…':full;
+}
+const SECTION_OBJECT_GLYPHS={
+ pointOnObject:'•',perpendicularFoot:'⟂',generalIntersection:'×',circleCircleIntersection:'×',triangleCenter:'⬡',
+ tangentCircle:'◯',circularArc:'◯',parabola:'◯',hyperbola:'◯',
+ transformCopy:'↗',locus:'∿',fixedLength:'╱',fixedAngle:'∠'
+};
+function navigateToObject(id){
+ if(!id||!get(doc,id))return;
+ if($('object-search').value&&!listedObjects.some(o=>o.id===id)){
+  $('object-search').value='';renderList({resetScroll:false});
+ }
+ if(document.body.classList.contains('left-collapsed')){$('left-collapse').click();}
+ if(document.body.classList.contains('mobile-left-open')===false&&window.matchMedia('(max-width:700px)').matches){$('left-collapse').click();}
+ const index=listedObjects.findIndex(o=>o.id===id);
+ if(index!==-1)focusListIndex(index);
+}
 function renderListWindow(){
  if(in3D())return;
  const wrapper=$('objects'),count=listedObjects.length,scroll=Math.max(0,wrapper.scrollTop),height=Math.max(90,wrapper.clientHeight);
@@ -1030,11 +1051,11 @@ function renderListWindow(){
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
   const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
-  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'━',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'•─',perpBisector:'⟂',angleBisector:'∠',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||'◇';
+  const glyph=document.createElement('span');glyph.className='glyph';glyph.textContent={point:'•',midpoint:'◉',segment:'╱',arrow:'➜',line:'━',circle:'◯',polygon:'⬡',regularPolygon:'⬟',rectangle:'□',parallelogram:'▱',polyline:'⌁',ray:'•─',perpBisector:'⟂',angleBisector:'∠',parallelThrough:'∥',perpendicularThrough:'⟂',intersection:'×',circleThrough3:'◉',freehand:'∿',text:'T',function:'ƒ',parametric:'∿',implicit:'◌',vectorField:'↗',domainColoring:'◉',ellipse:'⬭',bezier:'∽',angle:'∠',node:'▣',morphism:'↦'}[o.type]||SECTION_OBJECT_GLYPHS[o.type]||'•';
  if(o.type==='polyline'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M2 19L9 3L15 18L22 4"/></svg>'); }
  if(o.type==='circleIntersection'){glyph.textContent='';glyph.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M2 20L22 4"/><circle cx="6" cy="17" r="1.7" fill="currentColor"/><circle cx="18" cy="7" r="1.7" fill="currentColor"/></svg>'); }
  row.append(addObjectOrderGrip(row,o.id,'2d'),glyph);
-  const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;const small=document.createElement('small');small.textContent=desc(o);label.append(strong,small);row.append(label);
+  const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;strong.title=o.name;const small=document.createElement('small');const fullDescription=desc(o);small.textContent=compactSubtitle(fullDescription);small.title=fullDescription;label.append(strong,small);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
   more.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();openObjectMenu(o,more);}};
@@ -1063,7 +1084,34 @@ function focusListIndex(index){
  const target=[...wrapper.querySelectorAll('.object')].find(row=>row.dataset.id===o.id);
  target?.focus();
 }
-function field(parent,label,value,type,onChange,opts={}){const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');wrap.textContent=label;const input=document.createElement(type==='multiline'?'textarea':'input');if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}input.value=String(value??'');if(opts.step)input.step=opts.step;if(opts.min!==undefined)input.min=opts.min;if(opts.max!==undefined)input.max=opts.max;let accepted=input.value;input.onchange=()=>{if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}const next=input.value;if(onChange(type==='number'?Number(next):next)===false)input.value=accepted;else accepted=next;};wrap.append(input);parent.append(wrap);return input;}
+function rangeHint(opts={}){
+ if(opts.hint)return opts.hint;
+ const {min,max}=opts;
+ if(min!==undefined&&max!==undefined)return `Range: ${min}–${max}`;
+ if(min!==undefined)return `Minimum: ${min}`;
+ if(max!==undefined)return `Maximum: ${max}`;
+ return '';
+}
+function field(parent,label,value,type,onChange,opts={}){
+ const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');wrap.textContent=label;
+ const input=document.createElement(type==='multiline'?'textarea':'input');
+ if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
+ input.value=String(value??'');if(opts.step)input.step=opts.step;
+ if(opts.min!==undefined)input.min=opts.min;
+ if(opts.max!==undefined)input.max=opts.max;
+ const hint=rangeHint(opts);if(hint){wrap.title=hint;input.title=hint;}
+ let accepted=input.value;
+ input.onchange=()=>{
+  if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}
+  const next=input.value;
+  // A blur after an already committed change must not rebuild Properties or
+  // detach the list-row/button receiving that same pointer gesture.
+  if(next===accepted)return;
+  if(onChange(type==='number'?Number(next):next)===false)input.value=accepted;
+  else accepted=next;
+ };
+ wrap.append(input);parent.append(wrap);return input;
+}
 function renderBulkProperties(root,objects){
  const editable=objects.filter(o=>!o.locked),locked=objects.length-editable.length;
  const header=document.createElement('div');header.className='bulk-heading';
@@ -1110,10 +1158,10 @@ function renderProperties3D(root){
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
  if(fields.length){const rangeGrid=document.createElement('div');rangeGrid.className='parametric-range-grid';rangeGrid.setAttribute('role','group');rangeGrid.setAttribute('aria-label','Surface parameter ranges');root.append(rangeGrid);
-  for(const key of fields)field(rangeGrid,key.replace(/Min$/,' min').replace(/Max$/,' max'),selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}));}
+  for(const key of fields)field(rangeGrid,key.replace(/Min$/,' min').replace(/Max$/,' max'),selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}),{hint:'Finite expression; min must be less than max.'});}
  const block=document.createElement('div');block.className='plot-region-editor';const subtitle=document.createElement('h4');subtitle.textContent='3D drawing region';block.append(subtitle);
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
-  const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true);values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
+  const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
  const button=document.createElement('button');button.type='button';button.className='region-redraw';button.textContent='Redraw region';button.onclick=()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));});block.append(button);root.append(block);
  if(selectedPlot.kind==='domain3d'){
@@ -1189,7 +1237,7 @@ function renderProperties(){
  if(['point','node','text'].includes(o.type)){
   const coords=document.createElement('div');coords.className='twocol';for(let i=0;i<2;i++){
    const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='number';input.step='any';input.value=String(o.xy[i]);
-   input.onchange=()=>{const ok=edit(live=>{if(!input.value.trim())throw Error('Coordinate is required.');const v=Number(input.value);if(!finite(v))throw Error('Invalid coordinate.');const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});if(!ok)input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);};l.append(input);coords.append(l);
+   input.onchange=()=>{if(input.value.trim()&&finite(Number(input.value))&&Object.is(Number(input.value),get(doc,o.id)?.xy?.[i]))return;const ok=edit(live=>{if(!input.value.trim())throw Error('Coordinate is required.');const v=Number(input.value);if(!finite(v))throw Error('Invalid coordinate.');const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});if(!ok)input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);};l.append(input);coords.append(l);
   }root.append(coords);
  }
  if(['text','node','morphism'].includes(o.type)){
@@ -1250,8 +1298,8 @@ function renderProperties(){
   });if(!ok)sel.value=old;};wrap.append(sel);root.append(wrap);
   field(root,`x(${current}) =`,o.xExpr,'text',v=>edit(live=>{parseParametric(v,live.yExpr,live.parameter);live.xExpr=v;}));
   field(root,`y(${o.parameter||'v'}) =`,o.yExpr,'text',v=>edit(live=>{parseParametric(live.xExpr,v,live.parameter);live.yExpr=v;}));
-  field(root,'Parameter start',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
-  field(root,'Parameter end',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
+  field(root,'Parameter start',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1,hint:'Range: −1,000,000 to 1,000,000; start < end.'});
+  field(root,'Parameter end',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1,hint:'Range: −1,000,000 to 1,000,000; end > start.'});
  }
  if(o.type==='implicit')field(root,'F(x, y) =',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
  if(o.type==='vectorField'){
@@ -1270,7 +1318,7 @@ function renderProperties(){
  if(['vectorField','domainColoring'].includes(o.type)){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
   const entries={};for(const [key,label] of [['xMin','X min'],['xMax','X max'],['yMin','Y min'],['yMax','Y max']]){
-   entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'number',()=>true,{step:0.1});
+   entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'number',()=>true,{step:0.1,hint:'Finite bound; min must be less than max.'});
    // Region changes remain a draft until explicitly redrawn.
    entries[key].onchange=()=>{};
   }
@@ -1279,15 +1327,14 @@ function renderProperties(){
   form.append(button);root.append(form);
  }
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
- if(o.type==='segment'||o.type==='angle'){
-  const p=createResolver(doc).points(o);let measured=null;
-  if(p.every(Boolean)&&p.length===(o.type==='segment'?2:3)){
-   if(o.type==='segment')measured=Math.hypot(p[1][0]-p[0][0],p[1][1]-p[0][1]);
-   else{const one=Math.atan2(p[0][1]-p[1][1],p[0][0]-p[1][0]),two=Math.atan2(p[2][1]-p[1][1],p[2][0]-p[1][0]);let sweep=(two-one+2*Math.PI)%(2*Math.PI);if(sweep>Math.PI)sweep-=2*Math.PI;measured=Math.abs(sweep*180/Math.PI);}
-  }
-  const label=o.type==='segment'?'Length (units)':'Angle (degrees)';
-  const measure=document.createElement('label');measure.className='field';measure.textContent=translated(label,uiPrefs.language);
-  const output=document.createElement('output');output.className='measurement-value';output.textContent=measured===null?'—':String(Number(measured.toPrecision(8)));output.setAttribute('aria-label',translated(label,uiPrefs.language));
+ const measurement=measureGeometry(o,createResolver(doc));
+ if(measurement){
+  const label=measurement.kind==='length'?'Length (units)':measurement.kind==='angle'?'Angle (degrees)':'Area (units²)';
+  const measure=document.createElement('label');measure.className='field measurement-field';measure.textContent=translated(label,uiPrefs.language);
+  // Use the same textbox width as other Properties fields, but not an editable input.
+  const output=document.createElement('input');output.type='text';output.readOnly=true;
+  output.className='measurement-value';output.value=measurement.value===null?'—':String(Number(measurement.value.toPrecision(8)));
+  output.setAttribute('aria-label',translated(label,uiPrefs.language));output.setAttribute('aria-readonly','true');
   measure.append(output);root.append(measure);
  }
  // Compact appearance controls reuse the existing transaction handlers. Keep
@@ -1659,12 +1706,15 @@ function pointerDown(e){
   return;
  }
  if(tool==='select'){
+  // A canvas repaint can retarget the browser's dblclick to the SVG root.
+  // Save the real pointer-down hit until the subsequent dblclick event.
   // A selected morphism's label handle has priority over point and path hits.
   // This must be checked before the generic overlapping-object selection logic.
   const labelId=e.target.closest('[data-label-handle]')?.getAttribute('data-label-handle');
   const labelObject=labelId&&get(doc,labelId);
   if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey&&labelObject?.type==='morphism'&&!labelObject.locked&&labelObject.text){
    if(selected!==labelId)select(labelId);
+   lastMovePointerHitId=labelId;
    const automatic=labelObject.labelAvoid!==false?currentMorphismLabels.get(labelId):null;
    drag={kind:'label',pointerId:e.pointerId,id:labelId,before:JSON.stringify(doc),
     sx,sy,offsetX:(labelObject.labelDx??0)+(automatic?.dx??0),
@@ -1673,6 +1723,7 @@ function pointerDown(e){
    return;
   }
   const id=hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null;
+  lastMovePointerHitId=id;
   if(e.altKey){drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};}
   else if(id&&(e.ctrlKey||e.metaKey||e.shiftKey)){
    // Preserve overlapping-object cycling with Ctrl; Shift targets the topmost hit.
@@ -1681,7 +1732,10 @@ function pointerDown(e){
    drag=(e.shiftKey||e.ctrlKey||e.metaKey)&&e.pointerType!=='touch'
     ?{kind:'marquee',pointerId:e.pointerId,sx,sy,ex:sx,ey:sy,additive:true}
     :{kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy,emptyMove:true};
-  }else{select(id);const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&['point','node','text','pointOnObject'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};}
+  }else{
+   select(id);
+   const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&['point','node','text','pointOnObject'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};
+  }
  }else if(tool==='pan'){
   const id=uiPrefs.autoPan!==false?(hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null):null;
   const obj=id&&get(doc,id);
@@ -2547,7 +2601,13 @@ function setupDockablePanels(mobile,propertiesLayout){
 }
 
 function initialise(){
- populateTools();setupSettings();setupInterface();$('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow();},{passive:true});
+ populateTools();setupSettings();setupInterface();
+ for(const input of document.querySelectorAll('label.field input[type="number"]')){
+  const label=input.closest('label.field');if(!label||label.title)continue;
+  const hint=rangeHint({min:input.hasAttribute('min')?input.min:undefined,max:input.hasAttribute('max')?input.max:undefined});
+  if(hint){label.title=hint;input.title=hint;}
+ }
+$('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow();},{passive:true});
  const search=$('object-search');
  // Search stays visible. The magnifying glass is deliberately decorative.
  search.addEventListener('keydown',e=>{if(e.key==='Escape'&&search.value){e.stopPropagation();search.value='';renderList({resetScroll:true});}});
@@ -2579,8 +2639,10 @@ function initialise(){
 
  svg.addEventListener('contextmenu',e=>e.preventDefault());
  svg.addEventListener('wheel',onWheel,{passive:false});svg.addEventListener('dblclick',e=>{
+  if(in3D())return; // 3D camera interactions must never clear 2D selection.
   if(['polygon','polyline','spline','closedSpline'].includes(tool)){e.preventDefault();finishDraft();}
-  else if(['select','pan'].includes(tool)){e.preventDefault();select(null);}
+  else if(tool==='select'){e.preventDefault();const target=lastMovePointerHitId;lastMovePointerHitId=null;if(target&&get(doc,target))navigateToObject(target);else select(null);}
+  else if(tool==='pan'){e.preventDefault();select(null);}
  });
  window.addEventListener('keydown',e=>{
   // Composition keys belong to the IME even inside the tikz-cd modal.
