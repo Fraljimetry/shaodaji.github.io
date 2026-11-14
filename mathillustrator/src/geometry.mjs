@@ -86,7 +86,7 @@ export function worldBounds(doc,resolver){
    const node=resolver.object(id);
    return !node||node.hidden||node.style?.opacity===0;
   }))continue;
-  if(['point','midpoint','node'].includes(o.type))put(resolver.at(o.id));
+  if(['point','midpoint','intersection','node'].includes(o.type))put(resolver.at(o.id));
   else if(o.type==='text')put(o.xy);
   else if(o.type==='freehand')for(const p of o.path)put(p);
   else if(o.refs){const p=resolver.points(o);for(const x of p)put(x);
@@ -176,7 +176,7 @@ export function fitSceneView(doc,resolver,size){
    const b=nodeBoxForFit(o.text,o.fontSize||17);
    left=Math.max(left,b.width/2);right=Math.max(right,b.width/2);
    top=Math.max(top,b.height/2);bottom=Math.max(bottom,b.height/2);
-  }else if(['point','midpoint'].includes(o.type)){
+  }else if(['point','midpoint','intersection'].includes(o.type)){
    const r=o.style.pointSize??doc.settings.pointSize;
    left=Math.max(left,r);right=Math.max(right,r);top=Math.max(top,r);bottom=Math.max(bottom,r);
    if(doc.settings.showLabels){right=Math.max(right,10+String(o.name).length*7);top=Math.max(top,22);}
@@ -197,7 +197,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round24';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round25';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -290,7 +290,7 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
  };
  for(const o of objects){
   if(!o||o.hidden||o.style?.opacity===0)continue;
-  if(['point','midpoint'].includes(o.type)){
+  if(['point','midpoint','intersection'].includes(o.type)){
    offer(resolver.at?.(o.id),o,2);continue;
   }
   if(['text','node'].includes(o.type)){offer(o.xy,o,1);continue;}
@@ -304,7 +304,13 @@ export function nearestFreehandAttachment(point,objects,resolver,scale,maxPixels
    continue;
   }
   const pts=resolver.points(o);
-  if(!Array.isArray(pts)||!pts.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)))continue;
+  if(!Array.isArray(pts))continue;
+  if(['parallelThrough','perpendicularThrough'].includes(o.type)){
+   const line=resolver.line?.(o);
+   if(line)segment(line.a,[line.a[0]+line.d[0],line.a[1]+line.d[1]],o,true);
+   continue;
+  }
+  if(!pts.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)))continue;
   if(['segment','arrow','line','ray','perpBisector'].includes(o.type)&&pts.length===2){
    if(o.type==='perpBisector'){
     const [a,b]=pts,dx=b[0]-a[0],dy=b[1]-a[1];

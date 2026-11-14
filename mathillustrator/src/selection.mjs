@@ -1,6 +1,6 @@
 /** Transient editor selection helpers. Never serialize selection into project JSON. */
 export const FILL_TYPES=new Set(['polygon','regularPolygon','ellipse','rectangle','node']);
-export const POINT_TYPES=new Set(['point','midpoint']);
+export const POINT_TYPES=new Set(['point','midpoint','intersection']);
 export function toggleIds(current,id){
  const next=new Set(current);
  if(id){if(next.has(id))next.delete(id);else next.add(id);}

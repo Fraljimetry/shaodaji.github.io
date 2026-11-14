@@ -99,7 +99,7 @@
           "type": "number",
           "minimum": 1,
           "maximum": 100,
-          "description": "Optional per-point radius in CSS px; valid only for point/midpoint objects. Older v1 objects may omit it; while untouched they display the current legacy pointSize default. When the user changes the new-object point-size default, MathIllustrator first pins those existing objects to their prior displayed radius using this optional field, preserving appearance."
+          "description": "Optional per-point radius in CSS px; valid only for point/midpoint/intersection objects. Older v1 objects may omit it; while untouched they display the current legacy pointSize default. When the user changes the new-object point-size default, MathIllustrator first pins those existing objects to their prior displayed radius using this optional field, preserving appearance."
         }
       }
     },
@@ -337,7 +337,10 @@
             "ray",
             "perpBisector",
             "circleThrough3",
-            "spline"
+            "spline",
+            "parallelThrough",
+            "perpendicularThrough",
+            "intersection"
           ]
         },
         "style": {
@@ -358,7 +361,8 @@
             "type": "string",
             "pattern": "^o[1-9][0-9]*$"
           },
-          "maxItems": 2000
+          "maxItems": 2000,
+          "description": "Existing v1 point-anchored objects reference points/midpoints/intersections. Round25 parallelThrough/perpendicularThrough require [point reference, straight-line object reference]; intersection requires [straight object reference, straight object reference]. Straight sources include segment, arrow, line, ray, perpBisector and the new through-point lines. References are stable IDs, validated for target type, acyclicity and live geometry in the model."
         },
         "path": {
           "type": "array",
@@ -488,7 +492,10 @@
         },
         "displayLabelMode": {
           "type": "string",
-          "enum": ["plain", "latex"],
+          "enum": [
+            "plain",
+            "latex"
+          ],
           "description": "Optional mathematical label mode for geometric objects."
         },
         "pointLabel": {

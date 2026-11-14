@@ -1,6 +1,6 @@
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',showAxes:true,stroke:'#3657ad',fill:'#b6c9f9',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',showAxes:false,stroke:'#172b4d',fill:'#e6eef9',opacity:1,width:2,pointSize:5},
@@ -17,9 +17,10 @@ export const PRESET_MODULES = {
  'Free illustration':{basic:true,construction:true,illustration:true,diagram:false},
  'Commutative diagrams':{basic:true,construction:false,illustration:false,diagram:true},
 };
-export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','circle','circleThrough3','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
-const POINT_LIKE = new Set(['point','midpoint']);
-const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,circle:2,circleThrough3:3,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
+export const SUPPORTED = ['point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circle','circleThrough3','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','freehand','text','function','node','morphism'];
+const POINT_LIKE = new Set(['point','midpoint','intersection']);
+export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough']);
+const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,parallelThrough:2,perpendicularThrough:2,intersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:2,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.
  * The old two-reference rectangle-bounds ellipse is intentionally retained.
  * Return null rather than producing NaN/Infinity on collapsed input. */
@@ -100,9 +101,55 @@ export function preserveInheritedPointSizes(doc){
 }
 
 export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);return append(doc,{type,refs,...opts});}
-/** Returns a resolver which indexes the scene once, caches positions, and detects cycles. */
+/** Stable line descriptor. Supporting-line calculation is shared by rendering,
+ * snapping, intersections, and validation; half-line/segment bounds are kept.
+ * Input coordinates are world-space; no screen-space geometry leaks into JSON.
+ */
+function computedStraight(o,at,line){
+ if(!o||!STRAIGHT_TYPES.has(o.type))return null;
+ let a,b,domain='infinite';
+ if(o.type==='parallelThrough'||o.type==='perpendicularThrough'){
+  const anchor=at(o.refs?.[0]),source=line(o.refs?.[1]);
+  if(!anchor||!source)return null;
+  a=anchor;
+  const d=o.type==='parallelThrough'?source.d:[-source.d[1],source.d[0]];
+  b=[a[0]+d[0],a[1]+d[1]];
+ }else{
+  a=at(o.refs?.[0]);b=at(o.refs?.[1]);
+  if(!a||!b)return null;
+  if(o.type==='perpBisector'){
+   const dx=b[0]-a[0],dy=b[1]-a[1];
+   a=[(a[0]+b[0])/2,(a[1]+b[1])/2];b=[a[0]-dy,a[1]+dx];
+  }else if(o.type==='ray')domain='ray';
+  else if(['segment','arrow'].includes(o.type))domain='segment';
+ }
+ const d=[b[0]-a[0],b[1]-a[1]];
+ if(!safeCoord(a)||!d.every(finite)||Math.hypot(...d)<1e-9)return null;
+ // Normalized direction prevents huge products in cross calculations and
+ // makes source-line scale irrelevant when generating a parallel line.
+ const len=Math.hypot(...d),unit=[d[0]/len,d[1]/len];
+ return {a:[...a],d:unit,domain,length:len};
+}
+export function intersectStraightLines(a,b){
+ if(!a||!b||!safeCoord(a.a)||!safeCoord(b.a)||!safeCoord(a.d)||!safeCoord(b.d))return null;
+ const det=a.d[0]*b.d[1]-a.d[1]*b.d[0];
+ // Sine of the acute angle between normalized direction vectors.
+ if(!Number.isFinite(det)||Math.abs(det)<=1e-10)return null;
+ const d=[b.a[0]-a.a[0],b.a[1]-a.a[1]];
+ const t=(d[0]*b.d[1]-d[1]*b.d[0])/det;
+ const u=(d[0]*a.d[1]-d[1]*a.d[0])/det;
+ if(!Number.isFinite(t)||!Number.isFinite(u))return null;
+ const inside=(line,distance)=>line.domain==='infinite'||(distance>=-1e-9&&
+  (line.domain==='ray'||distance<=line.length+1e-9));
+ if(!inside(a,t)||!inside(b,u))return null;
+ const point=[a.a[0]+t*a.d[0],a.a[1]+t*a.d[1]];
+ return safeCoord(point)?point:null;
+}
+/** Iterative dependency resolution, including mixed point/line references.
+ * No recursion on user-created point graphs: 10,000-deep chains stay bounded.
+ */
 export function createResolver(doc){
- const objects=new Map(doc.objects.map(o=>[o.id,o])),cache=new Map();
+ const objects=new Map(doc.objects.map(o=>[o.id,o])),cache=new Map(),lines=new Map();
  function at(id){
   if(cache.has(id))return cache.get(id);
   const stack=[[id,false]],active=new Set();
@@ -114,16 +161,31 @@ export function createResolver(doc){
    if(ready){
     let p=null;
     if((obj.type==='point'||obj.type==='node')&&safeCoord(obj.xy))p=obj.xy;
-    if(obj.type==='midpoint'&&obj.refs?.length===2){const a=cache.get(obj.refs[0]),b=cache.get(obj.refs[1]);if(a&&b)p=[(a[0]+b[0])/2,(a[1]+b[1])/2];}
+    if(obj.type==='midpoint'&&obj.refs?.length===2){
+     const a=cache.get(obj.refs[0]),b=cache.get(obj.refs[1]);
+     if(a&&b)p=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+    }
+    if(obj.type==='intersection'&&obj.refs?.length===2)
+     p=intersectStraightLines(lines.get(obj.refs[0]),lines.get(obj.refs[1]));
+    if(STRAIGHT_TYPES.has(obj.type)){
+     lines.set(current,computedStraight(obj,ref=>cache.get(ref)||null,ref=>lines.get(ref)||null));
+    }
     cache.set(current,p);active.delete(current);continue;
    }
-   if(active.has(current)){cache.set(current,null);continue;}
+   if(active.has(current)){cache.set(current,null);lines.set(current,null);continue;}
    active.add(current);stack.push([current,true]);
-   if(obj.type==='midpoint')for(const ref of obj.refs||[])if(!cache.has(ref))stack.push([ref,false]);
+   // All refs may contain nested intersection points or line dependencies.
+   // Preexisting geometry validation rejects malformed references/cycles.
+   for(const ref of [...(obj.refs||[])].reverse())if(!cache.has(ref))stack.push([ref,false]);
   }
   return cache.get(id)||null;
  }
- return {at,points:o=>(o.refs||[]).map(at),object:id=>objects.get(id)};
+ function line(o){
+  const id=typeof o==='string'?o:o?.id;
+  if(!id)return null;
+  at(id);return lines.get(id)||null;
+ }
+ return {at,line,points:o=>(o.refs||[]).map(at),object:id=>objects.get(id)};
 }
 export function position(doc,id){return createResolver(doc).at(id);}
 export function points(doc,o){return createResolver(doc).points(o);}
@@ -144,6 +206,8 @@ export function guardAnchorMove(before,after,anchorId){
  const watched=affected(after,anchorId),oldResolver=createResolver(before),newResolver=createResolver(after);
  function defect(o,resolver){
   if(!o.refs)return null;
+  if(STRAIGHT_TYPES.has(o.type))return resolver.line(o)?null:'degenerate source line';
+  if(o.type==='intersection')return resolver.at(o.id)?null:'no unique intersection within the selected objects';
   const p=resolver.points(o);if(!p.every(Boolean))return null;
   if(o.type==='morphism')return Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9?'coincident diagram nodes':null;
   try{checkNewGeometry(o.type,p);}catch(e){return e.message;}
@@ -215,6 +279,17 @@ export function command(doc,source){
  if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
   if(parts.some(x=>!x)||parts.length<min||(!['polygon','polyline'].includes(type)&&(type==='ellipse'?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
   const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));return append(doc,{type,refs});
+ }
+ m=s.match(/^(Parallel|Perpendicular|Intersect)\s*\(\s*([A-Za-z][A-Za-z0-9_ ]*)\s*,\s*([A-Za-z][A-Za-z0-9_ ]*)\s*\)$/i);
+ if(m){
+  const type={parallel:'parallelThrough',perpendicular:'perpendicularThrough',intersect:'intersection'}[m[1].toLowerCase()];
+  const first=byName(doc,m[2].trim()),second=byName(doc,m[3].trim());
+  if(!first||!second)throw Error('Unknown construction reference.');
+  const refs=[first.id,second.id];
+  if(type==='intersection'){
+   if(!STRAIGHT_TYPES.has(first.type)||!STRAIGHT_TYPES.has(second.type)||!intersectStraightLines(createResolver(doc).line(first),createResolver(doc).line(second)))throw Error('Choose two crossing straight objects.');
+  }else if(!POINT_LIKE.has(first.type)||!STRAIGHT_TYPES.has(second.type)||!createResolver(doc).line(second))throw Error('Choose a point and a valid straight object.');
+  return append(doc,{type,refs});
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*"([^"\\]{1,180})"\s*\)$/i);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');return append(doc,{type:'node',name:m[1],xy:[Number(m[2]),Number(m[3])],text:m[4],fontSize:17});}
@@ -299,12 +374,16 @@ export function validateDoc(raw){
  if(d.settings.page==='infinite'&&d.settings.exportRegion==='page')throw Error('Page-only export requires a finite page frame.');
  if(!['viewport','page'].includes(d.settings.exportRegion)||typeof d.settings.showLabels!=='boolean'||typeof d.settings.snapAnchors!=='boolean')throw Error('Invalid extended settings.');
  const objects=new Map(d.objects.map(o=>[o.id,o]));
- for(const o of d.objects)for(const ref of o.refs||[]){const parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
-  if(o.type==='morphism'?parent.type!=='node':!POINT_LIKE.has(parent.type))throw Error('Invalid reference target for '+o.type);}
+ for(const o of d.objects)for(let i=0;i<(o.refs||[]).length;i++){const ref=o.refs[i],parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
+  const wantLine=o.type==='intersection'||(['parallelThrough','perpendicularThrough'].includes(o.type)&&i===1);
+  const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):POINT_LIKE.has(parent.type);
+  if(!valid)throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
- const constrained=new Set(['regularPolygon','ray','perpBisector','circleThrough3','spline']);
+ const constrained=new Set(['regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection']);
  const resolver=d.objects.some(o=>constrained.has(o.type))?createResolver(d):null;
  for(const o of d.objects)if(constrained.has(o.type)){
+  if(STRAIGHT_TYPES.has(o.type)){if(!resolver.line(o))throw Error('Invalid line dependencies for '+o.type+'.');continue;}
+  if(o.type==='intersection'){if(!resolver.at(o.id))throw Error('Intersection is undefined for parallel, coincident, or noncrossing objects.');continue;}
   const p=resolver.points(o);if(!p.every(Boolean))throw Error('Invalid construction anchors for '+o.type+'.');
   if(o.type==='regularPolygon'&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');
   if(o.type==='spline'){
