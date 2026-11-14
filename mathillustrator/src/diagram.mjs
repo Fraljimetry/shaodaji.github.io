@@ -1,5 +1,5 @@
 /** Restricted, deterministic tikz-cd interchange. Never evaluates TeX. */
-import {newDoc, append, PRESETS} from './model.mjs?cut=round54';
+import {newDoc, append, PRESETS} from './model.mjs?cut=round58';
 const CELL_X=3.5,CELL_Y=2.4;
 function fail(msg){throw Error('tikz-cd: '+msg);}
 function splitTopLevel(input,separator){
@@ -68,6 +68,7 @@ export function exportTikzCd(doc){
  if(!nodes.length||nodes.length>1600)fail('diagram requires 1–1600 nodes.');
  if(nodes.some(o=>!o.text||/"|\r|\n/.test(o.text)))fail('nodes require nonempty labels without double quotes or line breaks.');
  if(edges.some(o=>o.arrowStyle&&o.arrowStyle!=='solid'))fail('styled arrows are not yet round-trip safe in tikz-cd.');
+ if(edges.some(o=>(o.morphismLine&&o.morphismLine!=='solid')||(o.morphismHeads&&o.morphismHeads!=='end')))fail('arrowhead and line styles are not yet round-trip safe in tikz-cd.');
  if(edges.some(o=>/"|\r|\n/.test(o.text)||Math.abs(o.bend||0)>1e-8))fail('quoted or bent morphisms are not yet representable.');
  const coordinateIndex=(values,reverse=false)=>{
   const sorted=[...values].sort((a,b)=>reverse?b-a:a-b),groups=[];

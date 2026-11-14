@@ -1148,3 +1148,11 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 ## Round 57 — Circle inversion glyph (2026-11-14)
 
 - Rebuilt glyph with an unmarked circle center, two non-overlapping inverse points, and a horizontal point-to-point segment. Added Node source/geometry/bounds regression (`round57_inversion_glyph.test.mjs`). Final verification: `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` 362/362 PASS; actual Chromium `browser_round57_inversion_glyph.py` PASS (rendered icon, center unmarked, inverse-point separation, no clipping, matching left/right instances). Hosted deployment not checked.
+
+## Round 58 — Independent diagram/free-curve notation (2026-11-14)
+
+**Implemented:** morphism and freehand Line style (solid/dashed/dotted/double/wavy) and Arrowheads (none/end/start/both/double-end/hook/tail/harpoon); arrowless morphisms; two open LaTeX-style end tips for epimorphisms; existing filled freehand tip appearance preserved. Curve tangents and line effects sampled from the real rendered SVG path. Legacy morphism and freehand style JSON remains accepted. Restricted TikZ-cd export fails closed for unsupported styles rather than silently losing them.
+
+**Verification:** `node --check` app/model/diagram PASS; full `node --test tests/*.test.mjs` **366/366 PASS**, including 4 new style/schema/persistence/export tests and existing Geometry/plotting cases. Chromium `browser_round58_arrow_styles.py` PASS (all line/arrowhead controls; no-head morphism; two epimorphism tips; freehand options; Undo/Redo; JSON save; SVG export); `browser_round57_inversion_glyph.py` PASS. Chromium uses the isolated inline-module harness, **not** production HTTP navigation; hosted deployment remains unverified. No Git commits.
+
+**Known limitations:** Strict TikZ-cd interchange cannot yet encode the expanded styles (nonstandard choices are rejected); no dedicated semantic marker for natural transformations beyond a double shaft. Dense/short curvatures and wavy/double offsets remain candidates for further graphical visual inspection.

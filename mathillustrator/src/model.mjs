@@ -615,11 +615,14 @@ export function validateDoc(raw){
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
   if(o.type==='morphism'&&(o.text.length>1000||!finite(o.bend??0)||Math.abs(o.bend)>5||o.refs[0]===o.refs[1]))throw Error('Invalid morphism label or bend.');
   if(o.arrowStyle!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','hook','hook-dashed','twohead','tail'].includes(o.arrowStyle)))throw Error('Invalid diagram arrow style.');
+  if(o.morphismLine!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','double','wavy'].includes(o.morphismLine)))throw Error('Invalid morphism line style.');
+  if(o.morphismHeads!==undefined&&(o.type!=='morphism'||!['none','end','start','both','double-end','hook','tail','harpoon'].includes(o.morphismHeads)))throw Error('Invalid morphism arrowheads.');
   if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
   if(o.closed!==undefined&&(!['freehand','spline'].includes(o.type)||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
   if(o.joinStyle!==undefined&&(o.type!=='freehand'||o.closed!==true||!['smooth','corner'].includes(o.joinStyle)))throw Error('Invalid free curve join style.');
-  if(o.curveLine!==undefined&&(o.type!=='freehand'||!['solid','dashed','dotted'].includes(o.curveLine)))throw Error('Invalid free curve line pattern.');
+  if(o.curveLine!==undefined&&(o.type!=='freehand'||!['solid','dashed','dotted','double','wavy'].includes(o.curveLine)))throw Error('Invalid free curve line pattern.');
   if(o.curveArrows!==undefined&&(o.type!=='freehand'||!['none','end','both'].includes(o.curveArrows)))throw Error('Invalid free curve arrow count.');
+  if(o.curveHeads!==undefined&&(o.type!=='freehand'||!['none','end','start','both','double-end','hook','tail','harpoon'].includes(o.curveHeads)))throw Error('Invalid free curve arrowheads.');
   if(o.swap!==undefined&&(o.type!=='morphism'||typeof o.swap!=='boolean'))throw Error('Invalid morphism label-side flag.');
   if(o.routing!==undefined&&(o.type!=='morphism'||!['direct','avoid','avoid-crossings','scene-crossings'].includes(o.routing)))throw Error('Invalid morphism routing mode.');
   if(o.labelAvoid!==undefined&&(o.type!=='morphism'||typeof o.labelAvoid!=='boolean'))throw Error('Invalid morphism label avoidance flag.');

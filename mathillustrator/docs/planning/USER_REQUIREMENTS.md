@@ -1192,3 +1192,11 @@ User requests recorded, with implemented items distinguished from unresolved one
 ## Round 57 — Circle inversion glyph (2026-11-14)
 
 - Render only the inversion circle and two horizontally aligned source/image points joined directly by a segment, with **no marked center or segment to the center**. Inversion distances must satisfy CP × CP′ = R²; markers must be visibly separated and stay inside the glyph. No unrelated glyphs changed.
+
+## Round 58 — Morphism and freehand arrow notation (2026-11-14)
+
+- Expose two **independent** style choices on both morphisms and free curves: **Line style** (Solid, Dashed, Dotted, Double, Wavy) and **Arrowheads** (None, End, Start, Both, Double end (epimorphism), Hook, Tail, Harpoon). Combinations must not require dozens of redundant presets.
+- Morphisms must explicitly support **no arrowhead**; default remains ordinary End. The epimorphism has **two arrowheads on one shaft**, while Double is a separate two-shaft line style. Preserve direct/manual curved routing; do not introduce orthogonal paths or automatic rerouting.
+- Morphism tips use open, LaTeX-like arrow branches rather than freehand's filled heads. Preserve free-curve arrowhead visual styling and use the **actual smoothed SVG path** for all endpoint/tangent positions, including when a start or double-end head is selected.
+- Preserve existing projects: legacy morphism `arrowStyle` and freehand `curveArrows`/`curveLine` must remain readable and render with their former intent. Store new independent selections in additional optional validated fields; reject malformed fields on unrelated objects.
+- SVG/JSON must retain the selected styles, Undo/Redo must behave normally. Restricted TikZ-cd export must reject new unrepresentable styles rather than silently downgrade them. No changes to unrelated Geometry glyphs or 3D plotting.
