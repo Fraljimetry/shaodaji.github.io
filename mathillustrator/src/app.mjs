@@ -1,6 +1,6 @@
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs';
-import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round31';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round28';
+import {TOOLS,STRAIGHT_TYPES,PRESETS,PRESET_MODULES,newDoc,clone,append,appendPolygonEdges,appendDerivedShapeEdges,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,finite,preserveInheritedPointSizes} from './model.mjs?cut=round32';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round32';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round28';
 import {sampleExplicitPlot,plotPath} from './plot.mjs';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs';
@@ -413,6 +413,8 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
     const label=o.textMode==='latex'?latexDisplay(o,lx,ly,15,{anchor:'middle',color:placed?.status==='crowded'?'#b45309':o.style.stroke,exporting})
       :el('text',{'xml:space':'preserve',x:lx,y:ly,'font-size':15,'font-family':o.fontFamily||'Georgia, serif','text-anchor':'middle',fill:placed?.status==='crowded'?'#b45309':o.style.stroke,'paint-order':'stroke','stroke':exporting&&doc.settings.exportTransparent?'none':doc.settings.background,'stroke-width':4,opacity:sty.opacity});
     if(o.textMode!=='latex')appendTextLines(label,o.text,lx,ly,15,{centered:true});
+    label.classList.add('morphism-label');
+    label.dataset.id=o.id; // Preserve object identity after hoisting labels above other SVG elements.
     item.append(label);
     if(!exporting&&!o.locked&&tool==='select'){
      // The drawn glyph can contain unpainted holes (e.g. \varphi). A transparent
@@ -457,13 +459,9 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    if(label){label.setAttribute('pointer-events','none');label.setAttribute('class','geometry-display-label');svg.append(label);}
   }
  }
- // Hit paths are appended above the semantic group for easier line selection.
- // Keep the label handle above those transparent paths so it remains draggable.
- if(!exporting&&tool==='select'&&o.type==='morphism'){
-  // Keep the actual label above transparent arrow hit paths; place only its
-  // invisible text-sized hit box on top. No visible grab handle is drawn.
-  const hit=item.querySelector('[data-label-handle]');if(hit)svg.append(hit);
- }
+ // Label hit rectangles are raised after ALL objects have rendered, rather
+ // than here: subsequent arrow/node strokes could otherwise obscure them.
+
 }
 function draw(svg,{exporting=false}={}){
  svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);
@@ -590,6 +588,13 @@ function draw(svg,{exporting=false}={}){
  // on-screen drag handle's automatic-placement state with export-only layout.
  if(!exporting)currentMorphismLabels=computedMorphismLabels;
  for(const o of doc.objects)renderObject(svg,o,resolver,exporting,labels,diagramBoxes,computedMorphismLabels,morphismRoutes);
+ // Keep labels legible above subsequently painted diagram nodes and routes;
+ // preserve the relative order of all authored labels. SVG export uses this
+ // same painted order. Only the transparent handles are editor-only.
+ for(const label of [...svg.querySelectorAll('.morphism-label')])svg.append(label);
+ // Final hit targets are on top of every scene item, including other labels;
+ // the actual LaTeX/plain glyphs are not obscured by any invisible stroke hit.
+ if(!exporting&&tool==='select')for(const hit of [...svg.querySelectorAll('[data-label-handle]')])svg.append(hit);
  // Points are picked geometrically at pointerdown. No extra SVG circle per point:
  // avoids doubling the DOM and still selects points beneath later filled polygons.
  if(!exporting){const preview=draftPoints.length?draftPoints:(draftStart?[draftStart]:[]);
@@ -1021,7 +1026,7 @@ function checkNewRefs(type,refs){
   for(let i=1;i<pairs.length;i++)if(pairs[i]===pairs[i-1])throw Error('Construction has a repeated consecutive vertex.');
  }
 }
-function addTwoPoint(type,a,b){return update(()=>{checkNewGeometry(type,[a,b]);const refs=makeRefs([a,b]);checkNewRefs(type,refs);selected=append(doc,{type,refs}).id;});}
+function addTwoPoint(type,a,b){return update(()=>{checkNewGeometry(type,[a,b]);const refs=makeRefs([a,b]);checkNewRefs(type,refs);selected=append(doc,{type,refs}).id;if(type==='rectangle')appendDerivedShapeEdges(doc,selected);});}
 function finishDraft(){
  const mins={polygon:3,polyline:2,spline:3,closedSpline:3,bezier:4,angle:3,circleThrough3:3,triangle:3,quadrilateral:4};if(!mins[tool]||draftPoints.length<mins[tool]){notice('Add more vertices before finishing.');return;}
  const pts=clone(draftPoints),type=tool,storedType=['triangle','quadrilateral'].includes(type)?'polygon':type==='closedSpline'?'spline':type;
@@ -1225,7 +1230,7 @@ function performConstructionTap(e,pt){
     checkNewGeometry('circle',[a,pt]);const refs=makeRefs([a,pt]);checkNewRefs('circle',refs);
     const center=append(doc,{type:'midpoint',refs}).id;
     selected=append(doc,{type:'circle',refs:[center,refs[0]]}).id;
-   })&&afterOneConstruction();else if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;})&&afterOneConstruction();else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
+   })&&afterOneConstruction();else if(tool==='regularPolygon')update(()=>{if(Math.hypot(a[0]-pt[0],a[1]-pt[1])<1e-9)throw Error('Choose a different vertex from the center.');const refs=makeRefs([a,pt]);checkNewRefs('regularPolygon',refs);selected=append(doc,{type:'regularPolygon',refs,sides:doc.settings.polygonSides}).id;appendDerivedShapeEdges(doc,selected);})&&afterOneConstruction();else if(addTwoPoint(tool,a,pt))afterOneConstruction();}
  }else if(['polygon','polyline','bezier','angle','triangle','quadrilateral','circleThrough3','spline','closedSpline'].includes(tool)){
   if(draftPoints.length===0||Math.hypot(pt[0]-draftPoints.at(-1)[0],pt[1]-draftPoints.at(-1)[1])>1e-8)draftPoints.push(pt);
   if((tool==='bezier'&&draftPoints.length===4)||(tool==='angle'&&draftPoints.length===3)||(tool==='circleThrough3'&&draftPoints.length===3)||(tool==='triangle'&&draftPoints.length===3)||(tool==='quadrilateral'&&draftPoints.length===4))finishDraft();else scheduleRender();

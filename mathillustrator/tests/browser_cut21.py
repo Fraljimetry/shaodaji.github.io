@@ -24,16 +24,16 @@ def run():
   routed=page.locator('#drawing g[data-id="o4"][data-route-status="routed"]')
   assert routed.count()==1, 'Blocked straight edge should route around the intervening node'
   assert routed.locator('path').first.get_attribute('d').count('L')>=2
-  initial_label=routed.locator('text').get_attribute('x')
+  initial_label=page.locator('#drawing .morphism-label[data-id="o4"]').get_attribute('x')
   page.locator('#object-search').fill('arrow f');page.locator('#objects .object').first.click()
   assert page.locator('#morphism-routing').input_value()=='avoid'
   label_shift=page.get_by_label('Label shift X (px)')
   label_shift.fill('48');label_shift.dispatch_event('change');page.wait_for_timeout(100)
-  shifted=float(page.locator('#drawing g[data-id="o4"] text').get_attribute('x'))
+  shifted=float(page.locator('#drawing .morphism-label[data-id="o4"]').get_attribute('x'))
   assert shifted>float(initial_label)+45,(initial_label,shifted)
   pos=page.get_by_label('Label position')
   pos.fill('0.2');pos.dispatch_event('change');page.wait_for_timeout(100)
-  assert page.locator('#drawing g[data-id="o4"] text').count()==1
+  assert page.locator('#drawing .morphism-label[data-id="o4"]').count()==1
   page.locator('#export-open').click()
   assert page.get_by_role('button',name='TikZ / PGF',exact=True).is_disabled(), 'Restricted TikZ cannot preserve screen-space routes'
   svg=download(page,'SVG').read_text();assert 'data-route-status="routed"' in svg and 'data-id="o4"' in svg

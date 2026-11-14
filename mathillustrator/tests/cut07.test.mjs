@@ -8,7 +8,8 @@ test('MI-RECT-071: rectangle command creates live two-anchor rectangle',()=>{
  assert.equal(rect.type,'rectangle'); assert.equal(rect.refs.length,2);
  doc.objects.find(x=>x.name==='B').xy=[5,4];
  assert.deepEqual(createResolver(doc).points(rect),[[0,0],[5,4]]);
- assert.equal(validateDoc(doc).objects.at(-1).type,'rectangle');
+ assert.equal(validateDoc(doc).objects.find(o=>o.id===rect.id).type,'rectangle');
+ assert.equal(doc.objects.filter(o=>o.edgeOf===rect.id).length,4);
 });
 test('MI-RECT-072: rectangle with collapsed anchor is rejected without mutation',()=>{
  const doc=newDoc();addPoint(doc,[1,1],'A');addPoint(doc,[1,1],'B');const old=JSON.stringify(doc);

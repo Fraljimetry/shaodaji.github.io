@@ -1,4 +1,29 @@
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
+/** Pure derived polygon vertices. Shared by the model's dynamic side segments
+ * and the renderer/snapping module; never materialize virtual corners as points. */
+export function regularPolygonVertices(center,vertex,sides){
+ if(!safeCoord(center)||!safeCoord(vertex)||!Number.isInteger(sides)||sides<3||sides>100)return [];
+ const dx=vertex[0]-center[0],dy=vertex[1]-center[1],r=Math.hypot(dx,dy);
+ if(!Number.isFinite(r)||r<1e-10)return [];
+ const phase=Math.atan2(dy,dx);
+ return Array.from({length:sides},(_,i)=>[center[0]+r*Math.cos(phase+i*2*Math.PI/sides),center[1]+r*Math.sin(phase+i*2*Math.PI/sides)]);
+}
+/** Rectangle corners use the same min/max axis-aligned order as its SVG.
+ * Side identities remain stable when opposite defining corners cross axes. */
+export function derivedShapeVertices(owner,at){
+ if(!owner||!['rectangle','regularPolygon'].includes(owner.type)||!Array.isArray(owner.refs))return [];
+ const [a,b]=owner.refs.map(at);if(!safeCoord(a)||!safeCoord(b))return [];
+ if(owner.type==='regularPolygon')return regularPolygonVertices(a,b,owner.sides);
+ const minX=Math.min(a[0],b[0]),maxX=Math.max(a[0],b[0]);
+ const minY=Math.min(a[1],b[1]),maxY=Math.max(a[1],b[1]);
+ if(maxX-minX<1e-9||maxY-minY<1e-9)return [];
+ return [[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]];
+}
+export function derivedSidePoints(edge,owner,at){
+ if(!edge||!Number.isInteger(edge.edgeIndex)||edge.edgeIndex<0)return null;
+ const vertices=derivedShapeVertices(owner,at),i=edge.edgeIndex;
+ return i<vertices.length?[vertices[i],vertices[(i+1)%vertices.length]]:null;
+}
 export const VERSION = 1;
 export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','quadrilateral','ellipse','rectangle','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
@@ -104,6 +129,17 @@ export function appendPolygonEdges(doc,polygonId){
   edges.push(append(doc,{type:'segment',refs:[polygon.refs[i],polygon.refs[(i+1)%polygon.refs.length]],edgeOf:polygonId}).id);
  return edges;
 }
+/** First-class, independently styled segments tied to *virtual* corners.
+ * Existing rectangles/regular polygons without edges are left unchanged; no
+ * migration changes their IDs or object counts on import. The refs preserve
+ * the original two point dependencies; edgeIndex chooses derived endpoints. */
+export function appendDerivedShapeEdges(doc,ownerId){
+ const owner=get(doc,ownerId);
+ if(!owner||!['rectangle','regularPolygon'].includes(owner.type))throw Error('Derived sides require a rectangle or regular polygon.');
+ const count=owner.type==='rectangle'?4:owner.sides;
+ if(doc.objects.length+count>10000||doc.nextId+count>Number.MAX_SAFE_INTEGER-1)throw Error('Derived sides exceed object capacity.');
+ return Array.from({length:count},(_,i)=>append(doc,{type:'segment',refs:[...owner.refs],edgeOf:ownerId,edgeIndex:i}).id);
+}
 export function addPoint(doc,p,name){if(!safeCoord(p))throw Error('Point coordinates must be finite.');return append(doc,{type:'point',name,xy:clone(p)});}
 /** Freeze the displayed radii of legacy v1 point/midpoint objects which were
  * allowed to omit per-object pointSize. A change in *new object style* must
@@ -118,7 +154,7 @@ export function preserveInheritedPointSizes(doc){
  return pinned;
 }
 
-export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);const obj=append(doc,{type,refs,...opts});if(type==='polygon')appendPolygonEdges(doc,obj.id);return obj;}
+export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pts.every(safeCoord))throw Error('Invalid construction points.');const refs=pts.map(p=>addPoint(doc,p).id);const obj=append(doc,{type,refs,...opts});if(type==='polygon')appendPolygonEdges(doc,obj.id);if(['rectangle','regularPolygon'].includes(type))appendDerivedShapeEdges(doc,obj.id);return obj;}
 /** Stable line descriptor. Supporting-line calculation is shared by rendering,
  * snapping, intersections, and validation; half-line/segment bounds are kept.
  * Input coordinates are world-space; no screen-space geometry leaks into JSON.
@@ -126,6 +162,14 @@ export function createAnchored(doc,type,pts,opts={}){if(!Array.isArray(pts)||!pt
 function computedStraight(o,at,line){
  if(!o||!STRAIGHT_TYPES.has(o.type))return null;
  let a,b,domain='infinite';
+ if(o.type==='segment'&&o.edgeIndex!==undefined){
+  const endpoints=at.side?.(o);
+  if(!endpoints)return null;
+  [a,b]=endpoints;
+  const delta=[b[0]-a[0],b[1]-a[1]],len=Math.hypot(...delta);
+  if(!Number.isFinite(len)||len<1e-9)return null;
+  return {a:[...a],d:[delta[0]/len,delta[1]/len],domain:'segment',length:len};
+ }
  if(o.type==='parallelThrough'||o.type==='perpendicularThrough'){
   const anchor=at(o.refs?.[0]),source=line(o.refs?.[1]);
   if(!anchor||!source)return null;
@@ -224,6 +268,9 @@ export function intersectCircles(a,b){
  */
 export function createResolver(doc){
  const objects=new Map(doc.objects.map(o=>[o.id,o])),cache=new Map(),lines=new Map();
+ const side=o=>derivedSidePoints(o,objects.get(o.edgeOf),ref=>cache.get(ref)||null);
+ const pointForLine=ref=>cache.get(ref)||null;
+ pointForLine.side=side;
  function at(id){
   if(cache.has(id))return cache.get(id);
   const stack=[[id,false]],active=new Set();
@@ -253,7 +300,7 @@ export function createResolver(doc){
      p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
     }
     if(STRAIGHT_TYPES.has(obj.type)){
-     lines.set(current,computedStraight(obj,ref=>cache.get(ref)||null,ref=>lines.get(ref)||null));
+     lines.set(current,computedStraight(obj,pointForLine,ref=>lines.get(ref)||null));
     }
     cache.set(current,p);active.delete(current);continue;
    }
@@ -270,7 +317,8 @@ export function createResolver(doc){
   if(!id)return null;
   at(id);return lines.get(id)||null;
  }
- return {at,line,points:o=>(o.refs||[]).map(at),object:id=>objects.get(id)};
+ return {at,line,points:o=>o.type==='segment'&&o.edgeIndex!==undefined
+   ?derivedSidePoints(o,objects.get(o.edgeOf),at)||[]:(o.refs||[]).map(at),object:id=>objects.get(id)};
 }
 export function position(doc,id){return createResolver(doc).at(id);}
 export function points(doc,o){return createResolver(doc).points(o);}
@@ -365,7 +413,7 @@ export function command(doc,source){
  m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Polygon|Polyline|Bezier|Angle|Midpoint)\s*\(([^()]*)\)$/i);
  if(m){const type=m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:2,polygon:3,polyline:2,bezier:4,angle:3,midpoint:2}[type];
   if(parts.some(x=>!x)||parts.length<min||(!['polygon','polyline'].includes(type)&&(type==='ellipse'?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
-  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);return result;
+  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);if(type==='rectangle')appendDerivedShapeEdges(doc,result.id);return result;
  }
  m=s.match(/^(Parallel|Perpendicular|Intersect)\s*\(\s*([A-Za-z][A-Za-z0-9_ ]*)\s*,\s*([A-Za-z][A-Za-z0-9_ ]*)\s*\)$/i);
  if(m){
@@ -381,7 +429,7 @@ export function command(doc,source){
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*"([^"\\]{1,180})"\s*\)$/i);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');return append(doc,{type:'node',name:m[1],xy:[Number(m[2]),Number(m[3])],text:m[4],fontSize:17});}
  m=s.match(/^RegularPolygon\(\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*(\d+)\s*\)$/i);
- if(m){const sides=Number(m[3]);if(!Number.isInteger(sides)||sides<3||sides>100)throw Error('Regular polygon sides must be 3–100.');const a=pointName(doc,m[1]),b=pointName(doc,m[2]),u=position(doc,a),v=position(doc,b);if(!u||!v||Math.hypot(u[0]-v[0],u[1]-v[1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');return append(doc,{type:'regularPolygon',refs:[a,b],sides});}
+ if(m){const sides=Number(m[3]);if(!Number.isInteger(sides)||sides<3||sides>100)throw Error('Regular polygon sides must be 3–100.');const a=pointName(doc,m[1]),b=pointName(doc,m[2]),u=position(doc,a),v=position(doc,b);if(!u||!v||Math.hypot(u[0]-v[0],u[1]-v[1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');const polygon=append(doc,{type:'regularPolygon',refs:[a,b],sides});appendDerivedShapeEdges(doc,polygon.id);return polygon;}
  m=s.match(/^Morphism\(\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*"([^"\\]{0,180})"\s*\)$/i);
  if(m){const refs=m.slice(1,3).map(name=>{const o=byName(doc,name);if(o?.type!=='node')throw Error('Unknown diagram node: '+name);return o.id;});if(refs[0]===refs[1])throw Error('Self-morphism is not yet supported.');return append(doc,{type:'morphism',refs,text:m[3],bend:0});}
  throw Error('Unsupported command. See Tutorial for exact syntax.');
@@ -416,6 +464,7 @@ export function validateDoc(raw){
   if(o.branch!==undefined&&(!['circleIntersection','circleCircleIntersection'].includes(o.type)||![-1,1].includes(o.branch)))throw Error('Invalid circle intersection branch.');
   if(['circleIntersection','circleCircleIntersection'].includes(o.type)&&![-1,1].includes(o.branch))throw Error('Circle intersection branch is required.');
   if(o.edgeOf!==undefined&&(o.type!=='segment'||typeof o.edgeOf!=='string'||!/^o[1-9]\d*$/.test(o.edgeOf)))throw Error('Invalid polygon edge owner.');
+  if(o.edgeIndex!==undefined&&(o.type!=='segment'||!o.edgeOf||!Number.isInteger(o.edgeIndex)||o.edgeIndex<0||o.edgeIndex>99))throw Error('Invalid derived edge index.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
   if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
@@ -465,10 +514,23 @@ export function validateDoc(raw){
  if(!['viewport','page'].includes(d.settings.exportRegion)||typeof d.settings.showLabels!=='boolean'||typeof d.settings.snapAnchors!=='boolean')throw Error('Invalid extended settings.');
  const objects=new Map(d.objects.map(o=>[o.id,o]));
  for(const o of d.objects)if(o.edgeOf!==undefined){
-  const polygon=objects.get(o.edgeOf);
-  if(!polygon||polygon.type!=='polygon')throw Error('Polygon edge has no owning polygon.');
-  const refs=polygon.refs||[];
-  if(!refs.some((id,i)=>o.refs[0]===id&&o.refs[1]===refs[(i+1)%refs.length]))throw Error('Polygon edge does not match its owner.');
+  const owner=objects.get(o.edgeOf);
+  if(!owner||!['polygon','rectangle','regularPolygon'].includes(owner.type))throw Error('Segment edge has no supported owner.');
+  if(owner.type==='polygon'){
+   if(o.edgeIndex!==undefined)throw Error('Free-vertex polygon edges cannot have derived side indices.');
+   const refs=owner.refs||[];
+   if(!refs.some((id,i)=>o.refs[0]===id&&o.refs[1]===refs[(i+1)%refs.length]))throw Error('Polygon edge does not match its owner.');
+  }else{
+   if(!Number.isInteger(o.edgeIndex)||o.edgeIndex>=(owner.type==='rectangle'?4:owner.sides)||
+      o.refs.length!==2||o.refs.some((id,i)=>id!==owner.refs[i]))throw Error('Derived side does not match its owner.');
+  }
+ }
+
+ const derivedSides=new Set();
+ for(const o of d.objects)if(o.edgeIndex!==undefined){
+  const key=o.edgeOf+'/'+o.edgeIndex;
+  if(derivedSides.has(key))throw Error('Duplicate derived edge index.');
+  derivedSides.add(key);
  }
  for(const o of d.objects)for(let i=0;i<(o.refs||[]).length;i++){const ref=o.refs[i],parent=objects.get(ref);if(!parent)throw Error('Dangling object reference.');
   const wantLine=o.type==='intersection'||(o.type==='circleIntersection'&&i===0)||(['parallelThrough','perpendicularThrough'].includes(o.type)&&i===1);
@@ -476,9 +538,9 @@ export function validateDoc(raw){
   const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):POINT_LIKE.has(parent.type);
   if(!valid)throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
- const constrained=new Set(['regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection']);
- const resolver=d.objects.some(o=>constrained.has(o.type))?createResolver(d):null;
- for(const o of d.objects)if(constrained.has(o.type)){
+ const constrained=new Set(['rectangle','regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','intersection','circleIntersection','circleCircleIntersection']);
+ const resolver=d.objects.some(o=>constrained.has(o.type)||o.edgeIndex!==undefined)?createResolver(d):null;
+ for(const o of d.objects)if(constrained.has(o.type)||o.edgeIndex!==undefined){
   if(STRAIGHT_TYPES.has(o.type)){if(!resolver.line(o))throw Error('Invalid line dependencies for '+o.type+'.');continue;}
   if(['intersection','circleIntersection','circleCircleIntersection'].includes(o.type)){if(!resolver.at(o.id))throw Error('Intersection is undefined on the selected source domains.');continue;}
   const p=resolver.points(o);if(!p.every(Boolean))throw Error('Invalid construction anchors for '+o.type+'.');

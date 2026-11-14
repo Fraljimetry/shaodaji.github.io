@@ -21,7 +21,7 @@ def run():
   initial=page.locator('#drawing g[data-id="o3"] path').first.get_attribute('d')
   rect=handle.bounding_box();px=rect['x']+rect['width']/2;py=rect['y']+rect['height']/2
   page.mouse.move(px,py);page.mouse.down();page.mouse.move(px+47,py+26,steps=4);page.wait_for_timeout(130)
-  during=float(page.locator('#drawing g[data-id="o3"] text').get_attribute('x'))
+  during=float(page.locator('#drawing .morphism-label[data-id="o3"]').get_attribute('x'))
   page.mouse.up();page.wait_for_timeout(140)
   dx=page.get_by_label('Label shift X (px)').input_value();dy=page.get_by_label('Label shift Y (px)').input_value()
   assert abs(float(dx)-47)<=1 and abs(float(dy)-26)<=1,(dx,dy)

@@ -1,11 +1,6 @@
-/** Live regular polygon, with a center and an explicit first vertex. */
-export function regularPolygonVertices(center,vertex,sides){
- if(!Array.isArray(center)||!Array.isArray(vertex)||!Number.isInteger(sides)||sides<3||sides>100)return [];
- const dx=vertex[0]-center[0],dy=vertex[1]-center[1],radius=Math.hypot(dx,dy);
- if(!Number.isFinite(radius)||radius<1e-10)return [];
- const start=Math.atan2(dy,dx);
- return Array.from({length:sides},(_,i)=>[center[0]+radius*Math.cos(start+i*2*Math.PI/sides),center[1]+radius*Math.sin(start+i*2*Math.PI/sides)]);
-}
+/** Model and renderer use precisely the same virtual corners. */
+export {regularPolygonVertices} from './model.mjs?cut=round32';
+import {regularPolygonVertices} from './model.mjs?cut=round32';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -197,7 +192,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round27';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round32';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs';
 
 /** Conservative screen-space rejection for bounded SVG primitives.

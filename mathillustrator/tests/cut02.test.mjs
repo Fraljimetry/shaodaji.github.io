@@ -13,7 +13,8 @@ test('regular polygon has live center and vertex, exact side count, area and bou
  const d=newDoc(),a=command(d,'A=(1,2)'),b=command(d,'B=(3,2)');
  const shape=command(d,'RegularPolygon(A,B,4)');
  assert.equal(shape.sides,4);
- assert.equal(validateDoc(d).objects.length,3);
+ assert.equal(validateDoc(d).objects.length,7); // New shapes also create four real sides.
+ assert.equal(d.objects.filter(o=>o.edgeOf===shape.id).length,4);
  let vertices=regularPolygonVertices(...createResolver(d).points(shape),shape.sides);
  assert.equal(vertices.length,4);
  assert.ok(Math.abs(vertices[2][0]+1)<1e-10&&Math.abs(vertices[2][1]-2)<1e-10);

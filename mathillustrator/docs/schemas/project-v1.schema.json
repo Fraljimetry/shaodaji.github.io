@@ -357,7 +357,8 @@
         "xy": {
           "$ref": "#/$defs/xy"
         },
-        "edgeOf": {"type":"string","pattern":"^o[1-9][0-9]*$","description":"Optional Round28 parent polygon ID for individually editable side segments. Full owner existence/type, adjacent vertex references and deletion cascade are checked by the model validator."},
+        "edgeOf": {"type":"string","pattern":"^o[1-9][0-9]*$","description":"Owner of an independently editable segment: free-vertex polygon, rectangle, or regular polygon. Ownership is validated by the model."},
+        "edgeIndex": {"type":"integer","minimum":0,"maximum":99,"description":"Optional derived-side ordinal (0-based) for rectangle or regular-polygon owned segments. Referenced anchors are the owner's defining anchors; endpoints are computed live. Both owner and index are cross-validated by the model."},
         "branch": {"type":"integer","enum":[-1,1],"description":"Signed root along the oriented straight object for dynamic line-circle intersections."},
         "refs": {
           "type": "array",
@@ -517,6 +518,8 @@
         }
       },
       "allOf": [
+        {"if":{"required":["edgeIndex"]},"then":{"required":["edgeOf"],"properties":{"type":{"const":"segment"}}}},
+        {"if":{"required":["edgeOf"]},"then":{"properties":{"type":{"const":"segment"}}}},
         {
           "if": {
             "properties": {
