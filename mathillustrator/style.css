@@ -785,7 +785,7 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 }
 .rightpanel .style-controls-grid:has(#point-size)>.style-opacity{grid-area:3/1/4/2;}
 .rightpanel .style-controls-grid:has(#point-size)>.style-width{grid-area:3/2/4/3;}
-.rightpanel .style-controls-grid:has(#point-size)>.style-pointsize{grid-area:4/1/5/3;min-width:0;}
+.rightpanel .style-controls-grid:has(#point-size)>.style-pointsize{grid-area:4/1/5/2;min-width:0;}
 .rightpanel .style-controls-grid:has(#point-size)>.style-pointsize>.field{
  display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:8px;align-items:center;
  min-width:0;min-height:30px;margin:0;

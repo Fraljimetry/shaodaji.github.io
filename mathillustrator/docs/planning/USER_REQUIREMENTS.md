@@ -1109,3 +1109,15 @@ The user explicitly requested removal of **Intersection Point** because **Genera
 - R402: **Line–circle intersections** glyph must show a horizontal line through a circle, with two markers exactly at the circle's left and right intersections, not a slanted chord.
 - R403: **New object style** in the right Tools/Settings panel must place Point size *below* Opacity and Line width, never overlapping their label text. This is distinct from the selected-object Properties panel addressed in R51M. Use an explicit fourth grid row, with a full-width Point size slot and aligned numeric input, including narrower widths.
 - R404: Verify actual Chromium label/input rectangles, not merely CSS declaration or a mock selected-object inspector. Keep left/right SVG parity, existing geometry constructors, imports, and undo/redo unchanged.
+
+
+## Round 51O — Website Tools card accuracy (2026-11-14)
+
+- **Confirmed:** the website-root `tools.html` falsely described advanced 3D as unavailable even though the supplied editor/tutorial implements a dedicated 3D plotting workspace, implicit surfaces, domain coloring, and vector fields. The bilingual card was also missing current 2D intersection, transformation, and locus capabilities.
+- **Implemented:** update the MathIllustrator card in both languages to describe current 2D/3D features and explicitly characterize numerical/3D limitations without asserting certified mathematical exactness. Preserve original launch/tutorial links and MathReader card.
+- **Scope:** website-root copy only, plus new focused regression and quality documentation. Full Geometry behavior, locus accuracy, rendering speed and inspector collision research remain independent pending cuts.
+- **Packaging exception:** `tools.html` is physically a website-root file, so a functional overlay must contain that root path; putting it inside `mathillustrator/` would not update the advertised tools page.
+
+## Round 51P — Point size numeric alignment (2026-11-14)
+
+- R405: In the right-panel New object style grid, the **Point size numeric textbox must have the same horizontal position and width as the Opacity numeric textbox** directly above it, rather than aligning to the far-right Line width textbox. Preserve the fourth row and keep labels/inputs non-overlapping at desktop and narrow drawer widths. Do not alter selected-object Properties layout or behavior.
