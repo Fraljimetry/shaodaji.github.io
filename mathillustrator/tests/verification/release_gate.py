@@ -38,6 +38,7 @@ def command_specs(profile, cases):
             ('browser-export-fidelity', [py, 'tests/browser_round108_export_fidelity.py'], 150, 'browser'),
             ('browser-export-cancellation', [py, 'tests/browser_round109_export_interruptions.py'], 120, 'browser'),
             ('browser-scene-lifecycle', [py, 'tests/browser_round106_3d_lifecycle.py'], 150, 'browser'),
+            ('browser-3d-gpu-fallback', [py, 'tests/browser_gpu3d_acceleration.py'], 150, 'browser'),
             ('node-performance', [node, 'tests/verification/benchmark_performance.mjs'], 100, 'node'),
             ('browser-performance', [py, 'tests/browser_round103_performance.py'], 150, 'browser'),
             ('cache-stress', [node, '--expose-gc', 'tests/verification/benchmark_cache_stability.mjs'], 120, 'node'),

@@ -1485,3 +1485,7 @@ The user requested completing all remaining release steps in one pass, without P
 ## Round 112 verification requirement
 
 The verification engine must provide one fail-closed release command, execute rather than merely locate browser/performance checks, distinguish the initial catalog from complete application coverage, use reproducible adversarial mathematical seeds, document realistic configurable performance budgets, and preserve cumulative bug/test records.
+
+## Round 113 — optional GPU acceleration for dense 3D
+
+Accelerate dense 3D screen rendering using WebGL2 where available, without changing expression evaluation, mesh topology, camera, lighting, export semantics, saved projects, glyphs, or object model. Retain an explicitly labeled CPU/SVG fallback on unsupported hardware. Verify GPU batching, fallback, export equivalence and scene lifecycle at the end; do not claim physical GPU FPS benefits without real hardware measurements.
