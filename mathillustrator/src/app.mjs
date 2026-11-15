@@ -8,7 +8,7 @@ import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,geometricPoint,geometricLine,PRESETS,PRE
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round58';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round61';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round54';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round62';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round54';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated} from './i18n.mjs?cut=round54';
@@ -1315,15 +1315,16 @@ function renderBulkProperties(root,objects){
 }
 // Plot bounds are a single atomic edit: Enter commits all axes, while a double
 // click on any axis caption prepares symmetric bounds without persisting drafts.
-function installPlotRegionKeys(container,inputs,commit){
+function installPlotRegionKeys(container,inputs,commit,{parseBound=Number}={}){
  const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
  for(const [key,input] of Object.entries(inputs)){
   const caption=input.closest('label');
   caption.title='Double-click a bound label to fill symmetric ranges for all axes; Enter to redraw.';
   caption.addEventListener('dblclick',event=>{
    if(event.target!==caption)return;
-   const raw=input.value.trim();const numeric=Number(raw);
-   if(!raw||!Number.isFinite(numeric)){notice('Enter a finite bound first.');return;}
+   const raw=input.value.trim();let numeric;
+   try{numeric=raw?parseBound(raw):NaN;}catch{numeric=NaN;}
+   if(!Number.isFinite(numeric)){notice('Enter a finite bound first.');return;}
    const radius=Math.abs(numeric);
    if(!radius){notice('Symmetric range must have nonzero width.');return;}
    for(const axis of axes){inputs[axis+'Min'].value=String(-radius);inputs[axis+'Max'].value=String(radius);}
@@ -1349,7 +1350,7 @@ function renderProperties3D(root){
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
- installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));}));
+ installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));}),{parseBound:parse3DRangeExpression});
  root.append(block);
  if(selectedPlot.kind==='domain3d'){
   const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');

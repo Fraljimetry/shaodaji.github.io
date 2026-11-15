@@ -175,11 +175,20 @@ export function* sample3DPlotSteps(plot,detail){
   for(let j=0;j<n&&!limited;j++){
    for(let i=0;i<n;i++){
     const [a,c,d,e]=[vertices[j][i],vertices[j][i+1],vertices[j+1][i+1],vertices[j+1][i]];
-    if(!a||!c||!d||!e)continue;
-    const maxEdge=Math.max(...[[a,c],[c,d],[d,e],[e,a]].map(([p,q])=>Math.hypot(...minus(p,q))));
+    // A single undefined corner must not erase the triangle determined by
+    // the other three valid samples. Keep full-cell winding unchanged;
+    // partial cells are drawn only when their three vertices are finite.
+    const available=[a,c,d,e].filter(Boolean);
+    if(available.length<3)continue;
+    const edges=available.length===4?[[a,c],[c,d],[d,e],[e,a]]:[[available[0],available[1]],[available[1],available[2]],[available[2],available[0]]];
+    const maxEdge=Math.max(...edges.map(([p,q])=>Math.hypot(...minus(p,q))));
     if(maxEdge>Math.max(b.xMax-b.xMin,b.yMax-b.yMin,b.zMax-b.zMin)*1.5)continue;
-    if(plot.kind==='domain3d'&&plot.heightMode==='argument'&&Math.max(...[a,c,d,e].map(p=>p[2]))-Math.min(...[a,c,d,e].map(p=>p[2]))>Math.PI)continue;
-    pushTriangle(a,c,d);pushTriangle(a,d,e);
+    if(plot.kind==='domain3d'&&plot.heightMode==='argument'&&Math.max(...available.map(p=>p[2]))-Math.min(...available.map(p=>p[2]))>Math.PI)continue;
+    if(available.length===4){pushTriangle(a,c,d);pushTriangle(a,d,e);}
+    else if(!a)pushTriangle(c,d,e);
+    else if(!c)pushTriangle(a,d,e);
+    else if(!d)pushTriangle(a,c,e);
+    else pushTriangle(a,c,d);
    }yield;
   }
  }else if(plot.kind==='implicit3d'){

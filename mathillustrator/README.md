@@ -5,15 +5,15 @@ MathIllustrator is a local-first, static-browser editor at `/mathillustrator/`. 
 ## Current capabilities
 
 - Semantic 2D geometry: point/dependency constructions, circles, ellipses, polygons, Bézier/freehand paths, function `y=f(x)` graphs, move/pan tools and undo/redo.
-- Diagram nodes and morphisms: borderless nodes by default, curved/routed arrows, line-end/dash styles, label placement controls and restricted `tikz-cd` interchange.
+- Diagram nodes and morphisms: borderless nodes by default, manually curved arrows, line-end/dash styles, label placement controls and restricted `tikz-cd` interchange.
 - **Real locally typeset LaTeX mathematics** in new diagram nodes and arrow labels, plus optional point labels and other text objects. MathJax glyphs become SVG paths, not plain-text TeX. Existing JSON labels with no `textMode` retain their original plain-text appearance.
 - English/Chinese interface with a reusable translation module (**partial coverage**: some runtime warnings, prompts and accessibility copy remain English). Ordinary text objects have editable font family/size; MathJax mathematical fonts remain fixed.
-- Settings, collapsible/reorderable right-panel tool sections and four independently rearrangeable Geometry categories, resizable desktop sidebars, a resizable docked or freely movable floating Properties inspector, Recently Deleted, automatic Point → Move, and locally stored interface preferences.
+- Settings, collapsible/reorderable right-panel tool sections and seven collapsible Geometry subgroups, resizable desktop sidebars, a resizable docked or freely movable floating Properties inspector, Recently Deleted, automatic Point → Move, and locally stored interface preferences.
 - **2D Geometry:** Angle Bisector and Perpendicular Foot are dependency-preserving constructions; stroke-only styles use right-column Opacity then Width, while fill-bearing styles keep those fields below the colors.
 - **3D view:** world-fixed stronger diffuse multicolor lighting, 5×2 centered square swatches, editable 3D vector line width, inline 2×2 parametric bounds, and dedicated Fast 3D orbit. CPU/SVG limitations still apply.
 - Editable native JSON projects, SVG, PNG, WebP and conditional JPEG/TikZ/semantic `tikz-cd` exports. Representations that cannot preserve the current scene are explicitly refused/disabled rather than silently simplified.
 
-Enter `A=(0,0)`, `B=(4,2)`, `Segment(A,B)` in the construction box, or use the diagram tools to create a node with label `\\frac{A_1}{B_2}`. Consult the concise [user guide](tutorial.html) for usage and the [live feature catalog](docs/planning/features.json) for current limits.
+Use the right-hand Geometry and Diagram tools to construct shapes and labeled nodes; the expression input is for mathematical plotting. Consult the concise [user guide](tutorial.html) for usage and the [live feature catalog](docs/planning/features.json) for current limits.
 
 **Not yet implemented:** GPU/WebGL 3D acceleration, exact hidden-surface elimination, interactive parameter sliders, general implicit/symbolic geometry, PDE solvers, full MathReader-style movable/dockable *main* Objects/Tools panels, complete Chinese translation, arbitrary TeX packages, and universal TikZ support. The earlier Drawing preset selector and toolkit visibility checkboxes are intentionally hidden; tools remain reachable through the collapsible palette, with all four tool sections available.
 
@@ -62,7 +62,7 @@ See [`docs/planning/USER_REQUIREMENTS.md`](docs/planning/USER_REQUIREMENTS.md) f
 
 ### Round 38: bounded 2D plotting (five modes)
 
-In Construction input, choose Function (`sin(x)`), Parametric (x=`cos(t)`, y=`sin(t)`, one selected t/u/v parameter and range), Implicit (`x^2+y^2=1`), Vector field (X=`-y`, Y=`x`, adjustable arrow density and normalization), or Domain coloring (`z^2+1`, complex i and color schemes). These are locally evaluated, bounded numerical paths, vector arrows, and embedded-PNG colorings. New fields capture the visible canvas rectangle, with a deliberate Redraw button for editing x/y bounds. All expression modes support pi/e, safe implicit multiplication and strict parsing. Complex singular/isolated zero contour topology is not certified. For accurate editing, retain JSON; SVG/raster export fails closed on plot-limit warnings. The pre-existing command language is still accepted in Function mode. Technical constraints and verification appear in `docs/planning/USER_REQUIREMENTS.md` and `docs/quality/TEST_REPORT_CURRENT.md`.
+In the plotting input selector, choose Function (`sin(x)`), Parametric (x=`cos(t)`, y=`sin(t)`, t-only parameter and t min/t max), Implicit (`x^2+y^2=1`), Vector field (X=`-y`, Y=`x`, adjustable arrow density and normalization), or Domain coloring (`z^2+1`, complex i and color schemes). These are locally evaluated, bounded numerical paths, vector arrows, and embedded-PNG colorings. New fields capture the visible canvas rectangle; edit their bounds atomically using Enter in Properties. All expression modes support pi/e, safe implicit multiplication and strict parsing. Complex singular/isolated zero contour topology is not certified. For accurate editing, retain JSON; SVG/raster export fails closed on plot-limit warnings. Legacy command data may remain importable, but programmatic constructions are not a documented user workflow. Technical constraints and verification appear in `docs/planning/USER_REQUIREMENTS.md` and `docs/quality/TEST_REPORT_CURRENT.md`.
 
 
 ### Round 39: plotting-only 3D foundation and 2D corrections

@@ -4,7 +4,7 @@
 <a class="back" href="../../">← Back to editor</a>
 <h1>MathIllustrator · Complete working tutorial</h1>
 <p> MathIllustrator is a standalone browser-first mathematical figure editor. Its native project is a semantic JSON scene, not a raster screenshot. It is independent of MathReader and does not upload drawings or run remote math inference.</p>
-<p class="warning"><strong>Scope matters:</strong> this is an expanding 2D editor, not yet a complete mathematical visualization platform. A feature listed as planned or disabled below is not available. Even implemented features have documented boundaries and verification levels. SVG/PNG/JPEG/WebP and a restricted TikZ/<code>tikz-cd</code> interchange are working; full PDF, 3D, Möbius transforms and Ricci-flow visualization are not yet implemented.</p>
+<p class="warning"><strong>Scope matters:</strong> this is an expanding 2D editor, not yet a complete mathematical visualization platform. A feature listed as planned or disabled below is not available. Even implemented features have documented boundaries and verification levels. SVG/PNG/JPEG/WebP and a restricted TikZ/<code>tikz-cd</code> interchange are working; full PDF, GPU-accelerated 3D, Möbius transforms and Ricci-flow visualization are not yet implemented.</p>
 <p><strong>Where to find it:</strong> the website homepage has a Mathematical software section and the Tools page has a MathIllustrator launch link. The editor itself lives at <code>/mathillustrator/</code>. After copying the root-relative ZIP, you must deploy the repository for the public homepage to change.</p>
 <h2 id="layout">1 · The three-panel workspace</h2>
 <p>The <strong>left</strong> panel contains a command line, searchable object list (newest objects above older ones), visibility and lock toggles, selection and object properties. The <strong>center</strong> is a zoomable Cartesian SVG design surface: positive <em>x</em> points right, positive <em>y</em> points up. The <strong>right</strong> panel contains icon-caption tool tiles, workspace presets, toolkit visibility switches and construction settings. Either side panel can collapse independently. On narrow screens, both panels initially collapse into side rails; click the left/right rail arrows to open and close the scrollable objects/tools drawers. The drawer offset follows the actual header height.</p>
@@ -28,32 +28,10 @@
 <tr><td>Morphism</td><td>Click source node, then target node; enter arrow label.</td><td>Semantic directed edge with endpoints attached to nodes. Self-loops are not supported.</td></tr>
 </tbody></table>
 <p>Use the mouse wheel to zoom about the cursor; use the center-stage <em>− / 100% / + / Fit</em> buttons to adjust the view. <em>Fit</em> includes visible circles and ellipses, but does not yet compute analytic bounds for unbounded functions or infinite lines. Pan/zoom do not alter world coordinates or the editable JSON project.</p>
-<h2 id="commands">3 · Programmatic constructions</h2>
-<p>Type in the top-left input and press Enter. Names are case-sensitive, while construction keywords are not. The following commands are supported:</p>
-<pre>A = (0, 0)
-B = (4, 2)
-C = (-1.2e-2, 3)
-D = (4, 4)
-Segment(A, B)
-Arrow(A, C)
-Line(A, B)
-Circle(A, B)
-Ellipse(A, D)
-Rectangle(A, B)
-Polygon(A, B, C)
-Polyline(A, B, C)
-Bezier(A, B, C, D)
-Angle(A, B, C)
-RegularPolygon(A, B, 6)
-Midpoint(A, B)
-f(x) = sin(x) + x^2/4
-X = Node(0, 0, "X")
-Y = Node(3, 0, "Y")
-Morphism(X, Y, "f")</pre>
-<p>Use ordinary names such as <code>A</code> or <code>P_1</code> only where the current grammar accepts them: names must match <code>[A-Za-z][A-Za-z0-9_]*</code> in named assignments. Command argument positions refer to previously created named points (including midpoints); a morphism instead requires two named diagram nodes. The <code>Node</code>/<code>Morphism</code> command labels must use simple double-quoted text without embedded double quotes or backslashes. Complex TeX labels can be edited afterward in Properties or brought in by <code>tikz-cd</code> import.</p>
-<p>The expression parser supports arithmetic <code>+ - * / ^</code>, parentheses, <code>x</code>, <code>pi</code>, <code>e</code>, numerical literals (including scientific notation), and <code>sin cos tan asin acos atan sqrt abs log ln exp floor ceil</code>. Functions such as <code>f(x)=1/x</code> are plotted by screen sampling, not by exact symbolic analysis. Multiplication must be explicit (<code>2*x</code>, not <code>2x</code>). The parser does not execute JavaScript. Round 36 adds **bounded numerical 2D parametric and implicit zero-contour plotting**. Enter parametric x(u) and y(v) using one shared sampling parameter u=v, or implicit F(x,y)=0; omitted equality means equals zero. Implicit marching squares is not a certified topology solver and may miss isolated points, tangencies, high frequencies and poles. Numerical ODE/PDE solvers, symbolic algebra, arbitrary scripts, two-parameter surfaces and complex functions are not present.</p>
+<h2 id="plotting-legacy">3 · Plotting input (current interface)</h2>
+<p>The top-left expression field accepts mathematical plotting expressions chosen by mode. Construct points, segments, circles, polygons and diagram arrows through the corresponding on-canvas tools. See the <a href="../../tutorial.html#plotting">current bilingual plotting guide</a> for supported expressions and current controls. Historical construction-command examples have been removed because they are not a supported user workflow.</p>
 <h2 id="editing">4 · Live dependencies, object editing, locking and ordering</h2>
-<p>Shapes reference stable object IDs, not copies of point coordinates. If you move A, a segment <code>Segment(A,B)</code>, circle <code>Circle(A,B)</code>, and <code>Midpoint(A,B)</code> update immediately. Morphisms likewise follow diagram nodes. You may rename objects, set point/node/text coordinates, edit text, function expressions, stroke color, line width, opacity, node/polygon/ellipse fill, morphism bend and label side, and font size where meaningful.</p>
+<p>Shapes reference stable object IDs, not copies of point coordinates. If you move a point, dependent segments, circles, and midpoints update immediately. Morphisms likewise follow diagram nodes. You may rename objects, set point/node/text coordinates, edit text, function expressions, stroke color, line width, opacity, node/polygon/ellipse fill, morphism bend and label side, and font size where meaningful.</p>
 <p>After an invalid Properties edit, the previous <em>successfully committed</em> value is restored. You can immediately correct another field without a stale-editor error; for example, a rejected 101-sided polygon must not reset a previously accepted 9-sided value. Old controls from a different opened or undone project remain invalid.</p>
 <p>For live rectangles, select either defining anchor to adjust the shape. Earlier files representing rectangles as four-point polygons retain their original semantics and are not silently converted. Valid successive property edits do not rebuild a currently focused input; a rejected edit restores the saved value and is undo-safe.</p>
 <p><em>Locked</em> prevents direct dragging, property edits and deletion of that object. If deleting a parent would delete a locked dependent, the deletion is rejected until the dependent is unlocked. A locked dependent may still follow its parent when that parent moves, because locking does not freeze mathematical dependencies. Hiding an object affects its rendering and most exports but does not remove it from the dependency graph.</p>
@@ -71,7 +49,7 @@ Morphism(X, Y, "f")</pre>
 <li><strong>Theme:</strong> Light and dark UI themes. The project background is independent of the theme.</li>
 </ul>
 <h2 id="diagrams">6 · Semantic diagrams and restricted tikz-cd interchange</h2>
-<p>Create nodes and morphisms with right-hand tools or <code>Node</code> and <code>Morphism</code> commands. Drag a node and attached morphisms move with it. Edit arrow labels, label-side swap and bend in Properties. The rendering is a native SVG diagram, not TeX typesetting: a label such as <code>\alpha</code> appears literally in the browser.</p>
+<p>Create nodes and morphisms with the right-hand Diagram tools. Drag a node and attached morphisms move with it. Edit arrow labels, label-side swap and bend in Properties. The rendering is a native SVG diagram, not TeX typesetting: a label such as <code>\alpha</code> appears literally in the browser.</p>
 <p>Click <strong>Import TeX</strong>, paste a <em>single</em> <code>\begin{tikzcd} ... \end{tikzcd}</code> environment, and confirm project replacement. The supported subset has a rectangular <code>&amp;</code>/<code>\\</code> matrix of nonempty node labels, with direct <code>\arrow[r, "f"]</code>, <code>\arrow[dd, "g"']</code>, and directions composed of <code>r,l,u,d</code>. The maximum is 40 rows × 40 columns. Each arrow must point to an existing labeled node. Unsupported arrow options, nested environments, bend declarations, style options or malformed syntax cause a visible error; no TeX is executed.</p>
 <pre>\begin{tikzcd}
 A \arrow[r, "f"] & B \\
@@ -140,7 +118,7 @@ C \arrow[u, "g"'] & D
 
 <section id="cut10-update"><h2>Cut 10 (v0.11) — diagram edges, focused editing and dense plots</h2>
 <p><strong>Diagram morphisms:</strong> Arrows now stop near the visible boundaries of rectangular node boxes rather than passing into their centers. Node dimensions are estimated from font size and Unicode characters, not exact font/TeX glyph metrics. On tightly packed diagrams the arrow's cosmetic padding contracts. If node boxes actually overlap at the current zoom, the visible arrow may temporarily disappear rather than reverse its direction. The morphism remains in the left object list and native JSON: move its nodes apart or zoom in to restore the visible connection. The morphism's bend and label remain editable. The semantic <code>tikz-cd</code> graph is independent of this SVG layout approximation; PDF/TikZ appearance is not guaranteed identical.</p>
-<p><strong>Infinite lines:</strong> A programmatic <code>Line(A,B)</code> extends indefinitely in its mathematical definition, but the editor clips its visible SVG path to the current viewport. A line entirely offscreen is not painted. Fit, native JSON and its source anchors remain unchanged. TikZ is still a bounded publication depiction rather than a literal infinite curve.</p>
+<p><strong>Infinite lines:</strong> An infinite line extends indefinitely in its mathematical definition, but the editor clips its visible SVG path to the current viewport. A line entirely offscreen is not painted. Fit, native JSON and its source anchors remain unchanged. TikZ is still a bounded publication depiction rather than a literal infinite curve.</p>
 <p><strong>Large function drawings:</strong> The editor caches a bounded number of sampled visible plot paths for unchanged function expressions and camera settings. Changing an expression, viewport center, zoom or canvas size automatically resamples. This makes selection and property edits less costly in static plot-heavy scenes, but does not guarantee 60 FPS or certify discontinuities, roots, poles or exact topology. Extreme graph densities and other shapes still require more renderer optimization.</p>
 <p><strong>Keyboard and overlays:</strong> Focus an object-list row, then use <kbd>ArrowUp</kbd>/<kbd>ArrowDown</kbd> or <kbd>Home</kbd>/<kbd>End</kbd> to navigate visible, filtered objects. Enter/Space selects. The export selector and TeX import dialog keep Tab navigation inside their open overlays, Escape restores the launcher, and the export selector has a clickable backdrop that closes it without editing the canvas. During an open export selector, the background Save/New buttons are intentionally unavailable; dismiss the selector first. Screen-reader behavior, true modal inertness in all browsers and physical touch are not certified.</p>
 <p><strong>Exports and losses:</strong> For editing, save the lossless v1 JSON project. SVG has zoom/page-dependent appearance; normal TikZ is zoom-independent but not an exact visual conversion of node boxes, font metrics or curvature. When a format is unsupported or unsafe for the current scene, its button remains unavailable rather than performing a hidden fallback. Current unsupported formats include native PDF, Asymptote and animation.</p>
