@@ -1236,3 +1236,9 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Preserve the stored arrowhead mode for existing documents and while toggling line style: switching back to a compatible line restores prior arrowheads without changing JSON or history unexpectedly.
 - Preserve export fidelity: SVG reflects headless rendering; semantic TikZ-cd wavy export uses `no head`; unsupported arrowless double-shaft TikZ-cd combinations must fail explicitly, never silently substitute a misleading arrow.
 - Keep all other morphism and free-curve glyphs unchanged; no Git commits; website-root ZIP overlay of changed/new files only.
+
+### Round 64 — Locus/trace point picking and guidance (2026-11-14)
+- User reported that Locus / Trace displays “Choose an existing point” after clicking a point. Prioritize reliable picking of visible, resolved point-like constructions over nonpoint SVG overlays; never silently create or select an unrelated point.
+- Locus uses **target (dependent point) first; point constrained to existing object second**. A free point cannot drive the locus. Include a genuine dependent-point example (fixed A, circular driver P, midpoint M) in usage guidance.
+- Retain point picking index for performance, with a bounded screen-distance fallback only when a regular hit fails; skip hidden/transparent/invalid points. Avoid repeated linear driver lookup in numeric sampling. Preserve backward-compatible document data and existing tool glyphs.
+- Add real Chromium regression for point selection, constrained driver, dependent construction and rendered locus; do not count fixture-only or static assertions as equivalent to hosted-site tests.

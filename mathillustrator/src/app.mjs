@@ -437,9 +437,10 @@ function r50Locus(o){
  const key=`${documentRevision}/${o.id}`;
  if(!r50Locus.cache)r50Locus.cache=new Map();
  if(drag?.kind!=='point'&&r50Locus.cache.has(key))return r50Locus.cache.get(key);
- const temp={...doc,objects:doc.objects.map(item=>item.id===driver.id?{...item}:item)};
+ const driverCopy={...driver};
+ const temp={...doc,objects:doc.objects.map(item=>item.id===driver.id?driverCopy:item)};
  for(let i=0;i<=count;i++){
-  temp.objects.find(item=>item.id===driver.id).parameter=i/count;
+  driverCopy.parameter=i/count;
   const p=createResolver(temp).at(target.id);
   points.push(p&&p.every(Number.isFinite)?p:null);
  }
@@ -1979,7 +1980,23 @@ function constructionHit(e,accept=()=>true){
 }
 function r50ObjectTap(e,pt){
  const hit=constructionHit(e);
- const obj=get(doc,hit),resolver=createResolver(doc),pointHit=(()=>{const [sx,sy]=xyEvent(e),id=hitTestPoint(sx,sy);const candidate=get(doc,id);return geometricPoint(candidate,resolver)?candidate:geometricPoint(obj,resolver)?obj:null;})();
+ const obj=get(doc,hit),resolver=createResolver(doc),pointHit=(()=>{
+  const [sx,sy]=xyEvent(e),id=hitTestPoint(sx,sy),candidate=get(doc,id);
+  if(geometricPoint(candidate,resolver))return candidate;
+  if(geometricPoint(obj,resolver))return obj;
+  // A stale screen-space anchor index or an SVG overlay must not make a
+  // visibly drawn point unpickable. Re-resolve real visible point anchors at
+  // the pointer and use the same screen tolerance as normal anchor picking.
+  // Only scan on a miss; common clicks retain the indexed fast path.
+  let best=null,bestDistance=Infinity;
+  for(const point of doc.objects){
+   if(point.hidden||point.style?.opacity===0||!geometricPoint(point,resolver))continue;
+   const xy=resolver.at(point.id),screen=project(xy),d=Math.hypot(screen[0]-sx,screen[1]-sy);
+   const radius=Math.max(9,Number(point.style?.pointSize??doc.settings.pointSize)+3);
+   if(d<=radius&&d<bestDistance){best=point;bestDistance=d;}
+  }
+  return best;
+ })();
  const mode=tool;
  if(mode==='pointOnObject'){
   if(!draftReference){if(!obj||r50SourceShape(obj,createResolver(doc),70).length<2){notice('Choose a valid existing geometric object.');return;}draftReference=obj.id;scheduleRender();return;}
@@ -1993,7 +2010,7 @@ function r50ObjectTap(e,pt){
    const needsPoint=['tangentCircle','parabola','locus'].includes(mode);
    const source=needsPoint?pointHit:pointHit||obj;
    if(!source||needsPoint&&!geometricPoint(source,resolver)){
-    notice(needsPoint?'Choose an existing point.':'Choose an existing geometric object.');return;
+    notice(needsPoint?'Click the center of an existing point marker (not the curve or a preview).':'Choose an existing geometric object.');return;
    }
    draftReference=source.id;draftPoints=[];scheduleRender();return;
   }

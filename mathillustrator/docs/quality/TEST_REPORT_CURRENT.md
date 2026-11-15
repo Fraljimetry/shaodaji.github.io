@@ -1201,3 +1201,10 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - **Node:** 383/383 PASS including 3 new regression cases; `node --check` application, diagram and routing modules PASS.
 - **Chromium:** isolated inline-module `browser_smoke.py` PASS and `browser_round63_headless_styles.py` PASS (semicircular hook, morphism/freehand head suppression, disabled selectors, persisted/restored heads, and no page errors). These are not real-HTTP or hosted-deployment tests.
 - **Limitation:** exact SVG/TeX visual equivalence for non-standard decorative strokes is not guaranteed. No Git commits.
+
+## Round 64 — Locus/Trace selection focused cut (2026-11-14)
+- Reported symptom: first click on a purported point shows "Choose an existing point". A clean Chromium construction with an actual `point` accepted the first click; the reported configuration has not been reproduced exactly without the original drawing.
+- Improved error guidance and added a live-resolver fallback for visible 2D point-like objects when the cached spatial index or SVG hit stack fails. No document schema or glyph changes. Sampling no longer searches the full object list on each of 129 samples.
+- Browser regression: `tests/browser_round64_locus.py` confirms a genuine point, constrained circle driver, dependent midpoint, rendered locus, and no page errors in headless Chromium.
+- Verification: `node --test tests/*.test.mjs` **379/379 PASS**; `node --check src/app.mjs` PASS. Chromium: `browser_round64_locus.py`, `browser_round51s_axes.py`, `browser_round63_headless_styles.py` PASS.
+- Historical `browser_round50_geometry.py` remains incompatible with newer, intentionally enlarged glyph markers: expects radius 2 while current `pointOnObject` glyph uses 2.8. This legacy assertion fails before geometry construction; no existing glyph was changed in Round 64. Browser coverage is focused, not exhaustive across all Chromium scripts. Standalone hosted-site smoke was not performed.
