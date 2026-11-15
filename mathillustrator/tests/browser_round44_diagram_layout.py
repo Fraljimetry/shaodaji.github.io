@@ -91,21 +91,21 @@ def run():
    start=re.search(r'^M(-?[\d.]+) (-?[\d.]+)',arrow);assert start,arrow
    path_y=float(start.group(2))
    old=float(page.locator('#drawing .morphism-label').first.get_attribute('y'))-path_y
-   page.get_by_label('Swap label side').check();page.wait_for_timeout(80)
+   page.get_by_label('Swap side').check();page.wait_for_timeout(80)
    x2,y2=center(page,page.locator('#drawing [data-label-handle="o3"]'))
    new=float(page.locator('#drawing .morphism-label').first.get_attribute('y'))-path_y
    assert old*new<0 and abs(old)>5 and abs(new)>5,(old,new)
    assert abs(x2-x)<150,(x,x2)
-   page.get_by_label('Swap label side').uncheck();page.wait_for_timeout(70)
+   page.get_by_label('Swap side').uncheck();page.wait_for_timeout(70)
    x3,y3=center(page,page.locator('#drawing [data-label-handle="o3"]'))
    assert (float(page.locator('#drawing .morphism-label').first.get_attribute('y'))-path_y)*old>0,(y3,path_y,old)
    # Different routing options must keep the label visible and its side.
    for mode in ('direct','avoid','avoid-crossings','scene-crossings'):
     page.locator('#morphism-routing').select_option(mode);page.wait_for_timeout(75)
     assert page.locator('#drawing [data-label-handle="o3"]').count()==1,mode
-    page.get_by_label('Swap label side').check();page.wait_for_timeout(55)
+    page.get_by_label('Swap side').check();page.wait_for_timeout(55)
     assert page.locator('#drawing [data-label-handle="o3"]').count()==1
-    page.get_by_label('Swap label side').uncheck()
+    page.get_by_label('Swap side').uncheck()
    # Numeric controls form an actual two-column grid, not merely reduced widths.
    gr=page.locator('.diagram-numeric-grid');assert gr.locator('input[type=number]').count()==4
    b=[x.bounding_box() for x in gr.locator('input[type=number]').all()]

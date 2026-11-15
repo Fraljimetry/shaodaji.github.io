@@ -69,7 +69,7 @@ def run():
    assert path.get_attribute('stroke')=='#3657ad','selection must preserve existing blue'
    hook=page.locator('#drawing .morphism-tail-hook');top=hook.get_attribute('d')
    assert top.count(' A')==1 and ' 0 0 0 ' in top,top
-   swap=page.get_by_label('Swap label side');swap.check()
+   swap=page.get_by_label('Swap side');swap.check()
    bottom=page.locator('#drawing .morphism-tail-hook').get_attribute('d')
    assert bottom.count(' A')==1 and ' 0 0 1 ' in bottom and top!=bottom,(top,bottom)
    assert path.get_attribute('stroke')=='#3657ad'

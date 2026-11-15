@@ -62,7 +62,7 @@ def run():
     b=locator.bounding_box();assert b and b['width']>1 and b['height']>1,b
     return b['x']+b['width']/2,b['y']+b['height']/2
    x1,y1=bbox_center(label)
-   side=page.get_by_label('Swap label side')
+   side=page.get_by_label('Swap side')
    side.check();page.wait_for_timeout(110)
    x2,y2=bbox_center(page.locator('#drawing [data-label-handle="o3"]'))
    assert abs(y2-y1)>22,(y1,y2)

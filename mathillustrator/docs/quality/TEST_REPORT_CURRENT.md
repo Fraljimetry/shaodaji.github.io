@@ -1894,3 +1894,12 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - Full Node regression: **562 passed, 0 failed, 0 skipped** (`node --test tests/*.test.mjs`).
 - Actual Chromium (inline isolated application): **1440, 768, 390, and 320 px PASS** for point `Displayed label` vs. `Label format` alignment. 1440 and 768 px also PASS for domain coloring `Displayed label`, `Color scheme`, and `Coloring resolution` equal x-position and widths. No JavaScript exceptions in these completed cases.
 - **Incomplete:** Mobile domain-coloring alignment is not certified (mobile panel-switch fixture blocked); physical touch, hosted-site and screenshot-level visual review unverified.
+
+### Round 153 — paired Properties alignment (local source, 2026-11-15)
+
+- Node suite: **562/562 passed**, 0 failed / skipped (`node --test tests/*.test.mjs`).
+- JavaScript syntax: `node --check` on modified `app.mjs` and `i18n.mjs` passed.
+- Real headless Chromium: new morphism checks passed at 1440, 390 and 320 px, including real checkbox, bend edits, saved state and horizontal containment.
+- Real headless Chromium: new 2D vector paired-control checks passed at 1440, 390 and 320 px, including normalized flag, density edit and saved state. 3D vector paired-control test passed at 1440 px.
+- Mobile 3D vector interaction was **not certified**: mobile pane switching in the initial combined test blocked the plotting selector. This does not affect the passed mobile 2D and morphism checks, but must not be counted as a passed mobile 3D test.
+- Desktop browser is headless software Chromium; hosted deployment, touch hardware, visual screenshot certification, and physical GPU are not covered.

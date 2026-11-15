@@ -23,7 +23,7 @@ with sync_playwright() as pw:
   p.locator(f'.objects .object[data-id="{m["id"]}"]').click()
   sel=p.locator('#morphism-routing');assert sel.locator('option').count()==2,sel.inner_text()
   assert sel.input_value()=='scene-crossings'
-  assert p.get_by_label('Swap label side').count()==1
+  assert p.get_by_label('Swap side').count()==1
   assert p.get_by_label('Avoid collisions').count()==0
   sel.select_option('direct')
   assert [o for o in snapshot()['objects'] if o['type']=='morphism'][0]['labelAvoid']==False

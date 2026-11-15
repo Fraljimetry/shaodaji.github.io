@@ -925,3 +925,30 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  justify-content:stretch;column-gap:8px;width:100%;
 }
 .properties:not(.properties-3d) > .field:has(> input[type=number]):not(.measurement-field) > input {width:100%;min-width:0;max-width:100%}
+
+/* Round 153: short switch + numeric parameter share a single aligned row.
+   Long expressions and arbitrary text are deliberately excluded. */
+.properties .property-check-number-pair {
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ gap:8px;align-items:center;margin:7px 0;min-width:0;
+}
+.properties .property-check-number-pair>.check {
+ display:inline-flex;align-items:center;gap:5px;margin:0;min-width:0;
+ font-size:11px;line-height:1.25;white-space:normal;
+}
+.properties .property-check-number-pair>.check>input {
+ flex:none;width:13px;height:13px;min-width:13px;margin:0;
+}
+.properties .property-check-number-pair>.field {
+ display:grid;grid-template-columns:minmax(0,1fr) 53px;gap:5px;
+ align-items:center;margin:0;min-width:0;font-size:11px;
+}
+.properties .property-check-number-pair>.field>input[type=number] {
+ width:100%;min-width:0;max-width:100%;box-sizing:border-box;
+}
+@media(max-width:360px){
+ .properties .property-check-number-pair{gap:6px}
+ .properties .property-check-number-pair>.check,
+ .properties .property-check-number-pair>.field{font-size:10px}
+ .properties .property-check-number-pair>.field{grid-template-columns:minmax(0,1fr) 47px}
+}

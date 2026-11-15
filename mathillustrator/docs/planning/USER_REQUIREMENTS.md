@@ -1668,3 +1668,9 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 - Use one consistent right-hand control column for short Properties values (label format, color scheme, resolution, etc.); avoid excessive label-to-input gaps.
 - Preserve the full width of Name, mathematical expressions, LaTeX, and other long text inputs.
 - Preserve existing glyphs, geometry behavior, and saved-file compatibility.
+
+### Round 153 — compact paired property controls
+
+- Morphisms: place **Swap side** (formerly Swap label side) and **Bend** (formerly Curve / bend) in one balanced row with a short numeric input. Keep their existing semantics, saved data keys, and undo/redo.
+- 2D and 3D vector fields: place **Normalize lengths** (formerly Normalize vector lengths) with **Density** (formerly Arrow density) in a single row. Do not alter numerical validation or vector field behavior.
+- Keep mathematical expression/text inputs generously sized. At 320 px, 390 px and desktop viewport widths, paired controls must be visible without overlap. No glyph changes.

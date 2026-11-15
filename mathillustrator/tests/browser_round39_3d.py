@@ -42,7 +42,7 @@ def run():
             assert p.locator('#objects-3d .object').count()==4
             assert p.locator('#drawing polygon').count()>50
             baseline=saved(p)
-            p.locator('#objects-3d .object').first.click();assert p.locator('#properties').get_by_text('Arrow density').count()==1
+            p.locator('#objects-3d .object').first.click();assert p.locator('#properties').get_by_text('Density').count()==1
             p.locator('#properties input[type=number]').last.fill('0.72')
             p.locator('#properties input[type=number]').last.dispatch_event('change')
             p.locator('#scene3d-projection').select_option('orthographic')

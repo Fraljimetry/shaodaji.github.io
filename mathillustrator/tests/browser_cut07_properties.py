@@ -64,8 +64,8 @@ def run():
    go(p,'N');change(p,'Text / label','Alpha');change(p,'Font size',20)
    n=next(o for o in state(p)['objects'] if o['type']=='node' and o['name']=='N')
    assert n['fontSize']==20 and n['text']=='Alpha'
-   go(p,'morphism');change(p,'Curve / bend',1.5);change(p,'Arrow label','h')
-   c=p.get_by_label('Swap label side');c.check()
+   go(p,'morphism');change(p,'Bend',1.5);change(p,'Arrow label','h')
+   c=p.get_by_label('Swap side');c.check()
    m=next(o for o in state(p)['objects'] if o['type']=='morphism')
    assert m['bend']==1.5 and m['text']=='h' and m['swap'] is True
    assert p.locator('#drawing [data-id="'+m['id']+'"] path').count()>=1

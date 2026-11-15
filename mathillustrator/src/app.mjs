@@ -1503,8 +1503,9 @@ function renderProperties3D(root){
   select.value=selectedPlot.colorMode;select.onchange=()=>{if(edit(p=>{p.colorMode=select.value;})!==false)renderProperties();};colors.append(select);root.append(colors);
  }
  if(selectedPlot.kind==='vector3d'){
-  field(root,'Arrow density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
-  const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,' Normalize vector lengths');root.append(label);
+  const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
+  const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
+  field(pair,'Density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
  }
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
@@ -1638,10 +1639,10 @@ function renderProperties(){
   morphChoice('Arrowheads',visibleArrowheads(appearance.line,appearance.heads),HEAD_CHOICES,'morphismHeads');
   if(HEADLESS_LINE_STYLES.has(appearance.line)){const select=root.querySelector('select[aria-label="Arrowheads"]');select.disabled=true;select.title='Double and Wavy lines have no arrowheads.';}
 
-  field(root,'Curve / bend',o.bend||0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>5)throw Error('Bend range: −5 to 5.');live.bend=v;}),{min:-5,max:5,step:.1});
-  // Round 56: Arrow routing is always Direct. Use Curve / bend for manual adjustment.
+  const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
   const side=document.createElement('label');side.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;
-  cb.onchange=()=>edit(live=>{live.swap=cb.checked;});side.append(cb,document.createTextNode(' Swap label side'));root.append(side);
+  cb.onchange=()=>edit(live=>{live.swap=cb.checked;});side.append(cb,document.createTextNode(' Swap side'));pair.append(side);
+  field(pair,'Bend',o.bend||0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>5)throw Error('Bend range: −5 to 5.');live.bend=v;}),{min:-5,max:5,step:.1});
 
   const numericGrid=document.createElement('div');numericGrid.className='compact-numeric-grid diagram-numeric-grid';numericGrid.setAttribute('role','group');numericGrid.setAttribute('aria-label','Arrow label positioning');root.append(numericGrid);
   field(numericGrid,'Label position',o.labelT??.5,'number',v=>edit(live=>{if(!finite(v)||v<.05||v>.95)throw Error('Label position must be 0.05–0.95.');live.labelT=v;}),{min:.05,max:.95,step:.05});
@@ -1682,8 +1683,9 @@ function renderProperties(){
  if(o.type==='vectorField'){
   field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
   field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
-  field(root,'Arrow density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
-  const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' '+translated('Normalize vector lengths',uiPrefs.language)));root.append(check);
+  const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
+  const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
+  field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
