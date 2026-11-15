@@ -1217,3 +1217,18 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - **Actual headless Chromium (inline isolated app; not production website):** `browser_round65_dilation_locus.py` PASS for circle O, constrained P, factor-2 dilation Q, click Q then P and rendered locus; also `browser_round64_locus.py`, `browser_round63_headless_styles.py`, `browser_round62_plotting.py` PASS. No actual hosted-browser test or exhaustive historical Chromium certification in this cut.
 - **Regression detail:** Initial new browser test assumed a `polyline` child for locus; app correctly rendered a different SVG element. Corrected test to verify actual rendered geometry without enforcing the wrong SVG tag. Test harness artifact only, not an app failure.
 - **Compatibility:** no schema migrations, existing glyphs/arrow rules unchanged, no Git commit.
+
+
+### Round 66 — Mathematical type hierarchy (focused cut)
+**Confirmed regression:** Round 65 accepted dilation image `Q` in Locus selection, but `createResolver.at(Q)` returned `null`; `Midpoint(Q,O)` and nested point transformations could fail despite `Q` being visibly a point. `validateDoc` rejected the same point reference because it checked primitive type names. Command input `Midpoint(Q,O)` also used a primitive-type whitelist.
+
+**Fix:** Central iterative `pointRole` through transformation source, coordinate-resolving `createResolver.at(transformCopy)` for actual point images, role-aware reference validation and command point lookup. Reject transformed curves and undefined singular points. No change to line/wavy arrows, hooks, glyphs, or plotting algorithms.
+
+**Tests:** `tests/round66_point_roles.test.mjs` includes nested dilation/rotation, midpoint, JSON validation, curve rejection, singular inversion. Node full suite: **382/382 PASS**. `node --check src/model.mjs src/app.mjs` performed separately: PASS. Actual Chromium: `browser_round66_point_dependencies.py` PASS (dilation to midpoint via command); Round 65 locus, Round 64 locus, Round 62 plotting, Round 63 line styles PASS. Historical complete Chromium suite not certified.
+
+**Further hierarchy risks (not yet fixed/verified):** transformed straight objects are not uniformly accepted as a straight-support role; transformed circles are not uniformly accepted as circle supports; point-like transformed objects still have curve-oriented display-label and point-size defaults; arbitrary sampled intersections can lose branches or jump under parameter changes; 3D plot mesh validity and depth/transparency are a separate rendering representation. Address each as a targeted, reproduced regression rather than broad speculative rewrites.
+
+### Round 67 — Temporary diagram snapping focus (2026-11-14)
+**Change:** `app.mjs`: central `diagramSnapFocus()` and `syncDiagramSnapFocus()` for Node/Morphism tools and selected diagram nodes/arrows in Move mode. Enabled grid snapping is temporary and never persisted. Settings checkbox reflects and locks the override; toast announces entry/exit. Leaving diagram focus restores the actual saved setting. The existing Text tool behavior is preserved.
+
+**Regressions:** `tests/browser_round67_diagram_snap.py` (real headless Chromium, actual app bundle) PASS: startup defaults, Node/Morphism tool changes, activation/restoration toast, forced checked/disabled setting, existing-node selection in Move, deselection restoration, persistent project preference unchanged, no console page errors. Round 63, 64, 65, 66 focused Chromium suites PASS. Full `node --test tests/*.test.mjs`: **382/382 PASS**. `node --check src/app.mjs`: PASS. Full historical Chromium suite not certified; no Git commits.

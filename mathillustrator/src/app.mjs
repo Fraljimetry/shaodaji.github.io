@@ -239,6 +239,7 @@ function setSelection(ids,primary=null){
  selectedIds.clear();
  for(const id of ids)if(available.has(id))selectedIds.add(id);
  selected=primary&&selectedIds.has(primary)?primary:[...selectedIds].at(-1)||null;
+ syncDiagramSnapFocus(true);
  renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();
 }
 function selectToggle(id){
@@ -259,7 +260,7 @@ function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.p
 function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
 let pendingPropertiesFrame=0;
 function refreshAfterMutation(forceProperties=false){
- renderList();syncSettings();render();
+ syncDiagramSnapFocus(true);renderList();syncSettings();render();
  // Editing controls must not be replaced after the next animation frame while
  // focus remains inside the property pane: two rapid changes otherwise race
  // against detached onchange handlers and silently lose one of the edits.
@@ -1592,11 +1593,26 @@ function updateModeLabel(t){
  mode.setAttribute('aria-label',localized+': '+help);
  $('drawing').setAttribute('aria-label','Interactive mathematical drawing canvas · '+localized+': '+help);
 }
+// Grid snapping for diagram work is a temporary interaction mode, not a
+// document setting. A focused selected node/arrow also activates it in Move.
+// Do not treat selection of other geometric objects as diagram focus.
+function diagramSnapFocus(){
+ return !in3D()&&(['node','morphism','text'].includes(tool)||
+  (tool==='select'&&[...selectedIds].some(id=>['node','morphism'].includes(get(doc,id)?.type))));
+}
+function syncDiagramSnapFocus(announce=false){
+ const next=diagramSnapFocus()?true:null,previous=gridSnapOverride;
+ gridSnapOverride=next;
+ const input=$('snap');if(input){input.checked=next??doc.settings.snap;input.disabled=next===true;}
+ if(announce&&previous!==next){
+  notice(next===true?'Grid snapping temporarily enabled for diagram editing.':'Grid snapping restored to your saved setting.');
+ }
+}
 function selectTool(t){
  if(in3D())return;
  if(!TOOLS.includes(t))return;
- if(drag)cancelDrag();lastMoveCanvasTap=null;tool=t;gridSnapOverride=['node','morphism','text'].includes(t)?true:null;clearDraft();$('drawing').dataset.tool=t;
- if($('snap')){$('snap').checked=gridSnapOverride??doc.settings.snap;$('snap').disabled=gridSnapOverride===true;}
+ if(drag)cancelDrag();lastMoveCanvasTap=null;tool=t;clearDraft();$('drawing').dataset.tool=t;
+ syncDiagramSnapFocus(true);
  document.querySelectorAll('[data-tool-choice]').forEach(b=>{const active=b.dataset.toolChoice===t;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');});
  updateModeLabel(t);scheduleRender();
 }
@@ -1676,7 +1692,7 @@ function syncSettings(){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
  sync3DInterface();
- $('snap').checked=gridSnapOverride??doc.settings.snap;$('snap').disabled=['node','morphism','text'].includes(tool);
+ syncDiagramSnapFocus();
  $('export-region').querySelector('option[value="page"]').disabled=doc.settings.page==='infinite';
  // Legacy `settings.modules` is preserved in v1 project files, but no longer
  // hides a tool: section disclosure is independent, local interface state.
@@ -1705,7 +1721,6 @@ function setupSettings(){
    if(input.type==='number'&&!finite(value))throw Error('Value must be finite.');
    if(k==='pointSize'&&value!==doc.settings.pointSize)preserveInheritedPointSizes(doc);
    doc.settings[k]=value;
-   if(k==='snap')gridSnapOverride=['node','morphism','text'].includes(tool)?true:null; // Diagram snapping cannot be disabled by the settings checkbox
    if(k==='page'&&value==='infinite')doc.settings.exportRegion='viewport';
   },['exportRegion','exportGuides','exportScale','exportTransparent'].includes(k)?{refreshList:false,renderCanvas:false}:{});
  }
@@ -1865,7 +1880,7 @@ function objectPointAttachment(world,excluded=null){
  const candidates=excluded?doc.objects.filter(o=>!excluded.has(o.id)):doc.objects;
  return nearestFreehandAttachment(world,candidates,createResolver(doc),view.scale,10);
 }
-function effectiveSnapSettings(){return ['node','morphism','text'].includes(tool)?{...doc.settings,snap:true}:(gridSnapOverride===null?doc.settings:{...doc.settings,snap:gridSnapOverride});}
+function effectiveSnapSettings(){return gridSnapOverride===null?doc.settings:{...doc.settings,snap:gridSnapOverride};}
 function constructionPoint(world,excludeId=null){
  // Cache the dependency exclusion for a continuous drag. A point cannot attach
  // to itself or to a moving segment/ellipse that refers to that same point.

@@ -78,20 +78,22 @@ export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisec
 /** Shared geometry roles: derived intersections and centers are ordinary points,
  * and every computable straight construction can serve as a supporting line.
  * Reject unresolved/degenerate geometry rather than relying on a short UI list. */
-export function geometricPoint(o,resolver,visited=new Set()){
- if(!o||!resolver||visited.has(o.id))return false;
- visited.add(o.id);
- if(POINT_LIKE.has(o.type))return !!resolver.at(o.id);
- // A transformed point is still a selectable point, but a transformed
- // curve is not. Resolve its actual image rather than resolver.at(), which
- // only handles primitive and dependency-derived point constructions.
- if(o.type==='transformCopy'){
-  const source=resolver.object(o.refs?.[0]);
-  if(!source||source.id===o.id||!geometricPoint(source,resolver,visited))return false;
-  const shape=r50Shape(o,resolver,2);
-  return shape.length===1&&shape[0]?.every(Number.isFinite);
+/** Semantic point role is inherited through transformations, independent of
+ * the tool that produced the object. Cycles are rejected and coordinates are
+ * still checked separately by the resolver. */
+export function pointRole(o,object,visited=new Set()){
+ let current=o;
+ while(current){
+  if(visited.has(current.id))return false;
+  if(POINT_LIKE.has(current.type))return true;
+  if(current.type!=='transformCopy')return false;
+  visited.add(current.id);
+  current=object(current.refs?.[0]);
  }
  return false;
+}
+export function geometricPoint(o,resolver){
+ return !!o&&!!resolver&&pointRole(o,id=>resolver.object(id))&&!!resolver.at(o.id);
 }
 export function geometricLine(o,resolver){return !!o&&STRAIGHT_TYPES.has(o.type)&&!!resolver?.line(o);}
 const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,angleBisector:3,parallelThrough:2,perpendicularThrough:2,perpendicularFoot:2,pointOnObject:1,tangentCircle:2,circularArc:3,parabola:2,hyperbola:3,generalIntersection:2,transformCopy:2,locus:2,fixedLength:2,fixedAngle:2,triangleCenter:3,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
@@ -395,6 +397,17 @@ export function createResolver(doc){
    if(ready){
     let p=null;
     if((obj.type==='point'||obj.type==='node')&&safeCoord(obj.xy))p=obj.xy;
+    // Transformation images of points participate in ordinary dependency
+    // resolution (midpoints, intersections, transformations of transformations).
+    // Do not classify a transformed curve as a point just because its sampled
+    // path happened to contain a single valid vertex.
+    if(obj.type==='transformCopy'&&pointRole(obj,ref=>objects.get(ref))){
+     const r={at:ref=>cache.get(ref)||null,line:ref=>lines.get(typeof ref==='string'?ref:ref?.id)||null,
+      circle:ref=>circleGeometry(typeof ref==='string'?objects.get(ref):ref,id=>cache.get(id)||null),
+      points:ref=>(ref.refs||[]).map(id=>cache.get(id)||null),object:ref=>objects.get(ref)};
+     const image=r50Shape(obj,r,2);
+     if(image.length===1&&safeCoord(image[0]))p=image[0];
+    }
     if(obj.type==='midpoint'&&obj.refs?.length===2){
      const a=cache.get(obj.refs[0]),b=cache.get(obj.refs[1]);
      if(a&&b)p=[(a[0]+b[0])/2,(a[1]+b[1])/2];
@@ -519,7 +532,7 @@ export function checkNewGeometry(type,p){
   if(lu<1e-9||lv<1e-9||Math.hypot(u[0]/lu+v[0]/lv,u[1]/lu+v[1]/lv)<1e-9)throw Error('Angle bisector needs a non-straight angle.');
  }
 }
-function pointName(doc,name){const o=byName(doc,name.trim());if(!o||!POINT_LIKE.has(o.type))throw Error('Unknown point: '+name.trim());return o.id;}
+function pointName(doc,name){const o=byName(doc,name.trim());if(!o||!geometricPoint(o,createResolver(doc)))throw Error('Unknown point: '+name.trim());return o.id;}
 export function command(doc,source){
  const s=String(source).trim();if(!s)throw Error('Enter a construction command.');
  let m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.+)\)$/);
@@ -704,7 +717,7 @@ export function validateDoc(raw){
   const wantLine=o.type==='parabola'&&i===1||o.type==='transformCopy'&&o.transform==='reflect'&&i===1||o.type==='intersection'||(o.type==='circleIntersection'&&i===0)||(['parallelThrough','perpendicularThrough','perpendicularFoot'].includes(o.type)&&i===1);
   const wantCircle=o.type==='transformCopy'&&o.transform==='invert'&&i===1||o.type==='tangentCircle'&&i===1||o.type==='circleCircleIntersection'||(o.type==='circleIntersection'&&i===1);
   const wantAny=o.type==='pointOnObject'||o.type==='generalIntersection'||o.type==='locus'&&i===0||o.type==='transformCopy'&&i===0;
-  const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):wantAny?true:POINT_LIKE.has(parent.type);
+  const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):wantAny?true:pointRole(parent,id=>objects.get(id));
   if(!valid)throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
  const constrained=new Set([...R50_TYPES,'rectangle','parallelogram','regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','perpendicularFoot','intersection','circleIntersection','circleCircleIntersection']);

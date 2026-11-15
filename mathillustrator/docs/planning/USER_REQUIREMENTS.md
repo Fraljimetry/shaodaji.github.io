@@ -1247,3 +1247,15 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Every geometrically valid point must be treated as a point silently, regardless of construction origin (ordinary, derived, or a transformed image). Do not require conversion or a special selection mode for transformed copies such as a dilation image Q of constrained P.
 - Locus / Trace must accept transformed dependent Q as target, and constrained P as the driver. The example Q = O + 2(P-O) for P on a circle centered at O must produce a circle of twice the radius.
 - A transformed curve is not a point; invalid, singular or cyclic transformed references must be rejected rather than guessed. Preserve existing serialization and glyphs.
+
+
+### Round 66 — Semantic geometry roles (type-hierarchy audit)
+- Objects must be accepted by their mathematical **role** (point, straight line, circle, curve), not the construction tool name. A transformed point—including nested transforms—must be usable wherever a point input is mathematically defined; UI selection alone is insufficient.
+- Point dependencies must resolve through transformations in the core model, remain valid after JSON save/load, and reject singular/undefined results rather than silently substituting coordinates. Keep transformed curves distinct from points.
+- Follow-up audit: extend the same semantic role discipline to transformed lines/circles and intersections, point labels/pointSize on transformed points, analytic versus sampled curve behavior, object drag/persistence, and graphing/3D representation boundaries. Do not alter existing glyphs or arrowhead rules.
+
+### Round 67 — Contextual diagram snapping and notification (2026-11-14)
+- Choosing **Diagram Node** or **Morphism** activates grid snapping automatically as a temporary editor state; selecting an existing node/morphism while using **Move** does likewise.
+- Once that diagram editing focus ends (switching tools or deselecting), restore the user’s saved snap setting, not a hardcoded false value. Avoid altering project JSON, undo history, or exports.
+- Show a short toast on activation and restoration, not repeatedly during re-render. Display the forced state in Settings and prevent changing it while the diagram context requires it.
+- Keep existing text-tool snapping behavior. No glyph/arrow/style changes.
