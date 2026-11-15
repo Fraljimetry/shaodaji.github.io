@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MathReader verification engine v3. Stdlib-only, fail-closed, evidence-labelled.
+"""MathReader verification engine v4. Stdlib-only, fail-closed, evidence-labelled.
 
 This file can be run from any cwd; never modifies application source.
 """
@@ -218,12 +218,16 @@ def execute(args):
                                   missingFiles=missing, evidence='source-inventory'))
         else:
             push(result('v436-regression-inventory', 'INCOMPLETE', reason='historical manifest unavailable'))
-    # Run the verification framework's own invariants as part of every real gate.
-    selftest = root / 'tests' / 'verification' / 'test_release_gate.py'
-    if selftest.is_file():
-        push(run_command('verification-engine-selftest', [sys.executable, str(selftest)], root, args.browser_timeout, 'engine-selftest'))
-    else:
-        push(result('verification-engine-selftest', 'INCOMPLETE', reason='verification self-tests missing', evidence='engine-selftest'))
+    # Run all required engine self-tests. A missing file must never be hidden by a
+    # green unrelated test. Keep the established selftest name for compatibility.
+    for selftest_name, display in [('test_release_gate.py', 'verification-engine-selftest'),
+                                   ('test_pdf_oracle.py', 'pdf-geometry-oracle-selftest'),
+                                   ('test_index_oracle.py', 'math-index-oracle-selftest')]:
+        selftest = root / 'tests' / 'verification' / selftest_name
+        if selftest.is_file():
+            push(run_command(display, [sys.executable, str(selftest)], root, args.browser_timeout, 'engine-selftest'))
+        else:
+            push(result(display, 'INCOMPLETE', reason=f'{selftest_name} is missing', evidence='engine-selftest'))
     if not all_js:
         push(result('javascript-discovery', 'INCOMPLETE', reason='No root-level JavaScript regression files discovered'))
     if not all_py:
@@ -251,6 +255,21 @@ def execute(args):
         push(result('original-pdf-text-geometry-oracle', 'INCOMPLETE',
                     evidence='pdf-native-text-geometry',
                     reason='Pass --pdf-oracle with a reviewed manifest and accessible original PDFs'))
+    # The actual MathReader reading-data export is distinct from PDF text layer
+    # evidence. This oracle does not certify fresh detection or browser navigation.
+    if args.index_oracle:
+        from index_oracle import verify as verify_index_oracle
+        scored = verify_index_oracle(args.index_oracle)
+        push(result('mathreader-export-index-oracle', scored['status'],
+                    evidence='mathreader-saved-export-index-comparison',
+                    reason=scored.get('reason'), counts=scored['counts'],
+                    metrics=scored['metrics'], documentsChecked=scored.get('documentsChecked', 0),
+                    navigationCertified=False, freshDetectionCertified=False,
+                    cases=scored['cases'][:100]))
+    elif args.profile == 'release':
+        push(result('mathreader-export-index-oracle', 'INCOMPLETE',
+                    evidence='mathreader-saved-export-index-comparison',
+                    reason='Pass --index-oracle with reviewed targets and actual reading-data exports'))
     if args.profile == 'release':
         push(hosted_smoke(args.hosted_url, args.browser_timeout))
         push(result('mathreader-live-navigation-certification', 'INCOMPLETE',
@@ -265,7 +284,7 @@ def execute(args):
     counts = {s: sum(r['status'] == s for r in records) for s in ('PASS', 'FAIL', 'INCOMPLETE')}
     status = 'FAIL' if counts['FAIL'] else ('INCOMPLETE' if counts['INCOMPLETE'] else 'PASS')
     result_obj = {
-        'schemaVersion': 3, 'engine': 'MathReader verification v3',
+        'schemaVersion': 4, 'engine': 'MathReader verification v4',
         'generatedAt': datetime.now(timezone.utc).isoformat(), 'profile': args.profile,
         'status': status, 'releaseCertified': status == 'PASS' and args.profile == 'release',
         'root': str(root), 'sourceFingerprint': sha(root / 'mathreader.js') if (root / 'mathreader.js').is_file() else None,
@@ -292,6 +311,7 @@ def main(argv=None):
     ap.add_argument('--browser-timeout', type=int, default=180, help='seconds per Chromium/Python test')
     ap.add_argument('--hosted-url', default='')
     ap.add_argument('--pdf-oracle', type=Path, help='Reviewed original-PDF geometry manifest; evidence is not live MathReader navigation')
+    ap.add_argument('--index-oracle', type=Path, help='Reviewed index manifest referencing actual MathReader reading-data export')
     ap.add_argument('--only', default='', help='Regex to run a bounded subset; never reports a fully passing profile')
     args = ap.parse_args(argv)
     args.output = args.output or args.root / 'tests' / 'verification' / 'release_gate_result.json'

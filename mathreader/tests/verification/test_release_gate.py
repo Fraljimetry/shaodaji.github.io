@@ -20,7 +20,8 @@ class GateTests(unittest.TestCase):
         (self.root / 'tests').mkdir(parents=True)
         (self.root / 'js').mkdir()
         (self.root / 'tests' / 'verification').mkdir()
-        (self.root / 'tests' / 'verification' / 'test_release_gate.py').write_text("print('engine-selftest passed')")
+        for name in ('test_release_gate.py', 'test_pdf_oracle.py', 'test_index_oracle.py'):
+            (self.root / 'tests' / 'verification' / name).write_text("print('engine-selftest passed')")
         (self.root / 'index.html').write_text('<title>fixture</title>')
         (self.root / 'mathreader.js').write_text('const ok=1;')
         (self.root / 'js' / '00-core.js').write_text('const ok=1;')
@@ -75,6 +76,23 @@ class GateTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertTrue(any(x['name'] == 'verification-engine-selftest' and x['status'] == 'INCOMPLETE'
                             for x in report['checks']))
+
+    def test_missing_index_oracle_selftests_is_incomplete(self):
+        (self.root / 'tests' / 'verification' / 'test_index_oracle.py').unlink()
+        code, report = self.run_gate()
+        self.assertEqual(code, 2)
+        self.assertTrue(any(x['name'] == 'math-index-oracle-selftest' and x['status'] == 'INCOMPLETE' for x in report['checks']))
+
+    def test_failed_pdf_oracle_selftest_fails(self):
+        (self.root / 'tests' / 'verification' / 'test_pdf_oracle.py').write_text('raise Exception("bad oracle")')
+        code, report = self.run_gate()
+        self.assertEqual(code, 1)
+        self.assertTrue(any(x['name'] == 'pdf-geometry-oracle-selftest' and x['status'] == 'FAIL' for x in report['checks']))
+
+    def test_release_requires_index_oracle_evidence(self):
+        code, report = self.run_gate('--profile', 'release')
+        self.assertEqual(code, 2)
+        self.assertTrue(any(x['name'] == 'mathreader-export-index-oracle' and x['status'] == 'INCOMPLETE' for x in report['checks']))
 
     def test_zero_skipped_is_not_a_skip(self):
         (self.root / 'tests' / 'render_regression.py').write_text("print('7 passed, 0 skipped')")

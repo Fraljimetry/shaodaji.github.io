@@ -1503,3 +1503,15 @@ Continue GPU-era 3D acceleration incrementally without changing mathematics or s
 - Optimize 3D implicit surface sampling while preserving mathematical semantics and the existing WebGL2 presentation/CPU fallback architecture.
 - Avoid per-cell allocations when all eight sampled cube corners are strictly on one side of the zero level; retain the full boundary/pole/tetrahedron path for zero and nonfinite samples.
 - Preserve existing triangulation and cancellation, validate with exact-mesh regression fixtures and real Chromium checks. Actual GPU-side mathematical evaluation remains deferred until numerical equivalence and WebGL2 hardware execution can be verified.
+
+### Round 117 — 3D GPU failure recovery
+- Keep mathematical sampling on the authoritative CPU path until a numerical-equivalence-verified GPU expression compiler and real WebGL2 hardware execution are available.
+- The WebGL2 raster path must fail closed if context acquisition is blocked or throws. An active canvas context-loss event must rerender via CPU SVG and suppress future GPU attempts for this page session to avoid an infinite retry loop.
+- Releasing a superseded GPU context during ordinary camera movement must *not* be treated as a device failure. Exports and prior project formats remain unchanged.
+
+### Round 118 GPU sampling roadmap
+
+Restricted expression-to-GLSL compilation added as non-production groundwork. Keep CPU sampling authoritative; do not activate GPU numerical sampling until real WebGL2 shader execution, float32 discrepancy gates near zero-crossings/poles, and actual GPU measurements pass. Preserve SVG export and fail-closed fallback.
+
+### Round 119 GPU numerical verification (2026-11-14)
+- Pursue GPU-side mathematical evaluation only with explicit shader execution, CPU/GPU numerical comparison, hardware compatibility and transparent failure reporting. Round 119 adds an isolated WebGL2 numerical readback diagnostic; production 3D meshes stay on CPU until hardware validation proves safe.

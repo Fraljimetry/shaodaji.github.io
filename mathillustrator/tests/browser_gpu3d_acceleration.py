@@ -80,6 +80,27 @@ def run():
       page.locator('#scene3d-enable').uncheck()
       assert page.locator('[data-3d-gpu]').count()==0
       assert page.evaluate('window.__gpuCalls.released')==1
+      # Re-enter 3D and simulate a device reset after a successful GPU draw.
+      page.locator('#scene3d-enable').check()
+      page.wait_for_function("!document.querySelector('#render-info').textContent.includes('rendering')")
+      assert page.locator('[data-3d-gpu]').count()==1
+      count_before=page.evaluate('window.__gpuCalls.draw')
+      page.evaluate('''() => {
+        const canvas=document.querySelector('[data-3d-gpu] canvas');
+        const event=new Event('webglcontextlost',{cancelable:true});
+        canvas.dispatchEvent(event);
+        window.__lossPrevented=event.defaultPrevented;
+      }''')
+      assert page.evaluate('window.__lossPrevented')
+      page.wait_for_function("!document.querySelector('#render-info').textContent.includes('rendering') && document.querySelector('[data-3d-gpu]')===null")
+      assert 'CPU SVG fallback' in page.locator('#render-info').inner_text()
+      assert page.locator('#drawing polygon').count()>6000
+      assert page.evaluate('window.__gpuCalls.draw')==count_before
+      # A subsequent camera render cannot reenter a GPU context-loss loop.
+      page.locator('#scene3d-yaw').fill('34');page.locator('#scene3d-yaw').dispatch_event('change')
+      page.wait_for_function("!document.querySelector('#render-info').textContent.includes('rendering')")
+      assert page.locator('[data-3d-gpu]').count()==0
+      assert page.evaluate('window.__gpuCalls.draw')==count_before
       assert not errors,errors
       print(json.dumps({'passed':True,'chromiumWebGL2':native_webgl,'actualGpuPixelVerification':False,
         'fallbackVerified':not native_webgl,'mockGpuBatches':calls['draw'],

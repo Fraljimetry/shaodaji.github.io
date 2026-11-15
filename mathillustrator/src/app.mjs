@@ -792,9 +792,14 @@ function append3DPrimitive(target,primitive){
 // A transparent GPU canvas lives INSIDE the SVG viewBox, avoiding stage sizing
 // drift when panels resize. Never use this path for synchronous exports.
 const GPU3D_MIN_FACES=6000;
+// A browser/device that loses its context must not repeatedly attempt GPU
+// rendering on every fallback repaint. Reset only on a fresh page load.
+let gpu3DContextLost=false;
 function release3DGpuContext(svg){
  const canvas=svg.querySelector('[data-3d-gpu] canvas');
  if(!canvas)return;
+ // Releasing a superseded canvas is intentional, not a device failure.
+ if(canvas.__on3DContextLost)canvas.removeEventListener('webglcontextlost',canvas.__on3DContextLost);
  // Contexts from discarded frames must not accumulate across camera orbits.
  try{canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();}catch{}
 }
@@ -805,9 +810,11 @@ function gpu3DFaceColor(face){
   Math.round(v+(255-v)*(.1+.56*face.shade)));
 }
 function gpu3DCanvas(result,width,height){
- if(result.lines.length||result.faces.length<GPU3D_MIN_FACES||!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>4096||height>4096)return null;
+ if(gpu3DContextLost||result.lines.length||result.faces.length<GPU3D_MIN_FACES||!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>4096||height>4096)return null;
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
- const gl=canvas.getContext('webgl2',{alpha:true,antialias:true,depth:false,stencil:false,preserveDrawingBuffer:true,premultipliedAlpha:false});
+ let gl;
+ try{gl=canvas.getContext('webgl2',{alpha:true,antialias:true,depth:false,stencil:false,preserveDrawingBuffer:true,premultipliedAlpha:false});}
+ catch{return null;} // Blocked or exhausted contexts must not break the editor.
  if(!gl)return null;
  let shader=null,program=null,buffer=null;
  const compile=(type,source)=>{const object=gl.createShader(type);if(!object)throw Error('GPU shader allocation failed');gl.shaderSource(object,source);gl.compileShader(object);if(!gl.getShaderParameter(object,gl.COMPILE_STATUS)){gl.deleteShader(object);throw Error('GPU shader compilation failed');}return object;};
@@ -846,6 +853,14 @@ function gpu3DCanvas(result,width,height){
   if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw Error('GPU drawing failed');
   const foreign=el('foreignObject',{x:0,y:0,width,height,'pointer-events':'none','data-3d-gpu':'webgl2'});
   canvas.style.cssText='width:100%;height:100%;display:block;pointer-events:none';
+  canvas.__on3DContextLost=event=>{
+   // Only a currently displayed canvas may disable GPU. Retired contexts
+   // are deliberately lost on every camera move and must be ignored.
+   if(!canvas.isConnected)return;
+   event.preventDefault();gpu3DContextLost=true;
+   scheduleRender();
+  };
+  canvas.addEventListener('webglcontextlost',canvas.__on3DContextLost);
   foreign.append(canvas);return foreign;
  }catch{return null;}
  finally{

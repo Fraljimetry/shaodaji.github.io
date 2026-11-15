@@ -88,3 +88,53 @@ python -m unittest discover -s mathreader/tests/verification -p "test_*.py" -v
 ```
 
 `PASS` for native PDF text coordinates only proves that the *given* gold text/coordinates exist in that original PDF; it does **not** establish that MathReader found them, navigated to them, or that an OCR model inferred LaTeX correctly. The `release` gate intentionally remains `INCOMPLETE` without a real MathReader navigation adapter and real Texify evidence. A missing original PDF is `INCOMPLETE`; a checksum mismatch, bad page, wrong geometry, malformed target, or manifest-directory traversal is `FAIL`. The engine includes adversarial synthetic-PDF self-tests, clearly labeled as synthetic.
+
+## V4: MathReader exported-index oracle (reviewed targets, no invented truth)
+
+`index_oracle.py` compares the **actual MathReader reading-data export** with
+reviewer-entered Structure, Results, Equations, and Bibliography targets.
+It checks export SHA-256, MathReader schema, document identity, page count,
+explicit detection inclusion, normalized labels, pages and vertical page ratios.
+It compares repeated labels as separate occurrences, preventing one indexed
+entry from satisfying multiple reviewed targets.
+
+Manifest example (store next to the actual export JSON):
+
+```json
+{
+  "schemaVersion": 1,
+  "documents": [{
+    "export": "original-book-mathreader.json",
+    "sha256": "<64-character SHA256 of the exported JSON>",
+    "documentId": "<document.id from the exported JSON>",
+    "pageCount": 250,
+    "targets": [
+      {"kind": "structure", "label": "1 Introduction", "page": 3, "ratio": 0.25, "toleranceRatio": 0.025},
+      {"kind": "results", "label": "Theorem 1.2", "page": 9, "ratio": 0.6},
+      {"kind": "equations", "label": "(2.1)", "page": 13, "ratio": 0.72},
+      {"kind": "bibliography", "label": "[11]", "page": 247, "ratio": 0.3}
+    ],
+    "exhaustiveKinds": []
+  }]
+}
+```
+
+`exhaustiveKinds` is a list of index kinds for which the reviewer manually
+verified **all** instances in the document, including absence of extras.
+Only these kinds receive a precision estimate, and unreviewed exported entries
+then count against the gate. For all others, only *reviewed-target recall* is
+reported; `precision: null` is intentional. The denominator for recall is the
+number of valid reviewed targets, not every formula in the PDF.
+
+Run the standalone command with the reviewed manifest or pass
+`--index-oracle PATH` to `release_gate.py`. A missing export is INCOMPLETE;
+invalid or mismatched evidence is FAIL. The release gate also requires the new
+oracle self-tests and never accepts a missing oracle manifest as certification.
+
+**Evidence limitation:** A saved export may contain old cached detection or
+manual edits. Passing this oracle proves only that the saved **indexed data**
+match the supplied reviewed targets. It does *not* prove fresh auto-detection,
+correct PDF.js click/scroll coordinates, or actual Texify recognition.
+The original-PDF native-text oracle and the saved-index oracle remain distinct.
+A fully certified release still requires independently witnessed real-PDF
+browser navigation and real Texify inference.

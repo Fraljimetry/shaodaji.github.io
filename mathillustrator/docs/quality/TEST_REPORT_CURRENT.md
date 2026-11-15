@@ -1640,3 +1640,23 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - Scope: strict-sign fast-reject uses scalar lattice lookups, allocating corner/index arrays only for candidate cells; all ambiguous, zero, or nonfinite cells use the unchanged triangulation/refinement path.
 - Regression: `tests/round116_implicit_fast_reject.test.mjs` checks six exact SHA-256 geometry fixtures and cooperative cancellation.
 - Verification: local gate and environment details are supplied with the Round 116 evidence JSON. No GPU-side formula evaluation has been implemented or claimed.
+
+### Round 117 — GPU context-loss resilience (2026-11-14)
+
+- Fixed an unhandled WebGL2 `getContext()` exception and added fail-closed recovery if a displayed GPU canvas loses its context after painting. Context loss disables GPU rasterization for the remaining page session; subsequent frames use the existing CPU SVG renderer. Normal retirement of old canvases does not disable GPU.
+- Extended actual Chromium GPU regression to force context loss after a 12,800-triangle mocked-WebGL draw. Verified `preventDefault`, complete SVG fallback, persistent no-GPU retry on camera edits, 12,800-triangle SVG export, and absence of JS exceptions.
+- Local independent-process gate: **17/17 PASS**, including full Node regressions, 310,000 seeded mathematical property cases, all configured Chromium suites, performance, cache stress, and executed 28-operation coverage catalog. Evidence: companion `round117_verification.json` and `round117_coverage.json`.
+- Real hardware GPU raster output, real context loss on physical hardware, WebGL2 shader numeric execution and GPU-side mathematical sampling **not verified**. Recorded WebGL2 double validates dispatch and fallback, not GPU pixels or speed.
+
+## Round 118 — restricted GLSL expression compiler (2026-11-14)
+
+- Added `src/gpu_expression3d.mjs`, an **inactive** GLSL ES 3.00 expression compiler for future GPU mathematical sampling. Production 3D sampling and exports remain on the previously verified CPU implementation; existing optional GPU raster acceleration is unchanged.
+- Supported subset: `x`, `y`, `z`, `pi`, `e`, numeric literals, parentheses, unary signs, addition, subtraction, multiplication (including implicit multiplication), and integer powers 0–4 with total polynomial degree at most 8. All other functions, division, invalid syntax, large generated expressions, and dynamic exponents fail closed. The canonical JS parser is checked first.
+- `tests/round118_gpu_expression.test.mjs` tests acceptance, injection rejection, canonical CPU reference equivalence and implicit equations. These tests **do not demonstrate GPU/CPU floating-point parity**. Actual WebGL2 context, shader compilation/execution, nonfinite behavior, precision limits, cancellation, and performance must be tested before any production sampling route is enabled.
+
+### Round 119 — bounded GPU numerical readback probe (2026-11-14)
+
+- New **opt-in, nonproduction** `src/gpu_sampling_probe3d.mjs` compiles a restricted implicit expression from Round 118, executes it in a WebGL2 fragment shader, encodes float32 results into RGBA8 bytes and reads them back for CPU-reference comparison. The probe explicitly returns PASS / REJECTED / UNAVAILABLE / FAIL; it never labels a CPU calculation as GPU verification.
+- Bounded to 256 finite sample positions, no shader source directly supplied by document input, shader/program/buffer cleanup on every exit, strict readback errors and stated absolute/relative tolerances. Float32 GPU results are not exact JS-double values, and matching samples alone does not prove topology preservation for near-zero crossings.
+- New `tests/round119_gpu_probe.test.mjs` covers shader generation, input limits, fail-closed missing/throwing contexts and mismatch/nonfinite detection. New `tests/browser_round119_gpu_numeric.py` attempts real WebGL2 float readback on 4 formulas × 64 points. Exit 2 means **INCOMPLETE** if WebGL2 is unavailable; it must not be counted as GPU parity PASS.
+- No integration with production 3D meshing; implicit sampling remains CPU-authoritative. For hardware qualification, run browser probe in a WebGL2-enabled Chromium environment and repeat with more formulas, boundary points, GPU device resets and measured throughput before enabling production GPU mathematical sampling.
