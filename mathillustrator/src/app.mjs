@@ -1361,14 +1361,34 @@ function rangeHint(opts={}){
  if(max!==undefined)return `Maximum: ${max}`;
  return '';
 }
+// Numeric editors share the sandboxed plotting expression grammar; no eval.
+// Persist only evaluated numbers so old JSON projects remain compatible.
+function numericExpression(raw,{min=-Infinity,max=Infinity,integer=false}={}){
+ if(!String(raw).trim())throw Error('Numeric value is required.');
+ const value=r50ParseExpr(String(raw),[])({});
+ if(!Number.isFinite(value))throw Error('Numeric value must be finite.');
+ if(value<min||value>max)throw Error(`Value must be within ${min}–${max}.`);
+ if(integer&&!Number.isInteger(value))throw Error('A whole number is required.');
+ return value;
+}
+function numericEditor(input){
+ if(input.type!=='number')return input;
+ input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';
+ return input;
+}
+function numericOptions(input){
+ return {min:input.hasAttribute('min')?Number(input.min):-Infinity,
+ max:input.hasAttribute('max')?Number(input.max):Infinity,
+ integer:input.getAttribute('step')==='1'&&!['scene3d-yaw','scene3d-pitch'].includes(input.id)};
+}
 function field(parent,label,value,type,onChange,opts={}){
  const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');
  // Formula editors have their own inline layout; names and arbitrary text keep their existing layout.
  if(type==='text'&&parent.classList.contains('properties')&&/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[XYZ]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label))wrap.classList.add('formula-expression-field');
  wrap.textContent=label;
  const input=document.createElement(type==='multiline'?'textarea':'input');
- if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
- input.value=String(value??'');if(opts.step)input.step=opts.step;
+ if(type!=='multiline')input.type=type==='number'?'text':type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
+ input.value=String(value??'');if(type==='number'){input.inputMode='decimal';input.dataset.numericExpression='true';}else if(opts.step)input.step=opts.step;
  if(opts.min!==undefined)input.min=opts.min;
  if(opts.max!==undefined)input.max=opts.max;
  const hint=rangeHint(opts);if(hint){wrap.title=translated(hint,uiPrefs.language);input.title=translated(hint,uiPrefs.language);}
@@ -1379,8 +1399,11 @@ function field(parent,label,value,type,onChange,opts={}){
   // A blur after an already committed change must not rebuild Properties or
   // detach the list-row/button receiving that same pointer gesture.
   if(next===accepted)return;
-  if(onChange(type==='number'?Number(next):next)===false)input.value=accepted;
-  else accepted=next;
+  let parsed=next;
+  try{if(type==='number')parsed=numericExpression(next,{min:opts.min??-Infinity,max:opts.max??Infinity,integer:opts.step===1});}
+  catch(error){notice(error.message);input.value=accepted;return;}
+  if(onChange(parsed)===false)input.value=accepted;
+  else{accepted=type==='number'?String(parsed):next;input.value=accepted;}
  };
  wrap.append(input);parent.append(wrap);return input;
 }
@@ -1579,9 +1602,9 @@ function renderProperties(){
   pick.value=o.centerKind;pick.onchange=()=>edit(live=>{live.centerKind=pick.value;});label.append(pick);root.append(label);
  }
  if(['point','node','text'].includes(o.type)){
-  const coords=document.createElement('div');coords.className='twocol';for(let i=0;i<2;i++){
-   const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='number';input.step='any';input.value=String(o.xy[i]);
-   input.onchange=()=>{if(input.value.trim()&&finite(Number(input.value))&&Object.is(Number(input.value),get(doc,o.id)?.xy?.[i]))return;const ok=edit(live=>{if(!input.value.trim())throw Error('Coordinate is required.');const v=Number(input.value);if(!finite(v))throw Error('Invalid coordinate.');const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});if(!ok)input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);};l.append(input);coords.append(l);
+  const coords=document.createElement('div');coords.className='twocol point-coordinate-grid';for(let i=0;i<2;i++){
+   const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';input.value=String(o.xy[i]);
+   input.onchange=()=>{let v;try{v=numericExpression(input.value);}catch(error){notice(error.message);input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);return;}if(Object.is(v,get(doc,o.id)?.xy?.[i])){input.value=String(v);return;}const ok=edit(live=>{const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);};l.append(input);coords.append(l);
   }root.append(coords);
  }
  if(['text','node','morphism'].includes(o.type)){
@@ -1906,9 +1929,7 @@ function setupSettings(){
  preset.value='General';preset.onchange=()=>{if(preset.value!=='Custom')update(()=>{if(doc.settings.pointSize!==PRESETS[preset.value].pointSize)preserveInheritedPointSizes(doc);Object.assign(doc.settings,clone(PRESETS[preset.value]));doc.settings.modules={...PRESET_MODULES[preset.value]};doc.settings.snapAnchors=true;doc.settings.snapObjects=true;doc.settings.polygonSides=6;doc.settings.showLabels=true;doc.settings.labelPlacement='avoid';});};
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-guides','exportGuides'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   if(!$(id))continue;$(id).onchange=()=>update(()=>{
-   const input=$(id);if(input.type==='number'&&!input.value.trim())throw Error('Value is required.');
-   const value=input.type==='checkbox'?input.checked:(input.type==='number'||['exportScale','plotBudget'].includes(k))?Number(input.value):input.value;
-   if(input.type==='number'&&!finite(value))throw Error('Value must be finite.');
+   const input=$(id);const value=input.type==='checkbox'?input.checked:input.dataset.numericExpression==='true'?numericExpression(input.value,numericOptions(input)):(['exportScale','plotBudget'].includes(k)?Number(input.value):input.value);
    if(k==='pointSize'&&value!==doc.settings.pointSize)preserveInheritedPointSizes(doc);
    doc.settings[k]=value;
    if(k==='page'&&value==='infinite')doc.settings.exportRegion='viewport';
@@ -1917,7 +1938,9 @@ function setupSettings(){
  for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting'],['scene3d-grid','grid'],['scene3d-axes','axes']]){
   $(id).onchange=()=>{
    if(!in3D()||!doc.scene3d)return;
-   const node=$(id),value=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;
+   const node=$(id);let value;
+   try{value=node.type==='checkbox'?node.checked:node.dataset.numericExpression==='true'?numericExpression(node.value,numericOptions(node)):node.value;}
+   catch(error){notice(error.message);node.value=String(doc.scene3d.options[key]);return;}
    // A committed numeric field fires change again when a later button is
    // pressed (blur). Rebuilding the 3D list on that pointerdown detached the
    // target Lock/Delete button before pointerup and silently lost the click.
@@ -3156,11 +3179,15 @@ function setupDockablePanels(mobile,propertiesLayout){
 }
 
 function initialise(){
+ // Convert static numeric fields before wiring change handlers. The original
+ // min/max/step attributes still enforce the same semantic constraints.
+ for(const input of document.querySelectorAll('label.field input[type="number"]'))numericEditor(input);
  populateTools();setupSettings();setupInterface();
- for(const input of document.querySelectorAll('label.field input[type="number"]')){
+ for(const input of document.querySelectorAll('label.field input[data-numeric-expression="true"]')){
   const label=input.closest('label.field');if(!label||label.title)continue;
   const hint=rangeHint({min:input.hasAttribute('min')?input.min:undefined,max:input.hasAttribute('max')?input.max:undefined});
   if(hint){label.title=hint;input.title=hint;}
+  numericEditor(input);
  }
 $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow();},{passive:true});
  const search=$('object-search');

@@ -120,6 +120,8 @@ const zhExtra={
 };
 Object.assign(zh,zhExtra);
 Object.assign(zh,{
+ 'Drawing preset':'绘图预设', 'Keep this tab':'保留此标签页', 'Load other tab':'载入其他标签页', 'Another tab changed this project.':'另一标签页已修改此项目。', 'Autosave is paused to prevent lost updates. Download this version before resolving if needed.':'自动保存已暂停，以防覆盖更改。如有需要，请先下载当前版本。',
+ 't min':'t 下界', 't max':'t 上界', 'Mesh detail':'网格精度', 'View yaw (°)':'视角水平角 (°)', 'View pitch (°)':'视角俯仰角 (°)', 'Image export options':'图像导出选项', '3D rendering failed · previous view preserved':'三维渲染失败 · 已保留之前的视图',
  'Label':'标签', 'Polar':'极坐标', 'Resolution':'分辨率',
  'Smoothing':'平滑', 'Transparent':'透明', 'Size':'大小',
  'Density':'密度', 'Normalize lengths':'归一化长度', 'Bend':'弯曲', 'Swap side':'换侧'

@@ -1708,3 +1708,10 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 - Image export checkboxes occupy the same two-column grid tracks as the Interface toggle grid; Transparent aligns with the second-column checkbox start.
 - At narrow widths and in Chinese, allow checkbox labels to wrap within their own column while keeping both checkbox controls top-aligned.
 - Preserve independent checkbox behavior, accessibility, and the existing image export semantics.
+
+## Round 161 — Numeric mathematical expressions and locale completeness
+- Numeric editors in Settings, 2D/3D Properties, point coordinates, parameter limits, and construction inputs should accept finite arithmetic with constants `pi` and `e` when mathematically appropriate. Keep underlying project fields numeric for JSON compatibility.
+- Preserve property-specific range checks, whole-number requirements for density/resolution/count fields, and rollback on invalid expressions. Camera angles may be fractional although their spinner increments were 1 degree.
+- Continue reviewing hard-coded English labels and status messages in both language modes. Do not translate user-authored expressions, mathematical variables, or object names.
+
+- Round 162: In Point, Node and Text coordinate Properties, keep the `x` and `y` axis labels inline with their respective numeric editors, retaining two equal columns and editability at narrow widths.

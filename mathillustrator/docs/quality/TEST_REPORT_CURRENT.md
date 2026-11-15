@@ -1,3 +1,12 @@
+## Round 161 — Expression-capable numeric controls and localization (2026-11-15)
+
+- Baseline: source ZIP supplied as Round 158 with Round 159 and Round 160 overlays applied in order.
+- Extended the existing restricted arithmetic parser to numeric settings, 3D camera controls, Properties fields, coordinates and parametric t limits without introducing `eval`. Numeric results are persisted; non-finite, out-of-range and integer-field fractions are rejected. Preserved camera angle fractional expressions (step=1 is display increment, not an integer-only data rule).
+- CSS selectors preserve numeric control sizes and alignment after converting HTML number inputs into text editors capable of accepting `pi`, `e`, `2pi`, `180/pi`.
+- Chinese translation additions and remaining gaps: `ROUND161_TRANSLATION_AUDIT.md`.
+- PASS: 566/566 Node tests, zero skip/fail; `node --check` for changed JS modules; real local Chromium targeted expression tests at 1440 and 390px including invalid-input rollback, 3D camera, settings, and desktop 2D `t max = 2pi`; Round 160 responsive checkbox Chromium regression at 1440, 768, 390, 320px.
+- INCOMPLETE historical Chromium regression: Round 156 test still queries `input[type=number]` and fails with a null selector because numeric editors are now text inputs. This is a stale test-selector issue, not evidence of failure in functional inputs; the full historical browser battery was not re-run. Hosted deployment, native touch and GPU stress were not tested.
+
 ## Round 157 — Polar parameter correction and numeric field alignment
 
 Polar mode now uses `r(t)` with `t min` and `t max` exclusively. Legacy radial keys in saved documents are ignored for rendering. Bend and Density width aligned with rendered Opacity; Node 566/566 PASS; Chromium polar 1440/390 PASS; Chromium Bend 1440/390/320 PASS; Chromium 2D Density 1440/390/320 and 3D Density desktop PASS.
@@ -1957,3 +1966,10 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
   4. 3D settings checkbox rows allow wrapping; verify that wrapped text does not create apparent vertical misalignment or clipping at the 235px inspector breakpoint.
   5. Color swatches and full-width Background fields use dedicated sizing rules; verify their right edges under the narrow inspector breakpoint.
 - No changes to geometric calculations, glyphs, storage or serialization.
+
+
+### Round 162 — Inline x/y coordinate editors
+- Dedicated `.point-coordinate-grid` scopes inline axis-label layout to Point/Node/Text coordinates; the shared `.twocol` layout for other fields is unchanged.
+- Verification results are reported alongside the delivered overlay.
+
+- Round 162 executed: Node 566/566 PASS; app.mjs syntax PASS; Chromium 1440/768 genuine point coordinate editing and 390/320 visible CSS layout fixtures PASS. Hosted deployment not checked.
