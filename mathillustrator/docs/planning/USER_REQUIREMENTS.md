@@ -1200,3 +1200,22 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Morphism tips use open, LaTeX-like arrow branches rather than freehand's filled heads. Preserve free-curve arrowhead visual styling and use the **actual smoothed SVG path** for all endpoint/tangent positions, including when a start or double-end head is selected.
 - Preserve existing projects: legacy morphism `arrowStyle` and freehand `curveArrows`/`curveLine` must remain readable and render with their former intent. Store new independent selections in additional optional validated fields; reject malformed fields on unrelated objects.
 - SVG/JSON must retain the selected styles, Undo/Redo must behave normally. Restricted TikZ-cd export must reject new unrepresentable styles rather than silently downgrade them. No changes to unrelated Geometry glyphs or 3D plotting.
+
+## Round 59 — Diagram and Geometry debugging (2026-11-14)
+
+- The double-ended morphism arrowhead should be labeled simply **Double end**, with no awkward parenthetical “(epi)”; keep the semantic rendering and compatibility unchanged.
+- Continue focused, comprehensive regression investigation of diagram and geometry construction, dependency resolution, selection, drag, undo/redo, import/export and subtle numerical edge cases.
+- General Intersection must recognize analytically that a point belongs to a line, ray, segment or circle, including transformed point copies, regardless of the arbitrary sampled visualization extent. Both selection orders must agree; outside-domain or nearby off-curve points must not yield false intersections.
+- Preserve the Direct/manual-curved morphism interaction, all preexisting arrow styles, and compatibility with Round 58 JSON.
+
+
+## Round 60 — Free-curve arrowhead simplification
+- Free curves expose only None, End, Start and Both arrowheads; morphism choices remain unchanged.
+- Preserve imported legacy freehand arrowhead choices without schema breakage.
+- Make filled freehand arrow tips visually sharp beyond rounded stroke caps and large enough to span double-line strokes.
+
+## Round 61 — Morphism harpoon, hook and TikZ-cd interchange
+- Swap label side must also mirror a morphism's single-sided harpoon arrowhead; swapping must not alter style or color.
+- Restore the exact inset semicircular TeX-style morphism hook (not a pointed quadratic approximation). Keep it tangent to a shortened shaft and never modify freehand arrowhead appearance.
+- Provide TikZ-cd export of morphism constructions with supported styles: arrowless, ordinary, reversed, both-ended, two heads, hook, tail, harpoon, and solid/dashed/dotted/wavy strokes, plus a double shaft with ordinary arrowhead. Preserve side-swapped labels.
+- Round-trip supported styles through the TikZ-cd interchange parser. Reject combinations whose semantics cannot be represented faithfully rather than silently discarding a decoration. Do not claim arbitrary diagrams are representable as grid-based tikz-cd: mixed Geometry content, non-grid nodes, nonzero bends and complex labels remain explicitly gated.

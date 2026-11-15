@@ -122,6 +122,28 @@ export function generalCrossings(first,second,resolver,count=160){
  if(!first||!second||first.id===second.id)return [];
  const la=resolver.line(first),lb=resolver.line(second);
  const ca=resolver.circle(first),cb=resolver.circle(second);
+ // Points (including transformed single-point copies) must be tested against
+ // analytic line/circle supports. The old sampled ±15-unit line and polygonal
+ // circle approximation missed perfectly valid incidences.
+ const isolated=o=>{
+  const shape=r50SourceShape(o,resolver,3);
+  return shape.length===1&&coord(shape[0])?shape[0]:null;
+ };
+ const pa=(!la&&!ca)?isolated(first):null,pb=(!lb&&!cb)?isolated(second):null;
+ const pointOnLine=(p,line)=>{
+  if(!coord(p)||!line||!coord(line.a)||!coord(line.d))return false;
+  const distance=Math.abs(cross(sub(p,line.a),line.d));
+  if(distance>1e-7*Math.max(1,norm(sub(p,line.a))))return false;
+  const t=dot(sub(p,line.a),line.d);
+  return line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
+ };
+ const pointOnCircle=(p,circle)=>coord(p)&&circle&&coord(circle.center)&&finite(circle.radius)
+  &&Math.abs(norm(sub(p,circle.center))-circle.radius)<=1e-7*Math.max(1,circle.radius);
+ if(pa&&lb)return pointOnLine(pa,lb)?[pa]:[];
+ if(pb&&la)return pointOnLine(pb,la)?[pb]:[];
+ if(pa&&cb)return pointOnCircle(pa,cb)?[pa]:[];
+ if(pb&&ca)return pointOnCircle(pb,ca)?[pb]:[];
+ if(pa&&pb)return norm(sub(pa,pb))<1e-7?[pa]:[];
  const inside=(line,t)=>line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
  const sorted=points=>points.filter(coord).filter((p,i,all)=>all.findIndex(q=>coord(q)&&norm(sub(q,p))<1e-7)===i).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,32);
  if(la&&lb){

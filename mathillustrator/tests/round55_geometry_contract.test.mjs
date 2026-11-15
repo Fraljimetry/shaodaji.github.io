@@ -9,7 +9,7 @@ test('Round 55 exports the exact geometry contract required at startup',()=>{
   assert.equal(typeof api,'function');
  }
  for (const module of ['../src/app.mjs','../src/model.mjs']) {
-  assert.match(read(module),/from ['"]\.\/geometry_round50\.mjs\?cut=round56-direct-only['"]/);
+  assert.match(read(module),/from ['"]\.\/geometry_round50\.mjs\?cut=round60['"]/);
  }
- assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=round58"/);
+ assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=round61"/);
 });

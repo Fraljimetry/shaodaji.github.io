@@ -1156,3 +1156,29 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Verification:** `node --check` app/model/diagram PASS; full `node --test tests/*.test.mjs` **366/366 PASS**, including 4 new style/schema/persistence/export tests and existing Geometry/plotting cases. Chromium `browser_round58_arrow_styles.py` PASS (all line/arrowhead controls; no-head morphism; two epimorphism tips; freehand options; Undo/Redo; JSON save; SVG export); `browser_round57_inversion_glyph.py` PASS. Chromium uses the isolated inline-module harness, **not** production HTTP navigation; hosted deployment remains unverified. No Git commits.
 
 **Known limitations:** Strict TikZ-cd interchange cannot yet encode the expanded styles (nonstandard choices are rejected); no dedicated semantic marker for natural transformations beyond a double shaft. Dense/short curvatures and wavy/double offsets remain candidates for further graphical visual inspection.
+
+## Round 59 — Initial Diagram / Geometry regression sweep (2026-11-14)
+
+**Changes:** Simplified Arrowheads option text from “Double end (epi)” to “Double end”. Fixed confirmed General Intersection bug: a point on an infinite line beyond its previous ±15-unit polygonal preview was missed; points exactly on a circle but between sampled vertices were also missed. Point-vs-line/ray/segment and point-vs-circle now use analytic incidence with finite/domain guards and order-independent behavior. This handles transformed isolated points through the same geometry resolver. Document data schemas and arrowhead rendering were not changed.
+
+**Regressions:** `node --test tests/*.test.mjs` **370/370 PASS** (4 added cases covering distant points, exact circle incidence at sampling counts 3/7/160, finite domain behavior, and concise option text); `python tests/browser_round58_arrow_styles.py` PASS (diagram styles/undo/redo/JSON/SVG); `python tests/browser_smoke.py` PASS (startup, exports, controls); `python tests/browser_round51u_interactions.py` PASS (construction emphasis, intersections, tangent points, snapping); `python tests/browser_round51s_axes.py` PASS; `python tests/browser_round51t_geometry.py` PASS. Chromium checks use an **inline, isolated module harness**, not production HTTP. `node --check src/app.mjs` and `node --check src/geometry_round50.mjs` PASS.
+
+**Legacy test incompatibilities:** `browser_round51u_geometry.py` expects the old separate freehand arrow control removed in Round 58; `browser_round52_diagram.py` expects the previous inversion glyph replaced in Round 57; `browser_round50_geometry.py` expects the old point marker size (2 rather than 2.8). These are stale assertions, not identified application failures; they are not reported as passing. This is one focused audit cut, not a claim of exhaustive proof of all Diagram/Geometry features.
+
+**Remaining:** Deep geometry drag/dependency cycles, arbitrary curved-curve intersections, singular/tangential contact, branch continuity, dense diagram label collisions, full real-HTTP Chromium startup, and extensive cross-document import/export should be audited in subsequent focused cuts. No Git commits.
+
+
+## Round 60 — Free-curve arrow rendering
+- Restrict freehand arrowhead UI to None / End / Start / Both; preserve legacy data handling and morphism controls.
+- Shift freehand filled tips just beyond rounded path caps and increase arrowhead geometry for double-line style; retain LaTeX morphism tips unchanged.
+- PASS: full Node suite **373/373** (`node --test tests/*.test.mjs`).
+- PASS: Chromium isolated startup/export smoke, Round 58 morphism/freehand regression, and Round 60 focused real rendered SVG head geometry.
+- Note: Chromium tests use isolated inline-module bootstrapping, not hosted-site HTTP; production deployment not independently verified.
+
+## Round 61 — Morphism heads and TikZ-cd interchange (2026-11-14)
+- Fixed: harpoon branch is mirrored when `swap` changes; legacy label color is unchanged.
+- Fixed: hook rendering uses existing mathematically geometric `hookTailGeometry` semicircular arc; the broken quadratic hook was removed. Morphism shaft starts at the arc's tangent point.
+- Expanded TikZ-cd export and restricted importer to preserve supported independent arrowheads and stroke patterns; strict round-trip comparison now includes line and head modes, and explicitly refuses unsupported combined double-shaft/head cases.
+- PASS: Node **375/375** (`node --test tests/*.test.mjs`); new style combination interchange and hook/harpoon checks, existing topology and UI tests.
+- PASS: Chromium isolated inline-module smoke (startup, tool list, diagram construction, properties, Undo/Redo, SVG/PNG/TikZ/JSON and TikZ-cd interchange).
+- Limitations: no real-HTTP hosted-site validation; TikZ-cd has not been run through an external TeX compiler in this cut; semantic exporter is restricted to grid-aligned nodes and supported morphism options. No Git commits.

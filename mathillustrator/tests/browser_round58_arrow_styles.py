@@ -35,15 +35,15 @@ with sync_playwright() as pw:
   for line in ['solid','dashed','dotted','double','wavy']:
    lines.select_option(line)
    root=page.locator('#drawing [data-id="o4"]');assert root.count()>=1,line
-  for h in ['none','start','end','both','double-end','hook','tail','harpoon']:
+  for h in ['none','start','end','both']:
    heads.select_option(h)
    assert page.locator('#drawing [data-id="o4"]').count()>=1,h
   # Persist both styles; undo/redo must maintain the independent fields.
   stored=json.loads(download(page,'Save').read_text())
   f=next(o for o in stored['objects'] if o['type']=='freehand')
-  assert f['curveLine']=='wavy' and f['curveHeads']=='harpoon',f
+  assert f['curveLine']=='wavy' and f['curveHeads']=='both',f
   page.locator('#undo').click();page.locator('#redo').click()
-  assert json.loads(download(page,'Save').read_text())['objects'][-1]['curveHeads']=='harpoon'
+  assert json.loads(download(page,'Save').read_text())['objects'][-1]['curveHeads']=='both'
   page.locator('#object-search').fill('Arrow3');page.locator('#objects .object').first.click()
   page.get_by_label('Arrowheads').select_option('none')
   page.get_by_label('Line style').select_option('double')
