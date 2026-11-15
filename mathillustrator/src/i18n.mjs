@@ -126,13 +126,18 @@ Object.assign(zh,{
  'Smoothing':'平滑', 'Transparent':'透明', 'Size':'大小',
  'Density':'密度', 'Normalize lengths':'归一化长度', 'Bend':'弯曲', 'Swap side':'换侧'
 });
+Object.assign(zh,{"Free illustration": "自由绘图", "Olympiad geometry": "竞赛几何", "Research diagram": "研究图示", "Analysis / plots": "分析与绘图", "Commutative diagrams": "交换图", "Custom": "自定义", "Close importer": "关闭导入窗口", "Close export options": "关闭导出选项", "Toggle objects panel": "展开或收起对象面板", "Toggle tools panel": "展开或收起工具面板", "Objects and properties": "对象与属性", "Drawing tools and settings": "绘图工具与设置", "Find…": "查找…", "z component": "z 分量", "3D plotting mode": "三维绘图模式", "Fast 3D orbit": "快速三维旋转", "Auto-place arrow labels": "自动放置箭头标签", "System": "系统默认", "Times": "Times 字体", "Font": "字体", "Range": "范围", "Minimum": "最小值", "Maximum": "最大值", "Click the canvas.": "单击画布。", "Grid snapping temporarily enabled for diagram editing.": "编辑交换图时暂时启用网格吸附。", "Grid snapping restored to your saved setting.": "网格吸附已恢复为已保存的设置。", "Numeric value is required.": "请输入数值。", "A whole number is required.": "请输入整数。", "Click an existing line, circle or curve; then click the desired constrained position.": "单击已有直线、圆或曲线，再单击所需的约束位置。", "Click an external point, then a circle. Both tangents are constructed.": "先选圆外一点，再选圆，构造两条切线。", "Click start, a point on the arc, and end.": "依次单击起点、弧上一点和终点。", "Click focus point, then a directrix line.": "依次单击焦点和准线。", "Click two foci, then a point on the hyperbola.": "依次单击两个焦点及双曲线上一点。", "Click two different curves to construct their crossings.": "单击两条不同曲线以构造交点。", "Click a geometric object, then a mirror line.": "先选几何对象，再选对称轴。", "Choose an object, then an inversion circle. The circle center has no image.": "先选对象，再选反演圆；圆心没有像。", "Click a geometric object, then a center; enter the rotation angle (degrees).": "先选对象和中心，再输入旋转角度（度）。", "Click an object, then a translation start and end point.": "先选对象，再选平移起点和终点。", "Click a geometric object, then a center; enter a scale factor.": "先选对象和中心，再输入缩放倍数。", "Click a dependent point, then a point constrained to an object.": "先选从属点，再选受约束于对象的驱动点。", "Click the start point; enter a length, then choose its direction. Drag the endpoint to rotate.": "单击起点，输入长度并选方向；拖动终点可旋转。", "Choose a reference ray point and vertex, then enter an angle; drag the point on the resulting ray.": "依次选择参考射线上的点和顶点，再输入角度；拖动所得射线上的点。", "Click three noncollinear triangle vertices; center kind can be changed in Properties.": "单击三个不共线顶点；可在属性中更改中心类型。", "Click a source point, then a straight line, ray or segment; the foot remains dynamically attached.": "先选源点，再选直线、射线或线段；垂足随对象更新。", "Click three points; the second point is the vertex of the angle.": "单击三点，第二点为角顶点。", "Click a point, then a straight line, segment, or ray.": "先选一点，再选直线、线段或射线。", "Click two crossing straight objects.": "单击两条相交直线对象。", "Click two straight objects, two circles, or one of each; all finite intersections are created.": "选择两条直线对象、两个圆或一直线与一圆，构造全部有限交点。", "Click two points; the midpoint follows both.": "单击两点；中点随两点更新。", "Click the start, then the direction point.": "依次单击起点和方向点。", "Click two points; the bisector stays perpendicular as they move.": "单击两点；垂直平分线随之更新。", "Click two opposite ends of a diameter.": "单击直径两端点。", "Click three noncollinear points.": "单击三个不共线点。", "Click three vertices.": "单击三个顶点。", "Click four vertices.": "单击四个顶点。", "Click at least three points; Enter finishes.": "至少单击三点，按 Enter 完成。", "Click at least three points; click the starting point to close smoothly.": "至少单击三点，再单击起点以平滑闭合。", "Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.": "拖动对象可移动；拖动空白画布可平移；按 Shift 拖动空白画布可框选。", "Drag the canvas.": "拖动画布。", "Click vertices; click the starting point to close.": "逐个单击顶点，单击起点闭合。", "Click vertices; Enter finishes.": "逐个单击顶点，按 Enter 完成。", "Click four control points.": "单击四个控制点。", "Click three points (vertex second).": "单击三点，第二点为顶点。", "Drag to draw a free curve.": "拖动绘制自由曲线。", "Click source and target nodes.": "依次单击源节点和目标节点。", "Click center, then a vertex.": "先单击中心，再单击一个顶点。", "Click the canvas to add a node.": "单击画布以添加节点。", "Click the first focus, second focus, then a point on the ellipse.": "依次选择两个焦点及椭圆上一点。", "Click an edge start, edge end, then a point indicating perpendicular height.": "依次选择一条边的起点、终点及确定垂直高度的一点。", "Click three consecutive vertices.": "依次单击三个相邻顶点。"});
 const originalText=new WeakMap(),originalAttrs=new WeakMap();
 const skip='script,style,svg,.objects,#toast,#render-info,#coords,#autosave-info,#object-count,#trash-count,#mode-label,#command,#drawing';
 function translateTextNode(node,language){
  if(!originalText.has(node))originalText.set(node,node.nodeValue);
- const original=originalText.get(node),trim=original.trim();
- if(!trim||!Object.hasOwn(zh,trim))return;
- node.nodeValue=language==='zh'?original.replace(trim,zh[trim]):original;
+ let original=originalText.get(node);
+ // A live control may replace its text without replacing the Text node.
+ // Remember the new source, but never mistake our own translation for a new source.
+ if(node.nodeValue!==original && node.nodeValue!==original.replace(original.trim(),translated(original.trim(),'zh'))){original=node.nodeValue;originalText.set(node,original);}
+ const trim=original.trim();
+ if(!trim||translated(trim,'zh')===trim)return;
+ node.nodeValue=language==='zh'?original.replace(trim,translated(trim,'zh')):original;
 }
 export function localizeUI(root,language='en'){
  if(!root||!['en','zh'].includes(language))return;
@@ -141,10 +146,22 @@ export function localizeUI(root,language='en'){
  const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
  for(const n of nodes){if(n.parentElement?.closest(skip))continue;translateTextNode(n,language);}
  const candidates=root.querySelectorAll?.('[title],[aria-label],[placeholder]')||[];
- for(const el of candidates){if(el.closest(skip))continue;let base=originalAttrs.get(el);
+ for(const el of candidates){if(el.closest(skip) && !el.matches('.objects'))continue;let base=originalAttrs.get(el);
   if(!base){base={};for(const name of ['title','aria-label','placeholder'])if(el.hasAttribute(name))base[name]=el.getAttribute(name);originalAttrs.set(el,base);}
-  for(const [name,value] of Object.entries(base))if(Object.hasOwn(zh,value))el.setAttribute(name,language==='zh'?zh[value]:value);
+  for(const [name,value] of Object.entries(base)){
+   const current=el.getAttribute(name);
+   if(current!==null&&current!==value&&current!==translated(value,'zh')){base[name]=current;}
+   const source=base[name];
+   if(translated(source,'zh')!==source)el.setAttribute(name,language==='zh'?translated(source,'zh'):source);
+  }
  }
 }
-export function translated(s,language='en'){return language==='zh'?(zh[s]||s):s;}
+export function translated(s,language='en'){
+ if(language!=='zh')return s;
+ const range=/^(Range|Minimum|Maximum): ([^\n]+)$/.exec(s);
+ if(range)return (zh[range[1]]||range[1])+'：'+range[2];
+ const bounds=/^Value must be within ([^\n]+)\.$/.exec(s);
+ if(bounds)return '数值必须位于 '+bounds[1]+' 范围内。';
+ return zh[s]||s;
+}
 export const supportedLanguages=['en','zh'];

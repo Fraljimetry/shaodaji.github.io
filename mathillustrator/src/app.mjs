@@ -193,7 +193,7 @@ function initialSiteTheme(){
 let selected3d=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
 let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,showTooltips:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
-function notice(msg){const e=$('toast');e.textContent=msg;e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
+function notice(msg){const e=$('toast');e.textContent=translated(msg,uiPrefs.language);e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
  const node=$('autosave-info');if(node)node.textContent=message;
@@ -1792,10 +1792,10 @@ const toolInstructions={
  triangleCenter:'Click three noncollinear triangle vertices; center kind can be changed in Properties.',perpendicularFoot:'Click a source point, then a straight line, ray or segment; the foot remains dynamically attached.',angleBisector:'Click three points; the second point is the vertex of the angle.',parallelThrough:'Click a point, then a straight line, segment, or ray.',perpendicularThrough:'Click a point, then a straight line, segment, or ray.',intersection:'Click two crossing straight objects.',circleIntersection:'Click two straight objects, two circles, or one of each; all finite intersections are created.',midpoint:'Click two points; the midpoint follows both.',ray:'Click the start, then the direction point.',perpBisector:'Click two points; the bisector stays perpendicular as they move.',circleDiameter:'Click two opposite ends of a diameter.',circleThrough3:'Click three noncollinear points.',triangle:'Click three vertices.',quadrilateral:'Click four vertices.',spline:'Click at least three points; Enter finishes.',closedSpline:'Click at least three points; click the starting point to close smoothly.',select:'Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.',pan:'Drag the canvas.',polygon:'Click vertices; click the starting point to close.',polyline:'Click vertices; Enter finishes.',bezier:'Click four control points.',angle:'Click three points (vertex second).',freehand:'Drag to draw a free curve.',morphism:'Click source and target nodes.',regularPolygon:'Click center, then a vertex.',node:'Click the canvas to add a node.',ellipse:'Click the first focus, second focus, then a point on the ellipse.',rectangle:'Click an edge start, edge end, then a point indicating perpendicular height.',parallelogram:'Click three consecutive vertices.'};
 function updateModeLabel(t){
  const label=toolGroups['basic-tools'].concat(toolGroups['construction-tools'],toolGroups['diagram-tools']).find(([id])=>id===t)?.[1]||t;
- const localized=translated(label,uiPrefs.language),help=toolInstructions[t]||'Click the canvas.';
+ const localized=translated(label,uiPrefs.language),help=translated(toolInstructions[t]||'Click the canvas.',uiPrefs.language);
  const mode=$('mode-label');mode.textContent=localized;mode.removeAttribute('title');mode.removeAttribute('tabindex');
  mode.setAttribute('aria-label',localized+': '+help);
- $('drawing').setAttribute('aria-label','Interactive mathematical drawing canvas · '+localized+': '+help);
+ $('drawing').setAttribute('aria-label',translated('Interactive mathematical drawing canvas',uiPrefs.language)+' · '+localized+': '+help);
 }
 // Grid snapping for diagram work is a temporary interaction mode, not a
 // document setting. A focused selected node/arrow also activates it in Move.
@@ -1874,8 +1874,8 @@ function syncPlotModeControl(){
  const placeholders={function:'sin(x)',parametric:`cos(${symbol.value})`,implicit:'x^2+y^2=1',vectorField:'-y',domainColoring:'z^2+1',domain3d:'z^2+1',surface3d:'sin(x)*cos(y)',parametric3d:'cos(u)*sin(v)',implicit3d:'x^2+y^2+z^2=4',vector3d:'-y'};
  plotInput.placeholder=placeholders[mode]||'Expression';plotY.placeholder=mode==='parametric'?`sin(${symbol.value})`:mode==='vectorField'?'x':mode==='parametric3d'?'sin(u)*sin(v)':'x';
  plotZ.placeholder=mode==='parametric3d'?'cos(v)':'z';
- plotInput.setAttribute('aria-label',mode==='vectorField'?'X(x, y) =':['domainColoring','domain3d'].includes(mode)?'F(z) =':mode==='parametric'?`x(${symbol.value}) =`:three?'3D first component':'Function or construction command');
- plotY.setAttribute('aria-label',mode==='vectorField'?'Y(x, y) =':mode==='parametric'?`y(${symbol.value}) =`:three?'3D second component':'Second component');
+ plotInput.setAttribute('aria-label',translated(mode==='vectorField'?'X(x, y) =':['domainColoring','domain3d'].includes(mode)?'F(z) =':mode==='parametric'?`x(${symbol.value}) =`:three?'3D first component':'Function or construction command',uiPrefs.language));
+ plotY.setAttribute('aria-label',translated(mode==='vectorField'?'Y(x, y) =':mode==='parametric'?`y(${symbol.value}) =`:three?'3D second component':'Second component',uiPrefs.language));
 }
 function sync3DInterface(){
  const enabled=in3D();document.documentElement.classList.toggle('three-d',enabled);$('scene3d-enable').checked=enabled;

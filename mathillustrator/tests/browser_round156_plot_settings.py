@@ -36,8 +36,8 @@ with sync_playwright() as pw:
             page.locator('#command').press('Enter')
             r=page.evaluate('''() => {
                 const pair=document.querySelector('#properties .property-check-number-pair');
-                const input=pair.querySelector('input[type=number]');
-                const check=pair.querySelector('input[type=checkbox]');const opacity=document.querySelector('.style-opacity input[type=number]').getBoundingClientRect();
+                const input=pair.querySelector('input[data-numeric-expression=true]');
+                const check=pair.querySelector('input[type=checkbox]');const opacity=document.querySelector('.style-opacity input[data-numeric-expression=true]').getBoundingClientRect();
                 const a=pair.getBoundingClientRect(), b=input.getBoundingClientRect();
                 return {label:pair.textContent.replace(/\\s+/g,' ').trim(),width:b.width,right:b.right,outer:a.right,opacityWidth:opacity.width,opacityRight:opacity.right,check:check.checked};
             }''')

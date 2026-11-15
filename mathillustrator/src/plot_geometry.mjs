@@ -13,16 +13,25 @@ function mult(a,b){
 }
 export function polynomial2(source){
  if(typeof source!=='string'||source.length>240)return null;
- const compact=source.replace(/\s+/g,'');
- if(!/^(?:[\d.eExy+*/^()\-])+$/i.test(compact))return null;
- const normalized=compact.replace(/(\d|\))(?=[xy(])/g,'$1*').replace(/([xy])(?=\()/g,'$1*');
- const ts=normalized.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|[xy()+*/^\-]/gi)||[];
- if(ts.join('')!==normalized)return null;
+ const compact=source.replace(/\s+/g,'').toLowerCase();
+ // Use the plotting parser's multiplication and constant conventions. Never
+ // approximate a sampled curve to manufacture an exact geometric object.
+ const raw=compact.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|pi|e|[xy()+*/^\-]/g)||[];
+ if(raw.join('')!==compact)return null;
+ const ts=[];
+ for(const token of raw){
+  const previous=ts.at(-1);
+  const priorValue=previous&&(/^(?:\d|\.|pi$|e$|x$|y$|\)$)/.test(previous));
+  const nextValue=/^(?:\d|\.|pi$|e$|x$|y$|\()/.test(token);
+  if(priorValue&&nextValue)ts.push('*');
+  ts.push(token);
+ }
  let k=0;
  const peek=()=>ts[k],take=()=>ts[k++];
  function primary(){const t=take();if(!t)return null;
   if(t==='('){const a=expr();if(take()!==')')return null;return a;}
   if(t==='x'||t==='y'){const a=z();a[t==='x'?1:2]=1;return a;}
+  if(t==='pi'||t==='e'){const a=z();a[0]=t==='pi'?Math.PI:Math.E;return a;}
   const n=Number(t);if(!Number.isFinite(n))return null;const a=z();a[0]=n;return a;
  }
  function power(){let a=primary();if(!a)return null;if(peek()==='^'){take();const exp=Number(take());if(![0,1,2].includes(exp))return null;if(exp===0){a=z();a[0]=1;}else if(exp===2)a=mult(a,a);}return a;}

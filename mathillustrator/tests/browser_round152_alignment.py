@@ -11,14 +11,14 @@ with sync_playwright() as pw:
    if width<700: page.locator('#left-collapse').click()
    cmd(page,'P=(1,2)')
    page.locator('#objects .object').first.click()
-   result=page.evaluate('''() => {const p=document.querySelector('#properties');const find=t=>[...p.querySelectorAll('label.field')].find(e=>e.textContent.includes(t));const a=find('Displayed label'),b=find('Label format');const r=e=>e.getBoundingClientRect();const ai=r(a.querySelector('input')),bi=r(b.querySelector('select')),pr=r(p);return {a:ai.x,b:bi.x,aw:ai.width,bw:bi.width,right:pr.right,hasClass:a.classList.contains('short-label-field'),nameWidth:find('Name').querySelector('input').getBoundingClientRect().width};}''')
+   result=page.evaluate('''() => {const p=document.querySelector('#properties');const find=t=>[...p.querySelectorAll('label.field')].find(e=>e.firstChild?.textContent?.trim()===t);const a=find('Label'),b=find('Label format');const r=e=>e.getBoundingClientRect();const ai=r(a.querySelector('input')),bi=r(b.querySelector('select')),pr=r(p);return {a:ai.x,b:bi.x,aw:ai.width,bw:bi.width,right:pr.right,hasClass:a.classList.contains('short-label-field'),nameWidth:find('Name').querySelector('input').getBoundingClientRect().width};}''')
    assert result['hasClass'] and abs(result['a']-result['b'])<3 and abs(result['aw']-result['bw'])<3,(width,result)
    assert result['a']+result['aw']<=result['right']+1 and result['nameWidth']>result['aw'],(width,result)
    result2=None
    if width>=700:
     page.locator('#plot-mode').select_option('domainColoring')
     page.locator('#command').fill('z');page.locator('#command').press('Enter')
-    result2=page.evaluate('''() => {const p=document.querySelector('#properties');const fields=[...p.querySelectorAll('label.field')];const f=t=>fields.find(e=>e.textContent.includes(t));const rect=e=>e.getBoundingClientRect();const c=rect(f('Color scheme').querySelector('select')),n=rect(f('Coloring resolution').querySelector('input')),l=rect(f('Displayed label').querySelector('input'));return {cx:c.x,nx:n.x,lx:l.x,cw:c.width,nw:n.width,lw:l.width,pw:rect(p).width};}''')
+    result2=page.evaluate('''() => {const p=document.querySelector('#properties');const fields=[...p.querySelectorAll('label.field')];const f=t=>fields.find(e=>e.firstChild?.textContent?.trim()===t);const rect=e=>e.getBoundingClientRect();const c=rect(f('Color scheme').querySelector('select')),n=rect(f('Resolution').querySelector('input')),l=rect(f('Label').querySelector('input'));return {cx:c.x,nx:n.x,lx:l.x,cw:c.width,nw:n.width,lw:l.width,pw:rect(p).width};}''')
     assert max(result2['cx'],result2['nx'],result2['lx'])-min(result2['cx'],result2['nx'],result2['lx'])<3,(width,result2)
     assert max(result2['cw'],result2['nw'],result2['lw'])-min(result2['cw'],result2['nw'],result2['lw'])<3,(width,result2)
    assert not errors,(width,errors)

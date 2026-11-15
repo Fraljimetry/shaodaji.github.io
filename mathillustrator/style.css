@@ -873,11 +873,11 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 
 /* Round 149: text editors span the inspector, with the caption immediately
    above. Keep read-only measurements in their established two-column row. */
-.properties:not(.properties-3d) > .field:has(> input[type=text]:not([readonly])) {
+.properties:not(.properties-3d) > .field:has(> input[type=text]:not([readonly]):not([data-numeric-expression="true"])) {
  display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
  gap:5px;text-align:left;
 }
-.properties:not(.properties-3d) > .field > input[type=text]:not([readonly]) {
+.properties:not(.properties-3d) > .field > input[type=text]:not([readonly]):not([data-numeric-expression="true"]) {
  width:100%;max-width:100%;min-width:0;
 }
 
@@ -1043,3 +1043,11 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .properties .point-coordinate-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
 .properties .point-coordinate-grid label{display:grid;grid-template-columns:12px minmax(0,1fr);align-items:center;gap:5px;min-width:0;margin:0}
 .properties .point-coordinate-grid input{width:100%;min-width:0;margin:0;font-variant-numeric:tabular-nums}
+
+/* Round 164: Snap/Show use three full grid tracks.  The earlier half-width
+   inline checkbox rule unintentionally shrank every item inside this grid,
+   clipping English labels without raising a page overflow. */
+.geometry-options .settings-subsection[aria-label="Snap"]>.check,
+.geometry-options .settings-subsection[aria-label="Show"]>.check {
+  display:flex;width:auto;min-width:0;padding-right:0;white-space:normal;
+}

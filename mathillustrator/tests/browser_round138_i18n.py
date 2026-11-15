@@ -15,7 +15,7 @@ with sync_playwright() as pw:
     assert page.get_by_text(text,exact=True).count(),(width,text)
    page.locator('#scene3d-enable').check()
    assert page.locator('#settings-3d').get_by_text('三维可视化').count()
-   for text in ('网格精度','曲面不透明度','视角水平角 (°)','视角俯仰角 (°)'):
+   for text in ('网格精度','不透明度','视角水平角 (°)','视角俯仰角 (°)'):
     assert page.locator('#settings-3d').get_by_text(text,exact=True).count(),(width,text)
    assert page.locator('#plot-mode option:checked').inner_text()=='函数'
    page.locator('#scene3d-yaw').fill('21.25');page.locator('#scene3d-yaw').dispatch_event('change')

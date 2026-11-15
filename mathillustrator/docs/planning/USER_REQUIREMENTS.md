@@ -1715,3 +1715,21 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 - Continue reviewing hard-coded English labels and status messages in both language modes. Do not translate user-authored expressions, mathematical variables, or object names.
 
 - Round 162: In Point, Node and Text coordinate Properties, keep the `x` and `y` axis labels inline with their respective numeric editors, retaining two equal columns and editability at narrow widths.
+
+## Round 163 — Complete bilingual display consistency
+- English/Chinese UI switching must update static and dynamically assigned labels, range hints, tool instructions, dialogs and accessibility attributes without stale English or stale translations after repeated switching.
+- Mathematical formulas, user-created object names and raw TeX must remain untouched; font names, language names and paper names may retain standard names.
+- Plot mode changes, 2D/3D switches and dynamically updated controls must respect the current language.
+
+### Round 164 — Display regression expectations
+- Snap/Show checkboxes must fill their actual CSS-grid tracks; never inherit half-width checkbox layout inside a three-column grid.
+- Both languages and repeated language switching must avoid visible label clipping and controls escaping the Settings panel at desktop/tablet/mobile viewport widths.
+- Retain the shared second-column export/Interface alignment and do not alter mathematical rendering or glyphs during display-only fixes.
+
+### Round 165 — display consistency and verification
+- Treat numeric-expression controls as compact numeric fields in CSS; do not apply generic full-width text-editor rules to them. True long expression/text editors retain their established sizing.
+- Keep historical Chromium checks synchronized with intentionally renamed/removed controls and stable semantic selectors. Continue auditing both languages and responsive populated states without altering established glyphs.
+
+
+### Round 166 — plotting / geometry interoperability
+Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-insensitive), simple implicit multiplication, and scientific notation consistent with plotted expressions; avoid sample-based false-positive classification. Audit all plotting and geometry subsystems with reproducible evidence and disclose incomplete E2E rather than declaring exhaustive coverage.

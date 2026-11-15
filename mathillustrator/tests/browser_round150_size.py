@@ -13,15 +13,15 @@ with sync_playwright() as pw:
    if width<700:page.locator('#left-collapse').click()
    cmd(page,'P=(1,2)')
    page.locator('#objects .object').filter(has=page.locator('.object-label strong',has_text='P')).first.click()
-   values=page.evaluate('''() => {
-    const root=document.querySelector('#properties'), rect=s=>root.querySelector(s).getBoundingClientRect();
-    const size=root.querySelector('.style-pointsize .field'),op=root.querySelector('.style-opacity .field'),wid=root.querySelector('.style-width .field');
-    const s=rect('.style-pointsize input'),o=rect('.style-opacity input'),w=rect('.style-width input');
-    return {label:size.textContent.trim(),sx:s.x,ox:o.x,wx:w.x,sy:s.y,wy:w.y,sw:s.width,ow:o.width};
-   }''')
-   assert values['label'].startswith('Size'),(width,values)
-   assert abs(values['sx']-values['ox'])<4 and abs(values['sx']-values['wx'])<4,(width,values)
-   assert values['sy']>values['wy'],(width,values)
+   values=page.evaluate("""() => {
+     const root=document.querySelector('#properties');
+     const point=root.querySelector('.style-pointsize input'),opacity=root.querySelector('.style-opacity input');
+     if(!point||!opacity)return null;
+     const a=point.getBoundingClientRect(),b=opacity.getBoundingClientRect();
+     return {label:point.closest('label').textContent.trim(),sx:a.x,ox:b.x,sw:a.width,ow:b.width,widthCount:root.querySelectorAll('.style-width').length};
+   }""")
+   assert values and values['widthCount']==0 and values['label'].startswith('Size'),(width,values)
+   assert abs(values['sx']-values['ox'])<4 and abs(values['sw']-values['ow'])<4,(width,values)
    assert not errors,(width,errors)
    print('ROUND150_CHROMIUM_PASS',width,values,flush=True)
    page.close()

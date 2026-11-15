@@ -1973,3 +1973,25 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - Verification results are reported alongside the delivered overlay.
 
 - Round 162 executed: Node 566/566 PASS; app.mjs syntax PASS; Chromium 1440/768 genuine point coordinate editing and 390/320 visible CSS layout fixtures PASS. Hosted deployment not checked.
+
+### Round 163 — Bilingual display sweep
+- Source inspection and live Chromium scan across Settings, Properties, tool labels, plot mode inputs and both 2D/3D modes found dynamic English range hints, untranslated accessibility tool instructions, English-only preset options and plotting-input accessible labels. The original text/attribute cache also failed to recognize updated dynamic values in reused DOM nodes.
+- Fixed translation dispatch for `Range`/`Minimum`/`Maximum`, dynamic error messages, tool instructions, several preset names and UI accessibility strings, and refreshed the language cache when a node or attribute is repurposed. User content remains excluded.
+- Actual Chromium PASS: 1440, 768, 390, 320 px, repeat `en → zh → en → zh`, range hints, plot instructions, presets, 2D/3D and page errors. Node: 566/566 PASS, 0 skipped; `node --check` both modified JS files PASS.
+- After-sweep English candidates: standard font and paper names (`Legal`, `Letter`, `Verdana`, etc.), English language option, mathematical placeholders and TeX examples; deliberately retained. Full historical Chromium suite, GPU stress and hosted deployment were not run.
+
+### Round 164 — Display sweep (local, partial)
+- Confirmed and fixed a CSS-specific clipping defect in Snap/Show checkbox groups.
+- Node 566/566 passed; app/i18n syntax passed.
+- New Chromium 1440/1024/768/390/320 × English/Chinese/English checks passed. Recent Round 159–163 targeted Chromium scripts passed.
+- Broader historical browser batch contained nonzero exits from legacy assumptions (Rounds 138, 150, 152, 153, 156); it was not fully completed. See `ROUND164_DISPLAY_AUDIT.md` for exact limitations and failing scripts. No claim of exhaustive UI certification.
+
+### Round 165 — display gap closure
+- Fixed numeric-expression CSS specificity regression (`Resolution` right-edge alignment). Repaired five historical Chromium scripts (R138/150/152/153/156) for current UI semantics.
+- Node: 566 passed, 0 failed, 0 skipped; app.mjs and i18n.mjs syntax passed.
+- Chromium: R138, R150, R152, R153 paired and R164 completed successfully; R156 reported four width PASS lines, but enclosing batch timed out; R161 completed. Round 165 state sweep passed at 1440, 768, 390, 320, both languages/themes, plot modes, import/export dialogs.
+- Remaining: complete archived browser set, untested construction dialogs, mobile physical interactions, floating panels, GPU/performance/hosted deployment; see ROUND165_DISPLAY_CERTIFICATION.md.
+
+
+### Round 166 — comprehensive plotting and geometry sweep, partial certification
+568/568 Node checks passed. Actual Chromium: R166 pi/e plot creation at 1440/390 passed; R146 freehand at 1440/390/320 passed; R41 3D pipeline passed. Syntax passed. Historical browser scripts have stale-selector failures/timeouts, so no full-E2E PASS claim. See `ROUND166_PLOTTING_GEOMETRY_AUDIT.md`.
