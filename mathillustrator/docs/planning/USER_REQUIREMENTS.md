@@ -1754,3 +1754,8 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - The Background color picker aligns horizontally with the Stroke color picker in the first column.
 - Remove the redundant Grid/axes in export checkbox. Editor grid/axes remain available; export no longer paints editing guides. Retain the legacy exportGuides field only for compatibility with saved projects.
 - 2D and 3D transparent export controls share the same persisted exportTransparent setting.
+
+### Round 172 — Universal geometry picking (2026-11-15)
+- Use one shared, deterministic, type-aware hit ordering for 2D Move selection, hover preview and construction tools. Points under intersecting lines/curves must win independent of SVG drawing order when the current tool accepts points.
+- Apply tool eligibility before ranking: a tool requiring a curve/circle/line must not be intercepted by an incompatible overlapping point. Point-on-object construction must retain curve selection.
+- Prefer anchor spatial-index ordering for overlapping points, preserve Ctrl/Cmd-click overlap cycling and normal artwork stacking; exclude hidden/fully transparent objects. No changes to glyphs.

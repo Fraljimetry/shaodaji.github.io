@@ -2022,3 +2022,11 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - JavaScript syntax: `node --check src/app.mjs` passed.
 - Chromium: `browser_round171_background_transparency.py` passed at 1440 and 768, including both 2D/3D, setting interaction and English/Chinese language changes; 390 and 320 passed with forced-visible Settings fixtures because mobile layout normally hides the panel.
 - Not run: full historical Chromium suite, hosted site and GPU tests. Several old browser scripts still reference the removed checkbox and must be migrated before they can pass. No Git commit.
+
+### Round 172 — Unified geometry hit-testing
+- Baseline: reconstructed authoritative ZIP plus successive overlays 159–171.
+- Implementation: `src/geometry_pick.mjs` pure rank/eligibility function; `src/app.mjs` unified candidate ordering in Move, hover and construction selection, plus compatible curve-first selection for Point on Object; `tests/browser_smoke.py` updated for the new module in the real Chromium inline fixture.
+- Node (`node --test tests/*.test.mjs`): **572 passed, 0 failed, 0 skipped**, including four new pure ranking regressions covering point-over-line/region, tool compatibility, same-type ties, invisibility and deduplication.
+- Actual Chromium: `browser_round172_universal_geometry_pick.py` passed at 1440 and 1024 px; `browser_round167_point_over_line.py` passed at 1440/1024; `browser_round168_hover_drag.py` passed at 1440/1024; `browser_round170_selection_preview.py` passed at 1440/390 on retry; `browser_round171_background_transparency.py` passed at 1440/768/390/320.
+- An initial Round 170 run returned `AssertionError: point.bounding_box()` at 390 px after passing 1440; an unchanged rerun passed both widths. Treat as an intermittent fixture / UI timing gap, not an unconditional pass for all repetitions.
+- JavaScript syntax checked for `app.mjs`. Full archived browser collection, full physical-touch traversal, performance profiling of large documents, and hosted-site checks **not executed**; no exhaustive certification claim.

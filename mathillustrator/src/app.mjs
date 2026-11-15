@@ -20,6 +20,7 @@ import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} 
 import {boxRect,routeDiagramEdge,pathData,smoothRoutePath,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs?cut=round54';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round71';
+import {rankGeometryHits} from './geometry_pick.mjs?cut=round172';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotCache} from './plot_cache.mjs?cut=round54';
 import {layoutMorphismLabels,strokeObstacleRectangles} from './morphism_label_layout.mjs?cut=round54';
@@ -1964,13 +1965,27 @@ function currentAnchorIndex(){
  return anchorCache;
 }
 function hitTestPoint(sx,sy){return currentAnchorIndex().hit(sx,sy)?.id||null;}
+/** Shared semantic hit order used by selection, hover and constructions.
+ * A tool-specific predicate filters incompatible objects before ranking.
+ */
+function geometryHitCandidates(e,sx,sy,accept=()=>true){
+ const svg=$('drawing');
+ const elements=[e.target?.closest?.('[data-id]')?.dataset.id,
+  ...document.elementsFromPoint(e.clientX,e.clientY).map(node=>{
+   const target=node.closest?.('[data-id]');return target&&svg.contains(target)?target.dataset.id:null;
+  })];
+ return rankGeometryHits({anchors:currentAnchorIndex().hits(sx,sy),elements,
+  getObject:id=>get(doc,id),accept,visible:o=>!o.hidden&&o.style?.opacity!==0});
+}
+function geometryHit(e,sx,sy,accept=()=>true){return geometryHitCandidates(e,sx,sy,accept)[0]||null;}
 /** Preview the same semantic target used by a click, not merely the top SVG layer. */
 function hoverPick(e,sx,sy){
  if(drag||in3D())return null;
  const anchor=hitTestPoint(sx,sy),resolver=createResolver(doc);
  const point=get(doc,anchor),pointValid=point&&!point.hidden&&point.style?.opacity!==0&&geometricPoint(point,resolver);
  const mode=tool;
- if(['select','pan'].includes(mode))return anchor||e.target.closest?.('[data-id]')?.dataset.id||null;
+ if(['select','pan'].includes(mode))return geometryHit(e,sx,sy);
+ if(mode==='pointOnObject'&&!draftReference)return geometryHit(e,sx,sy,o=>r50SourceShape(o,resolver,70).length>=2);
  if(['reflection','rotation','translation','dilation','circleInversion','tangentCircle','parabola','locus','generalIntersection'].includes(mode)){
   if(!draftReference){
    if(pointValid)return point.id;
@@ -2014,9 +2029,8 @@ function stackedSelection(e,sx,sy){
  const domHits=document.elementsFromPoint(e.clientX,e.clientY).map(node=>{
   const element=node.closest?.('[data-id]');return element&&svg.contains(element)?element.dataset.id:null;
  }).filter(Boolean);
- const candidates=[...new Set([...indexHits,...domHits])].filter(id=>{
-  const object=get(doc,id);return object&&!object.hidden&&object.style?.opacity!==0;
- });
+ const candidates=rankGeometryHits({anchors:indexHits,elements:domHits,
+  getObject:id=>get(doc,id),visible:object=>!object.hidden&&object.style?.opacity!==0});
  return cycleSelection(candidates,selected);
 }
 function nearestAnchor(pt,excluded=null){
@@ -2176,7 +2190,7 @@ function pointerDown(e){
   // A selected morphism's label handle has priority over point and path hits.
   // This must be checked before the generic overlapping-object selection logic.
   const labelId=e.target.closest('[data-label-handle]')?.getAttribute('data-label-handle');
-  const actualHit=labelId||hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null;
+  const actualHit=labelId||geometryHit(e,sx,sy);
   const now=performance.now(),previous=lastMoveCanvasTap;
   const plainClick=!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey;
   const doubleHit=plainClick&&actualHit&&previous?.id===actualHit&&
@@ -2222,7 +2236,7 @@ function pointerDown(e){
    else if(o?.type==='freehand'&&!o.locked)drag={kind:'freehand-move',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,path:o.path.map(p=>[...p]),rawPath:o.rawPath?.map(p=>[...p])};
   }
  }else if(tool==='pan'){
-  const id=uiPrefs.autoPan!==false?(hitTestPoint(sx,sy)||e.target.closest('[data-id]')?.dataset.id||null):null;
+  const id=uiPrefs.autoPan!==false?geometryHit(e,sx,sy):null;
   const obj=id&&get(doc,id);
   if(obj&&!obj.hidden&&!obj.locked)drag={kind:'pan-object-pending',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy,id};
   else drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};
@@ -2240,48 +2254,25 @@ function r50Number(message,defaultValue,convert=1){
  * be the background even while a visible curve is under the pointer. Resolve
  * from the live SVG hit stack as a fallback. Never match unrelated UI nodes. */
 function constructionHit(e,accept=()=>true){
- const svg=$('drawing'),seen=new Set();
- const ids=[e.constructionHitId,e.target.closest?.('[data-id]')?.dataset.id];
- // Prefer actual document objects; only fall back to immutable guides if the
- // pointer lies on the displayed x or y axis. At the origin a second click
- // naturally chooses the *other* axis for an axis-axis intersection.
- const axisHits=[];
+ const [sx,sy]=xyEvent(e);
+ const candidates=geometryHitCandidates(e,sx,sy,accept);
+ if(candidates.length)return candidates[0];
+ // Legacy synthetic guide hits remain a fallback, never override real geometry.
+ if(e.constructionHitId){const o=get(doc,e.constructionHitId);if(o&&accept(o))return o.id;}
  if(doc.settings.showAxes&&!in3D()){
-  const [sx,sy]=xyEvent(e),[zx,zy]=project([0,0]);
-  if(Math.abs(sy-zy)<=7)axisHits.push('axis-x');
-  if(Math.abs(sx-zx)<=7)axisHits.push('axis-y');
-  if(draftReference&&axisHits.includes(draftReference)&&axisHits.length===2)axisHits.reverse();
- }
- for(const node of document.elementsFromPoint(e.clientX,e.clientY)){
-  const target=node.closest?.('[data-id]');
-  if(target&&svg.contains(target))ids.push(target.dataset.id);
- }
- for(const id of [...ids,...axisHits]){
-  if(!id||seen.has(id))continue;
-  seen.add(id);
-  const o=get(doc,id);if(o&&accept(o))return id;
+  const [zx,zy]=project([0,0]),axes=[];
+  if(Math.abs(sy-zy)<=7)axes.push('axis-x');
+  if(Math.abs(sx-zx)<=7)axes.push('axis-y');
+  if(draftReference&&axes.length===2&&axes[0]===draftReference)axes.reverse();
+  for(const id of axes){const o=get(doc,id);if(o&&accept(o))return id;}
  }
  return null;
 }
 function r50ObjectTap(e,pt){
- const hit=constructionHit(e);
- const obj=get(doc,hit),resolver=createResolver(doc),pointHit=(()=>{
-  const [sx,sy]=xyEvent(e),id=hitTestPoint(sx,sy),candidate=get(doc,id);
-  if(geometricPoint(candidate,resolver))return candidate;
-  if(geometricPoint(obj,resolver))return obj;
-  // A stale screen-space anchor index or an SVG overlay must not make a
-  // visibly drawn point unpickable. Re-resolve real visible point anchors at
-  // the pointer and use the same screen tolerance as normal anchor picking.
-  // Only scan on a miss; common clicks retain the indexed fast path.
-  let best=null,bestDistance=Infinity;
-  for(const point of doc.objects){
-   if(point.hidden||point.style?.opacity===0||!geometricPoint(point,resolver))continue;
-   const xy=r50PointPosition(point,resolver);if(!xy)continue;const screen=project(xy),d=Math.hypot(screen[0]-sx,screen[1]-sy);
-   const radius=Math.max(9,Number(point.style?.pointSize??doc.settings.pointSize)+3);
-   if(d<=radius&&d<bestDistance){best=point;bestDistance=d;}
-  }
-  return best;
- })();
+ const resolver=createResolver(doc),[sx,sy]=xyEvent(e);
+ const hit=constructionHit(e,tool==='pointOnObject'&&!draftReference?o=>r50SourceShape(o,resolver,70).length>=2:()=>true),obj=get(doc,hit);
+ const pointId=geometryHit(e,sx,sy,o=>!!geometricPoint(o,resolver));
+ const pointHit=get(doc,pointId);
  const mode=tool;
  if(mode==='pointOnObject'){
   if(!draftReference){if(!obj||r50SourceShape(obj,createResolver(doc),70).length<2){notice('Choose a valid existing geometric object.');return;}draftReference=obj.id;scheduleRender();return;}
