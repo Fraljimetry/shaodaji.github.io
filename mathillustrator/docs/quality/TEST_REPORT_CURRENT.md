@@ -2014,3 +2014,11 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 Confirmed and fixed absent preselection hover feedback, missing Free Curve translation in Move mode, and split Node Font size/Node border rows. Node **568/568 passed**; JavaScript syntax check passed. Actual Chromium `browser_round168_hover_drag.py` passed at 1440/1024 px for semantic hover, overlapping point, Free Curve drag and undo, Node layout; historical R167 point-over-line browser passed at the same widths. See `ROUND168_HOVER_FREECURVE.md`. Mobile touch, all construction tools, full browser history, GPU and hosted-site checks remain unexecuted.
 
 - Round 169: Polar-checkbox full-label restoration; syntax and Node 568/568 passed; local Chromium bilingual test passed at 1440 px, 390 px incomplete. See ROUND169_POLAR_LABEL.md.
+
+### Round 171 — Background/transparent paired layout and removed export guides
+- Changed: Page & appearance and 3D visualization now both place Background picker in column 1 and Transparent checkbox in column 2. Picker uses 39px swatch size aligned with Stroke.
+- Removed: Grid/axes in export UI; SVG export path no longer draws optional editing grid/axes (legacy exportGuides project property retained).
+- Node: 568/568 passed, zero failed, zero skipped (`node --test tests/*.test.mjs`).
+- JavaScript syntax: `node --check src/app.mjs` passed.
+- Chromium: `browser_round171_background_transparency.py` passed at 1440 and 768, including both 2D/3D, setting interaction and English/Chinese language changes; 390 and 320 passed with forced-visible Settings fixtures because mobile layout normally hides the panel.
+- Not run: full historical Chromium suite, hosted site and GPU tests. Several old browser scripts still reference the removed checkbox and must be migrated before they can pass. No Git commit.

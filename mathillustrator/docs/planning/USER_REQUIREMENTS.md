@@ -1748,3 +1748,9 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - Round 169: Keep the full **Use polar coordinates** label (使用极坐标) on the parametric plot checkbox; do not abbreviate it to “Polar”.
 
 - Round 170: Replace the Tooltips Interface checkbox with a persistent, default-on “Selection preview” checkbox (中文：选择预览). Hover must highlight the object that would be selected using the same subdued effect as actual selection, not a stronger double glow. Disabling preview must leave actual selection and object construction unaffected.
+
+### Round 171 — Export background layout
+- Both 2D Page & appearance and 3D visualization place Background in the left column and Transparent in the right column, on the same row.
+- The Background color picker aligns horizontally with the Stroke color picker in the first column.
+- Remove the redundant Grid/axes in export checkbox. Editor grid/axes remain available; export no longer paints editing guides. Retain the legacy exportGuides field only for compatibility with saved projects.
+- 2D and 3D transparent export controls share the same persisted exportTransparent setting.
