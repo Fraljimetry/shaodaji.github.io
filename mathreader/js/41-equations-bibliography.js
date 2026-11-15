@@ -5723,10 +5723,11 @@ async function returnToCrossDocumentSource() {
       if (currentFileKey !== item.targetId) await openCachedDocument(item.targetId);
       return false;
     }
-    const previousHistorySuppression = suppressReadingHistory;
-    suppressReadingHistory = true;
-    try { await goToLocation(item.page, item.ratio, { contextLead: false }); }
-    finally { suppressReadingHistory = previousHistorySuppression; }
+    const returnDocument = pdfDoc;
+    const expectedNavigation = readerNavigationSerial + 1;
+    await goToLocation(item.page, item.ratio, { contextLead: false, recordHistory: false });
+    if (!pdfDoc || pdfDoc !== returnDocument || currentFileKey !== item.sourceId
+        || readerNavigationSerial !== expectedNavigation) return false;
     // Only consume this return path after both the source PDF and its exact
     // anchor have been restored. A failed page navigation must stay retryable.
     crossDocumentReturnStack.pop();

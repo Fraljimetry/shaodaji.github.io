@@ -49,8 +49,8 @@ const ctx=vm.createContext({
     await vm.runInContext(`loadConfirmedBibliographyLinks(${JSON.stringify(id)})`,ctx);
     return true;
   },
-  suppressReadingHistory:false,
-  goToLocation:async(page,ratio,options)=>{if (navigationFailure) throw new Error("navigation failed"); visited.push({page,ratio,options});},
+  suppressReadingHistory:false,readerNavigationSerial:0,
+  goToLocation:async(page,ratio,options)=>{ctx.readerNavigationSerial++;if (navigationFailure) throw new Error("navigation failed"); visited.push({page,ratio,options});},
   showNavigationLandingCue:()=>{},
 });
 vm.runInContext(uiCode,ctx,{timeout:4000});
@@ -141,6 +141,7 @@ async function main() {
   check(ctx.currentFileKey===keyA && ctx.crossDocumentReturnStack.length===0,'return stack popped on success');
   check(visited.length===1 && visited[0].page===4 && visited[0].ratio===.625,'return restores exact page/ratio');
   check(visited[0].options.contextLead===false,'no artificial context offset on return');
+  check(visited[0].options.recordHistory===false,'cross-paper return suppresses history per request');
   check(ctx.suppressReadingHistory===false,'reading trail suppression releases');
   check(button.classList.hidden===true,'temporary button hidden after return');
   // A failed anchor restoration must preserve the return path; otherwise the

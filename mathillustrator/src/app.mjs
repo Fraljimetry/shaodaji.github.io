@@ -766,14 +766,16 @@ function draw3DBase(svg,result,{exporting=false}={}){
  for(const [a,b] of result.cube)svg.append(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
  for(const axis of result.axesLines||[])svg.append(el('line',{x1:axis.from[0],y1:axis.from[1],x2:axis.to[0],y2:axis.to[1],stroke:axis.color,'stroke-width':1.8,'pointer-events':'none'}));
 }
-function face3DElement(face){
- const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
+function face3DFill(face){
  const rgb=[1,3,5].map(i=>parseInt(face.color.slice(i,i+2),16));
  // Domain phase colors retain their identity while receiving subtle depth shading.
- const fill=face.rangeColor?`rgb(${rgb.map(v=>Math.round(v*(.38+.62*face.shade))).join(',')})`:
+ return face.rangeColor?`rgb(${rgb.map(v=>Math.round(v*(.38+.62*face.shade))).join(',')})`:
   face.domainColoring?`rgb(${rgb.map(v=>Math.round(v*(.74+.26*face.shade))).join(',')})`:
   `rgb(${rgb.map(v=>Math.round(v+(255-v)*(.1+.56*face.shade))).join(',')})`;
- return el('polygon',{points,fill,opacity:face.opacity,stroke:'none','pointer-events':'none'});
+}
+function face3DElement(face){
+ const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
+ return el('polygon',{points,fill:face3DFill(face),opacity:face.opacity,stroke:'none','pointer-events':'none'});
 }
 function line3DElements(field){
  const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
@@ -958,6 +960,38 @@ function draw(svg,{exporting=false}={}){
   }
  }
 }
+// Dense implicit surfaces contain hundreds of thousands of triangles. Rendering
+// each triangle as an SVG DOM element can take seconds and retains huge DOMs.
+// Preserve the exact projected/ordered mesh for vector export; only the editor
+// display is rasterized at device resolution when the primitive count is large.
+const DENSE_3D_RASTER_THRESHOLD=50000;
+function dense3DCanvas(result){
+ if(result.primitives.length<DENSE_3D_RASTER_THRESHOLD)return null;
+ const canvas=document.createElement('canvas');
+ // Device pixels improve edge quality, but bound allocation on large displays.
+ const scale=Math.max(1,Math.min(2,window.devicePixelRatio||1,Math.sqrt(6500000/(size.w*size.h))));
+ canvas.width=Math.max(1,Math.round(size.w*scale));
+ canvas.height=Math.max(1,Math.round(size.h*scale));
+ const ctx=canvas.getContext('2d',{alpha:true});
+ if(!ctx)return null;
+ ctx.scale(canvas.width/size.w,canvas.height/size.h);
+ return {canvas,ctx};
+}
+function paint3DCanvasPrimitive(ctx,primitive){
+ if(primitive.kind==='face'){
+  const f=primitive.value,p=f.points;
+  ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);ctx.closePath();
+  ctx.fillStyle=face3DFill(f);ctx.globalAlpha=f.opacity;ctx.fill();
+ }else{
+  const f=primitive.value,a=f.start,b=f.end,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+  if(len<.5)return;
+  ctx.globalAlpha=f.opacity;ctx.strokeStyle=f.color;ctx.fillStyle=f.color;ctx.lineWidth=f.width??1.5;
+  ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+  const head=6*Math.max(.7,Math.min(2,Math.sqrt((f.width??1.5)/1.5))),ux=dx/len,uy=dy/len;
+  ctx.beginPath();ctx.moveTo(b[0],b[1]);ctx.lineTo(b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux);
+  ctx.lineTo(b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux);ctx.closePath();ctx.fill();
+ }
+}
 let sceneRenderEpoch=0,sceneRenderFrame=0,sceneRenderTask=null,sceneRenderPending=false,orbitRenderQueued=false;
 function cancelSceneRender(){
  sceneRenderPending=false;
@@ -991,22 +1025,30 @@ function render(){
   // (front faces appeared only after hundreds of earlier, farther faces).
   const staged=el('g');draw3DBase(staged,result);
   plotLimitedInScene=result.limited;
+  const raster=dense3DCanvas(result);
   let next=0;
   const paint=()=>{
    sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
-   const fragment=document.createDocumentFragment();
-   // Budget DOM construction as well as CPU projection: 500 complex SVG
-   // polygons can exceed a frame on lower-end devices. Keep a hard cap and
-   // a time budget; always make forward progress on a slow frame.
-   const deadline=performance.now()+5;
-   const end=Math.min(result.primitives.length,next+250);
+   const fragment=raster?null:document.createDocumentFragment();
+   // Bound each UI slice; rasterization avoids thousands of SVG nodes while
+   // keeping the same face shading, opacity and painter order as vector export.
+   const deadline=performance.now()+7;
+   const end=Math.min(result.primitives.length,next+(raster?2500:250));
    for(;next<end;next++){
-    append3DPrimitive(fragment,result.primitives[next]);
-    if((next&31)===31&&performance.now()>=deadline){next++;break;}
+    if(raster)paint3DCanvasPrimitive(raster.ctx,result.primitives[next]);
+    else append3DPrimitive(fragment,result.primitives[next]);
+    if((next&63)===63&&performance.now()>=deadline){next++;break;}
    }
-   staged.append(fragment);
+   if(fragment)staged.append(fragment);
    if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
    else{
+    if(raster){
+     // Atomic image installation. Keep the previous SVG intact until encode
+     // succeeds; canvas allocation failure uses the existing vector route.
+     raster.ctx.globalAlpha=1;
+     staged.append(el('image',{x:0,y:0,width:size.w,height:size.h,href:raster.canvas.toDataURL('image/png'),preserveAspectRatio:'none','pointer-events':'none','data-3d-raster':'true'}));
+     raster.canvas.width=0;raster.canvas.height=0;
+    }
     // One atomic replacement: no half-lit or partly missing 3D scene.
     svg.replaceChildren(staged);sceneRenderPending=false;
     if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;

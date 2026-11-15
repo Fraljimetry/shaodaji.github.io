@@ -1551,3 +1551,9 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Allow Mesh detail 8–128 (previously 8–96); raise implicit grid ceiling 88→114 cells per axis, 3D evaluation ceiling 850,000→1,900,000, single-surface face ceiling 210,000→240,000, shared multi-surface face ceiling 135,000→150,000, and mesh LRU memory ceiling 192→224 MiB.
 - Retain cooperative cancellation, strict bounded CPU fallback, cached geometry reuse, project-schema compatibility, and a fast low-detail drag preview; do not imply unverified GPU numerical sampling is enabled.
 - Existing project files at detail ≤96 are unchanged; users opt into greater quality by raising Mesh detail. High resolutions take longer and consume more RAM on CPU/SVG configurations.
+
+### Round 127 — dense implicit-surface display performance (2026-11-15)
+- User reports approximately 11,751 ms for an implicit 3D surface at Mesh detail 96, versus a remembered approximately 1/10 runtime in earlier rounds; preserve high mathematical sampling fidelity while reducing latency.
+- Distinguish sampling, projection, SVG DOM creation and actual GPU hardware acceleration; do not claim GPU execution without hardware-level evidence.
+- For dense 3D scenes, replace hundreds of thousands of on-screen per-triangle SVG elements with a bounded high-density canvas raster embedded atomically in the editor SVG. Maintain SVG vector export, exact sampled triangle geometry, existing camera/cache semantics, color, lighting, ordering and opacity. Retain normal SVG for smaller scenes.
+- Longer term: use a verified WebGL2 framebuffer for rasterizing dense triangles, or indexed-mesh acceleration, to approach the former roughly one-second time without lowering fidelity.

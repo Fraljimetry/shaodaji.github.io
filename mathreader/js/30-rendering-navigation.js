@@ -909,11 +909,12 @@ function renderReadingTrail() {
       const target = readingBackStack[index];
       readingBackStack = readingBackStack.slice(0, index);
       updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
-      suppressReadingHistory = true;
-      try {
-        await goToLocation(target.page, target.ratio, { contextLead: false });
-        showNavigationLandingCue(target.page, target.ratio);
-      } finally { suppressReadingHistory = false; }
+      if (!target || !pdfDoc) return;
+      const sourceDoc = pdfDoc, sourceKey = currentFileKey;
+      const expectedNavigation = readerNavigationSerial + 1;
+      await goToLocation(target.page, target.ratio, { contextLead: false, recordHistory: false });
+      if (pdfDoc === sourceDoc && currentFileKey === sourceKey
+          && readerNavigationSerial === expectedNavigation) showNavigationLandingCue(target.page, target.ratio);
     });
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'reading-trail-remove';
     remove.textContent = '×'; remove.title = t('Remove from reading trail', '从阅读轨迹中移除');
@@ -961,13 +962,13 @@ function alignReaderNavigationToSurface(page, ratio, targetLead) {
 // an older request's post-render frame correction.
 let readerNavigationSerial = 0;
 
-async function goToLocation(page, ratio = 0, { contextLead = true } = {}) {
+async function goToLocation(page, ratio = 0, { contextLead = true, recordHistory = true } = {}) {
   if (!pdfDoc) return;
   const sourceDoc = pdfDoc;
   const sourceFlow = readingFlow;
   const serial = ++readerNavigationSerial;
   const stillCurrent = () => readerNavigationSerial === serial && pdfDoc === sourceDoc && readingFlow === sourceFlow;
-  if (!suppressReadingHistory && generalPrefs.recordReadingTrail !== false) {
+  if (recordHistory && !suppressReadingHistory && generalPrefs.recordReadingTrail !== false) {
     const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
     const targetPage = Math.min(Math.max(1, Number(page) || 1), pdfDoc.numPages);
     if (here && (Number(here.page) !== targetPage || Math.abs(Number(here.ratio || 0) - Number(ratio || 0)) > 0.02)) {
@@ -1032,14 +1033,14 @@ function updateReadingBackButton() {
 }
 
 async function goBackReadingLocation() {
+  if (!pdfDoc || !readingBackStack.length) return;
   const target = readingBackStack.pop();
   updateReadingBackButton(); renderReadingTrail(); persistDocumentState();
-  if (!target || !pdfDoc) return;
-  suppressReadingHistory = true;
-  try {
-    await goToLocation(target.page, target.ratio, { contextLead: false });
-    showNavigationLandingCue(target.page, target.ratio);
-  } finally { suppressReadingHistory = false; }
+  const sourceDoc = pdfDoc, sourceKey = currentFileKey;
+  const expectedNavigation = readerNavigationSerial + 1;
+  await goToLocation(target.page, target.ratio, { contextLead: false, recordHistory: false });
+  if (pdfDoc === sourceDoc && currentFileKey === sourceKey
+      && readerNavigationSerial === expectedNavigation) showNavigationLandingCue(target.page, target.ratio);
 }
 
 async function goToPage(page) {
