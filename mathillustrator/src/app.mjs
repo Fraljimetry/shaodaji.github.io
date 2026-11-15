@@ -2259,10 +2259,15 @@ function r50ObjectTap(e,pt){
  if(['tangentCircle','parabola','reflection','rotation','translation','dilation','circleInversion','locus','generalIntersection'].includes(mode)){
   if(!draftReference){
    const needsPoint=['tangentCircle','parabola','locus'].includes(mode);
-   // Honor the actual SVG object under the pointer before a nearby point
-   // detected by the broader snap radius. On a circle through P, a click on
-   // the visible arc must not silently choose P as the transformation source.
-   const source=needsPoint?pointHit:obj||pointHit;
+   // The rendered SVG stack is not the semantic picking order. At a point
+   // marker crossed by a line/curve, the marker must win when the first
+   // transformation operand can be a point (even when the SVG line is on top).
+   // The point index measures screen-space distance to visible anchors; it is
+   // independent of object z-order and does not require changing the drawing.
+   // For a curve-only second operand, the referencePredicate below still
+   // selects the curve, so a nearby point cannot steal that click.
+   const pointFirst=needsPoint||['reflection','rotation','translation','dilation','circleInversion'].includes(mode);
+   const source=pointFirst?(pointHit||obj):(obj||pointHit);
    if(!source||needsPoint&&!geometricPoint(source,resolver)){
     notice(needsPoint?'Click the center of an existing point marker (not the curve or a preview).':'Choose an existing geometric object.');return;
    }

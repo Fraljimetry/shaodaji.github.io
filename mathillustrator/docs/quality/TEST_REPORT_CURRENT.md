@@ -1995,3 +1995,9 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 
 ### Round 166 — comprehensive plotting and geometry sweep, partial certification
 568/568 Node checks passed. Actual Chromium: R166 pi/e plot creation at 1440/390 passed; R146 freehand at 1440/390/320 passed; R41 3D pipeline passed. Syntax passed. Historical browser scripts have stale-selector failures/timeouts, so no full-E2E PASS claim. See `ROUND166_PLOTTING_GEOMETRY_AUDIT.md`.
+
+### Round 167 — point-over-line construction hit priority
+- Reproduced a real defect with a point P=(0,0), later vertical Line(A,B) through P, and Circle(C,D): circle inversion selected line o4 instead of point o1 as the first operand, despite clicking the point marker. Original source **failed** the regression with refs `['o4','o7']`.
+- Fixed the source-picking priority for point-compatible transformations; the same test now yields `['o1','o7']`, retaining circle-only filtering for the second operand.
+- Actual Chromium interactive regression: **1440 and 1024 px PASS**; Move V and Pan H shortcuts verified with canvas focus. Other viewport widths, complete geometric tool coverage, and hosted-site verification not executed in this round.
+- Node regression: **568/568 PASS**, 0 failed, 0 skipped. `node --check src/app.mjs` PASS. No glyph or stored-document format change.

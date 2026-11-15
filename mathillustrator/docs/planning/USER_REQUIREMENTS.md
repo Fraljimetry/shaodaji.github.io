@@ -1733,3 +1733,8 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 
 ### Round 166 — plotting / geometry interoperability
 Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-insensitive), simple implicit multiplication, and scientific notation consistent with plotted expressions; avoid sample-based false-positive classification. Audit all plotting and geometry subsystems with reproducible evidence and disclose incomplete E2E rather than declaring exhaustive coverage.
+
+### Round 167 — type-aware geometry picking at overlapping anchors
+- In geometry construction, visible point markers must remain selectable even when crossing lines or curves are drawn on top. Point-compatible transformations (circle inversion, reflection, rotation, translation, dilation) prioritize the true point anchor for the **source** operand, independently of z-order.
+- The supporting circle/line/point required by a later construction step must still be filtered by its geometric type; do not globally make every hit point-first.
+- Preserve existing keyboard shortcuts **V = Move** and **H = Pan**, with shortcut suppression in text inputs/dialogs and no glyph redesign.
