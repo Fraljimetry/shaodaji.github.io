@@ -1,14 +1,15 @@
+import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round87';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
 import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round87';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round130';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round87';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round70';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated} from './i18n.mjs?cut=round54';
@@ -708,7 +709,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   item=mk('path',{d:path,fill:'none'});
 
  }else if(o.type==='vectorField'){
-  const region=o.region,options={density:o.density,normalized:o.normalized,maxEvaluations:doc.settings.plotBudget};
+  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),options={density:o.density,normalized:o.normalized,maxEvaluations:doc.settings.plotBudget};
   const result=sampleVectorField(parseVectorField(o.xExpr,o.yExpr),region,options);
   if(result.limited)plotLimitedInScene=true;
   const parts=[],colored=o.colorRange===true;
@@ -716,6 +717,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const low=magnitudes.length?Math.min(...magnitudes):0,high=magnitudes.length?Math.max(...magnitudes):1;
   if(colored)item=mk('g',{fill:'none'});
   for(const arrow of result.arrows){
+   if(!inRegion(condition,...arrow.start)||!inRegion(condition,...arrow.end))continue;
    const a=project(arrow.start),b=project(arrow.end),len=Math.hypot(b[0]-a[0],b[1]-a[1]);
    if(len<1||!Number.isFinite(len)||len>1e5)continue;
    const dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len,h=Math.min(9,Math.max(4,len*.28));
@@ -725,14 +727,19 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   }
   if(!colored)item=mk('path',{d:parts.join(''),fill:'none'});
  }else if(o.type==='domainColoring'){
-  const region=o.region,key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,doc.settings.plotBudget]);
+  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,o.regionCondition||'',doc.settings.plotBudget]);
   const uri=plotCache.get(key,()=>{
    const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:doc.settings.plotBudget});
    if(result.limited){limitedPlotKeys.add(key);return '';}
    limitedPlotKeys.delete(key);
    const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
    const ctx=canvas.getContext('2d',{willReadFrequently:false});if(!ctx)throw Error('Browser canvas is unavailable for domain coloring.');
-   const image=ctx.createImageData(result.width,result.height);image.data.set(result.rgba);ctx.putImageData(image,0,0);
+   const image=ctx.createImageData(result.width,result.height);image.data.set(result.rgba);
+   if(condition)for(let j=0;j<result.height;j++)for(let i=0;i<result.width;i++){
+    const x=region.xMin+(i+.5)*(region.xMax-region.xMin)/result.width,y=region.yMax-(j+.5)*(region.yMax-region.yMin)/result.height;
+    if(!inRegion(condition,x,y))image.data[(j*result.width+i)*4+3]=0;
+   }
+   ctx.putImageData(image,0,0);
    return canvas.toDataURL('image/png');
   });
   if(limitedPlotKeys.has(key))plotLimitedInScene=true;
@@ -1414,21 +1421,27 @@ function parse2DRegionBound(source){
 // Bound editors accept the same strict arithmetic grammar as plot formulas.
 // A centered region is defined by one positive half-width and never stored as
 // an additional mutable setting: imported/exported files keep numeric bounds.
-function installCenteredRegionEditor(container,inputs,commit,parseBound){
- const row=document.createElement('div');row.className='region-centered';
- const label=document.createElement('label');label.textContent='Centered half-range';
- const radius=document.createElement('input');radius.type='text';radius.placeholder='e.g. 4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Positive half-range for every axis; accepts 4pi, pi/2, sqrt(2).';
- const apply=document.createElement('button');apply.type='button';apply.textContent='Apply ±';
+function installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension){
+ const row=document.createElement('div');row.className='region-extras';
+ const label=document.createElement('label');label.className='field';label.textContent='Centered half-range';
+ const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Enter a positive half-range to set ±R along every axis.';
+ const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.textContent='Region inequality';
+ const region=document.createElement('input');region.type='text';region.value=conditionValue||'';region.placeholder=dimension===3?'x^2+y^2+z^2<16':'x^2+y^2<16';
+ region.setAttribute('aria-label','Region inequality');region.title='Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.';
  function useRadius(){
   let value;try{value=parseBound(radius.value);}catch(err){notice(err.message);return;}
   if(!(value>0)){notice('Centered half-range must be positive.');return;}
   for(const axis of new Set(Object.keys(inputs).map(k=>k[0]))){inputs[axis+'Min'].value=String(-value);inputs[axis+'Max'].value=String(value);}
   commit();
  }
- apply.onclick=useRadius;radius.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();useRadius();}});
- label.append(radius);row.append(label,apply);container.append(row);
+ radius.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();useRadius();}});
+ region.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();
+  try{compileRegionCondition(region.value,dimension);}catch(err){notice(err.message);return;}
+  conditionCommit(region.value);
+ }});
+ label.append(radius);conditionLabel.append(region);row.append(label,conditionLabel);container.append(row);
 }
-function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeExpression}={}){
+function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeExpression,conditionValue="",conditionCommit=()=>{},dimension=3}={}){
  const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
  for(const [key,input] of Object.entries(inputs)){
   const caption=input.closest('label');
@@ -1447,7 +1460,7 @@ function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeE
    event.preventDefault();event.stopPropagation();commit();
   });
  }
- installCenteredRegionEditor(container,inputs,commit,parseBound);
+ installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension);
 }
 function renderProperties3D(root){
  root.classList.add('properties-3d');
@@ -1464,7 +1477,7 @@ function renderProperties3D(root){
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
- installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));}),{parseBound:parse3DRangeExpression});
+ installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));}),{parseBound:parse3DRangeExpression,conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;}),dimension:3});
  root.append(block);
  if(selectedPlot.kind==='domain3d'){
   const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
@@ -1622,7 +1635,7 @@ function renderProperties(){
    entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
    entries[key].onchange=()=>{};
   }
-  installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound});
+  installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound,conditionValue:o.regionCondition,conditionCommit:value=>edit(live=>{live.regionCondition=value;}),dimension:2});
   root.append(form);
  }
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});

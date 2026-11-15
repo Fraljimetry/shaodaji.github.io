@@ -1,6 +1,7 @@
+import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
 import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round87';
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round70';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round130';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
@@ -713,6 +714,7 @@ export function validateDoc(raw){
  if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr);}
  if(['vectorField','domainColoring'].includes(o.type)){
   validatePlotRegion(o.region);
+  compileRegionCondition(o.regionCondition,2);
   if(o.type==='vectorField'){
    if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Vector field requires two components.');
    parseVectorField(o.xExpr,o.yExpr);

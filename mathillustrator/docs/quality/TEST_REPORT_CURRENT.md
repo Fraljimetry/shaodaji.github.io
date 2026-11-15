@@ -1721,3 +1721,16 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - An initial browser regression exposed that change-on-blur discarded draft states before a double-click label symmetry edit; removed that premature commit and reran both legacy browser regressions successfully.
 - 2D cap remains ±1e6; 3D cap remains ±1e4. Numeric bounds remain schema-compatible and GPU sampling is unaffected.
 - Not checked: hardware-specific GPU acceleration, hosted deployment, and the entire legacy Chromium matrix. Browser tests use isolated local module harness, not hosted navigation.
+
+## Round 129 — centered-region compact layout
+
+- Replaced oversized “Apply ±” button text with a 30 × 30 px “±” glyph; kept accessible name “Apply ±” and added tooltip. Aligned radius input and action with neighboring 30 px bounds editors.
+- Verified: `node --check src/app.mjs`, Python test syntax, Node 540/540 PASS, real Chromium `browser_round128_centered_regions.py` PASS (30 × 30 px, glyph, accessible label, XY/XYZ calculation), Round51R 2D/3D PASS, Round62 plotting PASS. No hardware GPU test; no entire legacy Chromium gate.
+
+### Round 130 — region-condition scope editing and clipping
+- Source baseline: Round 124 authoritative source ZIP plus sequential Round 125–129 overlays. Delivered website-root changed-files-only overlay.
+- Strict conditions compiled with the math expression parser; one comparator only; invalid input is rejected and does not alter document state. Optional persisted `regionCondition` is backward-compatible.
+- 3D face clipping against inequality via linear edge interpolation, implicit surfaces tested with opposite half-spaces, cache key includes condition, and vector segments require both endpoints inside; on-screen and export use the same mesh path. 2D vector arrows are conservatively filtered; domain-color raster pixels outside the condition become transparent and the cache key includes the condition.
+- Verified local Node suite 545/545 PASS (including five dedicated strict region tests), and actual Chromium focused scope UI, centered Enter, strict Enter, rollback, removal, 2D/3D persistence; previous Round128, Round126 and Round127 Chromium tests and Round107 3D export PASS.
+- Limitations: strict boundary approximated by triangle edges (not analytically exact for curved inequalities), and vector arrows crossing a boundary are omitted rather than partially clipped; GPU-device-specific behavior remains unverified. Tests are local isolated Chromium, not deployment validation.
+- HTTP-served Chromium startup probe was attempted but blocked by local browser administration (`ERR_BLOCKED_BY_ADMINISTRATOR`); isolated real Chromium module-graph tests passed instead. No production-host verification claim.

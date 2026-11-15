@@ -1,3 +1,4 @@
+import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round130';
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
@@ -76,6 +77,7 @@ export function validate3D(scene){
   if(plot.colorRange!==undefined&&typeof plot.colorRange!=='boolean')throw Error('Invalid 3D color range flag.');
   if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!['phase-modulus','phase','contours','solid'].includes(plot.colorMode)))throw Error('Invalid 3D complex coloring options.');
   if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'||(plot.lineWidth!==undefined&&(!ok(plot.lineWidth)||plot.lineWidth<.1||plot.lineWidth>12))))throw Error('3D vector density must be 3–12 and line width 0.1–12.');
+  compileRegionCondition(plot.regionCondition,3);
   parse3D(plot);
  }
  if(scene.nextId<=highest)throw Error('Invalid next 3D ID.');
@@ -154,6 +156,7 @@ function validTriangle(a,b,c){
  * Consumers may abandon the generator at any point; partial meshes never enter
  * the cache or exports. The synchronous public sampler drains the same work. */
 export function* sample3DPlotSteps(plot,detail){
+ const condition=compileRegionCondition(plot.regionCondition,3);
  const fn=parse3D(plot),b=plot.kind==='domain3d'&&plot.heightMode==='argument'&&plot.bounds.zMin===0?{...plot.bounds,zMin:-Math.PI,zMax:Math.PI}:plot.bounds,faces=[],lines=[],cap=MAX_MESH_FACES;let evaluations=0,limited=false;
  const safeEval=(...args)=>{evaluations++;let value;try{value=fn(...args);}catch{return null;}return finitePoint(value)?value:null;};
  const pushTriangle=(a,c,d)=>{
@@ -161,7 +164,8 @@ export function* sample3DPlotSteps(plot,detail){
   // Preserve per-face phase colors across any region-clipped subtriangles.
   const rgb=plot.kind==='domain3d'?a.domainRGB:null;
   const faceColor=rgb?'#'+rgb.slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join(''):null;
-  for(const vertices of clipTriangle([a,c,d],b)){
+  const clipped=clipTriangle([a,c,d],b);
+  for(const vertices of (condition?clipped.flatMap(t=>clipConditionTriangle(t,condition)):clipped)){
    if(!validTriangle(...vertices))continue;
    if(faces.length>=cap){limited=true;return;}
    if(faceColor)vertices.color=faceColor;
@@ -308,7 +312,7 @@ export function* sample3DPlotSteps(plot,detail){
     const length=Math.min((b.xMax-b.xMin)/n,(b.yMax-b.yMin)/n,(b.zMax-b.zMin)/n)*.35*(plot.normalized?1:Math.min(1.8,mag));
     const unit=vec.map(v=>v/mag);
     const endpoints=[center.map((v,q)=>v-unit[q]*length*.5),center.map((v,q)=>v+unit[q]*length*.5)];
-    if(endpoints.every(p=>inBounds(p,b)))lines.push({endpoints,magnitude:mag});
+    if(endpoints.every(p=>inBounds(p,b)&&inRegion(condition,...p)))lines.push({endpoints,magnitude:mag});
    }yield;
   }
  }
@@ -324,7 +328,7 @@ function meshBytes(mesh){return mesh.faces.length*3*3*8+mesh.lines.length*2*3*8+
 // Name, opacity, visibility, solid color and the edit Lock must NOT trigger
 // an expensive new implicit solve when their controls change.
 export const meshKey=(plot,detail)=>JSON.stringify([
- plot.kind,plot.a,plot.b,plot.c,plot.bounds,
+ plot.kind,plot.a,plot.b,plot.c,plot.bounds,plot.regionCondition||'',
  plot.kind==='parametric3d'?[plot.uMin,plot.uMax,plot.vMin,plot.vMax]:null,
  plot.kind==='vector3d'?[plot.density,plot.normalized]:null,
  plot.kind==='domain3d'?[plot.heightMode,plot.colorMode]:null,detail

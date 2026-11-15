@@ -1031,11 +1031,23 @@ function nativeOutlineTwoColumnPage(lines) {
   const across = usable.filter((row) => Number(row.xStartRatio) < 0.43 && Number(row.xEndRatio) > 0.62);
   if (left.length < 7 || right.length < 7 || (left.length + right.length) < usable.length * 0.67
       || across.length > (left.length + right.length) * 0.30) return false;
-  const leftYs = left.map((row) => Number(row.y)).filter(Number.isFinite);
-  const rightYs = right.map((row) => Number(row.y)).filter(Number.isFinite);
-  if (leftYs.length < 7 || rightYs.length < 7) return false;
-  const commonSpan = Math.min(Math.max(...leftYs), Math.max(...rightYs))
-    - Math.max(Math.min(...leftYs), Math.min(...rightYs));
+  // Never spread an unbounded text-layer array into Math.min/Math.max:
+  // scanned books can contain hundreds of thousands of glyph fragments.
+  const bounds = (column) => {
+    let min = Infinity, max = -Infinity, count = 0;
+    for (const row of column) {
+      const y = Number(row.y);
+      if (!Number.isFinite(y)) continue;
+      min = Math.min(min, y);
+      max = Math.max(max, y);
+      count++;
+    }
+    return {min, max, count};
+  };
+  const leftY = bounds(left), rightY = bounds(right);
+  if (leftY.count < 7 || rightY.count < 7) return false;
+  const commonSpan = Math.min(leftY.max, rightY.max)
+    - Math.max(leftY.min, rightY.min);
   return commonSpan >= Number(lines[0]?.pageHeight || 700) * 0.22;
 }
 
@@ -1374,7 +1386,8 @@ function uniqueStructureHeadingRatio(lines, title) {
   if (wanted.length < 6) return null;
   const fragments = [];
   for (const line of lines || []) {
-    const ratio = Number(line?.ratio);
+    if (line?.ratio === null || line?.ratio === undefined || line?.ratio === '') continue;
+    const ratio = Number(line.ratio);
     if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) continue;
     fragments.push(...structureHeadingRowSegments(line).filter((part) => part.text));
   }
@@ -1429,6 +1442,8 @@ function uniqueDetectedStructureHeadingRatio(entry) {
   const matches = entries.filter((item) => item?.userEdited !== true
     && Number(item?.page) === page
     && comparableStructureNavigationText(item.title) === title
+    // Null/empty OCR geometry is missing evidence, not a measured page-top.
+    && item.ratio !== null && item.ratio !== undefined && item.ratio !== ''
     && Number.isFinite(Number(item.ratio)) && Number(item.ratio) >= 0 && Number(item.ratio) <= 1);
   return matches.length === 1 ? Number(matches[0].ratio) : null;
 }

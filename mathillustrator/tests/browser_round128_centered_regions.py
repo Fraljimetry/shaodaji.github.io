@@ -17,8 +17,10 @@ def run():
    p.locator('#command-form button').click()
    region=p.locator('#properties .plot-region-editor')
    assert region.get_by_label('Centered half-range').count()==1
+   # Round130: compact Enter-only half-range, no Apply button.
+   assert region.get_by_role('button',name='Apply ±').count()==0
    region.get_by_label('Centered half-range').fill('4pi')
-   region.get_by_role('button',name='Apply ±').click()
+   region.get_by_label('Centered half-range').press('Enter')
    bounds=state()['scene3d']['plots'][-1]['bounds']
    for axis in 'xyz':
     assert math.isclose(bounds[axis+'Min'],-4*math.pi,rel_tol=1e-12),bounds
@@ -29,7 +31,7 @@ def run():
    before=state()['scene3d']['plots'][-1]['bounds'].copy()
    region=p.locator('#properties .plot-region-editor')
    region.get_by_label('Centered half-range').fill('alert(1)')
-   region.get_by_role('button',name='Apply ±').click()
+   region.get_by_label('Centered half-range').press('Enter')
    assert state()['scene3d']['plots'][-1]['bounds']==before
    # 2D regions accept the same expressions, and centered presets preserve persistence.
    p.locator('#scene3d-enable').uncheck()
@@ -38,7 +40,7 @@ def run():
    p.locator('#command-form button').click()
    region=p.locator('#properties .plot-region-editor')
    region.get_by_label('Centered half-range').fill('2pi')
-   region.get_by_role('button',name='Apply ±').click()
+   region.get_by_label('Centered half-range').press('Enter')
    bounds=state()['objects'][-1]['region']
    for axis in 'xy':
     assert math.isclose(bounds[axis+'Min'],-2*math.pi),bounds

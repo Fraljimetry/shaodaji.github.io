@@ -1273,8 +1273,10 @@ function canonicalizeEquationIndex(index) {
     for (const record of trusted) {
       const page = Number(record.page);
       const old = byPage.get(page);
-      if (!old || (record.meticulousPageVerified && !old.meticulousPageVerified)
-          || (Number(record.confidence) > Number(old.confidence))) byPage.set(page, record);
+      // The same-page choice must use the same evidence hierarchy as the
+      // document-wide canonical target. Raw confidence is not comparable to
+      // fresh page-frame verification: an old high-score location can be stale.
+      if (!old || chooseCanonicalEquationCandidate([old, record]) === record) byPage.set(page, record);
     }
     if (!byPage.size) byPage.set(Number(canonical.page), canonical);
     // Retain a canonical result on its own page even if the strict corroboration
@@ -4292,25 +4294,47 @@ function repeatedBibliographyAuthorPrefix(entries) {
 
 function bibliographyLineFragment(line, parts, columnIndex = null) {
   if (!Array.isArray(parts) || !parts.length) return null;
-  const ordered = [...parts].sort((a, b) => Number(a.start || 0) - Number(b.start || 0));
-  const start = Math.min(...ordered.map((part) => Number(part.start || 0)));
-  const end = Math.max(...ordered.map((part) => Number(part.end || 0)));
   const source = String(line?.text || '');
-  const raw = source.slice(start, end).replace(/\s+/g, ' ').trim();
-  if (!raw) return null;
-  const leading = source.slice(start, end).search(/\S/);
-  const adjustedStart = start + Math.max(0, leading);
+  // The glyph offsets belong to the ORIGINAL PDF.js line. Collapsing spaces
+  // before rebasing parts shifts every later token (including numbered keys),
+  // and can silently change a bibliography hit into a neighboring reference.
+  // Reject malformed bounds rather than turning out-of-range slices into
+  // apparently valid reference text.
+  const ordered = [...parts].sort((a, b) => Number(a.start) - Number(b.start));
+  let start = source.length;
+  let end = 0;
+  let xStart = Infinity;
+  let xEnd = -Infinity;
+  for (const part of ordered) {
+    const partStart = Number(part.start);
+    const partEnd = Number(part.end);
+    if (!Number.isInteger(partStart) || !Number.isInteger(partEnd)
+        || partStart < 0 || partEnd <= partStart || partEnd > source.length) return null;
+    start = Math.min(start, partStart);
+    end = Math.max(end, partEnd);
+    const xs = Number(part.xStartRatio);
+    const xe = Number(part.xEndRatio);
+    if (Number.isFinite(xs)) xStart = Math.min(xStart, xs);
+    if (Number.isFinite(xe)) xEnd = Math.max(xEnd, xe);
+  }
+  const segment = source.slice(start, end);
+  const leading = segment.search(/\S/);
+  if (leading < 0) return null;
+  const trailing = segment.match(/\s*$/u)?.[0]?.length || 0;
+  const adjustedStart = start + leading;
+  const adjustedEnd = end - trailing;
+  if (adjustedEnd <= adjustedStart) return null;
   const fragmentParts = ordered.map((part) => ({
     ...part,
-    start: Math.max(0, Number(part.start || 0) - adjustedStart),
-    end: Math.max(0, Number(part.end || 0) - adjustedStart),
+    start: Number(part.start) - adjustedStart,
+    end: Number(part.end) - adjustedStart,
   }));
   return {
     ...line,
-    text: raw,
+    text: source.slice(adjustedStart, adjustedEnd),
     parts: fragmentParts,
-    xStartRatio: Math.min(...ordered.map((part) => Number(part.xStartRatio || 0))),
-    xEndRatio: Math.max(...ordered.map((part) => Number(part.xEndRatio || 0))),
+    xStartRatio: xStart === Infinity ? Number(line?.xStartRatio || 0) : xStart,
+    xEndRatio: xEnd === -Infinity ? Number(line?.xEndRatio || 0) : xEnd,
     columnIndex,
   };
 }

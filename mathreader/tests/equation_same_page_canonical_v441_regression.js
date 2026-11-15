@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');
+const source=fs.readFileSync(path.join(__dirname,'../js/41-equations-bibliography.js'),'utf8');
+const ctx=vm.createContext({console,document:{addEventListener(){}}});
+vm.runInContext(source,ctx,{timeout:10000});
+const item=(page,ratio,confidence,extras={})=>({page,ratio,confidence,text:'x+y=1 (1.2)',label:'(1.2)',confirmedColonMargin:true,explicitParenthesized:true,candidateXStartRatio:.92,candidateXEndRatio:.97,candidateAtLineEnd:true,...extras});
+const stale=item(4,.15,99,{meticulousPageVerified:true,marginLocationVerifiedV385:true});
+const fresh=item(4,.62,14,{meticulousPageVerified:true,marginLocationVerifiedV385:true,marginLocationVerifiedV386:true,ocrGeometryMeasured:true});
+const other=item(5,.3,12);
+const idx=new Map([['(1.2)',[stale,fresh,other]]]);
+const canonical=ctx.canonicalizeEquationIndex(idx).get('(1.2)');
+assert.equal(canonical.length,2,'repeated printed labels on distinct pages remain separate');
+assert.equal(canonical[0].ratio,.62,'newly verified geometry must outrank historical stale high score on same page');
+assert.equal(canonical[1].page,5);
+assert.equal(ctx.canonicalizeEquationIndex(new Map([['(1.2)',[stale,fresh]]])).get('(1.2)')[0].ratio,.62);
+console.log('PASS same-page canonical equation geometry and repeated labels');

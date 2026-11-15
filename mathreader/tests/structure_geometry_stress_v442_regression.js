@@ -1,0 +1,28 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../js/40-outline-structure.js'),'utf8');
+const ctx=vm.createContext({console,inferredOutline:[],document:{addEventListener(){}}});
+const from=(begin,end)=>source.slice(source.indexOf(begin),source.indexOf(end,source.indexOf(begin)));
+vm.runInContext(from('function nativeOutlineTwoColumnPage(', '\n\n  const ocrSplitPages'),ctx,{timeout:10000});
+vm.runInContext(from('function comparableStructureNavigationText(', '\n\n// PDF.js can merge'),ctx,{timeout:10000});
+vm.runInContext(from('function uniqueDetectedStructureHeadingRatio(', '\n\nlet structureNavigationSerial'),ctx,{timeout:10000});
+const columns=ctx.nativeOutlineTwoColumnPage;
+const rows=[];
+for(let i=0;i<320000;i++) rows.push({text:'Long mathematical paragraph with equation references',xStartRatio:i%2?.55:.08,xEndRatio:i%2?.88:.43,y:100+(i%1000),pageHeight:1200});
+assert.equal(columns(rows),true,'large two-column text layers must not exhaust argument stack');
+const recovery=ctx.uniqueDetectedStructureHeadingRatio;
+ctx.inferredOutline=[{page:3,title:'3 Results of the Main Theorem',ratio:null,userEdited:false}];
+assert.equal(recovery({page:3,title:'3 Results of the Main Theorem'}),null,'missing result coordinate is not page top');
+ctx.inferredOutline=[{page:3,title:'3 Results of the Main Theorem',ratio:'',userEdited:false}];
+assert.equal(recovery({page:3,title:'3 Results of the Main Theorem'}),null,'empty result coordinate is not page top');
+ctx.inferredOutline=[{page:3,title:'3 Results of the Main Theorem',ratio:.385,userEdited:false}];
+assert.equal(recovery({page:3,title:'3 Results of the Main Theorem'}),.385);
+// Missing native-line Y must never become a false top-of-page heading.
+vm.runInContext(from('function structureHeadingRowSegments(', '\n\nfunction structureHeadingRowFragments'),ctx,{timeout:10000});
+vm.runInContext(from('function compactStructureNavigationText(', '\n\n// The existing typography detector'),ctx,{timeout:10000});
+const heading=ctx.uniqueStructureHeadingRatio;
+assert.equal(heading([{text:'3 Results of the Main Theorem',ratio:null,xStartRatio:.1,xEndRatio:.8}], '3 Results of the Main Theorem'),null);
+assert.equal(heading([{text:'3 Results of the Main Theorem',ratio:'',xStartRatio:.1,xEndRatio:.8}], '3 Results of the Main Theorem'),null);
+assert.equal(heading([{text:'3 Results of the Main Theorem',ratio:.413,xStartRatio:.1,xEndRatio:.8}], '3 Results of the Main Theorem'),.413);
+console.log('PASS Structure dense geometry and fallback coordinate boundaries');

@@ -803,7 +803,8 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .command-heading #parameter-symbol[hidden]{display:none!important}
 
 /* Centered drawing regions are opt-in, keep asymmetric numeric bounds intact. */
-.plot-region-editor .region-centered{grid-column:1/-1;display:flex;align-items:flex-end;gap:8px;min-width:0;margin-top:5px}
-.plot-region-editor .region-centered label{display:flex;flex:1 1 auto;flex-direction:column;gap:4px;min-width:0;font-size:11px}
-.plot-region-editor .region-centered input{width:100%;min-width:0;box-sizing:border-box}
-.plot-region-editor .region-centered button{flex:0 0 auto;white-space:nowrap}
+
+/* Round 130: two symmetric, non-spanning scope entries without a submit button. */
+.plot-region-editor .region-extras{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;min-width:0;margin-top:5px}
+.plot-region-editor .region-extras>.field{display:flex;flex-direction:column;gap:4px;min-width:0;margin:0;font-size:11px;white-space:normal}
+.plot-region-editor .region-extras>.field>input{height:30px;width:100%;max-width:100%;min-width:0;padding:4px 5px;box-sizing:border-box;font-size:11px}

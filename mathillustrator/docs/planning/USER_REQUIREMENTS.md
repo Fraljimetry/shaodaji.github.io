@@ -1564,3 +1564,12 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Allow an explicit **Centered half-range** input with **Apply ±** for both 2D vector/domain-coloring regions (center `(0,0)`) and 3D plot regions (center `(0,0,0)`). For radius `R`, each axis receives `[-R,R]`; existing asymmetric min/max fields remain available.
 - Region changes are atomic, undoable, export as numeric bounds (no new schema field), and reject invalid/out-of-range expressions without partial mutation. Keep old label-double-click symmetry and Enter-to-commit behavior.
 - Preserve existing 2D bounds cap of ±1e6 and 3D cap of ±1e4. Do not change mathematical sampling limits, mesh detail, or any tool glyphs.
+
+- Round 129: The centered half-range apply control must be compact (30 × 30 px, ± glyph), aligned to the 30 px scope inputs; retain an accessible label and tooltip, and preserve existing shortcut behavior.
+
+### Round 130 — compact centered range and strict drawing conditions
+- Remove the ± Apply button. Commit the centered positive half-range by pressing Enter only.
+- Keep centered half-range within the **left column** of the scope editor, aligned with the two-column bounds inputs; use the **right column** for an independent strict inequality, applied by Enter.
+- A 2D inequality uses x/y; a 3D inequality uses x/y/z. Accept one `<` or `>` with safe arithmetic (examples `x>0`, `x^2+y^2<4`, `x^2+y^2+z^2<16`); clear then Enter to remove the restriction. Reject chained/non-strict comparisons, malformed expressions, and unknown variables without changing the project.
+- Restrict geometry, not just the visible controls: 3D surfaces/implicit/domain meshes and vector-field segments, and 2D vector fields/domain coloring, with scene export and persistence compatibility. Preserve old projects without conditions.
+- Implement smooth/linear boundary approximation rather than exact symbolic inequality boundary solving; protect performance for unrestricted plots.
