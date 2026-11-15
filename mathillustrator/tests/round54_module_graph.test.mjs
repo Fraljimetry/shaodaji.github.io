@@ -19,6 +19,6 @@ test('Round 55 geometry contract has versioned dependency',()=>{
   }
  }
  assert.ok(imports>=30,`Expected complete graph, found ${imports} imports`);
- assert.match(readFileSync(resolve(src,'app.mjs'),'utf8'),/from '\.\/plot3d\.mjs\?cut=round62'/);
+ assert.match(readFileSync(resolve(src,'app.mjs'),'utf8'),/from '\.\/plot3d\.mjs\?cut=round(?:6[2-9]|[7-9]\d|[1-9]\d{2,})'/);
  assert.match(html,/mathillustrator-startup-error/);
 });

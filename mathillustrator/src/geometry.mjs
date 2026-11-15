@@ -1,6 +1,6 @@
 /** Model and renderer use precisely the same virtual corners. */
 export {regularPolygonVertices} from './model.mjs?cut=round58';
-import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible} from './model.mjs?cut=round58';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round69';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -81,7 +81,21 @@ export function worldBounds(doc,resolver){
    const node=resolver.object(id);
    return !node||node.hidden||node.style?.opacity===0;
   }))continue;
-  if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','node'].includes(o.type))put(resolver.at(o.id));
+  // Fit must measure the same resolved geometry that the SVG renderer draws.
+  // Ref coordinates describe a construction's inputs, not necessarily its
+  // output (especially transformed points and circles).
+  if(o.type==='node'||geometricPoint(o,resolver))put(resolver.at(o.id));
+  else if(geometricCircle(o,resolver)){
+   const circle=resolver.circle(o);
+   if(circle){const [cx,cy]=circle.center,r=circle.radius;
+    put([cx-r,cy-r]);put([cx+r,cy+r]);}
+  }
+  else if(o.type==='transformCopy'&&geometricLine(o,resolver)){
+   // Infinite lines/rays have no finite extent. Use their finite origin;
+   // segment images have a second, exact end, never source control points.
+   const line=resolver.line(o);put(line.a);
+   if(line.domain==='segment'||line.domain==='ray')put([line.a[0]+line.d[0]*line.length,line.a[1]+line.d[1]*line.length]);
+  }
   else if(o.type==='text')put(o.xy);
   else if(['vectorField','domainColoring'].includes(o.type)&&o.region){put([o.region.xMin,o.region.yMin]);put([o.region.xMax,o.region.yMax]);}
   else if(o.type==='freehand')for(const p of o.path)put(p);
@@ -173,7 +187,7 @@ export function fitSceneView(doc,resolver,size){
    const b=nodeBoxForFit(o.text,o.fontSize||17);
    left=Math.max(left,b.width/2);right=Math.max(right,b.width/2);
    top=Math.max(top,b.height/2);bottom=Math.max(bottom,b.height/2);
-  }else if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot'].includes(o.type)){
+  }else if(geometricPoint(o,resolver)){
    const r=o.style.pointSize??doc.settings.pointSize;
    left=Math.max(left,r);right=Math.max(right,r);top=Math.max(top,r);bottom=Math.max(bottom,r);
    if(doc.settings.showLabels){right=Math.max(right,10+String(o.name).length*7);top=Math.max(top,22);}

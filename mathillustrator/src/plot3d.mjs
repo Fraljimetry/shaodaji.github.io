@@ -83,7 +83,7 @@ export function validate3D(scene){
 }
 export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
  if(scene.plots.length>=80)throw Error('3D plot limit (80) reached.');
- const id=scene.nextId++,[a='',b='',c='']=inputs;
+ const id=scene.nextId,[a='',b='',c='']=inputs;
  const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false,locked:false,colorRange:false};
  if(kind==='parametric3d')Object.assign(plot,{uMin:0,uMax:2*Math.PI,vMin:0,vMax:2*Math.PI});
  if(kind==='vector3d')Object.assign(plot,{density:5,normalized:true,lineWidth:1.5});
@@ -98,7 +98,12 @@ export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
   }
   plot.bounds.zMin=0;plot.bounds.zMax=Math.max(4,Math.min(10000,Math.ceil(maxHeight*1.05)));
  }
- parse3D(plot);scene.plots.push(plot);enforce3DVisibility(scene,id);validate3D(scene);return plot;
+ // Validate a prospective scene *before* touching the caller's object.
+ // A malformed expression or region must not burn an ID, leave a half-added
+ // plot, or hide an older visible surface as a side effect of a rejected edit.
+ validate3D({...scene,nextId:id+1,plots:[...scene.plots,plot]});
+ scene.nextId=id+1;scene.plots.push(plot);enforce3DVisibility(scene,id);
+ return plot;
 }
 function finitePoint(p){return Array.isArray(p)&&p.length===3&&p.every(v=>ok(v)&&Math.abs(v)<1e6);}
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -197,6 +202,9 @@ export function* sample3DPlotSteps(plot,detail){
   // edge-pair order creates crossing / inverted triangles and visible mesh holes.
   const n=implicitGridCells(detail),cube=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
   const stride=n+1,values=new Float64Array(stride**3),index=(i,j,k)=>k*stride*stride+j*stride+i;
+  // Every tetrahedron in adjacent cubes must agree on whether a crossing
+  // is genuine. Cache validated edge roots by shared lattice-vertex pair.
+  const verifiedEdges=new Map();
   const at=(i,j,k)=>[b.xMin+(b.xMax-b.xMin)*i/n,b.yMin+(b.yMax-b.yMin)*j/n,b.zMin+(b.zMax-b.zMin)*k/n];
   // Work directly in scalar coordinates; allocate no temporary 3-vector per
   // sample. Yield for each row, not each plane, to keep heavy meshes cancelable.
@@ -215,15 +223,47 @@ export function* sample3DPlotSteps(plot,detail){
   for(let k=0;k<n&&!limited;k++)for(let j=0;j<n&&!limited;j++){
    for(let i=0;i<n&&!limited;i++){
     const pts=cube.map(([dx,dy,dz])=>at(i+dx,j+dy,k+dz)),v=cube.map(([dx,dy,dz])=>values[index(i+dx,j+dy,k+dz)]);
+    const lattice=cube.map(([cx,cy,cz])=>index(i+cx,j+cy,k+cz));
     for(const ids of tets){const z=ids.map(q=>v[q]);if(z.some(x=>!ok(x)))continue;
      const inside=[],outside=[];for(let m=0;m<4;m++)(z[m]<0?inside:outside).push(m);
      if(inside.length===0||outside.length===0)continue;
-     const edge=(u,w)=>{const from=ids[u],to=ids[w],t=z[u]/(z[u]-z[w]);return pts[from].map((a,d)=>a+(pts[to][d]-a)*t);};
-     if(inside.length===1){const a=inside[0];pushTriangle(edge(a,outside[0]),edge(a,outside[1]),edge(a,outside[2]));}
-     else if(outside.length===1){const a=outside[0];pushTriangle(edge(a,inside[0]),edge(a,inside[2]),edge(a,inside[1]));}
+     const edge=(u,w)=>{
+      const from=ids[u],to=ids[w],a=lattice[from],c=lattice[to],key=a<c?`${a}:${c}`:`${c}:${a}`;
+      if(verifiedEdges.has(key))return verifiedEdges.get(key);
+      let result=null,fl=z[u],fh=z[w],lo=pts[from],hi=pts[to];
+      if(fl===0)result=lo;
+      else if(fh===0)result=hi;
+      else if((fl<0)!==(fh<0)){
+       const initialJump=Math.abs(fl-fh);
+       // A sign change at a pole (e.g. 1/x) is NOT a level set. Refine
+       // the bracket in world coordinates: a continuous zero contracts
+       // its residual, whereas a pole/jump does not. Nonfinite probes fail
+       // closed. This is a numerical safeguard, not a topology guarantee.
+       for(let probe=0;probe<3&&!limited;probe++){
+        const mid=lo.map((a,d)=>(a+hi[d])/2);let fm;
+        try{fm=fn(...mid);}catch{fm=NaN;}evaluations++;
+        if(evaluations>MAX_3D_EVALUATIONS){limited=true;break;}
+        if(!ok(fm))break;
+        if(fm===0){result=mid;break;}
+        if((fl<0)===(fm<0)){lo=mid;fl=fm;}else{hi=mid;fh=fm;}
+       }
+       if(!result&&!limited&&Math.abs(fl-fh)<initialJump*.72){
+        const t=Math.max(0,Math.min(1,fl/(fl-fh)));
+        result=lo.map((a,d)=>a+(hi[d]-a)*t);
+       }
+      }
+      verifiedEdges.set(key,result);return result;
+     };
+     // Never emit a partial tetrahedron around a rejected discontinuity;
+     // doing so creates artificial hanging triangles along the pole.
+     const boundary=[];for(const u of inside)for(const w of outside)boundary.push([u,w,edge(u,w)]);
+     if(boundary.some(item=>!item[2]))continue;
+     const point=(u,w)=>boundary.find(([a,b])=>a===u&&b===w)?.[2]||boundary.find(([a,b])=>a===w&&b===u)?.[2];
+     if(inside.length===1){const a=inside[0];pushTriangle(point(a,outside[0]),point(a,outside[1]),point(a,outside[2]));}
+     else if(outside.length===1){const a=outside[0];pushTriangle(point(a,inside[0]),point(a,inside[2]),point(a,inside[1]));}
      else{
       const [a,c]=inside,[d,e]=outside;
-      const p=edge(a,d),q=edge(a,e),r=edge(c,e),s=edge(c,d);
+      const p=point(a,d),q=point(a,e),r=point(c,e),s=point(c,d);
       pushTriangle(p,q,r);pushTriangle(p,r,s);
      }
     }
@@ -273,9 +313,18 @@ function storeMesh(key,mesh){const bytes=meshBytes(mesh);if(bytes>MAX_MESH_CACHE
  * Scene-level budgets can still reduce density *explicitly* for 3 plots.
  */
 export function implicitGridCells(detail){return Math.min(88,Math.max(10,Math.round(detail*.83+8)));}
-function estimatedEvaluations(plot,detail){
+function estimatedEvaluations(plot,detail,pilot=null){
  if(plot.kind==='vector3d')return plot.density**3;
- if(plot.kind==='implicit3d')return (implicitGridCells(detail)+1)**3;
+ if(plot.kind==='implicit3d'){
+  const cells=implicitGridCells(detail),vertices=(cells+1)**3;
+  if(!pilot)return vertices;
+  const pilotCells=implicitGridCells(22),pilotVertices=(pilotCells+1)**3;
+  // Root validation costs real evaluations in proportion to the surface area.
+  // Estimate that cost from the same expression's low-resolution pilot, or a
+  // high-detail request can consume the budget and silently show no surface.
+  const rootCost=Math.max(0,pilot.evaluations-pilotVertices);
+  return vertices+Math.ceil(rootCost*(cells/pilotCells)**2*1.08);
+ }
  return (Math.max(8,Math.min(96,detail))+1)**2;
 }
 /** Synchronous exports and cooperative screen rendering share EXACT geometry,
@@ -333,9 +382,10 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   // changing anything; blind high-res retries instead consumed the global
   // evaluation budget, paradoxically making Detail 96 *worse* than 80.
   // The pilot is cached by formula/bounds and done only above its resolution.
+  let pilot=null;
   if(plot.kind==='implicit3d'&&implicitGridCells(effectiveDetail)>implicitGridCells(22)){
    const pilotDetail=22,key=meshKey(plot,pilotDetail);
-   let pilot=getCachedMesh(key);
+   pilot=getCachedMesh(key);
    if(!pilot){const sampler=sample3DPlotSteps(plot,pilotDetail);let next;
     do{next=sampler.next();if(!next.done)yield;}while(!next.done);
     pilot=next.value;
@@ -351,11 +401,15 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   effectiveDetail=Math.max(8,effectiveDetail);
   let mesh;
   for(let attempt=0;attempt<12;attempt++){
-   const predicted=estimatedEvaluations(plot,effectiveDetail);
+   const predicted=estimatedEvaluations(plot,effectiveDetail,pilot);
    const remaining=MAX_3D_EVALUATIONS-evaluations;
    const share=Math.floor(remaining/Math.max(1,plots.length-plotIndex));
    if(predicted>share&&effectiveDetail>8){
-    effectiveDetail=Math.max(8,Math.floor(effectiveDetail*.82));yield;continue;
+    // Reduce just enough to meet the predicted cost. Coarse 0.82 steps
+    // made detail 96 render *less* geometry than detail 80.
+    const ratio=Math.sqrt(Math.max(0,share)/predicted);
+    effectiveDetail=Math.max(8,Math.min(effectiveDetail-1,Math.floor(effectiveDetail*Math.max(.7,Math.min(.97,ratio)))));
+    yield;continue;
    }
    if(predicted>remaining){limited=true;break;}
    const key=meshKey(plot,effectiveDetail);mesh=getCachedMesh(key);
@@ -367,7 +421,7 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
    if(!mesh.limited&&mesh.faces.length<=perPlotFaces)break;
    if(effectiveDetail<=8||attempt===11){limited=true;break;}
    const faceRatio=Math.sqrt(perPlotFaces/Math.max(1,mesh.faces.length));
-   effectiveDetail=Math.max(8,Math.floor(effectiveDetail*Math.min(.85,.92*faceRatio)));mesh=null;
+   effectiveDetail=Math.max(8,Math.min(effectiveDetail-1,Math.floor(effectiveDetail*Math.min(.96,.96*faceRatio))));mesh=null;
    yield;
   }
   if(!mesh||mesh.limited||mesh.faces.length>perPlotFaces){limited=true;continue;}

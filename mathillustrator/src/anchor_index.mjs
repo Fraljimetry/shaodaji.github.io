@@ -1,4 +1,4 @@
-import {POINT_LIKE} from './model.mjs?cut=round58';
+import {pointRole,isObjectVisible} from './model.mjs?cut=round69';
 /** Screen-space grid for point and midpoint picking/snapping.
  * Built lazily from a settled document/viewport. The caller invalidates after
  * any committed mutation, undo/import or pan/zoom. Never use to decide which
@@ -10,11 +10,18 @@ export function createAnchorIndex(doc,resolver,view,size,{cell=32}={}){
  const key=(x,y)=>`${x}:${y}`;
  for(let i=0;i<doc.objects.length;i++){
   const o=doc.objects[i];
-  if(o.hidden||o.style?.opacity===0||!POINT_LIKE.has(o.type))continue;
+  // Match the renderer's semantic point role, including nested affine/inversion
+  // images with finite coordinates; never snap to invisible owned objects.
+  if(!isObjectVisible(doc,o,id=>resolver.object(id))||!pointRole(o,id=>resolver.object(id)))continue;
   const p=resolver.at(o.id);if(!p||!p.every(Number.isFinite))continue;
   const x=(p[0]-view.cx)*view.scale+size.w/2,y=(view.cy-p[1])*view.scale+size.h/2;
   if(!Number.isFinite(x)||!Number.isFinite(y))continue;
   const radius=Math.max(9,Number(o.style.pointSize??doc.settings.pointSize)+3);
+  // A marker outside the canvas by more than its own hit radius plus the
+  // snapping threshold can never be hit or snapped. Avoid allocating buckets
+  // for potentially thousands of distant points in imported large projects.
+  const margin=radius+12;
+  if(x < -margin||x > size.w+margin||y < -margin||y > size.h+margin)continue;
   maxRadius=Math.max(maxRadius,radius);
   const q={id:o.id,x,y,radius,rank:i,world:p};
   const k=key(Math.floor(x/cell),Math.floor(y/cell));if(!buckets.has(k))buckets.set(k,[]);

@@ -5,10 +5,10 @@ import {measureGeometry} from './geometry_measurements.mjs?cut=round69';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
 import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round69';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round58';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round71';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round62';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round70';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated} from './i18n.mjs?cut=round54';
@@ -17,7 +17,7 @@ import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
 import {boxRect,routeDiagramEdge,pathData,smoothRoutePath,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs?cut=round54';
-import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round58';
+import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round71';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotCache} from './plot_cache.mjs?cut=round54';
 import {layoutMorphismLabels,strokeObstacleRectangles} from './morphism_label_layout.mjs?cut=round54';
@@ -760,8 +760,8 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  // than here: subsequent arrow/node strokes could otherwise obscure them.
 
 }
-function draw3DBase(svg,result){
- svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));
+function draw3DBase(svg,result,{exporting=false}={}){
+ if(!(exporting&&doc.settings.exportTransparent))svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));
  for(const [a,b] of result.gridLines||[])svg.append(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#a9b3be','stroke-width':.7,opacity:.5,'pointer-events':'none'}));
  for(const [a,b] of result.cube)svg.append(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#97a2af','stroke-width':1,'stroke-dasharray':'4 4','pointer-events':'none'}));
  for(const axis of result.axesLines||[])svg.append(el('line',{x1:axis.from[0],y1:axis.from[1],x2:axis.to[0],y2:axis.to[1],stroke:axis.color,'stroke-width':1.8,'pointer-events':'none'}));
@@ -786,15 +786,15 @@ function append3DPrimitive(target,primitive){
  if(primitive.kind==='face')target.append(face3DElement(primitive.value));
  else for(const child of line3DElements(primitive.value))target.append(child);
 }
-function draw3DScene(svg){
+function draw3DScene(svg,{exporting=false}={}){
  const result=project3DScene(doc.scene3d,size.w,size.h);
- draw3DBase(svg,result);
+ draw3DBase(svg,result,{exporting});
  for(const primitive of result.primitives)append3DPrimitive(svg,primitive);
  plotLimitedInScene=result.limited;
  return result;
 }
 function draw(svg,{exporting=false}={}){
- if(in3D()){svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);draw3DScene(svg);return;}
+ if(in3D()){svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);draw3DScene(svg,{exporting});return;}
  svg.setAttribute('viewBox',`0 0 ${size.w} ${size.h}`);svg.setAttribute('width',size.w);svg.setAttribute('height',size.h);
  // Complex-plane rasters are a backdrop: grid/axes and all foreground objects must remain legible.
  drawBackground(svg,false,exporting);
