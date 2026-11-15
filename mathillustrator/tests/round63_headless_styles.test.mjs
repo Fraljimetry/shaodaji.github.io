@@ -9,7 +9,7 @@ test('Round 63: double and wavy omit visual heads, with disabled UI, without rew
  assert.match(app,/HEADLESS_LINE_STYLES=new Set\(\['double','wavy'\]\)/);
  assert.match(app,/decoratedHeads\(item,path,visibleArrowheads\(pattern,heads\)/);
  assert.match(app,/decoratedHeads\(item,path,visibleArrowheads\(appearance.line,appearance.heads\)/);
- assert.match(app,/if\(HEADLESS_LINE_STYLES.has\(freeLine\)\)/);
+ assert.match(app,/headSelect.disabled=isShape\|\|HEADLESS_LINE_STYLES.has\(line\)/);
  assert.match(app,/if\(HEADLESS_LINE_STYLES.has\(appearance.line\)\)/);
  const d=newDoc();const f=append(d,{type:'freehand',path:[[0,0],[2,1]]});f.curveLine='double';f.curveHeads='both';assert.equal(validateDoc(d).objects.find(x=>x.id===f.id).curveHeads,'both');
 });

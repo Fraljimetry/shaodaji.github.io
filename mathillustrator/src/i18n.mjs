@@ -1,5 +1,6 @@
 /** Scoped editor UI translation, never modifies mathematical object text or exported project data. */
 const zh={
+ 'Use polar coordinates':'使用极坐标',
  'Points & measurements':'点与测量','Lines & constructions':'直线与构造','Polygons & centers':'多边形与中心','Intersections':'交点','Transformations':'几何变换','Curves & loci':'曲线与轨迹',
  'Point on object':'对象上的点','Fixed length':'定长线段','Fixed angle':'固定角度','General intersection':'通用交点','Tangents to circle':'圆的切线','Circular arc':'圆弧','Parabola':'抛物线','Hyperbola':'双曲线','Triangle centers':'三角形中心','Reflection':'轴对称','Circle inversion':'圆反演','Rotation':'旋转','Translation':'平移变换','Dilation':'位似变换','Locus / trace':'轨迹','Center':'中心','Centroid':'重心','Circumcenter':'外心','Incenter':'内心','Orthocenter':'垂心',
 
@@ -18,6 +19,24 @@ const zh={
  'Ink (#111827)':'深墨色（#111827）','White (#ffffff)':'白色（#ffffff）','Gray (#94a3b8)':'灰色（#94a3b8）','Red (#ef4444)':'红色（#ef4444）','Orange (#f97316)':'橙色（#f97316）','Yellow (#eab308)':'黄色（#eab308）','Green (#22c55e)':'绿色（#22c55e）','Teal (#14b8a6)':'青绿色（#14b8a6）','Cyan (#48b6c8)':'柔和青色（#48b6c8）','Blue (#3b82f6)':'蓝色（#3b82f6）','Purple (#a855f7)':'紫色（#a855f7）','Undo (Ctrl+Z)':'撤销 (Ctrl+Z)','Redo (Ctrl+Y)':'重做 (Ctrl+Y)','New project':'新建项目','Open a JSON project':'打开 JSON 项目','Save editable project':'保存可编辑项目','Import semantic tikz-cd diagram':'导入 tikz-cd 交换图',
 };
 const zhExtra={
+ "Drawable objects": "可绘制对象", "Retry saving the current project in this browser": "重新在此浏览器保存当前项目",
+ "Drawing tools and settings": "绘图工具与设置", "Import tikz-cd": "导入 tikz-cd", "Close importer": "关闭导入窗口",
+ "tikz-cd source": "tikz-cd 源码", "Close export options": "关闭导出选项",
+ "Move (V)": "移动 (V)", "Pan (H)": "平移 (H)", "Diagram node (N)": "图节点 (N)",
+ "Morphism (M)": "态射 (M)", "Text (T)": "文字 (T)", "Point (P)": "点 (P)",
+ "Segment (S)": "线段 (S)", "Vector (A)": "向量 (A)", "Line (L)": "直线 (L)",
+ "Circle (C)": "圆 (C)", "Rectangle (R)": "矩形 (R)", "Free curve (F)": "自由曲线 (F)",
+ "Function or construction command": "函数表达式或构造命令",
+ "Excenter A": "A 顶点旁心",
+ "Excenter B": "B 顶点旁心",
+ "Excenter C": "C 顶点旁心",
+ "Shape": "形状",
+ "Free": "自由",
+ "Regular": "规则形状",
+ "Arrowheads": "箭头",
+ "Line style": "线型",
+ "Ellipse": "椭圆",
+ "Polygon": "多边形",
  "3D visualization": "三维可视化",
  "Mesh detail": "网格精度",
  "Surface opacity": "曲面不透明度",

@@ -124,6 +124,8 @@ def run():
         assert bounds['x']>=0 and bounds['x']+bounds['width']<=width
         assert bounds['y']>=0 and bounds['y']+bounds['height']<=780
         page.keyboard.press('Escape')
+        assert not page.evaluate("document.body.classList.contains('mobile-left-open')"), 'Escape should dismiss the mobile drawer'
+        page.locator('#left-collapse').click()
         assert page.locator('#object-search').is_visible()
     assert not errors,errors
     browser.close()

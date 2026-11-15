@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../js/40-outline-structure.js'),'utf8');
+const context=vm.createContext({console,document:{addEventListener(){}}});
+vm.runInContext(source,context,{timeout:20000});
+const bounds=context.outlineHorizontalLineBounds;
+assert.equal(typeof bounds,'function','native-structure horizontal geometry must have a bounded helper');
+const large=Array.from({length:160000},(_,i)=>({x:10+(i%100)*.01,width:2}));
+const got=bounds(large);
+assert.equal(got.xMin,10);
+assert.ok(Math.abs(got.xMax-12.99)<1e-8);
+assert.equal(bounds([{x:-2,width:5},{x:4,width:-100}]).xMax,4);
+assert.equal(bounds([{x:NaN,width:Infinity},{x:7,width:3}]).xMin,0);
+assert.equal(bounds([{x:NaN,width:Infinity},{x:7,width:3}]).xMax,10);
+console.log('PASS: large split heading row geometry, malformed widths and legacy fallbacks');

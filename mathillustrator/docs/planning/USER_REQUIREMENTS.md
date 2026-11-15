@@ -1620,3 +1620,36 @@ Implemented: added missing 3D settings labels (mesh detail, opacity, camera yaw/
 ### Round 139 — Reversible localization of region extras
 - Centered half-range / 中心对称半宽 and Region inequality / 区域不等式 must switch reversibly when the UI language changes, including labels and accessible names.
 - These two captions must align left (not centered) in the Properties panel in both languages, without changing glyphs or the region editing semantics.
+
+
+### Round 141: historical regression follow-up
+
+Preserve immediate point dragging after selection, even when the second pointer press occurs within the double-click interval. Double-click navigation must remain available for stationary clicks. Historical test assumptions about exported guides and regular polygon edge objects must follow later user requirements rather than roll back existing behavior.
+
+
+## Polar parametric plotting and algebraic geometry interaction
+- Show mouse-coordinate x/y values with two fixed decimal places in a stable canvas-footer slot; prevent saved-status position jitter while hovering. Preserve precision of stored coordinates and editable Properties fields.
+- Provide an optional, default-off polar checkbox for 2D parametric objects. In polar mode use `r(t)` plus editable `r min`/`r max` as radial clipping bounds; keep editable `t min`/`t max`. Preserve original `x(t)`/`y(t)` values while toggling, including in saved JSON and undo/redo.
+- Recognize mathematically unambiguous affine functions, linear/standard-circle implicit polynomial equations, straight parametric segments, full sine/cosine circles, and full-turn constant polar circles as semantic lines/circles, usable in existing compatible geometric constructions. Reject inferred semantics for incomplete arcs, noncircular ellipses, general sampled curves and unsupported syntax. Do not change glyphs.
+
+### Free curve shape gestures (Round 146)
+- The Free curve tool allows an editable shape mode **Free / Ellipse / Polygon**. Its **Regular** checkbox defaults to enabled. The same compact two-column controls appear before drawing (with Free curve selected) and in a selected curve's Properties.
+- **Ellipse + Regular** produces a circle; Ellipse without Regular uses the gesture's elliptical bounds. **Polygon + Regular** replaces an inferred multi-corner outline with a regular polygon; disabling Regular retains corners recovered from the gesture (e.g. a triangle or rectangle). Mode labels remain "Ellipse" and "Polygon".
+- Shape modes use only Solid, Dashed and Dotted. Arrowheads are unavailable and disabled for non-Free shapes. Free retains its original line styles and arrowheads. Line style/Arrowheads share the second compact row; Shape/Regular share the first.
+- Preserve the original gesture in editable JSON so changing mode or regularity does not permanently discard the original stroke. Older Free curve objects retain their legacy schema/behavior. Reject invalid or degenerate shapes without creating an object. Do not alter existing glyphs.
+
+### Round 147 — Compact controls and Free Curve geometry interoperability
+- Identify, but do not automatically redesign, matched two-column opportunities for short preset comboboxes and short numeric style/resolution fields. Keep all formula, name, text and label editors comfortably wide; align paired controls as in existing Properties. Preserve color swatches and glyphs.
+- A drawn `Ellipse + Regular` has exact circle semantics for supported analytical circle constructions; a nonregular ellipse remains a curve. Shaped polygons and ellipses must participate in compatible native-geometry intersections and constrained-point constructions. Snap to the rendered outline, not an invisible smoothing approximation. Generic free strokes must not be promoted to exact circles. Existing project data stays compatible.
+
+### Round 148 — compact predetermined controls and reversible localization
+
+- Use matched, aligned two-column rows for pairs of short predefined selectors and numeric style controls where readability is maintained. Implement in 2D Plotting (detail/budget), Geometry options (free curves/smoothing), Page & appearance (canvas/bounds, raster resolution/theme), 3D Visualization (raster resolution/theme), and Diagram morphism Properties (line style/arrowheads).
+- Do not compress user-entered formulas, object names, label text, LaTeX, or other longer strings. Preserve full-width Background controls following Theme and existing glyph artwork.
+- English/Chinese switches must restore original English text, including triangle center choices Excenter A/B/C, toolbar accessibility labels, and import/export dialogs.
+
+## Round 149 — Object list information density and inspector spacing
+
+- Show a second line in an Objects list row only when it contains object-specific user text, a mathematical expression, coordinates, or a numeric property such as polygon side count. Do not repeat generic tool/type names.
+- Place short, style-oriented numeric inputs immediately next to their labels, particularly Point size and standalone numeric Properties fields; retain compact grids already in use.
+- Give editable object names and displayed-label text the full inspector width, with the caption directly above the editor. Preserve read-only measurement layouts and all existing glyphs.

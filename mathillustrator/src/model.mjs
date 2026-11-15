@@ -1,6 +1,7 @@
+import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
 import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round87';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round130';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -105,18 +106,38 @@ export function lineRole(o,object,visited=new Set()){
  let current=o;
  while(current){
   if(visited.has(current.id))return false;
-  if(STRAIGHT_TYPES.has(current.type))return true;
+  if(STRAIGHT_TYPES.has(current.type)||recognizedPlotGeometry(current)?.kind==='line')return true;
   if(current.type!=='transformCopy'||!AFFINE_TRANSFORMS.has(current.transform)||
      (current.transform==='dilate'&&(!finite(current.amount)||Math.abs(current.amount)<1e-9)))return false;
   visited.add(current.id);current=object(current.refs?.[0]);
  }
  return false;
 }
+/** A regular Free Curve ellipse is generated as an exact circle in world
+ * coordinates. Its source points are stored in `path`, not in `refs`.
+ * Do not promote a nonregular ellipse or a generic drawn stroke to a circle. */
+function drawnCircle(o){
+ if(o?.type!=='freehand'||o.curveShape!=='ellipse'||o.curveRegular!==true||
+    !o.closed||!Array.isArray(o.path)||o.path.length<5)return null;
+ const path=o.path;
+ if(!path.every(safeCoord))return null;
+ const xs=path.map(p=>p[0]),ys=path.map(p=>p[1]);
+ const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+ const rx=(Math.max(...xs)-Math.min(...xs))/2,ry=(Math.max(...ys)-Math.min(...ys))/2;
+ const radius=(rx+ry)/2;
+ if(!(radius>1e-8)||Math.abs(rx-ry)>radius*1e-8)return null;
+ // Guard against an invalid/imported curve with forged shape flags. A regular
+ // N-gon or a rough stroke must never be treated as an analytic circle.
+ if(path.length<33)return null;
+ const eps=Math.max(radius*1e-7,1e-10);
+ if(path.some(([x,y])=>Math.abs(Math.hypot(x-cx,y-cy)-radius)>eps))return null;
+ return {center:[cx,cy],radius};
+}
 export function circleRole(o,object,visited=new Set()){
  let current=o;
  while(current){
   if(visited.has(current.id))return false;
-  if(['circle','circleThrough3'].includes(current.type))return true;
+  if(['circle','circleThrough3'].includes(current.type)||drawnCircle(current)||recognizedPlotGeometry(current)?.kind==='circle')return true;
   if(current.type!=='transformCopy'||!AFFINE_TRANSFORMS.has(current.transform)||
      (current.transform==='dilate'&&(!finite(current.amount)||Math.abs(current.amount)<1e-9)))return false;
   visited.add(current.id);current=object(current.refs?.[0]);
@@ -490,6 +511,10 @@ export function createResolver(doc){
      const roots=intersectLineCircle(lines.get(obj.refs[0]),circle);
      p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
     }
+    const recognized=recognizedPlotGeometry(obj);
+    if(recognized?.kind==='line'){const len=Math.hypot(...recognized.d);lines.set(current,{...recognized,d:recognized.d.map(v=>v/len),length:recognized.length*len});}
+    if(recognized?.kind==='circle')circles.set(current,{center:recognized.center,radius:recognized.radius});
+    const drawn=drawnCircle(obj);if(drawn)circles.set(current,drawn);
     if(STRAIGHT_TYPES.has(obj.type)){
      if(obj.type==='axis'){/* fixed world-coordinate line */}
      else if(obj.type==='tangentCircle'){
@@ -673,6 +698,7 @@ export function validateDoc(raw){
    if(o.type==='pointOnObject'&&(!finite(o.parameter)||o.parameter<0||o.parameter>1))throw Error('Invalid constrained point parameter.');
    if(o.type==='pointOnObject'&&o.distance!==undefined&&(!finite(o.distance)||
       !['line','ray','parallelThrough','perpendicularThrough','perpBisector','angleBisector','tangentCircle','axis','transformCopy'].includes(roleObjects.get(o.refs?.[0])?.type)&&
+      !lineRole(roleObjects.get(o.refs?.[0]),id=>roleObjects.get(id))&&
       !(o.constraintMode==='angleRay'&&roleObjects.get(o.refs?.[0])?.type==='fixedAngle')))throw Error('Invalid signed distance for constrained point.');
    if(o.type==='pointOnObject'&&o.constraintMode!==undefined&&o.constraintMode!=='angleRay')throw Error('Invalid constrained-point mode.');
    if(o.type==='pointOnObject'&&o.constraintMode==='angleRay'&&o.distance!==undefined&&o.distance<0)
@@ -710,6 +736,11 @@ export function validateDoc(raw){
   parseParametric(o.xExpr,o.yExpr,o.parameter);
   if(o.parameter!==undefined&&!['t','u','v'].includes(o.parameter))throw Error('Invalid parametric symbol.');
   if(!finite(o.tMin)||!finite(o.tMax)||o.tMin>=o.tMax||Math.abs(o.tMin)>1e6||Math.abs(o.tMax)>1e6)throw Error('Parameter range must be finite, ascending and within ±1,000,000.');
+  if(o.polar!==undefined&&typeof o.polar!=='boolean')throw Error('Invalid polar flag.');
+  if(o.polar){if(typeof o.rExpr!=='string')throw Error('Missing polar radius expression.');parseCurveExpression(o.rExpr,['t']);
+   if(!finite(o.rMin)||!finite(o.rMax)||o.rMin>=o.rMax||Math.abs(o.rMin)>1e6||Math.abs(o.rMax)>1e6)throw Error('Invalid polar radius bounds.');}
+  if(o.rExpr!==undefined&&(typeof o.rExpr!=='string'||o.rExpr.length>800))throw Error('Invalid radius expression.');
+  if((o.rMin!==undefined&&!finite(o.rMin))||(o.rMax!==undefined&&!finite(o.rMax)))throw Error('Invalid radial bounds.');
  }
  if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr);}
  if(['vectorField','domainColoring'].includes(o.type)){
@@ -727,6 +758,7 @@ export function validateDoc(raw){
   }
  }
  if(o.type!=='vectorField'&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
+ if(o.type!=='parametric'&&(o.polar!==undefined||o.rExpr!==undefined||o.rMin!==undefined||o.rMax!==undefined))throw Error('Unexpected polar properties.');
  if(!['parametric','pointOnObject'].includes(o.type)&&o.parameter!==undefined)throw Error('Unexpected parametric symbol.');
  if(o.type!=='pointOnObject'&&o.distance!==undefined)throw Error('Unexpected constrained-point distance.');
  if(!['parametric','vectorField'].includes(o.type)&&(o.xExpr!==undefined||o.yExpr!==undefined)||o.type!=='parametric'&&(o.tMin!==undefined||o.tMax!==undefined))throw Error('Unexpected parametric properties.');
@@ -739,6 +771,10 @@ export function validateDoc(raw){
   if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
   if(o.closed!==undefined&&(!['freehand','spline'].includes(o.type)||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
   if(o.joinStyle!==undefined&&(o.type!=='freehand'||o.closed!==true||!['smooth','corner'].includes(o.joinStyle)))throw Error('Invalid free curve join style.');
+  if(o.curveShape!==undefined&&(o.type!=='freehand'||!['free','ellipse','polygon'].includes(o.curveShape)))throw Error('Invalid free curve shape.');
+  if(o.curveRegular!==undefined&&(o.type!=='freehand'||typeof o.curveRegular!=='boolean'))throw Error('Invalid free curve regularity.');
+  if(o.rawPath!==undefined&&(o.type!=='freehand'||!Array.isArray(o.rawPath)||o.rawPath.length<2||o.rawPath.length>20000||!o.rawPath.every(safeCoord)))throw Error('Invalid original free curve path.');
+  if(o.curveShape!==undefined&&o.curveShape!=='free'&&o.closed!==true)throw Error('Shaped free curves must be closed.');
   if(o.curveLine!==undefined&&(o.type!=='freehand'||!['solid','dashed','dotted','double','wavy'].includes(o.curveLine)))throw Error('Invalid free curve line pattern.');
   if(o.curveArrows!==undefined&&(o.type!=='freehand'||!['none','end','both'].includes(o.curveArrows)))throw Error('Invalid free curve arrow count.');
   if(o.curveHeads!==undefined&&(o.type!=='freehand'||!['none','end','start','both','double-end','hook','tail','harpoon'].includes(o.curveHeads)))throw Error('Invalid free curve arrowheads.');

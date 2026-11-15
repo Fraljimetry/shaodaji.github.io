@@ -1,7 +1,7 @@
 """Cut14 adversarial lifecycle, keyboard, file-read and persistence checks.
 Tests isolated Chromium; no claim of hosted browser or genuine multi-tab evidence.
 """
-import os, json
+import os, json, re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from browser_smoke import inline_html,cmd
@@ -89,7 +89,7 @@ def main():
   assert 'Not saved locally' in page.locator('#autosave-info').inner_text(), 'Quota failure falsely reported autosave success'
   assert page.evaluate("localStorage.getItem('mathillustrator-project-v1')")==before,'Quota failure corrupted prior local project'
   with page.expect_download() as event: page.locator('#save').click()
-  assert event.value.suggested_filename=='mathillustrator.json'
+  assert re.fullmatch(r'mathillustrator_\d{8}_\d{6}\.json',event.value.suggested_filename), event.value.suggested_filename
   print('CUT14_PASS storage quota failure preserves previous data and manual JSON download')
   page.evaluate('window.__quota.fail=false')
   cmd(page,'C=(5,6)');page.wait_for_timeout(650)

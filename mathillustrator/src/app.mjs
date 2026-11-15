@@ -1,12 +1,13 @@
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round87';
+import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
 import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round130';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round87';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round147';
+import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
@@ -307,6 +308,7 @@ function desc(o,nameById=null){
  if(o.type==='point')return `(${o.xy.map(formatCoordinate).join(', ')})`;
  if(o.type==='midpoint')return `Midpoint${namedRefs()?' of '+namedRefs():''}`;
  if(o.type==='function')return `y = ${o.expr}`;
+ if(o.type==='parametric'&&o.polar)return `r(t) = ${o.rExpr}, [${o.tMin}, ${o.tMax}], radius [${o.rMin}, ${o.rMax}]`;
  if(o.type==='parametric')return `x(${o.parameter||'u'}) = ${o.xExpr}; y(${o.parameter||'v'}) = ${o.yExpr}, [${o.tMin}, ${o.tMax}]`;
  if(o.type==='vectorField')return `(${o.xExpr}, ${o.yExpr}), ${o.density} arrows across x`;
  if(o.type==='domainColoring')return `F(z) = ${o.expr}`;
@@ -469,6 +471,9 @@ const LINE_CHOICES=[['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['
 const HEAD_CHOICES=[['none','None'],['end','End'],['start','Start'],['both','Both'],['double-end','Double end'],['hook','Hook'],['tail','Tail'],['harpoon','Harpoon']];
 const FREE_CURVE_HEAD_CHOICES=HEAD_CHOICES.slice(0,4);
 const HEADLESS_LINE_STYLES=new Set(['double','wavy']);
+const SHAPE_CHOICES=[['free','Free'],['ellipse','Ellipse'],['polygon','Polygon']];
+const SHAPE_LINE_CHOICES=LINE_CHOICES.slice(0,3);
+let freehandShapeMode='free',freehandRegular=true,freehandLine='solid',freehandHeads='none';
 const visibleArrowheads=(line,heads)=>HEADLESS_LINE_STYLES.has(line)?'none':heads;
 function inheritedMorphismAppearance(o){
  const old=o.arrowStyle||'solid';
@@ -632,8 +637,8 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='angle'&&coords?.length===3){const [a,b,c]=coords,r=26,theta1=Math.atan2(a[1]-b[1],a[0]-b[0]),theta2=Math.atan2(c[1]-b[1],c[0]-b[0]);let delta=(theta2-theta1+Math.PI*2)%(Math.PI*2);if(delta>Math.PI)delta-=2*Math.PI;const start=[b[0]+r*Math.cos(theta1),b[1]+r*Math.sin(theta1)],end=[b[0]+r*Math.cos(theta1+delta),b[1]+r*Math.sin(theta1+delta)];item=mk('path',{d:`M${start.join(' ')} A${r} ${r} 0 0 ${delta>0?1:0} ${end.join(' ')}`,fill:'none'});
  }else if(o.type==='freehand'&&o.path?.length>1){
   const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;
-  const path=mk('path',{d:freehandCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
-  const pattern=o.curveLine||'solid',heads=o.curveHeads||(o.curveArrows||'none');
+  const path=mk('path',{d:o.curveShape&&o.curveShape!=='free'?`M${pathCoords.map(p=>p.join(' ')).join(' L')} Z`:freehandCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
+  const shapeMode=o.curveShape||'free',pattern=shapeMode==='free'?(o.curveLine||'solid'):SHAPE_LINE_CHOICES.some(([v])=>v===o.curveLine)?o.curveLine:'solid',heads=shapeMode==='free'?(o.curveHeads||(o.curveArrows||'none')):'none';
   if(pattern==='solid'&&heads==='none'){item=path;}
   else{item=el('g');item.append(path);styleDecoratedPath(item,path,pattern,mk);
    decoratedHeads(item,path,visibleArrowheads(pattern,heads),o.style.stroke,o.style.width,false,pattern);}
@@ -699,11 +704,11 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    }
   }
  }else if(['function','parametric','implicit'].includes(o.type)){
-  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
+  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,o.rMin,o.rMax,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
   const path=plotCache.get(key,()=>{
    const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
    const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
-    o.type==='parametric'?sampleParametricPlot(parseParametric(o.xExpr,o.yExpr,o.parameter),o.tMin,o.tMax,project,options):
+    o.type==='parametric'?sampleParametricPlot(o.polar?polarParametric(o):parseParametric(o.xExpr,o.yExpr,o.parameter),o.tMin,o.tMax,project,options):
     sampleImplicitPlot(parseImplicit(o.expr),px=>unproject(px,0)[0],py=>unproject(0,py)[1],size.w,size.h,{...options,cellPx:doc.settings.implicitGrid??12});
    if(plot.limited){limitedPlotKeys.add(key);while(limitedPlotKeys.size>32)limitedPlotKeys.delete(limitedPlotKeys.values().next().value);}
    else limitedPlotKeys.delete(key);
@@ -964,9 +969,10 @@ function draw(svg,{exporting=false}={}){
   // Drafts are never added to the document or the export SVG.
   if(drag?.kind==='marquee'){const m=drag;svg.append(el('rect',{class:'selection-marquee',x:Math.min(m.sx,m.ex),y:Math.min(m.sy,m.ey),width:Math.abs(m.ex-m.sx),height:Math.abs(m.ey-m.sy),'pointer-events':'none'}));}
   if(drag?.kind==='freehand'&&drag.path.length>1){
-   const {prepared,begin,finish}=preparedFreehand(drag.path,drag.startAttachment);
+   const mode=freehandShapeMode;
+   const {prepared,begin,finish}=mode==='free'?preparedFreehand(drag.path,drag.startAttachment):{prepared:shapeFromStroke(drag.path,mode,freehandRegular)||{path:drag.path,closed:false},begin:null,finish:null};
    const pts=prepared.path.map(project);
-   svg.append(el('path',{class:'draft-freehand',d:freehandCurveSvg(pts,prepared.closed),stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round','pointer-events':'none'}));
+   svg.append(el('path',{class:'draft-freehand',d:mode==='free'?freehandCurveSvg(pts,prepared.closed):`M${pts.map(p=>p.join(' ')).join(' L')} Z`,stroke:doc.settings.stroke,'stroke-width':doc.settings.width,opacity:doc.settings.opacity,fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round','pointer-events':'none'}));
    for(const target of [begin,finish])if(target){const [x,y]=project(target.world);svg.append(el('circle',{class:'freehand-snap-indicator',cx:x,cy:y,r:7,stroke:'#0d9488','stroke-width':2,fill:'none','pointer-events':'none'}));}
   }
  }
@@ -1251,21 +1257,18 @@ function compactSubtitle(value){
  return full.length>34?full.slice(0,31)+'…':full;
 }
 function shortObjectSubtitle(o){
- const labels={midpoint:'',pointOnObject:'',intersection:'',
-  circleIntersection:'Line–circle',circleCircleIntersection:'Circle–circle',generalIntersection:'Curve intersection',
-  perpendicularFoot:'Perpendicular foot',perpBisector:'Perp. bisector',parallelThrough:'Parallel',
-  perpendicularThrough:'Perpendicular',angleBisector:'Angle bisector',circleThrough3:'3-point circle',
-  circleDiameter:'Diameter circle',circularArc:'Circular arc',triangleCenter:'Triangle center',
-  fixedLength:'',fixedAngle:'',tangentCircle:'',
-  transformCopy:o.transform==='invert'?'Circle inversion':`Transformation: ${o.transform||'copy'}`,
-  locus:'Locus',parallelogram:'Parallelogram',regularPolygon:`${o.sides} sides`};
- if(o.type==='point')return o.xy.map(formatCoordinate).join(', ');
- if(o.type==='text'||o.type==='node'||o.type==='morphism')return compactSubtitle(o.text||o.type);
- if(o.type==='function'||o.type==='implicit'||o.type==='domainColoring')return compactSubtitle(o.expr||o.type);
- if(o.type==='parametric')return 'Parametric curve';
- if(o.type==='vectorField')return 'Vector field';
- return Object.hasOwn(labels,o.type)?compactSubtitle(labels[o.type]):'';
+ // A second line is useful only for user content, equations or numeric values.
+ // Repeating the object's type ("Vector field", "Parametric curve", etc.)
+ // adds noise without describing this particular object.
+ if(o.type==='point')return Array.isArray(o.xy)?o.xy.map(formatCoordinate).join(', '):'';
+ if(['text','node','morphism'].includes(o.type))return compactSubtitle(o.text||'');
+ if(['function','implicit','domainColoring'].includes(o.type))return compactSubtitle(o.expr||'');
+ if(o.type==='parametric')return compactSubtitle(o.polar?`r(t) = ${o.rExpr||''}`:`x(t) = ${o.xExpr||''}; y(t) = ${o.yExpr||''}`);
+ if(o.type==='vectorField')return compactSubtitle([o.xExpr,o.yExpr].filter(Boolean).join(', '));
+ if(o.type==='regularPolygon')return Number.isInteger(o.sides)?`${o.sides} sides`:'';
+ return '';
 }
+
 // Use one authoritative SVG for Geometry/Diagram tools and their Objects-list
 // rows. Plotting modes have a separate set of five semantic SVG glyphs.
 // Five shared 2D/3D plot pictograms; not used by Geometry tools.
@@ -1517,13 +1520,31 @@ function renderProperties3D(root){
  if(selectedPlot.kind==='vector3d')field(right,'Width',selectedPlot.lineWidth??1.5,'number',v=>edit(p=>{p.lineWidth=v;}),{min:.1,max:12,step:.5});
  localizeUI(root,uiPrefs.language);
 }
+function renderNewFreehandControls(root){
+ const header=document.createElement('h3');header.textContent='Free curve';root.append(header);
+ const grid=document.createElement('div');grid.className='freehand-shape-grid';root.append(grid);
+ const choice=(title,value,options,change)=>{
+  const l=document.createElement('label');l.className='field';l.textContent=title;
+  const s=document.createElement('select');s.setAttribute('aria-label',title);
+  for(const [key,caption]of options){const opt=document.createElement('option');opt.value=key;opt.textContent=translated(caption,uiPrefs.language);s.append(opt);}
+  s.value=value;s.onchange=()=>{change(s.value);renderProperties();};l.append(s);grid.append(l);
+ };
+ choice('Shape',freehandShapeMode,SHAPE_CHOICES,v=>freehandShapeMode=v);
+ const l=document.createElement('label');l.className='check freehand-regular-check';
+ const cb=document.createElement('input');cb.type='checkbox';cb.checked=freehandRegular;cb.onchange=()=>freehandRegular=cb.checked;
+ l.append(cb,document.createTextNode(' Regular'));grid.append(l);
+ const shaped=freehandShapeMode!=='free';
+ choice('Line style',shaped&&!SHAPE_LINE_CHOICES.some(([v])=>v===freehandLine)?'solid':freehandLine,shaped?SHAPE_LINE_CHOICES:LINE_CHOICES,v=>freehandLine=v);
+ choice('Arrowheads',shaped?'none':visibleArrowheads(freehandLine,freehandHeads),FREE_CURVE_HEAD_CHOICES,v=>freehandHeads=v);
+ const arrow=grid.querySelector('select[aria-label="Arrowheads"]');arrow.disabled=shaped||HEADLESS_LINE_STYLES.has(freehandLine);
+}
 function renderProperties(){
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
 
  const root=$('properties');root.classList.remove('properties-3d');root.replaceChildren();const objects=activeSelection();
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
- if(!o)return;
+ if(!o){if(tool==='freehand'){renderNewFreehandControls(root);localizeUI(root,uiPrefs.language);}return;}
  if(o.locked){const p=document.createElement('p');p.className='subtle';p.textContent='Locked';root.append(p);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
  // replace the document and make the old object reference stale. Resolve by ID in
@@ -1572,21 +1593,47 @@ function renderProperties(){
  if(['text','node'].includes(o.type))field(root,'Font size',o.fontSize||18,'number',v=>edit(live=>{if(!finite(v)||v<5||v>200)throw Error('Font size must be 5–200.');live.fontSize=v;}),{min:5,max:200,step:1});
  if(o.type==='node'){const border=document.createElement('label');border.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
  if(o.type==='freehand'){
-  const makeChoice=(title,value,options,prop)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);for(const [key,caption] of options){const option=document.createElement('option');option.value=key;option.textContent=translated(caption,uiPrefs.language);choice.append(option);}choice.value=value;choice.onchange=()=>{const next=choice.value;if(edit(live=>{live[prop]=next;})===false)return;
-    if(prop==='curveLine'){const heads=root.querySelector('select[aria-label="Arrowheads"]');if(heads){const headless=HEADLESS_LINE_STYLES.has(next);heads.disabled=headless;heads.value=visibleArrowheads(next,get(doc,o.id)?.curveHeads||(get(doc,o.id)?.curveArrows||'none'));heads.title=headless?'Double and Wavy lines have no arrowheads.':'';}}
-   };label.append(choice);root.append(label);};
-  makeChoice('Line style',o.curveLine||'solid',LINE_CHOICES,'curveLine');
-  const freeLine=o.curveLine||'solid',freeHeads=o.curveHeads||(o.curveArrows||'none');
-  makeChoice('Arrowheads',visibleArrowheads(freeLine,FREE_CURVE_HEAD_CHOICES.some(([key])=>key===freeHeads)?freeHeads:'end'),FREE_CURVE_HEAD_CHOICES,'curveHeads');
-  if(HEADLESS_LINE_STYLES.has(freeLine)){const select=root.querySelector('select[aria-label="Arrowheads"]');select.disabled=true;select.title='Double and Wavy lines have no arrowheads.';}
+  const shape=o.curveShape||'free';
+  const grid=document.createElement('div');grid.className='freehand-shape-grid';root.append(grid);
+  const buildChoice=(title,value,options,apply)=>{
+   const label=document.createElement('label');label.className='field';label.append(document.createTextNode(title));
+   const select=document.createElement('select');select.setAttribute('aria-label',title);
+   for(const [key,caption]of options){const option=document.createElement('option');option.value=key;option.textContent=translated(caption,uiPrefs.language);select.append(option);}
+   select.value=value;select.onchange=()=>apply(select.value);label.append(select);grid.append(label);return select;
+  };
+  const shapeSelect=buildChoice('Shape',shape,SHAPE_CHOICES,next=>{freehandShapeMode=next;
+   const current=get(doc,o.id),raw=current?.rawPath||current?.path;
+   const prepared=next==='free'&&current?.rawPath?{path:current.rawPath,closed:false}:shapeFromStroke(raw,next,current?.curveRegular!==false);
+   if(!prepared){shapeSelect.value=current?.curveShape||'free';notice('Draw a larger closed stroke for this shape.');return;}
+   if(edit(live=>{live.curveShape=next;live.path=prepared.path;live.closed=prepared.closed;
+    if(next!=='free')live.rawPath=raw.map(p=>p.slice());else delete live.joinStyle;
+   })!==false)renderProperties();
+  });
+  const regularLabel=document.createElement('label');regularLabel.className='check freehand-regular-check';
+  const regularCheckbox=document.createElement('input');regularCheckbox.type='checkbox';regularCheckbox.checked=o.curveRegular!==false;
+  regularCheckbox.onchange=()=>{freehandRegular=regularCheckbox.checked;
+   const current=get(doc,o.id),raw=current?.rawPath||current?.path;
+   const prepared=current?.curveShape&&current.curveShape!=='free'?shapeFromStroke(raw,current.curveShape,regularCheckbox.checked):null;
+   if(edit(live=>{live.curveRegular=regularCheckbox.checked;if(prepared){live.path=prepared.path;live.closed=true;}})===false)regularCheckbox.checked=!regularCheckbox.checked;
+  };
+  regularLabel.append(regularCheckbox,document.createTextNode(' Regular'));grid.append(regularLabel);
+  const isShape=shape!=='free',line=o.curveLine||'solid';
+  const lineSelect=buildChoice('Line style',isShape&&!SHAPE_LINE_CHOICES.some(([v])=>v===line)?'solid':line,isShape?SHAPE_LINE_CHOICES:LINE_CHOICES,next=>{freehandLine=next;
+   if(edit(live=>{live.curveLine=next;})!==false)renderProperties();
+  });
+  const heads=o.curveHeads||o.curveArrows||'none';
+  const headSelect=buildChoice('Arrowheads',isShape?'none':visibleArrowheads(line,FREE_CURVE_HEAD_CHOICES.some(([v])=>v===heads)?heads:'none'),FREE_CURVE_HEAD_CHOICES,next=>{freehandHeads=next;edit(live=>{live.curveHeads=next;});});
+  headSelect.disabled=isShape||HEADLESS_LINE_STYLES.has(line);
+  headSelect.title=isShape?'Arrows are unavailable for ellipses and polygons.':HEADLESS_LINE_STYLES.has(line)?'Double and Wavy lines have no arrowheads.':'';
  }
  if(o.type==='morphism'){
   const appearance=inheritedMorphismAppearance(o);
+  const morphStyleGrid=document.createElement('div');morphStyleGrid.className='compact-properties-grid';root.append(morphStyleGrid);
   const morphChoice=(title,value,options,key)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);
    for(const [id,caption] of options){const option=document.createElement('option');option.value=id;option.textContent=caption;choice.append(option);}
    choice.value=value;choice.onchange=()=>{const next=choice.value;if(edit(live=>{live[key]=next;})===false)return;
     if(key==='morphismLine'){const heads=root.querySelector('select[aria-label="Arrowheads"]');if(heads){const headless=HEADLESS_LINE_STYLES.has(next);heads.disabled=headless;const current=get(doc,o.id);heads.value=visibleArrowheads(next,current?inheritedMorphismAppearance(current).heads:'end');heads.title=headless?'Double and Wavy lines have no arrowheads.':'';}}
-   };label.append(choice);root.append(label);};
+   };label.append(choice);morphStyleGrid.append(label);};
   morphChoice('Line style',appearance.line,LINE_CHOICES,'morphismLine');
   morphChoice('Arrowheads',visibleArrowheads(appearance.line,appearance.heads),HEAD_CHOICES,'morphismHeads');
   if(HEADLESS_LINE_STYLES.has(appearance.line)){const select=root.querySelector('select[aria-label="Arrowheads"]');select.disabled=true;select.title='Double and Wavy lines have no arrowheads.';}
@@ -1613,8 +1660,20 @@ function renderProperties(){
    const y=axis==='y'?value:toT(live.yExpr,'y',live.parameter);
    parseParametric(x,y,'t');live.xExpr=x;live.yExpr=y;live.parameter='t';
   });
+  const polarLabel=document.createElement('label');polarLabel.className='check compact-property-check';
+  const polarToggle=document.createElement('input');polarToggle.type='checkbox';polarToggle.checked=o.polar===true;
+  polarToggle.setAttribute('aria-label',translated('Use polar coordinates',uiPrefs.language));
+  polarToggle.onchange=()=>{if(edit(live=>{live.polar=polarToggle.checked;if(live.polar){live.rExpr??='1';live.rMin??=0;live.rMax??=100;}})!==false)renderProperties();};
+  polarLabel.append(polarToggle,document.createTextNode(' '+translated('Use polar coordinates',uiPrefs.language)));root.append(polarLabel);
+  if(o.polar){
+   field(root,'r(t)',o.rExpr??'1','text',v=>edit(live=>{r50ParseExpr(v,['t']);live.rExpr=v;}));
+   const radial=document.createElement('div');radial.className='parametric-range-grid';root.append(radial);
+   field(radial,'r min',o.rMin??0,'number',v=>edit(live=>{if(!finite(v)||v>=live.rMax||Math.abs(v)>1e6)throw Error('Invalid polar radius minimum.');live.rMin=v;}),{step:.1});
+   field(radial,'r max',o.rMax??100,'number',v=>edit(live=>{if(!finite(v)||v<=live.rMin||Math.abs(v)>1e6)throw Error('Invalid polar radius maximum.');live.rMax=v;}),{step:.1});
+  }else{
   field(root,'x(t)',xText,'text',v=>change('x',v));
   field(root,'y(t)',yText,'text',v=>change('y',v));
+  }
   const range=document.createElement('div');range.className='parametric-range-grid';root.append(range);
   field(range,'t min',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
   field(range,'t max',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
@@ -1733,7 +1792,7 @@ function selectTool(t){
  if(drag)cancelDrag();lastMoveCanvasTap=null;tool=t;clearDraft();$('drawing').dataset.tool=t;
  syncDiagramSnapFocus(true);
  document.querySelectorAll('[data-tool-choice]').forEach(b=>{const active=b.dataset.toolChoice===t;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');});
- updateModeLabel(t);scheduleRender();
+ updateModeLabel(t);renderProperties();scheduleRender();
 }
 function populateTools(){
  const geometryTargets=new Map(),root=$('construction-tools');
@@ -1770,6 +1829,11 @@ function syncTooltips(){
   if(uiPrefs.showTooltips===false)button.removeAttribute('title');
   else if(button.dataset.fullTooltip)button.title=button.dataset.fullTooltip;
  }
+}
+function polarParametric(o){
+ const r=r50ParseExpr(o.rExpr,['t']);
+ return t=>{const radius=r({t});return Number.isFinite(radius)&&radius>=o.rMin&&radius<=o.rMax
+  ?[radius*Math.cos(t),radius*Math.sin(t)]:[NaN,NaN];};
 }
 function syncPlotModeControl(){
  const plotInput=$('command'),plotY=$('command-y'),plotZ=$('command-z'),mode=$('plot-mode').value,symbol=$('parameter-symbol'),three=in3D();
@@ -2053,7 +2117,17 @@ function pointerDown(e){
   lastMoveCanvasTap=plainClick&&actualHit?{id:actualHit,at:now,x:sx,y:sy}:null;
   if(doubleHit){
    lastMoveCanvasTap=null;
-   // Selecting the target first updates Properties, then scrolls/focuses the Objects row.
+   // Defer point navigation until release: a fast select-then-drag shares
+   // the same second pointerdown as a double-click. Do not swallow that drag.
+   const point=get(doc,actualHit);
+   if(point&&!point.hidden&&!point.locked&&['point','node','text','pointOnObject'].includes(point.type)){
+    select(actualHit);
+    drag={kind:'point',pointerId:e.pointerId,id:actualHit,before:JSON.stringify(doc),
+     sx,sy,moved:false,excluded:affected(doc,actualHit),doubleNavigate:true};
+    try{$('drawing').setPointerCapture(e.pointerId);}catch{}
+    e.preventDefault();return;
+   }
+   // Other objects have no point-drag gesture; navigate immediately.
    select(actualHit);navigateToObject(actualHit);e.preventDefault();return;
   }
   const labelObject=labelId&&get(doc,labelId);
@@ -2407,7 +2481,7 @@ function pointerMove(e){
  // coordinates or alter construction previews while another pointer is captured.
  if(e.isPrimary===false||(drag&&drag.pointerId!==e.pointerId))return;
  const [sx,sy]=xyEvent(e),world=unproject(sx,sy);
- hover=(drag||tool==='select'||tool==='pan')?world:tool==='point'?constructionPoint(world):constructionVertex(world);$('coords').textContent=`x ${formatCoordinate(world[0])} · y ${formatCoordinate(world[1])}`;
+ hover=(drag||tool==='select'||tool==='pan')?world:tool==='point'?constructionPoint(world):constructionVertex(world);$('coords').textContent=`x ${(Math.abs(world[0])<.005?0:world[0]).toFixed(2)} · y ${(Math.abs(world[1])<.005?0:world[1]).toFixed(2)}`;
  if(lastMoveCanvasTap&&drag&&Math.hypot(sx-drag.sx,sy-drag.sy)>9)lastMoveCanvasTap=null;
  if(drag?.kind==='pan-object-pending'&&Math.hypot(sx-drag.sx,sy-drag.sy)>4){
   const pending=drag,obj=get(doc,pending.id);
@@ -2501,6 +2575,7 @@ function pointerUp(e){
   renderList();renderProperties();
  }
  if(completed.kind==='point'){
+  if(completed.doubleNavigate&&!completed.moved&&Math.hypot(endX-completed.sx,endY-completed.sy)<=3)navigateToObject(completed.id);
   const moved=get(doc,completed.id);
   if(moved&&released.every(finite)&&(completed.moved||Math.hypot(endX-completed.sx,endY-completed.sy)>3)){if(moved.type==='pointOnObject')r50MoveConstrained(moved,released);else moved.xy=moved.type==='point'?constructionPoint(released,completed.id):snapPoint(released,effectiveSnapSettings());}
   const before=completed.before;
@@ -2513,9 +2588,10 @@ function pointerUp(e){
    const last=completed.path.at(-1);
    if(Math.hypot(last[0]-released[0],last[1]-released[1])>1e-10)completed.path.push(released);
   }
-  const {prepared}=preparedFreehand(completed.path,completed.startAttachment);
-  const {path,closed,joinStyle}=prepared;
-  if(path.length>=2){const start=path[0];const meaningful=closed||path.some(p=>Math.hypot(p[0]-start[0],p[1]-start[1])*view.scale>2);if(meaningful&&update(()=>selected=append(doc,{type:'freehand',path,closed,...(joinStyle?{joinStyle}:{})}).id))afterOneConstruction();}
+  const mode=freehandShapeMode,prepared=mode==='free'?preparedFreehand(completed.path,completed.startAttachment).prepared:shapeFromStroke(completed.path,mode,freehandRegular);
+  if(prepared){const {path,closed,joinStyle}=prepared;
+   if(path.length>=2){const start=path[0];const meaningful=closed||path.some(p=>Math.hypot(p[0]-start[0],p[1]-start[1])*view.scale>2);
+    if(meaningful&&update(()=>selected=append(doc,{type:'freehand',path,closed,curveShape:mode,curveRegular:freehandRegular,curveLine:mode==='free'||SHAPE_LINE_CHOICES.some(([v])=>v===freehandLine)?freehandLine:'solid',curveHeads:mode==='free'?freehandHeads:'none',...(mode!=='free'?{rawPath:completed.path}:{}),...(joinStyle?{joinStyle}:{})}).id))afterOneConstruction();}}
  }
  scheduleRender();
 }
@@ -2697,8 +2773,8 @@ function asTikz(){
   }else if(o.type==='freehand'&&o.path.length>1){
    const chosen=o.path;
    const pattern={dashed:',dashed',dotted:',dotted'}[o.curveLine]||'';
-   const arrows={end:',->',both:',<->'}[o.curveArrows]||'';
-   lines.push(`\\draw[${style}${pattern}${arrows}] ${chosen.map(texPoint).join(' -- ')};`);
+   const arrows=o.curveShape&&o.curveShape!=='free'?'':{end:',->',both:',<->'}[o.curveHeads||o.curveArrows]||'';
+   lines.push(`\\draw[${style}${pattern}${arrows}] ${chosen.map(texPoint).join(' -- ')}${o.closed?' -- cycle':''};`);
   }else if(o.type==='text')lines.push(`\\node[anchor=west,text=${rgb(o.style.stroke)},opacity=${o.style.opacity}] at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='node')lines.push(`\\node[${o.nodeBorder?`draw=${rgb(o.style.stroke)},rounded corners,`:''}inner sep=5pt,opacity=${o.style.opacity}] (mi${o.id}) at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='morphism')continue;

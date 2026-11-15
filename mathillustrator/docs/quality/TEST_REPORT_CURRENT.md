@@ -1,4 +1,36 @@
+## Round 149 — Objects list and Properties layout (2026-11-15)
+
+- Baseline: local Round 148 assembled source, including all prior overlays. No hosted deployment tested.
+- Change: object subtitles now appear only for object-specific content (coordinates, user-entered text, mathematical expressions, regular-polygon side count). Generic repeated type subtitles are omitted. Virtualized row height and search descriptors are unchanged.
+- Change: short numeric Properties fields (including Point size) use an adjacent label–input pair. Editable single-line text fields use a full-width editor below their caption. Read-only measurement and multiline text layout unchanged.
+- PASS: real headless Chromium at 1440, 390 and 320 px, testing point and segment list subtitles, full-width text field, point-size input proximity, and absence of page errors.
+- PASS: Node suite 566/566, `node --check src/app.mjs`.
+- Limits: tablet (768 px), exhaustive screenshot comparison, real physical touch, hosted deployment not verified in this round.
+
 # MathIllustrator current verification (with historical baseline)
+
+## Round 147 — Compact-control inventory and Free Curve interoperability (2026-11-15)
+
+- **Baseline:** Local Round 145 assembled source with the Round 146 overlay applied. No hosted-site deployment tested.
+- **Confirmed regression:** Shaped Free Curve outlines were drawn but `r50SourceShape` returned no curve geometry for them; regular drawn circles lacked the resolver's analytic circle role, so native line/circle intersections, constrained points and general crossings could fail. Magnetic snapping also used a smoothed invisible path despite straight-segment shaped rendering.
+- **Fixes:** Exact-role recognition for validated regular drawn ellipses only; shape paths made available to generic geometry, including polyline/circle crossing; snapping follows the actual shaped outline. Legacy Free strokes retain their prior rendering and semantics. No glyph or CSS changes.
+- **PASS:** Full Node suite **566/566**, all source-module `node --check` syntax gates; real local Chromium Free Curve Properties interactions at 1440, 390 and 320 px; separate real Chromium gesture-to-tangent test (draw circular Free Curve, create external point and two native tangent constructions). Browser uses inlined local source/CSS, not the hosted website.
+- **Regression coverage:** Round147 tests check drawn-circle/native-line intersections, drawn-circle/native-circle intersections, constrained points, irregular ellipse/noncircle semantics, drawn polygon/native-line and native-polygon crossings, and forged-circle rejection.
+- **Layout audit:** See `docs/quality/ROUND147_COMPACT_LAYOUT_AUDIT.md`. This is a proposal inventory only, not implemented layout compression.
+- **Limits:** Irregular ellipses use sampled polyline intersections, not analytic conic solvers. Free Curve outlines remain gesture-derived and do not become draggable native anchor-point polygons. Additional hosted-site/physical touch/GPU verification is not included.
+
+
+## Round 145 — Cursor stability, polar plots, and semantic plot geometry (2026-11-15)
+
+Source: user-supplied `mathillustrator(20261115-080406).zip` with successive Round 136–144 changed-files overlays applied in order. Only tested the assembled local source, not hosted deployment.
+
+- **PASS:** JavaScript syntax for all source `.mjs` files; `node --test tests/*.test.mjs`: **557/557 passed**, zero failed/skipped; targeted four mathematical semantics tests passed.
+- **PASS:** Real headless Chromium user interactions at 1440 px and 390 px: create parametric plot; select object; polar checkbox defaults off; toggle on; enter `r(t)=2`; verify saved document field and radial controls; toggle off and verify both original Cartesian expressions restored; move cursor and verify fixed two-decimal x/y display and unchanging coordinate-slot width. Browser tests load inlined local modules and the actual local CSS; they are not hosted-site tests.
+- **PASS:** Earlier Round 139 language switching in Chromium (1440/390); Round 144 extended 90-object interaction soak per viewport (1440/390), including history, themes, language and import rollback, no JavaScript exceptions.
+- **PASS:** Recognized explicit affine function, linear implicit plot, polynomial circle, bounded linear parametric path, full-turn sine/cosine parameterization and full-turn constant-radius polar circle. Exact resolved line/circle roles participate in analytical line–circle intersections and constrained-point validation. Added negative cases for partial turns, near-ellipses, hyperbolas, and nonlinear functions.
+- **FIXED:** Historical inline Chromium harness was missing actual current CSS (it matched an old stylesheet filename) and was unable to resolve new versioned module imports. Now embeds live local CSS and the new algebraic geometry module.
+- **Limits:** Recognition is intentionally syntactic and conservative, not a general symbolic algebra system; general conics, translated polar nonconstant shapes, arbitrary equivalent formulas, incomplete arcs and approximate visual circles remain ordinary sampled curves. Polar `r min/r max` are radial clipping bounds, not parameter endpoints. Rendering still uses sampled plot paths even when semantic geometry is recognized. GPU/browser matrix, hosted cache behavior, actual physical touch and comprehensive export fidelity for semantically recognized plots remain unverified.
+
 
 ## Scope and baseline
 
@@ -1802,3 +1834,42 @@ Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotatio
 - Node full regression: `node --test tests/*.test.mjs` **553/553 PASS**, zero skipped/failed.
 - Actual Chromium: new `tests/browser_round139_region_language.py` verified 1440 px and four successive zh/en changes with exact caption, accessibility text, and computed left alignment — PASS.
 - 390 px Chromium pass did not complete (browser fixture stalled after desktop; execution timed out). Mobile verification is NOT claimed. Hosted deployment and GPU hardware verification not run.
+
+
+## Round 140 — Historical bug re-audit (2026-11-15)
+
+See [`HISTORICAL_BUG_REAUDIT_20261115.md`](HISTORICAL_BUG_REAUDIT_20261115.md) for per-area evidence. Current Node 553/553 PASS and 30 module syntax checks PASS; 10 sampled current/historical Chromium scripts PASS; two historical browser scripts FAIL (pointer synthetic drag; obsolete export filename assertion), and other browser coverage remains incomplete. **Do not claim all historical bugs fixed.** No runtime source changes.
+
+
+### Round 141 — historical verification continued
+
+Current direct evidence: 553/553 Node PASS; Cut04 pointer real/synthetic Chromium PASS after fixing fast-select drag conflict; Cut14 PASS after timestamped filename test update; Round139 locale PASS at 1440/390 after correcting mobile panel setup; Cut04 and Cut04 stale PASS. Cut02 and Cut03 contain expectations superseded by later requirements (polygon edge objects and default exported guides). Cut04 opacity and wider stateful Chromium replay did not complete. **The historical archive is not fully certified.** See `HISTORICAL_BUG_REAUDIT_20261115.md`.
+
+
+## Round 142: Performance audit (2026-11-15)
+
+Measured local Chromium and Node CPU workloads with Round 141 source; no application modifications. Browser: 2D 40–240 point imports 40–64 ms median; 2,520-label redraw 9.6 ms median; auto-label diagram 17.3 ms median; single dense surface 1.11–1.12 s, single implicit surface 1.63–1.68 s wall time; WebGL2 unavailable. Node 3D benchmarks passed, cache checks passed. Archived GPU integration check failed its old CPU-status assertion and mock GPU activation remains unresolved. See `PERFORMANCE_AUDIT_ROUND142.md` for provenance, individual samples and exclusions.
+
+## Round 143 — Overall stability audit (2026-11-15)
+
+Current Round 141 application plus Round 142 documentation; **no runtime changes**. `node --test tests/*.test.mjs`: **553/553 PASS** (exit 0). **17 isolated real-Chromium interaction scripts PASS**, including a new repeatable UI-state soak and the current mobile Escape object-menu behavior. Verified command/undo/redo, locale/theme switching, malformed-import rollback, undoable New, autosave/conflict resolution, stale controls, touch cancellation, 2D/3D plotting constraints, exports and narrow UI. Two issues remain **incomplete**: `browser_cut04_opacity.py` timed out, and `browser_round119_gpu_numeric.py` reported WebGL2 UNAVAILABLE (exit 2). An initial wider parallel batch timed out and is not counted as complete. No physical hardware, deployed site, real multi-tab concurrency, all historical browser scripts, extended memory soak or GPU stability certification. See `STABILITY_AUDIT_ROUND143.md` for scope and test provenance.
+
+
+## Round 144 — extended stability audit
+
+See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-object/cross-state soak PASS; 3D export, export fidelity and centered-regions PASS. Historical opacity/TikZ export test remains unresolved (disabled export option; test now fails promptly). GPU/multi-hour/multi-tab stability unverified. No application code changes.
+
+### Round 146 — Free curve shape controls and gesture conversion
+- Added pre-draw and selected-object Free curve shape/regularity controls, compact 2×2 Properties layout, consistent style/arrow restrictions for shape gestures, non-destructive raw stroke preservation, and English/Chinese labels.
+- Node tests: 561/561 passed (557 previous + 4 new). New tests cover circle/ellipse bounding geometry, regular vs. irregular polygons, invalid gestures, and JSON backward compatibility. Legacy Round 60/63 source-shape tests updated to verify the current UI contract without weakening functional checks.
+- Real headless Chromium: desktop 1440 px and mobile 390 px / 320 px all passed pointer gesture, pre-draw Ellipse selection, selected-object shape changes, Regular toggling, three-style restriction, arrow disabling, raw restoration, two-row control alignment, zero JavaScript exceptions.
+- Limitations: free-gesture polygon corner recovery is heuristic; extremely noisy traces may not produce the number of sides intended. Shapes are editable as Free curve objects, not converted into constraint-based Geometry objects. Physical touch, actual hosted deployment, hardware GPU, and the entire historical Chromium suite were not verified here.
+
+### Round 148 — compact preset control and localization verification (2026-11-15)
+
+- Five short, predefined Settings selector pairs changed to equal-width two-column grids; Diagram morphism Line style and Arrowheads share a matched row. Background and all expression/text fields remain uncompressed.
+- Chromium `browser_round148_compact.py`: PASS at 1440, 768, 390, 320 px with English → Chinese → English switching and 3D transition; controls retain acceptable width with no runtime exceptions.
+- Chromium `browser_round148_morphism_layout.py`: PASS at 1440, 390, 320 px; line-style / arrowhead alignment, disabled-state behavior (Double → Solid), and interaction exercised.
+- Chromium `browser_round148_localization_audit.py`: PASS desktop 1440 px; Excenter A/B/C Chinese translation, reversible locale transitions, and property commit.
+- Node suite: 566/566 PASS (see Round148 verification). JS syntax checks PASS.
+- Not certified: full mobile geometry construction localization (separate fixture difficulty), hosted deployment, physical touch/GPU, exhaustive screenshot aesthetics review. No glyph modifications.

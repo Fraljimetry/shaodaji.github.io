@@ -1,7 +1,7 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round87';
-import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round87';
-import {r50SourceShape} from './geometry_round50.mjs?cut=round87';
+export {regularPolygonVertices} from './model.mjs?cut=round147';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round147';
+import {r50SourceShape} from './geometry_round50.mjs?cut=round147';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -219,7 +219,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round87';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round147';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs?cut=round54';
 
 /** Conservative screen-space rejection for bounded SVG primitives.
@@ -384,6 +384,10 @@ function renderedCurveSamples(d,scale){
 }
 function visibleFreehandSamples(o,scale){
  const source=o.path;if(!Array.isArray(source)||source.length<2)return [];
+ // Shaped strokes render with straight segments (including the ellipse's
+ // generated perimeter); smoothing them here would snap to *invisible* ink.
+ if(o.curveShape==='ellipse'||o.curveShape==='polygon')
+  return source.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite))?source:[];
  const key=freehandSnapCache.get(source);
  if(key?.scale===scale&&key.closed===!!o.closed)return key.samples;
  const d=freehandCurveSvg(source.map(p=>[p[0]*scale,-p[1]*scale]),!!o.closed);

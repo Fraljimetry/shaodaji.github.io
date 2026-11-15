@@ -17,6 +17,8 @@ def run():
   label=page.locator('#drawing text').filter(has_text='A')
   assert label.count()==0,'Fully transparent point label should not be in the rendered scene'
   page.locator('#export-open').click()
+  tikz=page.get_by_role('button',name='TikZ / PGF',exact=True)
+  assert tikz.is_enabled(), 'TikZ / PGF export disabled for a zero-opacity point scene; historical parity check cannot run'
   tex=download(page,'TikZ / PGF').read_text()
   assert '\\node[above right,opacity=0]' not in tex,'Fully transparent point label should be omitted from LaTeX'
   page.locator('#export-open').click()

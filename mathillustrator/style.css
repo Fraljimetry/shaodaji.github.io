@@ -811,3 +811,72 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 
 /* Region-extra captions remain left-aligned in both languages. */
 .plot-region-editor .region-extras > .field {text-align:left;align-items:stretch;justify-content:flex-start;}
+
+/* Stable canvas-footer columns: cursor movement cannot shift the save indicator. */
+.canvas-footer #coords{font-variant-numeric:tabular-nums;flex:0 0 124px;white-space:nowrap;overflow:hidden}
+.canvas-footer .save-feedback{flex:1 1 auto;text-align:center}
+.canvas-footer #render-info{flex:0 0 124px;text-align:right;white-space:nowrap}
+@media(max-width:950px){.canvas-footer #render-info{flex-basis:80px}}
+@media(max-width:700px){.canvas-footer #coords{display:none}.canvas-footer #render-info{flex-basis:auto}}
+/* Free curve properties: two aligned, compact rows of equal-width controls. */
+.properties .freehand-shape-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 8px;align-items:end;margin:7px 0 10px;min-width:0}
+.properties .freehand-shape-grid>.field{display:flex;flex-direction:column;align-items:stretch;justify-content:end;min-width:0;margin:0;gap:4px;font-size:11px;text-align:left}
+.properties .freehand-shape-grid>.field select{width:100%;min-width:0;max-width:100%;min-height:30px}
+.properties .freehand-shape-grid>.freehand-regular-check{display:flex;align-items:center;gap:7px;min-height:30px;margin:0;font-size:11px;text-align:left}
+.properties .freehand-shape-grid>.freehand-regular-check input{margin:0;flex:none}
+
+/* Round 148: compact pairs only for short, predetermined settings / style selectors.
+   Explicitly do not compact expression inputs, names, labels or free-form text. */
+.rightpanel .settings-sections .controls > .section-body > .compact-settings-grid,
+.properties > .compact-properties-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ column-gap:9px;row-gap:7px;align-items:end;min-width:0;margin:7px 0 9px;
+}
+.rightpanel .settings-sections .controls > .section-body > .compact-settings-grid > .field,
+.properties > .compact-properties-grid > .field{
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;
+ gap:4px;min-width:0;margin:0;text-align:left;font-size:11px;line-height:1.35;
+}
+.rightpanel .settings-sections .controls > .section-body > .compact-settings-grid > .field > select,
+.properties > .compact-properties-grid > .field > select{
+ box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:30px;min-height:30px;
+ padding:4px 5px;text-overflow:ellipsis;
+}
+.rightpanel .settings-sections .controls > .section-body > .compact-settings-grid > .field > select:focus-visible,
+.properties > .compact-properties-grid > .field > select:focus-visible{outline-offset:1px}
+/* The theme and background remain adjacent; background remains full-width. */
+.rightpanel .settings-sections .controls > .section-body > .compact-settings-grid + .field:has(> #background),
+.rightpanel .settings-sections .controls > .section-body > .compact-settings-grid + .field:has(> #scene3d-background){margin-top:5px}
+@media(max-width:360px){
+ .rightpanel .settings-sections .controls > .section-body > .compact-settings-grid,
+ .properties > .compact-properties-grid{column-gap:6px}
+ .rightpanel .settings-sections .controls > .section-body > .compact-settings-grid > .field,
+ .properties > .compact-properties-grid > .field{font-size:10.5px}
+}
+
+/* Round 149: place brief numeric values next to their labels, not on the
+   opposite side of the inspector. Full-width expressions and text are exempt. */
+.properties:not(.properties-3d) > .field:has(> input[type=number]):not(.measurement-field) {
+ display:grid;grid-template-columns:max-content minmax(64px,100px);
+ justify-content:start;column-gap:10px;max-width:100%;
+}
+.properties:not(.properties-3d) > .field:has(> input[type=number]):not(.measurement-field) > input[type=number] {
+ width:100%;max-width:100%;min-width:0;justify-self:start;
+}
+.properties .style-controls-grid > .style-pointsize > .field {
+ display:grid;grid-template-columns:max-content 56px;justify-content:start;
+ width:max-content;max-width:100%;gap:9px;align-items:center;
+}
+.properties .style-controls-grid > .style-pointsize > .field > input[type=number] {
+ justify-self:start;
+}
+
+/* Round 149: text editors span the inspector, with the caption immediately
+   above. Keep read-only measurements in their established two-column row. */
+.properties:not(.properties-3d) > .field:has(> input[type=text]:not([readonly])) {
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+ gap:5px;text-align:left;
+}
+.properties:not(.properties-3d) > .field > input[type=text]:not([readonly]) {
+ width:100%;max-width:100%;min-width:0;
+}

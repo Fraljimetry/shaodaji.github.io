@@ -331,8 +331,9 @@ export function generalCrossings(first,second,resolver,count=160){
  if(la)return curveAgainstLine(second,la);
  if(lb)return curveAgainstLine(first,lb);
  const edgeTypes=new Set(['polyline','polygon','regularPolygon','rectangle','parallelogram']);
- if(ca&&edgeTypes.has(second.type))return circlePolylineCrossings(ca,r50SourceShape(second,resolver,count));
- if(cb&&edgeTypes.has(first.type))return circlePolylineCrossings(cb,r50SourceShape(first,resolver,count));
+ const polygonEdges=o=>edgeTypes.has(o.type)||o.type==='freehand'&&o.curveShape==='polygon';
+ if(ca&&polygonEdges(second))return circlePolylineCrossings(ca,r50SourceShape(second,resolver,count));
+ if(cb&&polygonEdges(first))return circlePolylineCrossings(cb,r50SourceShape(first,resolver,count));
  const a=r50SourceShape(first,resolver,count),b=r50SourceShape(second,resolver,count);
  const pointOn=(point,path)=>{
   for(let i=1;i<path.length;i++){
@@ -421,7 +422,7 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
  const line=resolver.line(o);if(line){const span=line.domain==='segment'?line.length:line.domain==='ray'?15:30;
   const path=line.domain==='infinite'?[add(line.a,mul(line.d,-span/2)),add(line.a,mul(line.d,span/2))]:[line.a,add(line.a,mul(line.d,span))];
   if(line.domain!=='segment')path.domain=line.domain;return path;}
- if(o.type==='circle'||o.type==='circleThrough3'){
+ if(o.type==='circle'||o.type==='circleThrough3'||resolver.circle(o)){
   const c=resolver.circle(o);return c?Array.from({length:count+1},(_,i)=>add(c.center,mul([Math.cos(tau*i/count),Math.sin(tau*i/count)],c.radius))):[];
  }
  if(o.type==='ellipse'){
@@ -437,6 +438,14 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
   const [f,g,q]=p;if(![f,g,q].every(coord))return [];const mid=mul(add(f,g),.5),axis=unit(sub(g,f))||[1,0];
   const c=norm(sub(g,f))/2,a=(norm(sub(q,f))+norm(sub(q,g)))/2,b=Math.sqrt(Math.max(0,a*a-c*c));if(!(b>0))return [];
   const perp=left(axis);return Array.from({length:count+1},(_,i)=>add(add(mid,mul(axis,a*Math.cos(tau*i/count))),mul(perp,b*Math.sin(tau*i/count))));
+ }
+ if(o.type==='freehand'){
+  // Shaped Free Curves share the same geometric path semantics as native
+  // circles, ellipses and polygons. A generic free stroke retains its sampled
+  // path, but is not assigned a circle/straight role.
+  if(!Array.isArray(o.path)||!o.path.every(coord))return [];
+  if(o.curveShape==='polygon'||o.curveShape==='ellipse')return o.path;
+  return []; // Preserve legacy unshaped Free stroke interaction semantics.
  }
  if(o.type==='polygon'){const pts=resolver.points(o).filter(coord);return pts.length>2?[...pts,pts[0]]:[];}
  if(o.type==='regularPolygon'){

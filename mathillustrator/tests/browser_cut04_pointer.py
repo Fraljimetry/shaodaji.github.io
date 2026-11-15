@@ -11,6 +11,8 @@ def run():
   errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.set_content(inline_html(),wait_until='load');page.wait_for_timeout(80)
   cmd(page,'A=(0.13,0.26)')
+  page.locator('[data-tool-choice="select"]').click()
+  page.wait_for_timeout(160)
   hit=page.locator('#drawing circle[data-id="o1"]');r=hit.bounding_box()
   x=r['x']+r['width']/2;y=r['y']+r['height']/2
   page.mouse.click(x,y);page.wait_for_timeout(60)
@@ -23,7 +25,14 @@ def run():
   after=project(page)['objects'][0]['xy']
   assert after != [.13,.26],f'Endpoint was not used for point drag: {after}'
   page.locator('#undo').click();assert project(page)['objects'][0]['xy']==[.13,.26]
+  # Real Chromium mouse input must not lose a fast drag to double-click navigation.
+  r=page.locator('#drawing circle[data-id="o1"]').bounding_box()
+  x=r['x']+r['width']/2;y=r['y']+r['height']/2
+  page.mouse.click(x,y);page.mouse.move(x,y);page.mouse.down()
+  page.mouse.move(x+40,y-30,steps=4);page.mouse.up()
+  assert project(page)['objects'][0]['xy']!=[.13,.26], 'Fast real-mouse drag was swallowed'
+  page.locator('#undo').click();assert project(page)['objects'][0]['xy']==[.13,.26]
   assert not errors,errors
-  print('CHROMIUM_CUT04_POINTER_PASS: click-to-select preserves off-grid precision, pointerup-only final movement, undo')
+  print('CHROMIUM_CUT04_POINTER_PASS: fast select-then-drag, pointerup final movement, undo')
   browser.close()
 if __name__=='__main__':run()

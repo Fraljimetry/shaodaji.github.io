@@ -173,6 +173,24 @@ function ocrLineSuitableForStructure(line) {
   return true;
 }
 
+// A malformed or densely fragmented PDF text layer can put hundreds of thousands
+// of text items on one baseline. Avoid argument-spread limits while preserving
+// the established non-finite/negative-width fallback semantics.
+function outlineHorizontalLineBounds(items) {
+  let xMin = Infinity;
+  let xMax = -Infinity;
+  for (const item of items) {
+    const rawX = Number(item.x);
+    const rawWidth = Number(item.width);
+    const x = Number.isFinite(rawX) ? rawX : 0;
+    const width = Number.isFinite(rawWidth) ? Math.max(0, rawWidth) : 0;
+    const right = x + width;
+    if (x < xMin) xMin = x;
+    if (right > xMax) xMax = right;
+  }
+  return { xMin, xMax };
+}
+
 async function detectOutlineFromTypography() {
   const pages = [];
   const fontSamples = [];
@@ -263,8 +281,7 @@ async function detectOutlineFromTypography() {
       for (const line of lines) {
         line.items.sort((a, b) => a.x - b.x);
         line.text = normalizedHeadingText(line.items.map((item) => item.text).join(' '));
-        const xMin = Math.min(...line.items.map((item) => Number(item.x) || 0));
-        const xMax = Math.max(...line.items.map((item) => (Number(item.x) || 0) + Math.max(0, Number(item.width) || 0)));
+        const { xMin, xMax } = outlineHorizontalLineBounds(line.items);
         line.xStartRatio = Math.min(1, Math.max(0, xMin / Math.max(1, viewport.width)));
         line.xEndRatio = Math.min(1, Math.max(0, xMax / Math.max(1, viewport.width)));
       }

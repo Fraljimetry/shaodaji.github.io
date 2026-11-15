@@ -10,12 +10,17 @@ with sync_playwright() as pw:
    errors=[]
    page.on('pageerror',lambda error:errors.append(str(error)))
    page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load',timeout=45000)
+   if width<700:page.locator('#right-collapse').click()
    page.locator('#scene3d-enable').check()
+   if width<700:page.locator('#left-collapse').click()
    page.locator('#plot-mode').select_option('vector3d')
    page.locator('#command').fill('x')
    page.locator('#command-y').fill('y')
    page.locator('#command-z').fill('z')
    page.locator('#command-form button').click()
+   if width<700:
+    page.locator('#left-collapse').click()
+    page.locator('#right-collapse').click()
    for lang,expected in [('zh',('中心对称半宽','区域不等式')),('en',('Centered half-range','Region inequality')),('zh',('中心对称半宽','区域不等式')),('en',('Centered half-range','Region inequality'))]:
     page.locator('#ui-language').select_option(lang)
     labels=page.locator('#properties .region-extras > label')

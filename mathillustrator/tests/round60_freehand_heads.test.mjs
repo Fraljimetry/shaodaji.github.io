@@ -5,7 +5,7 @@ import {newDoc,append,validateDoc} from '../src/model.mjs';
 const app=readFileSync(new URL('../src/app.mjs',import.meta.url),'utf8');
 test('Round 60: free curve selector offers four standard modes while morphisms retain all choices',()=>{
  assert.match(app,/FREE_CURVE_HEAD_CHOICES=HEAD_CHOICES\.slice\(0,4\)/);
- assert.match(app,/makeChoice\('Arrowheads',[^\n]+FREE_CURVE_HEAD_CHOICES,'curveHeads'\)/);
+ assert.match(app,/buildChoice\('Arrowheads',[^\n]+FREE_CURVE_HEAD_CHOICES/);
  assert.match(app,/morphChoice\('Arrowheads',visibleArrowheads\(appearance\.line,appearance\.heads\),HEAD_CHOICES,'morphismHeads'\)/);
 });
 test('Round 60: end cap compensated and double-line heads enlarged; morphism kept unchanged',()=>{
