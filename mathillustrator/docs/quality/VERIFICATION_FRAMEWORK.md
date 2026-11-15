@@ -198,3 +198,15 @@ The initial 28/28 scoped coverage remains unchanged. Reliability probes are **in
 `python tests/browser_round106_3d_lifecycle.py` exercises the real application modules in isolated Chromium: one editable 3D surface, repeated mesh-detail edits, yaw/pitch updates, actual mouse camera orbits, 2D→3D→2D mode transitions, and post-GC JS heap / live DOM checks. Default: 8 cycles (configure `MI_3D_BROWSER_CYCLES`, allowed 4–40), up to 96 MiB post-GC growth and 1,500 DOM-node drift (configurable). Asserts nonempty 3D output on each return, zero stale polygons in 2D, stable plot count, untouched 2D model and zero page errors.
 
 Observed locally (8 cycles): 800–2,048 3D faces, 1,606–2,854 DOM nodes (detail-dependent), -0.10 MiB first-to-last post-GC heap difference, median wall-clock cycle 384.6 ms, zero page errors. The variable mesh detail intentionally changes DOM size, so the envelope is an invariant rather than demanding equal nodes each cycle. These are short, isolated, headless Chromium measurements; not proof of leak freedom, hardware GPU frame latency or real-site performance. The 28/28 scoped operation catalog and 36,000 mathematical property-case total are unchanged.
+
+## Round 107 — 3D export byte-level verification
+
+Run `python tests/browser_round107_3d_export.py` (set `MI_3D_EXPORT_CYCLES=2..12`, default 3). The test edits a 3D surface/detail and camera, triggers native SVG, PNG and JSON downloads, inspects bytes and polygon counts, ensures changing exported SVG signatures, validates PNG headers/dimensions, checks JSON scene/settings consistency and no export-induced model mutation. Verified 9 downloads in isolated Chromium; not equivalent to pixel fidelity, browser portability, hosted-site or concurrent export certification. No changes to the 28/28 operation scope.
+
+## Round 108 — release closure policy
+
+See `RELEASE_EXIT_GATE.md` for finite completion gates. The 28/28 initial inventory is complete, but the release is not signed off until cancellation fault injection, open-priority defect triage, and hosted deployment smoke are complete. New experimental investigations must not indefinitely postpone closure. Headless Chromium image transparency/fidelity probe passes.
+
+## Round 111 campaign closure
+
+Initial scoped operation coverage remains **28/28**. 36,000 deterministic property cases and 479 Node tests pass, alongside the local Chromium release checks and delayed export cancellation test. These are bounded claims; G7 hosted deployment still requires an external live-browser check. Do not continue arbitrary sequential audit rounds: only targeted, evidence-based maintenance work is authorized after this local closure. See `RELEASE_EXIT_GATE.md`.

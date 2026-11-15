@@ -1472,3 +1472,11 @@ Maintain the already completed 28-operation initial coverage catalog, and indepe
 ### Round 106 — continued verification
 
 Keep verification rounds concise and fast. Exercise actual 3D Chromium scene edits, camera orbit, rendering cancellation and mode switches with bounded memory/DOM checks. Retain numerical-property and historical-browser coverage, distinguish isolated browser stress from live/GPU/device guarantees, and record open risks without inventing defect IDs. Continue website-root changed-files-only ZIP overlays, with no PowerShell commands and no Git commits.
+
+### Round 107 reliability follow-through
+
+Keep exported 3D SVG/PNG images and JSON project snapshots consistent with current scene edits and viewport, avoid stale exports and unintended model edits, and preserve the existing export format and glyphs. Retain fast focused Chromium and Node regression gates, and distinguish verified file validity from unverified visual pixel fidelity.
+
+## Round 111 reliability closure
+
+The user requested completing all remaining release steps in one pass, without PowerShell instructions. The initial verification campaign is finished locally: export cancellation, confirmed-defect triage, regression and compatibility checks. The deployed website cannot be authenticated from this environment and is explicitly left for one live-site sign-off (see `docs/quality/RELEASE_EXIT_GATE.md`). Thereafter favor maintenance for reproduced failures and user-requested features rather than indefinite blanket audits.

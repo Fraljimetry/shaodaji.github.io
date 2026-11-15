@@ -1588,3 +1588,25 @@ Added `tests/verification/benchmark_cache_eviction.mjs`. Uses an isolated tempor
 - New actual-Chromium test: 8 camera-orbit / detail-edit cycles and 16 mode switches **PASS**. Each 3D re-entry rendered 800–2,048 polygon faces, with zero stale 3D polygons while in 2D mode. No page errors or 2D-model changes.
 - Observed DOM nodes 1,606–2,854 (detail-dependent); post-GC first-to-last JS heap difference **-0.10 MiB**; median end-to-end cycle **384.6 ms** (local machine only).
 - **28/28 initial operations**, **36,000 sampled mathematical cases** (unchanged). No production/glyph/schema changes, new confirmed defects, or Git commits. Physical devices, GPU frame pacing, sustained multihour use and hosted-site path remain unverified.
+
+## Round 107 — 3D export reliability
+
+- Node: **479/479 PASS**. Actual isolated Chromium: startup/export smoke, Round 76 regression, and Round 106 lifecycle **PASS**.
+- `tests/browser_round107_3d_export.py`: **9/9 real downloads PASS** across three changing 3D scenes (SVG, PNG, JSON per scene). SVG polygons: 648/968/1352; PNG magic/header, dimensions and nonempty payload validated; JSON scene/settings preserved; no document mutations or JavaScript page errors.
+- 28/28 initial operation catalog remains unchanged, as do 36,000 seeded mathematical cases. No confirmed defect or production changes.
+- Limitation: isolated headless Chromium only; PNG pixels not compared with a reference rendering; filename collision under same-second downloads, export interruption, SVG/PDF interoperability, mobile browsers and hardware GPU are unverified.
+
+## Round 108 — release exit gate and image alpha fidelity
+
+- Node **479/479 PASS**; actual isolated Chromium smoke and Round 76 PASS.
+- Real Chromium 3D SVG and PNG downloads verify 968 polygons, opaque vs transparent PNG corner alpha (255 vs 0), visible center content, and disabled JPEG under transparent mode. `tests/browser_round108_export_fidelity.py` PASS.
+- Initial framework remains **28/28 catalogued operations**, with 36,000 previously passing deterministic property cases; these were **not rerun** in this round.
+- Release closure tracked in `docs/quality/RELEASE_EXIT_GATE.md`: active cancellation fault-injection, confirmed bug triage, and hosted-site smoke remain as explicit finite gates. No production changes.
+
+## Round 109–111 final local release gate
+
+- 479/479 Node tests PASS; 36,000/36,000 property cases PASS; module syntax checks PASS.
+- Actual Chromium smoke, Round 76 geometry, Round 92 undo/redo, Round 107 3D export, Round 108 transparency fidelity, and new Round 109 delayed PNG cancellation PASS.
+- Round 109 isolated sabotage test: 0 downloads after interrupted export, 1 successful PNG download on next fresh export; no JS page errors.
+- Confirmed bug register triage: 58 recorded defects, 58 CLOSED, 0 OPEN. No application code, glyphs, or schema changed.
+- **Hosted-site smoke BLOCKED/UNVERIFIED**: shaodaji.cc name resolution failed in execution environment. Local sign-off is not a hosted production sign-off. Full gate criteria: `RELEASE_EXIT_GATE.md`.

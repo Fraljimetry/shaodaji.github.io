@@ -184,3 +184,15 @@ No newly confirmed defect. The prior *untested eviction behavior* risk now has a
 ## Round 106 — 3D browser lifecycle
 
 No new confirmed defect. New reusable browser regression `tests/browser_round106_3d_lifecycle.py` verifies repeated 3D detail edits, real mouse orbits, 2D/3D mode cancellation, polygon restoration, unaffected 2D state, post-GC JS heap and DOM size. Eight cycles pass with zero page errors. Further route: longer-duration sustained 3D editing, export within the lifecycle loop, representative device/GPU frame pacing, and multi-browser coverage; no speculative defect IDs. Initial framework coverage remains 28/28.
+
+## Round 107 — 3D image/project export verification
+
+No new confirmed defects. A retained real-Chromium test checks three successive edited 3D scenes and all nine SVG/PNG/JSON downloads. Next routes: (1) pixel-level image fidelity and alpha-channel semantics; (2) interruption/cancellation under asynchronous raster encoding; (3) same-second filename collisions; (4) Firefox/Safari/hosted environments. These are *unverified risks*, not confirmed bugs.
+
+## Round 108 — finite release exit plan
+
+No new confirmed defect. Chromium checks pass for opaque/transparent 3D PNG alpha, SVG face fidelity, and disabling transparent JPEG. Stop arbitrary next-round bug discovery. Close only release gates G4 (interrupted export), G5 (open confirmed P0/P1 triage), G7 (hosted deployment smoke), as tracked in `RELEASE_EXIT_GATE.md`; then enter regression-driven maintenance.
+
+## Rounds 109–111 — finite campaign closure
+
+All **58** entries in the master confirmed-defect table currently have CLOSED status, with no registered OPEN P0/P1/P2 issue. Round 109 added actual Chromium sabotage of deferred image encoding: closing the export dialog before `canvas.toBlob` completion prevents any stale download; subsequent fresh PNG download succeeds. Round 110 cross-checked the bug register and compatibility regressions; Round 111 closed the *local* verification campaign. **Hosted deployment remains unverified**, as documented in `RELEASE_EXIT_GATE.md`. Future debugging is driven by reproducible regressions or requested features rather than creating arbitrary defects to populate each round.
