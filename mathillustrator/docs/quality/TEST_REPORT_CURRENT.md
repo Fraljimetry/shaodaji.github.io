@@ -1873,3 +1873,24 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - Chromium `browser_round148_localization_audit.py`: PASS desktop 1440 px; Excenter A/B/C Chinese translation, reversible locale transitions, and property commit.
 - Node suite: 566/566 PASS (see Round148 verification). JS syntax checks PASS.
 - Not certified: full mobile geometry construction localization (separate fixture difficulty), hosted deployment, physical touch/GPU, exhaustive screenshot aesthetics review. No glyph modifications.
+
+
+### Round 150 — point Size label/alignment
+- Node: 566/566 PASS (`node --test tests/*.test.mjs`); module syntax: PASS.
+- Actual headless Chromium at 1440/390/320 px: PASS; Size, Opacity and Width numeric boxes share x-coordinate and width, Size is vertically below Width.
+- Not verified: hosted deployment, physical-touch UI, hardware GPU.
+
+### Round 151 — Free Curve preset visibility
+- Root cause: the Free Curve creation controls were rendered only when no object was selected. The previous selection survived switching tools; in continuous drawing mode, completing a stroke also selected the newly created object.
+- Fix: clear selection when entering Free Curve and after a completed stroke when Free Curve stays active. Preset variables remain unchanged.
+- Node: 566/566 PASS; JavaScript syntax: PASS.
+- Actual Chromium: Round151 selected-stroke/preset tool-switch regression PASS at 1440 px; existing Round146 interaction suite PASS at 1440, 390 and 320 px.
+- Incomplete: newly added mobile selected-stroke scenario not fully certified (mobile drawer interaction test timed out). Hosted-site/physical touch not tested.
+
+
+### Round 152 — Short label and Properties alignment
+- Restored compact inline `Displayed label` fields for both point-like objects and general shapes. Aligned direct Properties selects and short numeric inputs to a shared right-hand 53% control column. Long expression/Name editors remain full-width.
+- `node --check src/app.mjs`: PASS.
+- Full Node regression: **562 passed, 0 failed, 0 skipped** (`node --test tests/*.test.mjs`).
+- Actual Chromium (inline isolated application): **1440, 768, 390, and 320 px PASS** for point `Displayed label` vs. `Label format` alignment. 1440 and 768 px also PASS for domain coloring `Displayed label`, `Color scheme`, and `Coloring resolution` equal x-position and widths. No JavaScript exceptions in these completed cases.
+- **Incomplete:** Mobile domain-coloring alignment is not certified (mobile panel-switch fixture blocked); physical touch, hosted-site and screenshot-level visual review unverified.

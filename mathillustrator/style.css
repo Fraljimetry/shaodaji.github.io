@@ -880,3 +880,48 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .properties:not(.properties-3d) > .field > input[type=text]:not([readonly]) {
  width:100%;max-width:100%;min-width:0;
 }
+
+/* Round 150: point Size belongs below the right-hand Opacity/Width stack.
+   Keep the left palette clear and use the same label/value proportions. */
+.properties .style-controls-grid:not(.vector-style-grid) > .style-pointsize {
+ grid-column:2!important;grid-row:3!important;grid-area:3 / 2 / 4 / 3!important;min-width:0;
+}
+.properties .style-controls-grid:not(.vector-style-grid) > .style-pointsize > .field {
+ display:flex!important;flex-direction:row!important;align-items:center!important;
+ justify-content:space-between!important;width:100%!important;max-width:100%!important;
+ min-width:0!important;min-height:29px;gap:5px!important;
+}
+.properties .style-controls-grid:not(.vector-style-grid) > .style-pointsize > .field > input[type=number] {
+ box-sizing:border-box;width:56px!important;min-width:48px!important;max-width:62px!important;
+ flex:0 0 56px;justify-self:auto!important;margin:0;
+}
+
+/* Anchor the input to the same x-coordinate as Opacity and Width. */
+.properties .style-controls-grid:not(.vector-style-grid) > .style-pointsize > .field {
+ display:grid!important;grid-template-columns:43px minmax(0,1fr)!important;
+ column-gap:6px!important;justify-content:stretch!important;
+}
+.properties .style-controls-grid:not(.vector-style-grid) > .style-pointsize > .field > input[type=number] {
+ width:100%!important;min-width:0!important;max-width:100%!important;flex:auto!important;
+}
+
+/* Round 152: align short Displayed label editors with selectors and numeric values.
+   Full-width mathematical expressions and Name remain unchanged. */
+.properties:not(.properties-3d) > .field.short-label-field {
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,53%)!important;
+ align-items:center!important;column-gap:8px!important;justify-content:stretch!important;
+ margin:7px 0!important;min-width:0!important;
+}
+.properties:not(.properties-3d) > .field.short-label-field > input[type=text] {
+ box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%!important;
+}
+.properties:not(.properties-3d) > .field:has(> select) {
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,53%);
+ gap:8px;align-items:center;min-width:0;
+}
+.properties:not(.properties-3d) > .field:has(> select) > select {width:100%;min-width:0;max-width:100%}
+.properties:not(.properties-3d) > .field:has(> input[type=number]):not(.measurement-field) {
+ grid-template-columns:minmax(0,1fr) minmax(0,53%);
+ justify-content:stretch;column-gap:8px;width:100%;
+}
+.properties:not(.properties-3d) > .field:has(> input[type=number]):not(.measurement-field) > input {width:100%;min-width:0;max-width:100%}

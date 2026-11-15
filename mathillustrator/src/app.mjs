@@ -1413,7 +1413,7 @@ function renderBulkProperties(root,objects){
  }
  addColor('stroke','Stroke');addColor('fill','Fill');
  addNumber('opacity','Opacity',0,1,.1);addNumber('width','Line width',.1,100,.5);
- addNumber('pointSize','Point size',1,100,1);
+ addNumber('pointSize','Size',1,100,1);
  if(!grid.querySelector('.style-fill'))grid.classList.add('stroke-only-grid');
  root.append(grid);
 }
@@ -1559,7 +1559,7 @@ function renderProperties(){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex'&&live.pointLabel)validateLatexInput(live.pointLabel);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
-  field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex'&&v)validateLatexInput(v);live.pointLabel=v;}));
+  field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex'&&v)validateLatexInput(v);live.pointLabel=v;})).closest('label').classList.add('short-label-field');
  }
  // Diagram nodes, morphisms and Text already use their editable 'text' property.
  // All other shapes now expose optional independent on-canvas labels, never names/IDs.
@@ -1567,7 +1567,7 @@ function renderProperties(){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const select=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
   select.value=o.displayLabelMode||'plain';select.onchange=()=>edit(live=>{if(select.value==='latex'&&live.displayLabel)validateLatexInput(live.displayLabel);live.displayLabelMode=select.value;});mode.append(select);root.append(mode);
-  field(root,'Displayed label',o.displayLabel||'','text',v=>edit(live=>{if(live.displayLabelMode==='latex'&&v)validateLatexInput(v);live.displayLabel=v;}));
+  field(root,'Displayed label',o.displayLabel||'','text',v=>edit(live=>{if(live.displayLabelMode==='latex'&&v)validateLatexInput(v);live.displayLabel=v;})).closest('label').classList.add('short-label-field');
  }
  if(o.type==='triangleCenter'){
   const label=document.createElement('label');label.className='field';label.textContent='Center';const pick=document.createElement('select');
@@ -1736,7 +1736,7 @@ function renderProperties(){
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
  field(styleSlot('width'),styleGrid.classList.contains('stroke-only-grid')?'Width':'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
- if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Point size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
+ if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  localizeUI(root,uiPrefs.language);
  const actions=document.createElement('div');actions.className='props-actions';
@@ -1792,6 +1792,9 @@ function selectTool(t){
  if(drag)cancelDrag();lastMoveCanvasTap=null;tool=t;clearDraft();$('drawing').dataset.tool=t;
  syncDiagramSnapFocus(true);
  document.querySelectorAll('[data-tool-choice]').forEach(b=>{const active=b.dataset.toolChoice===t;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');});
+ // A drawing tool needs its creation options, not the previously selected object's editor.
+ // Keep the freehand preset across tool switches, but reveal it when entering this tool.
+ if(t==='freehand'&&selectedIds.size){select(null);}
  updateModeLabel(t);renderProperties();scheduleRender();
 }
 function populateTools(){
@@ -2591,7 +2594,7 @@ function pointerUp(e){
   const mode=freehandShapeMode,prepared=mode==='free'?preparedFreehand(completed.path,completed.startAttachment).prepared:shapeFromStroke(completed.path,mode,freehandRegular);
   if(prepared){const {path,closed,joinStyle}=prepared;
    if(path.length>=2){const start=path[0];const meaningful=closed||path.some(p=>Math.hypot(p[0]-start[0],p[1]-start[1])*view.scale>2);
-    if(meaningful&&update(()=>selected=append(doc,{type:'freehand',path,closed,curveShape:mode,curveRegular:freehandRegular,curveLine:mode==='free'||SHAPE_LINE_CHOICES.some(([v])=>v===freehandLine)?freehandLine:'solid',curveHeads:mode==='free'?freehandHeads:'none',...(mode!=='free'?{rawPath:completed.path}:{}),...(joinStyle?{joinStyle}:{})}).id))afterOneConstruction();}}
+    if(meaningful&&update(()=>selected=append(doc,{type:'freehand',path,closed,curveShape:mode,curveRegular:freehandRegular,curveLine:mode==='free'||SHAPE_LINE_CHOICES.some(([v])=>v===freehandLine)?freehandLine:'solid',curveHeads:mode==='free'?freehandHeads:'none',...(mode!=='free'?{rawPath:completed.path}:{}),...(joinStyle?{joinStyle}:{})}).id)){afterOneConstruction();if(tool==='freehand')select(null);}}}
  }
  scheduleRender();
 }

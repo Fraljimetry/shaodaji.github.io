@@ -1653,3 +1653,18 @@ Preserve immediate point dragging after selection, even when the second pointer 
 - Show a second line in an Objects list row only when it contains object-specific user text, a mathematical expression, coordinates, or a numeric property such as polygon side count. Do not repeat generic tool/type names.
 - Place short, style-oriented numeric inputs immediately next to their labels, particularly Point size and standalone numeric Properties fields; retain compact grids already in use.
 - Give editable object names and displayed-label text the full inspector width, with the caption directly above the editor. Preserve read-only measurement layouts and all existing glyphs.
+
+
+### Round 150 — point Size inspector alignment
+- In selected-point Properties, use the concise label **Size** (Chinese: **大小**) rather than Point size.
+- Align the Size numeric input precisely with the Opacity and Width numeric fields in the right column; do not affect the value, saved object representation, or rendering.
+
+### Round 151 — Free Curve pre-draw presets
+Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arrowheads controls even when an existing object was selected. Choosing a preset must persist across tool switches; with continuous drawing enabled, the next stroke must still have access to pre-draw controls. Existing object Properties remain editable when switching to Select.
+
+
+### Round 152 — Properties control alignment
+- `Displayed label` remains a short, single-line input aligned with short selectors and numeric fields, not a full-width editor.
+- Use one consistent right-hand control column for short Properties values (label format, color scheme, resolution, etc.); avoid excessive label-to-input gaps.
+- Preserve the full width of Name, mathematical expressions, LaTeX, and other long text inputs.
+- Preserve existing glyphs, geometry behavior, and saved-file compatibility.
