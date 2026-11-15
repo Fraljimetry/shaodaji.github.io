@@ -1,4 +1,4 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round74';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round76';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round70';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -452,7 +452,8 @@ export function createResolver(doc){
     if(obj.type==='triangleCenter')p=triangleCenter(obj.refs.map(r=>cache.get(r)),obj.centerKind||'centroid');
     if(obj.type==='pointOnObject'&&obj.refs?.length===1){
      const ref=objects.get(obj.refs[0]),r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circles.get(typeof o==='string'?o:o?.id)||null,points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
-     p=pointOnObject(ref,obj.parameter,r,r50SourceShape,obj.constraintMode,obj.distance);
+     p=pointOnObject(ref,obj.parameter,r,r50SourceShape,obj.constraintMode,
+      obj.constraintMode==='angleRay'&&obj.distance===undefined?30*obj.parameter:obj.distance);
     }
     if(obj.type==='generalIntersection'&&obj.refs?.length===2){
      const r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circles.get(typeof o==='string'?o:o?.id)||null,points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
@@ -482,8 +483,13 @@ export function createResolver(doc){
      if(obj.type==='axis'){/* fixed world-coordinate line */}
      else if(obj.type==='tangentCircle'){
       const point=cache.get(obj.refs?.[0]),circle=circles.get(obj.refs?.[1]),tangents=circleTangents(point,circle);
-      const target=tangents[obj.branch===1?1:0],d=target&&point?[target[0]-point[0],target[1]-point[1]]:null,len=d&&Math.hypot(...d);
-      lines.set(current,len>1e-9?{a:[...point],d:[d[0]/len,d[1]/len],domain:'infinite',length:len}:null);
+      const target=tangents[tangents.length===1?0:obj.branch===1?1:0];
+      let d=target&&point?[target[0]-point[0],target[1]-point[1]]:null;
+      // At on-circle tangency the contact foot equals the source point.
+      // The tangent is the perpendicular of the radius, never a zero line.
+      if(d&&Math.hypot(...d)<=1e-12&&circle&&point){const v=[point[0]-circle.center[0],point[1]-circle.center[1]];d=[-v[1],v[0]];}
+      const len=d&&Math.hypot(...d);
+      lines.set(current,len>0?{a:[...point],d:[d[0]/len,d[1]/len],domain:'infinite',length:len}:null);
      }else lines.set(current,computedStraight(obj,pointForLine,ref=>lines.get(ref)||null));
     }
     if(['circle','circleThrough3'].includes(obj.type))
@@ -652,8 +658,11 @@ export function validateDoc(raw){
   if(R50_TYPES.includes(o.type)){
    if(o.type==='pointOnObject'&&(!finite(o.parameter)||o.parameter<0||o.parameter>1))throw Error('Invalid constrained point parameter.');
    if(o.type==='pointOnObject'&&o.distance!==undefined&&(!finite(o.distance)||
-      !['line','ray','parallelThrough','perpendicularThrough','perpBisector','angleBisector','tangentCircle','axis','transformCopy'].includes(roleObjects.get(o.refs?.[0])?.type)))throw Error('Invalid signed distance for constrained point.');
+      !['line','ray','parallelThrough','perpendicularThrough','perpBisector','angleBisector','tangentCircle','axis','transformCopy'].includes(roleObjects.get(o.refs?.[0])?.type)&&
+      !(o.constraintMode==='angleRay'&&roleObjects.get(o.refs?.[0])?.type==='fixedAngle')))throw Error('Invalid signed distance for constrained point.');
    if(o.type==='pointOnObject'&&o.constraintMode!==undefined&&o.constraintMode!=='angleRay')throw Error('Invalid constrained-point mode.');
+   if(o.type==='pointOnObject'&&o.constraintMode==='angleRay'&&o.distance!==undefined&&o.distance<0)
+    throw Error('Fixed-angle ray distance must be nonnegative.');
    if(o.type==='transformCopy'&&(!TRANSFORM_MODES.includes(o.transform)||!finite(o.amount??0)||(o.transform==='dilate'&&Math.abs(o.amount)<1e-9)))throw Error('Invalid transformation parameters.');
    if(o.type==='triangleCenter'&&!CENTER_KINDS.includes(o.centerKind))throw Error('Invalid triangle center kind.');
    if(o.type==='generalIntersection'&&(!Number.isInteger(o.rootIndex)||o.rootIndex<0||o.rootIndex>=MAX_GENERAL_ROOTS))throw Error('Invalid curve intersection branch.');

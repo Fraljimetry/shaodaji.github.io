@@ -1328,3 +1328,17 @@ User requests recorded, with implemented items distinguished from unresolved one
 
 - After repairing the nine outstanding defects, search for **new** subtle and second-order failures in Points & Lines, including tiny-scale incidence/tangent tests, transformed-shape Fit, fixed-angle ray constraints, cubic-curve intersections and nonpoint dependency stacks. Do **not** fix any newly discovered defect during this discovery phase.
 - Place proven failures and minimal reproducible *expected-RED* tests in `docs/quality/ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md` and `tests/round75_followup.pending.mjs`. Keep speculative targets clearly separate from reproduced failures and exclude the expected-RED suite from ordinary release acceptance. Continue section-by-section repairs in later focused rounds.
+
+### Round 75 — Focused 2D Points & Lines repairs (2026-11-14)
+
+The approved section-by-section repair proceeds in small validated cuts, without changing glyphs or the v1 JSON format. **Completed this round:** R75-01 (distinct nearby points must not produce false crossings), R75-06 (Fit transformed curve extents, even through nested affine images), and R75-10 (avoid recursive stack overflow for deep transformed nonpoint curves). Preserve unresolved legacy intersections during JSON reimport. Keep seven follow-up issues open: R75-02/03 near-contact and on-circle tangents, R75-04 microscopic polygon area, R75-05 small segment crossing, R75-07 unbounded Fixed-angle ray constraint, R75-08 closely spaced Bézier crossing topology, R75-09 sampled circle/polyline precision. Every repair must have independent green Node cases and real Chromium startup/behavior checks. Do not weaken historic failure oracles or alter any existing glyph.
+
+
+## Round 76 — close all seven remaining confirmed Round 75 defects (2026-11-14)
+
+- All ten R75-01–10 minimal reproducible correctness oracles must now pass without weakening assertions. Close R75-02/03: two near-external tangents and a single exact tangent at an on-circle source; the actual UI must create the correct number of lines, and historical signed branches must not make project import fail.
+- Close R75-04/05: tiny nondegenerate polygon areas and small perpendicular piecewise-linear intersections must survive scale-independent absolute precision cutoffs. Continue rejecting degenerate/self-crossing polygon areas and parallel lines.
+- Close R75-07: a constrained point on a Fixed-angle ray must drag arbitrary finite distances. New points store an optional nonnegative world-space `distance`; legacy v1 parameter-only Fixed-angle points keep their former 30-unit interpolation. Preserve undo, Fit, JSON save/import and all glyphs.
+- Close R75-08: crossings between a true four-control-point cubic Bézier and a straight supporting line should not depend on 160 drawing samples. Use finite analytic polynomial root isolation, with distinct close branches and supported single tangencies. Historical sampled-spline root ordering is unchanged.
+- Close R75-09: intersections between an exact circle and finite piecewise straight objects (polylines, polygons, rectangles, regular polygons, parallelograms) must lie on the analytic circle instead of a sampled chord approximation. Do not falsely claim exactness for arbitrary splines or inverted curves.
+- Deliver one website-root-only changed/new-file ZIP, full Node and actual Chromium regressions, updated original issue disposition and quality documentation, with no Git commit; provide a concise next-chat prompt.

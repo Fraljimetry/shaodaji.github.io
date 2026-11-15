@@ -1381,3 +1381,48 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Round 75 independent discovery-only audit:** After completing the repairs, ten *new* mathematically correct assertions were checked against the post-Round-74 runtime and all **10/10 fail as expected** (`node --test tests/round75_followup.pending.mjs`). These are **not** accepted as green tests or fixed in this release. [`ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md`](./ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md) records case IDs, precise inputs, observed wrong outputs and source paths: two nearby points falsely intersect; outside and on-circle tangents missing; microscopic square area missing; microscopic perpendicular sampled segments missed; transformed polyline Fit extent omitted; Fixed-angle ray constrained movement still capped; close Bézier roots missed; sampled circle/polyline crossings not actually on exact circle; and a 1,500-deep *nonpoint* transformation stack overflow. All remain OPEN. Investigate and fix in subsequent focused rounds only.
 
 **Release boundaries:** A website-root ZIP containing only actual changed/new files, not the complete original site. The original historical audit tests and quality histories remain preserved. No Git commits, no hidden fallback, no claim that sampled arbitrary geometry is exact.
+
+### Round 75 — 2D Points & Lines priority repairs (2026-11-14)
+
+**Inputs:** the user's Round 71 `mathillustrator(8).zip` with cumulative Round 72, 73, and Round 74 overlays already reconstructed; only changed/new website-root-relative files are released. No MathReader code, existing glyphs, stored v1 JSON schema version, or Git commits were changed.
+
+**Closed:** R75-01 (nearby distinct points falsely identified as coincident), R75-06 (Fit misses transformed polyline extents), and R75-10 (stack overflow in nonpoint transformation chains). New independent cases cover argument-order symmetry, legitimate coincident roots, v1 false-root preservation, scale and hidden outliers, nested dilate/translate and reflection, edit-invalidated Fit cache, a 1,500-transform polyline chain, and finite mixed affine+circle-inversion paths.
+
+**Final verification of this development tree:**
+
+| Gate | Observed outcome |
+| --- | --- |
+| `node --test tests/*.test.mjs` | **421/421 PASS** (includes 5 new independent repair checks) |
+| `node --check src/*.mjs` (individual modules) | **26/26 PASS** |
+| Original Round 72 oracle `node --test tests/round72_points_lines.pending.mjs` | **11/11 PASS**, no earlier regression |
+| Original Round 75 discovery oracle `node --test tests/round75_followup.pending.mjs` | **3/10 PASS; 7/10 expected RED**, unchanged oracle assertions; never counted as release success |
+| 17 selected actual headless Chromium suites | **17/17 PASS**, including new `browser_round75_priority_repairs.py`, startup and existing 2D/3D behavior |
+| New browser behavior | False near-point marker absent; true coincident marker present; transformed polyline paths are visible after Fit; v1 save/reimport preserves geometry; zero page exceptions |
+| Runtime/asset scope | Four modified `src/*.mjs` modules, application module cache entry, local Chromium fixture import wiring; no glyph artwork changed |
+
+**Chromium provenance and limitations:** Real `/usr/bin/chromium` plus Playwright executed the isolated *current* ES-module graph embedded into a test fixture. A proposed additional local-HTTP deployment smoke was **not counted**: this execution environment denied loopback navigation with `net::ERR_BLOCKED_BY_ADMINISTRATOR`; that unverified test is not part of the delivered suite. Hosted GitHub Pages, actual browser HTTP caching, other browsers, physical touch hardware, repeated continuous zoom gestures, multi-tab persistence, and 60 FPS under extreme 1,500-object scenes are not certified. The per-Fit cache is ephemeral; no persistent geometry cache or hidden fallback was added.
+
+**Remaining, without fixes:** R75-02/03 (tangents), R75-04 (tiny polygon areas), R75-05 (tiny segment crossings), R75-07 (Fixed-angle ray distances), R75-08 (close Bézier roots), and R75-09 (sampled circle/curve precision). The detailed original inputs remain in `ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md` and the deliberately RED audit file. Proceed with scale-robust tangent and polygon/segment predicate repairs in a subsequent focused round.
+
+**R75-01 late precision check:** Independent Node test also rejects invented coincidence for separately stored, representably distinct points near world x=1e8; it leaves a limited relative-roundoff allowance for derived-image incidences. Release verification below was rerun after this final correction.
+
+
+## Round 76 — full closure of R75 second-pass Points & Lines discoveries (2026-11-14)
+
+**Baseline:** authoritative Round 71 source, overlaid in order with Round 72 audit, Round 73 intersections, Round 74 repairs/R75 discovery, and Round 75 priority repairs. Applied the seven remaining repairs to `geometry_round50.mjs`, `geometry_measurements.mjs`, `model.mjs` and `app.mjs`. App, model and browser harness versioned imports changed to `round76` where necessary; original glyphs and JSON v1 schema retained.
+
+| Confirmed defect now repaired | Independent verified regression |
+|---|---|
+| R75-02: tiny near-contact external tangent pair absent | Factored radius-relative tangent contact; both feet have exact circle radius and perpendicularity within representable precision |
+| R75-03: on-circle tangent nonexistent | One tangent at source; live resolver produces perpendicular unbounded line, old alternate branch remains resolvable; new UI creates only one |
+| R75-04: tiny polygon area null | Microscopic square `1e-14` survives; repeated vertex, collinear and self-crossing still null |
+| R75-05: crossing of tiny perpendicular segments missing | Segment-length-relative determinant accepts 1e-7-scale crossing and rejects parallel near-miss |
+| R75-07: Fixed-angle point clipped at world distance 30 | Optional nonnegative ray distance, live drag/save/reimport, old parameter-only position preserved at 30 |
+| R75-08: close Bézier triple crossing missing | Analytic cubic root isolation finds all three, checks tangent double root and reversed operand order |
+| R75-09: circle-polyline roots lie off circle | Exact finite-edge circle roots lie on radius 1 within `1e-12`; tangent and disjoint paths checked |
+
+**Original discovery probes:** `node --test tests/round75_followup.pending.mjs` now reports **10/10 PASS**, without modifying its original assertions. Independent green Node suite: `tests/round76_remaining_points_lines.test.mjs` (7 named cases). Actual Playwright suite `tests/browser_round76_remaining_points_lines.py` imports a mixed old/new v1 scene into Chromium, verifies the on-circle tangent and exact circle-root markers, drags a Fixed-angle constrained point beyond the old limit, then fits, downloads and reimports JSON without page exceptions. Browser harness `tests/browser_smoke.py` was updated for the round76 local module graph; it was not a product-level workaround.
+
+**Remaining explicit limits:** Exact crossing routines only cover the mathematically supported pairs above; arbitrary sampled curves can miss tangencies or close roots, and an overlapping/coincident continuum has no unique finite root branch. Full published-site, Firefox/Safari, physical touch, and unbounded scene performance are not verified by these local tests. Historic obsolete glyph assertions are not changed to satisfy outdated expectations. No Git commits.
+
+**Round 76 final local acceptance evidence:** `node --test tests/*.test.mjs`: **428/428 PASS**; original Round 75 discovery oracle: **10/10 PASS**; 26/26 `src/*.mjs` syntax checks PASS; **18/18** current standalone local Chromium/Playwright browser scripts PASS, including actual app startup, interactive Fixed-angle dragging, import/save/reimport, 2D editing and 3D regression paths. These are verified independently against the reconstructed Round 75 source plus Round 76 edits (not the hosted site). The release overlay is a changed/new-file-only ZIP relative to Round 75. No Git commits.

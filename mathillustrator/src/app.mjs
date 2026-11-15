@@ -1,11 +1,11 @@
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round74';
+import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round76';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round74';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round73';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round74';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round76';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round75';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round70';
@@ -594,7 +594,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   }else if(o.type==='tangentCircle'){
    item=el('g');item.append(mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'}));
    const feet=circleTangents(resolver.at(o.refs[0]),resolver.circle(o.refs[1]));
-   const foot=feet[o.branch===1?1:0];
+   const foot=feet[feet.length===1?0:o.branch===1?1:0];
    if(foot){const [x,y]=project(foot);item.append(el('circle',{cx:x,cy:y,r:Math.max(3,Number(o.style.pointSize??doc.settings.pointSize)||5),fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));}
   }else item=mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'});
  }else if(o.type==='circle'&&coords?.length===2){item=mk('circle',{cx:coords[0][0],cy:coords[0][1],r:Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),fill:'none'});
@@ -2085,8 +2085,9 @@ function r50ObjectTap(e,pt){
   if(!ref||ref.id===first.id){notice('Choose a different supporting object.');return;}
   if(mode==='tangentCircle'){
    if(!geometricCircle(ref,resolver)){notice('Choose a circle.');return;}
-   const r=createResolver(doc);if(!circleTangents(r.at(first.id),r.circle(ref)).length){notice('The point must lie outside the circle.');return;}
-   if(update(()=>{for(const branch of [-1,1])selected=append(doc,{type:'tangentCircle',refs:[first.id,ref.id],branch}).id;})){constructionEmphasis.clear();constructionEmphasis.add(first.id);constructionEmphasis.add(ref.id);clearDraft();afterOneConstruction();}return;
+   const r=createResolver(doc);const feet=circleTangents(r.at(first.id),r.circle(ref));
+   if(!feet.length){notice('The point must lie on or outside the circle.');return;}
+   if(update(()=>{for(const branch of feet.length===1?[-1]:[-1,1])selected=append(doc,{type:'tangentCircle',refs:[first.id,ref.id],branch}).id;})){constructionEmphasis.clear();constructionEmphasis.add(first.id);constructionEmphasis.add(ref.id);clearDraft();afterOneConstruction();}return;
   }
   if(mode==='parabola'){
    if(!geometricLine(ref,resolver)){notice('Choose a valid directrix line.');return;}
@@ -2239,7 +2240,7 @@ function performConstructionTap(e,pt){
     }else{
      const refs=makeRefs([a,pt]),angle=append(doc,{type:'fixedAngle',refs,angle:value});
      const radius=Math.hypot(a[0]-pt[0],a[1]-pt[1]);
-     selected=append(doc,{type:'pointOnObject',refs:[angle.id],parameter:Math.min(1,Math.max(.02,radius/30)),constraintMode:'angleRay'}).id;
+     selected=append(doc,{type:'pointOnObject',refs:[angle.id],parameter:Math.min(1,Math.max(.02,radius/30)),constraintMode:'angleRay',distance:radius}).id;
     }
    }))afterOneConstruction();
   }else if(tool==='circleDiameter')update(()=>{
@@ -2284,7 +2285,7 @@ function r50MoveConstrained(o,world){
   if(length<1e-9)return;
   const a=Math.atan2(d[1],d[0])+source.angle;
   const dist=(world[0]-vertex[0])*Math.cos(a)+(world[1]-vertex[1])*Math.sin(a);
-  o.parameter=Math.max(.001,Math.min(1,dist/30));return;
+  if(Number.isFinite(dist)&&Math.abs(dist)<1e9)o.distance=Math.max(0,dist);return;
  }
  const resolver=createResolver(doc),line=resolver.line(source);
  if(line&&line.domain!=='segment'){

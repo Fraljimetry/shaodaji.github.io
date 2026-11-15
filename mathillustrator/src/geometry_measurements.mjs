@@ -7,20 +7,25 @@ const valid=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);
 const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 function intersects(a,b,c,d){
  const ab=cross(a,b,c),ab2=cross(a,b,d),cd=cross(c,d,a),cd2=cross(c,d,b);
- // Reject both strict crossings and collinear/non-neighbor touching edges.
- const eps=1e-12*Math.max(1,Math.hypot(b[0]-a[0],b[1]-a[1])*Math.hypot(d[0]-c[0],d[1]-c[1]));
- if(Math.abs(ab)<=eps&&Math.min(a[0],b[0])-eps<=c[0]&&c[0]<=Math.max(a[0],b[0])+eps&&Math.min(a[1],b[1])-eps<=c[1]&&c[1]<=Math.max(a[1],b[1])+eps)return true;
- if(Math.abs(ab2)<=eps&&Math.min(a[0],b[0])-eps<=d[0]&&d[0]<=Math.max(a[0],b[0])+eps&&Math.min(a[1],b[1])-eps<=d[1]&&d[1]<=Math.max(a[1],b[1])+eps)return true;
- if(Math.abs(cd)<=eps&&Math.min(c[0],d[0])-eps<=a[0]&&a[0]<=Math.max(c[0],d[0])+eps&&Math.min(c[1],d[1])-eps<=a[1]&&a[1]<=Math.max(c[1],d[1])+eps)return true;
- if(Math.abs(cd2)<=eps&&Math.min(c[0],d[0])-eps<=b[0]&&b[0]<=Math.max(c[0],d[0])+eps&&Math.min(c[1],d[1])-eps<=b[1]&&b[1]<=Math.max(c[1],d[1])+eps)return true;
- return ab*ab2<-eps*eps&&cd*cd2<-eps*eps;
+ // Orientation error scales with the products used in the determinant, not
+ // with a fixed world-unit floor (which invalidated microscopic polygons).
+ const err=(p,q,r)=>{
+  const ux=q[0]-p[0],uy=q[1]-p[1],vx=r[0]-p[0],vy=r[1]-p[1];
+  return 16*Number.EPSILON*(Math.abs(ux*vy)+Math.abs(uy*vx));
+ };
+ const on=(p,q,r,cr)=>Math.abs(cr)<=err(p,q,r)&&
+  r[0]>=Math.min(p[0],q[0])&&r[0]<=Math.max(p[0],q[0])&&
+  r[1]>=Math.min(p[1],q[1])&&r[1]<=Math.max(p[1],q[1]);
+ if(on(a,b,c,ab)||on(a,b,d,ab2)||on(c,d,a,cd)||on(c,d,b,cd2))return true;
+ return ((ab>err(a,b,c)&&ab2< -err(a,b,d))||(ab< -err(a,b,c)&&ab2>err(a,b,d)))&&
+        ((cd>err(c,d,a)&&cd2< -err(c,d,b))||(cd< -err(c,d,a)&&cd2>err(c,d,b)));
 }
 export function polygonArea(vertices){
  if(!Array.isArray(vertices)||vertices.length<3||vertices.length>10000||!vertices.every(valid))return null;
  const n=vertices.length,anchor=vertices[0];
  for(let i=0;i<n;i++){
   const a=vertices[i],b=vertices[(i+1)%n];
-  if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-10)return null;
+  if(a[0]===b[0]&&a[1]===b[1])return null;
   for(let j=i+1;j<n;j++){
    if(j===i+1||(i===0&&j===n-1))continue;
    if(intersects(a,b,vertices[j],vertices[(j+1)%n]))return null;
@@ -32,7 +37,7 @@ export function polygonArea(vertices){
   twice+=(a[0]-anchor[0])*(b[1]-anchor[1])-(a[1]-anchor[1])*(b[0]-anchor[0]);
  }
  const area=Math.abs(twice)/2;
- return Number.isFinite(area)&&area>1e-12?area:null;
+ return Number.isFinite(area)&&area>0?area:null;
 }
 export function measureGeometry(o,resolver){
  if(!o||!resolver)return null;

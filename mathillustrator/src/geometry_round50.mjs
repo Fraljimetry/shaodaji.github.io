@@ -93,7 +93,10 @@ export function pointOnObject(owner,parameter,resolver,shapeSamples,constraintMo
   const [guide,vertex]=resolver.points(owner);if(!coord(guide)||!coord(vertex)||!finite(owner.angle))return null;
   const direction=unit(sub(guide,vertex));if(!direction)return null;
   const c=Math.cos(owner.angle),s=Math.sin(owner.angle);
-  return add(vertex,mul([direction[0]*c-direction[1]*s,direction[0]*s+direction[1]*c],30*parameter));
+  // Direct helper parameters describe a 100-world-unit sample of the ray;
+  // saved v1 objects retain their old 30-unit positions via resolver fallback.
+  const extent=finite(distance)?Math.max(0,distance):Math.max(0,parameter)*100;
+  return add(vertex,mul([direction[0]*c-direction[1]*s,direction[0]*s+direction[1]*c],extent));
  }
  const line=resolver.line(owner);if(line){const length=line.domain==='segment'?line.length:line.domain==='ray'?15:30;
   // New unbounded-line points use a signed world-distance; old projects
@@ -106,10 +109,17 @@ export function pointOnObject(owner,parameter,resolver,shapeSamples,constraintMo
  if(circle)return add(circle.center,mul([Math.cos(parameter*tau),Math.sin(parameter*tau)],circle.radius));
  return alongCurve(shapeSamples(owner,resolver),parameter,owner.type==='ellipse');
 }
-export function circleTangents(point,circle){if(!coord(point)||!circle)return [];
- const w=sub(point,circle.center),d2=dot(w,w),r2=circle.radius**2;
- if(!finite(d2)||d2<=r2+1e-9)return [];
- const factor=r2/d2,offset=Math.sqrt(Math.max(0,r2*(d2-r2)))/d2;
+export function circleTangents(point,circle){
+ if(!coord(point)||!coord(circle?.center)||!finite(circle.radius)||!(circle.radius>0))return [];
+ const w=sub(point,circle.center),d=norm(w),r=circle.radius;
+ if(!(d>0)||!finite(d))return [];
+ const radialTolerance=32*Number.EPSILON*Math.max(d,r,1e-12);
+ if(d<r-radialTolerance)return [];
+ // On-circle tangency is a *single* line, with its foot at the source point.
+ if(Math.abs(d-r)<=radialTolerance)return [add(circle.center,mul(w,r/d))];
+ const d2=d*d,r2=r*r,factor=r2/d2;
+ // Factor the near-tangency discriminant to avoid catastrophic cancellation.
+ const offset=r*Math.sqrt(Math.max(0,(d-r)*(d+r)))/d2;
  return [-1,1].map(sign=>add(circle.center,add(mul(w,factor),mul(left(w),sign*offset))));
 }
 export function transformPoint(p,mode,source,amount,other){if(!coord(p)||!coord(source))return null;
@@ -129,13 +139,79 @@ export function transformPoint(p,mode,source,amount,other){if(!coord(p)||!coord(
 export function polylineCrossings(a,b){if(a?.length<2||b?.length<2)return [];
  const result=[];
  for(let i=1;i<a.length;i++)for(let j=1;j<b.length;j++){
-  const p=a[i-1],q=b[j-1];if(!coord(p)||!coord(a[i])||!coord(q)||!coord(b[j]))continue;const u=sub(a[i],p),v=sub(b[j],q),det=cross(u,v);if(Math.abs(det)<PARALLEL_SINE_EPS)continue;
+  const p=a[i-1],q=b[j-1];if(!coord(p)||!coord(a[i])||!coord(q)||!coord(b[j]))continue;const u=sub(a[i],p),v=sub(b[j],q),lenU=norm(u),lenV=norm(v),det=cross(u,v);
+  if(!(lenU>0&&lenV>0)||Math.abs(det)<PARALLEL_SINE_EPS*lenU*lenV)continue;
   const w=sub(q,p),t=cross(w,v)/det,s=cross(w,u)/det;
   if(t>=-1e-9&&t<=1+1e-9&&s>=-1e-9&&s<=1+1e-9){const root=add(p,mul(u,t));
    if(coord(root)&&!result.some(x=>norm(sub(x,root))<=distanceEpsilon(...x,...root)))result.push(root);
    if(result.length>MAX_GENERAL_ROOTS)throw new RangeError('More than 10000 intersection roots; reduce the curve complexity.');}
  }
  return result.sort((p,q)=>p[0]-q[0]||p[1]-q[1]); // Legacy sampled-root ordering preserved.
+}
+/** Exact cubic-Bezier/line crossings, including close root pairs between
+ * rendering samples. A derivative partition makes each bracket monotone.
+ * All roots are refined in the Bernstein basis to avoid cancellation.
+ */
+export function bezierLineCrossings(control,line){
+ if(!Array.isArray(control)||control.length!==4||!control.every(coord)||!line||!coord(line.a)||!coord(line.d))return [];
+ const f=control.map(p=>cross(sub(p,line.a),line.d));
+ const scale=Math.max(...f.map(Math.abs));if(scale===0)return []; // Coincident curve: no discrete branches.
+ const value=t=>{const u=1-t;return f[0]*u*u*u+3*f[1]*t*u*u+3*f[2]*t*t*u+f[3]*t*t*t;};
+ const a=3*(-f[0]+3*f[1]-3*f[2]+f[3]);
+ const b=6*(f[0]-2*f[1]+f[2]);
+ const c=3*(f[1]-f[0]);
+ const breaks=[0,1],coeff=Math.max(Math.abs(a),Math.abs(b),Math.abs(c));
+ if(Math.abs(a)<=32*Number.EPSILON*coeff){if(Math.abs(b)>32*Number.EPSILON*coeff){const t=-c/b;if(t>0&&t<1)breaks.push(t);}}
+ else{
+  const disc=b*b-4*a*c;
+  if(disc>=0){const sq=Math.sqrt(disc),q=-(b+Math.sign(b||1)*sq)/2;
+   const roots=q!==0?[q/a,c/q]:[-b/(2*a)];
+   for(const t of roots)if(t>0&&t<1&&Number.isFinite(t))breaks.push(t);
+  }
+ }
+ breaks.sort((a,b)=>a-b);
+ const tol=32*Number.EPSILON*scale,ts=[];
+ const push=t=>{if(t>=0&&t<=1&&!ts.some(x=>Math.abs(x-t)<1e-11))ts.push(t);};
+ for(const t of breaks)if(Math.abs(value(t))<=tol)push(t);
+ for(let i=1;i<breaks.length;i++){
+  let lo=breaks[i-1],hi=breaks[i],fl=value(lo),fh=value(hi);
+  if(!((fl<0&&fh>0)||(fl>0&&fh<0)))continue;
+  // Always refine even when |f| is small: nearby roots may have tiny ordinates.
+  for(let k=0;k<90;k++){
+   const mid=(lo+hi)/2;if(mid===lo||mid===hi)break;
+   const fm=value(mid);if((fl<0&&fm<0)||(fl>0&&fm>0)){lo=mid;fl=fm;}else{hi=mid;fh=fm;}
+  }
+  push((lo+hi)/2);
+ }
+ const inside=(t)=>line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
+ return ts.map(t=>{
+  const u=1-t;
+  return [0,1].map(k=>control[0][k]*u*u*u+3*control[1][k]*t*u*u+3*control[2][k]*t*t*u+control[3][k]*t*t*t);
+ }).filter(coord).filter(p=>inside(dot(sub(p,line.a),line.d)))
+  .sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+}
+/** Exact circle against finite straight segments (not a polygonal circle).
+ * Discrete path vertices remain resolved by the model; this does not attempt
+ * to reinterpret sampled splines/freehand or inverted curves as straight.
+ */
+export function circlePolylineCrossings(circle,path){
+ if(!circle||!coord(circle.center)||!finite(circle.radius)||!(circle.radius>0)||!Array.isArray(path))return [];
+ const roots=[],r=circle.radius;
+ for(let i=1;i<path.length;i++){
+  const p=path[i-1],q=path[i];if(!coord(p)||!coord(q))continue;
+  const u=sub(q,p),length=norm(u);if(!(length>0))continue;
+  const w=sub(p,circle.center),projection=-dot(w,u)/(length*length),distance=Math.abs(cross(w,u))/length;
+  const tol=distanceEpsilon(...circle.center,...p,...q,r);
+  if(distance>r+tol)continue;
+  const dt=Math.sqrt(Math.max(0,(r-distance)*(r+distance)))/length;
+  for(const t of [projection-dt,projection+dt]){
+   if(t< -1e-12||t>1+1e-12)continue;
+   const root=add(p,mul(u,Math.max(0,Math.min(1,t))));
+   if(coord(root)&&!roots.some(q=>norm(sub(q,root))<=distanceEpsilon(...q,...root)))roots.push(root);
+   if(roots.length>MAX_GENERAL_ROOTS)throw new RangeError('More than 10000 intersection roots; reduce the curve complexity.');
+  }
+ }
+ return roots.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
 }
 /** Exact analytic intersections where possible; sampled curves otherwise.
  * Shared by construction and dependency resolution so saved branches agree. */
@@ -167,7 +243,12 @@ export function generalCrossings(first,second,resolver,count=160){
  if(pb&&la)return pointOnLine(pb,la)?[pb]:[];
  if(pa&&cb)return pointOnCircle(pa,cb)?[pa]:[];
  if(pb&&ca)return pointOnCircle(pb,ca)?[pb]:[];
- if(pa&&pb)return norm(sub(pa,pb))<1e-7?[pa]:[];
+ // Distinct isolated points do not intersect merely because they are close.
+ // Use only representational roundoff of the stored coordinates, never a
+ // drawing-pixel/world-size hit-test tolerance.
+ if(pa&&pb)return (first.type==='point'&&second.type==='point'
+   ?pa[0]===pb[0]&&pa[1]===pb[1]
+   :norm(sub(pa,pb))<=distanceEpsilon(...pa,...pb))?[pa]:[];
  const inside=(line,t)=>line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
  const unique=points=>points.filter(coord).filter((p,i,all)=>all.findIndex(q=>
   coord(q)&&norm(sub(q,p))<=distanceEpsilon(...q,...p))===i);
@@ -221,8 +302,13 @@ export function generalCrossings(first,second,resolver,count=160){
   // tracked continuously; this remains an explicit follow-up audit item.
   return roots.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);
  };
+ if(la&&second.type==='bezier')return bezierLineCrossings(resolver.points(second),la);
+ if(lb&&first.type==='bezier')return bezierLineCrossings(resolver.points(first),lb);
  if(la)return curveAgainstLine(second,la);
  if(lb)return curveAgainstLine(first,lb);
+ const edgeTypes=new Set(['polyline','polygon','regularPolygon','rectangle','parallelogram']);
+ if(ca&&edgeTypes.has(second.type))return circlePolylineCrossings(ca,r50SourceShape(second,resolver,count));
+ if(cb&&edgeTypes.has(first.type))return circlePolylineCrossings(cb,r50SourceShape(first,resolver,count));
  const a=r50SourceShape(first,resolver,count),b=r50SourceShape(second,resolver,count);
  const pointOn=(point,path)=>{
   for(let i=1;i<path.length;i++){
@@ -233,12 +319,14 @@ export function generalCrossings(first,second,resolver,count=160){
   }
   return false;
  };
- if(a.length===1&&b.length===1)return norm(sub(a[0],b[0]))<1e-7?[a[0]]:[];
+ if(a.length===1&&b.length===1)return (first.type==='point'&&second.type==='point'
+  ?a[0][0]===b[0][0]&&a[0][1]===b[0][1]
+  :norm(sub(a[0],b[0]))<=distanceEpsilon(...a[0],...b[0]))?[a[0]]:[];
  if(a.length===1)return pointOn(a[0],b)?[a[0]]:[];
  if(b.length===1)return pointOn(b[0],a)?[b[0]]:[];
  return polylineCrossings(a,b);
 }
-export function r50Shape(o,resolver,samples=120){if(!o)return [];
+export function r50Shape(o,resolver,samples=120,pathCache=null){if(!o)return [];
  const pts=()=>resolver.points(o),p=pts();
  if(o.type==='circularArc')return circleArcPoints(p,samples);
  if(o.type==='parabola')return parabolaPoints(resolver.at(o.refs[0]),resolver.line(o.refs[1]),samples);
@@ -249,50 +337,62 @@ export function r50Shape(o,resolver,samples=120){if(!o)return [];
   return Array.from({length:65},(_,i)=>add(b,mul([Math.cos(theta+angle*i/64),Math.sin(theta+angle*i/64)],radius)));
  }
  if(o.type==='transformCopy'){
-  const src=resolver.object(o.refs[0]);if(!src||src.id===o.id)return [];
-  const anchor=resolver.at(o.refs[1]);let other=null;
-  if(o.transform==='reflect'){const line=resolver.line(o.refs[1]);if(!line)return [];return r50SourceShape(src,resolver,samples).map(p=>transformPoint(p,'reflect',line.a,0,add(line.a,line.d))).filter(coord);}
-  if(o.transform==='invert'){
-   const circle=resolver.circle(o.refs[1]);if(!circle||!coord(circle.center)||!(circle.radius>1e-9))return [];
-   const isPoint=!!resolver.at(src.id);
-   const sourcePath=r50SourceShape(src,resolver,Math.max(96,samples));
-   if(!sourcePath.length)return [];
-   // Straight edges become circular arcs after inversion. Subdivide BEFORE
-   // inversion; simply joining transformed polygon vertices is incorrect.
-   const sampled=[];const line=resolver.line(src);
-   const needsSubdivision=!!line||['polygon','rectangle','parallelogram','regularPolygon','polyline'].includes(src.type);
-   for(let i=0;i<sourcePath.length;i++){
-    const current=sourcePath[i];if(!coord(current)){sampled.push(null);continue;}
-    if(i&&needsSubdivision&&coord(sourcePath[i-1])){
-     const previous=sourcePath[i-1],length=norm(sub(current,previous));
-     const pieces=Math.min(96,Math.max(1,Math.ceil(length/Math.max(circle.radius*.12,.1))));
-     for(let j=1;j<pieces;j++)sampled.push(add(previous,mul(sub(current,previous),j/pieces)));
-    }
-    sampled.push(current);
-   }
-   const result=[];const radius=circle.radius,limit=1e6;
-   for(let i=0;i<sampled.length;i++){
-    const p=sampled[i];
-    const transformed=coord(p)?transformPoint(p,'invert',circle.center,radius):null;
-    // Keep separators: dropping a singular sample and joining its neighbors
-    // creates a false line passing through infinity.
-    result.push(transformed&&norm(sub(transformed,circle.center))<limit?transformed:null);
-    if(i&&coord(sampled[i-1])&&coord(p)&&result.at(-2)&&result.at(-1)){
-     const ab=sub(p,sampled[i-1]),d2=dot(ab,ab);
-     const t=d2>1e-18?Math.max(0,Math.min(1,dot(sub(circle.center,sampled[i-1]),ab)/d2)):0;
-     const closest=add(sampled[i-1],mul(ab,t));
-     if(norm(sub(closest,circle.center))<Math.max(1e-8,radius*1e-5))result.splice(result.length-1,0,null);
-    }
-   }
-   // A singularity is not a valid isolated point; regular samples survive.
-   return isPoint?result.filter(coord):result;
+  // Follow the source chain iteratively. Recursive expansion overflowed the JS
+  // stack for long affine *curve* chains even though point chains already used
+  // an iterative resolver. Preserve the historical order and inversion rules.
+  const chain=[],seen=new Set();let src=o;
+  while(src?.type==='transformCopy'&&!pathCache?.has(src.id)){
+   if(seen.has(src.id))return [];seen.add(src.id);chain.push(src);
+   src=resolver.object(src.refs?.[0]);
   }
-  if(o.transform==='translate')other=resolver.at(o.refs[2]);
-  return r50SourceShape(src,resolver,samples).map(p=>transformPoint(p,o.transform,anchor,o.amount,other)).filter(coord);
+  if(!src)return [];
+  // Inversion used >=96 samples at every level below it. The maximum base
+  // sample rate is sufficient without repeatedly resampling transformed paths.
+  const baseCount=chain.some(x=>x.transform==='invert')?Math.max(96,samples):samples;
+  let path=pathCache?.get(src.id)||r50SourceShape(src,resolver,baseCount,pathCache);
+  for(let i=chain.length-1;i>=0;i--){
+   const transform=chain[i],source=i===chain.length-1?src:chain[i+1];
+   if(!path.length)return [];
+   if(transform.transform==='reflect'){
+    const line=resolver.line(transform.refs[1]);if(!line)return [];
+    path=path.map(p=>transformPoint(p,'reflect',line.a,0,add(line.a,line.d))).filter(coord);
+   }else if(transform.transform==='invert'){
+    const circle=resolver.circle(transform.refs[1]);if(!circle||!coord(circle.center)||!(circle.radius>1e-9))return [];
+    const isPoint=!!resolver.at(source.id),sampled=[];
+    const needsSubdivision=!!resolver.line(source)||['polygon','rectangle','parallelogram','regularPolygon','polyline'].includes(source.type);
+    for(let j=0;j<path.length;j++){
+     const current=path[j];if(!coord(current)){sampled.push(null);continue;}
+     if(j&&needsSubdivision&&coord(path[j-1])){
+      const previous=path[j-1],length=norm(sub(current,previous));
+      const pieces=Math.min(96,Math.max(1,Math.ceil(length/Math.max(circle.radius*.12,.1))));
+      for(let k=1;k<pieces;k++)sampled.push(add(previous,mul(sub(current,previous),k/pieces)));
+     }
+     sampled.push(current);
+    }
+    const result=[],radius=circle.radius,limit=1e6;
+    for(let j=0;j<sampled.length;j++){
+     const point=sampled[j];const transformed=coord(point)?transformPoint(point,'invert',circle.center,radius):null;
+     result.push(transformed&&norm(sub(transformed,circle.center))<limit?transformed:null);
+     if(j&&coord(sampled[j-1])&&coord(point)&&result.at(-2)&&result.at(-1)){
+      const ab=sub(point,sampled[j-1]),d2=dot(ab,ab);
+      const t=d2>1e-18?Math.max(0,Math.min(1,dot(sub(circle.center,sampled[j-1]),ab)/d2)):0;
+      const closest=add(sampled[j-1],mul(ab,t));
+      if(norm(sub(closest,circle.center))<Math.max(1e-8,radius*1e-5))result.splice(result.length-1,0,null);
+     }
+    }
+    path=isPoint?result.filter(coord):result;
+   }else{
+    const anchor=resolver.at(transform.refs[1]),other=transform.transform==='translate'?resolver.at(transform.refs[2]):null;
+    path=path.map(p=>transformPoint(p,transform.transform,anchor,transform.amount,other)).filter(coord);
+   }
+   pathCache?.set(transform.id,path);
+  }
+  return path;
  }
  return [];
 }
-export function r50SourceShape(o,resolver,count=120){if(!o)return [];
+export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return [];
+ if(o.type==='transformCopy'&&pathCache?.has(o.id))return pathCache.get(o.id);
  if(['point','midpoint','perpendicularFoot','pointOnObject','triangleCenter','intersection','circleIntersection','circleCircleIntersection','generalIntersection'].includes(o.type)){const p=resolver.at(o.id);return p?[p]:[];}
  const line=resolver.line(o);if(line){const span=line.domain==='segment'?line.length:line.domain==='ray'?15:30;
   const path=line.domain==='infinite'?[add(line.a,mul(line.d,-span/2)),add(line.a,mul(line.d,span/2))]:[line.a,add(line.a,mul(line.d,span))];
@@ -343,6 +443,6 @@ export function r50SourceShape(o,resolver,count=120){if(!o)return [];
   // through thousands of parents just to obtain a one-element shape.
   const resolved=resolver.at(o.id);if(coord(resolved))return [resolved];
  }
- if(['circularArc','parabola','hyperbola','fixedAngle','transformCopy'].includes(o.type))return r50Shape(o,resolver,count);
+ if(['circularArc','parabola','hyperbola','fixedAngle','transformCopy'].includes(o.type))return r50Shape(o,resolver,count,pathCache);
  return [];
 }

@@ -41,3 +41,32 @@ Do not rename the `.pending.mjs` file to `.test.mjs` until working on the approp
 - Self-intersections, overlapping collinear arcs, exactly coincident curves, discontinuities and export into TikZ for mixed transformed curves.
 
 **No fixes in this audit phase.** Next repair round should prioritize R75-01 (invented incidence), R75-06 (invisible curve extent), and R75-10 (stack overflow), then target small-scale geometry and sampling limits in separate cuts. Keep the verified Round 74 branch policy and saved v1 references stable.
+
+## Round 75 repair status update — focused P1 subset (2026-11-14)
+
+The preceding ten-case table records the original **post-Round-74 discovery state**, not the status after this subsequent repair. **Now CLOSED: R75-01, R75-06 and R75-10. Still OPEN: R75-02, R75-03, R75-04, R75-05, R75-07, R75-08 and R75-09.** The original assertions in `tests/round75_followup.pending.mjs` are **unchanged** and now give **3 correct PASS / 7 expected RED** when run explicitly; this is not a green suite. Independent required green tests live in `tests/round75_priority_repairs.test.mjs`.
+
+- **R75-01:** Exact isolated point coincidence uses coordinate-relative roundoff, not a fixed `1e-7` geometric acceptance band. Existing stored false roots remain unresolved and stay present through v1 JSON reimport; genuine exactly coincident points still resolve. Argument order and 1e-8/1e-9 separations were separately checked.
+- **R75-06:** Fit now measures visible *resolved* generic transformed curve paths, rather than only transformation anchor references. Hidden curves do not distort bounds, affine chains are included, and a new resolver on any subsequent edit recomputes bounds without stale cached geometry. Fit's per-pass path cache is discarded immediately after use. Line/circle exact bounds retain the established Round 74 behavior.
+- **R75-10:** A source-first, iterative transformCopy-curve evaluator replaces recursive nonpoint chain expansion. Existing affine, reflection and inversion order is retained; valid 1,500-image polyline chains resolve and survive v1 JSON validation. A focused mixed-inversion test protects the former finite-image behavior. The optimization does *not* assert continuous exact intersection geometry or guarantee 60 FPS on an arbitrarily dense scene.
+
+**Open defects must not be silently fixed, suppressed, or relabeled.** Continue with small-scale tangents/area/segment predicates (R75-02–05), then Fixed-angle ray constraints and advanced sampled-curve crossings in separate rounds. Browser evidence is from real Chromium executing the current isolated module graph, not production-hosted URLs.
+
+**Additional R75-01 second-order guard:** For two *stored* point objects, compare exact representable x/y coordinates; do not merge independently stored points via even a coordinate-relative floating-point tolerance at very large offsets. The new regression tests points `(1e8,0)` and `(1e8+1e-7,0)` as distinct. Derived point images still use a representational roundoff tolerance to preserve genuine computed incidences.
+
+
+## Round 76 final repair disposition — all R75 cases closed (2026-11-14)
+
+**Historical discovery table above is intentionally unchanged.** All ten original mathematical oracles in `tests/round75_followup.pending.mjs` are now expected **GREEN (10/10)**. The seven previously open bugs are independently covered by `tests/round76_remaining_points_lines.test.mjs` and an actual Chromium browser check `tests/browser_round76_remaining_points_lines.py`. The original `.pending.mjs` filename remains for historical traceability, but the tests are no longer expected to fail. The existing R75-01/06/10 closures from Round 75 are unchanged.
+
+| Closed ID | Correction and compatibility policy |
+|---|---|
+| R75-02 | Tangent discriminant is factored in a radius-relative computation; both real near-contact feet are retained rather than rejected by absolute `1e-9` squared-distance cutoff. |
+| R75-03 | An on-circle source produces exactly one tangent, with the tangent vector constructed perpendicular to the radius (its foot equals the source). Interactive creation creates only the one branch; older saved alternative branches at the same tangency remain resolvable. |
+| R75-04 | Polygon self-intersection checks use local floating determinant bounds, not absolute `1e-12` floors. Positive finite tiny areas remain measurable; zero edges, collinear triples and self-crossing rings still fail closed. |
+| R75-05 | Polyline determinant threshold is proportional to the product of segment lengths; microscopic perpendicular crossings remain genuine and small parallel lines remain parallel. |
+| R75-07 | Fixed-angle constrained points may now specify signed-distance-field `distance` as a **nonnegative** world distance, validated only for `constraintMode='angleRay'`. Initial creation and dragging use this distance without a 30-unit clamp. For historical parameter-only Fixed-angle v1 objects, the model resolver explicitly retains `30 × parameter` positioning, including after JSON reimport. Direct geometry helper parameters can describe an arbitrary sample reach and are not a migration of saved v1 parameters. |
+| R75-08 | A cubic Bézier with a straight line now isolates roots using derivative extrema and refines monotone brackets in Bernstein form. Close crossings and ordinary double-contact tangencies remain detectable; sampled spline/ellipse/locus intersections still have documented sampling limitations. |
+| R75-09 | Circles vs finite straight-segment paths now use analytic circle/segment roots. Polyline, polygon and supported polygonal primitives are covered; unrelated curved paths and inversion images are not falsely advertised as exact. |
+
+**Scope limit:** these confirmed 10 bugs are closed; that does not establish a global absence of bugs in the remaining 2D/3D sections, nor arbitrary algebraic completeness for higher-degree curve pairs. Discovery of new defects belongs in subsequent section-by-section rounds.

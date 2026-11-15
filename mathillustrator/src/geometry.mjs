@@ -1,6 +1,7 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round58';
-import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round69';
+export {regularPolygonVertices} from './model.mjs?cut=round75';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round75';
+import {r50SourceShape} from './geometry_round50.mjs?cut=round75';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -72,6 +73,9 @@ function ultraSmoothPath(raw,scale){
 
 export function worldBounds(doc,resolver){
  const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
+ // One Fit pass visits many objects that share long transform ancestry. Cache
+ // completed paths only within this pass, never across edited documents.
+ const transformedPaths=new Map();
  function put(p){if(!p||!p.every(Number.isFinite))return;bounds.minX=Math.min(bounds.minX,p[0]);bounds.maxX=Math.max(bounds.maxX,p[0]);bounds.minY=Math.min(bounds.minY,p[1]);bounds.maxY=Math.max(bounds.maxY,p[1]);}
  for(const o of doc.objects){
   // Bounds must represent what users can actually see. Fully transparent
@@ -95,6 +99,11 @@ export function worldBounds(doc,resolver){
    // segment images have a second, exact end, never source control points.
    const line=resolver.line(o);put(line.a);
    if(line.domain==='segment'||line.domain==='ray')put([line.a[0]+line.d[0]*line.length,line.a[1]+line.d[1]*line.length]);
+  }
+  else if(o.type==='transformCopy'){
+   // Transformed curves have output geometry different from their source
+   // control points. Fit the resolved rendered path, not its anchor refs.
+   for(const p of r50SourceShape(o,resolver,120,transformedPaths))put(p);
   }
   else if(o.type==='text')put(o.xy);
   else if(['vectorField','domainColoring'].includes(o.type)&&o.region){put([o.region.xMin,o.region.yMin]);put([o.region.xMax,o.region.yMax]);}
@@ -210,7 +219,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round58';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round75';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs?cut=round54';
 
 /** Conservative screen-space rejection for bounded SVG primitives.

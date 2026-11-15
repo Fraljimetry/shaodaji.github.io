@@ -355,3 +355,12 @@ The current editor still renders mathematical labels as plain SVG text; rich TeX
 ## Round 75 — New confirmed OPEN defects, discovery ONLY (2026-11-14)
 
 **10 newly reproduced defects remain UNFIXED.** The authoritative cases are in [`ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md`](./ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md) with ten correct-but-RED Node tests in `tests/round75_followup.pending.mjs`. R75-01: near-but-distinct points falsely intersect; R75-02/03: two missing near-contact tangents / one missing on-circle tangent; R75-04: tiny-square area rejected; R75-05: microscopic perpendicular line segments missed by sampled intersection; R75-06: transformed polyline extent excluded from Fit; R75-07: constrained Fixed-angle ray stops at 30 units; R75-08: two close true Bézier crossings missed; R75-09: sampled circle/polyline roots do not lie on exact circle; R75-10: 1,500-level **nonpoint** transform chain stack overflow. These do **not** invalidate the 12 closed Round 72 defects, which have different minimal reproductions. Do not mark them fixed or weaken the intentionally failing oracle assertions.
+
+### Round 75 targeted repairs (follow-up status)
+
+The Round 75 discovery inventory above is preserved as a historical snapshot. **Closed in the next targeted repair: R75-01, R75-06, R75-10. Still open (seven): R75-02, R75-03, R75-04, R75-05, R75-07, R75-08, R75-09.** See `ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md` for complete original RED reproductions and the appended disposition. The intentionally failing audit is not part of the release's regular green test suite.
+
+
+### Round 76 — current status correction to historical Round 75 open inventory
+
+**The historical ten-case R75 inventory above is now fully CLOSED (10/10).** R75-01,06,10 were repaired in Round 75; R75-02,03,04,05,07,08,09 were repaired in Round 76. The original `tests/round75_followup.pending.mjs` is unchanged and now passes explicitly; seven independent green tests and a browser smoke test cover the new repairs. See `ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md` for numerical repros and correction details. Remaining **unverified** areas include coincident/overlapping arbitrary parametric curves, multiroot general cubic–cubic Bézier intersections, sampled spline/locus intersections, singular inversion images and exact curves transformed by nonlinear maps. These are limitations or future audit targets, **not confirmed new bugs**.
