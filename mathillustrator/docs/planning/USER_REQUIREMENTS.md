@@ -1738,3 +1738,9 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - In geometry construction, visible point markers must remain selectable even when crossing lines or curves are drawn on top. Point-compatible transformations (circle inversion, reflection, rotation, translation, dilation) prioritize the true point anchor for the **source** operand, independently of z-order.
 - The supporting circle/line/point required by a later construction step must still be filtered by its geometric type; do not globally make every hit point-first.
 - Preserve existing keyboard shortcuts **V = Move** and **H = Pan**, with shortcut suppression in text inputs/dialogs and no glyph redesign.
+
+### Round 168: predictive geometry hover and Free Curve movement
+
+- While hovering over a selectable geometric object, visibly preview the object the current tool would pick, before clicking. Respect point-first selection over overlapping lines and tool-specific construction operand types; don't alter the document or the actual selection on hover.
+- In Move mode, drag whole Free Curve objects, including their original data, without altering geometry style; support undo and cancellation.
+- Keep Node `Font size` and `Node border` on one compact horizontal row. Preserve bilingual labels and narrow layouts.
