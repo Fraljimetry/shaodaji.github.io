@@ -1422,3 +1422,16 @@ Preserve rapid, framework-driven cuts and honest coverage labels. Verify JSON pr
 ## Round 92 verification request
 
 Continue rapid, focused incremental invariant-driven verification; cover undo/redo with real Chromium state-machine tests. Keep cumulative bug register, coverage and quality documentation updated; retain unchanged glyphs and backwards compatibility.
+
+## Round 93 verification checkpoint
+
+Continue invariant-driven coverage with real Chromium input checks. Keep undo/redo and selection semantics stable; canceled drags must not mutate documents, locked points must not move, and empty-canvas double-click deselects. Extend verification to pointercancel and touch in later focused rounds.
+
+### Round 94 verification policy
+- Continue fast, focused release rounds and concise English reports with no PowerShell instructions.
+- Preserve the cumulative bug register and the invariant coverage distinction: browser smoke is not automatically a seeded property family.
+- Verify pointer cancellation, lost capture, additive selection and eventually touch and marquee interactions without changing glyphs or unrelated application behavior.
+
+
+### Round 95 verification milestone
+Continue finite verification framework. Check touch gesture event ordering, marquee selection, and subtle UI state invariants with real Chromium tests; keep platform-specific touch hardware explicitly unverified until device testing. Preserve existing glyphs, schemas and site compatibility.

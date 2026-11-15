@@ -106,3 +106,23 @@ Advance analytic line/circle intersection residuals and symmetry, including inde
 - Browser verifies multiple independent imports, full undo and redo traversal, disabled-state boundaries, new-edit redo invalidation, rejected malformed JSON and rejected invalid-schema imports preserving document/history, and successful export after redo.
 - Coverage **16/28**, **20 families**, **24,000 sampled cases**. Covered means a defined oracle executed, **not** complete history verification. History eviction at 80 states/30MiB, pointer-drag cancellation, tab conflict, asynchronous autosave, and high-volume history are still unverified.
 - Production code unchanged; no glyph, schema, or behavior changes.
+
+## Round 93 — real browser selection and drag lifecycle
+
+- Added `tests/browser_round93_interaction.py`, a real Chromium test of SVG point selection, in-flight pointer dragging, Escape cancellation without mutation, successful drag commit, undo/redo restoration, empty-canvas double-click deselection, and locked-point immobility.
+- These are reproducible **browser integration scenarios** rather than independent seeded mathematical properties. Accordingly the property coverage remains **16/28**, **20 families**, **24,000 cases**; `integration.browser-interaction` stays unverified for complete property/invariant coverage.
+- No production behavior changed; no new bug confirmed. Further checks: pointercancel/lostcapture, multi-object selection, marquee, touch/pinch, snapping focus, unusual SVG overlap, platform-specific input events.
+
+## Round 94 — pointer cancellation and additive selection
+
+- Added `tests/browser_round94_pointer_multiselect.py`, an actual Chromium scenario using captured pointer events and real SVG point dragging. Checks `pointercancel` and `lostpointercapture` rollback, prevents later pointerup from committing canceled edits, and verifies Shift-additive selection and Shift-toggle removal across two independent points.
+- Node **479/479**, Chromium smoke, Round 76 and Round 93 browser checks, and Round 94 new check **PASS**; 27 source-module syntax checks **PASS**. No application runtime or saved schema changes.
+- Coverage remains **16/28** scoped property operations / **24,000** seeded mathematical cases; these are deterministic browser scenarios, not a newly qualified property family. **Unverified:** native multitouch pinch/zoom, touchscreen long press and pointer ordering, OS-specific pointer capture, marquee geometry with overlapping paths. Do not infer touch-platform support from desktop Chromium checks.
+- Next: scoped pointer/marquee property model and touchscreen emulation in Chromium, then physical-device validation before marking `integration.browser-interaction` covered.
+
+## Round 95 — touchscreen contact ordering and marquee boundaries
+
+- Added `tests/browser_round95_touch_marquee.py`, exercising actual Chromium SVG handling for Shift marquee with fully enclosed window selection versus reverse crossing selection. Two-point additive selection verified.
+- Touchscreen-emulated `PointerEvent` sequences verify deferred construction until release, two simultaneous contacts suppressing a premature point, cancelled touches not constructing, and an ordinary single-contact tap constructing exactly one point. This uses browser-dispatched PointerEvents in Chromium with touch enabled; **it is not evidence of hardware pinch zoom, native touch-event ordering, real device gestures, or mobile browser behavior**.
+- Node **479/479 PASS**, Chromium smoke and Round 76 **PASS**, Round 95 browser **PASS**. Round 94 browser check initially encountered a transient absent SVG marker, but passed independently on immediate rerun; not claimed as a confirmed defect.
+- Coverage remains **16/28**, **24,000** seeded cases: browser interaction scenarios do not meet the catalogued seeded-property criterion. No application source changes. Next: investigate hardware gesture support and marquee on overlapping/clipped SVG elements; qualify an integration property only with a reproducible oracle.

@@ -127,3 +127,15 @@ No new confirmed bugs and no existing status changes. JSON roundtrip has 1,200 s
 ## Round 92 verification update
 
 No new confirmed defects. Chromium history tests cover multi-step traversal, redo invalidation and rejected-import preservation; history eviction, concurrent tabs, drag cancellation and autosave remain *unverified risks*, not registered bugs. Continue to prioritize evidence-backed failures over arbitrary discovery quotas.
+
+## Round 93 verification update
+
+No new confirmed defects or status changes. Real Chromium pointer interaction now verifies selection, canceled and committed point dragging, undo/redo, empty-canvas deselection and locked-point immobility. Follow-up coverage: pointercancel, touch gestures, multi-select, marquee and overlapping shapes. Do not count these browser workflows as a new seeded property operation.
+
+## Round 94 verification update
+
+No new confirmed defects, and no statuses changed. Real Chromium confirms pointercancel and lostpointercapture fully roll back pending point edits, and Shift selection toggles two distinct point objects. Touchscreen pinch gestures, real multi-pointer hardware ordering and overlapping-geometry marquee behavior remain **unverified risks**, not confirmed bugs. Property coverage stays **16/28**.
+
+## Round 95 verification update
+
+No new confirmed defects; status unchanged. Real Chromium validates mouse marquee window/crossing and emulated multitouch contact suppression, cancellation, and single-touch point creation. Hardware pinch and platform-specific touch remain unverified. A transient missing marker in one prior Round 94 test was not reproducible on rerun and is not registered as a bug. Property coverage stays **16/28**.

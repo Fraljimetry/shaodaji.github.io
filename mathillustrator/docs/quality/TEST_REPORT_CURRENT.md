@@ -1512,3 +1512,24 @@ Seeded dependency graph recomputation, transitive deletion and cyclic-document r
 ## Round 92 — undo/redo verification
 
 Automated browser check: `python tests/browser_round92_history.py` (Chromium). Exercises multi-step history, redo invalidation, invalid JSON/schema imports, snapshot preservation and export. Framework: 16/28 operations, 20 properties, 24,000 cases; not exhaustive history coverage.
+
+## Round 93 — browser interaction checkpoint
+
+- Added actual Chromium test `tests/browser_round93_interaction.py`: select, cancel drag with Escape, commit drag, undo/redo, deselect by double-click, locked point immobility.
+- Core property coverage remains 16/28, 20 families, 24,000 sampled cases; browser workflow does not increase independent property coverage.
+- Full Node, syntax, and browser results must be read from this round's execution logs; older suites are not claimed exhaustive.
+
+## Round 94 — current verification checkpoint
+
+- Source baseline: Round 93 working tree; test-only changes.
+- Node `node --test tests/*.test.mjs`: **479/479 PASS**.
+- Chromium: `browser_round94_pointer_multiselect.py`, `browser_round93_interaction.py`, `browser_round76_remaining_points_lines.py`, `browser_smoke.py`: **PASS**.
+- `node --check src/*.mjs`: **27/27 PASS**.
+- Coverage: **16/28** scoped operations, **24,000** seeded property cases; no coverage promotion.
+- No new confirmed defects; touch hardware, gesture overlap and multi-pointer sequence coverage pending.
+
+## Round 95 current checkpoint (supersedes earlier historical test totals)
+
+- Node `node --test tests/*.test.mjs`: **479/479 PASS**.
+- Actual Chromium: isolated startup/export smoke **PASS**; Round 76 regression **PASS**; Round 95 marquee/touch event-order suite **PASS**. Round 94 pointer suite passed on independent rerun after one missing-marker test failure.
+- Browser pointer tests are deterministic scenarios, not physical-touch validation. No production code or glyph modifications. Coverage: **16/28** scoped property operations, **24,000** passing seeded cases.
