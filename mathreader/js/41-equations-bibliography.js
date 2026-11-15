@@ -227,7 +227,8 @@ function tocResultLineIndices(lines, page = 1, pageCount = 1) {
 function structureResultsIndexNavigationPage(lines) {
   const rows = Array.isArray(lines) ? lines : [];
   if (rows.length < 12) return false;
-  return rows.some((line) => Number(line?.ratio ?? 1) <= 0.16
+  return rows.some((line) => line?.ratio != null && Number.isFinite(Number(line.ratio))
+    && Number(line.ratio) >= 0 && Number(line.ratio) <= 0.16
     && /^(?:(?:subject|name|author|phrase[-\s]?finder|general)\s+)?index\s*[.:]?$/i.test(String(line?.text || '').trim()));
 }
 
@@ -406,31 +407,48 @@ function resultProofHeading(text) {
 function resultProofTarget(entries, printedReference, page, proofLine) {
   const available = Array.isArray(entries) ? entries : [];
   const explicit = String(printedReference || '').trim();
+  const proofPage = Number(page);
+  if (!Number.isInteger(proofPage) || proofPage < 1) return null;
   const proofRatio = proofLine?.ratio == null ? NaN : Number(proofLine.ratio);
+  const proofX = proofLine?.xStartRatio == null ? NaN : Number(proofLine.xStartRatio);
   const candidates = available.filter((entry) => Number.isInteger(Number(entry?.page))
-    && Number(entry.page) <= Number(page)
+    && Number(entry.page) >= 1 && Number(entry.page) <= proofPage
     && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(String(entry.label || ''))
-    // A declaration physically below this proof cannot be its owner. Missing
-    // coordinates keep the legacy fallback rather than fabricating geometry.
-    && (Number(entry.page) !== Number(page) || !Number.isFinite(proofRatio)
+    // Do not select a declaration printed below the proof, regardless of
+    // detector insertion order. Unknown geometry retains legacy fallback.
+    && (Number(entry.page) !== proofPage || !Number.isFinite(proofRatio)
       || entry?.ratio == null || !Number.isFinite(Number(entry.ratio))
       || Number(entry.ratio) <= proofRatio + 0.003));
+  // Detector data need not arrive in physical order (two-column text layers,
+  // asynchronous OCR). Resolve the nearest preceding *document position*.
+  const precedingFirst = (a, b) => Number(b.page) - Number(a.page)
+    || (Number.isFinite(Number(b.ratio)) && b.ratio != null ? Number(b.ratio) : -1)
+      - (Number.isFinite(Number(a.ratio)) && a.ratio != null ? Number(a.ratio) : -1);
   if (explicit) {
     const wanted = normalizedStructureResultReference(explicit);
-    // Explicit cross-references can legitimately point several pages back.
-    // The latest matching preceding declaration wins, without guessing a
-    // different theorem when that exact target was never indexed.
-    return [...candidates].reverse().find((entry) =>
-      normalizedStructureResultReference(entry.label) === wanted) || null;
+    const matches = candidates.filter((entry) => normalizedStructureResultReference(entry.label) === wanted);
+    // The printed target is authoritative. A missing target must not fall
+    // through to a different nearby theorem or another result type.
+    return matches.sort(precedingFirst)[0] || null;
   }
-  const nearby = candidates.filter(entry => Number(page) - Number(entry.page) <= 1);
-  const x = proofLine?.xStartRatio == null ? NaN : Number(proofLine.xStartRatio);
-  return [...nearby].reverse().find((entry) => {
-    const entryX = entry?.declarationXStartRatio == null ? NaN : Number(entry.declarationXStartRatio);
-    if (!Number.isFinite(x) || !Number.isFinite(entryX)) return true;
-    // A left-column proof must not claim an unrelated right-column result.
-    return Math.abs(x - entryX) <= 0.24;
-  }) || null;
+  const nearby = candidates.filter((entry) => proofPage - Number(entry.page) <= 1);
+  if (!Number.isFinite(proofX) && !Number.isFinite(proofRatio)) return nearby[nearby.length - 1] || null;
+  // Prioritize a geometrically verified same-column declaration. An earlier
+  // right-column theorem must not steal a left-column unnumbered proof merely
+  // because another candidate lacks x coordinates.
+  const sameColumn = nearby.filter((entry) => {
+    const x = entry?.declarationXStartRatio == null ? NaN : Number(entry.declarationXStartRatio);
+    return !Number.isFinite(proofX) || !Number.isFinite(x)
+      || Math.abs(proofX - x) <= 0.24;
+  });
+  const geoRank = (entry) => {
+    const x = entry?.declarationXStartRatio == null ? NaN : Number(entry.declarationXStartRatio);
+    return Number.isFinite(proofX) && Number.isFinite(x) ? 1 : 0;
+  };
+  return sameColumn.sort((a, b) => Number(b.page) - Number(a.page)
+    || geoRank(b) - geoRank(a)
+    || (b.ratio == null || !Number.isFinite(Number(b.ratio)) ? -1 : Number(b.ratio))
+      - (a.ratio == null || !Number.isFinite(Number(a.ratio)) ? -1 : Number(a.ratio)))[0] || null;
 }
 
 function proofLineSameColumn(proofX, currentX) {
@@ -797,7 +815,7 @@ function normalizeSequentialStructureEntries(entries) {
   // chapters/lectures. Mere narrative mentions NEVER create duplicate entries.
   const chosen = new Set();
   for (const occurrences of byLabel.values()) {
-    const max = Math.max(...occurrences.map(strength));
+    const max = occurrences.reduce((current, entry) => Math.max(current, strength(entry)), 0);
     const good = occurrences.filter(entry => strength(entry) === max);
     const byPage = new Map();
     for (const entry of good) if (!byPage.has(entry.page)) byPage.set(entry.page,entry);
