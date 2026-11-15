@@ -1794,3 +1794,11 @@ Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotatio
 - Reproduced defect (red): dynamic 3D plot-mode choice stayed in Chinese after switching back to English; fixed by retaining an English source string for localization and translating after dynamic option creation (green).
 - UI localization is additive: user-defined project data, mathematical formulas, glyphs and export formats unchanged.
 - Limitations: Chromium tests use `page.set_content` with inlined source, not live hosted deployment. Native OS font metrics, assistive technology, GPU performance, the full historical Chromium suite, and exhaustive translation of every error/notification message were not verified.
+
+### Round 139 — Region localization and label alignment
+- Root cause: region-extra labels and input metadata were initialized with the currently translated language; the i18n text/attribute WeakMap then cached Chinese as canonical source and could not restore English after language changes.
+- Fix: construct region-extra captions and metadata from canonical English strings; let `localizeUI` translate them, and scope left-aligned caption styling to `.plot-region-editor .region-extras > .field`.
+- Syntax: `node --check src/app.mjs` PASS.
+- Node full regression: `node --test tests/*.test.mjs` **553/553 PASS**, zero skipped/failed.
+- Actual Chromium: new `tests/browser_round139_region_language.py` verified 1440 px and four successive zh/en changes with exact caption, accessibility text, and computed left alignment — PASS.
+- 390 px Chromium pass did not complete (browser fixture stalled after desktop; execution timed out). Mobile verification is NOT claimed. Hosted deployment and GPU hardware verification not run.

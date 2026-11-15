@@ -1427,11 +1427,11 @@ function parse2DRegionBound(source){
 // an additional mutable setting: imported/exported files keep numeric bounds.
 function installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension){
  const row=document.createElement('div');row.className='region-extras';
- const label=document.createElement('label');label.className='field';label.textContent=translated('Centered half-range',uiPrefs.language);
- const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label',translated('Centered half-range',uiPrefs.language));radius.title=translated('Enter a positive half-range to set ±R along every axis.',uiPrefs.language);
- const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.textContent=translated('Region inequality',uiPrefs.language);
+ const label=document.createElement('label');label.className='field';label.textContent='Centered half-range';
+ const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Enter a positive half-range to set ±R along every axis.';
+ const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.textContent='Region inequality';
  const region=document.createElement('input');region.type='text';region.value=conditionValue||'';region.placeholder=dimension===3?'x^2+y^2+z^2<16':'x^2+y^2<16';
- region.setAttribute('aria-label',translated('Region inequality',uiPrefs.language));region.title=translated('Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.',uiPrefs.language);
+ region.setAttribute('aria-label','Region inequality');region.title='Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.';
  function useRadius(){
   let value;try{value=parseBound(radius.value);}catch(err){notice(err.message);return;}
   if(!(value>0)){notice('Centered half-range must be positive.');return;}

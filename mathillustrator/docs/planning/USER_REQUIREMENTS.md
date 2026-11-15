@@ -1616,3 +1616,7 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 User requirement: Chinese mode must translate user-facing 2D/3D Settings and Properties completely; investigate display overflow and locale switching without changing object names, formulas, glyphs, or project serialization. The audit includes the screenshot-reported 3D visualization and vector-field editor.
 
 Implemented: added missing 3D settings labels (mesh detail, opacity, camera yaw/pitch), 3D region action labels, symmetric range/inequality fields, object search placeholders, accessible help labels, and common controls. Fixed stale dynamic plot-mode choices when switching zh → en → zh. Existing mathematical expressions and user-defined object names are deliberately language-neutral. Camera yaw/pitch numeric display is limited to two decimal places, without quantizing stored camera state. No glyph, mathematical engine, or schema changes.
+
+### Round 139 — Reversible localization of region extras
+- Centered half-range / 中心对称半宽 and Region inequality / 区域不等式 must switch reversibly when the UI language changes, including labels and accessible names.
+- These two captions must align left (not centered) in the Properties panel in both languages, without changing glyphs or the region editing semantics.

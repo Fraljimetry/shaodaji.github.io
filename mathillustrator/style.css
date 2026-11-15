@@ -808,3 +808,6 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .plot-region-editor .region-extras{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;min-width:0;margin-top:5px}
 .plot-region-editor .region-extras>.field{display:flex;flex-direction:column;gap:4px;min-width:0;margin:0;font-size:11px;white-space:normal}
 .plot-region-editor .region-extras>.field>input{height:30px;width:100%;max-width:100%;min-width:0;padding:4px 5px;box-sizing:border-box;font-size:11px}
+
+/* Region-extra captions remain left-aligned in both languages. */
+.plot-region-editor .region-extras > .field {text-align:left;align-items:stretch;justify-content:flex-start;}
