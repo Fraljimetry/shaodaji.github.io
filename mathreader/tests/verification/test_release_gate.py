@@ -20,7 +20,7 @@ class GateTests(unittest.TestCase):
         (self.root / 'tests').mkdir(parents=True)
         (self.root / 'js').mkdir()
         (self.root / 'tests' / 'verification').mkdir()
-        for name in ('test_release_gate.py', 'test_pdf_oracle.py', 'test_index_oracle.py'):
+        for name in ('test_release_gate.py', 'test_pdf_oracle.py', 'test_index_oracle.py', 'test_browser_campaign.py', 'test_stress_gate.py'):
             (self.root / 'tests' / 'verification' / name).write_text("print('engine-selftest passed')")
         (self.root / 'index.html').write_text('<title>fixture</title>')
         (self.root / 'mathreader.js').write_text('const ok=1;')
@@ -128,6 +128,18 @@ class GateTests(unittest.TestCase):
         self.assertEqual(report['testsSelected']['python'], 0)
         self.assertTrue(any(x['name'] == 'empty-test-selection' and x['status'] == 'INCOMPLETE'
                             for x in report['checks']))
+
+    def test_missing_browser_campaign_selftest_is_incomplete(self):
+        (self.root / 'tests' / 'verification' / 'test_browser_campaign.py').unlink()
+        code, report = self.run_gate()
+        self.assertEqual(code, 2)
+        self.assertTrue(any(x['name'] == 'real-browser-campaign-selftest' and x['status'] == 'INCOMPLETE' for x in report['checks']))
+
+    def test_release_without_real_evidence_is_incomplete(self):
+        code, report = self.run_gate('--profile', 'release', '--stress-attempts', '0')
+        self.assertEqual(code, 2)
+        self.assertFalse(report['releaseCertified'])
+        self.assertTrue(any(x['name'] == 'repeated-performance-and-reliability' and x['status'] == 'INCOMPLETE' for x in report['checks']))
 
     def test_syntax_failure(self):
         (self.root / 'mathreader.js').write_text('function (')

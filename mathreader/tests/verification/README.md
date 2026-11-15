@@ -138,3 +138,82 @@ correct PDF.js click/scroll coordinates, or actual Texify recognition.
 The original-PDF native-text oracle and the saved-index oracle remain distinct.
 A fully certified release still requires independently witnessed real-PDF
 browser navigation and real Texify inference.
+
+## V5: complete verification-framework integration (evidence-gated)
+
+V5 integrates the remaining operational framework components; it **does not** assert
+that unavailable original-PDF or Texify accuracy evidence has been measured.
+
+- `browser_campaign.py` runs the **actual MathReader assembled runtime** in
+  Chromium using the existing isolated P0/P1 browser probes and pinned genuine
+  `pdfjs-dist@4.10.38`. Each reviewed target names a category, a precise
+  index label, page and vertical ratio. The test clicks a real index entry in
+  production DOM, waits for the real PDF navigation anchor, and rejects wrong
+  pages, mismatched positions, duplicates, missing results, or unfinished
+  detection. Original-PDF SHA-256 is required. No fake PDF.js adapters.
+- The same browser campaign can execute **actual browser Texify inference**
+  on reviewer-specified PDF crop coordinates with `--real-ocr`. It requires an
+  actual model backend and compares observed LaTeX against independently
+  reviewed expressions (whitespace-insensitive edit distance, default exact
+  match, configurable explicit maximum normalized error). Actual MathJax
+  compilation is checked. No model, image crop, or reviewed answer means
+  INCOMPLETE, not PASS. The runner never substitutes vector text or Tesseract.
+- `stress_gate.py` repeats real regression scripts (reader navigation,
+  Settings, search, equation indexing, OCR lifecycle), enforces per-attempt
+  performance ceilings, records repeat variability and fails on flaky tests,
+  skipped tests, or timeouts. Some underlying browser tests use mocked PDF or
+  model operations; stress evidence **is not live-PDF/OCR certification**.
+- `release_gate.py` integrates both, running expensive external campaigns in
+  supervised subprocesses with hard limits. It requires all historical tests,
+  syntax, self-tests, original-PDF text geometry, reviewed saved-index export,
+  hosted smoke, real-PDF browser navigation, actual Texify comparisons and
+  repeated performance tests to certify `release`. Empty, partial, fake,
+  contradictory or absent evidence fails closed.
+
+A reviewed browser campaign manifest, stored beside the original PDF, looks like:
+
+```json
+{
+  "schemaVersion": 1,
+  "documents": [
+    {
+      "pdf": "original-book.pdf",
+      "sha256": "<SHA-256 of original PDF>",
+      "navigation": [
+        { "kind": "structure", "label": "1 Introduction", "page": 3, "ratio": 0.25, "toleranceRatio": 0.06 }
+      ],
+      "ocr": [
+        { "page": 3, "rectPdfPt": [100, 150, 350, 215], "latex": "x^2+y^2=z^2", "maxNormalizedError": 0.0 }
+      ]
+    }
+  ]
+}
+```
+
+`navigation` entries must be independently checked in the original PDF.
+Unreviewed or ambiguous labels are not acceptable as authoritative ground
+truth. OCR crops are measured in PDF points from the page's top left. For
+release certification, additionally supply the V3 `--pdf-oracle` and V4
+`--index-oracle` evidence files and `--hosted-url`.
+
+Example (from the website root; local pinned PDF.js assets and a real Texify
+model installation are prerequisites):
+
+```powershell
+python mathreader/tests/verification/release_gate.py --profile release `
+  --hosted-url https://shaodaji.cc/mathreader/ `
+  --pdf-oracle D:\Reviewed\geometry.json `
+  --index-oracle D:\Reviewed\indexes.json `
+  --browser-campaign D:\Reviewed\browser.json `
+  --pdfjs-build D:\Dependencies\pdfjs-dist-4.10.38\build `
+  --mathjax-js D:\Dependencies\mathjax\es5\tex-chtml.js
+```
+
+**Current evidence boundary:** The provided v436 source tree does not bundle
+pinned PDF.js assets, original 41-PDF corpus, reviewed formula targets, or
+Texify model weights. This engine is executable and adversarially self-tested,
+but release certification remains INCOMPLETE without that independent
+material. Never treat generated synthetic PDFs or previous exports as a
+replacement for original-PDF MathReader acceptance. The engine must not be
+expanded indefinitely: future work should focus on genuine bug reproduction
+and improving substantive regression coverage.

@@ -1537,3 +1537,17 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 ### Round 123 — larger development batches (2026-11-14)
 - User requested materially larger related batches per iteration, rather than repeated small GPU-probe-only passes. Retain complete Node, mathematical, real Chromium, export, cache, and performance checks.
 - Next priority: improve 3D responsiveness and memory/performance while preserving numerical/topological equality. Never claim production GPU numerical acceleration before hardware equivalence is established.
+
+### Round 125 — benchmark-driven 3D scheduling and reliability (2026-11-14)
+- Continue in substantial coherent batches: improve responsiveness during 3D surface sampling, projection, and SVG staging without changing the mathematical output, existing glyphs, or document interchange.
+- Heavy implicit voxel traversal must be cooperatively interruptible inside rows; cancellation must not publish or cache partial geometry.
+- Each 3D projection step must have a bounded work unit count even when performance clock resolution is coarse; zero-duration steps must make progress and cancellation must be idempotent.
+- Keep previously committed 3D drawings visible on transient compute errors; stage SVG within frame-time and primitive-count budgets instead of appending arbitrarily large batches.
+- Prove CPU-reference mesh equality, warm-camera cache reuse, and real Chromium lifecycle/export behavior; distinguish native hardware GPU tests from simulated execution.
+- Source alignment caveat: supplied authoritative ZIP currently contains GPU diagnostic modules but not the production WebGL2 raster renderer expected by `browser_gpu3d_acceleration.py`. Do not claim production WebGL2 acceleration was validated from this ZIP.
+
+### Round 126 — Higher-resolution 3D mesh ceiling (2026-11-15)
+- User requests sharper 3D results through raised mesh/grid ceilings in light of GPU acceleration work.
+- Allow Mesh detail 8–128 (previously 8–96); raise implicit grid ceiling 88→114 cells per axis, 3D evaluation ceiling 850,000→1,900,000, single-surface face ceiling 210,000→240,000, shared multi-surface face ceiling 135,000→150,000, and mesh LRU memory ceiling 192→224 MiB.
+- Retain cooperative cancellation, strict bounded CPU fallback, cached geometry reuse, project-schema compatibility, and a fast low-detail drag preview; do not imply unverified GPU numerical sampling is enabled.
+- Existing project files at detail ≤96 are unchanged; users opt into greater quality by raising Mesh detail. High resolutions take longer and consume more RAM on CPU/SVG configurations.

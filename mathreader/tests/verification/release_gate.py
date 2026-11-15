@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MathReader verification engine v4. Stdlib-only, fail-closed, evidence-labelled.
+"""MathReader verification engine v5. Stdlib-only, fail-closed, evidence-labelled.
 
 This file can be run from any cwd; never modifies application source.
 """
@@ -16,6 +16,7 @@ import signal
 import subprocess
 import sys
 import time
+import tempfile
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 PROFILES = ('quick', 'full', 'release')
@@ -105,7 +106,9 @@ def run_command(name, cmd, root, timeout, evidence, kind=None):
             return result(name, 'FAIL', reason=f'timeout after {timeout}s', evidence=evidence,
                           command=cmd, seconds=round(time.monotonic()-started, 3))
         # Do not treat a merely mentioned '0 skipped' or 'skip handling' as an actual skip.
-        skipped = bool(re.search(r'(?im)^(?!.*\b0\s+(?:tests?\s+)?skipped\b).*\b(?:SKIPPED|SKIP:|NOT RUN)\b', out + '\n' + err))
+        output = out + '\n' + err
+        skipped = bool(re.search(r'(?im)^(?!.*\b0\s+(?:tests?\s+)?skipped\b).*\b(?:SKIPPED|SKIP:|NOT RUN)\b', output))
+        skipped = skipped or bool(re.search(r'\bskipped\s*=\s*[1-9]\d*\b|\b[1-9]\d*\s+(?:tests?\s+)?skipped\b', output, re.I))
         browser_missing = bool(re.search(r'Executable doesn.t exist|browserType.launch:.*executable|Please run.*playwright install', out + '\n' + err, re.I | re.S))
         if rc != 0 and browser_missing and kind == 'chromium':
             return result(name, 'INCOMPLETE', reason='Browser executable unavailable to this test; source may require bundled Playwright Chromium', evidence=evidence, command=cmd, returnCode=rc, seconds=round(time.monotonic()-started, 3), stdoutTail=out[-2500:], stderrTail=err[-2500:])
@@ -222,7 +225,9 @@ def execute(args):
     # green unrelated test. Keep the established selftest name for compatibility.
     for selftest_name, display in [('test_release_gate.py', 'verification-engine-selftest'),
                                    ('test_pdf_oracle.py', 'pdf-geometry-oracle-selftest'),
-                                   ('test_index_oracle.py', 'math-index-oracle-selftest')]:
+                                   ('test_index_oracle.py', 'math-index-oracle-selftest'),
+                                   ('test_browser_campaign.py', 'real-browser-campaign-selftest'),
+                                   ('test_stress_gate.py', 'stress-gate-selftest')]:
         selftest = root / 'tests' / 'verification' / selftest_name
         if selftest.is_file():
             push(run_command(display, [sys.executable, str(selftest)], root, args.browser_timeout, 'engine-selftest'))
@@ -270,12 +275,67 @@ def execute(args):
         push(result('mathreader-export-index-oracle', 'INCOMPLETE',
                     evidence='mathreader-saved-export-index-comparison',
                     reason='Pass --index-oracle with reviewed targets and actual reading-data exports'))
+    # Subprocess isolation prevents a stalled PDF.js/model inference or browser
+    # stress run from holding the release engine indefinitely. Reports survive
+    # a completed command; a timeout always fails closed.
+    def bounded_evidence(name, command, evidence, timeout):
+        with tempfile.TemporaryDirectory(prefix='mathreader-verification-') as temp:
+            report_file = Path(temp) / 'evidence.json'
+            ran = run_command(name, [sys.executable, *command, '--output', str(report_file)],
+                              root, timeout, evidence)
+            if ran['status'] == 'FAIL' and 'timeout' in (ran.get('reason') or ''):
+                return ran
+            if not report_file.is_file():
+                return result(name, 'FAIL' if ran['status']=='FAIL' else 'INCOMPLETE',
+                    evidence=evidence, reason='Evidence command produced no completed JSON report',
+                    command=ran.get('command'), stderrTail=ran.get('stderrTail'))
+            try:
+                data = json.loads(report_file.read_text(encoding='utf8'))
+                state = data['status']
+                if state not in ('PASS', 'FAIL', 'INCOMPLETE'):
+                    raise ValueError('Invalid oracle status')
+                if ran.get('returnCode') not in ({'PASS': 0, 'FAIL': 1, 'INCOMPLETE': 2}[state],):
+                    raise ValueError('Oracle exit code and report disagree')
+                return result(name, state, evidence=evidence, report=data,
+                    seconds=ran.get('seconds'), command=ran.get('command'))
+            except (ValueError, KeyError, OSError, TypeError) as exc:
+                return result(name, 'FAIL', evidence=evidence,
+                    reason=f'Invalid or contradictory completed evidence: {exc}')
+    if args.profile in ('full', 'release'):
+        if args.stress_attempts == 0:
+            push(result('repeated-performance-and-reliability', 'INCOMPLETE',
+                evidence='repeated-production-source-regressions', reason='Stress disabled; release certification prohibited'))
+        else:
+            stress_script = str(Path(__file__).with_name('stress_gate.py'))
+            push(bounded_evidence('repeated-performance-and-reliability',
+                [stress_script, '--root', str(root), '--attempts', str(args.stress_attempts),
+                 '--timeout', str(args.browser_timeout), '--budget', str(args.performance_budget)],
+                'repeated-production-source-regressions',
+                args.browser_timeout * args.stress_attempts * 5 + 30))
     if args.profile == 'release':
         push(hosted_smoke(args.hosted_url, args.browser_timeout))
-        push(result('mathreader-live-navigation-certification', 'INCOMPLETE',
-                              evidence='real-pdf-browser-navigation', reason='Requires actual MathReader PDF.js click/scroll/navigation adapter checked against reviewed targets; native text geometry alone is insufficient'))
-        push(result('real-texify-inference-certification', 'INCOMPLETE',
-                              evidence='real-model-inference', reason='Requires measured genuine Texify inference and human-reviewed ground truth'))
+        if args.browser_campaign:
+            campaign_script = str(Path(__file__).with_name('browser_campaign.py'))
+            cmd = [campaign_script, str(args.browser_campaign), '--root', str(root), '--real-ocr']
+            if args.pdfjs_build: cmd.extend(['--pdfjs-build', str(args.pdfjs_build)])
+            if args.mathjax_js: cmd.extend(['--mathjax-js', str(args.mathjax_js)])
+            observed = bounded_evidence('original-pdf-browser-campaign', cmd,
+                'original-pdf-live-navigation-and-real-model',
+                args.browser_timeout * 20)
+            push(observed)
+            evidence_data = observed.get('report', {})
+            for name, field, kind in [('mathreader-live-navigation-certification','navigationCertified','real-pdf-browser-navigation'),
+                                       ('real-texify-inference-certification','ocrCertified','real-model-inference')]:
+                if observed['status'] == 'FAIL': state='FAIL'
+                elif evidence_data.get(field) is True: state='PASS'
+                else: state='INCOMPLETE'
+                push(result(name, state, evidence=kind,
+                    reason=None if state=='PASS' else 'Original-PDF browser campaign did not establish this evidence'))
+        else:
+            push(result('mathreader-live-navigation-certification', 'INCOMPLETE',
+                evidence='real-pdf-browser-navigation', reason='Reviewed --browser-campaign and pinned PDF.js required'))
+            push(result('real-texify-inference-certification', 'INCOMPLETE',
+                evidence='real-model-inference', reason='Reviewed --browser-campaign OCR targets and genuine Texify required'))
     cov = coverage(js, py, all_js, all_py)
     for label, d in cov.items():
         relevant = ['node:' + x for x in d['selectedTests'] if x.endswith('.js')]
@@ -284,7 +344,7 @@ def execute(args):
     counts = {s: sum(r['status'] == s for r in records) for s in ('PASS', 'FAIL', 'INCOMPLETE')}
     status = 'FAIL' if counts['FAIL'] else ('INCOMPLETE' if counts['INCOMPLETE'] else 'PASS')
     result_obj = {
-        'schemaVersion': 4, 'engine': 'MathReader verification v4',
+        'schemaVersion': 5, 'engine': 'MathReader verification v5',
         'generatedAt': datetime.now(timezone.utc).isoformat(), 'profile': args.profile,
         'status': status, 'releaseCertified': status == 'PASS' and args.profile == 'release',
         'root': str(root), 'sourceFingerprint': sha(root / 'mathreader.js') if (root / 'mathreader.js').is_file() else None,
@@ -312,8 +372,15 @@ def main(argv=None):
     ap.add_argument('--hosted-url', default='')
     ap.add_argument('--pdf-oracle', type=Path, help='Reviewed original-PDF geometry manifest; evidence is not live MathReader navigation')
     ap.add_argument('--index-oracle', type=Path, help='Reviewed index manifest referencing actual MathReader reading-data export')
+    ap.add_argument('--browser-campaign', type=Path, help='Reviewed original-PDF + real browser navigation and Texify case manifest')
+    ap.add_argument('--pdfjs-build', type=Path, help='Pinned genuine pdfjs-dist@4.10.38 build directory')
+    ap.add_argument('--mathjax-js', type=Path, help='Local MathJax 3 bundle for real OCR compilation')
+    ap.add_argument('--stress-attempts', type=int, default=None, help='Repeated reliability tests; full default=2, release=3; zero means explicitly incomplete')
+    ap.add_argument('--performance-budget', type=float, default=180, help='Maximum elapsed seconds per stress attempt')
     ap.add_argument('--only', default='', help='Regex to run a bounded subset; never reports a fully passing profile')
     args = ap.parse_args(argv)
+    if args.stress_attempts is None:
+        args.stress_attempts = 3 if args.profile == 'release' else 2
     args.output = args.output or args.root / 'tests' / 'verification' / 'release_gate_result.json'
     return execute(args)
 

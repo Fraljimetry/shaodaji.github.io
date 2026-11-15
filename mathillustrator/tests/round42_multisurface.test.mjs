@@ -61,8 +61,8 @@ test('Round42: 96-detail domain coloring is persisted and exceeds old 44-detail 
  assert.ok(meshCacheStats().estimatedBytes<=meshCacheStats().limitBytes);
  const doc=newDoc();doc.settings.plot3dEnabled=true;doc.scene3d=scene;assert.doesNotThrow(()=>validateDoc(doc));
  const schema=JSON.parse(readFileSync(new URL('../docs/schemas/project-v1.schema.json',import.meta.url)));
- assert.equal(schema.$defs.scene3d.properties.options.properties.detail.maximum,96);
- scene.options.detail=97;assert.throws(()=>validate3D(scene),/Invalid 3D camera/);
+ assert.equal(schema.$defs.scene3d.properties.options.properties.detail.maximum,128);
+ scene.options.detail=129;assert.throws(()=>validate3D(scene),/Invalid 3D camera/);
 });
 
 test('Round42: cancellation, singularities, and adaptive fair allocation remain bounded',()=>{

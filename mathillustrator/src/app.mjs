@@ -995,8 +995,15 @@ function render(){
   const paint=()=>{
    sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
    const fragment=document.createDocumentFragment();
-   const end=Math.min(result.primitives.length,next+500);
-   for(;next<end;next++)append3DPrimitive(fragment,result.primitives[next]);
+   // Budget DOM construction as well as CPU projection: 500 complex SVG
+   // polygons can exceed a frame on lower-end devices. Keep a hard cap and
+   // a time budget; always make forward progress on a slow frame.
+   const deadline=performance.now()+5;
+   const end=Math.min(result.primitives.length,next+250);
+   for(;next<end;next++){
+    append3DPrimitive(fragment,result.primitives[next]);
+    if((next&31)===31&&performance.now()>=deadline){next++;break;}
+   }
    staged.append(fragment);
    if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
    else{
@@ -1014,7 +1021,13 @@ function render(){
   try{const state=sceneRenderTask.step(7);
    if(state.done)paintResult(state.result);
    else sceneRenderFrame=requestAnimationFrame(compute);
-  }catch(e){sceneRenderTask=null;sceneRenderPending=false;svg.replaceChildren(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));$('render-info').textContent='3D rendering failed';notice('3D rendering failed: '+e.message);}
+  }catch(e){
+   // Do not destroy the last complete scene when a new mesh fails; the user
+   // must still be able to orbit, edit or remove the offending expression.
+   sceneRenderTask?.cancel();sceneRenderTask=null;sceneRenderPending=false;
+   $('render-info').textContent='3D rendering failed · previous view preserved';
+   notice('3D rendering failed: '+e.message);
+  }
  };
  compute();
 }

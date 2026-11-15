@@ -170,14 +170,24 @@ function normalizeOcrLatex(value) {
     { re: /\\\(([\s\S]*?)\\\)/g, inner: 1 },
     { re: /(?<!\$)\$([^$\n]+?)\$(?!\$)/g, inner: 1 }
   ];
+  // A formula may contain dollar signs inside a display-math envelope.
+  // Regexes for shorter delimiters must not independently harvest a piece of
+  // a longer match, or the final output fabricates extra aligned rows.
+  const occupied = [];
   for (const { re, inner } of patterns) {
-    for (const m of text.matchAll(re)) matches.push({ index: m.index ?? 0, value: String(m[inner] || '').trim() });
+    for (const m of text.matchAll(re)) {
+      const start = m.index ?? 0;
+      const end = start + m[0].length;
+      if (occupied.some(([from, to]) => start < to && end > from)) continue;
+      occupied.push([start, end]);
+      matches.push({ index: start, value: String(m[inner] || '').trim() });
+    }
   }
   matches.sort((a, b) => a.index - b.index);
   const blocks = matches.map((m) => m.value).filter(Boolean);
   if (blocks.length === 1) text = blocks[0];
   else if (blocks.length > 1) {
-    let clean = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1]);
+    let clean = blocks; // Identical consecutive lines can be intentional mathematics.
 
     // Texify occasionally emits a good main formula surrounded by tiny stray
     // math blocks (for example a lone \blacksquare or an index fragment).
@@ -342,19 +352,12 @@ function cleanOcrFormattingRow(value) {
 }
 
 function cleanOcrFormattingRows(rows) {
-  const cleaned = [];
-  let previousKey = '';
-  for (const raw of Array.isArray(rows) ? rows : []) {
-    const row = cleanOcrFormattingRow(raw);
-    if (!row) continue;
-    // Preserve alignment markers for later formatting, but ignore harmless
-    // whitespace/bracing differences when detecting accidental duplicate rows.
-    const key = row.replace(/&/g, '').replace(/\s+/g, '').trim();
-    if (key && key === previousKey) continue;
-    cleaned.push(row);
-    previousKey = key;
-  }
-  return cleaned;
+  // Content-preserving formatting must not delete equal adjacent rows: a
+  // repeated identity, boundary condition or matrix row may be intentional.
+  // The OCR model cannot prove that a repetition is an accidental echo.
+  return (Array.isArray(rows) ? rows : [])
+    .map((raw) => cleanOcrFormattingRow(raw))
+    .filter(Boolean);
 }
 
 function normalizeOcrAlignmentLine(value) {

@@ -64,7 +64,7 @@ export function parse3D(plot){
 }
 export function validate3D(scene){
  if(!scene||typeof scene!=='object'||Array.isArray(scene)||!Array.isArray(scene.plots)||scene.plots.length>80||!Number.isSafeInteger(scene.nextId)||scene.nextId<1)throw Error('Invalid 3D scene.');
- const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>96||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
+ const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>128||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
  const ids=new Set();let highest=0;
  for(const plot of scene.plots){
   if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>100||!color.test(plot.color)||!ok(plot.opacity)||plot.opacity<.05||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
@@ -108,14 +108,14 @@ export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
 function finitePoint(p){return Array.isArray(p)&&p.length===3&&p.every(v=>ok(v)&&Math.abs(v)<1e6);}
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const minus=(a,b)=>a.map((x,i)=>x-b[i]);
-export const MAX_3D_EVALUATIONS=850000;
-export const MAX_3D_FACES=210000;
+export const MAX_3D_EVALUATIONS=1900000;
+export const MAX_3D_FACES=240000;
 // Keep multi-surface scenes responsive: each visible face-producing plot shares
 // a smaller combined DOM budget; a single detailed surface retains full quality.
-export const MAX_3D_MULTI_FACES=135000;
+export const MAX_3D_MULTI_FACES=150000;
 export const MAX_3D_LINES=4800;
 const MAX_MESH_FACES=MAX_3D_FACES;
-const MAX_MESH_CACHE_BYTES=192*1024*1024;
+const MAX_MESH_CACHE_BYTES=224*1024*1024;
 function makeCamera(bounds,options,width,height){
  const yaw=options.yaw*Math.PI/180,pitch=options.pitch*Math.PI/180,cos=Math.cos(yaw),sin=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const center=['x','y','z'].map(axis=>(bounds[axis+'Min']+bounds[axis+'Max'])/2),span=['x','y','z'].map(axis=>(bounds[axis+'Max']-bounds[axis+'Min'])/2);
@@ -169,7 +169,7 @@ export function* sample3DPlotSteps(plot,detail){
   }
  };
  if(['surface3d','parametric3d','domain3d'].includes(plot.kind)){
-  const n=Math.max(8,Math.min(96,detail));
+  const n=Math.max(8,Math.min(128,detail));
   // Only adjacent rows are needed to triangulate a structured surface.
   // Keep a two-row sliding window instead of retaining the full (n+1)^2
   // lattice, reducing live references to O(n) without changing triangle order.
@@ -232,6 +232,9 @@ export function* sample3DPlotSteps(plot,detail){
   }
   for(let k=0;k<n&&!limited;k++)for(let j=0;j<n&&!limited;j++){
    for(let i=0;i<n&&!limited;i++){
+    // Expensive root refinement can dominate a voxel row. Yield within the
+    // row so a new camera pose can cancel before another full scan completes.
+    if(i && (i&15)===0)yield;
     // Most cells of a localized implicit surface cannot cross the zero level.
     // Read their eight scalar values first, and avoid constructing world-space
     // vertices and tetrahedra for all-strict-positive/all-strict-negative cells.
@@ -296,6 +299,7 @@ export function* sample3DPlotSteps(plot,detail){
  }else if(plot.kind==='vector3d'){
   const n=plot.density;for(let k=0;k<n;k++){
    for(let j=0;j<n;j++)for(let i=0;i<n;i++){
+    if(i && (i&15)===0)yield;
     const center=[b.xMin+(b.xMax-b.xMin)*(i+.5)/n,
      b.yMin+(b.yMax-b.yMin)*(j+.5)/n,
      b.zMin+(b.zMax-b.zMin)*(k+.5)/n];
@@ -339,7 +343,7 @@ function storeMesh(key,mesh){const bytes=meshBytes(mesh);if(bytes>MAX_MESH_CACHE
  * estimated triangle count, making high settings visually identical.
  * Scene-level budgets can still reduce density *explicitly* for 3 plots.
  */
-export function implicitGridCells(detail){return Math.min(88,Math.max(10,Math.round(detail*.83+8)));}
+export function implicitGridCells(detail){return Math.min(114,Math.max(10,Math.round(detail*.83+8)));}
 function estimatedEvaluations(plot,detail,pilot=null){
  if(plot.kind==='vector3d')return plot.density**3;
  if(plot.kind==='implicit3d'){
@@ -352,7 +356,7 @@ function estimatedEvaluations(plot,detail,pilot=null){
   const rootCost=Math.max(0,pilot.evaluations-pilotVertices);
   return vertices+Math.ceil(rootCost*(cells/pilotCells)**2*1.08);
  }
- return (Math.max(8,Math.min(96,detail))+1)**2;
+ return (Math.max(8,Math.min(128,detail))+1)**2;
 }
 /** Synchronous exports and cooperative screen rendering share EXACT geometry,
  * clipping, sorting, and work limits. SVG is not a Z-buffer; crossing translucent
@@ -495,15 +499,26 @@ export function project3DScene(scene,width,height){
 /** Asynchronous caller owns the lifecycle. One step performs at most its frame
  * allowance of small generator units; cancel() discards all partial work. */
 export function create3DProjectionTask(scene,width,height,{interactive=false}={}){
- const generator=project3DSceneSteps(scene,width,height,{interactive});let cancelled=false,done=false,result=null;
+ const generator=project3DSceneSteps(scene,width,height,{interactive});let cancelled=false,done=false,result=null,units=0;
  return {
   get done(){return done;},get cancelled(){return cancelled;},get result(){return result;},
-  cancel(){cancelled=true;result=null;generator.return();},
+  get units(){return units;},
+  cancel(){
+   if(cancelled||done)return;
+   cancelled=true;result=null;generator.return();
+  },
   step(milliseconds=7){
    if(cancelled)return {done:true,cancelled:true,result:null};
    if(done)return {done:true,cancelled:false,result};
-   const deadline=performance.now()+Math.max(0,Math.min(20,milliseconds));let next;
-   do{next=generator.next();if(next.done){done=true;result=next.value;break;}}while(performance.now()<deadline);
+   // A bounded unit count protects against coarse/frozen clocks, while the
+   // deadline limits work on fast machines. Even a zero-ms budget advances
+   // one cooperative unit, preventing task starvation.
+   const budget=Number.isFinite(milliseconds)?Math.max(0,Math.min(20,milliseconds)):7;
+   const deadline=performance.now()+budget;let next,spent=0;
+   do{
+    next=generator.next();units++;spent++;
+    if(next.done){done=true;result=next.value;break;}
+   }while(spent<128&&performance.now()<deadline);
    return {done,cancelled:false,result};
   }
  };

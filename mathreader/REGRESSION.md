@@ -356,3 +356,15 @@ See [Documentation map](docs/README.md) for OCR, export, audit, and release docu
 
 ---
 
+
+### Verification engine V5 evidence gates
+
+The canonical verification entry point is `tests/verification/release_gate.py`.
+The release gate now includes real original-PDF Chromium navigation targets,
+actual browser Texify crop-to-LaTeX measurement, repeated reliability/performance
+runs, and strict supervised subprocess/partial-evidence accounting. The reader
+runtime is unchanged. See `tests/verification/README.md` for reviewed manifest
+schema, evidence distinctions, and the requirements for a meaningful PASS.
+Without the reviewed original-PDF corpus, exact pinned PDF.js assets and a real
+Texify backend, release certification **MUST remain INCOMPLETE** even when all
+synthetic, source-level, and mocked-Chromium regressions are green.

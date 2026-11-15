@@ -34,7 +34,9 @@ def verify():
     for p in parts:
         assert p['start_line'] == previous_end + 1
         previous_end = p['end_line']
-        data = current_record if p['path'] == 'REGRESSION.md' else (ROOT / p['path']).read_bytes()
+        # Later release notes may append to REGRESSION.md; the migrated v414
+        # historical partition must remain byte-for-byte intact.
+        data = b''.join(current_record.splitlines(keepends=True)[:p['end_line']]) if p['path'] == 'REGRESSION.md' else (ROOT / p['path']).read_bytes()
         assert sha(data) == p['sha256'], p['path']
         assert len(data.splitlines()) == p['end_line'] - p['start_line'] + 1
         original.extend(data)
