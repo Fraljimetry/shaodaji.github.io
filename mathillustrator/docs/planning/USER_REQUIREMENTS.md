@@ -1583,3 +1583,7 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Remove two dashed control-handle segments from Bézier; retain the four defining points.
 - Standardize ordinary single-circle glyph radii to 8 SVG units unless geometric overlap/layout specifically requires otherwise.
 - Restrict edits to these explicitly requested glyphs.
+
+### Round 132 — Icon clearance and scope capitalization
+- Circle inversion glyph: increase the distance between the two visible inverse points while keeping the geometric reciprocal-radius relation and common point size.
+- Scope bounds across 2D/3D must use lowercase variable names (x min, x max, y min, y max, z min, z max); keep serialization identifiers unchanged.

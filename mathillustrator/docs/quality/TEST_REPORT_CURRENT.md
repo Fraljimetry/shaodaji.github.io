@@ -1744,3 +1744,9 @@ Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotatio
 - Real local Chromium (Playwright, inline HTML): `tests/browser_round131_glyphs.py` PASS, checking rendered glyphs, sizes, point counts and absence of page errors.
 - Real local Chromium: Round 128 centered-range regression PASS, Round 130 strict region regression PASS.
 - Hosted website, Firefox/Safari, real GPU: not tested (glyph changes do not modify GPU code).
+
+### Round 132 — Inversion glyph clearance and axis-label consistency
+- Moved Circle inversion markers onto a diagonal ray to increase on-screen separation while preserving the inverse-distance product and existing glyph point sizes.
+- Changed 2D region labels and scope i18n keys to lowercase axis letters, consistent with existing 3D region labels. No schema changes.
+
+**Round 132 verification (local isolated fixture):** `node --check` app and i18n PASS; full `node --test tests/*.test.mjs` **545/545 PASS**; actual Chromium `browser_round57_inversion_glyph.py`, `browser_round132_scope_glyph.py`, `browser_round131_glyphs.py`, and `browser_smoke.py` PASS. No hardware GPU or live-site deployment tests were performed. One early combined browser test timed out during incorrect selector setup; it was corrected and rerun successfully. No changes to project schema or mathematical geometry computations.

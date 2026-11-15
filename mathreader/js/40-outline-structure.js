@@ -1305,7 +1305,17 @@ function structureHeadingRowSegments(line) {
   if (parts.length < 2) return fallback;
   if (parts.some((part) => !Number.isInteger(part.start) || !Number.isInteger(part.end)
       || part.end <= part.start || part.start < 0 || part.end > text.length
-      || !Number.isFinite(Number(part.xStartRatio)) || !Number.isFinite(Number(part.xEndRatio)))) return fallback;
+      || part.xStartRatio === null || part.xStartRatio === undefined || part.xStartRatio === ''
+      || part.xEndRatio === null || part.xEndRatio === undefined || part.xEndRatio === ''
+      || !Number.isFinite(Number(part.xStartRatio)) || !Number.isFinite(Number(part.xEndRatio))
+      || Number(part.xEndRatio) < Number(part.xStartRatio))) return fallback;
+  // The geometry and source-text offsets must advance together. Malformed
+  // or overlapping part ranges otherwise fabricate a different heading when
+  // reconstructing two-column lines from imported / OCR text.
+  for (let i = 1; i < parts.length; i++) {
+    if (parts[i].start < parts[i - 1].end
+        || Number(parts[i].xStartRatio) < Number(parts[i - 1].xStartRatio)) return fallback;
+  }
   const fragments = [];
   let current = '';
   let start = null;

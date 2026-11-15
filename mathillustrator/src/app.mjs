@@ -139,13 +139,14 @@ glyph.reflection='<path d="M12 2V22M4 12H20"/>'+glyphDots([[5,12],[19,12]]);
 // occupying one corner; the origin remains distinct from the two orbit points.
 glyph.rotation='<path d="M2.4 15A10.8 10.8 0 0 1 21.6 15"/>'+glyphDots([[12,19.92],[2.4,15],[21.6,15]]);
 glyph.dilation='<path d="M4 12H21"/>'+glyphDots([[4,12],[11,12],[21,12]]);
-// Circle inversion: the center is deliberately NOT marked or connected.
-// C=(8.2,12), R=8; P=(13.2,12), P'=C+(R²/5,0).
-// Both P and P' have the common glyph marker radius 2.8 and fit the 24x24 viewBox.
-// The short horizontal segment joins only the paired inversion points.
-const inversionGlyphInsideX=13.2;
-const inversionGlyphOutsideX=8.2+8**2/5;
-glyph.circleInversion=glyphCrossSectionCircle(8.2,12,8)+`<path d="M${inversionGlyphInsideX} 12H${inversionGlyphOutsideX}"/>`+glyphDots([[inversionGlyphInsideX,12],[inversionGlyphOutsideX,12]]);
+// Circle inversion: diagonal placement maximizes separation inside the 24-unit
+// glyph while retaining true reciprocal distances and the standard 8-unit ring.
+// C=(9,9), R=8, P'=(20.5,20.5), P=C+(R²/|P'-C|²)(P'-C).
+// The inversion center is neither drawn nor connected to either point.
+const inversionGlyphCenter=[9,9], inversionGlyphFar=[20.5,20.5];
+const inversionGlyphScale=8**2/((inversionGlyphFar[0]-9)**2+(inversionGlyphFar[1]-9)**2);
+const inversionGlyphNear=inversionGlyphCenter.map((v,i)=>v+inversionGlyphScale*(inversionGlyphFar[i]-v));
+glyph.circleInversion=glyphCrossSectionCircle(...inversionGlyphCenter,8)+`<path d="M${inversionGlyphNear.join(' ')}L${inversionGlyphFar.join(' ')}"/>`+glyphDots([inversionGlyphNear,inversionGlyphFar]);
 // Replace each *filled* glyph circle radius including older shared glyphs;
 // geometric outlines with no fill remain unchanged.
 for(const type of Object.keys(glyph))glyph[type]=glyph[type].replace(/<circle\b[^>]*\bfill="currentColor"[^>]*\/>/g,tag=>{
@@ -1633,7 +1634,7 @@ function renderProperties(){
  }
  if(['vectorField','domainColoring'].includes(o.type)){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
-  const entries={};for(const [key,label] of [['xMin','X min'],['xMax','X max'],['yMin','Y min'],['yMax','Y max']]){
+  const entries={};for(const [key,label] of [['xMin','x min'],['xMax','x max'],['yMin','y min'],['yMax','y max']]){
    entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
    entries[key].onchange=()=>{};
   }

@@ -81,6 +81,15 @@ function structureResultWrappedProseReference(lines, lineIndex, cleaned) {
     if (!Number.isFinite(distance) || distance < 0 || distance > 0.032) break;
     const prevEnd = Number(previous.xEndRatio);
     const currentStart = Number(current.xStartRatio);
+    // A neighboring visual row can belong to the opposite PDF column.
+    // Check both directions: a right-column reference lead must not suppress
+    // a valid left-column Result (the old check only handled the reverse).
+    const previousStart = Number(previous.xStartRatio);
+    const currentEnd = Number(current.xEndRatio);
+    if (Number.isFinite(previousStart) && Number.isFinite(prevEnd)
+        && Number.isFinite(currentStart) && Number.isFinite(currentEnd)
+        && ((previousStart < 0.49 && currentStart > 0.51)
+          || (previousStart > 0.51 && currentStart < 0.49))) continue;
     if (Number.isFinite(prevEnd) && Number.isFinite(currentStart)
         && currentStart > prevEnd + 0.12) continue;
     const before = normalizedStructureResultText(previous.text);
@@ -496,7 +505,13 @@ function detectedStructureResult(lines, lineIndex, page) {
     const previous = lines?.[lineIndex - 1];
     const previousText = normalizedStructureResultText(previous?.text);
     const previousDistance = previous ? Math.abs((Number(previous.ratio) || 0) - (Number(line.ratio) || 0)) : Infinity;
-    const splitProofHeading = previousDistance <= 0.075
+    // A nearby PROOF OF heading in the opposite column is unrelated.
+    const precedingStart = Number(previous?.xStartRatio);
+    const headingStart = Number(line?.xStartRatio);
+    const sameColumn = !Number.isFinite(precedingStart) || !Number.isFinite(headingStart)
+      || !((precedingStart < 0.49 && headingStart > 0.51)
+        || (precedingStart > 0.51 && headingStart < 0.49));
+    const splitProofHeading = previousDistance <= 0.075 && sameColumn
       && /^(?:\d+(?:(?:\.\d+)+|(?:-\d+)+)\s+)?(?:A\s+)?PROOF\s+OF\s+(?:THE\s+)?/i.test(previousText);
     if (splitProofHeading) return null;
     const title = cleaned.replace(/[.:]+$/, '').trim();

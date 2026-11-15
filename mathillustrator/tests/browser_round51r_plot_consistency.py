@@ -33,18 +33,18 @@ def main():
    add('vectorField','-y','x');assert prop().get_by_text('X(x, y)',exact=True).count()==1
    region=prop().locator('.plot-region-editor');assert region.get_by_role('button',name='Apply ±').count()==1
    before=state()['objects'][-1]['region'].copy()
-   region.get_by_label('X max').fill('5')
-   region.get_by_label('X max').press('Tab')
+   region.get_by_label('x max').fill('5')
+   region.get_by_label('x max').press('Tab')
    assert state()['objects'][-1]['region']==before,'blur should not redraw'
-   region.get_by_label('X max').locator('..').dblclick(position={'x':7,'y':13})
+   region.get_by_label('x max').locator('..').dblclick(position={'x':7,'y':13})
    assert [float(i.input_value()) for i in region.locator('input:not([aria-label="Centered half-range"])').all()]==[-5,5,-5,5]
    assert state()['objects'][-1]['region']==before
-   region.get_by_label('X max').press('Enter')
+   region.get_by_label('x max').press('Enter')
    assert state()['objects'][-1]['region']=={'xMin':-5,'xMax':5,'yMin':-5,'yMax':5}
    page.locator('#undo').click();assert state()['objects'][-1]['region']==before
    page.locator('#redo').click();assert state()['objects'][-1]['region']['yMax']==5
    region=prop().locator('.plot-region-editor')
-   region.get_by_label('X min').fill('7');region.get_by_label('X min').press('Enter')
+   region.get_by_label('x min').fill('7');region.get_by_label('x min').press('Enter')
    assert state()['objects'][-1]['region']['xMin']==-5,'invalid range must rollback'
    print('ROUND51R_2D_CHROMIUM_PASS',flush=True)
    page.locator('#scene3d-enable').check(force=True)

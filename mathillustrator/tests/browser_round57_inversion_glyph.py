@@ -20,10 +20,11 @@ with sync_playwright() as p:
   for g in result:
    assert len(g['rings'])==1 and len(g['dots'])==2 and len(g['paths'])==1,g
    cx,cy,r=g['rings'][0];(x,y,rad),(xx,yy,rad2)=g['dots']
-   assert y==yy==cy and cx<x<cx+r<xx,g
-   assert abs((x-cx)*(xx-cx)-r*r)<1e-9,g
-   assert xx-x>rad+rad2 and xx+rad2<=24,g
-   assert g['paths'][0]==f'M{x} 12H{xx}',g
+   near=math.hypot(x-cx,y-cy);far=math.hypot(xx-cx,yy-cy)
+   assert near<r<far and abs(near*far-r*r)<1e-8,g
+   assert math.hypot(xx-x,yy-y)>11,g
+   assert all(2.8<=v<=21.2 for v in (xx,yy)),g
+   assert g['paths'][0]==f'M{x} {y}L{xx} {yy}',g
   assert not errors,errors
   print('ROUND57_CHROMIUM_PASS: unmarked inversion center, two distinct correctly inverse points, horizontal segment, no clipping')
  finally:b.close()
