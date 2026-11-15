@@ -1,3 +1,9 @@
+## Round 181 — Tutorial examples postponed
+- Remove all example-project links from both tutorial languages for now. Do not introduce a replacement showcase. Keep other tutorial content unchanged.
+
+## Round 180 — Tutorial table headings
+- Tutorial table header cells are left-aligned in both English and Chinese via a guide-scoped CSS rule; editor tables are unaffected.
+
 # MathIllustrator — single living user-requirements register
 
 This is the **only growing user-requirements Markdown file** for this project. Update this file in place after every implementation/debug round. Do not create separate per-round requirement files. Historical acceptance evidence belongs in the existing `docs/quality/TEST_REPORT_CURRENT.md`, and old release artifacts remain in the verified history archive.

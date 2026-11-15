@@ -1,3 +1,10 @@
+## Round 181 — Tutorial example gallery removal (2026-11-15)
+- Removed six example links and gallery introductions in both English and Chinese. Removed unused gallery-only CSS. Kept editor and existing native example assets unchanged to avoid unrelated behavior changes.
+- Verification: bilingual static markup assertions and Node regression; full browser suite not run.
+
+## Round 180 — Tutorial table alignment (2026-11-15)
+- Tutorial table header cells are left-aligned in both English and Chinese via a guide-scoped CSS rule; editor tables are unaffected.
+
 ## Round 179 — Editable tutorial gallery and Vector Field control order (2026-11-15)
 
 - Added six real native JSON examples under `examples/gallery-*.json`, with EN/CN tutorial links opening a new editor tab via `?example=...`. Loader uses a six-ID allowlist, fetches only bundled files, validates with `validateDoc`, confirms replacement, checks document generation/revision during async fetch and clears the query parameter. No silent project replacement.
