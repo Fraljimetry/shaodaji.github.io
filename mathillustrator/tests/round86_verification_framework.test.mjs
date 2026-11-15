@@ -21,7 +21,7 @@ test('geometry invariants — deterministic multi-scale suite',()=>{
  assert.equal(SCALES.length,6);
  const failures=result.results.filter(r=>r.failed);
  assert.deepEqual(failures,[],`seed=${DEFAULT_SEED} failures=${JSON.stringify(failures.slice(0,3))}`);
- assert.equal(result.results.reduce((s,r)=>s+r.passed,0),10800);
+ assert.equal(result.results.reduce((s,r)=>s+r.passed,0),24000);
 });
 
 test('coverage inventory has no untracked properties or fictitious module paths',async()=>{
@@ -29,9 +29,9 @@ test('coverage inventory has no untracked properties or fictitious module paths'
  const result=spawnSync(process.execPath,['tests/verification/report_coverage.mjs'],{cwd:new URL('..',import.meta.url),encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
  const report=JSON.parse(result.stdout);
- assert.equal(report.propertyFamilies,9);
- assert.equal(report.propertyCases,10800);
+ assert.equal(report.propertyFamilies,20);
+ assert.equal(report.propertyCases,24000);
  assert.equal(report.operationsCatalogued,28);
- assert.equal(report.operationsCovered,9);
+ assert.equal(report.operationsCovered,16);
  assert.equal(report.failed,0);
 });

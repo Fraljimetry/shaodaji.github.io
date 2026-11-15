@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "round": 87,
+  "round": 92,
   "notes": "Inventory is scoped to core behavior, not every UI tool. 'covered' denotes seeded property checks only, not formal proofs or exhaustive input coverage.",
   "operations": [
     {
@@ -37,15 +37,23 @@
       "id": "line.intersections",
       "layer": 2,
       "module": "src/geometry_round50.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "line.intersection_symmetry",
+        "line.domain_boundary"
+      ],
+      "status": "covered"
     },
     {
       "id": "circle.intersections",
       "layer": 2,
       "module": "src/model.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "circle.line_incidence",
+        "circle.circle_incidence",
+        "circle.domain_boundary",
+        "circle.tangency_branches"
+      ],
+      "status": "covered"
     },
     {
       "id": "circle.circumcircle",
@@ -172,36 +180,46 @@
       "id": "dependency.recompute",
       "layer": 4,
       "module": "src/model.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "dependency.recompute"
+      ],
+      "status": "covered"
     },
     {
       "id": "dependency.branch-identity",
       "layer": 4,
       "module": "src/model.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "dependency.branch_identity"
+      ],
+      "status": "covered"
     },
     {
       "id": "dependency.cycles-and-deletion",
       "layer": 4,
       "module": "src/model.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "dependency.cycles_and_deletion"
+      ],
+      "status": "covered"
     },
     {
       "id": "integration.import-export",
       "layer": 5,
       "module": "src/storage.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "integration.json_roundtrip"
+      ],
+      "status": "covered"
     },
     {
       "id": "integration.undo-redo",
       "layer": 5,
       "module": "src/app.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "integration.history_snapshots"
+      ],
+      "status": "covered"
     },
     {
       "id": "integration.browser-interaction",

@@ -328,6 +328,18 @@ function computedStraight(o,at,line){
  const len=Math.hypot(...d),unit=[d[0]/len,d[1]/len];
  return {a:[...a],d:unit,domain,length:len};
 }
+/** Scale-aware finite-domain membership for unit-direction lines.
+ * A fixed world-unit pad admits fake intersections on microscopic segments.
+ * Permit only floating-point rounding at the parameter's own scale.
+ */
+function inStraightDomain(line,u){
+ if(line.domain==='infinite')return true;
+ if(!Number.isFinite(u))return false;
+ const length=line.length;
+ if(line.domain==='segment'&&(!Number.isFinite(length)||length<0))return false;
+ const tolerance=8*Number.EPSILON*Math.max(Math.abs(u),line.domain==='segment'?Math.abs(length):0);
+ return u>=-tolerance&&(line.domain==='ray'||u<=length+tolerance);
+}
 export function intersectStraightLines(a,b){
  if(!a||!b||!safeCoord(a.a)||!safeCoord(b.a)||!safeCoord(a.d)||!safeCoord(b.d))return null;
  const det=a.d[0]*b.d[1]-a.d[1]*b.d[0];
@@ -337,8 +349,7 @@ export function intersectStraightLines(a,b){
  const t=(d[0]*b.d[1]-d[1]*b.d[0])/det;
  const u=(d[0]*a.d[1]-d[1]*a.d[0])/det;
  if(!Number.isFinite(t)||!Number.isFinite(u))return null;
- const inside=(line,distance)=>line.domain==='infinite'||(distance>=-1e-9&&
-  (line.domain==='ray'||distance<=line.length+1e-9));
+ const inside=(line,distance)=>inStraightDomain(line,distance);
  if(!inside(a,t)||!inside(b,u))return null;
  const point=[a.a[0]+t*a.d[0],a.a[1]+t*a.d[1]];
  return safeCoord(point)?point:null;
@@ -371,8 +382,7 @@ export function intersectLineCircle(line,circle){
  const gap=circle.radius-perpendicular;
  const h=Math.sqrt(gap*(circle.radius+perpendicular));
  const tangent=gap===0;
- const inside=u=>line.domain==='infinite'||(u>=-1e-9&&
-  (line.domain==='ray'||u<=line.length+1e-9));
+ const inside=u=>inStraightDomain(line,u);
  const point=u=>{
   if(!inside(u))return null;
   const p=[line.a[0]+u*dx,line.a[1]+u*dy];

@@ -1482,3 +1482,33 @@ R83-01/02/03 **CLOSED** in `geometry_round50.mjs` without touching pointer hit-t
 - New scale-aware predicates shared by model and world geometry. Source compatibility and cache-version imports updated to Round 87; glyphs and schema unchanged.
 - Property-based framework: **9/28** scoped operations, **10,800/10,800** deterministic cases PASS, six scales.
 - Full Node suite **479/479 PASS**; module syntax PASS; real isolated Chromium startup/export/undo/redo and Round 68/73/76 workflows PASS. Existing Chromium test harness updated to recognize the new versioned module dependency. Published site and remaining browser scripts not tested.
+
+## Round 88 — analytic intersection properties
+
+- Node **479/479 PASS**; new deterministic property corpus **14,400/14,400 PASS**, seed `0x5a17c0de`, six scales.
+- Coverage catalog **11/28 operations**, 12 property families, zero seeded failures.
+- Actual isolated Chromium `tests/browser_smoke.py` PASS (startup, drawing, exports, undo/redo).
+- Production modules unchanged. Full historical Chromium matrix, published deployment, cross-browser and performance tests **not run**.
+
+## Round 89 verification — 2026-11-15
+
+- Node: 479/479 PASS; module syntax: 27/27 PASS.
+- Deterministic mathematical properties: 19,200/19,200 PASS across 16 families and six scales, 12/28 catalog operations covered.
+- Actual Chromium: `browser_smoke.py` PASS; `browser_round76_remaining_points_lines.py` PASS.
+- Shared numeric domain membership repaired and independently regression-tested. No other historical browser suites executed this round.
+
+## Round 90 scope
+
+Seeded dependency graph recomputation, transitive deletion and cyclic-document rejection were added to the framework; 14/28 covered operations. The canonical full test and Chromium evidence is reported in the Round 90 release response, rather than conflating earlier Cut25 test counts with the current suite.
+
+## Round 91 — Import/export and browser history
+
+- Node: **479/479 PASS** (including framework suite).
+- Seeded properties: **22,800/22,800 PASS**, 19 families, six scales, seed `0x5a17c0de`.
+- Catalog: **15/28** covered operations, limited JSON round-trip property promoted.
+- Chromium: `browser_smoke.py`, `browser_round76_remaining_points_lines.py`, `browser_round91_history.py` **PASS** (actual Chromium).
+- No production changes; no new confirmed bugs. Unverified: general history state machine, concurrent persistence and non-JSON format fidelity.
+
+## Round 92 — undo/redo verification
+
+Automated browser check: `python tests/browser_round92_history.py` (Chromium). Exercises multi-step history, redo invalidation, invalid JSON/schema imports, snapshot preservation and export. Framework: 16/28 operations, 20 properties, 24,000 cases; not exhaustive history coverage.

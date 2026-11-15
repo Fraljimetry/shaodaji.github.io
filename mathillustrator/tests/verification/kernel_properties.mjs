@@ -3,7 +3,7 @@
  * Never change the seed to make failures disappear: archive the seed + case.
  */
 import {transformPoint,circum,projectToCurve,alongCurve,r50SourceShape} from '../../src/geometry_round50.mjs';
-import {regularPolygonVertices,shapeVerticesFromPoints} from '../../src/model.mjs';
+import {regularPolygonVertices,shapeVerticesFromPoints,intersectStraightLines,intersectLineCircle,intersectCircles,newDoc,append,createResolver,affected,remove,validateDoc,clone} from '../../src/model.mjs';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from '../../src/numeric_geometry.mjs';
 
 export const FRAMEWORK_VERSION=1;
@@ -19,6 +19,17 @@ export const FAMILY_CASES=Object.freeze({
  'segment.projection_roundtrip':1200,
  'numeric.degeneracy_scale':1200,
  'shape.polygon_scale':1200,
+ 'line.intersection_symmetry':1200,
+ 'circle.line_incidence':1200,
+ 'circle.circle_incidence':1200,
+ 'line.domain_boundary':1200,
+ 'circle.domain_boundary':1200,
+ 'circle.tangency_branches':1200,
+ 'dependency.branch_identity':1200,
+ 'dependency.recompute':1200,
+ 'dependency.cycles_and_deletion':1200,
+ 'integration.json_roundtrip':1200,
+ 'integration.history_snapshots':1200,
 });
 export function rng(seed){
  let state=seed>>>0;
@@ -43,6 +54,153 @@ export function propertyCase(family,caseIndex,rand){
  const scale=SCALES[caseIndex%SCALES.length], center=randomPoint(rand,scale),p=add(center,randomPoint(rand,scale));
  const q=add(center,randomPoint(rand,scale)),angle=(rand()*2-1)*Math.PI;
  const failure=(detail)=>({family,caseIndex,scale,detail});
+ if(family==='integration.history_snapshots'){
+  // Pure serialization state contract; real Chromium tests exercise app undo/redo.
+  const doc=newDoc(),anchor=append(doc,{type:'point',xy:center});
+  const first=JSON.stringify(doc),history=[first],future=[];
+  doc.objects.find(o=>o.id===anchor.id).xy=add(center,mul(unitAngle(rand),scale));
+  const second=JSON.stringify(doc);
+  future.push(second);
+  const restored=validateDoc(JSON.parse(history.pop()));
+  const beforeDivergence=JSON.stringify(restored);
+  const redoState=JSON.parse(future[0]);
+  const diverged=clone(restored);
+  diverged.objects[0].xy=add(center,mul(unitAngle(rand),scale*2));
+  future.length=0;
+  const valid=JSON.stringify(restored)===first&&JSON.stringify(redoState)===second&&
+    beforeDivergence===JSON.stringify(restored)&&JSON.stringify(diverged)!==first&&future.length===0;
+  return valid?null:failure({first,second,restored,diverged});
+ }
+ if(family==='integration.json_roundtrip'){
+  // Validate actual persisted v1 JSON, not only JSON.parse/stringify.
+  const doc=newDoc(),a=append(doc,{type:'point',xy:center});
+  const b=append(doc,{type:'point',xy:add(center,mul(unitAngle(rand),scale))});
+  const midpoint=append(doc,{type:'midpoint',refs:[a.id,b.id]});
+  const edge=append(doc,{type:'segment',refs:[a.id,b.id]});
+  doc.meta.title=`Roundtrip ${caseIndex}`;
+  const snapshot=JSON.stringify(doc),reloaded=validateDoc(JSON.parse(snapshot));
+  const positionBefore=createResolver(doc).at(midpoint.id),positionAfter=createResolver(reloaded).at(midpoint.id);
+  const isolated=clone(reloaded);isolated.objects.find(o=>o.id===a.id).xy=[scale*4,scale*5];
+  const valid=JSON.stringify(reloaded)===snapshot&&JSON.stringify(doc)===snapshot&&
+    reloaded.objects.length===4&&reloaded.objects.some(o=>o.id===edge.id)&&
+    closePoint(positionBefore,positionAfter,scale)&&
+    JSON.stringify(doc)===snapshot&&JSON.stringify(isolated)!==snapshot;
+  return valid?null:failure({snapshot,reloaded,positionBefore,positionAfter});
+ }
+ if(family==='line.domain_boundary'){
+  const u=unitAngle(rand),v=[-u[1],u[0]],len=(1+rand())*scale;
+  const a={a:center,d:u,domain:'segment',length:len};
+  const b={a:add(center,mul(u,len*.4)),d:v,domain:'infinite'};
+  const inside=intersectStraightLines(a,b),reverse=intersectStraightLines(b,a);
+  const outStart={...b,a:sub(center,mul(u,.2*scale))};
+  const outEnd={...b,a:add(center,mul(u,len+.2*scale))};
+  const ray={...a,domain:'ray'};
+  return closePoint(inside,b.a,scale)&&closePoint(reverse,b.a,scale)&&
+    intersectStraightLines(a,outStart)===null&&intersectStraightLines(a,outEnd)===null&&
+    intersectStraightLines(ray,outStart)===null&&closePoint(intersectStraightLines(ray,outEnd),outEnd.a,scale)
+    ?null:failure({a,b,inside,reverse,outStart:intersectStraightLines(a,outStart),outEnd:intersectStraightLines(a,outEnd)});
+ }
+ if(family==='circle.domain_boundary'){
+  const u=unitAngle(rand),radius=(.6+rand())*scale;
+  const circle={center,radius},base=sub(center,mul(u,radius*2));
+  const short={a:base,d:u,domain:'segment',length:radius*.75};
+  const long={a:base,d:u,domain:'segment',length:radius*4.5};
+  const ray={a:add(center,mul(u,radius*2)),d:u,domain:'ray'};
+  const s=intersectLineCircle(short,circle),l=intersectLineCircle(long,circle),r=intersectLineCircle(ray,circle);
+  return !s.minus&&!s.plus&&!r.minus&&!r.plus&&l.minus&&l.plus&&
+    closePoint(l.minus,sub(center,mul(u,radius)),scale)&&closePoint(l.plus,add(center,mul(u,radius)),scale)
+    ?null:failure({circle,short:s,long:l,ray:r});
+ }
+ if(family==='circle.tangency_branches'){
+  const radius=(.6+rand())*scale,origin=[0,0],u=[1,0];
+  const line={a:[0,radius],d:u,domain:'infinite'};
+  const crossing=intersectLineCircle(line,{center:origin,radius});
+  const c1={center:origin,radius},c2={center:[2*radius,0],radius};
+  const cc=intersectCircles(c1,c2);
+  return crossing.tangent&&closePoint(crossing.minus,line.a,scale)&&
+    closePoint(crossing.plus,line.a,scale)&&cc.tangent&&cc.plus===null&&
+    closePoint(cc.minus,[radius,0],scale)
+    ?null:failure({line,crossing,c1,c2,cc});
+ }
+ if(family==='dependency.branch_identity'){
+  // New resolver on each input edit models a user dragging the second circle.
+  const doc=newDoc(),radius=(1+rand())*scale,atOrigin=[0,0];
+  const origin=append(doc,{type:'point',xy:atOrigin});
+  const up=append(doc,{type:'point',xy:[0,radius]});
+  const moving=append(doc,{type:'point',xy:[radius,0]});
+  const movingUp=append(doc,{type:'point',xy:add(moving.xy,[0,radius])});
+  const c1=append(doc,{type:'circle',refs:[origin.id,up.id]});
+  const c2=append(doc,{type:'circle',refs:[moving.id,movingUp.id]});
+  const minus=append(doc,{type:'circleCircleIntersection',refs:[c1.id,c2.id],branch:-1});
+  const plus=append(doc,{type:'circleCircleIntersection',refs:[c1.id,c2.id],branch:1});
+  const before=createResolver(doc),p1=before.at(minus.id),p2=before.at(plus.id);
+  moving.xy=[2*radius,0];movingUp.xy=[2*radius,radius];
+  const tangent=createResolver(doc),t1=tangent.at(minus.id),t2=tangent.at(plus.id);
+  moving.xy=[radius,0];movingUp.xy=[radius,radius];
+  const after=createResolver(doc),a1=after.at(minus.id),a2=after.at(plus.id);
+  return p1&&p2&&p1[1]<p2[1]&&t1&&t2&&closePoint(t1,t2,scale)&&
+    closePoint(a1,p1,scale)&&closePoint(a2,p2,scale)
+    ?null:failure({p1,p2,t1,t2,a1,a2,radius});
+ }
+ if(family==='dependency.recompute'){
+  // Each resolver must reflect the current document, not stale cached values.
+  const doc=newDoc(),a=append(doc,{type:'point',xy:center}),b=append(doc,{type:'point',xy:add(center,mul(unitAngle(rand),scale))});
+  const middle=append(doc,{type:'midpoint',refs:[a.id,b.id]});
+  const nested=append(doc,{type:'midpoint',refs:[middle.id,b.id]});
+  const before=createResolver(doc),old=before.at(nested.id);
+  const delta=randomPoint(rand,scale);a.xy=add(a.xy,delta);
+  const after=createResolver(doc),next=after.at(nested.id);
+  const expected=add(old,mul(delta,.25));
+  // Fresh resolver updates; earlier resolver is an immutable evaluation snapshot.
+  return closePoint(next,expected,scale)&&closePoint(before.at(nested.id),old,scale)
+   ?null:failure({center,delta,old,next,expected});
+ }
+ if(family==='dependency.cycles_and_deletion'){
+  const doc=newDoc(),a=append(doc,{type:'point',xy:center}),b=append(doc,{type:'point',xy:add(center,[scale,0])});
+  const m=append(doc,{type:'midpoint',refs:[a.id,b.id]});
+  const downstream=append(doc,{type:'midpoint',refs:[m.id,b.id]});
+  const independent=append(doc,{type:'point',xy:add(center,[0,scale])});
+  const expected=new Set([a.id,m.id,downstream.id]);
+  const descendants=affected(doc,a.id);
+  const count=remove(doc,a.id);
+  const cascade=count===3&&expected.size===descendants.size&&[...expected].every(id=>descendants.has(id))&&
+   doc.objects.length===2&&doc.objects.every(o=>[b.id,independent.id].includes(o.id))&&closePoint(createResolver(doc).at(b.id),b.xy,scale);
+  // Directly constructed invalid graph: validator must explicitly recognize cycles.
+  const cyclic=newDoc();append(cyclic,{type:'midpoint',refs:['o2','o2']});append(cyclic,{type:'midpoint',refs:['o1','o1']});
+  let error='';try{validateDoc(cyclic);}catch(e){error=String(e.message);}
+  const safelyUnresolved=createResolver(cyclic).at('o1')===null;
+  return cascade&&/Cyclic object dependency/.test(error)&&safelyUnresolved?null:
+   failure({cascade,error,safelyUnresolved,remaining:doc.objects.map(o=>o.id)});
+ }
+ if(family==='line.intersection_symmetry'){
+  const u=unitAngle(rand),angle=(.2+rand()*2.5)*(rand()<.5?-1:1);
+  const v=[u[0]*Math.cos(angle)-u[1]*Math.sin(angle),u[0]*Math.sin(angle)+u[1]*Math.cos(angle)];
+  const a={a:sub(center,mul(u,(.3+rand())*scale)),d:u,domain:'infinite'};
+  const b={a:add(center,mul(v,(.3+rand())*scale)),d:v,domain:'infinite'};
+  const ab=intersectStraightLines(a,b),ba=intersectStraightLines(b,a);
+  return closePoint(ab,center,scale)&&closePoint(ba,center,scale)&&closePoint(ab,ba,scale)?null:failure({a,b,ab,ba,center});
+ }
+ if(family==='circle.line_incidence'){
+  const u=unitAngle(rand),v=[-u[1],u[0]],radius=scale*(.6+rand());
+  const offset=(rand()-.5)*radius;
+  const line={a:add(center,mul(v,offset)),d:u,domain:'infinite'};
+  const c={center,radius},root=intersectLineCircle(line,c);
+  const valid=pt=>pt&&Math.abs(norm(sub(pt,center))-radius)<=2e-10*scale&&
+    Math.abs((pt[0]-line.a[0])*u[1]-(pt[1]-line.a[1])*u[0])<=2e-10*scale;
+  return !root.tangent&&valid(root.minus)&&valid(root.plus)&&
+   norm(sub(root.minus,root.plus))>0?null:failure({line,c,root});
+ }
+ if(family==='circle.circle_incidence'){
+  const u=unitAngle(rand),v=[-u[1],u[0]],radius=scale*(.6+rand());
+  const distance=radius*(.3+rand()*.9);
+  const a={center,radius},b={center:add(center,mul(u,distance)),radius};
+  const ab=intersectCircles(a,b),ba=intersectCircles(b,a);
+  const valid=pt=>pt&&Math.abs(norm(sub(pt,a.center))-a.radius)<=2e-10*scale&&
+    Math.abs(norm(sub(pt,b.center))-b.radius)<=2e-10*scale;
+  const roots=[ab.minus,ab.plus],reverse=[ba.minus,ba.plus];
+  const matches=roots.every(pt=>reverse.some(other=>closePoint(pt,other,scale)));
+  return !ab.tangent&&!ba.tangent&&roots.every(valid)&&reverse.every(valid)&&matches?null:failure({a,b,ab,ba});
+ }
  if(family==='numeric.degeneracy_scale'){
   const a=center,b=add(a,[scale,0]),c=add(b,[scale*.3,scale*.6]);
   const collinear=add(b,[scale*.3,0]);

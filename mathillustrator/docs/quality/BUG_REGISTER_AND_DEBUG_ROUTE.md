@@ -106,3 +106,24 @@
 ## Round 86 — systematic verification foundation (no bug status changes)
 
 The debugging strategy is now **invariant-driven**, not a repeating quota of newly found bugs. See [VERIFICATION_FRAMEWORK.md](VERIFICATION_FRAMEWORK.md) and `tests/verification/coverage_catalog.json`. Seven seeded mathematical property families (8,400 cases over six scales) now pass; scoped property coverage is **7/28** operations. The three degenerate polygon cases R86-01/02/03 stay **OPEN** and their `*.pending.mjs` reproducers are untouched. Property coverage is not equivalent to complete software coverage, and earlier historical closure statements remain unchanged. Next priority is numerical degeneracy contracts and independent intersection oracles, then dependent and browser workflows.
+
+## Round 88 — verification-only checkpoint
+
+No new confirmed defects and no bug status changes. `line.intersections` and `circle.intersections` gained deterministic seeded incidence/symmetry properties; **11/28 operations** now meet the current property coverage criterion. Prioritized open investigation: analytic tangency transitions, ray/segment domains, intersection branch continuity. Keep the distinction between property coverage and full defect clearance.
+
+## Round 89 — numerical domain regression and verification
+
+- **R89-01 — CLOSED (P1):** Fixed absolute `1e-9` line-parameter boundary padding used in both `intersectStraightLines` and `intersectLineCircle`. It could return false intersections beyond segment/ray endpoints for microscopic shapes. Reproducer: six-scale, deterministically seeded `line.domain_boundary` and `circle.domain_boundary` invariants in `tests/verification/kernel_properties.mjs`. Shared correction: `inStraightDomain` in `src/model.mjs`. Regression included in the regular framework test.
+- Covered `dependency.branch-identity` for sampled exactly representable tangent transitions. No other defect claimed or closed. Continue prioritized next with independent near-tangent oracle, recomputation and deleted-source handling; do not count previously sampled families as exhaustive.
+
+### Round 90 verification update
+
+No new defect confirmed. Dependency recomputation and cycle/cascade deletion now have seeded regression properties. Remaining priorities: dependent non-point curves, ownership of polygon edges, complex branch changes, and browser undo/redo. The register of existing defects is unchanged.
+
+### Round 91 — integration verification checkpoint
+
+No new confirmed bugs and no existing status changes. JSON roundtrip has 1,200 seeded mathematical state checks; actual Chromium import → undo → redo → save passes. Continue reviewing rejected mutations, redo invalidation, history size eviction, older scene formats, SVG/TikZ interchanges and multi-tab conflicts. The history operation remains unverified in the property catalog; do not count simple UI smoke as exhaustive history validation.
+
+## Round 92 verification update
+
+No new confirmed defects. Chromium history tests cover multi-step traversal, redo invalidation and rejected-import preservation; history eviction, concurrent tabs, drag cancellation and autosave remain *unverified risks*, not registered bugs. Continue to prioritize evidence-backed failures over arbitrary discovery quotas.

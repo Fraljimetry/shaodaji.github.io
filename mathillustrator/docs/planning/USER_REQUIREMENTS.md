@@ -1402,3 +1402,23 @@ User requested replacing open-ended iterative bug-hunting with a **systematic ve
 - Continue bottom-up, invariant-driven verification; do not revert to arbitrary fixed counts of newly found bugs.
 - Mathematical construction validity must be scale-aware and identical between model creation and geometry path resolution; protect microscopic shapes and forbid degenerate closed paths.
 - Keep persistent bug register, coverage catalog, verification plan and quality report current each round.
+
+## Round 88 — verification-first continuation
+
+Continue rapid, focused rounds and machine-readable property coverage; no PowerShell commands in delivery. Round 88 adds analytic intersection symmetry and incidence property families, preserving all existing glyphs and compatibility. Future work prioritizes bounded-domain/tangency oracles and moving branch identities, without misrepresenting sampled properties as mathematical proofs.
+
+## Round 89 framework continuation
+- Continue fast, focused framework rounds, keep one cumulative bug register, avoid PowerShell instructions, preserve website-root changed-file-only ZIP overlays and no Git commits.
+- Require seeded multiscale boundary and tangency testing, dynamic saved intersection branch identity, and explicit inventory coverage rather than endlessly creating isolated defect lists.
+
+### Round 90 framework continuity
+
+Continue bounded, deterministic verification of dependencies, including anchor recomputation, cascading deletion and cyclic graphs. Preserve existing project compatibility and glyphs; do not broaden the verified scope beyond tested dependency families.
+
+### Round 91 verification continuation
+
+Preserve rapid, framework-driven cuts and honest coverage labels. Verify JSON project round-trip and actual Chromium import/undo/redo/export; maintain the cumulative bug register and distinguish a narrow browser smoke test from full state-machine property coverage. Keep changed-files-only website-root ZIP overlays, no commits, and concise delivery without PowerShell instructions.
+
+## Round 92 verification request
+
+Continue rapid, focused incremental invariant-driven verification; cover undo/redo with real Chromium state-machine tests. Keep cumulative bug register, coverage and quality documentation updated; retain unchanged glyphs and backwards compatibility.

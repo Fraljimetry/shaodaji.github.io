@@ -68,3 +68,41 @@ The runners print structured JSON, exit nonzero on failure, and do not modify ap
 ### Next focused step (Round 88)
 
 Advance analytic line/circle intersection residuals and symmetry, including independent reference calculations and near-tangencies. Then move to dynamic branch identity. Scope and count of uncovered operations should decrease only as new property families execute.
+
+## Round 88 — analytic intersections (framework only)
+
+- Added three independently constructed seeded mathematical properties: crossing straight-line symmetry and known incidence, circle–line intersection residuals, and circle–circle root residuals plus argument-order symmetry. Each runs 1,200 cases at six world scales.
+- Coverage now **11/28** scoped operations, **12 property families**, **14,400/14,400** passing cases. `line.intersections` and `circle.intersections` are covered; point incidence, tangency transitions, domain-boundary counterexamples, dependent branch continuity, and rigorous high-precision reference remain **unverified**.
+- No production code changed. This coverage validates selected *interior, well-conditioned* cases, not arbitrary near-tangencies or loss of significance.
+- Next: test exact tangencies and bounded segment/ray domains with independent oracles, then dynamic intersection-branch identity.
+
+## Round 89 — bounded domains, exact tangency and branch identity
+
+- Added four independent deterministic families (4,800 cases): bounded line/segment/ray crossings, bounded circle–line crossings, exactly representable tangencies, and saved `+`/`−` circle-intersection branch identity across anchor edits. Existing 12 families remain unchanged and independently seeded.
+- **12/28** catalogued operations covered, **16 property families**, **19,200/19,200** passing trials over six scales (1e-9–1e6). Newly covered: `dependency.branch-identity` (the line/circle domain and tangent checks deepen already-covered operations). This is sampled floating-point coverage, not a formal proof of tangency or dynamic branch continuity.
+- Fixed a root cause in `model.mjs`: previously fixed `1e-9` segment/ray endpoint padding allowed nonexistent crossings on microscopic objects. Both line–line and line–circle solvers now share a parameter-magnitude-based floating-point allowance; infinite domains remain unrestricted.
+- Exact tangent generators use axis-aligned, exactly constructible configurations, because general rotated floating-point constructions may be near-secant/near-disjoint even when mathematically tangent. General near-tangency and root continuity through nonrepresentable contacts remain future verification targets.
+- Full Node **479/479 PASS**, syntax **27 modules PASS**, Chromium isolated smoke and Round 76 **PASS**. No glyph, schema or unrelated UI changes.
+- Next: independent high-precision near-tangent oracle, then dependency recomputation and cycle/deletion contracts. These are still marked unverified in the catalog.
+
+## Round 90 — dependency recomputation and deletion/cycle contracts
+
+- Added deterministic properties `dependency.recompute` and `dependency.cycles_and_deletion` (1,200 cases each over six scales).
+- Recompute property checks midpoint chains after anchor movement and verifies snapshot isolation for existing resolvers.
+- Graph property checks transitive cascade deletion, unrelated-object preservation, explicit cycle rejection by `validateDoc`, and cycle-safe resolver behavior.
+- Coverage **14/28**, **18 families**, **21,600 sampled cases**. This checks a scoped family of midpoint dependencies; other dynamically constrained objects, complicated ownership and high-depth graphs remain separate risks.
+- No runtime application code changed; actual browser smoke and full Node results are recorded in this release summary.
+
+## Round 91 — JSON project roundtrip and real browser undo/redo
+
+- Added `integration.json_roundtrip`: 1,200 deterministic multiscale v1 projects with mixed point, midpoint, and segment references. Each case serializes, validates, reserializes and checks resolved derived positions and snapshot isolation.
+- Coverage **15/28** scoped operations, **19 families**, **22,800 sampled cases**. `integration.import-export` is covered for this bounded JSON subset only; malformed/project migration, larger documents, non-JSON export formats and concurrency remain unverified.
+- Added `tests/browser_round91_history.py` which exercises actual Chromium JSON import, undo, redo and JSON download of an edited project. The `integration.undo-redo` catalog operation deliberately remains *unverified* pending comprehensive history bounds, failed edits, multi-step redo invalidation, and drag cancellation properties. UI smoke alone is not counted as a seeded property.
+- No production modules or glyphs changed. Next: history state machine verification, then wider import/export schemas and invalid input tests.
+
+## Round 92 — history state-machine verification
+
+- Added `integration.history_snapshots`: 1,200 seeded scale-varying serialization, rollback and divergent-state isolation cases. Pure snapshot invariants are paired with `tests/browser_round92_history.py`, which exercises **actual Chromium app history**.
+- Browser verifies multiple independent imports, full undo and redo traversal, disabled-state boundaries, new-edit redo invalidation, rejected malformed JSON and rejected invalid-schema imports preserving document/history, and successful export after redo.
+- Coverage **16/28**, **20 families**, **24,000 sampled cases**. Covered means a defined oracle executed, **not** complete history verification. History eviction at 80 states/30MiB, pointer-drag cancellation, tab conflict, asynchronous autosave, and high-volume history are still unverified.
+- Production code unchanged; no glyph, schema, or behavior changes.
