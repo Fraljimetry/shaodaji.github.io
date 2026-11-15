@@ -9,7 +9,7 @@ def inspect(page):
       if(!pair)return null;
       const c=pair.querySelector('label.check'),f=pair.querySelector('label.field'),i=f.querySelector('input');
       const a=c.getBoundingClientRect(),b=f.getBoundingClientRect(),n=i.getBoundingClientRect(),outer=pair.getBoundingClientRect();
-      return {caption:c.textContent.trim(),field:f.textContent.trim(),rows:getComputedStyle(pair).gridTemplateColumns.split(' ').length,ok:a.right<=b.left+1&&n.right<=outer.right+1&&a.left>=outer.left-1,visible:n.width>=45&&a.height>=13};
+      return {caption:c.textContent.trim(),field:f.textContent.trim(),rows:getComputedStyle(pair).gridTemplateColumns.split(' ').length,ok:a.right<=b.left+1&&n.right<=outer.right+1&&a.left>=outer.left-1,visible:Math.abs(n.width-56)<1&&a.height>=13};
     }''')
 
 with sync_playwright() as pw:

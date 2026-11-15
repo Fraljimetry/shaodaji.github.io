@@ -1674,3 +1674,11 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 - Morphisms: place **Swap side** (formerly Swap label side) and **Bend** (formerly Curve / bend) in one balanced row with a short numeric input. Keep their existing semantics, saved data keys, and undo/redo.
 - 2D and 3D vector fields: place **Normalize lengths** (formerly Normalize vector lengths) with **Density** (formerly Arrow density) in a single row. Do not alter numerical validation or vector field behavior.
 - Keep mathematical expression/text inputs generously sized. At 320 px, 390 px and desktop viewport widths, paired controls must be visible without overlap. No glyph changes.
+
+### Round 154 — Short numeric field width
+- Bend (Diagram morphism) and Density (2D/3D vector fields) numeric inputs must match the 56 px width used by Opacity, including at 320 px mobile viewport; preserve paired checkbox layout.
+
+
+### Round 155 — Formula editor sizing
+- Formula expressions (`f(x)`, `F(x,y)`, `x(t)`, `y(t)`, `r(t)`, `F(z)` and 3D components) use a compact single-row label and medium-width (~53% inspector) expression field. Do not shrink names, general text or multiline editors.
+- Do not shorten labels unless the saved space is materially useful. Preserve original descriptive labels.

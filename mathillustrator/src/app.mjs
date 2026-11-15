@@ -1362,7 +1362,10 @@ function rangeHint(opts={}){
  return '';
 }
 function field(parent,label,value,type,onChange,opts={}){
- const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');wrap.textContent=label;
+ const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');
+ // Formula editors have their own inline layout; names and arbitrary text keep their existing layout.
+ if(type==='text'&&parent.classList.contains('properties')&&/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[XYZ]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label))wrap.classList.add('formula-expression-field');
+ wrap.textContent=label;
  const input=document.createElement(type==='multiline'?'textarea':'input');
  if(type!=='multiline')input.type=type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
  input.value=String(value??'');if(opts.step)input.step=opts.step;

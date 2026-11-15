@@ -940,7 +940,7 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  flex:none;width:13px;height:13px;min-width:13px;margin:0;
 }
 .properties .property-check-number-pair>.field {
- display:grid;grid-template-columns:minmax(0,1fr) 53px;gap:5px;
+ display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:5px;
  align-items:center;margin:0;min-width:0;font-size:11px;
 }
 .properties .property-check-number-pair>.field>input[type=number] {
@@ -950,5 +950,19 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  .properties .property-check-number-pair{gap:6px}
  .properties .property-check-number-pair>.check,
  .properties .property-check-number-pair>.field{font-size:10px}
- .properties .property-check-number-pair>.field{grid-template-columns:minmax(0,1fr) 47px}
+ .properties .property-check-number-pair>.field{grid-template-columns:minmax(0,1fr) 56px}
+}
+
+/* Round 155: restore medium-width inline plot expression editors.
+   This applies only to formulas, not Name, Displayed label or arbitrary text.
+   Make labels adjacent to the editors without wasting a mostly empty row. */
+.properties > .field.formula-expression-field,
+.properties.properties-3d > .field.formula-expression-field {
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,53%)!important;
+ align-items:center!important;column-gap:8px!important;justify-content:stretch!important;
+ min-width:0!important;margin:7px 0!important;text-align:left!important;
+}
+.properties > .field.formula-expression-field > input[type=text] {
+ box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%!important;
+ font-family:Consolas,monospace;
 }

@@ -1903,3 +1903,14 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - Real headless Chromium: new 2D vector paired-control checks passed at 1440, 390 and 320 px, including normalized flag, density edit and saved state. 3D vector paired-control test passed at 1440 px.
 - Mobile 3D vector interaction was **not certified**: mobile pane switching in the initial combined test blocked the plotting selector. This does not affect the passed mobile 2D and morphism checks, but must not be counted as a passed mobile 3D test.
 - Desktop browser is headless software Chromium; hosted deployment, touch hardware, visual screenshot certification, and physical GPU are not covered.
+
+### Round 154 — Bend/Density input width
+- Updated paired Bend and Density numeric inputs from 53 px (47 px at narrow mobile) to 56 px, matching compact Opacity inputs.
+- Real Chromium width regression: Bend 1440/390/320 px PASS; Density 2D 1440/390/320 px PASS; 3D desktop 1440 px PASS. Node 562/562 PASS. Mobile 3D remains unverified (prior drawer navigation issue).
+
+
+### Round 155 — Formula editor alignment
+- Node `node --test tests/*.test.mjs`: 562 passed, 0 failed, 0 skipped.
+- `node --check src/app.mjs`: passed.
+- Real local headless Chromium `tests/browser_round155_expression_alignment.py`: function, parametric, implicit and domain coloring formula row alignment passed at 1440, 768, 390 and 320 px; editors were 53% of panel width, no input overflow or page exceptions.
+- 3D component alignment code was included but not independently browser-exercised. Hosted deployment and physical-device testing not executed.
