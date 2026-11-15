@@ -1,21 +1,25 @@
 {
   "schemaVersion": 1,
-  "round": 92,
+  "round": 99,
   "notes": "Inventory is scoped to core behavior, not every UI tool. 'covered' denotes seeded property checks only, not formal proofs or exhaustive input coverage.",
   "operations": [
     {
       "id": "numeric.domain-and-finite",
       "layer": 1,
       "module": "src/model.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "numeric.domain_and_finite"
+      ],
+      "status": "covered"
     },
     {
       "id": "numeric.tolerance-policy",
       "layer": 1,
       "module": "src/geometry_round50.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "numeric.tolerance_equivariance"
+      ],
+      "status": "covered"
     },
     {
       "id": "numeric.degeneracy",
@@ -30,8 +34,10 @@
       "id": "point.incidence",
       "layer": 2,
       "module": "src/geometry_round50.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "point.support_incidence"
+      ],
+      "status": "covered"
     },
     {
       "id": "line.intersections",
@@ -77,15 +83,19 @@
       "id": "curve.spline",
       "layer": 2,
       "module": "src/geometry.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "curve.spline_interpolation"
+      ],
+      "status": "covered"
     },
     {
       "id": "curve.bezier",
       "layer": 2,
       "module": "src/geometry_round50.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "curve.bezier_convex_hull"
+      ],
+      "status": "covered"
     },
     {
       "id": "transform.rotation",
@@ -136,22 +146,28 @@
       "id": "conic.ellipse",
       "layer": 3,
       "module": "src/model.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "conic.ellipse_focal_sum"
+      ],
+      "status": "covered"
     },
     {
       "id": "conic.parabola",
       "layer": 3,
       "module": "src/geometry_round50.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "conic.parabola_focus_directrix"
+      ],
+      "status": "covered"
     },
     {
       "id": "conic.hyperbola",
       "layer": 3,
       "module": "src/geometry_round50.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "conic.hyperbola_focal_difference"
+      ],
+      "status": "covered"
     },
     {
       "id": "shape.polygons",

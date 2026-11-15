@@ -21,6 +21,6 @@ const byLayer=Object.fromEntries([1,2,3,4,5].map(layer=>{
  const ops=catalog.operations.filter(op=>op.layer===layer);
  return [layer,{covered:ops.filter(op=>op.status==='covered').length,total:ops.length}];
 }));
-const report={round:92,seed:DEFAULT_SEED,scales:SCALES,propertyFamilies:families.size,propertyCases:checks.results.reduce((s,r)=>s+r.count,0),failed:failures,operationsCovered:catalog.operations.filter(o=>o.status==='covered').length,operationsCatalogued:catalog.operations.length,byLayer,results:checks.results};
+const report={round:99,seed:DEFAULT_SEED,scales:SCALES,propertyFamilies:families.size,propertyCases:checks.results.reduce((s,r)=>s+r.count,0),failed:failures,operationsCovered:catalog.operations.filter(o=>o.status==='covered').length,operationsCatalogued:catalog.operations.length,byLayer,results:checks.results};
 process.stdout.write(JSON.stringify(report,null,2)+'\n');
 if(failures)process.exitCode=1;

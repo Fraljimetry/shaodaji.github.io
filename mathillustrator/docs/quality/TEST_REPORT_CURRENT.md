@@ -1533,3 +1533,23 @@ Automated browser check: `python tests/browser_round92_history.py` (Chromium). E
 - Node `node --test tests/*.test.mjs`: **479/479 PASS**.
 - Actual Chromium: isolated startup/export smoke **PASS**; Round 76 regression **PASS**; Round 95 marquee/touch event-order suite **PASS**. Round 94 pointer suite passed on independent rerun after one missing-marker test failure.
 - Browser pointer tests are deterministic scenarios, not physical-touch validation. No production code or glyph modifications. Coverage: **16/28** scoped property operations, **24,000** passing seeded cases.
+
+## Round 96 verification (local extracted website, not hosted)
+
+- Seeded properties **27,600/27,600 PASS** across **23 families**, **19/28** catalogued operations. New ellipse, parabola and hyperbola properties detect and guard a microscopic-scale parabola sampling failure (R96-01 FIXED).
+- `node --test tests/*.test.mjs`: **479/479 PASS**. `node --check src/*.mjs`: **27/27 PASS**.
+- Actual Chromium: `tests/browser_smoke.py` **PASS** and `tests/browser_round76_remaining_points_lines.py` **PASS**. Not a full browser matrix or physical-device test.
+- Unverified operations remain explicitly unverified. No changes to glyphs, schema, or unrelated code.
+
+
+## Round 97 — spline/Bézier verification
+
+Node: **479/479 PASS**; coverage runner: **21/28 operations**, **25 property families**, **30,000/30,000 PASS**; actual Chromium isolated startup/export smoke and Round 76: **PASS**. This round changes only test infrastructure and documentation; no source/runtime or glyph changes. Independent native touch and full historic Chromium suite were not executed.
+
+## Round 98 — numerical domain/tolerance verification
+
+Full Node suite **479/479 PASS**; framework **23/28 operations**, **27 seeded families**, **32,400/32,400 property cases PASS**; module syntax PASS; actual Chromium isolated smoke and Round 76 PASS. Changes restricted to tests and documentation. No runtime fixes, glyph/schema changes, or Git commits. Full historical Chromium matrix not executed.
+
+## Round 99 — point incidence framework
+
+Added 1,200 deterministic six-scale tests of constrained segment/circle points and general point/support incidence; rejected out-of-segment and off-circle false matches. **24/28 operations**, **28 families**, **33,600/33,600 passing cases**. Full Node **479/479 PASS**; actual Chromium isolated smoke and Round 76 PASS. No production source, glyph, or schema changes; historical browser matrix and physical touch not rerun.

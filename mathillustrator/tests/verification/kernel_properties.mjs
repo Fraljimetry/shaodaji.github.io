@@ -2,9 +2,10 @@
  * No dependencies, no random state from Math.random, no production fallback.
  * Never change the seed to make failures disappear: archive the seed + case.
  */
-import {transformPoint,circum,projectToCurve,alongCurve,r50SourceShape} from '../../src/geometry_round50.mjs';
-import {regularPolygonVertices,shapeVerticesFromPoints,intersectStraightLines,intersectLineCircle,intersectCircles,newDoc,append,createResolver,affected,remove,validateDoc,clone} from '../../src/model.mjs';
-import {distinctPoints,independentEdges,perpendicularHeightNonzero} from '../../src/numeric_geometry.mjs';
+import {transformPoint,circum,projectToCurve,alongCurve,pointOnObject,generalCrossings,r50SourceShape,parabolaPoints,hyperbolaPoints} from '../../src/geometry_round50.mjs';
+import {focalEllipse,regularPolygonVertices,shapeVerticesFromPoints,intersectStraightLines,intersectLineCircle,intersectCircles,newDoc,append,createResolver,affected,remove,validateDoc,clone} from '../../src/model.mjs';
+import {finitePoint,distinctPoints,independentEdges,perpendicularHeightNonzero} from '../../src/numeric_geometry.mjs';
+import {smoothCurveSvg} from '../../src/geometry.mjs';
 
 export const FRAMEWORK_VERSION=1;
 export const SCALES=Object.freeze([1e-9,1e-6,1e-3,1,1e3,1e6]);
@@ -18,6 +19,8 @@ export const FAMILY_CASES=Object.freeze({
  'circumcircle.incidence':1200,
  'segment.projection_roundtrip':1200,
  'numeric.degeneracy_scale':1200,
+ 'numeric.domain_and_finite':1200,
+ 'numeric.tolerance_equivariance':1200,
  'shape.polygon_scale':1200,
  'line.intersection_symmetry':1200,
  'circle.line_incidence':1200,
@@ -30,6 +33,12 @@ export const FAMILY_CASES=Object.freeze({
  'dependency.cycles_and_deletion':1200,
  'integration.json_roundtrip':1200,
  'integration.history_snapshots':1200,
+ 'conic.ellipse_focal_sum':1200,
+ 'conic.parabola_focus_directrix':1200,
+ 'conic.hyperbola_focal_difference':1200,
+ 'curve.spline_interpolation':1200,
+ 'curve.bezier_convex_hull':1200,
+ 'point.support_incidence':1200,
 });
 export function rng(seed){
  let state=seed>>>0;
@@ -54,6 +63,112 @@ export function propertyCase(family,caseIndex,rand){
  const scale=SCALES[caseIndex%SCALES.length], center=randomPoint(rand,scale),p=add(center,randomPoint(rand,scale));
  const q=add(center,randomPoint(rand,scale)),angle=(rand()*2-1)*Math.PI;
  const failure=(detail)=>({family,caseIndex,scale,detail});
+ if(family==='point.support_incidence'){
+  // Exact supporting geometry is independent of the UI's pixel hit tolerance.
+  // Check both constructed constrained points and general intersections with
+  // isolated points, at the six framework world scales.
+  const u=unitAngle(rand),v=[-u[1],u[0]],len=(.4+rand())*scale;
+  const anchor=center,far=add(anchor,mul(u,len));
+  const line={id:'line',type:'segment',refs:['a','b']};
+  const circle={id:'circle',type:'circle',refs:['o','r']};
+  let activeProbe=null;
+  const r={
+   line:o=>o?.id==='line'?{a:anchor,d:u,domain:'segment',length:len}:null,
+   circle:o=>o?.id==='circle'?{center:anchor,radius:len}:null,
+   points:o=>o?.id==='line'?[anchor,far]:o?.id==='circle'?[anchor,far]:[],
+   at:id=>id==='probe'?activeProbe:({'a':anchor,'b':far,'o':anchor,'r':far})[id]||null
+  };
+  const t=.1+.8*rand(),onLine=pointOnObject(line,t,r,r50SourceShape);
+  const angle=2*Math.PI*rand(),onCircle=pointOnObject(circle,angle/(2*Math.PI),r,r50SourceShape);
+  const point=p=>({id:'probe',type:'point',xy:p});
+  activeProbe=onLine;const crossingLine=generalCrossings(point(onLine),line,r);
+  activeProbe=onCircle;const crossingCircle=generalCrossings(point(onCircle),circle,r);
+  const outside=add(far,mul(u,.1*len));activeProbe=outside;const miss=generalCrossings(point(outside),line,r);
+  // A radial perturbation much larger than roundoff must not count as incidence.
+  const offCircle=add(anchor,mul(sub(onCircle,anchor),1.01));
+  activeProbe=offCircle;const missCircle=generalCrossings(point(offCircle),circle,r);
+  const lineResidual=Math.abs((onLine[0]-anchor[0])*v[0]+(onLine[1]-anchor[1])*v[1]);
+  const radiusResidual=Math.abs(norm(sub(onCircle,anchor))-len);
+  const ok=closePoint(onLine,add(anchor,mul(u,t*len)),scale)&&
+   closePoint(onCircle,add(anchor,mul([Math.cos(angle),Math.sin(angle)],len)),scale)&&
+   lineResidual<2e-10*scale&&radiusResidual<2e-10*scale&&
+   crossingLine.length===1&&closePoint(crossingLine[0],onLine,scale)&&
+   crossingCircle.length===1&&closePoint(crossingCircle[0],onCircle,scale)&&
+   miss.length===0&&missCircle.length===0;
+  return ok?null:failure({anchor,len,t,onLine,onCircle,crossingLine,crossingCircle,miss,missCircle});
+ }
+ if(family==='curve.spline_interpolation'){
+  // Use pixel coordinates (as the real renderer does), avoiding SVG's 3-decimal
+  // rounding from being mistaken for a world-coordinate geometry precision fault.
+  const pts=Array.from({length:5},()=>[200+rand()*600,200+rand()*600]);
+  const closed=caseIndex%2===0;
+  const path=smoothCurveSvg(pts,closed);
+  const commands=[...path.matchAll(/([MLC])([^MLCZ]+)/g)];
+  const pairs=commands.map(([,cmd,raw])=>({cmd,values:raw.trim().split(/[\s,]+/).map(Number)}));
+  const expected=[pts[0],...pts.slice(1),...(closed?[pts[0]]:[])];
+  const endpoints=pairs.map(({cmd,values})=>cmd==='C'?values.slice(4,6):values.slice(0,2));
+  if(!path||pairs.length!==expected.length||path.endsWith('Z')!==closed||
+   endpoints.some((xy,i)=>!closePoint(xy,expected[i],1e3,1e-6))||
+   pairs.some(({cmd,values})=>values.length!==(cmd==='C'?6:2)||!values.every(Number.isFinite)))
+    return failure({pts,closed,path,endpoints,expected});
+  return null;
+ }
+ if(family==='curve.bezier_convex_hull'){
+  const pts=Array.from({length:4},()=>add(center,randomPoint(rand,scale)));
+  const resolver={points:()=>pts,line:()=>null,circle:()=>null,at:()=>null};
+  const sampled=r50SourceShape({type:'bezier'},resolver,64);
+  if(sampled.length!==65||!closePoint(sampled[0],pts[0],scale)||!closePoint(sampled.at(-1),pts[3],scale))
+   return failure({pts,sampledLength:sampled.length,first:sampled[0],last:sampled.at(-1)});
+  for(let i=0;i<sampled.length;i++){
+   const t=i/64,u=1-t;
+   const weights=[u*u*u,3*u*u*t,3*u*t*t,t*t*t];
+   const independent=[0,1].map(k=>pts.reduce((sum,pt,j)=>sum+pt[k]*weights[j],0));
+   if(!closePoint(sampled[i],independent,scale))return failure({pts,i,actual:sampled[i],independent});
+  }
+  return null;
+ }
+ if(family==='conic.ellipse_focal_sum'){
+  const u=unitAngle(rand),v=[-u[1],u[0]],c=scale*(.3+.25*rand()),a=c+scale*(.4+.4*rand());
+  const f1=sub(center,mul(u,c)),f2=add(center,mul(u,c)),b=Math.sqrt((a-c)*(a+c));
+  const theta=2*Math.PI*rand(),point=add(center,add(mul(u,a*Math.cos(theta)),mul(v,b*Math.sin(theta))));
+  const ellipse=focalEllipse([f1,f2,point]);
+  if(!ellipse)return failure({f1,f2,point,ellipse});
+  const axis=[Math.cos(ellipse.angle),Math.sin(ellipse.angle)],perp=[-axis[1],axis[0]];
+  for(let j=0;j<8;j++){
+   const t=2*Math.PI*(j+.13)/8;
+   const on=add([ellipse.cx,ellipse.cy],add(mul(axis,ellipse.rx*Math.cos(t)),mul(perp,ellipse.ry*Math.sin(t))));
+   const sum=norm(sub(on,f1))+norm(sub(on,f2));
+   if(Math.abs(sum-2*a)>3e-10*scale)return failure({f1,f2,point,ellipse,on,sum,expected:2*a});
+  }
+  return null;
+ }
+ if(family==='conic.parabola_focus_directrix'){
+  const d=unitAngle(rand),n=[-d[1],d[0]],sep=scale*(.3+rand());
+  const line={a:center,d},focus=add(center,mul(n,sep));
+  const sampled=parabolaPoints(focus,line,24);
+  if(sampled.length!==25)return failure({focus,line,count:sampled.length});
+  for(const on of sampled){
+   const focusDist=norm(sub(on,focus)),offset=sub(on,line.a);
+   const directrixDist=Math.abs(offset[0]*n[0]+offset[1]*n[1]);
+   if(!Number.isFinite(focusDist)||Math.abs(focusDist-directrixDist)>3e-10*Math.max(scale,focusDist))
+     return failure({focus,line,on,focusDist,directrixDist});
+  }
+  return null;
+ }
+ if(family==='conic.hyperbola_focal_difference'){
+  const u=unitAngle(rand),v=[-u[1],u[0]],c=scale*(.8+.4*rand()),a=c*(.35+.3*rand());
+  const b=Math.sqrt((c-a)*(c+a)),t=(rand()-.5)*1.8;
+  const f=sub(center,mul(u,c)),g=add(center,mul(u,c));
+  const on=add(center,add(mul(u,a*Math.cosh(t)),mul(v,b*Math.sinh(t))));
+  const sampled=hyperbolaPoints([f,g,on],40);
+  if(sampled.length!==41)return failure({f,g,on,count:sampled.length});
+  for(const q of sampled){
+   const diff=Math.abs(norm(sub(q,f))-norm(sub(q,g)));
+   if(!Number.isFinite(diff)||Math.abs(diff-2*a)>3e-10*Math.max(scale,norm(sub(q,center))))
+    return failure({f,g,on,q,diff,expected:2*a});
+  }
+  return null;
+ }
  if(family==='integration.history_snapshots'){
   // Pure serialization state contract; real Chromium tests exercise app undo/redo.
   const doc=newDoc(),anchor=append(doc,{type:'point',xy:center});
@@ -200,6 +315,45 @@ export function propertyCase(family,caseIndex,rand){
   const roots=[ab.minus,ab.plus],reverse=[ba.minus,ba.plus];
   const matches=roots.every(pt=>reverse.some(other=>closePoint(pt,other,scale)));
   return !ab.tangent&&!ba.tangent&&roots.every(valid)&&reverse.every(valid)&&matches?null:failure({a,b,ab,ba});
+ }
+ if(family==='numeric.domain_and_finite'){
+  // Import and geometry predicates must reject nonfinite or malformed coordinates,
+  // including a mutated persisted point; a rejected import must not mutate source.
+  const invalid=[NaN,Infinity,-Infinity,null,'1',{},[1],[1,2,3]];
+  const valid=finitePoint(center)&&distinctPoints(center,add(center,[scale,0]));
+  for(const bad of invalid){
+   const point=[bad,center[1]];
+   if(finitePoint(point)||distinctPoints(center,point)||independentEdges(center,point,p)||perpendicularHeightNonzero(center,point,p))
+    return failure({bad:String(bad),predicate:'invalid point accepted'});
+  }
+  const doc=newDoc();append(doc,{type:'point',xy:center});
+  const baseline=JSON.stringify(doc);
+  for(const bad of [NaN,Infinity,-Infinity,null,'1']){
+   const corrupted=clone(doc);corrupted.objects[0].xy=[bad,center[1]];
+   let rejected=false;
+   try{validateDoc(corrupted);}catch{rejected=true;}
+   if(!rejected||JSON.stringify(doc)!==baseline)return failure({bad:String(bad),rejected,mutation:JSON.stringify(doc)!==baseline});
+  }
+  return valid?null:failure({center,valid});
+ }
+ if(family==='numeric.tolerance_equivariance'){
+  // Uniform scaling should not turn well-separated proper intersections into
+  // tangencies, remove domain exclusions, or manufacture coincident points.
+  const d=unitAngle(rand),normal=[-d[1],d[0]];
+  const distance=scale*(.4+.5*rand());
+  const lineA={a:sub(center,mul(d,distance)),d,domain:'segment',length:distance*2};
+  const lineB={a:sub(center,mul(normal,distance)),d:normal,domain:'infinite'};
+  const hit=intersectStraightLines(lineA,lineB);
+  const outside={...lineB,a:add(center,mul(d,distance*1.25))};
+  const miss=intersectStraightLines(lineA,outside);
+  const radius=distance*(.7+.2*rand());
+  const circle={center,radius};
+  const through={a:sub(center,mul(d,2*radius)),d,domain:'infinite'};
+  const secant=intersectLineCircle(through,circle);
+  return closePoint(hit,center,scale)&&miss===null&&!secant.tangent&&
+    closePoint(secant.minus,sub(center,mul(d,radius)),scale)&&
+    closePoint(secant.plus,add(center,mul(d,radius)),scale)
+    ?null:failure({center,d,distance,hit,miss,circle,secant});
  }
  if(family==='numeric.degeneracy_scale'){
   const a=center,b=add(a,[scale,0]),c=add(b,[scale*.3,scale*.6]);

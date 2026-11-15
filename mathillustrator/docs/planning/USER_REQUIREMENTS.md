@@ -1435,3 +1435,18 @@ Continue invariant-driven coverage with real Chromium input checks. Keep undo/re
 
 ### Round 95 verification milestone
 Continue finite verification framework. Check touch gesture event ordering, marquee selection, and subtle UI state invariants with real Chromium tests; keep platform-specific touch hardware explicitly unverified until device testing. Preserve existing glyphs, schemas and site compatibility.
+
+### Round 96 verification milestone
+Maintain fast, focused verification-framework rounds. Check conic mathematical invariants independently across world scales and avoid fixed absolute sampling spans for microscopic valid geometry. Preserve historical/legacy behavior at normal scales, cumulative bug records, glyphs, schema compatibility, and real Chromium checks.
+
+
+### Round 97 verification continuity
+Continue incremental, fast, invariant-driven verification with honest covered/unverified distinctions, a persistent bug register, and Node plus actual Chromium regressions. Spline/Bézier property families added (21/28 operations); keep glyphs, schema, and existing behavior stable.
+
+### Round 98 verification continuity
+
+Maintain deterministic finite-value rejection and scale-aware domain/tolerance regression checks. Progress: 23/28 core verification operations; unverified areas remain point incidence, 2D/3D plotting, seeded browser interactions, and performance. Preserve application behavior and release speed without implying that sampled tests prove correctness.
+
+### Round 99 verification continuity
+
+Point incidence is property-verified (24/28 core operations, 33,600 sampled cases). Continue fast, focused rounds: 2D plotting, 3D plotting, browser interaction, then performance. Treat sampled verification as evidence rather than proof; preserve glyphs, persistence compatibility, and cumulative bug records.

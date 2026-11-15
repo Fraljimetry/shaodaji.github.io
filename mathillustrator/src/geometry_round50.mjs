@@ -73,7 +73,7 @@ export function parabolaPoints(focus,line,count=120){if(!coord(focus)||!line||!c
  const t=dot(sub(focus,line.a),line.d),foot=add(line.a,mul(line.d,t)),sep=sub(focus,foot),distance=norm(sep);
  if(!(distance>0))return [];
  const axis=unit(sep),side=left(axis),vertex=mul(add(focus,foot),.5),p=distance/2;
- const span=Math.min(30,Math.max(3,5*distance));
+ const span=distance<0.6?5*distance:Math.min(30,Math.max(3,5*distance));
  return Array.from({length:count+1},(_,i)=>{const s=(2*i/count-1)*span;return add(add(vertex,mul(side,s)),mul(axis,s*s/(4*p)));}).filter(coord);
 }
 export function hyperbolaPoints(points,count=128){if(!points?.every(coord)||points.length!==3)return [];

@@ -126,3 +126,30 @@ Advance analytic line/circle intersection residuals and symmetry, including inde
 - Touchscreen-emulated `PointerEvent` sequences verify deferred construction until release, two simultaneous contacts suppressing a premature point, cancelled touches not constructing, and an ordinary single-contact tap constructing exactly one point. This uses browser-dispatched PointerEvents in Chromium with touch enabled; **it is not evidence of hardware pinch zoom, native touch-event ordering, real device gestures, or mobile browser behavior**.
 - Node **479/479 PASS**, Chromium smoke and Round 76 **PASS**, Round 95 browser **PASS**. Round 94 browser check initially encountered a transient absent SVG marker, but passed independently on immediate rerun; not claimed as a confirmed defect.
 - Coverage remains **16/28**, **24,000** seeded cases: browser interaction scenarios do not meet the catalogued seeded-property criterion. No application source changes. Next: investigate hardware gesture support and marquee on overlapping/clipped SVG elements; qualify an integration property only with a reproducible oracle.
+
+## Round 96 — conic invariants and scale-safe parabola sampling
+
+- Added independent seeded focal-distance invariants for the **ellipse** (sum), **parabola** (focus/directrix equality), and **hyperbola** (absolute difference). Each performs 1,200 cases over the existing six scale strata; curves are sampled at multiple points, not merely at the construction anchor.
+- **R96-01 CLOSED (P1):** `parabolaPoints` used a fixed minimum world-span of 3 even when its focal separation was microscopic, causing out-of-domain samples to be silently filtered. The reproduced seed `0x5a17c0de`, case 0 at scale `1e-9` produced only 13/25 sample points; now all 25 remain finite and satisfy the focus/directrix residual. Small separation uses a scale-proportional span; normal-scale behavior remains unchanged.
+- Property inventory **19/28**, **23 families**, **27,600 sampled cases PASS**. Existing full Node **479/479 PASS**; actual Chromium smoke and Round 76 workflows PASS; 27 module syntax checks PASS. This is sampled functional coverage, not proof of numerical robustness or certification of every conic construction.
+- Remaining unverified: numeric domains and tolerance policy, point incidence, spline, Bezier, 2D/3D plotting, browser interaction as a seeded property, and performance. Continue prioritizing these nine inventory operations.
+
+## Round 97 — spline and cubic Bézier invariants
+
+- Added `curve.spline_interpolation` (1,200 seeded cases): renderer-generated SVG cubic endpoints interpolate the original control anchors in both open and closed modes, all path coordinates are finite, and closed paths have the expected closing command. Pixel-level 3-decimal serialization allowance is explicit.
+- Added `curve.bezier_convex_hull` (1,200 cases): production sampled cubic endpoints match first/last anchors and all 65 samples agree with independently evaluated nonnegative Bernstein weights (whose sum is one, implying the convex-hull property). Six world-scale strata retained.
+- Coverage: **21/28**, **25 families**, **30,000 sampled cases PASS**. Full Node **479/479 PASS**; actual Chromium smoke and Round 76 PASS. No production code change.
+- Remaining: numerical domain/finite and tolerance rules, point incidence, plotting 2D/3D, browser interaction property model, performance (7 scoped operations). Additional risks: duplicated/invalid spline anchors, very high control-point counts, closure seam continuity, Bézier self-intersection, browser export precision. Not confirmed bugs.
+
+## Round 98 — finite domains and tolerance equivariance
+
+- `numeric.domain_and_finite` (1,200 seeded cases): geometry predicates reject nonfinite/malformed coordinates; v1 document validation rejects mutated nonfinite point data without mutating the original document.
+- `numeric.tolerance_equivariance` (1,200 cases): segment-bounded orthogonal line intersections, out-of-domain rejection, and proper circle secants remain consistent across six coordinate scales. The oracle does not claim uniform accuracy near floating-point underflow/overflow, or nearly coincident geometry.
+- Coverage: **23/28** operations, **27** families, **32,400/32,400** property cases PASS. Full Node **479/479 PASS**; syntax and real Chromium smoke/round-76 PASS. No runtime code changes.
+- Still unverified: point incidence, 2D plotting, 3D plotting, seeded browser interaction, performance (5 scoped operations). Numerical tolerance tests are sampled contracts, not universal proofs.
+
+## Round 99 — point incidence
+
+- Added `point.support_incidence` (1,200 deterministic cases, six world scales): constrained points on segment and circle supports are checked against independently computed positions; `generalCrossings` finds true isolated-point incidences and rejects points beyond segment endpoints or outside circles. The test harness provides each isolated point through `resolver.at`, matching the production resolver protocol.
+- Coverage: **24/28**, **28 families**, **33,600/33,600** passing cases. Full Node **479/479 PASS**; real Chromium smoke and Round 76 PASS. No runtime or glyph changes.
+- Still unverified: 2D plotting, 3D plotting, seeded browser-interaction properties, performance. Physical-device behavior and exhaustive near-tangencies are not asserted.

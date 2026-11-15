@@ -139,3 +139,20 @@ No new confirmed defects, and no statuses changed. Real Chromium confirms pointe
 ## Round 95 verification update
 
 No new confirmed defects; status unchanged. Real Chromium validates mouse marquee window/crossing and emulated multitouch contact suppression, cancellation, and single-touch point creation. Hardware pinch and platform-specific touch remain unverified. A transient missing marker in one prior Round 94 test was not reproducible on rerun and is not registered as a bug. Property coverage stays **16/28**.
+
+## Round 96 — conic property verification
+
+- **R96-01 — CLOSED (P1):** Microscopic valid parabolas lost sampled path points because `parabolaPoints` imposed a fixed 3-world-unit sampling span, producing huge unstable parabola heights. Evidence: `conic.parabola_focus_directrix` property seed `0x5a17c0de`, case 0, scale `1e-9`, returned 13 points instead of the requested 25. Repair: proportional span below focal separation 0.6; retain the original span at ordinary world scales. The property now passes all 1,200 cases.
+- No other new confirmed defects. **19/28** catalog operations covered; nine explicitly unverified. Prior open statuses unaffected. Continue to validate numerical/domain contracts, spline and Bezier, plotting and integration performance.
+
+## Round 97 verification update
+
+No new confirmed defects or status changes. Added 2,400 deterministic cases for open/closed spline interpolation and cubic Bézier weighted evaluation. Coverage 21/28 operations; 30,000 cases PASS. High-density spline and invalid-point paths remain unverified risk areas, not discovered bugs. Continue to the seven unverified catalog operations, prioritizing numeric domain/finite and tolerance-policy verification.
+
+## Round 98 verification update
+
+No new confirmed defects. Closed/open defect statuses unchanged. Verified finite-coordinate rejection and scale-consistent proper intersection boundaries with 2,400 additional deterministic property cases. Coverage now 23/28 operations and 32,400/32,400 passing sampled cases. Debug route: point incidence → 2D/3D plotting → seeded browser interaction → performance. Continue maintaining this cumulative register.
+
+## Round 99 verification update
+
+No new confirmed defects or defect-status changes. Point-on-segment/circle incidence and isolated-point crossing behavior verified with 1,200 seeded cases spanning six scales. Framework: 24/28 operations, 33,600 passing sampled cases. Next route: 2D plotting → 3D plotting → browser-state model → performance, with regression preservation at each step.
