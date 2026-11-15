@@ -1660,3 +1660,22 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - Bounded to 256 finite sample positions, no shader source directly supplied by document input, shader/program/buffer cleanup on every exit, strict readback errors and stated absolute/relative tolerances. Float32 GPU results are not exact JS-double values, and matching samples alone does not prove topology preservation for near-zero crossings.
 - New `tests/round119_gpu_probe.test.mjs` covers shader generation, input limits, fail-closed missing/throwing contexts and mismatch/nonfinite detection. New `tests/browser_round119_gpu_numeric.py` attempts real WebGL2 float readback on 4 formulas × 64 points. Exit 2 means **INCOMPLETE** if WebGL2 is unavailable; it must not be counted as GPU parity PASS.
 - No integration with production 3D meshing; implicit sampling remains CPU-authoritative. For hardware qualification, run browser probe in a WebGL2-enabled Chromium environment and repeat with more formulas, boundary points, GPU device resets and measured throughput before enabling production GPU mathematical sampling.
+
+
+### Round 120 GPU numerical verification hardening (2026-11-14)
+- Batch scope: GPU probe fail-closed tolerance validation, malformed/readback-input validation, untouched framebuffer sentinel, and precision-boundary regression cases. This diagnostic is not wired into production 3D sampling.
+- Real WebGL2 numerical execution and GPU speedups remain unverified until tested on a WebGL2-capable physical/browser environment. A simulator or CPU reference never counts as GPU parity.
+
+
+### Round 121 verification (local)
+- Regressions: 514/514 Node tests PASS (4 new); zero-crossing sign checks, zero handling, shader bit encoding.
+- Full 16-stage local gate: 16/16 PASS (including Node/property, actual Chromium startup/interaction/history/exports/GPU fallback, performance/cache).
+- Additional real WebGL2 numerical probe: INCOMPLETE; environment cannot create WebGL2 context; no GPU numerical equivalence or hardware speedup claim.
+- Production CPU 3D sampling unchanged; shader compiler and numeric probe remain diagnostic only.
+
+### Round 122 — GPU probe throughput and numerical guards
+- Nonproduction `gpu_sampling_probe3d.mjs`: bounded 4,096-point multi-draw diagnostic with 256-point independent WebGL2 readbacks, fail-closed partial-chunk policy, and global mismatch indices.
+- Both shader stages must advertise float32-grade highp precision. CPU/GPU comparison now rejects zeros where reference values are nonzero (and conversely) to protect implicit zero-set topology.
+- Added `tests/round122_gpu_batch.test.mjs` for batch bounds, unavailable hardware, 4,096-point comparison, global indices, and zero/nonzero topology mismatches.
+- Neither shader compilation nor synthetic CPU-derived comparison is evidence of GPU hardware parity. Production CPU mesh sampling remains unchanged.
+- Round 122 local execution: 519/519 Node regressions PASS; math-properties PASS; 16/16 standard local stages PASS when run as independently timed subprocesses; catalog coverage PASS. The monolithic runner stalled at browser-history in this environment. Real WebGL2 numerical verification returned UNAVAILABLE (exit 2), therefore hardware parity is INCOMPLETE, not PASS. Extended browser probe now checks a 513-point chunked case when WebGL2 is available.

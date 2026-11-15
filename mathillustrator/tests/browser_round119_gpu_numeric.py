@@ -26,7 +26,13 @@ def run():
                     reports.push({expression,...comparison});
                     if(comparison.status!=='PASS')return {status:'FAIL',reports};
                 }
-                return {status:'PASS',backend:'WebGL2',reports};
+                // A separate >256-point probe exercises chunking rather than a single draw.
+                const batchPoints=Array.from({length:513},(_,i)=>[(i%17-8)/6,(i%19-9)/7,(i%23-11)/8]);
+                const batch=m.evaluateRestrictedGPUBatch(canvas,'x^2+y^2+z^2=1',batchPoints);
+                if(batch.status!=='PASS')return {status:batch.status,reason:batch.reason,reports};
+                const batchComparison=m.compareGPUBatchWithCPU('x^2+y^2+z^2=1',batchPoints,batch);
+                if(batchComparison.status!=='PASS')return {status:'FAIL',reason:'Batched numerical mismatch',batchComparison,reports};
+                return {status:'PASS',backend:'WebGL2',reports,batchComparison,chunks:batch.chunks};
             }''',probe)
             print(json.dumps(result,indent=2))
             if result['status']=='PASS':return 0

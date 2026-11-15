@@ -1515,3 +1515,21 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 
 ### Round 119 GPU numerical verification (2026-11-14)
 - Pursue GPU-side mathematical evaluation only with explicit shader execution, CPU/GPU numerical comparison, hardware compatibility and transparent failure reporting. Round 119 adds an isolated WebGL2 numerical readback diagnostic; production 3D meshes stay on CPU until hardware validation proves safe.
+
+
+### Round 120 GPU numerical verification hardening (2026-11-14)
+- Batch scope: GPU probe fail-closed tolerance validation, malformed/readback-input validation, untouched framebuffer sentinel, and precision-boundary regression cases. This diagnostic is not wired into production 3D sampling.
+- Real WebGL2 numerical execution and GPU speedups remain unverified until tested on a WebGL2-capable physical/browser environment. A simulator or CPU reference never counts as GPU parity.
+
+
+### Round 121: Batched GPU numerical safety (2026-11-15)
+- Require sign agreement for nonzero implicit-field CPU/GPU values, even when absolute tolerance would otherwise accept reversed signs; preserve zero-boundary handling.
+- Require full fragment highp float32 precision before accepting GPU readbacks; do not silently treat unavailable GPU qualification as passing.
+- Preserve precise framebuffer sentinel alpha and clear GPU color masking for diagnostic readback.
+- Keep GPU mathematical sampling diagnostic-only pending actual supported WebGL2 hardware equivalence testing.
+
+### Round 122 — Batched GPU diagnostic and topology safety
+- Batch related GPU verification improvements per development pass; preserve CPU production path until genuine WebGL2 hardware numerical equivalence is demonstrated.
+- Restrict the experimental GPU diagnostic to 256 samples per draw and 4,096 per batch. Fail closed on unavailable hardware or any failed chunk; never publish partial data as complete.
+- Preserve implicit-surface topology by rejecting zero/nonzero and opposite-sign discrepancies at sampled points, even inside the numerical tolerance.
+- Require adequate float precision in both vertex and fragment shader stages.
