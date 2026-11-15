@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "round": 87,
+  "notes": "Inventory is scoped to core behavior, not every UI tool. 'covered' denotes seeded property checks only, not formal proofs or exhaustive input coverage.",
+  "operations": [
+    {
+      "id": "numeric.domain-and-finite",
+      "layer": 1,
+      "module": "src/model.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "numeric.tolerance-policy",
+      "layer": 1,
+      "module": "src/geometry_round50.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "numeric.degeneracy",
+      "layer": 1,
+      "module": "src/model.mjs",
+      "properties": [
+        "numeric.degeneracy_scale"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "point.incidence",
+      "layer": 2,
+      "module": "src/geometry_round50.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "line.intersections",
+      "layer": 2,
+      "module": "src/geometry_round50.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "circle.intersections",
+      "layer": 2,
+      "module": "src/model.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "circle.circumcircle",
+      "layer": 2,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "circumcircle.incidence"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "path.projection",
+      "layer": 2,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "segment.projection_roundtrip"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "curve.spline",
+      "layer": 2,
+      "module": "src/geometry.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "curve.bezier",
+      "layer": 2,
+      "module": "src/geometry_round50.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "transform.rotation",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "rotation.isometry"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "transform.reflection",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "reflection.involution"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "transform.translation",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "translation.isometry"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "transform.dilation",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "dilation.composition"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "transform.inversion",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [
+        "inversion.involution"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "conic.ellipse",
+      "layer": 3,
+      "module": "src/model.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "conic.parabola",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "conic.hyperbola",
+      "layer": 3,
+      "module": "src/geometry_round50.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "shape.polygons",
+      "layer": 3,
+      "module": "src/model.mjs",
+      "properties": [
+        "shape.polygon_scale"
+      ],
+      "status": "covered"
+    },
+    {
+      "id": "plot.2d",
+      "layer": 3,
+      "module": "src/plot_modes.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "plot.3d",
+      "layer": 3,
+      "module": "src/plot3d.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "dependency.recompute",
+      "layer": 4,
+      "module": "src/model.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "dependency.branch-identity",
+      "layer": 4,
+      "module": "src/model.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "dependency.cycles-and-deletion",
+      "layer": 4,
+      "module": "src/model.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "integration.import-export",
+      "layer": 5,
+      "module": "src/storage.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "integration.undo-redo",
+      "layer": 5,
+      "module": "src/app.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "integration.browser-interaction",
+      "layer": 5,
+      "module": "src/app.mjs",
+      "properties": [],
+      "status": "unverified"
+    },
+    {
+      "id": "integration.performance",
+      "layer": 5,
+      "module": "src/plot3d.mjs",
+      "properties": [],
+      "status": "unverified"
+    }
+  ]
+}

@@ -1457,3 +1457,28 @@ Four of eight Round 77 discovered defects fixed: R77-01/02/03/04. Stable factore
 ## Round 82 — broad cross-section repairs and second-order re-audit (2026-11-15)
 
 Repaired all **16 corrected Round 81** regression assertions across 2D conic/transform scale, constrained paths, general sampled incidence/circle matching, complex zero power, bounded 2D domain bitmap dimensions and 3D argument/solid modes. Original R81-04 oracle wrongly represented a degenerate hyperbola; corrected its off-axis branch point and verified before promoting the suite to `round82_cross_section_repairs.test.mjs`. No glyph/schema changes. Full Node suite **457/457 PASS**, plus isolated Chromium startup/exports, Round 76, Round 68, Round 40 3D domain, and Round 70 3D passes. The full historical Chromium archive and hosted/mobile cross-browser testing are NOT RUN. Follow-up discoveries: **3 new intentionally RED tests**, documented in `ROUND83_INTERSECTION_FOLLOWUP.md`; no fixes to these new bugs yet.
+
+## Round 83 — precise point incidence and endpoint audit (2026-11-15)
+
+R83-01/02/03 **CLOSED** in `geometry_round50.mjs` without touching pointer hit-testing, glyphs or JSON schema. Promoted three focused assertions to `round83_intersection_repairs.test.mjs`. Full Node suite **460/460 PASS**. Actual isolated Chromium `browser_smoke.py`, `browser_round76_remaining_points_lines.py`, and `browser_round68_geometry_diagram_hierarchy.py` **PASS**. Full historical browser matrix, deployed-site, mobile and cross-browser testing NOT RUN. New independent audit reproduces **3 intentionally failing** boundary cases R84-01/02/03 in `round84_intersection_boundary.pending.mjs`, outside the green suite. See `ROUND84_INTERSECTION_BOUNDARY_AUDIT.md`. No Git commits.
+
+## Round 84 — strict finite geometry boundaries (2026-11-15)
+
+**R84-01/02/03 CLOSED.** Replaced fixed coordinate/parameter allowances with scale-aware floating-point endpoint slacks in `polylineCrossings`, `circlePolylineCrossings`, `generalCrossings` analytic line-line, sampled curve-vs-line, and Bezier-vs-line. Six permanent boundary tests include all three previously failing counterexamples plus exact true endpoint crossings. **Node 466/466 PASS; module syntax checked; real isolated Chromium `browser_smoke.py`, `browser_round76_remaining_points_lines.py`, `browser_round68_geometry_diagram_hierarchy.py`, `browser_round73_analytic_intersections.py` PASS.** Full historical browser matrix, production HTTP, non-Chromium browsers, large-scene profiling not run. Three new unrelated precision cases R85-01/02/03 reproduced as **3 expected FAIL** in `round85_cross_section_followup.pending.mjs`, documented in `ROUND85_FOLLOWUP_AUDIT.md`; not fixed this round. No glyphs, v1 schema, or Git commits.
+
+
+## Round 85 — scale precision repair and cumulative bug register
+
+**R85-01/02/03 CLOSED.** `src/geometry_round50.mjs`: accept valid positive tiny two-corner rectangle extents, compare distinct singleton derived points by exact finite coordinates, and remove the fixed `1e-3` magnitude floor from the world-distance epsilon. New `tests/round85_precision_repairs.test.mjs` 3/3 PASS, all Node tests **469/469 PASS**. Real isolated Chromium `browser_smoke.py`, `browser_round76_remaining_points_lines.py`, `browser_round68_geometry_diagram_hierarchy.py` PASS. Three **new, intentionally OPEN** R86 degenerate polygon/quadrilateral reproducers are recorded in `round86_degenerate_shapes.pending.mjs` (0/3 PASS). New permanent `docs/quality/BUG_REGISTER_AND_DEBUG_ROUTE.md` consolidates all confirmed historical rounds and prioritizes future work. No glyph/schema/commit changes. Hosted, Safari/Firefox and full historical Chromium matrix not run.
+
+## Round 86 — verification framework foundation (2026-11-15)
+
+**No production source changes or defect-closure claims.** New portable seeded property harness and machine-readable coverage catalog: seven mathematical families, 1,200 trials each, scales 1e-9/1e-6/1e-3/1/1e3/1e6, seed 0x5a17c0de = 8,400 deterministic cases; 0 failures. This is not a proof or an exhaustive audit. Catalog lists 28 scoped core operations, 7 with initial properties and 21 explicitly unverified. Four new Node framework/meta-regression tests. Full `node --test tests/*.test.mjs`: **473/473 PASS**; `node --check src/*.mjs` **26/26 PASS**; real isolated Chromium `tests/browser_smoke.py` PASS (startup, exports, undo/redo); `tests/browser_round76_remaining_points_lines.py` PASS. Full historical browser matrix, hosted site, other browsers and performance benchmarks NOT RUN. Existing R86-01/02/03 intentionally failing polygon cases remain OPEN and separate. No glyph, production code, schema or Git changes.
+
+
+## Round 87 — numerical kernel / polygons verification
+
+- R86-01/02/03 **CLOSED**: zero-radius regular polygons, collinear rectangles and collinear parallelograms now yield empty paths; new construction guards align with live geometry. Microscopic nondegenerate shapes remain valid.
+- New scale-aware predicates shared by model and world geometry. Source compatibility and cache-version imports updated to Round 87; glyphs and schema unchanged.
+- Property-based framework: **9/28** scoped operations, **10,800/10,800** deterministic cases PASS, six scales.
+- Full Node suite **479/479 PASS**; module syntax PASS; real isolated Chromium startup/export/undo/redo and Round 68/73/76 workflows PASS. Existing Chromium test harness updated to recognize the new versioned module dependency. Published site and remaining browser scripts not tested.

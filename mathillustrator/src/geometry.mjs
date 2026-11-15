@@ -1,7 +1,7 @@
 /** Model and renderer use precisely the same virtual corners. */
-export {regularPolygonVertices} from './model.mjs?cut=round75';
-import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round75';
-import {r50SourceShape} from './geometry_round50.mjs?cut=round75';
+export {regularPolygonVertices} from './model.mjs?cut=round87';
+import {regularPolygonVertices,shapeVerticesFromPoints,isObjectVisible,geometricPoint,geometricCircle,geometricLine} from './model.mjs?cut=round87';
+import {r50SourceShape} from './geometry_round50.mjs?cut=round87';
 /** Pure geometry helpers for canvas rendering and regression tests. */
 export function smoothPath(raw,mode,scale=50){
  if(!Array.isArray(raw)||raw.length<3||mode==='off')return raw;
@@ -219,7 +219,7 @@ export function fitSceneView(doc,resolver,size){
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
-import {focalEllipse,circumcircle} from './model.mjs?cut=round75';
+import {focalEllipse,circumcircle} from './model.mjs?cut=round87';
 import {nodeBox as nodeBoxForFit} from './diagram_layout.mjs?cut=round54';
 
 /** Conservative screen-space rejection for bounded SVG primitives.

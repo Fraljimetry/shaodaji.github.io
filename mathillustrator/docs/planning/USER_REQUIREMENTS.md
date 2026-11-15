@@ -1377,3 +1377,28 @@ User requested one larger comprehensive sweep of previously unaudited sections, 
 ### Round 82 — broad repair and subsequent discovery
 
 User requested repairing all Round 81 defects, then discovering more bugs, with concise English responses and no PowerShell command blocks. Repair the 16 corrected assertions in one larger release and keep their tests permanent. Original R81-04 used a degenerate on-axis hyperbola point; corrected to an off-axis nondegenerate input. New R83-01/02/03 analytic general-intersection bugs were reproduced and deliberately left pending for a focused next round. Preserve glyphs, JSON v1 compatibility, cumulative documentation and website-root overlay delivery; no Git commits.
+
+### Round 83 — fix open defects, then discover more
+
+User requests all currently open R83 intersection bugs fixed before further discovery, concise responses, no PowerShell. R83-01/02/03 repaired and permanently regression-tested, with mathematically strict world-coordinate incidences separated from UI tolerance. R84-01/02/03 newly reproduced endpoint leak defects remain pending for next repair. Preserve all prior graphics, import/export and glyph requirements. No Git commits; website-root changed-files-only ZIP overlays.
+
+### Round 84 — intersection endpoint repairs and further discovery
+- Fix R84-01/02/03 finite-support numerical boundary leaks consistently in polyline, circle-vs-segment, analytic line intersections, Bezier-vs-line and sampled curve-vs-line paths. Maintain true endpoint inclusion, signed circle branches, and v1 JSON compatibility.
+- Keep the UI hit-test radius separate from geometric intersection tolerance. Preserve all existing tool glyphs and unrelated features.
+- Follow up with additional source-based cross-section debugging, record reproducible issues as intentionally red tests, and leave those new defects for the next focused round. Current R85-01/02/03 are detailed in `docs/quality/ROUND85_FOLLOWUP_AUDIT.md`.
+- Deliver changed-files-only website-root overlays, no Git commit, concise English, and no PowerShell commands.
+
+
+### Round 85 — cumulative bug register (ongoing requirement)
+- Maintain one separate, **constantly updated** `docs/quality/BUG_REGISTER_AND_DEBUG_ROUTE.md` as the authoritative bug-status and future-debugging route register across all rounds. Preserve original detailed audit reports as evidence. Update the master after every bug discovery, fix, or reprioritization. Never erase the provenance of corrected tests.
+- Close R85-01/02/03 with permanent numerical regressions; track R86-01/02/03 as newly open degenerate geometry cases. Preserve glyphs, JSON v1 compatibility and one-section-at-a-time repair discipline.
+
+## Round 86 — systematic verification requirements (2026-11-15)
+
+User requested replacing open-ended iterative bug-hunting with a **systematic verification framework**. Verification must proceed from numerical kernel through shared geometric primitives, mathematical constructions, dependency graph and real application integration. Require deterministic property-based and metamorphic tests, explicit seed/scale/failure reproduction, independent oracles where feasible, a machine-readable coverage inventory, ranked root-cause repairs, completion criteria and an honest list of unverified scope. Maintain one cumulative bug register and continue updating test/requirements documents; preserve glyphs, v1 compatibility and changed-files-only website-root ZIP releases. Round 86 establishes the framework and catalog without changing application code. Do not confuse a passing property sample with global correctness.
+
+
+### Round 87 verification framework continuation
+- Continue bottom-up, invariant-driven verification; do not revert to arbitrary fixed counts of newly found bugs.
+- Mathematical construction validity must be scale-aware and identical between model creation and geometry path resolution; protect microscopic shapes and forbid degenerate closed paths.
+- Keep persistent bug register, coverage catalog, verification plan and quality report current each round.

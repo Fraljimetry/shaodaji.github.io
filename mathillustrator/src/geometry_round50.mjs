@@ -1,3 +1,4 @@
+import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
 /** Round 55 deployment contract: generalCrossings is a required named export.
  * Round 50 geometry primitives. Pure world-coordinate mathematics; no canvas/DOM.
  * Finite and singularity guards are deliberate: undefined geometry must never
@@ -15,7 +16,21 @@ const norm=a=>Math.hypot(...a),left=a=>[-a[1],a[0]];
 // precision near the actual geometry, not the distance of a point along a line
 // or a fixed allowance in squared-world units. Never grow tolerance simply
 // because the intersection is far from a line's chosen origin.
-const distanceEpsilon=(...values)=>64*Number.EPSILON*Math.max(1e-3,...values.map(Math.abs));
+const distanceEpsilon=(...values)=>64*Number.EPSILON*Math.max(Number.MIN_VALUE,...values.map(Math.abs));
+// Endpoint slack is for floating-point arithmetic only, never an arbitrary
+// world-coordinate or dimensionless extension of a finite support.
+const endpointEpsilon=(...values)=>32*Number.EPSILON*Math.max(1e-12,...values.map(Math.abs));
+const segmentParameterInside=(t,a,b)=>{
+ const len=norm(sub(b,a));
+ if(!(len>0)||!Number.isFinite(t))return false;
+ const slack=endpointEpsilon(...a,...b,len)/len;
+ return t>=-slack&&t<=1+slack;
+};
+const finiteLineInside=(line,t)=>{
+ if(line.domain==='infinite')return true;
+ const slack=endpointEpsilon(...line.a,line.length,t);
+ return t>=-slack&&(line.domain==='ray'||t<=line.length+slack);
+};
 const unit=a=>{const n=norm(a);return n>0&&Number.isFinite(n)?mul(a,1/n):null};
 export const R50_TYPES=['pointOnObject','tangentCircle','circularArc','parabola','hyperbola','generalIntersection','transformCopy','locus','fixedLength','fixedAngle','triangleCenter'];
 export const R50_POINT_TYPES=['pointOnObject','generalIntersection','triangleCenter'];
@@ -150,7 +165,7 @@ export function polylineCrossings(a,b){if(a?.length<2||b?.length<2)return [];
   const p=a[i-1],q=b[j-1];if(!coord(p)||!coord(a[i])||!coord(q)||!coord(b[j]))continue;const u=sub(a[i],p),v=sub(b[j],q),lenU=norm(u),lenV=norm(v),det=cross(u,v);
   if(!(lenU>0&&lenV>0)||Math.abs(det)<PARALLEL_SINE_EPS*lenU*lenV)continue;
   const w=sub(q,p),t=cross(w,v)/det,s=cross(w,u)/det;
-  if(t>=-1e-9&&t<=1+1e-9&&s>=-1e-9&&s<=1+1e-9){const root=add(p,mul(u,t));
+  if(segmentParameterInside(t,p,a[i])&&segmentParameterInside(s,q,b[j])){const root=add(p,mul(u,t));
    if(coord(root)&&!result.some(x=>norm(sub(x,root))<=distanceEpsilon(...x,...root)))result.push(root);
    if(result.length>MAX_GENERAL_ROOTS)throw new RangeError('More than 10000 intersection roots; reduce the curve complexity.');}
  }
@@ -191,7 +206,7 @@ export function bezierLineCrossings(control,line){
   }
   push((lo+hi)/2);
  }
- const inside=(t)=>line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
+ const inside=t=>finiteLineInside(line,t);
  return ts.map(t=>{
   const u=1-t;
   return [0,1].map(k=>control[0][k]*u*u*u+3*control[1][k]*t*u*u+3*control[2][k]*t*t*u+control[3][k]*t*t*t);
@@ -213,7 +228,7 @@ export function circlePolylineCrossings(circle,path){
   if(distance>r+tol)continue;
   const dt=Math.sqrt(Math.max(0,(r-distance)*(r+distance)))/length;
   for(const t of [projection-dt,projection+dt]){
-   if(t< -1e-12||t>1+1e-12)continue;
+   if(!segmentParameterInside(t,p,q))continue;
    const root=add(p,mul(u,Math.max(0,Math.min(1,t))));
    if(coord(root)&&!roots.some(q=>norm(sub(q,root))<=distanceEpsilon(...q,...root)))roots.push(root);
    if(roots.length>MAX_GENERAL_ROOTS)throw new RangeError('More than 10000 intersection roots; reduce the curve complexity.');
@@ -239,9 +254,10 @@ export function generalCrossings(first,second,resolver,count=160){
   if(!coord(p)||!line||!coord(line.a)||!coord(line.d))return false;
   const distance=Math.abs(cross(sub(p,line.a),line.d));
   const precision=distanceEpsilon(p[0],p[1],line.a[0],line.a[1],line.length);
-  if(distance>Math.max(1e-10,precision))return false;
+  if(distance>precision)return false;
   const t=dot(sub(p,line.a),line.d);
-  return line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
+  const boundaryEps=distanceEpsilon(...p,...line.a,line.length);
+  return line.domain==='infinite'||t>=-boundaryEps&&(line.domain==='ray'||t<=line.length+boundaryEps);
  };
  const pointOnCircle=(p,circle)=>coord(p)&&circle&&coord(circle.center)&&finite(circle.radius)
   &&Math.abs(norm(sub(p,circle.center))-circle.radius)<=Math.max(
@@ -256,8 +272,8 @@ export function generalCrossings(first,second,resolver,count=160){
  // drawing-pixel/world-size hit-test tolerance.
  if(pa&&pb)return (first.type==='point'&&second.type==='point'
    ?pa[0]===pb[0]&&pa[1]===pb[1]
-   :norm(sub(pa,pb))<=distanceEpsilon(...pa,...pb))?[pa]:[];
- const inside=(line,t)=>line.domain==='infinite'||t>=-1e-8&&(line.domain==='ray'||t<=line.length+1e-8);
+   :pa[0]===pb[0]&&pa[1]===pb[1])?[pa]:[];
+ const inside=finiteLineInside;
  const unique=points=>points.filter(coord).filter((p,i,all)=>all.findIndex(q=>
   coord(q)&&norm(sub(q,p))<=distanceEpsilon(...q,...p))===i);
  const sorted=points=>unique(points).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
@@ -299,7 +315,7 @@ export function generalCrossings(first,second,resolver,count=160){
    const v=sub(b,a),len=norm(v),det=cross(line.d,v);
    if(!(len>0)||Math.abs(det)<PARALLEL_SINE_EPS*len)continue;
    const w=sub(a,line.a),t=cross(w,v)/det,u=cross(w,line.d)/det;
-   if(inside(line,t)&&u>=-1e-12&&u<=1+1e-12){
+   if(inside(line,t)&&segmentParameterInside(u,a,b)){
     const root=add(line.a,mul(line.d,t));
     if(coord(root)&&!roots.some(q=>norm(sub(q,root))<=distanceEpsilon(...q,...root)))roots.push(root);
     if(roots.length>MAX_GENERAL_ROOTS)throw new RangeError('More than 10000 intersection roots; reduce the curve complexity.');
@@ -321,7 +337,7 @@ export function generalCrossings(first,second,resolver,count=160){
  const pointOn=(point,path)=>{
   for(let i=1;i<path.length;i++){
    const u=sub(path[i],path[i-1]),len=dot(u,u);
-   if(!(len>1e-20))continue;
+   if(!(len>0))continue;
    const t=Math.max(0,Math.min(1,dot(sub(point,path[i-1]),u)/len));
    if(norm(sub(point,add(path[i-1],mul(u,t))))<=distanceEpsilon(...point,...path[i-1],...path[i]))return true;
   }
@@ -329,7 +345,7 @@ export function generalCrossings(first,second,resolver,count=160){
  };
  if(a.length===1&&b.length===1)return (first.type==='point'&&second.type==='point'
   ?a[0][0]===b[0][0]&&a[0][1]===b[0][1]
-  :norm(sub(a[0],b[0]))<=distanceEpsilon(...a[0],...b[0]))?[a[0]]:[];
+  :a[0][0]===b[0][0]&&a[0][1]===b[0][1])?[a[0]]:[];
  if(a.length===1)return pointOn(a[0],b)?[a[0]]:[];
  if(b.length===1)return pointOn(b[0],a)?[b[0]]:[];
  return polylineCrossings(a,b);
@@ -425,6 +441,7 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
  if(o.type==='polygon'){const pts=resolver.points(o).filter(coord);return pts.length>2?[...pts,pts[0]]:[];}
  if(o.type==='regularPolygon'){
   const [center,vertex]=resolver.points(o),n=o.sides;if(!coord(center)||!coord(vertex)||!Number.isInteger(n)||n<3||n>100)return [];
+  if(!distinctPoints(center,vertex))return [];
   const r=norm(sub(vertex,center)),t=Math.atan2(vertex[1]-center[1],vertex[0]-center[0]);
   return Array.from({length:n+1},(_,i)=>add(center,mul([Math.cos(t+tau*i/n),Math.sin(t+tau*i/n)],r)));
  }
@@ -432,11 +449,12 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
   const p=resolver.points(o);if(!p.every(coord))return [];
   if(o.type==='rectangle'&&p.length===2){
    const [a,b]=p,minX=Math.min(a[0],b[0]),maxX=Math.max(a[0],b[0]),minY=Math.min(a[1],b[1]),maxY=Math.max(a[1],b[1]);
-   if(maxX-minX<1e-9||maxY-minY<1e-9)return [];
+   if(!(maxX>minX&&maxY>minY))return [];
    return [[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY],[minX,minY]];
   }
   if(p.length!==3)return [];
-  const [a,b,c]=p;if(o.type==='parallelogram'){const d=add(a,sub(c,b));return [a,b,c,d,a];}
+  const [a,b,c]=p;if(o.type==='parallelogram'){if(!independentEdges(a,b,c))return [];const d=add(a,sub(c,b));return [a,b,c,d,a];}
+  if(!perpendicularHeightNonzero(a,b,c))return [];
   const d=sub(b,a),side=unit(left(d));if(!side)return [];
   const h=dot(sub(c,b),side),v=mul(side,h);return [a,b,add(b,v),add(a,v),a];
  }

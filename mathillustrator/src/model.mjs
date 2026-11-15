@@ -1,4 +1,5 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round76';
+import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round87';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round70';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -7,7 +8,7 @@ import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,pars
 export function regularPolygonVertices(center,vertex,sides){
  if(!safeCoord(center)||!safeCoord(vertex)||!Number.isInteger(sides)||sides<3||sides>100)return [];
  const dx=vertex[0]-center[0],dy=vertex[1]-center[1],r=Math.hypot(dx,dy);
- if(!Number.isFinite(r)||r<1e-10)return [];
+ if(!Number.isFinite(r)||!distinctPoints(center,vertex))return [];
  const phase=Math.atan2(dy,dx);
  return Array.from({length:sides},(_,i)=>[center[0]+r*Math.cos(phase+i*2*Math.PI/sides),center[1]+r*Math.sin(phase+i*2*Math.PI/sides)]);
 }
@@ -21,18 +22,18 @@ export function shapeVerticesFromPoints(type,p){
  if(type==='parallelogram'&&p.length===3){
   const [a,b,c]=p,d=[a[0]+c[0]-b[0],a[1]+c[1]-b[1]];
   const cross=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);
-  return safeCoord(d)&&Math.abs(cross)>1e-9*Math.max(1,Math.hypot(b[0]-a[0],b[1]-a[1])*Math.hypot(c[0]-b[0],c[1]-b[1]))?[a,b,c,d]:[];
+  return safeCoord(d)&&independentEdges(a,b,c)?[a,b,c,d]:[];
  }
  if(type!=='rectangle')return [];
  if(p.length===2){
   const [a,b]=p,minX=Math.min(a[0],b[0]),maxX=Math.max(a[0],b[0]),minY=Math.min(a[1],b[1]),maxY=Math.max(a[1],b[1]);
-  return maxX-minX>=1e-9&&maxY-minY>=1e-9?[[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]]:[];
+  return maxX>minX&&maxY>minY?[[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]]:[];
  }
  if(p.length!==3)return [];
  const [a,b,c]=p,dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);
- if(length<1e-9)return [];
+ if(!(length>0)||!perpendicularHeightNonzero(a,b,c))return [];
  const nx=-dy/length,ny=dx/length,height=(c[0]-b[0])*nx+(c[1]-b[1])*ny;
- if(!Number.isFinite(height)||Math.abs(height)<1e-9)return [];
+ if(!Number.isFinite(height)||height===0)return [];
  const third=[b[0]+height*nx,b[1]+height*ny],fourth=[a[0]+height*nx,a[1]+height*ny];
  return safeCoord(third)&&safeCoord(fourth)?[a,b,third,fourth]:[];
 }
@@ -589,7 +590,8 @@ export function snapPoint(p,s){return p.map(v=>roundSnap(v,s));}
 export function parseExpression(source){const fn=parseCurveExpression(source,['x']);return x=>fn({x});}
 /** Reject invisible *new* geometry without invalidating legacy v1 projects on import. */
 export function checkNewGeometry(type,p){
- if(['segment','arrow','line','ray','perpBisector','midpoint','regularPolygon','fixedLength'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(['segment','arrow','line','ray','perpBisector','midpoint','fixedLength'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(type==='regularPolygon'&&!distinctPoints(p[0],p[1]))throw Error('Construction requires distinct points.');
  if(type==='circle'&&!(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])>0))throw Error('Circle requires a distinct radius point.');
  if(type==='circularArc'&&!circumcircle(p))throw Error('Circular arc requires three noncollinear points.');
  if(type==='triangleCenter'&&!circumcircle(p))throw Error('Triangle center requires three noncollinear vertices.');

@@ -9,3 +9,6 @@ Reproduced on the Round 82 repaired source using `tests/round83_intersection_fol
 | P2 | R83-03 | Point `(5e-12,0)` exactly on a `1e-11` spline segment returns no root | Sampled incidence ignores squared length `<=1e-20` |
 
 **Follow-up boundary:** Fix the analytic segment parameter and sampled point-path incidence with floating-point representational bounds, preserve ray/line semantics, and test translated/zoomed microgeometry. Do not change pointer snapping or glyphs. Historical browser assertions may retain old failures and must be distinguished from actual regressions.
+
+## Round 83 repair (CLOSED)
+All three previously failing cases R83-01, R83-02, R83-03 now pass. Replaced unconditional `1e-10` perpendicular-distance floor with the existing representational epsilon, replaced the isolated point/line endpoint `1e-8` allowance with a representation-aware bound, and permitted strictly positive finite spline-segment lengths independent of absolute world scale. Promoted all three to `round83_intersection_repairs.test.mjs`. Follow-up three new endpoint-boundary bugs R84-01/02/03 remain open; see `ROUND84_INTERSECTION_BOUNDARY_AUDIT.md`.
