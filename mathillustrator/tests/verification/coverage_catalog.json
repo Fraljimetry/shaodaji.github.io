@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "round": 99,
-  "notes": "Inventory is scoped to core behavior, not every UI tool. 'covered' denotes seeded property checks only, not formal proofs or exhaustive input coverage.",
+  "round": 102,
+  "notes": "Scoped inventory: 26 seeded Node property operations, one deterministic Chromium interaction operation; performance remains unverified. Browser interactions are not counted as Node property cases.",
   "operations": [
     {
       "id": "numeric.domain-and-finite",
@@ -182,15 +182,19 @@
       "id": "plot.2d",
       "layer": 3,
       "module": "src/plot_modes.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "plot.2d_sampling"
+      ],
+      "status": "covered"
     },
     {
       "id": "plot.3d",
       "layer": 3,
       "module": "src/plot3d.mjs",
-      "properties": [],
-      "status": "unverified"
+      "properties": [
+        "plot.3d_sampling"
+      ],
+      "status": "covered"
     },
     {
       "id": "dependency.recompute",
@@ -242,14 +246,23 @@
       "layer": 5,
       "module": "src/app.mjs",
       "properties": [],
-      "status": "unverified"
+      "status": "covered",
+      "browserTests": [
+        "tests/browser_round102_seeded_interactions.py"
+      ],
+      "coverageType": "chromium-seeded"
     },
     {
       "id": "integration.performance",
       "layer": 5,
       "module": "src/plot3d.mjs",
       "properties": [],
-      "status": "unverified"
+      "status": "covered",
+      "coverageType": "measured-benchmark",
+      "benchmarkTests": [
+        "tests/verification/benchmark_performance.mjs",
+        "tests/browser_round103_performance.py"
+      ]
     }
   ]
 }

@@ -1450,3 +1450,25 @@ Maintain deterministic finite-value rejection and scale-aware domain/tolerance r
 ### Round 99 verification continuity
 
 Point incidence is property-verified (24/28 core operations, 33,600 sampled cases). Continue fast, focused rounds: 2D plotting, 3D plotting, browser interaction, then performance. Treat sampled verification as evidence rather than proof; preserve glyphs, persistence compatibility, and cumulative bug records.
+
+### Round 100 verification continuity
+
+Maintain cumulative verification toward 28/28. The 2D plotting operation has a scoped 1,200-case property family; do not conflate this with full renderer/contour/pole correctness. Next focused verification: 3D plotting, seeded browser interactions, and performance. Preserve no-glyph-change, overlay-only delivery, and concise replies.
+
+### Round 101 verification continuity
+
+Progress from Round 100 to **26/28** catalogue operations with 3D mathematical properties, retaining explicitly scoped coverage and preserving glyphs and data formats. Next target browser interaction and performance, with reproducible seeded input sequences and measurable budgets.
+
+## Round 102 update
+
+Round 102: Preserve deterministic Chromium interaction evidence as a separate framework class from Node property testing; keep real-device touch explicitly unverified.
+
+- Round 103: maintain a measurable performance verification gate (Node 3D projections, real Chromium import and SVG render), document environment-specific budgets and limitations; prioritize reliable completion criteria over endless ad hoc bug hunting.
+
+## Round 104 — verification quality
+
+Maintain the already completed 28-operation initial coverage catalog, and independently harden reliability with measured cache churn, bounded memory and DOM growth, deterministic repeated rendering, and Chromium checks. Never equate sampled performance or a passing memory check with the absence of leaks. Do not alter glyphs or unrelated runtime behavior for a framework-only round.
+
+### Round 106 — continued verification
+
+Keep verification rounds concise and fast. Exercise actual 3D Chromium scene edits, camera orbit, rendering cancellation and mode switches with bounded memory/DOM checks. Retain numerical-property and historical-browser coverage, distinguish isolated browser stress from live/GPU/device guarantees, and record open risks without inventing defect IDs. Continue website-root changed-files-only ZIP overlays, with no PowerShell commands and no Git commits.

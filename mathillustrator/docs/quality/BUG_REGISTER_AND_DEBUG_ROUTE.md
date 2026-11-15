@@ -156,3 +156,31 @@ No new confirmed defects. Closed/open defect statuses unchanged. Verified finite
 ## Round 99 verification update
 
 No new confirmed defects or defect-status changes. Point-on-segment/circle incidence and isolated-point crossing behavior verified with 1,200 seeded cases spanning six scales. Framework: 24/28 operations, 33,600 passing sampled cases. Next route: 2D plotting → 3D plotting → browser-state model → performance, with regression preservation at each step.
+
+## Round 100 verification update
+
+No new confirmed defects. 2D plotting's scoped analytic expression, parametric/implicit evaluation, vector fields, and smooth explicit line sampling now have seeded, scale-aware oracle coverage (25/28 catalogued operations). Further testing should target discontinuities, contour topology, domain color raster, extreme zoom, and interactive workflows; these are investigation targets, not confirmed bugs. Next: 3D mathematical properties → seeded browser model → performance budgets.
+
+## Round 101 verification update
+
+No newly confirmed defects. Added 3D parsing and planar mesh numerical oracles (26/28 catalogued operations covered). Next: browser-interaction seeded state transitions and explicit performance budgets. Unverified 3D mesh topology, camera/lighting, heavy-scene memory, and physical touch remain risk areas, not confirmed bugs.
+
+## Round 102 update
+
+Round 102: Added seeded Chromium interaction verification. No new defect asserted; continue next with scoped performance budgets, then independent root-cause risk review. Test coverage does not imply bug-free behavior.
+
+## Round 103 — verification framework closure / future route
+
+No new confirmed defects. Initial operation inventory is 28/28 covered; **do not confuse sampled coverage with absence of bugs**. Priority next: (1) tighten environment-specific latency thresholds; (2) 3D interactive rendering and long-run memory retention; (3) mobile pointer and browser compatibility; (4) independent high-precision oracles at singularities; (5) export stress, persistence and dependency chains. Reopen this register only for reproduced defects with permanent tests.
+
+## Round 104 — bounded-state reliability verification
+
+No new **confirmed** defects (do not create a speculative bug ID). New durable regression probes: `tests/verification/benchmark_cache_stability.mjs` and `tests/browser_round104_churn.py`. Both pass; the 3D cache did **not** reach its eviction limit, so eviction correctness remains an **INVESTIGATE** item, not a closed test category. Also investigate long-lived 3D interactive renderer allocations and browser memory under repeated 3D import/orbit/export. Next focused reliability round: force LRU eviction with varied high-detail 3D meshes and verify deterministic recomputation and bounded heap after eviction.
+
+## Round 105 — forced LRU eviction verification
+
+No newly confirmed defect. The prior *untested eviction behavior* risk now has a passing isolated regression: oldest-entry eviction, LRU promotion on hit, bounded cache size, and deterministic recomputation under a 1 MiB test-only cache limit, using an otherwise unmodified production cache implementation. Remaining reliability route: sustained real 192 MiB cache churn, actual 3D orbit and UI lifecycle memory, repeated export/scene editing, and platform/browser performance. No defect IDs assigned without reproduction.
+
+## Round 106 — 3D browser lifecycle
+
+No new confirmed defect. New reusable browser regression `tests/browser_round106_3d_lifecycle.py` verifies repeated 3D detail edits, real mouse orbits, 2D/3D mode cancellation, polygon restoration, unaffected 2D state, post-GC JS heap and DOM size. Eight cycles pass with zero page errors. Further route: longer-duration sustained 3D editing, export within the lifecycle loop, representative device/GPU frame pacing, and multi-browser coverage; no speculative defect IDs. Initial framework coverage remains 28/28.

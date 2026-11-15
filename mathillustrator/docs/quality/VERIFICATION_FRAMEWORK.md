@@ -153,3 +153,48 @@ Advance analytic line/circle intersection residuals and symmetry, including inde
 - Added `point.support_incidence` (1,200 deterministic cases, six world scales): constrained points on segment and circle supports are checked against independently computed positions; `generalCrossings` finds true isolated-point incidences and rejects points beyond segment endpoints or outside circles. The test harness provides each isolated point through `resolver.at`, matching the production resolver protocol.
 - Coverage: **24/28**, **28 families**, **33,600/33,600** passing cases. Full Node **479/479 PASS**; real Chromium smoke and Round 76 PASS. No runtime or glyph changes.
 - Still unverified: 2D plotting, 3D plotting, seeded browser-interaction properties, performance. Physical-device behavior and exhaustive near-tangencies are not asserted.
+
+## Round 100 — 2D plotting verification
+
+- Added `plot.2d_sampling`: 1,200 seeded cases over six world scales. Independent analytic checks cover real expression evaluation, legacy-compatible parametric evaluation, circle implicit equation, finite vector-field geometry, and explicit straight-line sampling with screen-coordinate incidence and viewport continuity.
+- Coverage **25/28** operations, **29 families**, **34,800/34,800** property cases PASS. Node **479/479 PASS**, Chromium smoke and Round 76 PASS. No production change.
+- This does **not** verify implicit contour extraction, adaptive sampling around poles, oscillatory functions, domain-color rasterization, canvas pixel fidelity, extreme zoom, or real-time performance. These remain explicit risks and are not counted as covered subfeatures.
+- Remaining catalog operations: 3D plotting, seeded browser interaction, performance.
+
+## Round 101 — 3D plotting verification
+
+- Added `plot.3d_sampling` (1,200 deterministic cases over six coordinate scales). Independent algebraic reference evaluations cover explicit 3D surfaces, parametric surfaces, implicit scalar fields, vector fields, and complex argument height with solid coloring. Every twelfth case also exercises finite triangulated planar surface sampling.
+- Coverage **26/28** operations, **30 families**, **36,000/36,000** property cases PASS; full Node **479/479** PASS; Chromium startup and Round 76 PASS. No production source changes.
+- `plot.3d` coverage is scoped to these checks only. The framework does NOT yet validate implicit meshing topology, discontinuity boundaries, lighting behavior, mesh cache eviction, camera interaction, clipping at extreme zoom, or high-detail performance.
+- Remaining catalog operations: browser interaction and performance.
+
+## Round 102 update
+
+Round 102: `integration.browser-interaction` covered with deterministic real-Chromium drag, Escape cancellation, undo/redo sequences (seed 1022026, 12 independent cases). Coverage 27/28, with 36,000 Node property cases unchanged. This operation uses Chromium evidence, **not** an extra Node property family. Physical touch, multi-tab concurrency and every possible UI state remain outside the scoped contract. Performance operation remains unverified.
+
+## Round 103 — measured performance verification
+
+- Coverage **28/28** in the *initial scoped inventory* (30 seeded functional families, **36,000** cases; performance is separate measured evidence). This is not comprehensive correctness or cross-device performance certification.
+- Node benchmark `tests/verification/benchmark_performance.mjs`: surface detail 24, complex domain detail 48, implicit sphere detail 32; 1 cold and 5 warm measurements each, checks finite output, face/evaluation ceilings and mesh cache limit. Environment-specific cold/warm p95 budget defaults to **10,000 ms**, configurable via `MI_PERF_P95_MS` (also `MI_PERF_ITERATIONS`). Sampled heap and per-scenario timings are JSON.
+- Chromium `tests/browser_round103_performance.py`: 40/120/240 actual SVG points, three JSON import→visible-render measurements per size, p95 sample maximum, default configurable 10,000-ms budget `MI_BROWSER_IMPORT_P95_MS`. Uses isolated inline app with real Chromium; not public-server network cost or mobile hardware.
+- These are **initial non-regression guardrails**, not product SLOs. Do not use this generous environment-independent threshold to assert UI responsiveness. Rebaseline on representative hardware with tighter budgets, collect variability over repeated runs, add 3D browser frame timing, memory growth/leak tests, export stress and device matrix.
+- No production code, glyph, schema or project behavior changed. Next phase: upgrade assurance strength, target outstanding gaps rather than expanding the 28-op denominator arbitrarily.
+
+## Round 104 — reliability hardening (post-inventory)
+
+The initial 28/28 scoped coverage remains unchanged. Reliability probes are **independent** of the 36,000 mathematical property cases:
+
+- `node --expose-gc tests/verification/benchmark_cache_stability.mjs`: 24 distinct 3D scenes × 3 passes (72 projections), repeated mesh signatures, finite projections, face/evaluation ceilings, cache byte invariant, post-GC heap growth. Configurable `MI_CACHE_SCENARIOS` (8–80), `MI_CACHE_PASSES` (2–8), `MI_CACHE_HEAP_GROWTH_MIB` (default 128). GC-aware heap assertion is skipped when `--expose-gc` is absent.
+- `python tests/browser_round104_churn.py`: 12 repeated 120-point JSON imports, actual SVG element counts and constant DOM node population; observable heap growth capped at 64 MiB when the browser exposes a heap metric. Configurable `MI_BROWSER_CHURN_ROUNDS` (4–50).
+- This is a **stress/regression guard**, not proof of absence of memory leaks: caches did not approach their 192 MiB ceiling, GC snapshots can hide retained allocations, browser metrics can be unavailable/uninformative, and testing used a headless isolated Chromium environment. Later tests should deliberately force cache eviction with high-detail varied meshes, measure memory in a sustained browser session, and test real 3D UI orbit/frame pacing on multiple devices.
+- No new defect was confirmed by these probes; no production source was modified.
+
+## Round 105 — isolated forced LRU eviction
+
+`node tests/verification/benchmark_cache_eviction.mjs` runs the **real production cache implementation** in a temporary isolated copy with its 192 MiB limit reduced to 1 MiB **only inside that copy**. It verifies actual oldest-entry eviction, hit-triggered LRU promotion, bounded cache bytes, and deterministic geometry after an evicted mesh is recomputed. The original source, runtime limit, glyphs, and project schema remain unchanged. This is a semantic eviction regression, **not** a full-size 192 MiB memory-load certification; long-duration real-browser stress remains an investigation target. Initial 28/28 scope and 36,000 property cases are unchanged.
+
+## Round 106 — real Chromium 3D lifecycle reliability
+
+`python tests/browser_round106_3d_lifecycle.py` exercises the real application modules in isolated Chromium: one editable 3D surface, repeated mesh-detail edits, yaw/pitch updates, actual mouse camera orbits, 2D→3D→2D mode transitions, and post-GC JS heap / live DOM checks. Default: 8 cycles (configure `MI_3D_BROWSER_CYCLES`, allowed 4–40), up to 96 MiB post-GC growth and 1,500 DOM-node drift (configurable). Asserts nonempty 3D output on each return, zero stale polygons in 2D, stable plot count, untouched 2D model and zero page errors.
+
+Observed locally (8 cycles): 800–2,048 3D faces, 1,606–2,854 DOM nodes (detail-dependent), -0.10 MiB first-to-last post-GC heap difference, median wall-clock cycle 384.6 ms, zero page errors. The variable mesh detail intentionally changes DOM size, so the envelope is an invariant rather than demanding equal nodes each cycle. These are short, isolated, headless Chromium measurements; not proof of leak freedom, hardware GPU frame latency or real-site performance. The 28/28 scoped operation catalog and 36,000 mathematical property-case total are unchanged.

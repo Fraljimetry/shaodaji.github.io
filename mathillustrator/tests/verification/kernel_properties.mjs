@@ -6,6 +6,9 @@ import {transformPoint,circum,projectToCurve,alongCurve,pointOnObject,generalCro
 import {focalEllipse,regularPolygonVertices,shapeVerticesFromPoints,intersectStraightLines,intersectLineCircle,intersectCircles,newDoc,append,createResolver,affected,remove,validateDoc,clone} from '../../src/model.mjs';
 import {finitePoint,distinctPoints,independentEdges,perpendicularHeightNonzero} from '../../src/numeric_geometry.mjs';
 import {smoothCurveSvg} from '../../src/geometry.mjs';
+import {sampleExplicitPlot} from '../../src/plot.mjs';
+import {parse3D,add3DPlot,newScene3D,sample3DPlot} from '../../src/plot3d.mjs';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,sampleVectorField} from '../../src/plot_modes.mjs';
 
 export const FRAMEWORK_VERSION=1;
 export const SCALES=Object.freeze([1e-9,1e-6,1e-3,1,1e3,1e6]);
@@ -39,6 +42,8 @@ export const FAMILY_CASES=Object.freeze({
  'curve.spline_interpolation':1200,
  'curve.bezier_convex_hull':1200,
  'point.support_incidence':1200,
+ 'plot.2d_sampling':1200,
+ 'plot.3d_sampling':1200,
 });
 export function rng(seed){
  let state=seed>>>0;
@@ -63,6 +68,56 @@ export function propertyCase(family,caseIndex,rand){
  const scale=SCALES[caseIndex%SCALES.length], center=randomPoint(rand,scale),p=add(center,randomPoint(rand,scale));
  const q=add(center,randomPoint(rand,scale)),angle=(rand()*2-1)*Math.PI;
  const failure=(detail)=>({family,caseIndex,scale,detail});
+ if(family==='plot.3d_sampling'){
+  // Independent algebraic oracles for all five 3D expression modes.
+  // Alternate coordinate scales within the supported 3D bounds.
+  const x=(rand()-.5)*Math.min(500,scale),y=(rand()-.5)*Math.min(500,scale),z=(rand()-.5)*Math.min(500,scale);
+  const close=(a,b)=>Number.isFinite(a)&&Math.abs(a-b)<=2e-11*Math.max(1,Math.abs(b));
+  const surface=parse3D({kind:'surface3d',a:'x^2+2*y'})(x,y);
+  const param=parse3D({kind:'parametric3d',a:'u+v',b:'u-v',c:'u*v'})(x,y);
+  const implicit=parse3D({kind:'implicit3d',a:'x^2+y^2+z^2=1'})(x,y,z);
+  const vector=parse3D({kind:'vector3d',a:'-y',b:'x',c:'2*z'})(x,y,z);
+  const complex=parse3D({kind:'domain3d',a:'z',heightMode:'argument',colorMode:'solid'})(x,y);
+  if(!close(surface[2],x*x+2*y)||!param.every((v,i)=>close(v,[x+y,x-y,x*y][i]))||
+    !close(implicit,x*x+y*y+z*z-1)||!vector.every((v,i)=>close(v,[-y,x,2*z][i]))||
+    !close(complex[2],Math.atan2(y,x))||complex.domainRGB!==null)
+   return failure({kind:'expressions',x,y,z,surface,param,implicit,vector,complex});
+  // Only sample full meshes at a subset of cases to bound test runtime.
+  if(caseIndex%12===0){
+   const scene=newScene3D(),plot=add3DPlot(scene,'surface3d',['x+y']);
+   const mesh=sample3DPlot(plot,8);
+   if(mesh.limited||mesh.faces.length===0||mesh.faces.some(face=>face.some(pt=>pt.some(v=>!Number.isFinite(v))||Math.abs(pt[2]-(pt[0]+pt[1]))>1e-9)))
+     return failure({kind:'mesh',faces:mesh.faces.length,limited:mesh.limited});
+  }
+  return null;
+ }
+ if(family==='plot.2d_sampling'){
+  // Independent real/parametric/implicit oracles, plus screen-space straight-line
+  // sampling and finite bounded vector fields across six plotting scales.
+  const slope=(rand()-.5)*3,offset=(rand()-.5)*scale;
+  const fn=parseCurveExpression('2*x+1');
+  const x=(rand()-.5)*scale;
+  if(Math.abs(fn({x})-(2*x+1))>1e-12*Math.max(1,Math.abs(x)))return failure({kind:'parser',x});
+  const param=parseParametric('t^2','2*t','t');
+  const pv=param(x);
+  if(Math.abs(pv[0]-x*x)>1e-11*Math.max(1,Math.abs(x*x))||Math.abs(pv[1]-2*x)>1e-11*Math.max(1,Math.abs(x)))return failure({kind:'parametric',x,pv});
+  const implicit=parseImplicit('x^2+y^2=1');
+  const theta=rand()*Math.PI*2;
+  if(Math.abs(implicit(Math.cos(theta),Math.sin(theta)))>1e-12)return failure({kind:'implicit',theta});
+  const field=parseVectorField('x','-y');
+  const region={xMin:-scale,xMax:scale,yMin:-scale,yMax:scale};
+  const vectors=sampleVectorField(field,region,{density:3+Math.floor(rand()*10),normalized:true});
+  if(vectors.limited||!vectors.arrows.length||vectors.arrows.some(a=>![...a.start,...a.end,a.magnitude].every(Number.isFinite)))return failure({kind:'vector',region});
+  // Use independent analytic screen transform. All generated segments must lie
+  // on the same line and span the viewport without artificial disconnections.
+  const width=120+Math.floor(rand()*180),height=180;
+  const map=px=>((px/width)*2-1)*scale;
+  const screen=y=>height/2-(y-offset)/scale*40;
+  const sampled=sampleExplicitPlot(z=>slope*z+offset,map,screen,width,height,{quality:'fast'});
+  const expected=px=>height/2-slope*map(px)/scale*40;
+  if(sampled.limited||sampled.segments.length!==1||sampled.breaks!==0||sampled.segments[0].length<2||sampled.segments[0].some(([px,sy])=>Math.abs(sy-expected(px))>1e-8))return failure({kind:'explicit',sampled,slope,scale});
+  return null;
+ }
  if(family==='point.support_incidence'){
   // Exact supporting geometry is independent of the UI's pixel hit tolerance.
   // Check both constructed constrained points and general intersections with

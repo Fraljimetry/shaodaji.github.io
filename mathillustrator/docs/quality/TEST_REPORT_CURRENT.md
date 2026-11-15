@@ -1553,3 +1553,38 @@ Full Node suite **479/479 PASS**; framework **23/28 operations**, **27 seeded fa
 ## Round 99 — point incidence framework
 
 Added 1,200 deterministic six-scale tests of constrained segment/circle points and general point/support incidence; rejected out-of-segment and off-circle false matches. **24/28 operations**, **28 families**, **33,600/33,600 passing cases**. Full Node **479/479 PASS**; actual Chromium isolated smoke and Round 76 PASS. No production source, glyph, or schema changes; historical browser matrix and physical touch not rerun.
+
+## Round 100 — 2D plotting framework
+
+1,200 new six-scale seeded property cases: real/parametric/implicit expression oracles, finite vector fields, and explicit plot sampling in screen space. **25/28 operations; 29 families; 34,800/34,800 property cases PASS.** Full Node **479/479 PASS**; actual Chromium isolated startup/exports and Round 76 regressions PASS. Production source unchanged. Full historical Chromium suite not rerun.
+
+## Round 101 — 3D plotting framework
+
+1,200 new seeded checks for expression oracles (surface, parametric, implicit, vector, complex domain), plus bounded planar mesh sampling. **26/28 operations; 30 families; 36,000/36,000 property cases PASS.** Full Node **479/479 PASS**; actual Chromium smoke and Round 76 regression PASS. Production code unchanged. Full historical Chromium suite not rerun.
+
+## Round 102 update
+
+Round 102: 27/28 scoped operations; 36,000 Node property cases remain unchanged. New seeded real-Chromium interaction runner: 12 cases, drag commit/cancel and undo/redo. Browser evidence tracked separately. See current verification logs for execution status.
+
+## Round 103 — performance framework closure
+
+Initial 28/28 scoped operations have evidence. Performance checks: measured Node 3D cold/warm projection and real Chromium SVG import/render; memory/cache safety checks and configurable timing budgets. Results depend on environment; full performance certification, memory leak testing, mobile and hosted site remain unverified. Run `node tests/verification/benchmark_performance.mjs` and `python tests/browser_round103_performance.py`.
+
+## Round 104 — cache & browser churn reliability
+
+- Node: **479/479 PASS**; 27 JS module syntax checks PASS.
+- Deterministic 3D churn benchmark: **72/72 projections PASS** (24 distinct scenes, three passes); cache and face/evaluation budgets respected; post-GC heap growth **6.53 MiB**, observed cache peak **3.78 MiB / 192 MiB**, median projection **2.28 ms** in this container. Numbers are environment-specific, not stable performance targets.
+- Real Chromium: **12/12 repeated 120-point imports and visible SVG renders PASS**; DOM nodes remained **1258** each cycle; zero page errors. Browser exposed a zero heap delta; this cannot establish leak freedom.
+- Chromium smoke/startup/export and Round 76 regressions PASS. No production, glyph, or schema change.
+- Initial verification catalog stays **28/28**; numerical properties remain **36,000** cases. Reliability maturity is a separate dimension.
+
+## Round 105 — forced cache eviction regression
+
+Added `tests/verification/benchmark_cache_eviction.mjs`. Uses an isolated temporary copy of the 3D module with only its cache budget reduced to 1 MiB. Asserts real LRU eviction, cache-hit promotion, reentry after eviction, deterministic resampling, finite geometry, and bounded byte accounting. Not a 192 MiB stress/long-lived UI certification. Production code unchanged. Baseline Node **479/479 PASS**; actual Chromium isolated startup/export smoke **PASS** and Round 76 regression **PASS**. Forced-eviction probe **PASS**. Production files unchanged.
+
+## Round 106 — 3D browser lifecycle stress
+
+- Node suite: **479/479 PASS**. Isolated Chromium smoke and Round 76: **PASS**.
+- New actual-Chromium test: 8 camera-orbit / detail-edit cycles and 16 mode switches **PASS**. Each 3D re-entry rendered 800–2,048 polygon faces, with zero stale 3D polygons while in 2D mode. No page errors or 2D-model changes.
+- Observed DOM nodes 1,606–2,854 (detail-dependent); post-GC first-to-last JS heap difference **-0.10 MiB**; median end-to-end cycle **384.6 ms** (local machine only).
+- **28/28 initial operations**, **36,000 sampled mathematical cases** (unchanged). No production/glyph/schema changes, new confirmed defects, or Git commits. Physical devices, GPU frame pacing, sustained multihour use and hosted-site path remain unverified.
