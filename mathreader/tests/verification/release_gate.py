@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MathReader verification engine v1. Stdlib-only, fail-closed, evidence-labelled.
+"""MathReader verification engine v3. Stdlib-only, fail-closed, evidence-labelled.
 
 This file can be run from any cwd; never modifies application source.
 """
@@ -62,8 +62,9 @@ def missing_dependency(kind):
             from playwright.sync_api import sync_playwright
             with sync_playwright() as p:
                 executable = Path(p.chromium.executable_path)
-                if not executable.exists() and not os.environ.get('MATHREADER_CHROMIUM'):
-                    return 'Playwright Chromium executable is unavailable'
+                system_browser = os.environ.get('MATHREADER_CHROMIUM') or shutil.which('chromium') or shutil.which('chromium-browser') or shutil.which('google-chrome')
+                if not executable.is_file() and not (system_browser and Path(system_browser).is_file()):
+                    return 'Neither Playwright Chromium nor system Chromium is available'
         except Exception as e:
             return f'Playwright Chromium preflight failed: {type(e).__name__}: {e}'
     return None
@@ -103,7 +104,11 @@ def run_command(name, cmd, root, timeout, evidence, kind=None):
             terminate_tree(proc)
             return result(name, 'FAIL', reason=f'timeout after {timeout}s', evidence=evidence,
                           command=cmd, seconds=round(time.monotonic()-started, 3))
-        skipped = bool(re.search(r'(?im)^.*\b(?:SKIPPED|SKIP:|NOT RUN)\b', out + '\n' + err))
+        # Do not treat a merely mentioned '0 skipped' or 'skip handling' as an actual skip.
+        skipped = bool(re.search(r'(?im)^(?!.*\b0\s+(?:tests?\s+)?skipped\b).*\b(?:SKIPPED|SKIP:|NOT RUN)\b', out + '\n' + err))
+        browser_missing = bool(re.search(r'Executable doesn.t exist|browserType.launch:.*executable|Please run.*playwright install', out + '\n' + err, re.I | re.S))
+        if rc != 0 and browser_missing and kind == 'chromium':
+            return result(name, 'INCOMPLETE', reason='Browser executable unavailable to this test; source may require bundled Playwright Chromium', evidence=evidence, command=cmd, returnCode=rc, seconds=round(time.monotonic()-started, 3), stdoutTail=out[-2500:], stderrTail=err[-2500:])
         status = 'FAIL' if rc != 0 else ('INCOMPLETE' if skipped else 'PASS')
         return result(name, status, reason='test output reports skipped work' if skipped and rc == 0 else None, evidence=evidence, command=cmd,
                       returnCode=rc, seconds=round(time.monotonic()-started, 3),
@@ -181,42 +186,76 @@ def write_atomic(path, data):
 def execute(args):
     root = args.root.resolve()
     records = []
+    partial_path = args.output.with_name(args.output.name + '.partial')
+    def push(check):
+        records.append(check)
+        write_atomic(partial_path, {'schemaVersion': 2, 'profile': args.profile,
+            'status': 'INCOMPLETE', 'reason': 'execution in progress or interrupted',
+            'checks': records, 'counts': {s: sum(r['status'] == s for r in records) for s in ('PASS', 'FAIL', 'INCOMPLETE')}})
     all_js, all_py = discover(root, 'full')
     js, py = discover(root, args.profile)
+    filtered = bool(args.only)
+    if filtered:
+        selected = re.compile(args.only, re.I)
+        js, py = [p for p in js if selected.search(p.name)], [p for p in py if selected.search(p.name)]
+        push(result('partial-selection', 'INCOMPLETE', evidence='runner-scope', reason='--only restricts regression coverage; this run cannot certify the requested profile', filter=args.only))
+        if not js and not py:
+            push(result('empty-test-selection', 'INCOMPLETE', evidence='runner-scope', reason='--only matched zero eligible tests in this profile', filter=args.only))
     if not (root / 'index.html').is_file():
-        records.append(result('application-root', 'INCOMPLETE', reason='index.html is missing'))
+        push(result('application-root', 'INCOMPLETE', reason='index.html is missing'))
     else:
-        records.append(result('application-root', 'PASS', evidence='source-inventory'))
-    records += list(syntax_checks(root, args.timeout))
+        push(result('application-root', 'PASS', evidence='source-inventory'))
+    for check in syntax_checks(root, args.timeout):
+        push(check)
     if args.profile in ('full', 'release'):
         manifest_path = Path(__file__).with_name('v436_inventory.json')
         if manifest_path.exists():
             inventory = json.loads(manifest_path.read_text(encoding='utf-8'))
             missing = sorted(set(inventory['expectedJavaScript'] + inventory['expectedPython']) -
                              {p.relative_to(root).as_posix() for p in (*all_js, *all_py)})
-            records.append(result('v436-regression-inventory', 'INCOMPLETE' if missing else 'PASS',
+            push(result('v436-regression-inventory', 'INCOMPLETE' if missing else 'PASS',
                                   reason=f'{len(missing)} historical regression files absent' if missing else None,
                                   missingFiles=missing, evidence='source-inventory'))
         else:
-            records.append(result('v436-regression-inventory', 'INCOMPLETE', reason='historical manifest unavailable'))
+            push(result('v436-regression-inventory', 'INCOMPLETE', reason='historical manifest unavailable'))
+    # Run the verification framework's own invariants as part of every real gate.
+    selftest = root / 'tests' / 'verification' / 'test_release_gate.py'
+    if selftest.is_file():
+        push(run_command('verification-engine-selftest', [sys.executable, str(selftest)], root, args.browser_timeout, 'engine-selftest'))
+    else:
+        push(result('verification-engine-selftest', 'INCOMPLETE', reason='verification self-tests missing', evidence='engine-selftest'))
     if not all_js:
-        records.append(result('javascript-discovery', 'INCOMPLETE', reason='No root-level JavaScript regression files discovered'))
+        push(result('javascript-discovery', 'INCOMPLETE', reason='No root-level JavaScript regression files discovered'))
     if not all_py:
-        records.append(result('python-discovery', 'INCOMPLETE', reason='No root-level Python regression files discovered'))
+        push(result('python-discovery', 'INCOMPLETE', reason='No root-level Python regression files discovered'))
     node = shutil.which('node') or 'node'
     for path in js:
-        records.append(run_command('node:' + path.name, [node, str(path)], root, args.test_timeout,
+        push(run_command('node:' + path.name, [node, str(path)], root, args.test_timeout,
                                    'node-regression', 'node'))
     for path in py:
         needs_browser = 'playwright' in path.read_text(encoding='utf-8', errors='replace').lower()
-        records.append(run_command('python:' + path.name, [sys.executable, str(path)], root,
+        push(run_command('python:' + path.name, [sys.executable, str(path)], root,
                                    args.browser_timeout, 'python-browser' if needs_browser else 'python-regression',
                                    'chromium' if needs_browser else None))
+    # First-party PDF geometry oracle: optional for fast/full; required as a separate
+    # evidence gate for release. It never replaces live MathReader navigation tests.
+    if args.pdf_oracle:
+        from pdf_oracle import verify as verify_pdf_oracle
+        native = verify_pdf_oracle(args.pdf_oracle)
+        push(result('original-pdf-text-geometry-oracle', native['status'],
+                    evidence='pdf-native-text-geometry',
+                    reason=native.get('reason'), counts=native['counts'],
+                    documentsChecked=native.get('documentsChecked', 0),
+                    navigationCertified=False, cases=native['cases'][:100]))
+    elif args.profile == 'release':
+        push(result('original-pdf-text-geometry-oracle', 'INCOMPLETE',
+                    evidence='pdf-native-text-geometry',
+                    reason='Pass --pdf-oracle with a reviewed manifest and accessible original PDFs'))
     if args.profile == 'release':
-        records.append(hosted_smoke(args.hosted_url, args.browser_timeout))
-        records.append(result('original-pdf-geometry-certification', 'INCOMPLETE',
-                              evidence='real-pdf-original', reason='Requires checked-in oracle and real PDF.js navigation adapter; corpus presence alone does not certify accuracy'))
-        records.append(result('real-texify-inference-certification', 'INCOMPLETE',
+        push(hosted_smoke(args.hosted_url, args.browser_timeout))
+        push(result('mathreader-live-navigation-certification', 'INCOMPLETE',
+                              evidence='real-pdf-browser-navigation', reason='Requires actual MathReader PDF.js click/scroll/navigation adapter checked against reviewed targets; native text geometry alone is insufficient'))
+        push(result('real-texify-inference-certification', 'INCOMPLETE',
                               evidence='real-model-inference', reason='Requires measured genuine Texify inference and human-reviewed ground truth'))
     cov = coverage(js, py, all_js, all_py)
     for label, d in cov.items():
@@ -226,7 +265,7 @@ def execute(args):
     counts = {s: sum(r['status'] == s for r in records) for s in ('PASS', 'FAIL', 'INCOMPLETE')}
     status = 'FAIL' if counts['FAIL'] else ('INCOMPLETE' if counts['INCOMPLETE'] else 'PASS')
     result_obj = {
-        'schemaVersion': 1, 'engine': 'MathReader verification v1',
+        'schemaVersion': 3, 'engine': 'MathReader verification v3',
         'generatedAt': datetime.now(timezone.utc).isoformat(), 'profile': args.profile,
         'status': status, 'releaseCertified': status == 'PASS' and args.profile == 'release',
         'root': str(root), 'sourceFingerprint': sha(root / 'mathreader.js') if (root / 'mathreader.js').is_file() else None,
@@ -238,6 +277,7 @@ def execute(args):
                             'Real PDF and OCR certification are not implied by offline green tests.'],
     }
     write_atomic(args.output, result_obj)
+    partial_path.unlink(missing_ok=True)
     print(json.dumps({'status': status, 'counts': counts, 'selected': result_obj['testsSelected'], 'report': str(args.output)}, ensure_ascii=False))
     return {'PASS': 0, 'FAIL': 1, 'INCOMPLETE': 2}[status]
 
@@ -251,6 +291,8 @@ def main(argv=None):
     ap.add_argument('--test-timeout', type=int, default=120, help='seconds per Node test')
     ap.add_argument('--browser-timeout', type=int, default=180, help='seconds per Chromium/Python test')
     ap.add_argument('--hosted-url', default='')
+    ap.add_argument('--pdf-oracle', type=Path, help='Reviewed original-PDF geometry manifest; evidence is not live MathReader navigation')
+    ap.add_argument('--only', default='', help='Regex to run a bounded subset; never reports a fully passing profile')
     args = ap.parse_args(argv)
     args.output = args.output or args.root / 'tests' / 'verification' / 'release_gate_result.json'
     return execute(args)

@@ -26,7 +26,11 @@ for(let pass=0;pass<passes;pass++){
   assert(frame.faces.length>0 && frame.faces.length<=MAX_3D_FACES,'invalid face count');
   assert(frame.evaluations<=MAX_3D_EVALUATIONS,'evaluation budget exceeded');
   assert(frame.faces.every(f=>f.points.every(p=>p.every(Number.isFinite))),'nonfinite projected coordinates');
-  current.push([frame.faces.length,frame.lines.length,frame.evaluations]);
+  // Evaluations measure new work, not geometric identity: cache hits should
+  // reach zero without changing the projected primitives or bounds.
+  current.push([frame.faces.length,frame.lines.length,
+   frame.faces[0]?.points.flat().map(v=>+v.toFixed(7))]);
+  if(pass>0)assert.equal(frame.evaluations,0,'Warm scene must not resample cached world geometry');
   totalFaces+=frame.faces.length;totalEvaluations+=frame.evaluations;
   const cache=meshCacheStats();assert(cache.estimatedBytes>=0 && cache.estimatedBytes<=cache.limitBytes,'mesh cache exceeded budget');
   peakCache=Math.max(peakCache,cache.estimatedBytes);

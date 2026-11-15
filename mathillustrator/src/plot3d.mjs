@@ -222,8 +222,22 @@ export function* sample3DPlotSteps(plot,detail){
   }
   for(let k=0;k<n&&!limited;k++)for(let j=0;j<n&&!limited;j++){
    for(let i=0;i<n&&!limited;i++){
-    const pts=cube.map(([dx,dy,dz])=>at(i+dx,j+dy,k+dz)),v=cube.map(([dx,dy,dz])=>values[index(i+dx,j+dy,k+dz)]);
-    const lattice=cube.map(([cx,cy,cz])=>index(i+cx,j+cy,k+cz));
+    // Most cells of a localized implicit surface cannot cross the zero level.
+    // Read their eight scalar values first, and avoid constructing world-space
+    // vertices and tetrahedra for all-strict-positive/all-strict-negative cells.
+    // Never prune zero or nonfinite samples: the existing edge validation and
+    // partial-tetrahedron handling must still decide those boundary cases.
+    // Inspect the eight lattice samples without allocating index/value arrays.
+    // In typical smooth level sets the overwhelming majority of cells are
+    // one-sided; materialize corners only for actual crossing candidates.
+    const base=index(i,j,k),row=stride,plane=stride*stride;
+    const a=values[base],c=values[base+1],d=values[base+row+1],e=values[base+row];
+    const f=values[base+plane],g=values[base+plane+1],h=values[base+plane+row+1],l=values[base+plane+row];
+    if((a>0&&c>0&&d>0&&e>0&&f>0&&g>0&&h>0&&l>0)||
+       (a<0&&c<0&&d<0&&e<0&&f<0&&g<0&&h<0&&l<0))continue;
+    const lattice=[base,base+1,base+row+1,base+row,base+plane,base+plane+1,base+plane+row+1,base+plane+row];
+    const v=[a,c,d,e,f,g,h,l];
+    const pts=cube.map(([cx,cy,cz])=>at(i+cx,j+cy,k+cz));
     for(const ids of tets){const z=ids.map(q=>v[q]);if(z.some(x=>!ok(x)))continue;
      const inside=[],outside=[];for(let m=0;m<4;m++)(z[m]<0?inside:outside).push(m);
      if(inside.length===0||outside.length===0)continue;
@@ -389,7 +403,7 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
    if(!pilot){const sampler=sample3DPlotSteps(plot,pilotDetail);let next;
     do{next=sampler.next();if(!next.done)yield;}while(!next.done);
     pilot=next.value;
-    // Pilot sampling is real work too; account for it in the scene budget.
+    // Cached pilot meshes consume no new mathematical evaluations.
     evaluations+=pilot.evaluations;
     if(!pilot.limited)storeMesh(key,pilot);
    }
@@ -401,7 +415,12 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   effectiveDetail=Math.max(8,effectiveDetail);
   let mesh;
   for(let attempt=0;attempt<12;attempt++){
-   const predicted=estimatedEvaluations(plot,effectiveDetail,pilot);
+   // A complete cached world mesh costs zero evaluations. Check it BEFORE
+   // applying the new-work budget, or orbiting a dense cached scene silently
+   // lowers quality and can reject valid exports after another plot changes.
+   const key=meshKey(plot,effectiveDetail);
+   const cached=getCachedMesh(key);
+   const predicted=cached?0:estimatedEvaluations(plot,effectiveDetail,pilot);
    const remaining=MAX_3D_EVALUATIONS-evaluations;
    const share=Math.floor(remaining/Math.max(1,plots.length-plotIndex));
    if(predicted>share&&effectiveDetail>8){
@@ -412,12 +431,14 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
     yield;continue;
    }
    if(predicted>remaining){limited=true;break;}
-   const key=meshKey(plot,effectiveDetail);mesh=getCachedMesh(key);
+   mesh=cached;
    if(!mesh){const sampler=sample3DPlotSteps(plot,effectiveDetail);let next;
     do{next=sampler.next();if(!next.done)yield;}while(!next.done);
-    mesh=next.value;if(!mesh.limited)storeMesh(key,mesh);
+    mesh=next.value;
+    // Only freshly sampled geometry counts toward the per-frame work cap.
+    evaluations+=mesh.evaluations;
+    if(!mesh.limited)storeMesh(key,mesh);
    }
-   evaluations+=mesh.evaluations;
    if(!mesh.limited&&mesh.faces.length<=perPlotFaces)break;
    if(effectiveDetail<=8||attempt===11){limited=true;break;}
    const faceRatio=Math.sqrt(perPlotFaces/Math.max(1,mesh.faces.length));

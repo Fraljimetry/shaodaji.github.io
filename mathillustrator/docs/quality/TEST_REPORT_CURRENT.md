@@ -1621,3 +1621,22 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - Focused real Chromium `tests/browser_gpu3d_acceleration.py`: **PASS**. Default-detail SVG remains unchanged. Dense 12,800-triangle scene uses explicit CPU/SVG fallback when WebGL2 is not available. A *recording WebGL API test double* confirms a single 12,800-triangle batch, GPU-path selection, 12,800-triangle native SVG export, no foreignObject in the export, and clearing 3D state on mode switch. No page errors.
 - **Hardware limitation:** this Linux Chromium environment exposes no WebGL2 context. The API test double cannot prove that shaders compile on a real GPU, rendered pixels match SVG, or that rendering is faster on a physical GPU. This is GPU-path integration validation, not GPU performance certification. No hidden fallback: status text indicates `CPU SVG fallback` for dense unsupported scenes.
 - Verification engine registers the focused Chromium check in the local/release profiles; initial 28-operation catalogue scope is unchanged. Existing Node, 310,000 seeded mathematical property trials, Chromium startup, point/line interactions, seeded interactions and history, 3D exports, lifecycle, performance and cache checks were run after the change; see accompanying evidence. Hosted production and physical GPU sign-off remain unverified.
+
+## Round 114 — sampled-mesh cache budget correctness
+
+- Confirmed regression: scene projection charged reused world meshes and cached implicit pilots as fresh mathematical work. It also applied the new-evaluation quota before checking the cache; this could degrade or discard complete meshes during orbit when another plot consumed the scene budget.
+- Fixed in `src/plot3d.mjs`: inspect full mesh cache before budget admission and count only *actual fresh evaluations* (including freshly computed implicit pilots). No new GPU backend or numerical sampler introduced; fallback and exports continue to consume the same mesh geometry.
+- New `tests/round114_cached_sampling.test.mjs` covers: cold render nonzero work, repeated/camera-only zero new work, unchanged detail and faces, isolated expression edit, LRU cap, persistence, and cancellation.
+- Physical GPU raster speed and hosted deployment certification remain unverified, consistent with Round 113.
+- Final Round 114 `local` gate: **PASS** (17/17 checks, 0 FAIL, 0 INCOMPLETE); **483/483 Node tests**, **310,000 mathematical property cases**, all configured actual Chromium checks and cache/performance stress PASS. Independent Round 114 regressions 2/2 PASS.
+- Initial cache-stress failure was a test-oracle issue: it treated evaluation counts as a permanent geometry signature. Corrected benchmark now compares face/line counts and projected first-face coordinates while independently asserting zero work on warm-cache runs; rerun PASS. This preserves strict identity checks without mistaking optimization for geometry corruption.
+
+### Round 115 — Implicit cell pruning
+- Added Round115 source-preserving SHA-256 geometry fixtures from the Round114 sampler for six implicit expressions: bounded spheres, empty surface, exact lattice zeros, rational pole, and tangent degeneracy.
+- Verified geometry equality against the Round114 sampler before deleting the temporary comparison module. Added generator cancellation and warm-cache checks.
+- GPU-assisted **mathematical evaluation remains unimplemented** pending expression-to-shader parity, float-render-target compatibility, and actual GPU validation. Existing WebGL2 face rasterization and CPU fallback remain unchanged.
+
+### Round 116 — 3D implicit sampling allocation reduction
+- Scope: strict-sign fast-reject uses scalar lattice lookups, allocating corner/index arrays only for candidate cells; all ambiguous, zero, or nonfinite cells use the unchanged triangulation/refinement path.
+- Regression: `tests/round116_implicit_fast_reject.test.mjs` checks six exact SHA-256 geometry fixtures and cooperative cancellation.
+- Verification: local gate and environment details are supplied with the Round 116 evidence JSON. No GPU-side formula evaluation has been implemented or claimed.

@@ -1489,3 +1489,17 @@ The verification engine must provide one fail-closed release command, execute ra
 ## Round 113 — optional GPU acceleration for dense 3D
 
 Accelerate dense 3D screen rendering using WebGL2 where available, without changing expression evaluation, mesh topology, camera, lighting, export semantics, saved projects, glyphs, or object model. Retain an explicitly labeled CPU/SVG fallback on unsupported hardware. Verify GPU batching, fallback, export equivalence and scene lifecycle at the end; do not claim physical GPU FPS benefits without real hardware measurements.
+
+## Round 114 — cached 3D sampling budget and responsiveness
+
+Continue GPU-era 3D acceleration incrementally without changing mathematics or silently assuming a hardware GPU exists. Cached world-space meshes (including the implicit pilot) must count as **zero new mathematical evaluations** during camera orbit, redraw and style changes. Check the existing cache before downshifting resolution under the per-frame work budget; edits to one expression must not force resampling of other unchanged plots. Preserve original mesh clipping, exports, fallback behavior, cancellation and stored scene format. Test fresh, repeated, camera-only, single-plot edits and cancellation.
+
+### Round 115 — Implicit surface bottleneck and GPU sampling feasibility (2026-11-14)
+- Preserve exact legacy mathematical semantics and numerical safety checks when accelerating implicit surfaces, especially poles, zero values, nonfinite samples, clipping, face winding, and cancellation.
+- CPU optimization: reject strictly same-sign lattice cubes before allocating world-space vertices or iterating their tetrahedra. GPU mesh rasterization from Round 113 is unchanged.
+- GPU *mathematical* sampling is not enabled: a safe expression compiler, float-render-target detection, numerical equivalence gate, and CPU fallback are prerequisites. Never represent GPU rasterization as GPU evaluation or claim hardware speedups without a genuine GPU benchmark.
+
+### Round 116 — implicit 3D sampling hot path
+- Optimize 3D implicit surface sampling while preserving mathematical semantics and the existing WebGL2 presentation/CPU fallback architecture.
+- Avoid per-cell allocations when all eight sampled cube corners are strictly on one side of the zero level; retain the full boundary/pole/tetrahedron path for zero and nonfinite samples.
+- Preserve existing triangulation and cancellation, validate with exact-mesh regression fixtures and real Chromium checks. Actual GPU-side mathematical evaluation remains deferred until numerical equivalence and WebGL2 hardware execution can be verified.

@@ -19,6 +19,8 @@ class GateTests(unittest.TestCase):
         self.root = Path(self.temp.name) / 'mathreader'
         (self.root / 'tests').mkdir(parents=True)
         (self.root / 'js').mkdir()
+        (self.root / 'tests' / 'verification').mkdir()
+        (self.root / 'tests' / 'verification' / 'test_release_gate.py').write_text("print('engine-selftest passed')")
         (self.root / 'index.html').write_text('<title>fixture</title>')
         (self.root / 'mathreader.js').write_text('const ok=1;')
         (self.root / 'js' / '00-core.js').write_text('const ok=1;')
@@ -66,6 +68,48 @@ class GateTests(unittest.TestCase):
         self.assertFalse(report['releaseCertified'])
         self.assertEqual(report['status'], 'INCOMPLETE')
         self.assertEqual(sum(x['name'].endswith('certification') for x in report['checks']), 2)
+
+    def test_missing_engine_selftest_is_incomplete(self):
+        (self.root / 'tests' / 'verification' / 'test_release_gate.py').unlink()
+        code, report = self.run_gate()
+        self.assertEqual(code, 2)
+        self.assertTrue(any(x['name'] == 'verification-engine-selftest' and x['status'] == 'INCOMPLETE'
+                            for x in report['checks']))
+
+    def test_zero_skipped_is_not_a_skip(self):
+        (self.root / 'tests' / 'render_regression.py').write_text("print('7 passed, 0 skipped')")
+        code, report = self.run_gate()
+        self.assertEqual(code, 0)
+        self.assertEqual(report['status'], 'PASS')
+
+    def test_actual_skipped_corpus_is_incomplete(self):
+        (self.root / 'tests' / 'render_regression.py').write_text("print('PASS fixture; original PDF corpus SKIPPED')")
+        code, report = self.run_gate()
+        self.assertEqual(code, 2)
+        self.assertEqual(report['status'], 'INCOMPLETE')
+
+    def test_engine_selftest_failure_blocks_gate(self):
+        (self.root / 'tests' / 'verification' / 'test_release_gate.py').write_text('raise RuntimeError("broken gate")')
+        code, report = self.run_gate()
+        self.assertEqual(code, 1)
+        self.assertTrue(any(x['name'] == 'verification-engine-selftest' and x['status'] == 'FAIL'
+                            for x in report['checks']))
+
+    def test_filtered_run_is_incomplete_even_when_every_selected_test_passes(self):
+        code, report = self.run_gate('--only', 'settings')
+        self.assertEqual(code, 2)
+        self.assertEqual(report['status'], 'INCOMPLETE')
+        self.assertEqual(report['testsSelected']['python'], 0)
+        self.assertTrue(any(x['name'] == 'partial-selection' for x in report['checks']))
+        self.assertFalse((self.root / 'result.json.partial').exists())
+
+    def test_empty_filter_reports_incomplete_explicitly(self):
+        code, report = self.run_gate('--only', 'nonexistent-verification-test-xyz')
+        self.assertEqual(code, 2)
+        self.assertEqual(report['testsSelected']['javascript'], 0)
+        self.assertEqual(report['testsSelected']['python'], 0)
+        self.assertTrue(any(x['name'] == 'empty-test-selection' and x['status'] == 'INCOMPLETE'
+                            for x in report['checks']))
 
     def test_syntax_failure(self):
         (self.root / 'mathreader.js').write_text('function (')
