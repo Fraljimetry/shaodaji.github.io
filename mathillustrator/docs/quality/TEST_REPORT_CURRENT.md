@@ -1679,3 +1679,11 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - Added `tests/round122_gpu_batch.test.mjs` for batch bounds, unavailable hardware, 4,096-point comparison, global indices, and zero/nonzero topology mismatches.
 - Neither shader compilation nor synthetic CPU-derived comparison is evidence of GPU hardware parity. Production CPU mesh sampling remains unchanged.
 - Round 122 local execution: 519/519 Node regressions PASS; math-properties PASS; 16/16 standard local stages PASS when run as independently timed subprocesses; catalog coverage PASS. The monolithic runner stalled at browser-history in this environment. Real WebGL2 numerical verification returned UNAVAILABLE (exit 2), therefore hardware parity is INCOMPLETE, not PASS. Extended browser probe now checks a 513-point chunked case when WebGL2 is available.
+
+### Round 123 — 3D CPU throughput batch
+- Structured surface/parametric/domain meshes now sample and triangulate with a two-row sliding window, reducing retained intermediate lattice references from O(n²) to O(n). Triangle order, winding, UV/complex phase attributes and evaluation count remain unchanged.
+- Vector field sampling avoids transient axis arrays per cell while preserving exact vector coordinates and segment endpoints.
+- Added 11 regressions: six exact SHA-256 mesh fixtures from the unmodified Round 122 implementation, four early generator-abort cases, and one camera-cache/cancel stress case.
+- Hardware GPU numerical sampling remains disabled and unverified. Benchmarks are exploratory, machine-specific, and not hardware GPU speedup claims.
+- Third optimization: surface-cell edge-length checks now scan the existing point ring directly, avoiding per-cell edge-pair arrays while retaining the identical discontinuity rejection rule.
+- Round 123 final acceptance: 16/16 local verification checks PASS; 530/530 Node tests expected from 519 baseline plus 11 new cases (check full reporter for authoritative number); 37,200 seeded kernel cases PASS; all real Chromium, history, export, GPU fallback, lifecycle, and performance checks PASS. Actual hardware GPU numerical parity remains INCOMPLETE.

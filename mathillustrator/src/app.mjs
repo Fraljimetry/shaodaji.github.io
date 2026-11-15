@@ -120,8 +120,8 @@ const angleBase='<path d="M3.5 5L8.5 19H21"/>';
 glyph.angle=angleBase+'<path d="M7 14.8Q10.6 13.8 12.6 19"/>'+glyphDots([[3.5,5],[8.5,19],[21,19]]);
 glyph.fixedAngle=angleBase+'<path d="M7.15 15.23A4 4 0 0 1 12.5 19M6.35 12.97A6.4 6.4 0 0 1 14.9 19"/>'+glyphDots([[3.5,5],[8.5,19],[21,19]]);
 // Same source construction shown by a more distant, oblique external point.
-// Circle C=(15.8,14), R=6; the tangent feet satisfy CT perpendicular PT.
-const tangentCenter=[15.8,14], tangentRadius=6, tangentSource=[2.8,3.2];
+// Match the Circle glyph scale: the tangent target circle uses radius 8.
+const tangentCenter=[15,14], tangentRadius=8, tangentSource=[2.8,3.2];
 const tangentVector=[tangentSource[0]-tangentCenter[0],tangentSource[1]-tangentCenter[1]];
 const tangentD2=tangentVector[0]**2+tangentVector[1]**2;
 const tangentA=tangentRadius**2/tangentD2;
@@ -786,90 +786,6 @@ function append3DPrimitive(target,primitive){
  if(primitive.kind==='face')target.append(face3DElement(primitive.value));
  else for(const child of line3DElements(primitive.value))target.append(child);
 }
-// Dense-screen acceleration: the CPU sampler is authoritative for topology,
-// clipping, depth order and SVG/PDF export. WebGL2 only rasterizes the already
-// projected painter-order triangles; no arbitrary expressions reach the shader.
-// A transparent GPU canvas lives INSIDE the SVG viewBox, avoiding stage sizing
-// drift when panels resize. Never use this path for synchronous exports.
-const GPU3D_MIN_FACES=6000;
-// A browser/device that loses its context must not repeatedly attempt GPU
-// rendering on every fallback repaint. Reset only on a fresh page load.
-let gpu3DContextLost=false;
-function release3DGpuContext(svg){
- const canvas=svg.querySelector('[data-3d-gpu] canvas');
- if(!canvas)return;
- // Releasing a superseded canvas is intentional, not a device failure.
- if(canvas.__on3DContextLost)canvas.removeEventListener('webglcontextlost',canvas.__on3DContextLost);
- // Contexts from discarded frames must not accumulate across camera orbits.
- try{canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();}catch{}
-}
-function gpu3DFaceColor(face){
- const rgb=[1,3,5].map(i=>parseInt(face.color.slice(i,i+2),16));
- return rgb.map(v=>face.rangeColor?Math.round(v*(.38+.62*face.shade)):
-  face.domainColoring?Math.round(v*(.74+.26*face.shade)):
-  Math.round(v+(255-v)*(.1+.56*face.shade)));
-}
-function gpu3DCanvas(result,width,height){
- if(gpu3DContextLost||result.lines.length||result.faces.length<GPU3D_MIN_FACES||!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>4096||height>4096)return null;
- const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
- let gl;
- try{gl=canvas.getContext('webgl2',{alpha:true,antialias:true,depth:false,stencil:false,preserveDrawingBuffer:true,premultipliedAlpha:false});}
- catch{return null;} // Blocked or exhausted contexts must not break the editor.
- if(!gl)return null;
- let shader=null,program=null,buffer=null;
- const compile=(type,source)=>{const object=gl.createShader(type);if(!object)throw Error('GPU shader allocation failed');gl.shaderSource(object,source);gl.compileShader(object);if(!gl.getShaderParameter(object,gl.COMPILE_STATUS)){gl.deleteShader(object);throw Error('GPU shader compilation failed');}return object;};
- try{
-  const vertex=compile(gl.VERTEX_SHADER,`#version 300 es
-   in vec2 a_position; in vec4 a_color; out vec4 v_color;
-   uniform vec2 u_resolution;
-   void main(){vec2 clip=(a_position/u_resolution)*2.0-1.0;gl_Position=vec4(clip.x,-clip.y,0.0,1.0);v_color=a_color;}`);
-  const fragment=compile(gl.FRAGMENT_SHADER,`#version 300 es
-   precision mediump float; in vec4 v_color; out vec4 out_color;
-   void main(){out_color=v_color;}`);
-  shader=[vertex,fragment];program=gl.createProgram();if(!program)throw Error('GPU program allocation failed');
-  gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);
-  if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('GPU program link failed');
-  gl.useProgram(program);
-  const position=gl.getAttribLocation(program,'a_position'),color=gl.getAttribLocation(program,'a_color');
-  const resolution=gl.getUniformLocation(program,'u_resolution');if(position<0||color<0||!resolution)throw Error('GPU shader attributes unavailable');
-  // A single interleaved upload avoids thousands of SVG polygon nodes and
-  // thousands of individual draw calls. Sorted painter order is preserved.
-  const values=new Float32Array(result.faces.length*3*6);let offset=0;
-  for(const face of result.faces){
-   const rgb=gpu3DFaceColor(face),opacity=Math.max(0,Math.min(1,face.opacity));
-   for(const point of face.points){
-    values[offset++]=point[0];values[offset++]=point[1];
-    values[offset++]=rgb[0]/255;values[offset++]=rgb[1]/255;values[offset++]=rgb[2]/255;values[offset++]=opacity;
-   }
-  }
-  buffer=gl.createBuffer();if(!buffer)throw Error('GPU buffer allocation failed');
-  gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,values,gl.STREAM_DRAW);
-  gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,24,0);
-  gl.enableVertexAttribArray(color);gl.vertexAttribPointer(color,4,gl.FLOAT,false,24,8);
-  gl.uniform2f(resolution,width,height);
-  gl.viewport(0,0,width,height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-  gl.drawArrays(gl.TRIANGLES,0,result.faces.length*3);
-  if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw Error('GPU drawing failed');
-  const foreign=el('foreignObject',{x:0,y:0,width,height,'pointer-events':'none','data-3d-gpu':'webgl2'});
-  canvas.style.cssText='width:100%;height:100%;display:block;pointer-events:none';
-  canvas.__on3DContextLost=event=>{
-   // Only a currently displayed canvas may disable GPU. Retired contexts
-   // are deliberately lost on every camera move and must be ignored.
-   if(!canvas.isConnected)return;
-   event.preventDefault();gpu3DContextLost=true;
-   scheduleRender();
-  };
-  canvas.addEventListener('webglcontextlost',canvas.__on3DContextLost);
-  foreign.append(canvas);return foreign;
- }catch{return null;}
- finally{
-  // WebGL command stream retains its own resources while the canvas lives;
-  // deleting the pipeline objects after draw prevents buildup on camera orbit.
-  if(buffer)gl.deleteBuffer(buffer);if(program)gl.deleteProgram(program);
-  if(shader)for(const item of shader)gl.deleteShader(item);
- }
-}
 function draw3DScene(svg,{exporting=false}={}){
  const result=project3DScene(doc.scene3d,size.w,size.h);
  draw3DBase(svg,result,{exporting});
@@ -1054,7 +970,7 @@ function render(){
  cancelSceneRender();
  const start=performance.now(),svg=$('drawing');plotLimitedInScene=false;
  if(!in3D()){
-  release3DGpuContext(svg);svg.replaceChildren();draw(svg);lastRender=performance.now()-start;
+  svg.replaceChildren();draw(svg);lastRender=performance.now()-start;
   $('render-info').textContent=`${doc.objects.length} objects · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`;
   return;
  }
@@ -1075,16 +991,6 @@ function render(){
   // (front faces appeared only after hundreds of earlier, farther faces).
   const staged=el('g');draw3DBase(staged,result);
   plotLimitedInScene=result.limited;
-  // Try GPU only for dense, face-only frames. If unsupported, explicitly
-  // report CPU rendering and retain the exact old SVG fallback.
-  const gpu=result.faces.length>=GPU3D_MIN_FACES?gpu3DCanvas(result,size.w,size.h):null;
-  if(gpu){
-   staged.append(gpu);release3DGpuContext(svg);svg.replaceChildren(staged);sceneRenderPending=false;
-   if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;
-   $('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms · WebGL2 raster${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;
-   if(cameraDrag&&orbitRenderQueued){orbitRenderQueued=false;scheduleRender();}
-   return;
-  }
   let next=0;
   const paint=()=>{
    sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
@@ -1095,9 +1001,9 @@ function render(){
    if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
    else{
     // One atomic replacement: no half-lit or partly missing 3D scene.
-    release3DGpuContext(svg);svg.replaceChildren(staged);sceneRenderPending=false;
+    svg.replaceChildren(staged);sceneRenderPending=false;
     if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;
-    $('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?' · drag preview':''}${result.faces.length>=GPU3D_MIN_FACES?' · CPU SVG fallback':''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;
+    $('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?' · drag preview':''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;
     if(cameraDrag&&orbitRenderQueued){orbitRenderQueued=false;scheduleRender();}
    }
   };
@@ -1108,7 +1014,7 @@ function render(){
   try{const state=sceneRenderTask.step(7);
    if(state.done)paintResult(state.result);
    else sceneRenderFrame=requestAnimationFrame(compute);
-  }catch(e){sceneRenderTask=null;sceneRenderPending=false;release3DGpuContext(svg);svg.replaceChildren(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));$('render-info').textContent='3D rendering failed';notice('3D rendering failed: '+e.message);}
+  }catch(e){sceneRenderTask=null;sceneRenderPending=false;svg.replaceChildren(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background}));$('render-info').textContent='3D rendering failed';notice('3D rendering failed: '+e.message);}
  };
  compute();
 }

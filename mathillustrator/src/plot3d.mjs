@@ -169,24 +169,32 @@ export function* sample3DPlotSteps(plot,detail){
   }
  };
  if(['surface3d','parametric3d','domain3d'].includes(plot.kind)){
-  const n=Math.max(8,Math.min(96,detail)),vertices=[];
-  for(let j=0;j<=n;j++){
-   const row=[];for(let i=0;i<=n;i++){
+  const n=Math.max(8,Math.min(96,detail));
+  // Only adjacent rows are needed to triangulate a structured surface.
+  // Keep a two-row sliding window instead of retaining the full (n+1)^2
+  // lattice, reducing live references to O(n) without changing triangle order.
+  const sampleRow=j=>{
+   const row=[];
+   for(let i=0;i<=n;i++){
     const x=plot.kind!=='parametric3d'?b.xMin+(b.xMax-b.xMin)*i/n:plot.uMin+(plot.uMax-plot.uMin)*i/n;
     const y=plot.kind!=='parametric3d'?b.yMin+(b.yMax-b.yMin)*j/n:plot.vMin+(plot.vMax-plot.vMin)*j/n;
     row.push(safeEval(x,y));
-   }vertices.push(row);yield;
-  }
+   }
+   return row;
+  };
+  let upper=sampleRow(0);yield;
   for(let j=0;j<n&&!limited;j++){
+   const lower=sampleRow(j+1);yield;
    for(let i=0;i<n;i++){
-    const [a,c,d,e]=[vertices[j][i],vertices[j][i+1],vertices[j+1][i+1],vertices[j+1][i]];
+    const [a,c,d,e]=[upper[i],upper[i+1],lower[i+1],lower[i]];
     // A single undefined corner must not erase the triangle determined by
     // the other three valid samples. Keep full-cell winding unchanged;
     // partial cells are drawn only when their three vertices are finite.
     const available=[a,c,d,e].filter(Boolean);
     if(available.length<3)continue;
-    const edges=available.length===4?[[a,c],[c,d],[d,e],[e,a]]:[[available[0],available[1]],[available[1],available[2]],[available[2],available[0]]];
-    const maxEdge=Math.max(...edges.map(([p,q])=>Math.hypot(...minus(p,q))));
+    // Scan the existing ring directly: no temporary edge-pair arrays per cell.
+    let maxEdge=0;
+    for(let k=0;k<available.length;k++)maxEdge=Math.max(maxEdge,Math.hypot(...minus(available[k],available[(k+1)%available.length])));
     if(maxEdge>Math.max(b.xMax-b.xMin,b.yMax-b.yMin,b.zMax-b.zMin)*1.5)continue;
     if(plot.kind==='domain3d'&&plot.heightMode==='argument'&&Math.max(...available.map(p=>p[2]))-Math.min(...available.map(p=>p[2]))>Math.PI)continue;
     if(available.length===4){pushTriangle(a,c,d);pushTriangle(a,d,e);}
@@ -194,7 +202,9 @@ export function* sample3DPlotSteps(plot,detail){
     else if(!c)pushTriangle(a,d,e);
     else if(!d)pushTriangle(a,c,e);
     else pushTriangle(a,c,d);
-   }yield;
+   }
+   upper=lower;
+   yield;
   }
  }else if(plot.kind==='implicit3d'){
   // A consistent body diagonal partitions adjacent cubes into conforming tetrahedra.
@@ -286,10 +296,13 @@ export function* sample3DPlotSteps(plot,detail){
  }else if(plot.kind==='vector3d'){
   const n=plot.density;for(let k=0;k<n;k++){
    for(let j=0;j<n;j++)for(let i=0;i<n;i++){
-    const center=['x','y','z'].map((axis,index)=>b[axis+'Min']+(b[axis+'Max']-b[axis+'Min'])*([i,j,k][index]+.5)/n);
+    const center=[b.xMin+(b.xMax-b.xMin)*(i+.5)/n,
+     b.yMin+(b.yMax-b.yMin)*(j+.5)/n,
+     b.zMin+(b.zMax-b.zMin)*(k+.5)/n];
     let vec;try{vec=fn(...center);}catch{}evaluations++;
     if(!finitePoint(vec))continue;const mag=Math.hypot(...vec);if(mag<1e-10||!ok(mag))continue;
-    const unit=vec.map(v=>v/mag),length=Math.min(...['x','y','z'].map(axis=>(b[axis+'Max']-b[axis+'Min'])/n))*.35*(plot.normalized?1:Math.min(1.8,mag));
+    const length=Math.min((b.xMax-b.xMin)/n,(b.yMax-b.yMin)/n,(b.zMax-b.zMin)/n)*.35*(plot.normalized?1:Math.min(1.8,mag));
+    const unit=vec.map(v=>v/mag);
     const endpoints=[center.map((v,q)=>v-unit[q]*length*.5),center.map((v,q)=>v+unit[q]*length*.5)];
     if(endpoints.every(p=>inBounds(p,b)))lines.push({endpoints,magnitude:mag});
    }yield;

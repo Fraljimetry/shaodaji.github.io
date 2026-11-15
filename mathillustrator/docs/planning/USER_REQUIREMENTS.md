@@ -1533,3 +1533,7 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Restrict the experimental GPU diagnostic to 256 samples per draw and 4,096 per batch. Fail closed on unavailable hardware or any failed chunk; never publish partial data as complete.
 - Preserve implicit-surface topology by rejecting zero/nonzero and opposite-sign discrepancies at sampled points, even inside the numerical tolerance.
 - Require adequate float precision in both vertex and fragment shader stages.
+
+### Round 123 — larger development batches (2026-11-14)
+- User requested materially larger related batches per iteration, rather than repeated small GPU-probe-only passes. Retain complete Node, mathematical, real Chromium, export, cache, and performance checks.
+- Next priority: improve 3D responsiveness and memory/performance while preserving numerical/topological equality. Never claim production GPU numerical acceleration before hardware equivalence is established.
