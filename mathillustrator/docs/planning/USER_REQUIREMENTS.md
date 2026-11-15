@@ -1629,7 +1629,7 @@ Preserve immediate point dragging after selection, even when the second pointer 
 
 ## Polar parametric plotting and algebraic geometry interaction
 - Show mouse-coordinate x/y values with two fixed decimal places in a stable canvas-footer slot; prevent saved-status position jitter while hovering. Preserve precision of stored coordinates and editable Properties fields.
-- Provide an optional, default-off polar checkbox for 2D parametric objects. In polar mode use `r(t)` plus editable `r min`/`r max` as radial clipping bounds; keep editable `t min`/`t max`. Preserve original `x(t)`/`y(t)` values while toggling, including in saved JSON and undo/redo.
+- Provide an optional, default-off polar checkbox for 2D parametric objects. In polar mode use `r(t)` plus editable `t min`/`t max` only; no radial clipping bounds. Preserve original `x(t)`/`y(t)` values while toggling, including in saved JSON and undo/redo.
 - Recognize mathematically unambiguous affine functions, linear/standard-circle implicit polynomial equations, straight parametric segments, full sine/cosine circles, and full-turn constant polar circles as semantic lines/circles, usable in existing compatible geometric constructions. Reject inferred semantics for incomplete arcs, noncircular ellipses, general sampled curves and unsupported syntax. Do not change glyphs.
 
 ### Free curve shape gestures (Round 146)
@@ -1690,3 +1690,11 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 - Evaluation budget and Implicit grid (px) must share the next two-column row. Do not shorten descriptive labels merely to save space.
 - Vector-field Normalize lengths and Density must occupy a single aligned row in 2D and 3D; Density input matches the 56 px Opacity-sized numeric control.
 - Keep mathematical expression editors medium-width and in line with their labels; preserve existing glyphs and behavior.
+
+- **Round 157 correction (authoritative):** Polar parametric Properties have only `r(t)` and `t min`/`t max`. Remove `r min`/`r max` UI and radial clipping; preserve legacy JSON fields without affecting rendering.
+
+### Round 158 — point style and contextual label compactness
+- Point-role objects (including derived points) expose **Opacity** and **Size**, but do not show the line **Width** control; line and curve objects continue to expose Width. Saved style data is not rewritten.
+- Apply concise contextual captions where the section disambiguates them: **Label** (formerly Displayed label), **Resolution** (domain coloring and raster export), **Smoothing** (Geometry), **Polar** (parametric), **Transparent** (background), and **Opacity** (3D surface settings).
+- Preserve descriptive **Evaluation budget** and **Implicit grid (px)** because both would be ambiguous if shortened further. Keep wide expression editors and the preexisting geometry/3D behavior.
+- Labels and captions must translate reversibly between English and Chinese, with no compact-layout collisions at 1440, 768, 390, or 320 px.

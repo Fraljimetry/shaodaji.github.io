@@ -29,7 +29,7 @@ with sync_playwright() as pw:
    pair=p.locator('#properties .property-check-number-pair')
    assert pair.count()==1,(width,pair.count())
    assert pair.get_by_text('Swap side').count()==1 and pair.get_by_text('Bend').count()==1,width
-   assert pair.evaluate('''e => {const a=e.querySelector('.check').getBoundingClientRect(),b=e.querySelector('.field').getBoundingClientRect(),n=e.querySelector('input[type=number]').getBoundingClientRect(),r=e.getBoundingClientRect();return a.right<=b.left+1 && n.right<=r.right+1 && Math.abs(n.width-56)<1;}'''),width
+   assert pair.evaluate('''e => {const a=e.querySelector('.check').getBoundingClientRect(),b=e.querySelector('.field').getBoundingClientRect(),n=e.querySelector('input[type=number]').getBoundingClientRect(),r=e.getBoundingClientRect();return a.right<=b.left+1 && n.right<=r.right+1 && Math.abs(n.width-e.closest('#properties').querySelector('.style-opacity input[type=number]').getBoundingClientRect().width)<2;}'''),width
    pair.locator('input[type=checkbox]').check()
    pair.locator('input[type=number]').fill('1.5');pair.locator('input[type=number]').press('Tab')
    actual=next(x for x in snapshot()['objects'] if x['type']=='morphism')

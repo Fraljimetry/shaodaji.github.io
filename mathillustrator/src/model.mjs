@@ -737,10 +737,10 @@ export function validateDoc(raw){
   if(o.parameter!==undefined&&!['t','u','v'].includes(o.parameter))throw Error('Invalid parametric symbol.');
   if(!finite(o.tMin)||!finite(o.tMax)||o.tMin>=o.tMax||Math.abs(o.tMin)>1e6||Math.abs(o.tMax)>1e6)throw Error('Parameter range must be finite, ascending and within ±1,000,000.');
   if(o.polar!==undefined&&typeof o.polar!=='boolean')throw Error('Invalid polar flag.');
-  if(o.polar){if(typeof o.rExpr!=='string')throw Error('Missing polar radius expression.');parseCurveExpression(o.rExpr,['t']);
-   if(!finite(o.rMin)||!finite(o.rMax)||o.rMin>=o.rMax||Math.abs(o.rMin)>1e6||Math.abs(o.rMax)>1e6)throw Error('Invalid polar radius bounds.');}
+  if(o.polar){if(typeof o.rExpr!=='string')throw Error('Missing polar radius expression.');parseCurveExpression(o.rExpr,['t']);}
   if(o.rExpr!==undefined&&(typeof o.rExpr!=='string'||o.rExpr.length>800))throw Error('Invalid radius expression.');
-  if((o.rMin!==undefined&&!finite(o.rMin))||(o.rMax!==undefined&&!finite(o.rMax)))throw Error('Invalid radial bounds.');
+  // Legacy rMin/rMax fields are retained for JSON compatibility, but no longer clip polar plots.
+  if((o.rMin!==undefined&&!finite(o.rMin))||(o.rMax!==undefined&&!finite(o.rMax)))throw Error('Invalid legacy radial bounds.');
  }
  if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr);}
  if(['vectorField','domainColoring'].includes(o.type)){

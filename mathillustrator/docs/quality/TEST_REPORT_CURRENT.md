@@ -1,3 +1,7 @@
+## Round 157 — Polar parameter correction and numeric field alignment
+
+Polar mode now uses `r(t)` with `t min` and `t max` exclusively. Legacy radial keys in saved documents are ignored for rendering. Bend and Density width aligned with rendered Opacity; Node 566/566 PASS; Chromium polar 1440/390 PASS; Chromium Bend 1440/390/320 PASS; Chromium 2D Density 1440/390/320 and 3D Density desktop PASS.
+
 ## Round 149 — Objects list and Properties layout (2026-11-15)
 
 - Baseline: local Round 148 assembled source, including all prior overlays. No hosted deployment tested.
@@ -29,7 +33,7 @@ Source: user-supplied `mathillustrator(20261115-080406).zip` with successive Rou
 - **PASS:** Earlier Round 139 language switching in Chromium (1440/390); Round 144 extended 90-object interaction soak per viewport (1440/390), including history, themes, language and import rollback, no JavaScript exceptions.
 - **PASS:** Recognized explicit affine function, linear implicit plot, polynomial circle, bounded linear parametric path, full-turn sine/cosine parameterization and full-turn constant-radius polar circle. Exact resolved line/circle roles participate in analytical line–circle intersections and constrained-point validation. Added negative cases for partial turns, near-ellipses, hyperbolas, and nonlinear functions.
 - **FIXED:** Historical inline Chromium harness was missing actual current CSS (it matched an old stylesheet filename) and was unable to resolve new versioned module imports. Now embeds live local CSS and the new algebraic geometry module.
-- **Limits:** Recognition is intentionally syntactic and conservative, not a general symbolic algebra system; general conics, translated polar nonconstant shapes, arbitrary equivalent formulas, incomplete arcs and approximate visual circles remain ordinary sampled curves. Polar `r min/r max` are radial clipping bounds, not parameter endpoints. Rendering still uses sampled plot paths even when semantic geometry is recognized. GPU/browser matrix, hosted cache behavior, actual physical touch and comprehensive export fidelity for semantically recognized plots remain unverified.
+- **Limits:** Recognition is intentionally syntactic and conservative, not a general symbolic algebra system; general conics, translated polar nonconstant shapes, arbitrary equivalent formulas, incomplete arcs and approximate visual circles remain ordinary sampled curves. Polar has only `t min/t max` parameter endpoints; legacy radial fields are ignored. Rendering still uses sampled plot paths even when semantic geometry is recognized. GPU/browser matrix, hosted cache behavior, actual physical touch and comprehensive export fidelity for semantically recognized plots remain unverified.
 
 
 ## Scope and baseline
@@ -1924,3 +1928,11 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 **Executed:** Node `node --test tests/*.test.mjs`: **566/566 PASS**, 0 failed, 0 skipped. `node --check src/app.mjs`: PASS. Chromium `browser_round156_plot_settings.py`: PASS at 1440, 768, 390 and 320 px, checking row arrangement, widths, nonoverlap and actual settings changes / 2D vector creation. Chromium `browser_round153_pairs.py`: PASS at 1440, 390, 320 px (desktop 3D + all-width 2D). Chromium `browser_round155_expression_alignment.py`: PASS at 1440, 768, 390, 320 px.
 
 **Not executed:** hosted deployment, physical mobile, mobile 3D density, physical GPU and full historical Chromium suite. No changes to SVG glyphs or geometry algorithms.
+
+### Round 158 — point Width removal and label compactness (2026-11-15)
+- Changed the point-role Properties editor to omit Width, retaining Size and Opacity and preserving all serialized fields and width editing for line/curve objects.
+- Shortened only contextually unambiguous labels in object Properties and Settings; retained Evaluation budget and Implicit grid (px).
+- Node: **566/566 PASS**, `node --test tests/*.test.mjs` on the Round 157 baseline plus Round 158 overlay.
+- Syntax: `node --check` passed for modified `src/app.mjs` and `src/i18n.mjs`.
+- Chromium: `tests/browser_round158_point_labels.py` **PASS** at 1440, 768, 390, and 320 px: point has no Width, Size x-alignment matches Opacity, Segment retains Width, and English/Chinese Label switching works. Local inline Chromium fixture, not hosted deployment.
+- Remaining gaps: hardware GPU, physical touch, entire historical browser suite, hosted-site verification not rerun.

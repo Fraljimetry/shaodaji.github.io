@@ -308,7 +308,7 @@ function desc(o,nameById=null){
  if(o.type==='point')return `(${o.xy.map(formatCoordinate).join(', ')})`;
  if(o.type==='midpoint')return `Midpoint${namedRefs()?' of '+namedRefs():''}`;
  if(o.type==='function')return `y = ${o.expr}`;
- if(o.type==='parametric'&&o.polar)return `r(t) = ${o.rExpr}, [${o.tMin}, ${o.tMax}], radius [${o.rMin}, ${o.rMax}]`;
+ if(o.type==='parametric'&&o.polar)return `r(t) = ${o.rExpr}, t in [${o.tMin}, ${o.tMax}]`;
  if(o.type==='parametric')return `x(${o.parameter||'u'}) = ${o.xExpr}; y(${o.parameter||'v'}) = ${o.yExpr}, [${o.tMin}, ${o.tMax}]`;
  if(o.type==='vectorField')return `(${o.xExpr}, ${o.yExpr}), ${o.density} arrows across x`;
  if(o.type==='domainColoring')return `F(z) = ${o.expr}`;
@@ -704,7 +704,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    }
   }
  }else if(['function','parametric','implicit'].includes(o.type)){
-  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,o.rMin,o.rMax,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
+  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
   const path=plotCache.get(key,()=>{
    const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
    const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
@@ -1563,7 +1563,7 @@ function renderProperties(){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex'&&live.pointLabel)validateLatexInput(live.pointLabel);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
-  field(root,'Displayed label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex'&&v)validateLatexInput(v);live.pointLabel=v;})).closest('label').classList.add('short-label-field');
+  field(root,'Label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex'&&v)validateLatexInput(v);live.pointLabel=v;})).closest('label').classList.add('short-label-field');
  }
  // Diagram nodes, morphisms and Text already use their editable 'text' property.
  // All other shapes now expose optional independent on-canvas labels, never names/IDs.
@@ -1571,7 +1571,7 @@ function renderProperties(){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const select=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
   select.value=o.displayLabelMode||'plain';select.onchange=()=>edit(live=>{if(select.value==='latex'&&live.displayLabel)validateLatexInput(live.displayLabel);live.displayLabelMode=select.value;});mode.append(select);root.append(mode);
-  field(root,'Displayed label',o.displayLabel||'','text',v=>edit(live=>{if(live.displayLabelMode==='latex'&&v)validateLatexInput(v);live.displayLabel=v;})).closest('label').classList.add('short-label-field');
+  field(root,'Label',o.displayLabel||'','text',v=>edit(live=>{if(live.displayLabelMode==='latex'&&v)validateLatexInput(v);live.displayLabel=v;})).closest('label').classList.add('short-label-field');
  }
  if(o.type==='triangleCenter'){
   const label=document.createElement('label');label.className='field';label.textContent='Center';const pick=document.createElement('select');
@@ -1666,14 +1666,12 @@ function renderProperties(){
   });
   const polarLabel=document.createElement('label');polarLabel.className='check compact-property-check';
   const polarToggle=document.createElement('input');polarToggle.type='checkbox';polarToggle.checked=o.polar===true;
-  polarToggle.setAttribute('aria-label',translated('Use polar coordinates',uiPrefs.language));
-  polarToggle.onchange=()=>{if(edit(live=>{live.polar=polarToggle.checked;if(live.polar){live.rExpr??='1';live.rMin??=0;live.rMax??=100;}})!==false)renderProperties();};
-  polarLabel.append(polarToggle,document.createTextNode(' '+translated('Use polar coordinates',uiPrefs.language)));root.append(polarLabel);
+  polarToggle.setAttribute('aria-label',translated('Polar',uiPrefs.language));
+  polarToggle.onchange=()=>{if(edit(live=>{live.polar=polarToggle.checked;if(live.polar){live.rExpr??='1';}})!==false)renderProperties();};
+  polarLabel.append(polarToggle,document.createTextNode(' '+translated('Polar',uiPrefs.language)));root.append(polarLabel);
   if(o.polar){
    field(root,'r(t)',o.rExpr??'1','text',v=>edit(live=>{r50ParseExpr(v,['t']);live.rExpr=v;}));
-   const radial=document.createElement('div');radial.className='parametric-range-grid';root.append(radial);
-   field(radial,'r min',o.rMin??0,'number',v=>edit(live=>{if(!finite(v)||v>=live.rMax||Math.abs(v)>1e6)throw Error('Invalid polar radius minimum.');live.rMin=v;}),{step:.1});
-   field(radial,'r max',o.rMax??100,'number',v=>edit(live=>{if(!finite(v)||v<=live.rMin||Math.abs(v)>1e6)throw Error('Invalid polar radius maximum.');live.rMax=v;}),{step:.1});
+
   }else{
   field(root,'x(t)',xText,'text',v=>change('x',v));
   field(root,'y(t)',yText,'text',v=>change('y',v));
@@ -1695,7 +1693,7 @@ function renderProperties(){
   const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
   const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
-  field(root,'Coloring resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
  }
  if(['vectorField','domainColoring'].includes(o.type)){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
@@ -1740,7 +1738,7 @@ function renderProperties(){
  }
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
- field(styleSlot('width'),styleGrid.classList.contains('stroke-only-grid')?'Width':'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
+ if(!pointRole(o,id=>get(doc,id)))field(styleSlot('width'),styleGrid.classList.contains('stroke-only-grid')?'Width':'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
  if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  localizeUI(root,uiPrefs.language);
@@ -1840,7 +1838,7 @@ function syncTooltips(){
 }
 function polarParametric(o){
  const r=r50ParseExpr(o.rExpr,['t']);
- return t=>{const radius=r({t});return Number.isFinite(radius)&&radius>=o.rMin&&radius<=o.rMax
+ return t=>{const radius=r({t});return Number.isFinite(radius)
   ?[radius*Math.cos(t),radius*Math.sin(t)]:[NaN,NaN];};
 }
 function syncPlotModeControl(){

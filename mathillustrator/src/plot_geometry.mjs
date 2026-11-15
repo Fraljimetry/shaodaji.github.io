@@ -62,7 +62,7 @@ export function recognizedPlotGeometry(o){
  if(o.polar){
   const p=polynomial2(clean(o.rExpr).replace(/\bt\b/g,'x'));
   if(!p||p.slice(1).some(v=>!zero(v))||!fullTurn(o))return null;
-  const r=Math.abs(p[0]);return r>0&&r>=o.rMin&&r<=o.rMax?{kind:'circle',center:[0,0],radius:r}:null;
+  const r=Math.abs(p[0]);return r>0?{kind:'circle',center:[0,0],radius:r}:null;
  }
  const t=o.parameter||'t',x=clean(o.xExpr),y=clean(o.yExpr);
  // Full circles with simple translated/scaled sine/cosine components.

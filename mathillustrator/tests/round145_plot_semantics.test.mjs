@@ -23,7 +23,7 @@ test('Never classify noncircles from near-equality, incomplete arcs, poles, or u
   {type:'function',expr:'tan(x)'},
   {type:'parametric',xExpr:'cos(t)',yExpr:'sin(t)',parameter:'t',tMin:0,tMax:Math.PI},
   {type:'parametric',xExpr:'cos(t)',yExpr:'sin(t)',parameter:'t',tMin:0,tMax:2*Math.PI-1e-9},
-  {type:'parametric',xExpr:'cos(t)',yExpr:'sin(t)',parameter:'t',tMin:0,tMax:2*Math.PI,polar:true,rExpr:'2',rMin:3,rMax:4},
+  {type:'parametric',xExpr:'cos(t)',yExpr:'sin(t)',parameter:'t',tMin:0,tMax:Math.PI,polar:true,rExpr:'2'},
  ])assert.equal(recognizedPlotGeometry(o),null,JSON.stringify(o));
 });
 test('Recognized curves participate in exact geometric intersection dependencies',()=>{
@@ -34,11 +34,12 @@ test('Recognized curves participate in exact geometric intersection dependencies
  validateDoc(d);r=createResolver(d);assert.ok(r.at(constrained.id));const point=r.at(root.id);
  assert.ok(Math.abs(point[0]+Math.SQRT2)<1e-9&&Math.abs(point[1]+Math.SQRT2)<1e-9);
 });
-test('Polar bounds validate, persist in JSON, and do not destroy cartesian components',()=>{
+test('Polar uses parameter bounds, preserves cartesian components, and ignores legacy radial clipping',()=>{
  const d=newDoc();const o=append(d,{type:'parametric',xExpr:'cos(t)',yExpr:'sin(t)',parameter:'t',tMin:0,tMax:2*Math.PI,polar:true,rExpr:'2',rMin:0,rMax:5});
  validateDoc(d);assert.equal(JSON.parse(JSON.stringify(d)).objects[0].yExpr,'sin(t)');
  assert.equal(recognizedPlotGeometry(o).radius,2);
- for(const mutate of [p=>p.rMin=6,p=>p.rExpr='foo(t)',p=>p.polar='yes']){
+ assert.equal(recognizedPlotGeometry({...o,rMin:3,rMax:4}).radius,2); // legacy fields never clip
+ for(const mutate of [p=>p.tMin=8,p=>p.rExpr='foo(t)',p=>p.polar='yes']){
   const bad=structuredClone(d);mutate(bad.objects[0]);assert.throws(()=>validateDoc(bad));
  }
 });

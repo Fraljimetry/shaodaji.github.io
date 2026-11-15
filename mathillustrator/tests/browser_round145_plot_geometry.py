@@ -28,7 +28,10 @@ with sync_playwright() as pw:
     assert toggle.is_checked()
     state=page.evaluate('JSON.parse(window.__round36Snapshot())')
     assert state['objects'][0]['polar'] is True and state['objects'][0]['rExpr']=='2',state['objects'][0]
-    assert page.locator('#properties label').filter(has_text='r min').count()>0
+    assert page.locator('#properties label').filter(has_text='r min').count()==0
+    assert page.locator('#properties label').filter(has_text='r max').count()==0
+    assert page.locator('#properties label').filter(has_text='t min').count()>0
+    assert page.locator('#properties label').filter(has_text='t max').count()>0
     toggle.uncheck()
     assert page.locator('#properties label').filter(has_text='x(t)').count()>0
     state=page.evaluate('JSON.parse(window.__round36Snapshot())')

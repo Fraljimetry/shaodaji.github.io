@@ -119,6 +119,11 @@ const zhExtra={
  "Arrow label positioning": "箭头标签布局"
 };
 Object.assign(zh,zhExtra);
+Object.assign(zh,{
+ 'Label':'标签', 'Polar':'极坐标', 'Resolution':'分辨率',
+ 'Smoothing':'平滑', 'Transparent':'透明', 'Size':'大小',
+ 'Density':'密度', 'Normalize lengths':'归一化长度', 'Bend':'弯曲', 'Swap side':'换侧'
+});
 const originalText=new WeakMap(),originalAttrs=new WeakMap();
 const skip='script,style,svg,.objects,#toast,#render-info,#coords,#autosave-info,#object-count,#trash-count,#mode-label,#command,#drawing';
 function translateTextNode(node,language){

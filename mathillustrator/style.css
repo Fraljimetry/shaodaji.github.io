@@ -930,7 +930,7 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
    Long expressions and arbitrary text are deliberately excluded. */
 .properties .property-check-number-pair {
  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
- gap:8px;align-items:center;margin:7px 0;min-width:0;
+ gap:9px;align-items:center;margin:7px 0;min-width:0;
 }
 .properties .property-check-number-pair>.check {
  display:inline-flex;align-items:center;gap:5px;margin:0;min-width:0;
@@ -940,17 +940,17 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  flex:none;width:13px;height:13px;min-width:13px;margin:0;
 }
 .properties .property-check-number-pair>.field {
- display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:5px;
+ display:grid;grid-template-columns:45px minmax(0,1fr);gap:5px;
  align-items:center;margin:0;min-width:0;font-size:11px;
 }
 .properties .property-check-number-pair>.field>input[type=number] {
  width:100%;min-width:0;max-width:100%;box-sizing:border-box;
 }
 @media(max-width:360px){
- .properties .property-check-number-pair{gap:6px}
+ .properties .property-check-number-pair{gap:9px}
  .properties .property-check-number-pair>.check,
  .properties .property-check-number-pair>.field{font-size:10px}
- .properties .property-check-number-pair>.field{grid-template-columns:minmax(0,1fr) 56px}
+ .properties .property-check-number-pair>.field{grid-template-columns:45px minmax(0,1fr)}
 }
 
 /* Round 155: restore medium-width inline plot expression editors.
@@ -998,4 +998,9 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 @media(max-width:360px){
  .rightpanel .settings-sections .plotting-setting-layout > .compact-settings-grid{gap:6px}
  .rightpanel .settings-sections .plotting-setting-layout > .compact-settings-grid > .field{font-size:10.5px}
+}
+
+/* Round 158: points have Size, not line Width; position Size in Width's former row. */
+.properties .style-controls-grid.stroke-only-grid:not(.vector-style-grid):not(:has(>.style-width)):has(>.style-pointsize)>.style-pointsize {
+ grid-area:2 / 2 / 3 / 3!important;grid-row:2!important;grid-column:2!important;
 }
