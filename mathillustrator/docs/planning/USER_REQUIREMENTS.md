@@ -1778,3 +1778,10 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - Correct actual missing triangles in smooth implicit 3D surfaces. Distinguish unintended mesh holes from genuine topological openings and from transparency/shading artifacts; do not fill every projected white region indiscriminately.
 - Refine uncertain signed-edge zero crossings adaptively while preserving discontinuity/pole rejection and finite rendering budgets.
 - Section headings must switch back correctly from Chinese to English after initialization and on repeated language changes.
+
+## Round 177 — Translation closure requirements
+- Every visible editor-owned UI string, dynamic option, empty state and accessibility label must switch reversibly between English and Chinese without altering user names, mathematical expressions or export data.
+- Language switching must refresh populated Properties and command-mode accessibility labels, not only static DOM text.
+- Keep a browser-based comparison of stable UI labels and an explicit allowlist for brand names, language names, font names and paper format names.
+
+- Round 178: In both 2D and 3D vector-field Properties, place Density on the left and Normalize lengths on the right of the same compact row; preserve editing, translation, and narrow-viewport alignment.

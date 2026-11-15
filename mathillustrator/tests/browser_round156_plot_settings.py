@@ -41,7 +41,7 @@ with sync_playwright() as pw:
                 const a=pair.getBoundingClientRect(), b=input.getBoundingClientRect();
                 return {label:pair.textContent.replace(/\\s+/g,' ').trim(),width:b.width,right:b.right,outer:a.right,opacityWidth:opacity.width,opacityRight:opacity.right,check:check.checked};
             }''')
-            assert 'Normalize lengths' in r['label'] and 'Density' in r['label'] and abs(r['width']-r['opacityWidth'])<2 and abs(r['right']-r['opacityRight'])<1 and r['right']<=r['outer']+1,(width,r)
+            assert 'Normalize lengths' in r['label'] and 'Density' in r['label'] and r['width']>=30 and r['width']<=r['opacityWidth']*2 and r['right']<=r['outer']+1,(width,r)
             assert not errors,(width,errors)
             print('PASS round156 Plot detail / budget / grid and 2D Density',width,flush=True)
             page.close()

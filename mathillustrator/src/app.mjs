@@ -1344,7 +1344,7 @@ function renderListWindow(){
   };fragment.append(row);
  }
  if(last<count)fragment.append(spacer((count-last)*LIST_ROW_HEIGHT));
- if(!count){const empty=document.createElement('p');empty.className='subtle empty-objects';empty.textContent=doc.objects.length?'No matches':'No objects';fragment.append(empty);}
+ if(!count){const empty=document.createElement('p');empty.className='subtle empty-objects';empty.textContent=translated(doc.objects.length?'No matches':'No objects',uiPrefs.language);fragment.append(empty);}
  wrapper.replaceChildren(fragment);
 }
 
@@ -1534,8 +1534,8 @@ function renderProperties3D(root){
  }
  if(selectedPlot.kind==='vector3d'){
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
   field(pair,'Density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
+  const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
  }
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
@@ -1716,8 +1716,8 @@ function renderProperties(){
   field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
   field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
   field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
+  const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
@@ -2915,7 +2915,7 @@ function setupInterface(){
  for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['selection-preview','selectionPreview'],['fast-3d-orbit','fast3DOrbit']]){
   const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels'||key==='fast3DOrbit')scheduleRender();else setHoverPick(null);};
  }
- function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
+ function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);syncPlotModeControl();renderProperties();}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
  const languageSwitch=$('ui-language');
  languageSwitch.title='Click once to switch English / 中文';

@@ -1,3 +1,10 @@
+## Round 178 — Vector-field controls reordered (2026-11-15)
+
+- 2D and 3D vector-field Properties now display **Density | Normalize lengths**, with unchanged binding and behavior.
+- PASS: `node --check src/app.mjs`, Node 586/586 (0 failed, 0 skipped); Chromium Round 178 at 1440/768/390/320 px, testing 2D values, checkbox persistence, and 3D desktop layout.
+- PASS: updated historical Round 153 at 1440/390/320 px and Round 156 at 1440/768/390/320 px.
+- NOT RUN: all historical Chromium suites, real touch devices, hosted-site deployment.
+
 ## Round 170 — Selection preview control and subtle highlight (2026-11-15)
 
 - Replaced the Interface **Tooltips** checkbox with **Selection preview** (default on), retaining persistent layout preferences while retiring `showTooltips`. Tool buttons keep their native accessibility titles regardless of the new preference.
@@ -2062,3 +2069,10 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - Node: **584/584 passed** (`node --test tests/*.test.mjs`), no failures or skips. `node --check` passed for changed JavaScript modules.
 - Real Chromium: `browser_round176_i18n_surface.py` passed at 1440, 768 and 390 px; repeated EN/ZH roundtrips and representative implicit 3D rendering at 1440 px.
 - Unverified: exact visual equivalence to the user's hosted screenshot/camera pose, every possible implicit function, exhaustive GPU/large-scene stress, full historical Chromium collection, hosted site and real physical mobile devices. White openings may also result from actual surface topology or bounding-box clipping.
+
+## Round 177 — UI translation sweep
+- Confirmed and fixed: object-list `No objects`/`No matches` empty states remained English because the list is outside the global localization walker; command input accessibility label was stale on language switch; already-rendered object Properties are now refreshed on language changes.
+- Automated 2D DOM comparison: 302 scoped elements in each language, with only intentional unchanged terms (MathIllustrator, English language selector, paper formats and fonts).
+- Node: **586/586 passed**, 0 failed, 0 skipped; JavaScript syntax passed.
+- Real Chromium: new empty-state and repeated-switch test passed at 1440, 768, 390 and 320 px; populated point Properties and 3D plot-mode options passed at 1440 and 768 px. Historical Round 174 runtime localization passed at 1440/768/390 and Round 175 arrowhead/option localization passed at 1440/768/390.
+- Limitations: not a proof of zero translation defects in every rare dialog, imported malformed project, graphics-library error or hosted deployment. Entire historical Chromium suite not executed.
