@@ -1,29 +1,59 @@
 #!/usr/bin/env node
+/** Scoped coverage catalog + execution evidence, with no file-existence-as-pass shortcut. */
 import {readFileSync,existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dirname,resolve} from 'node:path';
 import {FAMILY_CASES,SCALES,DEFAULT_SEED,runProperties} from './kernel_properties.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 const catalog=JSON.parse(readFileSync(resolve(root,'tests/verification/coverage_catalog.json'),'utf8'));
-if(catalog.schemaVersion!==1||!Array.isArray(catalog.operations))throw new Error('Invalid coverage catalog');
+const args=process.argv.slice(2);
+const catalogOnly=args.includes('--catalog-only');
+const evidenceArg=args.find(a=>a.startsWith('--evidence-file='));
+if(catalogOnly&&evidenceArg)throw Error('Use --catalog-only or --evidence-file, not both');
+if(catalog.schemaVersion!==1||!Array.isArray(catalog.operations)||catalog.operations.length!==28)throw Error('Invalid scoped coverage catalog');
 const ids=new Set(),families=new Set();
 for(const op of catalog.operations){
- if(ids.has(op.id)||!Number.isInteger(op.layer)||op.layer<1||op.layer>5||!existsSync(resolve(root,op.module)))throw new Error(`Bad operation: ${op.id}`);
+ if(!op.id||ids.has(op.id)||!Number.isInteger(op.layer)||op.layer<1||op.layer>5||!existsSync(resolve(root,op.module)))throw Error(`Bad operation: ${op.id}`);
  ids.add(op.id);
- if(!['covered','unverified'].includes(op.status))throw new Error(`Invalid status ${op.id}`);
- if(!Array.isArray(op.properties))throw new Error(`No property list for ${op.id}`);
- if(op.status==='covered' && !op.properties.length && !(op.coverageType==='chromium-seeded' && Array.isArray(op.browserTests) && op.browserTests.length) && !(op.coverageType==='measured-benchmark' && Array.isArray(op.benchmarkTests) && op.benchmarkTests.length===2))throw new Error(`Missing coverage evidence for ${op.id}`);
- if(op.status==='unverified' && (op.properties.length||op.browserTests?.length))throw new Error(`Misleading coverage status for ${op.id}`);
- for(const benchmarkTest of op.benchmarkTests||[]){if(!existsSync(resolve(root,benchmarkTest)))throw new Error(`Missing benchmark evidence ${benchmarkTest}`);}
- for(const browserTest of op.browserTests||[]){if(!existsSync(resolve(root,browserTest)))throw new Error(`Missing Chromium evidence ${browserTest}`);}
- for(const name of op.properties){if(!Object.hasOwn(FAMILY_CASES,name))throw new Error(`Unknown property ${name}`);families.add(name);}
+ if(!['covered','unverified'].includes(op.status)||!Array.isArray(op.properties))throw Error(`Invalid status/properties for ${op.id}`);
+ const hasBrowser=Array.isArray(op.browserTests)&&op.browserTests.length>0;
+ const hasBench=Array.isArray(op.benchmarkTests)&&op.benchmarkTests.length>0;
+ if(op.status==='covered'&&!op.properties.length&&!hasBrowser&&!hasBench)throw Error(`Missing evidence declaration for ${op.id}`);
+ if(op.status==='unverified'&&(op.properties.length||hasBrowser||hasBench))throw Error(`Misleading unverified status for ${op.id}`);
+ if(hasBrowser&&op.coverageType!=='chromium-seeded')throw Error(`Bad browser coverage type: ${op.id}`);
+ if(hasBench&&op.coverageType!=='measured-benchmark')throw Error(`Bad benchmark coverage type: ${op.id}`);
+ for(const path of [...(op.browserTests||[]),...(op.benchmarkTests||[])])if(!existsSync(resolve(root,path)))throw Error(`Missing declared test ${path}`);
+ for(const name of op.properties){if(!Object.hasOwn(FAMILY_CASES,name))throw Error(`Unknown property ${name}`);families.add(name);}
 }
-if(families.size!==Object.keys(FAMILY_CASES).length)throw new Error('One or more property families unlisted');
-const checks=runProperties(),failures=checks.results.reduce((s,r)=>s+r.failed,0);
-const byLayer=Object.fromEntries([1,2,3,4,5].map(layer=>{
- const ops=catalog.operations.filter(op=>op.layer===layer);
- return [layer,{covered:ops.filter(op=>op.status==='covered').length,total:ops.length}];
-}));
-const report={round:103,seed:DEFAULT_SEED,scales:SCALES,propertyFamilies:families.size,propertyCases:checks.results.reduce((s,r)=>s+r.count,0),failed:failures,operationsCovered:catalog.operations.filter(o=>o.status==='covered').length,operationsCatalogued:catalog.operations.length,byLayer,results:checks.results};
-process.stdout.write(JSON.stringify(report,null,2)+'\n');
-if(failures)process.exitCode=1;
+if(families.size!==Object.keys(FAMILY_CASES).length)throw Error('One or more property families unlisted');
+let evidence=null;
+if(evidenceArg){
+ evidence=JSON.parse(readFileSync(resolve(root,evidenceArg.slice('--evidence-file='.length)),'utf8'));
+ if(evidence.schemaVersion!==1||!Array.isArray(evidence.checks))throw Error('Invalid execution evidence');
+}
+const pathExecuted=(path)=>evidence?.checks.some(c=>c.status==='PASS' && Array.isArray(c.command) && c.command.some(s=>s.replaceAll('\\','/').endsWith(path)));
+const propertiesExecuted=Boolean(evidence?.checks.some(c=>c.name==='math-properties'&&c.status==='PASS'));
+let propertyReport=null;
+if(!catalogOnly&&!evidence){
+ const checks=runProperties();
+ propertyReport={seed:DEFAULT_SEED,scales:SCALES,propertyCases:checks.results.reduce((s,r)=>s+r.count,0),failed:checks.results.reduce((s,r)=>s+r.failed,0),results:checks.results};
+}
+const opResults=catalog.operations.map(op=>{
+ const missing=[];
+ if(op.status==='unverified')missing.push('no declared coverage');
+ if(op.properties.length&&!propertiesExecuted&&!propertyReport?.results?.length)missing.push('no executed property evidence');
+ for(const p of op.browserTests||[])if(!pathExecuted(p))missing.push(`not executed: ${p}`);
+ for(const p of op.benchmarkTests||[])if(!pathExecuted(p))missing.push(`not executed: ${p}`);
+ if(propertyReport?.failed)missing.push('mathematical property failure');
+ return {id:op.id,layer:op.layer,catalogStatus:op.status,verified:missing.length===0,missing};
+});
+const verified=opResults.filter(op=>op.verified).length;
+const report={
+ catalogRound:catalog.round,scope:'28 scoped operation families; not an exhaustive application audit',
+ catalogued:catalog.operations.length,declaredCovered:catalog.operations.filter(o=>o.status==='covered').length,
+ executedVerified:verified,propertyFamilies:families.size,mode:catalogOnly?'catalog-only':evidence?'execution-evidence':'properties-only',
+ propertyReport,operations:opResults,complete:verified===catalog.operations.length,
+};
+console.log(JSON.stringify(report,null,2));
+if(!catalogOnly && !report.complete)process.exitCode=2;
+if(propertyReport?.failed)process.exitCode=1;

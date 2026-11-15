@@ -1,6 +1,6 @@
 # MathIllustrator Verification Framework — authoritative living plan
 
-**Started:** Round 86. **Current:** Round 87. This document records the verification architecture and exit gates; it does not replace the cumulative [bug register](BUG_REGISTER_AND_DEBUG_ROUTE.md), [test report](TEST_REPORT_CURRENT.md), or [requirements](../planning/USER_REQUIREMENTS.md).
+**Started:** Round 86. **Current:** Round 112 (executable release-gate orchestration). This document records the verification architecture and exit gates; it does not replace the cumulative [bug register](BUG_REGISTER_AND_DEBUG_ROUTE.md), [test report](TEST_REPORT_CURRENT.md), or [requirements](../planning/USER_REQUIREMENTS.md).
 
 ## Purpose and evidence rules
 
@@ -210,3 +210,11 @@ See `RELEASE_EXIT_GATE.md` for finite completion gates. The 28/28 initial invent
 ## Round 111 campaign closure
 
 Initial scoped operation coverage remains **28/28**. 36,000 deterministic property cases and 479 Node tests pass, alongside the local Chromium release checks and delayed export cancellation test. These are bounded claims; G7 hosted deployment still requires an external live-browser check. Do not continue arbitrary sequential audit rounds: only targeted, evidence-based maintenance work is authorized after this local closure. See `RELEASE_EXIT_GATE.md`.
+
+## Round 112 — release-gate hardening and evidence completeness
+
+- The catalog is the **initial scoped 28-operation inventory**, not total feature coverage. `declaredCovered` is distinct from `executedVerified`. The reporter no longer treats browser/benchmark script existence as a passing test. Bare property-only reporting cannot certify all 28 operations.
+- `tests/verification/release_gate.py` executes fail-closed `quick`, `local` and `release` profiles and writes JSON with per-check executed PASS/FAIL/INCOMPLETE statuses. `release` additionally requires a live HTTPS smoke check.
+- Extended profiles run 10,000 trials per property family; the 31st adversarial family targets near-tangent and near-endpoint conditions. Passing sampled properties does not prove robustness for unrepresentable near-singular inputs.
+- The old 10,000 ms performance allowances are replaced **in the gate** by explicit 1,500 ms 3D Node and 2,000 ms browser import/render limits, configurable for reference hardware. They are not 60 fps or long-duration memory guarantees.
+- See `VERIFICATION_ENGINE_USER_GUIDE.md` for the authoritative command and release semantics. Older round summaries below are historical snapshots, not current state.

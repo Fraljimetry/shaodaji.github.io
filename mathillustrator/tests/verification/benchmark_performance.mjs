@@ -4,7 +4,7 @@ import {performance} from 'node:perf_hooks';
 import {newScene3D,add3DPlot,project3DScene,meshCacheStats,MAX_3D_FACES,MAX_3D_EVALUATIONS} from '../../src/plot3d.mjs';
 const iterations = Number(process.env.MI_PERF_ITERATIONS || 5);
 if(!Number.isInteger(iterations)||iterations<3||iterations>30)throw Error('MI_PERF_ITERATIONS must be 3..30');
-const budgetMs=Number(process.env.MI_PERF_P95_MS || 10000);
+const budgetMs=Number(process.env.MI_PERF_P95_MS || 1500);
 if(!(budgetMs>0&&Number.isFinite(budgetMs)))throw Error('Invalid MI_PERF_P95_MS');
 function percentile(values,p){let s=[...values].sort((a,b)=>a-b);return Math.round(s[Math.ceil(s.length*p)-1]*100)/100;}
 const scenarios=[

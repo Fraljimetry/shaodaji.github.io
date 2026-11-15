@@ -1610,3 +1610,7 @@ Added `tests/verification/benchmark_cache_eviction.mjs`. Uses an isolated tempor
 - Round 109 isolated sabotage test: 0 downloads after interrupted export, 1 successful PNG download on next fresh export; no JS page errors.
 - Confirmed bug register triage: 58 recorded defects, 58 CLOSED, 0 OPEN. No application code, glyphs, or schema changed.
 - **Hosted-site smoke BLOCKED/UNVERIFIED**: shaodaji.cc name resolution failed in execution environment. Local sign-off is not a hosted production sign-off. Full gate criteria: `RELEASE_EXIT_GATE.md`.
+
+## Round 112 — verification-engine hardening
+
+Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) with explicit `quick`, `local`, and deployed `release` profiles; machine-readable execution evidence; separate declared vs executed coverage; independent negative tests for missing/failed browser evidence; tightened configurable performance budgets; and a seeded adversarial numerical family. The scoped inventory remains 28, now with 31 property families (37,200 quick-mode or 310,000 extended-mode cases). Do not use old 36,000/479 figures as current counts. Hosted certification remains incomplete unless a live HTTPS smoke check actually succeeds. See `VERIFICATION_ENGINE_USER_GUIDE.md`.

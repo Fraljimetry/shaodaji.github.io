@@ -1480,3 +1480,8 @@ Keep exported 3D SVG/PNG images and JSON project snapshots consistent with curre
 ## Round 111 reliability closure
 
 The user requested completing all remaining release steps in one pass, without PowerShell instructions. The initial verification campaign is finished locally: export cancellation, confirmed-defect triage, regression and compatibility checks. The deployed website cannot be authenticated from this environment and is explicitly left for one live-site sign-off (see `docs/quality/RELEASE_EXIT_GATE.md`). Thereafter favor maintenance for reproduced failures and user-requested features rather than indefinite blanket audits.
+
+
+## Round 112 verification requirement
+
+The verification engine must provide one fail-closed release command, execute rather than merely locate browser/performance checks, distinguish the initial catalog from complete application coverage, use reproducible adversarial mathematical seeds, document realistic configurable performance budgets, and preserve cumulative bug/test records.

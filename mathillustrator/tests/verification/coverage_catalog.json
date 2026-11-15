@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "round": 102,
-  "notes": "Scoped inventory: 26 seeded Node property operations, one deterministic Chromium interaction operation; performance remains unverified. Browser interactions are not counted as Node property cases.",
+  "round": 112,
+  "notes": "Initial scoped catalog of 28 operations; execution evidence is required for browser/performance certification. Not exhaustive of every tool or platform.",
   "operations": [
     {
       "id": "numeric.domain-and-finite",
@@ -17,7 +17,8 @@
       "layer": 1,
       "module": "src/geometry_round50.mjs",
       "properties": [
-        "numeric.tolerance_equivariance"
+        "numeric.tolerance_equivariance",
+        "numeric.adversarial_boundaries"
       ],
       "status": "covered"
     },

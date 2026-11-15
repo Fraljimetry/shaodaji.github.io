@@ -24,6 +24,7 @@ export const FAMILY_CASES=Object.freeze({
  'numeric.degeneracy_scale':1200,
  'numeric.domain_and_finite':1200,
  'numeric.tolerance_equivariance':1200,
+ 'numeric.adversarial_boundaries':1200,
  'shape.polygon_scale':1200,
  'line.intersection_symmetry':1200,
  'circle.line_incidence':1200,
@@ -390,6 +391,31 @@ export function propertyCase(family,caseIndex,rand){
    if(!rejected||JSON.stringify(doc)!==baseline)return failure({bad:String(bad),rejected,mutation:JSON.stringify(doc)!==baseline});
   }
   return valid?null:failure({center,valid});
+ }
+ if(family==='numeric.adversarial_boundaries'){
+  // Controlled offsets near tangency and segment endpoints, sampled at six
+  // scales. Distances exceed floating-point roundoff but are small relative
+  // to local geometry; all targets are independently known.
+  const radius=scale*(.5+rand());
+  const eps=2**-18;
+  const tangentLine=y=>({a:[0,y],d:[1,0],domain:'infinite'});
+  const circle={center:[0,0],radius};
+  const above=intersectLineCircle(tangentLine(radius*(1+eps)),circle);
+  const below=intersectLineCircle(tangentLine(radius*(1-eps)),circle);
+  const disconnected=intersectCircles(circle,{center:[2*radius*(1+eps),0],radius});
+  const crossing=intersectCircles(circle,{center:[2*radius*(1-eps),0],radius});
+  const segment={a:[0,0],d:[1,0],domain:'segment',length:radius};
+  const normal={a:[radius*(1+eps),-radius],d:[0,1],domain:'infinite'};
+  const nearEndpoint={...normal,a:[radius*(1-eps),-radius]};
+  const boundaryMiss=intersectStraightLines(segment,normal);
+  const boundaryHit=intersectStraightLines(segment,nearEndpoint);
+  const noLine=above.minus===null&&above.plus===null;
+  const yesLine=below.minus&&below.plus&&!below.tangent;
+  const noCircle=disconnected.minus===null&&disconnected.plus===null;
+  const yesCircle=crossing.minus&&crossing.plus&&!crossing.tangent;
+  return noLine&&yesLine&&noCircle&&yesCircle&&boundaryMiss===null&&
+    closePoint(boundaryHit,[radius*(1-eps),0],scale)
+    ?null:failure({radius,above,below,disconnected,crossing,boundaryMiss,boundaryHit});
  }
  if(family==='numeric.tolerance_equivariance'){
   // Uniform scaling should not turn well-separated proper intersections into

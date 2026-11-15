@@ -196,3 +196,7 @@ No new confirmed defect. Chromium checks pass for opaque/transparent 3D PNG alph
 ## Rounds 109–111 — finite campaign closure
 
 All **58** entries in the master confirmed-defect table currently have CLOSED status, with no registered OPEN P0/P1/P2 issue. Round 109 added actual Chromium sabotage of deferred image encoding: closing the export dialog before `canvas.toBlob` completion prevents any stale download; subsequent fresh PNG download succeeds. Round 110 cross-checked the bug register and compatibility regressions; Round 111 closed the *local* verification campaign. **Hosted deployment remains unverified**, as documented in `RELEASE_EXIT_GATE.md`. Future debugging is driven by reproducible regressions or requested features rather than creating arbitrary defects to populate each round.
+
+## Round 112 — verification infrastructure (no new production defects asserted)
+
+The release runner now enforces actual executed evidence for browser/performance catalog items. Numerical adversarial tests and explicit PASS/FAIL/INCOMPLETE states prevent false complete-coverage assertions. Production bug statuses remain unchanged; infrastructure gaps are documented in `VERIFICATION_ENGINE_USER_GUIDE.md` and not mislabeled as mathematical defects.

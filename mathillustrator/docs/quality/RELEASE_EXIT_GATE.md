@@ -24,3 +24,7 @@ The finite Round 72–111 reliability campaign is concluded locally. Do not repr
 ## Recorded verification commands (test names only)
 
 `node --test tests/*.test.mjs`; `node tests/verification/run_kernel_properties.mjs`; `python tests/browser_smoke.py`; `python tests/browser_round76_remaining_points_lines.py`; `python tests/browser_round92_history.py`; `python tests/browser_round107_3d_export.py`; `python tests/browser_round108_export_fidelity.py`; `python tests/browser_round109_export_interruptions.py`.
+
+## Round 112 — authoritative executable release gate
+
+Use `python tests/verification/release_gate.py --profile release --hosted-url=https://shaodaji.cc/mathillustrator/` for an end-to-end release **gate**. The prior R111 table is historical, not live evidence for new builds. The gate marks missing dependencies or unavailable hosted deployment **INCOMPLETE**, actual failed checks **FAIL**, and certifies release only when every required check passes. The initial 28-operation catalog is not exhaustive application/function/platform coverage. See `VERIFICATION_ENGINE_USER_GUIDE.md`.

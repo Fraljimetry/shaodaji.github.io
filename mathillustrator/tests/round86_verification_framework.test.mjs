@@ -21,17 +21,17 @@ test('geometry invariants — deterministic multi-scale suite',()=>{
  assert.equal(SCALES.length,6);
  const failures=result.results.filter(r=>r.failed);
  assert.deepEqual(failures,[],`seed=${DEFAULT_SEED} failures=${JSON.stringify(failures.slice(0,3))}`);
- assert.equal(result.results.reduce((s,r)=>s+r.passed,0),36000);
+ assert.equal(result.results.reduce((s,r)=>s+r.passed,0),Object.values(FAMILY_CASES).reduce((s,n)=>s+n,0));
 });
 
-test('coverage inventory has no untracked properties or fictitious module paths',async()=>{
+test('coverage inventory distinguishes declaration from executed release checks',async()=>{
  const {spawnSync}=await import('node:child_process');
- const result=spawnSync(process.execPath,['tests/verification/report_coverage.mjs'],{cwd:new URL('..',import.meta.url),encoding:'utf8'});
+ const result=spawnSync(process.execPath,['tests/verification/report_coverage.mjs','--catalog-only'],{cwd:new URL('..',import.meta.url),encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
  const report=JSON.parse(result.stdout);
- assert.equal(report.propertyFamilies,30);
- assert.equal(report.propertyCases,36000);
- assert.equal(report.operationsCatalogued,28);
- assert.equal(report.operationsCovered,28);
- assert.equal(report.failed,0);
+ assert.equal(report.propertyFamilies,Object.keys(FAMILY_CASES).length);
+ assert.equal(report.catalogued,28);
+ assert.equal(report.declaredCovered,28);
+ assert.equal(report.executedVerified,0);
+ assert.equal(report.complete,false);
 });

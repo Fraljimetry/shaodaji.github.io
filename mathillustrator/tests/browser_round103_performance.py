@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 from browser_smoke import inline_html
 
 COUNTS=(40,120,240)
-BUDGET_MS=float(os.environ.get('MI_BROWSER_IMPORT_P95_MS','10000'))
+BUDGET_MS=float(os.environ.get('MI_BROWSER_IMPORT_P95_MS','2000'))
 SEED=1032026
 
 def main():
@@ -32,9 +32,9 @@ def main():
                     page.wait_for_function('(n) => JSON.parse(window.__round36Snapshot()).objects.length===n', arg=count)
                     page.wait_for_function('(n) => document.querySelectorAll("#drawing circle[data-id]").length===n',arg=count)
                     samples.append((time.perf_counter()-start)*1000)
-                samples.sort();results.append({'points':count,'medianMs':round(statistics.median(samples),2),'p95SampleMs':round(max(samples),2),'samplesMs':[round(v,2) for v in samples]})
+                samples.sort();results.append({'points':count,'medianMs':round(statistics.median(samples),2),'maxSampleMs':round(max(samples),2),'samplesMs':[round(v,2) for v in samples]})
             assert not errors,errors
-            assert all(x['p95SampleMs']<=BUDGET_MS for x in results),f'Import exceeds {BUDGET_MS} ms: {results}'
+            assert all(x['maxSampleMs']<=BUDGET_MS for x in results),f'Import exceeds {BUDGET_MS} ms: {results}'
             print(json.dumps({'round':103,'seed':SEED,'browser':'Chromium','budgetMs':BUDGET_MS,'results':results,'passed':True},indent=2))
         finally:browser.close()
 
