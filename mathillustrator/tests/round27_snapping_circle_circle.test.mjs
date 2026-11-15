@@ -25,7 +25,7 @@ test('Round27 circle-circle crossings are rigorous, oriented and dynamically res
 });
 test('Round27 tangent and disjoint circles have no duplicate or invented intersections',()=>{
  const a={center:[0,0],radius:3},b={center:[6,0],radius:3};
- const tangent=intersectCircles(a,b);assert.equal(tangent.tangent,true);at(tangent.minus,[3,0]);at(tangent.plus,[3,0]);
+ const tangent=intersectCircles(a,b);assert.equal(tangent.tangent,true);at(tangent.minus,[3,0]);assert.equal(tangent.plus,null);
  assert.equal(intersectCircles(a,{center:[8,0],radius:3}).minus,null);
  assert.equal(intersectCircles(a,{center:[0,0],radius:3}).minus,null);
  assert.equal(intersectCircles(a,{center:[.2,0],radius:1}).minus,null);

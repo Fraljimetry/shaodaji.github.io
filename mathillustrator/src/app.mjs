@@ -1870,7 +1870,7 @@ function finishDraft(){
   }
   if(['circularArc','hyperbola','triangleCenter'].includes(type)){
    if(!circumcircle(pts)&&['circularArc','triangleCenter'].includes(type))throw Error('Choose noncollinear points.');
-   if(type==='hyperbola'&&!r50Shape({type,refs:[]},{points:()=>pts}).length)throw Error('Hyperbola requires a point off the focal line.');
+   if(type==='hyperbola')checkNewGeometry(type,refs.map(id=>position(doc,id)));
   }else checkNewRefs(storedType,refs);
   if(type==='closedSpline'&&refs[0]===refs.at(-1))throw Error('Closed spline cannot duplicate the first vertex.');
   selected=append(doc,{type:storedType,refs,...(type==='triangleCenter'?{centerKind:'centroid'}:{}),...(type==='closedSpline'?{closed:true}:{})}).id;

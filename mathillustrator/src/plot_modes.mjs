@@ -50,6 +50,7 @@ const C={
  }
 };
 C.pow=(a,b)=>{
+ if(b[0]===0&&b[1]===0)return [1,0];
  if(a[0]===0&&a[1]===0&&b[1]===0&&b[0]>0)return [0,0];
  return C.fun('exp',C.mul(b,C.fun('log',a)));
 };
@@ -151,7 +152,8 @@ export function domainColor(re,im,mode='phase-modulus'){
 export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
  validatePlotRegion(region);
  if(!Number.isInteger(resolution)||resolution<32||resolution>1024||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
- const height=Math.max(16,Math.round(resolution*(region.yMax-region.yMin)/(region.xMax-region.xMin)));
+ const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin);
+ const height=Math.max(16,Math.min(1024,Number.isFinite(ratio)?Math.round(resolution*ratio):1024));
  const width=resolution;if(width*height>maxEvaluations)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
  const rgba=new Uint8ClampedArray(width*height*4);
  for(let j=0;j<height;j++)for(let i=0;i<width;i++){

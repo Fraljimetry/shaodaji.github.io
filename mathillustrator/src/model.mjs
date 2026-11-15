@@ -1,4 +1,4 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round76';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round76';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round70';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -131,7 +131,7 @@ export function focalEllipse(p){
  if(!Array.isArray(p)||p.length!==3||!p.every(safeCoord))return null;
  const [f1,f2,q]=p,dx=f2[0]-f1[0],dy=f2[1]-f1[1];
  const c=Math.hypot(dx,dy)/2,a=(Math.hypot(q[0]-f1[0],q[1]-f1[1])+Math.hypot(q[0]-f2[0],q[1]-f2[1]))/2;
- if(!Number.isFinite(a)||!Number.isFinite(c)||a-c<=Math.max(1e-9,a*1e-10))return null;
+ if(!Number.isFinite(a)||!Number.isFinite(c)||!(a>c&&a-c>64*Number.EPSILON*a))return null;
  const b=Math.sqrt((a-c)*(a+c)),cx=(f1[0]+f2[0])/2,cy=(f1[1]+f2[1])/2;
  if(!Number.isFinite(b)||b<=0||![cx,cy].every(finite))return null;
  return {cx,cy,rx:a,ry:b,angle:Math.atan2(dy,dx)};
@@ -140,14 +140,7 @@ export function focalEllipse(p){
  * avoid cancellation of large absolute positions, and near-collinear clicks
  * are rejected rather than creating an invisible huge radius. */
 export function circumcircle(points){
- if(!Array.isArray(points)||points.length!==3||!points.every(safeCoord))return null;
- const [a,b,c]=points,ux=b[0]-a[0],uy=b[1]-a[1],vx=c[0]-a[0],vy=c[1]-a[1];
- const u2=ux*ux+uy*uy,v2=vx*vx+vy*vy,cross=ux*vy-uy*vx;
- if(!Number.isFinite(cross)||Math.abs(cross)<=1e-9*Math.sqrt(u2*v2)||u2<1e-18||v2<1e-18)return null;
- const x=(u2*vy-v2*uy)/(2*cross),y=(v2*ux-u2*vx)/(2*cross);
- const center=[a[0]+x,a[1]+y],radius=Math.hypot(x,y);
- if(!center.every(finite)||!finite(radius)||radius<1e-9)return null;
- return {center,radius};
+ return sharedCircum(points);
 }
 const HEX = /^#[0-9a-fA-F]{6}$/;
 /** Unicode scalar values admitted by XML 1.0; SVG exports are XML, not HTML.
@@ -357,25 +350,26 @@ export function circleGeometry(o,at){
  if(o.type==='circleThrough3')return circumcircle(pts);
  if(pts.length!==2)return null;
  const radius=Math.hypot(pts[0][0]-pts[1][0],pts[0][1]-pts[1][1]);
- return radius>1e-9&&finite(radius)?{center:pts[0],radius}:null;
+ return radius>0&&finite(radius)?{center:pts[0],radius}:null;
 }
-/** Stable two-root solver: the branch sign is defined along the source line's
- * orientation, not by screen x or proximity to the previous frame. Domain
- * clipping happens AFTER solving the infinite supporting line. Tangency has
- * one geometric root; both branches may coincide if a live secant becomes a
- * tangent. The move guard rejects changes that eliminate an existing branch.
+/** Analytic line/circle roots in the orientation of the source line.
+ * The signed perpendicular distance avoids cancelling two nearly equal
+ * squared radii. Small positive gaps are genuine secants, not tangencies.
+ * Tangent line roots intentionally alias for legacy branch references.
  */
 export function intersectLineCircle(line,circle){
  const empty={minus:null,plus:null,tangent:false};
  if(!line||!circle||!safeCoord(line.a)||!safeCoord(line.d)||!safeCoord(circle.center)||
-    !finite(circle.radius)||circle.radius<=1e-9)return empty;
+    !finite(circle.radius)||circle.radius<=0)return empty;
  const [dx,dy]=line.d,unit=Math.hypot(dx,dy);
  if(Math.abs(unit-1)>1e-8)return empty;
  const qx=line.a[0]-circle.center[0],qy=line.a[1]-circle.center[1];
- const t=-(qx*dx+qy*dy),perp2=(qx+t*dx)**2+(qy+t*dy)**2;
- const h2=circle.radius**2-perp2,tol=Math.max(1e-13,circle.radius**2*1e-10);
- if(!Number.isFinite(h2)||h2 < -tol)return empty;
- const tangent=h2<=tol,h=Math.sqrt(Math.max(0,h2));
+ const t=-(qx*dx+qy*dy);
+ const perpendicular=Math.abs(qx*dy-qy*dx)/unit;
+ if(!Number.isFinite(perpendicular)||perpendicular>circle.radius)return empty;
+ const gap=circle.radius-perpendicular;
+ const h=Math.sqrt(gap*(circle.radius+perpendicular));
+ const tangent=gap===0;
  const inside=u=>line.domain==='infinite'||(u>=-1e-9&&
   (line.domain==='ray'||u<=line.length+1e-9));
  const point=u=>{
@@ -386,23 +380,28 @@ export function intersectLineCircle(line,circle){
  return {minus:point(t-h),plus:point(t+h),tangent};
 }
 
-/** Two circle crossings, signed relative to the oriented center baseline.
- * Negative is the right-hand branch from first center to second center;
- * positive is the left-hand branch. Tangency has only the minus branch.
- * Coincident circles have infinitely many roots and must be rejected. */
+/** Stable signed circle crossings. A nonzero separation is not coincident;
+ * strict distance comparisons avoid erasing shallow intersections. Tangency
+ * has one geometric root (minus); legacy plus-branch objects are resolved
+ * to that root separately in createResolver, without duplicating API roots.
+ */
 export function intersectCircles(a,b){
  const none={minus:null,plus:null,tangent:false};
- if(!a||!b||!safeCoord(a.center)||!safeCoord(b.center)||!finite(a.radius)||!finite(b.radius)||a.radius<=1e-9||b.radius<=1e-9)return none;
+ if(!a||!b||!safeCoord(a.center)||!safeCoord(b.center)||!finite(a.radius)||!finite(b.radius)||a.radius<=0||b.radius<=0)return none;
  const dx=b.center[0]-a.center[0],dy=b.center[1]-a.center[1],distance=Math.hypot(dx,dy),r=a.radius,R=b.radius;
- const tolerance=Math.max(1e-11,Math.max(r,R,distance)*1e-10);
- if(!Number.isFinite(distance)||distance<=tolerance||distance>r+R+tolerance||distance<Math.abs(r-R)-tolerance)return none;
+ if(!Number.isFinite(distance)||distance===0||distance>r+R||distance<Math.abs(r-R))return none;
  const ux=dx/distance,uy=dy/distance;
- const along=(r*r-R*R+distance*distance)/(2*distance),height2=r*r-along*along;
- const hTol=Math.max(1e-12,r*r*1e-10);
- if(!Number.isFinite(height2)||height2 < -hTol)return none;
- const height=height2<=hTol?0:Math.sqrt(height2),middle=[a.center[0]+along*ux,a.center[1]+along*uy];
+ const along=(r-R)*(r+R)/(2*distance)+distance/2;
+ // Factored radical is stable at both internal/external tangencies, including
+ // near-concentric equal circles; it avoids subtracting nearly equal squares.
+ const outer=(r+R-distance)*(r+R+distance);
+ const delta=Math.abs(r-R),inner=(distance-delta)*(distance+delta);
+ const height=Math.sqrt(Math.max(0,outer))*Math.sqrt(Math.max(0,inner))/(2*distance);
+ if(!Number.isFinite(along)||!Number.isFinite(height))return none;
+ const tangent=height===0;
+ const middle=[a.center[0]+along*ux,a.center[1]+along*uy];
  const root=sign=>{const pt=[middle[0]-sign*height*uy,middle[1]+sign*height*ux];return safeCoord(pt)?pt:null;};
- return {minus:root(-1),plus:root(1),tangent:height2<=hTol};
+ return {minus:root(-1),plus:tangent?null:root(1),tangent};
 }
 
 /** Iterative dependency resolution, including mixed point/line references.
@@ -472,7 +471,7 @@ export function createResolver(doc){
      const first=circles.get(obj.refs[0]);
      const second=circles.get(obj.refs[1]);
      const roots=intersectCircles(first,second);
-     p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
+     p=obj.branch===-1?roots.minus:obj.branch===1?(roots.plus||(roots.tangent?roots.minus:null)):null;
     }
     if(obj.type==='circleIntersection'&&obj.refs?.length===2){
      const circle=circles.get(obj.refs[1]);
@@ -510,7 +509,7 @@ export function createResolver(doc){
      if(baseCircle){
       const center=move(baseCircle.center),factor=obj.transform==='dilate'?Math.abs(obj.amount):1;
       const radius=baseCircle.radius*factor;
-      circles.set(current,center&&finite(radius)&&radius>1e-9?{center,radius}:null);
+      circles.set(current,center&&finite(radius)&&radius>0?{center,radius}:null);
      }
     }
     cache.set(current,p);active.delete(current);continue;
@@ -590,11 +589,13 @@ export function snapPoint(p,s){return p.map(v=>roundSnap(v,s));}
 export function parseExpression(source){const fn=parseCurveExpression(source,['x']);return x=>fn({x});}
 /** Reject invisible *new* geometry without invalidating legacy v1 projects on import. */
 export function checkNewGeometry(type,p){
- if(['segment','arrow','line','ray','perpBisector','midpoint','circle','regularPolygon','fixedLength'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(['segment','arrow','line','ray','perpBisector','midpoint','regularPolygon','fixedLength'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
+ if(type==='circle'&&!(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])>0))throw Error('Circle requires a distinct radius point.');
  if(type==='circularArc'&&!circumcircle(p))throw Error('Circular arc requires three noncollinear points.');
  if(type==='triangleCenter'&&!circumcircle(p))throw Error('Triangle center requires three noncollinear vertices.');
  if(type==='circleThrough3'&&!circumcircle(p))throw Error('Choose three noncollinear points for a circle.');
  if(type==='ellipse'&&p.length===3&&!focalEllipse(p))throw Error('Ellipse needs two foci and a third point outside the focal segment.');
+ if(type==='hyperbola'&&hyperbolaPoints(p,8).length<2)throw Error('Hyperbola needs distinct foci and a point defining a nondegenerate hyperbola.');
  if(['rectangle','parallelogram'].includes(type)&&!shapeVerticesFromPoints(type,p).length)throw Error(type==='rectangle'?(p.length===2?'Rectangle requires nonzero width and height.':'Rectangle needs a nonzero first edge and perpendicular height.'):'Parallelogram needs three noncollinear consecutive vertices.');
  if(['angle','angleBisector'].includes(type)&&(Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9||Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1])<1e-9))throw Error('Angle requires distinct rays.');
  if(type==='angleBisector'){
@@ -818,7 +819,9 @@ export function validateDoc(raw){
    for(let i=1;i<p.length;i++)if(Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1])<1e-9)throw Error('Spline needs distinct consecutive vertices.');
    if(o.closed&&Math.hypot(p[0][0]-p.at(-1)[0],p[0][1]-p.at(-1)[1])<1e-9)throw Error('Closed spline must not repeat its first vertex.');
   }
-  if(o.type!=='regularPolygon')checkNewGeometry(o.type,p);
+  // A saved v1 hyperbola may become degenerate after anchor edits; reject only
+  // new constructions, not legacy project imports.
+  if(o.type!=='regularPolygon'&&o.type!=='hyperbola')checkNewGeometry(o.type,p);
  }
  const state=new Map();for(const id of ids){if(state.get(id)===2)continue;const stack=[[id,false]];while(stack.length){const [current,done]=stack.pop();if(done){state.set(current,2);continue;}const old=state.get(current);if(old===2)continue;if(old===1)throw Error('Cyclic object dependency.');state.set(current,1);stack.push([current,true]);for(const ref of objects.get(current).refs||[])if(!AXIS_OBJECTS[ref]&&state.get(ref)!==2)stack.push([ref,false]);}}
  return d;

@@ -1342,3 +1342,38 @@ The approved section-by-section repair proceeds in small validated cuts, without
 - Close R75-08: crossings between a true four-control-point cubic Bézier and a straight supporting line should not depend on 160 drawing samples. Use finite analytic polynomial root isolation, with distinct close branches and supported single tangencies. Historical sampled-spline root ordering is unchanged.
 - Close R75-09: intersections between an exact circle and finite piecewise straight objects (polylines, polygons, rectangles, regular polygons, parallelograms) must lie on the analytic circle instead of a sampled chord approximation. Do not falsely claim exactness for arbitrary splines or inverted curves.
 - Deliver one website-root-only changed/new-file ZIP, full Node and actual Chromium regressions, updated original issue disposition and quality documentation, with no Git commit; provide a concise next-chat prompt.
+
+## Round 77 — Circles & Conics discovery-only continuation
+
+- Preserve Round 76 as the authoritative baseline; audit the next 2D section, **Circles & Conics**, for exactness, stability, interactions, performance and second-order failure modes before making fixes.
+- Record confirmed defects with independent RED numerical tests and full reproduction inputs; do not fix in the discovery-only round. Eight defects R77-01–06/08–09 confirmed; one passing control R77-07.
+- Fix these systematically in later small focused rounds, retaining stored project v1 compatibility, current glyphs, cumulative requirements, import/export and real Chromium regression gates.
+- Deliver only new/changed files in a site-root overlay ZIP and never create Git commits.
+
+### Round 78 — Circles & Conics numerical integrity
+- Keep genuine, very close intersection branches distinct; no scale-inappropriate tolerance may turn a secant into a tangent.
+- Return a single unique point for tangent circle pairs; preserve resolution of old saved plus-branch intersection objects at a tangent and avoid document schema changes.
+- Preserve oriented branch identity for two-root crossings, including very close center configurations; avoid introducing phantom roots for disjoint circles.
+- Continue Circles & Conics in focused repair rounds: R77-05/06/09 next for circle scale and collinearity consistency; R77-08 for valid hyperbola construction. Keep failure evidence/tests and update cumulative quality documentation each cut.
+
+### Round 79 — small-circle mathematics and arc consistency
+- Accept positive finite circle radii below 1e-9 world units at construction, resolving, transformed-circle propagation and analytic intersection; never accept true radius zero.
+- For three-point circle and circular-arc primitives, use one translated, scale-independent near-collinearity test and reject nearly collinear triples consistently, while retaining tiny well-conditioned triangles.
+- Preserve existing glyphs, v1 JSON layout, and previously repaired Circle Intersections from Round 78; regression-test small geometric scales, JSON roundtrip, and dependent edits.
+- Round 79 closes R77-05/06/09. Continue Round 80 with the still-open R77-08 degenerate hyperbola check. No Git commits; deliver a website-root ZIP overlay of changed/new files.
+
+
+### Round 80 — Circles & Conics / hyperbola construction
+- Validate newly made hyperbolas against the actual sampled shape: do not create invisible curves from coincident foci, an anchor on the focal line, or an anchor on the perpendicular bisector.
+- Apply creation validation **after** point snapping/reference resolution, rather than relying on raw pointer samples.
+- Keep preexisting v1 saved projects importable when a hyperbola becomes degenerate after anchor edits; do not rewrite old projects, change glyphs, or add document fields.
+- Round 80 resolves the final outstanding Round 77 confirmed defect R77-08; all eight are closed. Continue discovery of second-order Circles & Conics issues in a separate audit before expanding repairs.
+
+
+### Round 81 — cross-section audit handoff (discovery only)
+
+User requested one larger comprehensive sweep of previously unaudited sections, priority-ranked and reproducible, without PowerShell commands or unrelated fixes. On the Round 80 baseline, 16 new confirmed, reproducible defects were isolated in `tests/round81_cross_section_audit.pending.mjs`; see `docs/quality/ROUND81_CROSS_SECTION_AUDIT.md` for complete ranked evidence. No glyph, runtime, JSON, tutorial or application UI behavior changed in this audit. Subsequent rounds should fix one coherent section at a time, keeping tests and cumulative requirements current and using changed-files-only website-root overlays.
+
+### Round 82 — broad repair and subsequent discovery
+
+User requested repairing all Round 81 defects, then discovering more bugs, with concise English responses and no PowerShell command blocks. Repair the 16 corrected assertions in one larger release and keep their tests permanent. Original R81-04 used a degenerate on-axis hyperbola point; corrected to an off-axis nondegenerate input. New R83-01/02/03 analytic general-intersection bugs were reproduced and deliberately left pending for a focused next round. Preserve glyphs, JSON v1 compatibility, cumulative documentation and website-root overlay delivery; no Git commits.

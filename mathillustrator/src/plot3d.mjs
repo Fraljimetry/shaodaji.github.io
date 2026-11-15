@@ -42,7 +42,7 @@ export function parse3D(plot){
   const fn=parseComplexExpression(plot.a);
   return (x,y)=>{const [re,im]=fn(x,y);if(!ok(re)||!ok(im))return [x,y,NaN];
    const z=plot.heightMode==='argument'?Math.atan2(im,re):Math.hypot(re,im);
-   const result=[x,y,z];result.domainRGB=domainColor(re,im,plot.colorMode);return result;};
+   const result=[x,y,z];result.domainRGB=plot.colorMode==='solid'?null:domainColor(re,im,plot.colorMode);return result;};
  }
  if(plot.kind==='surface3d'){
   const f=parseCurveExpression(plot.a,['x','y']);return (x,y)=>[x,y,f({x,y})];
@@ -154,7 +154,7 @@ function validTriangle(a,b,c){
  * Consumers may abandon the generator at any point; partial meshes never enter
  * the cache or exports. The synchronous public sampler drains the same work. */
 export function* sample3DPlotSteps(plot,detail){
- const fn=parse3D(plot),b=plot.bounds,faces=[],lines=[],cap=MAX_MESH_FACES;let evaluations=0,limited=false;
+ const fn=parse3D(plot),b=plot.kind==='domain3d'&&plot.heightMode==='argument'&&plot.bounds.zMin===0?{...plot.bounds,zMin:-Math.PI,zMax:Math.PI}:plot.bounds,faces=[],lines=[],cap=MAX_MESH_FACES;let evaluations=0,limited=false;
  const safeEval=(...args)=>{evaluations++;let value;try{value=fn(...args);}catch{return null;}return finitePoint(value)?value:null;};
  const pushTriangle=(a,c,d)=>{
   if(![a,c,d].every(finitePoint))return;

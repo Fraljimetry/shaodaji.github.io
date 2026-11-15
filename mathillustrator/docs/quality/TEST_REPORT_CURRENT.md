@@ -1426,3 +1426,34 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 **Remaining explicit limits:** Exact crossing routines only cover the mathematically supported pairs above; arbitrary sampled curves can miss tangencies or close roots, and an overlapping/coincident continuum has no unique finite root branch. Full published-site, Firefox/Safari, physical touch, and unbounded scene performance are not verified by these local tests. Historic obsolete glyph assertions are not changed to satisfy outdated expectations. No Git commits.
 
 **Round 76 final local acceptance evidence:** `node --test tests/*.test.mjs`: **428/428 PASS**; original Round 75 discovery oracle: **10/10 PASS**; 26/26 `src/*.mjs` syntax checks PASS; **18/18** current standalone local Chromium/Playwright browser scripts PASS, including actual app startup, interactive Fixed-angle dragging, import/save/reimport, 2D editing and 3D regression paths. These are verified independently against the reconstructed Round 75 source plus Round 76 edits (not the hosted site). The release overlay is a changed/new-file-only ZIP relative to Round 75. No Git commits.
+
+## Round 77 — Circles & Conics discovery only (2026-11-14)
+
+From the uploaded authoritative Round 76 ZIP: **8 new confirmed OPEN defects**, 1 positive control. See [`ROUND77_CIRCLES_CONICS_BUG_AUDIT.md`](./ROUND77_CIRCLES_CONICS_BUG_AUDIT.md) and `tests/round77_circles_conics.pending.mjs`. Independent discovery oracle: **1 PASS, 8 intentionally RED**; no runtime fixes, no glyph or v1 schema modifications. Existing Node acceptance **428/428 PASS**; all 26 `src/*.mjs` syntax checks PASS. Actual Chromium `browser_smoke.py` and `browser_round76_remaining_points_lines.py` PASS. An attempted broader Chromium matrix was not completed and is not certified. Continue with Circle intersections in Round 78.
+
+## Round 78 — Circle intersection numerical repair (2026-11-14)
+
+Four of eight Round 77 discovered defects fixed: R77-01/02/03/04. Stable factored root calculations preserve near-tangent secants and near-concentric equal circles. Tangency exposes a single circle-circle intersection root; previously saved plus-branch objects still resolve at contact. Other Round 77 defects remain open. `tests/round78_circle_intersections.test.mjs` adds five green checks; legacy Round 27 test assertion updated for the one-root API. Node **433/433 PASS**; syntax 26/26 PASS. Real Chromium current smoke, Round 76 regression, and Round 68 hierarchy suites PASS. Three historical browser suites fail the same assertions on unmodified authoritative Round 76 source; see Round 77 audit follow-up for exact names. Original R77 discovery oracles: 5 PASS, 4 intentionally RED. No Git commits.
+
+## Round 79 — Circles & Conics: tiny scale and near-collinearity (2026-11-14)
+
+**Focus and disposition:** R77-05, R77-06 and R77-09 repaired, with the Round 78 root fixes retained. `model.mjs` circle radius, new-construction guard, affine circle resolver and analytic circle solvers permit finite positive sub-1e-9 circles, while rejecting coincident anchors. `geometry_round50.mjs` now provides the shared, scale-independent circumcircle/arc degeneracy rule; `model.mjs` delegates to it. Legacy v1 field layout and all glyph paths are unchanged.
+
+**Independent coverage:** `tests/round79_circle_scale_collinearity.test.mjs`: five new green tests. Full `node --test tests/*.test.mjs`: **438/438 PASS**; 26 ES module syntax checks PASS. Original `round77_circles_conics.pending.mjs`: **8 PASS, 1 expected FAIL (R77-08)**, deliberately not part of the release-green glob. Actual Chromium: `browser_smoke.py`, `browser_round76_remaining_points_lines.py`, `browser_round68_geometry_diagram_hierarchy.py` PASS. The earlier three historical baseline-failing scripts have not been resolved. Local isolated Chromium, not the deployed site. No Git commits.
+
+**Remaining work:** Round 80 repair R77-08 (invalid hyperbola creation), including renderer and saved-document compatibility tests. Tiny circles are represented correctly in model space, but cannot be expected to occupy a visible pixel at normal zoom; no arbitrary-precision claim is made.
+
+## Round 80 — Hyperbola creation guard (2026-11-14)
+
+**R77-08 closed:** `checkNewGeometry('hyperbola', ...)` rejects invisible new constructions, using the renderer's actual sampling predicate. UI checks final snapped refs, not raw pointer taps. Existing v1 project import/validation continues accepting degenerate historical hyperbola objects, while preserving structural checks. No glyph or schema edits.
+
+**Regressions:** 3 new tests in `round80_hyperbola_construction.test.mjs`; Node **441/441 PASS**; original R77 discovery oracles **9/9 PASS**; module syntax **26/26 PASS**; local Chromium `browser_smoke.py`, `browser_round68_geometry_diagram_hierarchy.py`, `browser_round76_remaining_points_lines.py` **PASS**. No new direct Chromium click-path for hyperbola; legacy scripts with baseline UI expectation failures remain unmodified. No Git commits.
+
+
+## Round 81 — broad discovery-only cross-section audit (2026-11-15)
+
+**NO RUNTIME FIXES.** See [ROUND81_CROSS_SECTION_AUDIT.md](ROUND81_CROSS_SECTION_AUDIT.md) for 16 prioritized source-reproduced defects spanning general intersection, conics, constrained point paths, transformations, 2D domain/complex plot, and 3D domain coloring. Their separate `round81_cross_section_audit.pending.mjs` suite reports **16 expected failures**; it is intentionally excluded from ordinary `*.test.mjs` globs. Existing 441/441 Node tests pass; isolated real Chromium smoke plus Round 76, Round 68, Round 63 style tests pass. Full historical, hosted, mobile and cross-browser matrices were not run. Baseline is original authoritative Round 76 ZIP plus Round 77–80 overlays, with no src changes in Round 81.
+
+## Round 82 — broad cross-section repairs and second-order re-audit (2026-11-15)
+
+Repaired all **16 corrected Round 81** regression assertions across 2D conic/transform scale, constrained paths, general sampled incidence/circle matching, complex zero power, bounded 2D domain bitmap dimensions and 3D argument/solid modes. Original R81-04 oracle wrongly represented a degenerate hyperbola; corrected its off-axis branch point and verified before promoting the suite to `round82_cross_section_repairs.test.mjs`. No glyph/schema changes. Full Node suite **457/457 PASS**, plus isolated Chromium startup/exports, Round 76, Round 68, Round 40 3D domain, and Round 70 3D passes. The full historical Chromium archive and hosted/mobile cross-browser testing are NOT RUN. Follow-up discoveries: **3 new intentionally RED tests**, documented in `ROUND83_INTERSECTION_FOLLOWUP.md`; no fixes to these new bugs yet.

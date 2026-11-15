@@ -16,17 +16,22 @@ const norm=a=>Math.hypot(...a),left=a=>[-a[1],a[0]];
 // or a fixed allowance in squared-world units. Never grow tolerance simply
 // because the intersection is far from a line's chosen origin.
 const distanceEpsilon=(...values)=>64*Number.EPSILON*Math.max(1e-3,...values.map(Math.abs));
-const unit=a=>{const n=norm(a);return n>1e-10?mul(a,1/n):null};
+const unit=a=>{const n=norm(a);return n>0&&Number.isFinite(n)?mul(a,1/n):null};
 export const R50_TYPES=['pointOnObject','tangentCircle','circularArc','parabola','hyperbola','generalIntersection','transformCopy','locus','fixedLength','fixedAngle','triangleCenter'];
 export const R50_POINT_TYPES=['pointOnObject','generalIntersection','triangleCenter'];
 export const R50_CURVE_TYPES=['circularArc','parabola','hyperbola','transformCopy','locus','fixedAngle'];
 export const TRANSFORM_MODES=['reflect','rotate','translate','dilate','invert'];
 export const CENTER_KINDS=['centroid','circumcenter','incenter','orthocenter','excenterA','excenterB','excenterC'];
-export function circum(p){if(!p||p.length!==3||!p.every(coord))return null;
- const [a,b,c]=p,u=sub(b,a),v=sub(c,a),det=2*cross(u,v);
- if(Math.abs(det)<=1e-12*norm(u)*norm(v))return null;
- const x=(dot(u,u)*v[1]-dot(v,v)*u[1])/det,y=(dot(v,v)*u[0]-dot(u,u)*v[0])/det,center=add(a,[x,y]);
- return coord(center)?{center,radius:norm([x,y])}:null;
+/** Shared relative-angle degeneracy policy for 3-point circles and arcs.
+ * Reject nearly collinear anchors independently of world scale. No absolute
+ * minimum radius: a small, well-conditioned triangle is still a circle.
+ */
+export function circum(p){if(!Array.isArray(p)||p.length!==3||!p.every(coord))return null;
+ const [a,b,c]=p,u=sub(b,a),v=sub(c,a),lu=norm(u),lv=norm(v),det=2*cross(u,v);
+ if(!(lu>0&&lv>0)||!Number.isFinite(det)||Math.abs(det)<=2e-9*lu*lv)return null;
+ const u2=dot(u,u),v2=dot(v,v);
+ const x=(u2*v[1]-v2*u[1])/det,y=(v2*u[0]-u2*v[0])/det,center=add(a,[x,y]),radius=Math.hypot(x,y);
+ return coord(center)&&finite(radius)&&radius>0?{center,radius}:null;
 }
 export function triangleCenter(p,kind){if(!p||p.length!==3||!p.every(coord))return null;
  const [a,b,c]=p,C=circum(p),sa=norm(sub(b,c)),sb=norm(sub(a,c)),sc=norm(sub(a,b)),per=sa+sb+sc;
@@ -51,14 +56,14 @@ export function circleArcPoints(points,count=96){const c=circum(points);if(!c)re
 }
 export function parabolaPoints(focus,line,count=120){if(!coord(focus)||!line||!coord(line.a)||!coord(line.d))return [];
  const t=dot(sub(focus,line.a),line.d),foot=add(line.a,mul(line.d,t)),sep=sub(focus,foot),distance=norm(sep);
- if(distance<1e-9)return [];
+ if(!(distance>0))return [];
  const axis=unit(sep),side=left(axis),vertex=mul(add(focus,foot),.5),p=distance/2;
  const span=Math.min(30,Math.max(3,5*distance));
  return Array.from({length:count+1},(_,i)=>{const s=(2*i/count-1)*span;return add(add(vertex,mul(side,s)),mul(axis,s*s/(4*p)));}).filter(coord);
 }
 export function hyperbolaPoints(points,count=128){if(!points?.every(coord)||points.length!==3)return [];
- const [f,g,on]=points,mid=mul(add(f,g),.5),c=norm(sub(g,f))/2;if(c<=1e-9)return [];
- const a=Math.abs(norm(sub(on,f))-norm(sub(on,g)))/2;if(a<=1e-9||a>=c-1e-9)return [];
+ const [f,g,on]=points,mid=mul(add(f,g),.5),c=norm(sub(g,f))/2;if(!(c>0))return [];
+ const a=Math.abs(norm(sub(on,f))-norm(sub(on,g)))/2;if(!(a>0&&a<c)||!(c-a>64*Number.EPSILON*c))return [];
  const b=Math.sqrt(c*c-a*a),axis=unit(sub(g,f)),perp=left(axis);
  // The selected third point determines the displayed branch.
  const sgn=dot(sub(on,mid),axis)>=0?1:-1;
@@ -67,14 +72,14 @@ export function hyperbolaPoints(points,count=128){if(!points?.every(coord)||poin
 export function projectToCurve(world,path,closed=false){if(!coord(world)||!Array.isArray(path)||path.length<2)return null;
  // Ray/line supports are unbounded even though rendered samples are finite.
  if(path.domain==='ray'||path.domain==='infinite'){
-  const a=path[0],b=path[1],v=sub(b,a),length=norm(v);if(length<=1e-10)return null;
+  const a=path[0],b=path[1],v=sub(b,a),length=norm(v);if(!(length>0))return null;
   const t=dot(sub(world,a),v)/(length*length),parameter=path.domain==='ray'?Math.max(0,t):t;
   return {parameter,position:add(a,mul(v,parameter))};
  }
  let best=null,position=0,total=0;const segments=[];
  for(let i=1;i<path.length+(closed?1:0);i++){
   const a=path[i-1],b=path[i%path.length];if(!coord(a)||!coord(b))continue;
-  const d=sub(b,a),length=norm(d);if(length<1e-9)continue;
+  const d=sub(b,a),length=norm(d);if(!(length>0))continue;
   const t=Math.max(0,Math.min(1,dot(sub(world,a),d)/(length*length))),p=add(a,mul(d,t)),dist=norm(sub(world,p));
   segments.push({a,b,length,offset:total});if(!best||dist<best.dist)best={p,dist,length,t,offset:total};total+=length;
  }
@@ -83,8 +88,8 @@ export function projectToCurve(world,path,closed=false){if(!coord(world)||!Array
 export function alongCurve(path,parameter,closed=false){if(!Array.isArray(path)||path.length<2||!finite(parameter))return null;
  if(path.domain==='ray'||path.domain==='infinite')return add(path[0],mul(sub(path[1],path[0]),path.domain==='ray'?Math.max(0,parameter):parameter));
  const seg=[],limit=path.length+(closed?1:0);let total=0;
- for(let i=1;i<limit;i++){const a=path[i-1],b=path[i%path.length];if(!coord(a)||!coord(b))continue;const length=norm(sub(b,a));if(length>1e-10){seg.push({a,b,length});total+=length;}}
- if(total<1e-10)return null;let remaining=Math.max(0,Math.min(1,parameter))*total;
+ for(let i=1;i<limit;i++){const a=path[i-1],b=path[i%path.length];if(!coord(a)||!coord(b))continue;const length=norm(sub(b,a));if(length>0){seg.push({a,b,length});total+=length;}}
+ if(!(total>0))return null;let remaining=Math.max(0,Math.min(1,parameter))*total;
  for(const s of seg){if(remaining<=s.length)return add(s.a,mul(sub(s.b,s.a),remaining/s.length));remaining-=s.length;}
  return seg.at(-1).b;
 }
@@ -130,9 +135,12 @@ export function transformPoint(p,mode,source,amount,other){if(!coord(p)||!coord(
  if(mode==='dilate'&&finite(amount))result=add(source,mul(sub(p,source),amount));
  // Inversion in a circle centered at `source` with radius `amount`:
  // I(P) = C + R²(P-C)/|P-C|². The center has no finite image.
- if(mode==='invert'&&finite(amount)&&amount>1e-9){
-  const v=sub(p,source),d2=dot(v,v);
-  if(d2>1e-18)result=add(source,mul(v,amount*amount/d2));
+ if(mode==='invert'&&finite(amount)&&amount>0){
+  const v=sub(p,source),distance=norm(v);
+  // Normalize before scaling to avoid squaring a tiny radius or distance.
+  if(distance>0){const imageRadius=(amount/distance)*amount;
+   if(Number.isFinite(imageRadius))result=add(source,mul(v,imageRadius/distance));
+  }
  }
  return coord(result)?result:null;
 }
@@ -237,7 +245,7 @@ export function generalCrossings(first,second,resolver,count=160){
  };
  const pointOnCircle=(p,circle)=>coord(p)&&circle&&coord(circle.center)&&finite(circle.radius)
   &&Math.abs(norm(sub(p,circle.center))-circle.radius)<=Math.max(
-   1e-10*Math.max(circle.radius,1e-3),
+   0,
    distanceEpsilon(...p,...circle.center,circle.radius));
  if(pa&&lb)return pointOnLine(pa,lb)?[pa]:[];
  if(pb&&la)return pointOnLine(pb,la)?[pb]:[];
@@ -315,7 +323,7 @@ export function generalCrossings(first,second,resolver,count=160){
    const u=sub(path[i],path[i-1]),len=dot(u,u);
    if(!(len>1e-20))continue;
    const t=Math.max(0,Math.min(1,dot(sub(point,path[i-1]),u)/len));
-   if(norm(sub(point,add(path[i-1],mul(u,t))))<1e-6)return true;
+   if(norm(sub(point,add(path[i-1],mul(u,t))))<=distanceEpsilon(...point,...path[i-1],...path[i]))return true;
   }
   return false;
  };
@@ -357,7 +365,7 @@ export function r50Shape(o,resolver,samples=120,pathCache=null){if(!o)return [];
     const line=resolver.line(transform.refs[1]);if(!line)return [];
     path=path.map(p=>transformPoint(p,'reflect',line.a,0,add(line.a,line.d))).filter(coord);
    }else if(transform.transform==='invert'){
-    const circle=resolver.circle(transform.refs[1]);if(!circle||!coord(circle.center)||!(circle.radius>1e-9))return [];
+    const circle=resolver.circle(transform.refs[1]);if(!circle||!coord(circle.center)||!(circle.radius>0))return [];
     const isPoint=!!resolver.at(source.id),sampled=[];
     const needsSubdivision=!!resolver.line(source)||['polygon','rectangle','parallelogram','regularPolygon','polyline'].includes(source.type);
     for(let j=0;j<path.length;j++){
@@ -406,12 +414,12 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
   // The renderer still draws these: geometry consumers must see the same path.
   if(p.length===2&&p.every(coord)){
    const [a,b]=p,c=mul(add(a,b),.5),rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
-   if(rx<1e-7||ry<1e-7)return [a,b]; // Matches the rendered limiting line.
+   if(!(rx>0&&ry>0))return [a,b]; // Matches the rendered limiting line.
    return Array.from({length:count+1},(_,i)=>[c[0]+rx*Math.cos(tau*i/count),c[1]+ry*Math.sin(tau*i/count)]);
   }
   if(p.length!==3)return [];
   const [f,g,q]=p;if(![f,g,q].every(coord))return [];const mid=mul(add(f,g),.5),axis=unit(sub(g,f))||[1,0];
-  const c=norm(sub(g,f))/2,a=(norm(sub(q,f))+norm(sub(q,g)))/2,b=Math.sqrt(Math.max(0,a*a-c*c));if(b<1e-9)return [];
+  const c=norm(sub(g,f))/2,a=(norm(sub(q,f))+norm(sub(q,g)))/2,b=Math.sqrt(Math.max(0,a*a-c*c));if(!(b>0))return [];
   const perp=left(axis);return Array.from({length:count+1},(_,i)=>add(add(mid,mul(axis,a*Math.cos(tau*i/count))),mul(perp,b*Math.sin(tau*i/count))));
  }
  if(o.type==='polygon'){const pts=resolver.points(o).filter(coord);return pts.length>2?[...pts,pts[0]]:[];}
