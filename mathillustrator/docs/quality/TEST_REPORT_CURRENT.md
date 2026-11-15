@@ -1,3 +1,11 @@
+## Round 179 — Editable tutorial gallery and Vector Field control order (2026-11-15)
+
+- Added six real native JSON examples under `examples/gallery-*.json`, with EN/CN tutorial links opening a new editor tab via `?example=...`. Loader uses a six-ID allowlist, fetches only bundled files, validates with `validateDoc`, confirms replacement, checks document generation/revision during async fetch and clears the query parameter. No silent project replacement.
+- Restored **Normalize lengths | Density** in 2D and 3D Vector Field Properties.
+- Mathematical checks: Fibonacci tiling side lengths 5, 3, 2, 1, 1; four distinct vector fields; gyroid and Enneper expressions produce valid finite values; point images in Circle Inversion satisfy the exact radial inversion invariant.
+- PASS: Node 591/591, zero failed/skipped; JavaScript syntax; Chromium native JSON import at 1440 and 390 px for all six examples; offline Chromium gallery-loader behavior for Golden and Gyroid with mocked fetch/URL; vector control order/interactions at 1440, 768, 390, 320 px.
+- Rendering observations: Enneper and low-detail Gyroid rendered in local Chromium. The Gyroid renderer still exposes visible triangulation at low mesh detail. Localhost navigation was blocked by the browser environment, so direct real-origin link navigation was not tested; headless import and simulated fetch do not establish hosted-site/E2E equivalence. Physical mobile/GPU/full historical browser suite not run.
+
 ## Round 178 — Vector-field controls reordered (2026-11-15)
 
 - 2D and 3D vector-field Properties now display **Density | Normalize lengths**, with unchanged binding and behavior.

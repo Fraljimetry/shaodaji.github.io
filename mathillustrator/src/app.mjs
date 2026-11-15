@@ -1534,8 +1534,8 @@ function renderProperties3D(root){
  }
  if(selectedPlot.kind==='vector3d'){
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  field(pair,'Density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
   const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
+  field(pair,'Density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
  }
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
@@ -1716,8 +1716,8 @@ function renderProperties(){
   field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
   field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
   const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
+  field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
@@ -3350,6 +3350,34 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  };
  $('new').onclick=()=>{if(!localizedConfirm('Start a new illustration? Download the current project first if needed.'))return;update(()=>{doc=newDoc();selected=null;view={cx:0,cy:0,scale:48};});};
  $('open').onclick=()=>$('open-file').click();$('open-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12e6)throw Error('Project JSON exceeds 12 MB safety limit.');const readingRevision=documentRevision,readingGeneration=documentGeneration;const imported=validateDoc(JSON.parse(await file.text()));if(imported.scene3d)enforce3DVisibility(imported.scene3d);if(readingRevision!==documentRevision||readingGeneration!==documentGeneration)throw Error('The current project changed while reading this file. Import canceled to protect newer edits.');if(!localizedConfirm('Replace the current illustration with this JSON project?'))return;update(()=>{doc=imported;selected=null;});notice('Project opened.');}catch(err){notice('Open failed: '+err.message);}finally{e.target.value='';}};
+ // Tutorial gallery: fetch only six bundled files, validate before replacement and
+ // never silently overwrite an existing or concurrently edited project.
+ const galleryId=new URLSearchParams(window.location.search).get('example');
+ const galleryNames=new Set(['golden-ratio','spirograph','phase-portraits','gyroid','enneper','circle-inversion']);
+ if(galleryId&&galleryNames.has(galleryId)){
+  const link=new URL(window.location.href);link.searchParams.delete('example');
+  window.history.replaceState(window.history.state,'',link.pathname+link.search+link.hash);
+  const currentRevision=documentRevision,currentGeneration=documentGeneration;
+  fetch(`examples/gallery-${galleryId}.json`,{cache:'no-store'}).then(async response=>{
+   if(!response.ok)throw Error('Example file unavailable.');
+   const project=validateDoc(await response.json());
+   if(currentRevision!==documentRevision||currentGeneration!==documentGeneration)throw Error('Project changed while loading example.');
+   if(!localizedConfirm('Replace the current illustration with this JSON project?'))return;
+   if(drag)cancelDrag();
+   const ok=update(()=>{doc=project;selected=null;selected3d=null;
+    view=galleryId==='spirograph'?{cx:0,cy:0,scale:44}:galleryId==='circle-inversion'?{cx:0,cy:0,scale:48}:{cx:0,cy:0,scale:51};
+   });
+   if(ok){
+    // Show the example's native plotting mode rather than a stale mode from
+    // the previously open project. Object content remains independently editable.
+    const preferred={'spirograph':'parametric','phase-portraits':'vectorField','gyroid':'implicit3d','enneper':'parametric3d'}[galleryId];
+    if(preferred&&[...$('plot-mode').options].some(option=>option.value===preferred)){
+     $('plot-mode').value=preferred;syncPlotModeControl();
+    }
+    notice('Project opened.');
+   }
+  }).catch(error=>notice('Open failed: '+error.message));
+ }
  $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
  $('export-open').onclick=()=>{if(drag)cancelDrag();setupExport();$('export-menu').hidden=!$('export-menu').hidden;$('export-backdrop').hidden=$('export-menu').hidden;if($('export-menu').hidden)exportAbortToken++;else $('export-close').focus();};$('export-close').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
  $('export-backdrop').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};

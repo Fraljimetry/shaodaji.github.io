@@ -1,0 +1,291 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Circle inversion \u2014 corresponding points"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": true,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#dc2626",
+        "fill": "#dc2626",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "Inversion center O",
+      "xy": [
+        0,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#dc2626",
+        "fill": "#dc2626",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "Radius anchor R",
+      "xy": [
+        2.5,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#dc2626",
+        "fill": "#fff7ed",
+        "width": 2.4,
+        "opacity": 1
+      },
+      "type": "circle",
+      "name": "Inversion circle",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#2563eb",
+        "fill": "#2563eb",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P",
+      "xy": [
+        4,
+        1
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#2563eb",
+        "fill": "#2563eb",
+        "width": 2.2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "transformCopy",
+      "name": "P inverted",
+      "refs": [
+        "o4",
+        "o3"
+      ],
+      "transform": "invert",
+      "amount": 1,
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#2563eb",
+        "fill": "#2563eb",
+        "width": 1.3,
+        "opacity": 1
+      },
+      "type": "segment",
+      "name": "Segment OP",
+      "refs": [
+        "o1",
+        "o4"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#059669",
+        "fill": "#059669",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "Q",
+      "xy": [
+        3,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#059669",
+        "fill": "#059669",
+        "width": 2.2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "transformCopy",
+      "name": "Q inverted",
+      "refs": [
+        "o7",
+        "o3"
+      ],
+      "transform": "invert",
+      "amount": 1,
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o9",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#059669",
+        "fill": "#059669",
+        "width": 1.3,
+        "opacity": 1
+      },
+      "type": "segment",
+      "name": "Segment OQ",
+      "refs": [
+        "o1",
+        "o7"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o10",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#7c3aed",
+        "fill": "#7c3aed",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "S",
+      "xy": [
+        -4,
+        1.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o11",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#7c3aed",
+        "fill": "#7c3aed",
+        "width": 2.2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "transformCopy",
+      "name": "S inverted",
+      "refs": [
+        "o10",
+        "o3"
+      ],
+      "transform": "invert",
+      "amount": 1,
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o12",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#7c3aed",
+        "fill": "#7c3aed",
+        "width": 1.3,
+        "opacity": 1
+      },
+      "type": "segment",
+      "name": "Segment OS",
+      "refs": [
+        "o1",
+        "o10"
+      ],
+      "displayLabelMode": "latex"
+    }
+  ],
+  "nextId": 13
+}

@@ -1,0 +1,656 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Golden rectangles and spiral"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": false,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#0f766e",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R1A",
+      "xy": [
+        -4,
+        -2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#0f766e",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R1B",
+      "xy": [
+        4,
+        -2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#0f766e",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R1C",
+      "xy": [
+        4,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#0f766e",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R1D",
+      "xy": [
+        -4,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#ccfbf1",
+        "width": 1.8,
+        "opacity": 0.3
+      },
+      "type": "polygon",
+      "name": "Golden tile 1",
+      "refs": [
+        "o1",
+        "o2",
+        "o3",
+        "o4"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R2A",
+      "xy": [
+        -4,
+        -2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R2B",
+      "xy": [
+        1,
+        -2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R2C",
+      "xy": [
+        1,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o9",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R2D",
+      "xy": [
+        -4,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o10",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#2563eb",
+        "fill": "#dbeafe",
+        "width": 1.8,
+        "opacity": 0.3
+      },
+      "type": "polygon",
+      "name": "Golden tile 2",
+      "refs": [
+        "o6",
+        "o7",
+        "o8",
+        "o9"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o11",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R3A",
+      "xy": [
+        1,
+        -2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o12",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R3B",
+      "xy": [
+        4,
+        -2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o13",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R3C",
+      "xy": [
+        4,
+        0.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o14",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R3D",
+      "xy": [
+        1,
+        0.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o15",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#ccfbf1",
+        "width": 1.8,
+        "opacity": 0.3
+      },
+      "type": "polygon",
+      "name": "Golden tile 3",
+      "refs": [
+        "o11",
+        "o12",
+        "o13",
+        "o14"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o16",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R4A",
+      "xy": [
+        2,
+        0.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o17",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R4B",
+      "xy": [
+        4,
+        0.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o18",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R4C",
+      "xy": [
+        4,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o19",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R4D",
+      "xy": [
+        2,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o20",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#2563eb",
+        "fill": "#dbeafe",
+        "width": 1.8,
+        "opacity": 0.3
+      },
+      "type": "polygon",
+      "name": "Golden tile 4",
+      "refs": [
+        "o16",
+        "o17",
+        "o18",
+        "o19"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o21",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R5A",
+      "xy": [
+        1,
+        0.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o22",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R5B",
+      "xy": [
+        2,
+        0.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o23",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R5C",
+      "xy": [
+        2,
+        1.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o24",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R5D",
+      "xy": [
+        1,
+        1.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o25",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0f766e",
+        "fill": "#ccfbf1",
+        "width": 1.8,
+        "opacity": 0.3
+      },
+      "type": "polygon",
+      "name": "Golden tile 5",
+      "refs": [
+        "o21",
+        "o22",
+        "o23",
+        "o24"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o26",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R6A",
+      "xy": [
+        1,
+        1.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o27",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R6B",
+      "xy": [
+        2,
+        1.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o28",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R6C",
+      "xy": [
+        2,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o29",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#64748b",
+        "fill": "#64748b",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 2.4
+      },
+      "type": "point",
+      "name": "R6D",
+      "xy": [
+        1,
+        2.5
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o30",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#2563eb",
+        "fill": "#dbeafe",
+        "width": 1.8,
+        "opacity": 0.3
+      },
+      "type": "polygon",
+      "name": "Golden tile 6",
+      "refs": [
+        "o26",
+        "o27",
+        "o28",
+        "o29"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o31",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#db2777",
+        "fill": "#db2777",
+        "width": 2.6,
+        "opacity": 1
+      },
+      "type": "parametric",
+      "name": "Golden logarithmic spiral",
+      "xExpr": "0.18*phi^(2*t/pi)*cos(t)-0.2",
+      "yExpr": "0.18*phi^(2*t/pi)*sin(t)-0.1",
+      "parameter": "t",
+      "tMin": -6.283185307179586,
+      "tMax": 7.0685834705770345,
+      "displayLabelMode": "latex"
+    }
+  ],
+  "nextId": 32
+}

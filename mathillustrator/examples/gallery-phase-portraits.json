@@ -1,0 +1,157 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Phase portraits — four linear systems"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": true,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#7c3aed",
+        "fill": "#7c3aed",
+        "width": 1.45,
+        "opacity": 1
+      },
+      "type": "vectorField",
+      "name": "Saddle",
+      "xExpr": "x",
+      "yExpr": "-y",
+      "region": {
+        "xMin": -7,
+        "xMax": -0.5,
+        "yMin": -5,
+        "yMax": -0.5
+      },
+      "density": 9,
+      "normalized": true,
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#0891b2",
+        "fill": "#0891b2",
+        "width": 1.45,
+        "opacity": 1
+      },
+      "type": "vectorField",
+      "name": "Stable node",
+      "xExpr": "-x-3",
+      "yExpr": "-y-3",
+      "region": {
+        "xMin": 0.5,
+        "xMax": 7,
+        "yMin": -5,
+        "yMax": -0.5
+      },
+      "density": 9,
+      "normalized": true,
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#ea580c",
+        "fill": "#ea580c",
+        "width": 1.45,
+        "opacity": 1
+      },
+      "type": "vectorField",
+      "name": "Unstable node",
+      "xExpr": "x+3",
+      "yExpr": "y-3",
+      "region": {
+        "xMin": -7,
+        "xMax": -0.5,
+        "yMin": 0.5,
+        "yMax": 5
+      },
+      "density": 9,
+      "normalized": true,
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#059669",
+        "fill": "#059669",
+        "width": 1.45,
+        "opacity": 1
+      },
+      "type": "vectorField",
+      "name": "Center (rotation)",
+      "xExpr": "-(y-3)",
+      "yExpr": "x-3",
+      "region": {
+        "xMin": 0.5,
+        "xMax": 7,
+        "yMin": 0.5,
+        "yMax": 5
+      },
+      "density": 9,
+      "normalized": true,
+      "displayLabelMode": "latex"
+    }
+  ],
+  "nextId": 5
+}

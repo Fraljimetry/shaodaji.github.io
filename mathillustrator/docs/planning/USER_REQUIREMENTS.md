@@ -1785,3 +1785,10 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - Keep a browser-based comparison of stable UI labels and an explicit allowlist for brand names, language names, font names and paper format names.
 
 - Round 178: In both 2D and 3D vector-field Properties, place Density on the left and Normalize lengths on the right of the same compact row; preserve editing, translation, and narrow-viewport alignment.
+
+## Round 179 — Tutorial gallery and Vector Field layout (2026-11-15)
+
+- **A posteriori UI correction (Done):** restore Normalize lengths to the left and Density to the right in both 2D and 3D Vector Field Properties, without altering field behavior.
+- **Structural/gallery feature (Done for six examples):** provide six bilingual links in the tutorial opening validated, editable native MathIllustrator JSON projects: Golden Ratio/Fibonacci tiling with logarithmic spiral; Spirograph; Phase Portraits; Gyroid; Enneper Surface; Circle Inversion. Each uses genuine supported object/plot types and normal project validation. Linked editor opens in a new tab; existing work requires confirmation before replacement.
+- **Quality limit:** local Chromium runs in an opaque-origin fixture, so full deployed-origin navigation, cross-tab autosave conflict behavior and hosted rendering are not certified. GPU stress is outside this round.
+

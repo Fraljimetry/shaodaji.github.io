@@ -1,0 +1,86 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Enneper surface — minimal surface"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": true,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [
+      {
+        "id": 1,
+        "kind": "parametric3d",
+        "name": "Enneper minimal surface",
+        "a": "u-u^3/3+u*v^2",
+        "b": "v-v^3/3+v*u^2",
+        "c": "u^2-v^2",
+        "bounds": {
+          "xMin": -5,
+          "xMax": 5,
+          "yMin": -5,
+          "yMax": 5,
+          "zMin": -5,
+          "zMax": 5
+        },
+        "color": "#6366f1",
+        "opacity": 1,
+        "hidden": false,
+        "locked": false,
+        "colorRange": true,
+        "uMin": -1.65,
+        "uMax": 1.65,
+        "vMin": -1.65,
+        "vMax": 1.65
+      }
+    ],
+    "nextId": 2,
+    "options": {
+      "yaw": -31,
+      "pitch": 27,
+      "projection": "perspective",
+      "cube": false,
+      "lighting": true,
+      "opacity": 1,
+      "detail": 50,
+      "zoom": 1.08,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [],
+  "nextId": 1
+}

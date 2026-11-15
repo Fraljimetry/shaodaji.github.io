@@ -1,0 +1,82 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Gyroid \u2014 triply periodic implicit surface"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": true,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [
+      {
+        "id": 1,
+        "kind": "implicit3d",
+        "name": "Gyroid level surface",
+        "a": "sin(x)*cos(y)+sin(y)*cos(z)+sin(z)*cos(x)=0",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -3.35,
+          "xMax": 3.35,
+          "yMin": -3.35,
+          "yMax": 3.35,
+          "zMin": -3.35,
+          "zMax": 3.35
+        },
+        "color": "#7c3aed",
+        "opacity": 1,
+        "hidden": false,
+        "locked": false,
+        "colorRange": true
+      }
+    ],
+    "nextId": 2,
+    "options": {
+      "yaw": -32,
+      "pitch": 21,
+      "projection": "perspective",
+      "cube": false,
+      "lighting": true,
+      "opacity": 1,
+      "detail": 22,
+      "zoom": 0.72,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [],
+  "nextId": 1
+}

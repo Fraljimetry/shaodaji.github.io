@@ -1,4 +1,4 @@
-"""Round 178: Density belongs to left column, Normalize lengths to right, 2D/3D."""
+"""Round 179: Normalize lengths restored to left, Density restored to right, 2D/3D."""
 import os
 from playwright.sync_api import sync_playwright
 from browser_smoke import inline_html
@@ -25,8 +25,9 @@ with sync_playwright() as pw:
                   const a=left.getBoundingClientRect(),b=right.getBoundingClientRect(),box=pair.getBoundingClientRect();
                   return {left:left.textContent.trim(),right:right.textContent.trim(),a:a.x,ar:a.right,b:b.x,br:b.right,edge:box.right,order:left.className+' '+right.className};
                 }''')
-                assert r and r['left']=='Density' and r['right']=='Normalize lengths', (width,r)
+                assert r and r['left']=='Normalize lengths' and r['right']=='Density', (width,r)
                 assert r['a']<r['b'] and r['ar']<=r['b']+1 and r['br']<=r['edge']+1, (width,r)
+            page.locator('#properties .property-check-number-pair').wait_for(state='attached',timeout=15000)
             verify()
             page.locator('.property-check-number-pair input[type=checkbox]').check()
             page.locator('.property-check-number-pair input[data-numeric-expression=true]').fill('10')
@@ -42,9 +43,10 @@ with sync_playwright() as pw:
                 page.locator('#command-y').fill('y')
                 page.locator('#command-z').fill('z')
                 page.locator('#command').press('Enter')
+                page.locator('#properties .property-check-number-pair').wait_for(state='attached',timeout=20000)
                 verify()
             assert not errors,(width,errors)
-            print('ROUND178_VECTOR_ORDER_PASS',width,flush=True)
+            print('ROUND179_VECTOR_ORDER_PASS',width,flush=True)
             page.close()
     finally:
         browser.close()
