@@ -1023,3 +1023,18 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  .rightpanel .settings-sections .export-check-row{gap:7px}
  .rightpanel .settings-sections .export-check-row > .check{font-size:10px;gap:3px}
 }
+
+/* Round 160: align export toggles to the same two-column tracks as
+   Canvas/Theme and Interface toggles (including narrow/translated UI). */
+#settings-2d .export-check-row,
+.rightpanel .settings-sections .export-check-row {
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ column-gap:8px;row-gap:4px;align-items:center;
+}
+.rightpanel .settings-sections .export-check-row > .check {
+ min-width:0;white-space:normal;overflow-wrap:normal;
+}
+@media(max-width:360px){
+ .rightpanel .settings-sections .export-check-row{column-gap:6px}
+}
+.rightpanel .settings-sections .export-check-row{align-items:start}

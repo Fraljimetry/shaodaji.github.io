@@ -23,7 +23,7 @@ with sync_playwright() as pw:
                      label2:document.querySelector('#export-transparent').closest('label').innerText};
                 }''')
             m=measure()
-            assert m['display']=='flex' and abs(m['ay']-m['by'])<2 and not m['overlap'] and m['within'],(width,m)
+            assert m['display']=='grid' and abs(m['ay']-m['by'])<2 and not m['overlap'] and m['within'],(width,m)
             page.locator('#export-guides').check()
             page.locator('#export-transparent').check()
             assert page.locator('#export-guides').is_checked() and page.locator('#export-transparent').is_checked()

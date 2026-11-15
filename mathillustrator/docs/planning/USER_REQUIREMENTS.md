@@ -1702,3 +1702,9 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 ### Round 159 — export option checkbox row
 - In **Page & appearance**, keep **Grid/axes in export** and **Transparent** on one horizontal row in both English and Chinese, including narrow viewports. Preserve their independently clickable checkboxes, settings persistence and export behavior.
 - Do not shrink adjacent Canvas/Image bounds or Resolution/Theme selectors or change established labels and glyphs to achieve this layout.
+
+
+### Round 160 — Export checkboxes and alignment consistency
+- Image export checkboxes occupy the same two-column grid tracks as the Interface toggle grid; Transparent aligns with the second-column checkbox start.
+- At narrow widths and in Chinese, allow checkbox labels to wrap within their own column while keeping both checkbox controls top-aligned.
+- Preserve independent checkbox behavior, accessibility, and the existing image export semantics.

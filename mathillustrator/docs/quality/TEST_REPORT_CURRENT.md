@@ -1943,3 +1943,17 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - Node `node --test tests/*.test.mjs`: **566 passed, 0 failed, 0 skipped**; `node --check src/app.mjs` and `src/i18n.mjs` passed.
 - Real local Chromium `tests/browser_round159_export_check_row.py`: **passed at 1440, 768, 390, 320 px**, verifying same row, no overlap, English/Chinese switching, and independent checkbox toggles.
 - Historical Chromium `browser_round153_pairs.py`, `browser_round155_expression_alignment.py`, `browser_round156_plot_settings.py`: passed. Full historical browser suite, GPU stress, physical mobile, hosted deployment, and comprehensive mathematical-property audit **not executed** in this round. No overall mathematical correctness certification is claimed.
+
+
+### Round 160 — Alignment correction and follow-up audit (2026-11-15)
+- **Confirmed and fixed:** flex spacing positioned Transparent away from the second Interface checkbox column. Replaced it with matching 2-column grid tracks; wrapped text is top-aligned.
+- **Real Chromium (isolated inline HTML, not hosted-site test):** Round 160 checks passed at widths 1440, 768, 390, and 320, including checkbox state changes and Chinese/English localization; the revised Round 159 checks also passed at those widths.
+- **Node:** `node --test tests/*.test.mjs` 566 passed, 0 failed.
+- **Broader Chromium regressions:** historical Round 158 regression process stalled and was stopped by execution timeout; Round 158 and other historical Chromium suites were **not certified this round**.
+- **Visual alignment watchlist (potential risks, not confirmed new defects):**
+  1. Property style grids can leave empty right-column space when point size is displayed without line width; assess with actual object types.
+  2. Long translated plot-expression labels may compete with input width; verify each plot mode with Chinese strings at narrow widths.
+  3. Different field-grid rules (2D, 3D, vector, plotting) may produce distinct input edges despite appearing adjacent; compare control coordinates across sections.
+  4. 3D settings checkbox rows allow wrapping; verify that wrapped text does not create apparent vertical misalignment or clipping at the 235px inspector breakpoint.
+  5. Color swatches and full-width Background fields use dedicated sizing rules; verify their right edges under the narrow inspector breakpoint.
+- No changes to geometric calculations, glyphs, storage or serialization.
