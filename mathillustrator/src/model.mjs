@@ -78,7 +78,21 @@ export const STRAIGHT_TYPES = new Set(['segment','arrow','line','ray','perpBisec
 /** Shared geometry roles: derived intersections and centers are ordinary points,
  * and every computable straight construction can serve as a supporting line.
  * Reject unresolved/degenerate geometry rather than relying on a short UI list. */
-export function geometricPoint(o,resolver){return !!o&&POINT_LIKE.has(o.type)&&!!resolver?.at(o.id);}
+export function geometricPoint(o,resolver,visited=new Set()){
+ if(!o||!resolver||visited.has(o.id))return false;
+ visited.add(o.id);
+ if(POINT_LIKE.has(o.type))return !!resolver.at(o.id);
+ // A transformed point is still a selectable point, but a transformed
+ // curve is not. Resolve its actual image rather than resolver.at(), which
+ // only handles primitive and dependency-derived point constructions.
+ if(o.type==='transformCopy'){
+  const source=resolver.object(o.refs?.[0]);
+  if(!source||source.id===o.id||!geometricPoint(source,resolver,visited))return false;
+  const shape=r50Shape(o,resolver,2);
+  return shape.length===1&&shape[0]?.every(Number.isFinite);
+ }
+ return false;
+}
 export function geometricLine(o,resolver){return !!o&&STRAIGHT_TYPES.has(o.type)&&!!resolver?.line(o);}
 const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,angleBisector:3,parallelThrough:2,perpendicularThrough:2,perpendicularFoot:2,pointOnObject:1,tangentCircle:2,circularArc:3,parabola:2,hyperbola:3,generalIntersection:2,transformCopy:2,locus:2,fixedLength:2,fixedAngle:2,triangleCenter:3,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.

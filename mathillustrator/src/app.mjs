@@ -428,6 +428,14 @@ function geometryLabelAnchor(o,resolver){
  if(['rectangle','parallelogram'].includes(o.type)){const vertices=shapeVerticesFromPoints(o.type,p);if(!vertices.length)return null;return project([vertices.reduce((v,q)=>v+q[0],0)/4,vertices.reduce((v,q)=>v+q[1],0)/4]);}
  return project([p.reduce((sum,pt)=>sum+pt[0],0)/p.length,p.reduce((sum,pt)=>sum+pt[1],0)/p.length]);
 }
+function r50PointPosition(o,resolver){
+ if(!o)return null;
+ if(o.type==='transformCopy'){
+  if(!geometricPoint(o,resolver))return null;
+  return r50Shape(o,resolver,2)[0]||null;
+ }
+ return resolver.at(o.id);
+}
 function r50Locus(o){
  const target=get(doc,o.refs?.[0]),driver=get(doc,o.refs?.[1]);
  if(!target||driver?.type!=='pointOnObject'||doc.objects.length>250)return [];
@@ -441,7 +449,7 @@ function r50Locus(o){
  const temp={...doc,objects:doc.objects.map(item=>item.id===driver.id?driverCopy:item)};
  for(let i=0;i<=count;i++){
   driverCopy.parameter=i/count;
-  const p=createResolver(temp).at(target.id);
+  const p=r50PointPosition(target,createResolver(temp));
   points.push(p&&p.every(Number.isFinite)?p:null);
  }
  // Gaps are significant: never join across a singular/undefined parameter.
@@ -1991,7 +1999,7 @@ function r50ObjectTap(e,pt){
   let best=null,bestDistance=Infinity;
   for(const point of doc.objects){
    if(point.hidden||point.style?.opacity===0||!geometricPoint(point,resolver))continue;
-   const xy=resolver.at(point.id),screen=project(xy),d=Math.hypot(screen[0]-sx,screen[1]-sy);
+   const xy=r50PointPosition(point,resolver);if(!xy)continue;const screen=project(xy),d=Math.hypot(screen[0]-sx,screen[1]-sy);
    const radius=Math.max(9,Number(point.style?.pointSize??doc.settings.pointSize)+3);
    if(d<=radius&&d<bestDistance){best=point;bestDistance=d;}
   }

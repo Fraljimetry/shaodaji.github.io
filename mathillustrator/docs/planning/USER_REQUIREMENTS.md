@@ -1242,3 +1242,8 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Locus uses **target (dependent point) first; point constrained to existing object second**. A free point cannot drive the locus. Include a genuine dependent-point example (fixed A, circular driver P, midpoint M) in usage guidance.
 - Retain point picking index for performance, with a bounded screen-distance fallback only when a regular hit fails; skip hidden/transparent/invalid points. Avoid repeated linear driver lookup in numeric sampling. Preserve backward-compatible document data and existing tool glyphs.
 - Add real Chromium regression for point selection, constrained driver, dependent construction and rendered locus; do not count fixture-only or static assertions as equivalent to hosted-site tests.
+
+### Round 65 — Semantic point recognition for transformed constructions (2026-11-14)
+- Every geometrically valid point must be treated as a point silently, regardless of construction origin (ordinary, derived, or a transformed image). Do not require conversion or a special selection mode for transformed copies such as a dilation image Q of constrained P.
+- Locus / Trace must accept transformed dependent Q as target, and constrained P as the driver. The example Q = O + 2(P-O) for P on a circle centered at O must produce a circle of twice the radius.
+- A transformed curve is not a point; invalid, singular or cyclic transformed references must be rejected rather than guessed. Preserve existing serialization and glyphs.

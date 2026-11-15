@@ -1208,3 +1208,12 @@ Bilingual English/Chinese UI strings are handled by a reusable, local DOM transl
 - Browser regression: `tests/browser_round64_locus.py` confirms a genuine point, constrained circle driver, dependent midpoint, rendered locus, and no page errors in headless Chromium.
 - Verification: `node --test tests/*.test.mjs` **379/379 PASS**; `node --check src/app.mjs` PASS. Chromium: `browser_round64_locus.py`, `browser_round51s_axes.py`, `browser_round63_headless_styles.py` PASS.
 - Historical `browser_round50_geometry.py` remains incompatible with newer, intentionally enlarged glyph markers: expects radius 2 while current `pointOnObject` glyph uses 2.8. This legacy assertion fails before geometry construction; no existing glyph was changed in Round 64. Browser coverage is focused, not exhaustive across all Chromium scripts. Standalone hosted-site smoke was not performed.
+
+## Round 65 — Transformed point locus (2026-11-14)
+
+- **Confirmed:** Locus selection rejected dilated point Q because `transformCopy` was not classified as a geometric point; the locus sampler likewise called `resolver.at(Q)` although a transformed copy is represented by transformed geometry rather than a primitive coordinate.
+- **Fix:** Computable single-point transformed copies are recognized as points in shared geometric role classification; transformed curves remain nonpoints, singular images are rejected, cyclic chains are bounded. Point picking and sampling use the actual transformed image, preserving the underlying object schema.
+- **Node:** 379/379 tests PASS (`node --test tests/*.test.mjs`), `node --check src/app.mjs` PASS, direct imports of model, geometry_round50, diagram and plot3d PASS (app is DOM-dependent and tested in Chromium).
+- **Actual headless Chromium (inline isolated app; not production website):** `browser_round65_dilation_locus.py` PASS for circle O, constrained P, factor-2 dilation Q, click Q then P and rendered locus; also `browser_round64_locus.py`, `browser_round63_headless_styles.py`, `browser_round62_plotting.py` PASS. No actual hosted-browser test or exhaustive historical Chromium certification in this cut.
+- **Regression detail:** Initial new browser test assumed a `polyline` child for locus; app correctly rendered a different SVG element. Corrected test to verify actual rendered geometry without enforcing the wrong SVG tag. Test harness artifact only, not an app failure.
+- **Compatibility:** no schema migrations, existing glyphs/arrow rules unchanged, no Git commit.
