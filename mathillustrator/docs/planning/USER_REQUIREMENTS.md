@@ -1768,3 +1768,13 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 ### Round 174 — runtime bilingual coverage
 - English/Chinese switching must also translate construction validation messages, native browser confirmation/prompt dialogs, export-format availability reasons, autosave and cross-tab conflict statuses, and parameterized notices.
 - Preserve user-entered mathematical notation, object names, project data and original error details when no safe translation exists. Do not translate inside persisted project formats.
+
+
+### Round 175 — Chinese UI choice consistency
+- Translate every arrowhead option in free-curve and diagram selectors, plus line/shape options and user-facing navigation/tooltips; preserve option values, stored data, and mathematical text.
+- Verify runtime option text when switching language in both directions, not merely dictionary existence.
+
+### Round 176 — Implicit 3D mesh integrity and locale headings
+- Correct actual missing triangles in smooth implicit 3D surfaces. Distinguish unintended mesh holes from genuine topological openings and from transparency/shading artifacts; do not fill every projected white region indiscriminately.
+- Refine uncertain signed-edge zero crossings adaptively while preserving discontinuity/pole rejection and finite rendering budgets.
+- Section headings must switch back correctly from Chinese to English after initialization and on repeated language changes.

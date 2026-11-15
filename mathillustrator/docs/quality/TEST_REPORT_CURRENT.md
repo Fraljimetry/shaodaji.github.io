@@ -2045,3 +2045,20 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - Node tests: 578/578 passed. JavaScript syntax: passed.
 - Actual Chromium: Round 174 dedicated runtime switch/dialog test passed at 1440, 768 and 390 px. Other historical suites and hosted-site verification were not rerun.
 - Limits: arbitrary errors originating in model/third-party libraries may still contain English submessages; some non-visible states and every possible geometry failure path were not exhaustively exercised.
+
+
+### Round 175 UI translation verification
+- Confirmed and corrected missing arrowhead, line style, shape and accessibility translations.
+- Node `node --test tests/*.test.mjs`: 582 passed, 0 failed, 0 skipped; syntax checks passed.
+- Chromium `browser_round175_ui_options_i18n.py`: 1440/768/390 px passed, EN↔ZH option values and repeated switching.
+- Remaining unverified: exhaustive dynamic dialogs/error states, full historical Chromium collection and hosted site. See `ROUND175_UI_TRANSLATION_AUDIT.md`.
+
+### Round 176 — mesh holes and bilingual heading roundtrips (2026-11-15)
+- User clarification: the reported white patches are **missing surface pieces**, not dark triangle shading. Earlier per-surface opacity compositing proposal was excluded from this delivery.
+- Confirmed structural defect: for `cos(x)*cos(phi*y)+cos(y)*cos(phi*z)+cos(z)*cos(phi*x)`, bounds ±5.1, detail 22, the old implicit tetrahedron sampler produced **114 unmatched interior mesh edges**; a targeted adaptive root-refinement change produces **0** for this exact fixture (quantized-edge analysis). Genuine edges at the bounding box are excluded.
+- The refinement normally stops after the original three probes; it uses up to three additional probes only for uncontracted brackets. Nonfinite and pole protections remain; `1/x=0` still produces 0 faces.
+- 3D scene at configured Mesh detail 96 yielded a complete, not-budget-limited projection in the targeted fixture. This is not proof that every possible high-detail mesh can be rendered without limits.
+- Initial locale application was moved until after section headings are built, retaining their English source text for EN←ZH switches.
+- Node: **584/584 passed** (`node --test tests/*.test.mjs`), no failures or skips. `node --check` passed for changed JavaScript modules.
+- Real Chromium: `browser_round176_i18n_surface.py` passed at 1440, 768 and 390 px; repeated EN/ZH roundtrips and representative implicit 3D rendering at 1440 px.
+- Unverified: exact visual equivalence to the user's hosted screenshot/camera pose, every possible implicit function, exhaustive GPU/large-scene stress, full historical Chromium collection, hosted site and real physical mobile devices. White openings may also result from actual surface topology or bounding-box clipping.

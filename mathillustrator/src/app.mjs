@@ -2922,7 +2922,7 @@ function setupInterface(){
  languageSwitch.addEventListener('pointerdown',event=>{if(event.button===0){event.preventDefault();}});
  languageSwitch.addEventListener('click',event=>{if(event.detail!==0){languageSwitch.value=languageSwitch.value==='zh'?'en':'zh';languageSwitch.dispatchEvent(new Event('change',{bubbles:true}));}});
  languageSwitch.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();languageSwitch.value=languageSwitch.value==='zh'?'en':'zh';languageSwitch.dispatchEvent(new Event('change',{bubbles:true}));}});
- $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();renderList();};applyLanguage();
+ $('ui-language').onchange=()=>{uiPrefs.language=$('ui-language').value;savePrefs();applyLanguage();renderList();};
  syncGeometryVisibility();
  // The docked Properties disclosure is exclusively owned by setupPropertiesLayout.
  // A second click handler here used to toggle the pane back open immediately.
@@ -3027,6 +3027,9 @@ function setupInterface(){
  document.addEventListener('dragover',event=>{if(dragged&&!event.target.closest?.('.toolgroup,.controls,.geometry-subgroup'))clearDropTarget();});
  document.addEventListener('drop',clearDropTarget);
  for(const section of allSections)addDisclosure(section,section!==settingsGroup);
+ // Initialize translations only after the section headings are created.
+ // This keeps the source English labels available during subsequent switches.
+ applyLanguage();
  // Language is switched after buttons are generated; update mutable labels
  // explicitly rather than relying on cached DOM localization attributes.
  const previousLanguage=applyLanguage;

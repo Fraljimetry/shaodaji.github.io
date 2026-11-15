@@ -270,7 +270,12 @@ export function* sample3DPlotSteps(plot,detail){
        // the bracket in world coordinates: a continuous zero contracts
        // its residual, whereas a pole/jump does not. Nonfinite probes fail
        // closed. This is a numerical safeguard, not a topology guarantee.
-       for(let probe=0;probe<3&&!limited;probe++){
+       // Three probes suffice for ordinary smooth crossings. If the
+       // bracket has not contracted enough, refine up to three more times:
+       // rejecting it early can punch real holes into an otherwise smooth
+       // implicit surface. A pole retains its large jump and is still rejected.
+       for(let probe=0;probe<6&&!limited;probe++){
+        if(probe>=3&&Math.abs(fl-fh)<initialJump*.72)break;
         const mid=lo.map((a,d)=>(a+hi[d])/2);let fm;
         try{fm=fn(...mid);}catch{fm=NaN;}evaluations++;
         if(evaluations>MAX_3D_EVALUATIONS){limited=true;break;}

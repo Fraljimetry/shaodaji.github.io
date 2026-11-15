@@ -216,6 +216,26 @@ Object.assign(zh,{
  "Value must be finite.": "数值必须有限。"
 });
 Object.assign(zh,{"The locally saved project is invalid.": "本地保存的项目无效。", "Corrupt local project · autosave paused": "本地项目损坏 · 自动保存已暂停", "Autosave paused · other tab changed": "自动保存已暂停 · 其他标签页有更改", "Not saved locally · download JSON": "未保存到本地 · 请下载 JSON", "Recovered local project": "已恢复本地项目", "Local save unavailable": "本地保存不可用", "Layout preferences could not be saved.": "无法保存布局偏好。", "Label exceeds": "标签超过", " characters. Nothing was added.": " 字符，未添加对象。", " objects. Restore them under Recently Deleted.": " 个对象。可在最近删除中恢复。", "Deleted": "已删除", "Current project changed while reading this file.": "读取期间当前项目已更改。"});
+// Round 175: visible dropdown, shape and accessibility labels previously missed by static sweeps.
+Object.assign(zh,{
+ 'Arrowheads':'箭头端点', 'Line style':'线型', 'Shape':'形状',
+ 'None':'无', 'End':'终点', 'Start':'起点', 'Both':'两端',
+ 'Double end':'双重箭头', 'Hook':'钩形', 'Tail':'尾线', 'Harpoon':'半箭头',
+ 'Double':'双线', 'Wavy':'波浪线', 'Free':'自由曲线', 'Regular':'规则',
+ 'Single color':'单色', 'Times':'Times 字体',
+ 'New project':'新建项目', 'Open a JSON project':'打开 JSON 项目',
+ 'Save editable project':'保存可编辑项目', 'Objects and properties':'对象与属性',
+ 'Toggle objects panel':'切换对象面板', 'Toggle tools panel':'切换工具面板',
+ 'Resize panel':'调整面板大小', 'Illustration canvas':'绘图画布',
+ 'Drawing tools and settings':'绘图工具与设置', 'Drawable objects':'可绘制对象',
+ 'Zoom out':'缩小', 'Zoom in':'放大', 'Reset view':'重置视图',
+ 'Fit objects to canvas':'使对象适应画布', 'Add construction':'添加构造',
+ 'Add curve or construction':'添加曲线或构造', 'Choose a plotting mode':'选择绘图模式',
+ 'Use the same parameter in x and y':'x 与 y 使用同一个参数',
+ 'Third component':'第三分量', 'z component':'z 分量',
+ 'Import semantic tikz-cd diagram':'导入语义 tikz-cd 交换图',
+ 'Find…':'查找…', 'Selection mode':'选择模式'
+});
 const originalText=new WeakMap(),originalAttrs=new WeakMap();
 const skip='script,style,svg,.objects,#toast,#render-info,#coords,#autosave-info,#object-count,#trash-count,#mode-label,#command,#drawing';
 function translateTextNode(node,language){
