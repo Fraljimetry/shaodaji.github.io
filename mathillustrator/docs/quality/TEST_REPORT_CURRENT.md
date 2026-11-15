@@ -2030,3 +2030,18 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - Actual Chromium: `browser_round172_universal_geometry_pick.py` passed at 1440 and 1024 px; `browser_round167_point_over_line.py` passed at 1440/1024; `browser_round168_hover_drag.py` passed at 1440/1024; `browser_round170_selection_preview.py` passed at 1440/390 on retry; `browser_round171_background_transparency.py` passed at 1440/768/390/320.
 - An initial Round 170 run returned `AssertionError: point.bounding_box()` at 390 px after passing 1440; an unchanged rerun passed both widths. Treat as an intermittent fixture / UI timing gap, not an unconditional pass for all repetitions.
 - JavaScript syntax checked for `app.mjs`. Full archived browser collection, full physical-touch traversal, performance profiling of large documents, and hosted-site checks **not executed**; no exhaustive certification claim.
+
+### Round 173 — Golden-ratio constant and graphing audit
+- Reconstructed baseline from authoritative upload plus cumulative overlays 159–172.
+- Golden ratio `phi`, `φ`, `ϕ` implemented in core parser, exact plot geometry recognizer, and strict 3D GPU compiler; updated bilingual tutorial.
+- Node: **576/576 passed**, no failures/skips (`node --test tests/*.test.mjs`). Three edited JS modules passed `node --check`.
+- Chromium: `browser_round173_phi.py` passed 1440 and 390 px with function and implicit plotting from the actual command UI.
+- Existing confirmed limitation: squared implicit equation `(x-.173)^2=0` yields no marching-squares contour whereas `x-.173=0` yields 14 segments in the same viewport; see `ROUND173_CONSTANTS_GRAPHING_AUDIT.md` for reproduction and caveats.
+- Not run: complete historical browser suite, hardware GPU tests, physical touch, hosted site, exhaustive plotting verification.
+
+### Round 174 — runtime localization audit (2026-11-15)
+- Static HTML label/attribute dictionary audit: remaining unchanged text is terminology/proper names (A3/A4/A5, paper sizes, fonts, English, MathIllustrator), mathematical placeholders and LaTeX example content.
+- Confirmed and corrected: 85 missing static/runtime phrase mappings (construction errors, undo/storage/export messages, dialog texts, accessibility tooltips), native confirm/prompt paths not localized, dynamic autosave/conflict status, and interpolated deletion/label-length notices.
+- Node tests: 578/578 passed. JavaScript syntax: passed.
+- Actual Chromium: Round 174 dedicated runtime switch/dialog test passed at 1440, 768 and 390 px. Other historical suites and hosted-site verification were not rerun.
+- Limits: arbitrary errors originating in model/third-party libraries may still contain English submessages; some non-visible states and every possible geometry failure path were not exhaustively exercised.

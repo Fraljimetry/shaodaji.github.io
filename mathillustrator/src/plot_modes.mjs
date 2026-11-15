@@ -16,8 +16,10 @@ const REAL_FUNCS={
 const REAL_FUNCTIONS=Object.keys(REAL_FUNCS);
 const COMPLEX_FUNCTIONS=['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','sec','csc','cot','sqrt','cbrt','abs','sign','log','ln','log10','log2','log1p','exp','expm1','conj','arg','re','im','norm','pow'];
 const FUNCTION_ARITY={min:[2,32],max:[2,32],hypot:[2,32],atan2:[2,2],pow:[2,2],mod:[2,2],clamp:[3,3]};
+const GOLDEN_RATIO=(1+Math.sqrt(5))/2;
+const CONSTANTS={pi:Math.PI,e:Math.E,phi:GOLDEN_RATIO};
 const VARIABLES=['x','y','t','u','v','z','i'];
-const TOKENS=[...new Set([...REAL_FUNCTIONS,...COMPLEX_FUNCTIONS,'pi','e',...VARIABLES])].sort((a,b)=>b.length-a.length);
+const TOKENS=[...new Set([...REAL_FUNCTIONS,...COMPLEX_FUNCTIONS,...Object.keys(CONSTANTS),...VARIABLES])].sort((a,b)=>b.length-a.length);
 function tokenize(source){
  if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
  const result=[];let i=0;
@@ -25,6 +27,7 @@ function tokenize(source){
   const c=source[i];if(/\s/.test(c)){i++;continue;}
   const num=source.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/);
   if(num){const n=Number(num[0]);if(!valid(n)||Math.abs(n)>=1e9)throw Error('Numeric literal out of range.');result.push({kind:'num',value:n});i+=num[0].length;continue;}
+  if(c==='φ'||c==='ϕ'){result.push({kind:'word',value:'phi',start:i,end:i+1});i++;continue;}
   if(/[a-z]/i.test(c)){
    const word=TOKENS.find(t=>source.slice(i,i+t.length).toLowerCase()===t);
    if(!word)throw Error('Unknown symbol near: '+source.slice(i,i+16));
@@ -37,13 +40,13 @@ function tokenize(source){
 }
 const R={
  num:x=>x,add:(a,b)=>a+b,sub:(a,b)=>a-b,mul:(a,b)=>a*b,div:(a,b)=>a/b,pow:(a,b)=>a**b,neg:a=>-a,
- fun:(name,args)=>REAL_FUNCS[name](...args),fromVar:(name,vars)=>vars[name],fromConst:name=>name==='pi'?Math.PI:Math.E
+ fun:(name,args)=>REAL_FUNCS[name](...args),fromVar:(name,vars)=>vars[name],fromConst:name=>CONSTANTS[name]
 };
 const C={
  num:x=>[x,0],add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],
  mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],
  div:(a,b)=>{const d=b[0]**2+b[1]**2;return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];},
- neg:a=>[-a[0],-a[1]],fromVar:(_name,vars)=>vars.z,fromConst:name=>name==='pi'?[Math.PI,0]:name==='e'?[Math.E,0]:[0,1],
+ neg:a=>[-a[0],-a[1]],fromVar:(_name,vars)=>vars.z,fromConst:name=>name==='i'?[0,1]:[CONSTANTS[name],0],
  fun(name,args){const z=args[0], [x,y]=z,r=Math.hypot(x,y),a=Math.atan2(y,x);
   if(name==='pow')return C.pow(z,args[1]);
   if(name==='norm')return [r*r,0];
@@ -89,7 +92,7 @@ function compile(source,variables,complex=false){
   if(t.kind==='word'){
    const name=t.value;
    if(allowed.has(name))return vars=>ops.fromVar(name,vars);
-   if(name==='pi'||name==='e'||complex&&name==='i')return ()=>ops.fromConst(name);
+   if(Object.hasOwn(CONSTANTS,name)||complex&&name==='i')return ()=>ops.fromConst(name);
    if(functions.includes(name)){
     if(take()?.kind!=='(')throw Error(`Function ${name} requires parentheses.`);
     const args=[expr(0)];while(peek()?.kind===','){take();args.push(expr(0));if(args.length>32)throw Error('Too many function arguments.');}
@@ -135,7 +138,7 @@ export function parseVectorField(xExpr,yExpr){
  const x=parseCurveExpression(xExpr,['x','y']),y=parseCurveExpression(yExpr,['x','y']);
  return (a,b)=>[x({x:a,y:b}),y({x:a,y:b})];
 }
-/** Retarget one shared parameter without altering e.g. sqrt, pi or scientific notation. */
+/** Retarget one shared parameter without altering constants, functions or scientific notation. */
 export function renameCurveParameter(source,oldSymbol,newSymbol){
  if(!['t','u','v'].includes(oldSymbol)||!['t','u','v'].includes(newSymbol))throw Error('Invalid parameter rename.');
  if(!source.trim())return source;

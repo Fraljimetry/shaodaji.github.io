@@ -1759,3 +1759,12 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - Use one shared, deterministic, type-aware hit ordering for 2D Move selection, hover preview and construction tools. Points under intersecting lines/curves must win independent of SVG drawing order when the current tool accepts points.
 - Apply tool eligibility before ranking: a tool requiring a curve/circle/line must not be intercepted by an incompatible overlapping point. Point-on-object construction must retain curve selection.
 - Prefer anchor spatial-index ordering for overlapping points, preserve Ctrl/Cmd-click overlap cycling and normal artwork stacking; exclude hidden/fully transparent objects. No changes to glyphs.
+
+### Round 173 — Golden ratio in mathematical expressions
+- Support the golden-ratio constant `phi` (case-insensitive), plus `φ` / `ϕ`, alongside `pi` and `e` in real and complex 2D/3D plotting, numeric mathematical fields, strict GPU polynomial expressions, and exact recognized plotted geometry.
+- Preserve scientific notation, implicit multiplication, conservative GPU restrictions, existing saved projects and security restrictions. Keep the bilingual tutorial updated with user-facing examples.
+- Continue testing common graphing edge cases: removable/true discontinuities, tangential implicit zeros, domain coloring resolution budgets, highly oscillatory curves, GPU/CPU precision and degeneracy. Do not claim complete plotting certification from unit tests alone.
+
+### Round 174 — runtime bilingual coverage
+- English/Chinese switching must also translate construction validation messages, native browser confirmation/prompt dialogs, export-format availability reasons, autosave and cross-tab conflict statuses, and parameterized notices.
+- Preserve user-entered mathematical notation, object names, project data and original error details when no safe translation exists. Do not translate inside persisted project formats.

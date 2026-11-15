@@ -28,7 +28,8 @@ export function compileRestrictedGPUExpression(source){
    if(/\s/.test(source[i])){i++;continue;}
    const match=source.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/);
    if(match){const value=Number(match[0]);if(!Number.isFinite(value)||Math.abs(value)>=1e9)return null;tokens.push({type:'number',value});i+=match[0].length;continue;}
-   const word=['pi','x','y','z','e'].find(w=>source.slice(i,i+w.length).toLowerCase()===w);
+   if(source[i]==='φ'||source[i]==='ϕ'){tokens.push({type:'word',value:'phi'});i++;continue;}
+   const word=['phi','pi','x','y','z','e'].find(w=>source.slice(i,i+w.length).toLowerCase()===w);
    if(word){tokens.push({type:'word',value:word});i+=word.length;continue;}
    if('()+-*^'.includes(source[i])){tokens.push({type:source[i]});i++;continue;}
    return null;
@@ -42,7 +43,7 @@ export function compileRestrictedGPUExpression(source){
    if(t.type==='number')return {s:literal(t.value),degree:0,constant:t.value};
    if(t.type==='word'){
     if(VARS.has(t.value)){variables.add(t.value);return {s:t.value,degree:1,constant:null};}
-    const v=t.value==='pi'?Math.PI:Math.E;return {s:literal(v),degree:0,constant:v};
+    const v=t.value==='pi'?Math.PI:t.value==='e'?Math.E:(1+Math.sqrt(5))/2;return {s:literal(v),degree:0,constant:v};
    }
    throw Error('operator');
   }

@@ -16,13 +16,13 @@ export function polynomial2(source){
  const compact=source.replace(/\s+/g,'').toLowerCase();
  // Use the plotting parser's multiplication and constant conventions. Never
  // approximate a sampled curve to manufacture an exact geometric object.
- const raw=compact.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|pi|e|[xy()+*/^\-]/g)||[];
+ const raw=compact.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|phi|φ|ϕ|pi|e|[xy()+*/^\-]/g)||[];
  if(raw.join('')!==compact)return null;
  const ts=[];
  for(const token of raw){
   const previous=ts.at(-1);
-  const priorValue=previous&&(/^(?:\d|\.|pi$|e$|x$|y$|\)$)/.test(previous));
-  const nextValue=/^(?:\d|\.|pi$|e$|x$|y$|\()/.test(token);
+  const priorValue=previous&&(/^(?:\d|\.|pi$|phi$|φ$|ϕ$|e$|x$|y$|\)$)/.test(previous));
+  const nextValue=/^(?:\d|\.|pi$|phi$|φ$|ϕ$|e$|x$|y$|\()/.test(token);
   if(priorValue&&nextValue)ts.push('*');
   ts.push(token);
  }
@@ -31,7 +31,7 @@ export function polynomial2(source){
  function primary(){const t=take();if(!t)return null;
   if(t==='('){const a=expr();if(take()!==')')return null;return a;}
   if(t==='x'||t==='y'){const a=z();a[t==='x'?1:2]=1;return a;}
-  if(t==='pi'||t==='e'){const a=z();a[0]=t==='pi'?Math.PI:Math.E;return a;}
+  if(['pi','e','phi','φ','ϕ'].includes(t)){const a=z();a[0]=t==='pi'?Math.PI:t==='e'?Math.E:(1+Math.sqrt(5))/2;return a;}
   const n=Number(t);if(!Number.isFinite(n))return null;const a=z();a[0]=n;return a;
  }
  function power(){let a=primary();if(!a)return null;if(peek()==='^'){take();const exp=Number(take());if(![0,1,2].includes(exp))return null;if(exp===0){a=z();a[0]=1;}else if(exp===2)a=mult(a,a);}return a;}
