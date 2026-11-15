@@ -1698,3 +1698,7 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 - Apply concise contextual captions where the section disambiguates them: **Label** (formerly Displayed label), **Resolution** (domain coloring and raster export), **Smoothing** (Geometry), **Polar** (parametric), **Transparent** (background), and **Opacity** (3D surface settings).
 - Preserve descriptive **Evaluation budget** and **Implicit grid (px)** because both would be ambiguous if shortened further. Keep wide expression editors and the preexisting geometry/3D behavior.
 - Labels and captions must translate reversibly between English and Chinese, with no compact-layout collisions at 1440, 768, 390, or 320 px.
+
+### Round 159 — export option checkbox row
+- In **Page & appearance**, keep **Grid/axes in export** and **Transparent** on one horizontal row in both English and Chinese, including narrow viewports. Preserve their independently clickable checkboxes, settings persistence and export behavior.
+- Do not shrink adjacent Canvas/Image bounds or Resolution/Theme selectors or change established labels and glyphs to achieve this layout.

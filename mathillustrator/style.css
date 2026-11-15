@@ -1004,3 +1004,22 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .properties .style-controls-grid.stroke-only-grid:not(.vector-style-grid):not(:has(>.style-width)):has(>.style-pointsize)>.style-pointsize {
  grid-area:2 / 2 / 3 / 3!important;grid-row:2!important;grid-column:2!important;
 }
+
+/* Round 159: related image export options share one compact row.
+   Keep the text attached to each checkbox, including translated labels. */
+#settings-2d .export-check-row,
+.rightpanel .settings-sections .export-check-row {
+ display:flex;align-items:center;justify-content:flex-start;flex-wrap:nowrap;
+ gap:12px;min-width:0;margin:7px 0 9px;
+}
+.rightpanel .settings-sections .export-check-row > .check {
+ display:inline-flex;align-items:center;gap:5px;min-width:0;
+ margin:0;padding:0;font-size:11px;line-height:1.35;white-space:nowrap;
+}
+.rightpanel .settings-sections .export-check-row > .check > input[type=checkbox] {
+ flex:0 0 auto;margin:0;width:13px;height:13px;
+}
+@media(max-width:360px){
+ .rightpanel .settings-sections .export-check-row{gap:7px}
+ .rightpanel .settings-sections .export-check-row > .check{font-size:10px;gap:3px}
+}

@@ -1936,3 +1936,10 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - Syntax: `node --check` passed for modified `src/app.mjs` and `src/i18n.mjs`.
 - Chromium: `tests/browser_round158_point_labels.py` **PASS** at 1440, 768, 390, and 320 px: point has no Width, Size x-alignment matches Opacity, Segment retains Width, and English/Chinese Label switching works. Local inline Chromium fixture, not hosted deployment.
 - Remaining gaps: hardware GPU, physical touch, entire historical browser suite, hosted-site verification not rerun.
+
+### Round 159 — Page & appearance export checkbox alignment (2026-11-15)
+- Baseline: supplied Round 158 source ZIP. Root cause: two block-level checkbox labels occupied separate rows in Page & appearance.
+- Changed HTML structure and scoped CSS only; no mathematical engine, serialization, export logic, or glyph alterations.
+- Node `node --test tests/*.test.mjs`: **566 passed, 0 failed, 0 skipped**; `node --check src/app.mjs` and `src/i18n.mjs` passed.
+- Real local Chromium `tests/browser_round159_export_check_row.py`: **passed at 1440, 768, 390, 320 px**, verifying same row, no overlap, English/Chinese switching, and independent checkbox toggles.
+- Historical Chromium `browser_round153_pairs.py`, `browser_round155_expression_alignment.py`, `browser_round156_plot_settings.py`: passed. Full historical browser suite, GPU stress, physical mobile, hosted deployment, and comprehensive mathematical-property audit **not executed** in this round. No overall mathematical correctness certification is claimed.
