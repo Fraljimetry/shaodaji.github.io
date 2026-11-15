@@ -6,7 +6,7 @@ import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
 import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,geometricPoint,geometricLine,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round58';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round58';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round61';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round62';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round54';
@@ -15,7 +15,7 @@ import {localizeUI,translated} from './i18n.mjs?cut=round54';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
-import {boxRect,routeDiagramEdge,pathData,smoothRoutePath,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round61';
+import {boxRect,routeDiagramEdge,pathData,smoothRoutePath,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
 import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs?cut=round54';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round58';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
@@ -453,6 +453,8 @@ function r50Locus(o){
 const LINE_CHOICES=[['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['double','Double'],['wavy','Wavy']];
 const HEAD_CHOICES=[['none','None'],['end','End'],['start','Start'],['both','Both'],['double-end','Double end'],['hook','Hook'],['tail','Tail'],['harpoon','Harpoon']];
 const FREE_CURVE_HEAD_CHOICES=HEAD_CHOICES.slice(0,4);
+const HEADLESS_LINE_STYLES=new Set(['double','wavy']);
+const visibleArrowheads=(line,heads)=>HEADLESS_LINE_STYLES.has(line)?'none':heads;
 function inheritedMorphismAppearance(o){
  const old=o.arrowStyle||'solid';
  return {line:o.morphismLine||({'dashed':'dashed','dotted':'dotted','hook-dashed':'dashed'}[old]||'solid'),
@@ -596,7 +598,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const pattern=o.curveLine||'solid',heads=o.curveHeads||(o.curveArrows||'none');
   if(pattern==='solid'&&heads==='none'){item=path;}
   else{item=el('g');item.append(path);styleDecoratedPath(item,path,pattern,mk);
-   decoratedHeads(item,path,heads,o.style.stroke,o.style.width,false,pattern);}
+   decoratedHeads(item,path,visibleArrowheads(pattern,heads),o.style.stroke,o.style.width,false,pattern);}
  }else if(o.type==='text'){const [x,y]=project(o.xy),fontSize=o.fontSize||18;if(textOutside(x,y,o.text,fontSize))return;
   if(o.textMode==='latex'){item=latexDisplay(o,x,y,fontSize,{exporting});if(!exporting)item.setAttribute('pointer-events','visiblePainted');}
   else{item=el('text',{'xml:space':'preserve',x,y,'font-size':fontSize,'font-family':o.fontFamily||'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity});
@@ -624,13 +626,13 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const routed=route.status==='routed';
   const appearance=inheritedMorphismAppearance(o);
   const pathStart=a;
-  const hook=appearance.heads==='hook'?hookTailGeometry(a,b,!!o.swap):null;
+  const hook=visibleArrowheads(appearance.line,appearance.heads)==='hook'?hookTailGeometry(a,b,!!o.swap):null;
   const start=hook?.shaftStart||a;
   const d=`M${start[0].toFixed(2)} ${start[1].toFixed(2)} Q${curve.control[0].toFixed(2)} ${curve.control[1].toFixed(2)} ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
   item=el('g',{'data-id':o.id,'data-route-status':route.status});
   const path=mk('path',{d,fill:'none'});item.append(path);
   styleDecoratedPath(item,path,appearance.line,mk);
-  decoratedHeads(item,path,appearance.heads,o.style.stroke,o.style.width,true,appearance.line,!!o.swap);
+  decoratedHeads(item,path,visibleArrowheads(appearance.line,appearance.heads),o.style.stroke,o.style.width,true,appearance.line,!!o.swap);
   if(hook)item.append(el('path',{d:hook.d,stroke:o.style.stroke,'stroke-width':o.style.width,fill:'none','stroke-linecap':'round','pointer-events':'none',class:'latex-morphism-hook'}));
   if(o.text){const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
    const pos=auto?labelOnPolyline(route.points,t,distance,!!o.swap,dx,dy):labelOnQuadratic(a,curve.control,b,t,distance,!!o.swap,dx,dy);
@@ -1441,17 +1443,24 @@ function renderProperties(){
  if(['text','node'].includes(o.type))field(root,'Font size',o.fontSize||18,'number',v=>edit(live=>{if(!finite(v)||v<5||v>200)throw Error('Font size must be 5–200.');live.fontSize=v;}),{min:5,max:200,step:1});
  if(o.type==='node'){const border=document.createElement('label');border.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.nodeBorder;cb.onchange=()=>edit(live=>live.nodeBorder=cb.checked);border.append(cb,document.createTextNode(' Node border'));root.append(border);}
  if(o.type==='freehand'){
-  const makeChoice=(title,value,options,prop)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);for(const [key,caption] of options){const option=document.createElement('option');option.value=key;option.textContent=translated(caption,uiPrefs.language);choice.append(option);}choice.value=value;choice.onchange=()=>edit(live=>{live[prop]=choice.value;});label.append(choice);root.append(label);};
+  const makeChoice=(title,value,options,prop)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);for(const [key,caption] of options){const option=document.createElement('option');option.value=key;option.textContent=translated(caption,uiPrefs.language);choice.append(option);}choice.value=value;choice.onchange=()=>{const next=choice.value;if(edit(live=>{live[prop]=next;})===false)return;
+    if(prop==='curveLine'){const heads=root.querySelector('select[aria-label="Arrowheads"]');if(heads){const headless=HEADLESS_LINE_STYLES.has(next);heads.disabled=headless;heads.value=visibleArrowheads(next,get(doc,o.id)?.curveHeads||(get(doc,o.id)?.curveArrows||'none'));heads.title=headless?'Double and Wavy lines have no arrowheads.':'';}}
+   };label.append(choice);root.append(label);};
   makeChoice('Line style',o.curveLine||'solid',LINE_CHOICES,'curveLine');
-  makeChoice('Arrowheads',FREE_CURVE_HEAD_CHOICES.some(([key])=>key===(o.curveHeads||(o.curveArrows||'none')))?(o.curveHeads||(o.curveArrows||'none')):'end',FREE_CURVE_HEAD_CHOICES,'curveHeads');
+  const freeLine=o.curveLine||'solid',freeHeads=o.curveHeads||(o.curveArrows||'none');
+  makeChoice('Arrowheads',visibleArrowheads(freeLine,FREE_CURVE_HEAD_CHOICES.some(([key])=>key===freeHeads)?freeHeads:'end'),FREE_CURVE_HEAD_CHOICES,'curveHeads');
+  if(HEADLESS_LINE_STYLES.has(freeLine)){const select=root.querySelector('select[aria-label="Arrowheads"]');select.disabled=true;select.title='Double and Wavy lines have no arrowheads.';}
  }
  if(o.type==='morphism'){
   const appearance=inheritedMorphismAppearance(o);
   const morphChoice=(title,value,options,key)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);
    for(const [id,caption] of options){const option=document.createElement('option');option.value=id;option.textContent=caption;choice.append(option);}
-   choice.value=value;choice.onchange=()=>edit(live=>{live[key]=choice.value;});label.append(choice);root.append(label);};
+   choice.value=value;choice.onchange=()=>{const next=choice.value;if(edit(live=>{live[key]=next;})===false)return;
+    if(key==='morphismLine'){const heads=root.querySelector('select[aria-label="Arrowheads"]');if(heads){const headless=HEADLESS_LINE_STYLES.has(next);heads.disabled=headless;const current=get(doc,o.id);heads.value=visibleArrowheads(next,current?inheritedMorphismAppearance(current).heads:'end');heads.title=headless?'Double and Wavy lines have no arrowheads.':'';}}
+   };label.append(choice);root.append(label);};
   morphChoice('Line style',appearance.line,LINE_CHOICES,'morphismLine');
-  morphChoice('Arrowheads',appearance.heads,HEAD_CHOICES,'morphismHeads');
+  morphChoice('Arrowheads',visibleArrowheads(appearance.line,appearance.heads),HEAD_CHOICES,'morphismHeads');
+  if(HEADLESS_LINE_STYLES.has(appearance.line)){const select=root.querySelector('select[aria-label="Arrowheads"]');select.disabled=true;select.title='Double and Wavy lines have no arrowheads.';}
 
   field(root,'Curve / bend',o.bend||0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>5)throw Error('Bend range: −5 to 5.');live.bend=v;}),{min:-5,max:5,step:.1});
   // Round 56: Arrow routing is always Direct. Use Curve / bend for manual adjustment.

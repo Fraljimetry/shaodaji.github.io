@@ -25,8 +25,9 @@ const HEAD_FROM_TIKZ=Object.fromEntries(Object.entries(TIKZ_HEADS).filter(([,v])
 const LINE_FROM_TIKZ=Object.fromEntries(Object.entries(TIKZ_LINES).filter(([,v])=>v).map(([k,v])=>[v,k]));
 function morphismAppearance(edge){
  const old=edge.arrowStyle||'solid';
- return {heads:edge.morphismHeads||({hook:'hook','hook-dashed':'hook',twohead:'both',tail:'tail'}[old]||'end'),
-  line:edge.morphismLine||({dashed:'dashed',dotted:'dotted','hook-dashed':'dashed'}[old]||'solid')};
+ const line=edge.morphismLine||({dashed:'dashed',dotted:'dotted','hook-dashed':'dashed'}[old]||'solid');
+ const storedHeads=edge.morphismHeads||({hook:'hook','hook-dashed':'hook',twohead:'both',tail:'tail'}[old]||'end');
+ return {heads:['double','wavy'].includes(line)?'none':storedHeads,line};
 }
 function parseArrow(raw){
  const args=splitTopLevel(raw,',');let direction=null,label='',swap=false,foundLabel=false,heads='end',line='solid',sawHead=false,sawLine=false;

@@ -1228,3 +1228,11 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Fix sampled 3D explicit/parametric/domain surfaces dropping a whole mesh cell when only one of its four corner samples is undefined: retain a finite three-corner triangle after edge, branch-cut and bounds checks; never bridge missing two-corner cells, and never produce nonfinite faces. Preserve existing complete-quad triangulation, clipping, colors, work budgets, cache, and cancellable rendering.
 - Double-click of a 3D drawing-region bound must accept the same strict finite mathematical expressions as the Enter commit (e.g. `2pi`), fill all x/y/z ranges symmetrically as *drafts*, and preserve atomic undo/redo. 2D retains finite numeric bounds.
 - Continue plotting audit: deep topological fidelity of singular curves and 3D implicit sheets; GPU depth buffering and exact occlusion/transparency; performance in multiple huge/high-detail translucent surfaces remain limitations, not solved by this cut.
+
+
+## Round 63 — Hook scale and headless decorative strokes (2026-11-14)
+- Shrink the LaTeX-style morphism semicircular hook (maximum arc radius 5 screen px, previously 8), maintaining the smooth semicircle shape and Swap label side behavior.
+- For **both free curves and morphisms**, Double and Wavy stroke patterns deliberately suppress arrowheads. Arrowheads property shows **None** and is disabled for these two patterns, and immediately becomes editable again for Solid, Dashed or Dotted. No conventional single-shaft arrowhead should be drawn on a Double/Wavy stroke.
+- Preserve the stored arrowhead mode for existing documents and while toggling line style: switching back to a compatible line restores prior arrowheads without changing JSON or history unexpectedly.
+- Preserve export fidelity: SVG reflects headless rendering; semantic TikZ-cd wavy export uses `no head`; unsupported arrowless double-shaft TikZ-cd combinations must fail explicitly, never silently substitute a misleading arrow.
+- Keep all other morphism and free-curve glyphs unchanged; no Git commits; website-root ZIP overlay of changed/new files only.

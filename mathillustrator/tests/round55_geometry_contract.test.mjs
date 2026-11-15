@@ -11,5 +11,5 @@ test('Round 55 exports the exact geometry contract required at startup',()=>{
  for (const module of ['../src/app.mjs','../src/model.mjs']) {
   assert.match(read(module),/from ['"]\.\/geometry_round50\.mjs\?cut=round60['"]/);
  }
- assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=round62"/);
+ assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=round63"/);
 });

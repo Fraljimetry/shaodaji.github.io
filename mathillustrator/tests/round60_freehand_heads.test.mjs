@@ -6,12 +6,12 @@ const app=readFileSync(new URL('../src/app.mjs',import.meta.url),'utf8');
 test('Round 60: free curve selector offers four standard modes while morphisms retain all choices',()=>{
  assert.match(app,/FREE_CURVE_HEAD_CHOICES=HEAD_CHOICES\.slice\(0,4\)/);
  assert.match(app,/makeChoice\('Arrowheads',[^\n]+FREE_CURVE_HEAD_CHOICES,'curveHeads'\)/);
- assert.match(app,/morphChoice\('Arrowheads',appearance\.heads,HEAD_CHOICES,'morphismHeads'\)/);
+ assert.match(app,/morphChoice\('Arrowheads',visibleArrowheads\(appearance\.line,appearance\.heads\),HEAD_CHOICES,'morphismHeads'\)/);
 });
 test('Round 60: end cap compensated and double-line heads enlarged; morphism kept unchanged',()=>{
  assert.match(app,/const advance=!latex&&vlen>1e-5/);
  assert.match(app,/lineStyle==='double'\?Math\.max\(width,3\.5\):width/);
- assert.match(app,/decoratedHeads\(item,path,heads,o\.style\.stroke,o\.style\.width,false,pattern\)/);
+ assert.match(app,/decoratedHeads\(item,path,visibleArrowheads\(pattern,heads\),o\.style\.stroke,o\.style\.width,false,pattern\)/);
 });
 test('Round 60: imported historical curve arrowheads remain schema-compatible',()=>{
  for(const choice of ['double-end','hook','tail','harpoon']){

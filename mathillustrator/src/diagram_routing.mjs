@@ -204,7 +204,7 @@ export function hookTailGeometry(start,next,swapped=false){
  if(!finitePoint(start)||!finitePoint(next))return null;
  const dx=next[0]-start[0],dy=next[1]-start[1],len=Math.hypot(dx,dy);
  if(len<8)return null;
- const radius=Math.min(8,(len-2)/3);if(radius<2)return null;
+ const radius=Math.min(5,(len-2)/3);if(radius<2)return null;
  const ux=dx/len,uy=dy/len,normal=[-uy,ux];
  const shaftStart=[start[0]+ux*radius,start[1]+uy*radius];
  const side=swapped?1:-1;
