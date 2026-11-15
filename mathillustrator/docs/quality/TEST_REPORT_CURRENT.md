@@ -1914,3 +1914,13 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 - `node --check src/app.mjs`: passed.
 - Real local headless Chromium `tests/browser_round155_expression_alignment.py`: function, parametric, implicit and domain coloring formula row alignment passed at 1440, 768, 390 and 320 px; editors were 53% of panel width, no input overflow or page exceptions.
 - 3D component alignment code was included but not independently browser-exercised. Hosted deployment and physical-device testing not executed.
+
+
+### Round 156 — Targeted alignment correction
+
+**Source:** current authoritative ZIP with cumulative overlays through Round 155.
+**Change:** Plot detail now sits alone on a right-column-aligned row; Evaluation budget and Implicit grid share the lower grid. Retained the single-row Normalize lengths / Density pair, reinforced its 56 px input, and preserved expressions.
+
+**Executed:** Node `node --test tests/*.test.mjs`: **566/566 PASS**, 0 failed, 0 skipped. `node --check src/app.mjs`: PASS. Chromium `browser_round156_plot_settings.py`: PASS at 1440, 768, 390 and 320 px, checking row arrangement, widths, nonoverlap and actual settings changes / 2D vector creation. Chromium `browser_round153_pairs.py`: PASS at 1440, 390, 320 px (desktop 3D + all-width 2D). Chromium `browser_round155_expression_alignment.py`: PASS at 1440, 768, 390, 320 px.
+
+**Not executed:** hosted deployment, physical mobile, mobile 3D density, physical GPU and full historical Chromium suite. No changes to SVG glyphs or geometry algorithms.

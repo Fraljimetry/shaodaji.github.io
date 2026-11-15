@@ -1682,3 +1682,11 @@ Selecting Free Curve must show the new-stroke Shape / Regular / Line style / Arr
 ### Round 155 — Formula editor sizing
 - Formula expressions (`f(x)`, `F(x,y)`, `x(t)`, `y(t)`, `r(t)`, `F(z)` and 3D components) use a compact single-row label and medium-width (~53% inspector) expression field. Do not shrink names, general text or multiline editors.
 - Do not shorten labels unless the saved space is materially useful. Preserve original descriptive labels.
+
+
+### Round 156 — Plotting setting rows and Density alignment
+
+- Plot detail must occupy its own row, with a non-stretched selector aligned to the right-hand control column.
+- Evaluation budget and Implicit grid (px) must share the next two-column row. Do not shorten descriptive labels merely to save space.
+- Vector-field Normalize lengths and Density must occupy a single aligned row in 2D and 3D; Density input matches the 56 px Opacity-sized numeric control.
+- Keep mathematical expression editors medium-width and in line with their labels; preserve existing glyphs and behavior.
