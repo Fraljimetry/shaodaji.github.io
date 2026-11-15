@@ -31,13 +31,13 @@ def main():
    assert state()['objects'][-1]['tMin']==-1
    add('implicit','x^2+y^2=1');assert prop().get_by_text('F(x, y)',exact=True).count()==1
    add('vectorField','-y','x');assert prop().get_by_text('X(x, y)',exact=True).count()==1
-   region=prop().locator('.plot-region-editor');assert region.locator('button').count()==0
+   region=prop().locator('.plot-region-editor');assert region.get_by_role('button',name='Apply ±').count()==1
    before=state()['objects'][-1]['region'].copy()
    region.get_by_label('X max').fill('5')
    region.get_by_label('X max').press('Tab')
    assert state()['objects'][-1]['region']==before,'blur should not redraw'
    region.get_by_label('X max').locator('..').dblclick(position={'x':7,'y':13})
-   assert [float(i.input_value()) for i in region.locator('input').all()]==[-5,5,-5,5]
+   assert [float(i.input_value()) for i in region.locator('input:not([aria-label="Centered half-range"])').all()]==[-5,5,-5,5]
    assert state()['objects'][-1]['region']==before
    region.get_by_label('X max').press('Enter')
    assert state()['objects'][-1]['region']=={'xMin':-5,'xMax':5,'yMin':-5,'yMax':5}
@@ -50,11 +50,11 @@ def main():
    page.locator('#scene3d-enable').check(force=True)
    add('surface3d','sin(x)*cos(y)')
    assert prop().get_by_text('f(x, y)',exact=True).count()==1
-   region=prop().locator('.plot-region-editor');assert region.locator('button').count()==0
+   region=prop().locator('.plot-region-editor');assert region.get_by_role('button',name='Apply ±').count()==1
    bounds=state()['scene3d']['plots'][-1]['bounds'].copy()
    region.get_by_label('x max').fill('5')
    region.get_by_label('x max').locator('..').dblclick(position={'x':7,'y':13})
-   assert [float(e.input_value()) for e in region.locator('input').all()]==[-5,5,-5,5,-5,5]
+   assert [float(e.input_value()) for e in region.locator('input:not([aria-label="Centered half-range"])').all()]==[-5,5,-5,5,-5,5]
    assert state()['scene3d']['plots'][-1]['bounds']==bounds
    region.get_by_label('x max').press('Enter')
    assert state()['scene3d']['plots'][-1]['bounds']=={'xMin':-5,'xMax':5,'yMin':-5,'yMax':5,'zMin':-5,'zMax':5}

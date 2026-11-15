@@ -801,3 +801,9 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 .properties .plot-region-editor>.field{cursor:default}
 /* The deprecated t/u/v selector must not reserve a blank slot in either mode. */
 .command-heading #parameter-symbol[hidden]{display:none!important}
+
+/* Centered drawing regions are opt-in, keep asymmetric numeric bounds intact. */
+.plot-region-editor .region-centered{grid-column:1/-1;display:flex;align-items:flex-end;gap:8px;min-width:0;margin-top:5px}
+.plot-region-editor .region-centered label{display:flex;flex:1 1 auto;flex-direction:column;gap:4px;min-width:0;font-size:11px}
+.plot-region-editor .region-centered input{width:100%;min-width:0;box-sizing:border-box}
+.plot-region-editor .region-centered button{flex:0 0 auto;white-space:nowrap}

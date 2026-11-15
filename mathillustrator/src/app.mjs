@@ -1405,11 +1405,34 @@ function renderBulkProperties(root,objects){
 }
 // Plot bounds are a single atomic edit: Enter commits all axes, while a double
 // click on any axis caption prepares symmetric bounds without persisting drafts.
-function installPlotRegionKeys(container,inputs,commit,{parseBound=Number}={}){
+// Keep the 2D historical ±1e6 range; the 3D engine intentionally has ±1e4.
+function parse2DRegionBound(source){
+ const value=r50ParseExpr(String(source),[])({});
+ if(!Number.isFinite(value)||Math.abs(value)>1e6)throw Error('2D region value must be finite and within ±1,000,000.');
+ return value;
+}
+// Bound editors accept the same strict arithmetic grammar as plot formulas.
+// A centered region is defined by one positive half-width and never stored as
+// an additional mutable setting: imported/exported files keep numeric bounds.
+function installCenteredRegionEditor(container,inputs,commit,parseBound){
+ const row=document.createElement('div');row.className='region-centered';
+ const label=document.createElement('label');label.textContent='Centered half-range';
+ const radius=document.createElement('input');radius.type='text';radius.placeholder='e.g. 4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Positive half-range for every axis; accepts 4pi, pi/2, sqrt(2).';
+ const apply=document.createElement('button');apply.type='button';apply.textContent='Apply ±';
+ function useRadius(){
+  let value;try{value=parseBound(radius.value);}catch(err){notice(err.message);return;}
+  if(!(value>0)){notice('Centered half-range must be positive.');return;}
+  for(const axis of new Set(Object.keys(inputs).map(k=>k[0]))){inputs[axis+'Min'].value=String(-value);inputs[axis+'Max'].value=String(value);}
+  commit();
+ }
+ apply.onclick=useRadius;radius.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();useRadius();}});
+ label.append(radius);row.append(label,apply);container.append(row);
+}
+function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeExpression}={}){
  const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
  for(const [key,input] of Object.entries(inputs)){
   const caption=input.closest('label');
-  caption.title='Double-click a bound label to fill symmetric ranges for all axes; Enter to redraw.';
+  caption.title='Double-click this label to fill symmetric ranges for all axes; Enter to redraw.';
   caption.addEventListener('dblclick',event=>{
    if(event.target!==caption)return;
    const raw=input.value.trim();let numeric;
@@ -1424,6 +1447,7 @@ function installPlotRegionKeys(container,inputs,commit,{parseBound=Number}={}){
    event.preventDefault();event.stopPropagation();commit();
   });
  }
+ installCenteredRegionEditor(container,inputs,commit,parseBound);
 }
 function renderProperties3D(root){
  root.classList.add('properties-3d');
@@ -1595,10 +1619,10 @@ function renderProperties(){
  if(['vectorField','domainColoring'].includes(o.type)){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
   const entries={};for(const [key,label] of [['xMin','X min'],['xMax','X max'],['yMin','Y min'],['yMax','Y max']]){
-   entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'number',()=>true,{step:0.1,hint:'Finite bound; min must be less than max.'});
+   entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
    entries[key].onchange=()=>{};
   }
-  installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,Number(input.value)]));validatePlotRegion(region);live.region=region;}));
+  installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound});
   root.append(form);
  }
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});

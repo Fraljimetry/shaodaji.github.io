@@ -88,6 +88,8 @@
         <p class="muted lang en">Indexes are generated automatically and may miss entries, especially in scanned or low-quality PDFs. Check the original page when accuracy matters.</p>
         <p class="muted lang zh">索引由程序自动生成；扫描件或画质较差的 PDF 可能存在遗漏。重要内容请以原文为准。</p>
         <p class="lang en"><strong>Current detection limits:</strong> Structure may misplace wrapped/multicolumn headings; Results can confuse declarations with references; Equations can omit special, repeated or image-only labels; Bibliography can miss continued entries or confuse mathematical square brackets with citations. These are separate indexes—not a guarantee that all printed content was detected. Manually added Structure entries remain editable; automatic Results/Bibliography still require checking against the PDF.</p>
+        <p class="lang en"><strong>Bibliography detection:</strong> Damaged OCR reference numbers are recovered only when anchored by neighboring printed keys and left-margin OCR evidence. Ambiguous labels are not guessed. DOI links preserve balanced parentheses; verify detected entries and links against the original PDF.</p>
+        <p class="lang zh"><strong>参考文献检测：</strong>仅在相邻印刷编号与页左侧 OCR 证据共同支持时修复受损编号；不猜测含糊条目。DOI 链接保留配对括号；请始终对照原 PDF 核验条目及链接。</p>
         <p class="lang zh"><strong>当前内容检测局限：</strong>多栏、换行标题可能导致结构定位错误；Results 可能混淆定理陈述与引用；特殊编号、重复编号或纯图片公式可能漏入 Equations；跨栏参考文献可能遗漏，数学方括号也可能误判为引用。四类索引均不保证覆盖全部印刷内容。手动新增的 Structure 项可编辑；自动 Results 与 Bibliography 仍须对照 PDF 核验。</p>
       </section>
 
@@ -153,6 +155,8 @@
         <p class="lang zh">如果扫描版 PDF 无法选中文字，MathReader 可能提示<strong>运行 OCR</strong>或<strong>不运行 OCR 直接打开</strong>。全文 OCR 耗时较长，但可为目录与搜索提供文本。跳过 OCR 仍能看页面，但部分索引可能不可用；之后可根据目录面板提示再运行 OCR。</p>
         <p class="muted lang en">For a single formula, use formula selection instead of processing the whole document. Handwritten mathematics may require manual correction.</p>
         <p class="muted lang zh">只需提取单个公式时，可使用公式选取，无需进行全文 OCR。手写数学内容通常需要人工核对。</p>
+        <p class="lang en"><strong>Equation navigation after OCR:</strong> Manual page OCR and full-document OCR may change the available index text. Equation jumps prefer verified labels on the selected page before using measurements from another page. If a repeated number or unclear margin tag remains ambiguous, inspect the printed equation and reselect it manually; OCR and native-text agreement are not guaranteed.</p>
+        <p class="lang zh"><strong>OCR 后的公式定位：</strong>单页 OCR 与全文 OCR 可能改变可用于索引的文字。公式跳转优先采用所选页上已验证的编号位置，不会因为其他页的测量版本更新就优先跳走。若重复编号或页边编号仍有歧义，请对照原文并手动重选；OCR 与原生文字层并不保证一致。</p>
       </section>
 
       <section id="search">

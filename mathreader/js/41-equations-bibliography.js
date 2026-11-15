@@ -3834,10 +3834,13 @@ function verifiedEquationNavigationTarget(entry) {
     }
   }
   if (!verified.length) return original;
-  // New v386 measurements are normalized to the actual hOCR page bbox;
-  // old v385 positions may carry an affine (y-dependent) scale error.
-  const newMeasurements = verified.filter((item) => item.candidate.marginLocationVerifiedV386 === true);
-  const usable = newMeasurements.length ? newMeasurements : verified;
+  // Page identity outranks OCR geometry version: an upgraded measurement
+  // for another printed occurrence must never displace a valid same-page tag.
+  // Only then prefer the newer, page-bbox-normalized v386 coordinates.
+  const samePageEvidence = verified.filter((item) => item.page === original.page);
+  const eligible = samePageEvidence.length ? samePageEvidence : verified;
+  const newMeasurements = eligible.filter((item) => item.candidate.marginLocationVerifiedV386 === true);
+  const usable = newMeasurements.length ? newMeasurements : eligible;
   const samePage = usable.filter((item) => item.page === original.page);
   // Other-page recovery is safe only when there is exactly one independently
   // vetted page for the label; otherwise retain the original target.
@@ -4117,7 +4120,14 @@ async function findEquationLabelLocation(query, originPage = null, originRatio =
 }
 
 async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, flatCache = textCache, { ignoreManual = false } = {}) {
-  if (cache.has(pageNum)) return cache.get(pageNum);
+  // A manual-OCR overlay and a native-text query have different semantics.
+  // Do not reuse a shared cached overlay when native-only evidence is requested,
+  // or an old native cache when a freshly restored manual overlay is present.
+  // Native-only requests use a disposable cache to prevent contamination.
+  if (ignoreManual && sourceDoc === pdfDoc
+      && (manualIndexOcrPages.has(Number(pageNum)) || sourceDocumentUsesOcr(pageNum)) && cache === lineCache) {
+    return pageTextLines(pageNum, sourceDoc, new Map(), null, { ignoreManual: true });
+  }
   if (!ignoreManual && sourceDoc === pdfDoc && manualIndexOcrPages.has(Number(pageNum))) {
     const record = manualIndexOcrPages.get(Number(pageNum));
     const lines = (record.lines || []).map((line) => ({...line, ocrSource: true, parts: Array.isArray(line.parts) ? line.parts.map((part) => ({...part})) : []}));
@@ -4125,7 +4135,7 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
     if (flatCache) flatCache.set(pageNum, String(record.text || lines.map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim());
     return lines;
   }
-  if (sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
+  if (!ignoreManual && sourceDoc === pdfDoc && sourceDocumentUsesOcr(pageNum)) {
     const record = documentOcrPages.get(Number(pageNum));
     const lines = (record?.lines || []).map((line) => ({
       ...line,
@@ -4136,6 +4146,7 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
     if (flatCache) flatCache.set(pageNum, String(record?.text || lines.map((line) => line.text).join(' ')).replace(/\s+/g, ' ').trim());
     return lines;
   }
+  if (cache.has(pageNum)) return cache.get(pageNum);
   const { page, content } = await nativePageTextData(sourceDoc, pageNum);
   const view = Array.isArray(page.view) ? page.view : [0, 0, 1, 1];
   const yMin = Number(view[1]) || 0;
@@ -4163,8 +4174,14 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
   const pageWidth = Math.max(1, (Number(view[2]) || 1) - (Number(view[0]) || 0));
   const lines = rows.map((row) => {
     const items = row.items.sort((a, b) => a.x - b.x);
-    const xMin = Math.min(...items.map((item) => item.x));
-    const xMax = Math.max(...items.map((item) => item.x + (item.width || 0)));
+    let xMin = Infinity;
+    let xMax = -Infinity;
+    let maxHeight = 0;
+    for (const item of items) {
+      if (item.x < xMin) xMin = item.x;
+      if (item.x + item.width > xMax) xMax = item.x + item.width;
+      if (item.height > maxHeight) maxHeight = item.height;
+    }
     const parts = [];
     let text = '';
     for (const item of items) {
@@ -4182,7 +4199,7 @@ async function pageTextLines(pageNum, sourceDoc = pdfDoc, cache = lineCache, fla
       text: text.replace(/\s+/g, ' ').trim(),
       parts,
       ratio: Math.min(1, Math.max(0, (yMax - row.y) / pageHeight)),
-      heightRatio: Math.min(0.08, Math.max(0.001, Math.max(...items.map((item) => item.height || 0)) / pageHeight)),
+      heightRatio: Math.min(0.08, Math.max(0.001, maxHeight / pageHeight)),
       xStartRatio: Math.min(1, Math.max(0, (xMin - (Number(view[0]) || 0)) / pageWidth)),
       xEndRatio: Math.min(1, Math.max(0, (xMax - (Number(view[0]) || 0)) / pageWidth))
     };
@@ -4624,7 +4641,18 @@ function bibliographyCitationKeys(raw, knownKeys = null) {
 
 function bibliographyMetadata(text) {
   const value = String(text || '');
-  const doi = value.match(/\b10\.\d{4,9}\/[\-._;()/:A-Z0-9]+/i)?.[0]?.replace(/[.,;)]$/, '') || '';
+  // DOI suffixes may legitimately contain balanced parentheses (including
+  // nested ones). Only strip a closing parenthesis when it is unmatched;
+  // punctuation belonging to the surrounding sentence is not part of a DOI.
+  let doi = value.match(/\b10\.\d{4,9}\/[\-._;()/:A-Z0-9]+/i)?.[0] || '';
+  while (doi && /[.,;)]$/.test(doi)) {
+    if (doi.endsWith(')')) {
+      const opens = (doi.match(/\(/g) || []).length;
+      const closes = (doi.match(/\)/g) || []).length;
+      if (closes <= opens) break;
+    }
+    doi = doi.slice(0, -1);
+  }
   const arxiv = value.match(/\barXiv\s*:\s*([a-z.-]+\/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?/i)?.[1] || '';
   return { doi, arxiv };
 }
@@ -4813,11 +4841,17 @@ function recoverSingleGapBibliographyCandidates(entries, candidates) {
     const leftPos = bibliographyDocumentPosition(left.entry);
     const rightPos = bibliographyDocumentPosition(right.entry);
     const compatible = candidates.filter((candidate) => {
-      if (candidate.used) return false;
+      // Single-gap repair is OCR evidence, never a substitute for native text.
+      // A math token in the middle of the page or an author-key [B] must not
+      // silently manufacture a numbered bibliography reference.
+      if (candidate.used || !candidate.ocrSource
+          || !Number.isFinite(Number(candidate.xStartRatio))
+          || Number(candidate.xStartRatio) >= 0.22) return false;
       const position = bibliographyDocumentPosition(candidate);
       if (!(position > leftPos && position < rightPos)) return false;
       if (candidate.digitText) return Number(candidate.digitText) === missing;
-      return candidate.bracketedSingleGlyph;
+      return candidate.bracketedSingleGlyph
+        && /^[\[{(]\s*[iIl|OoSs]\s*[\]})][.)]?$/u.test(String(candidate.token || ''));
     });
     if (compatible.length !== 1) continue;
 

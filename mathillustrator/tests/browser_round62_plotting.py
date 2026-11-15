@@ -30,10 +30,10 @@ def run():
    assert snap()['scene3d']['plots'][-1]['kind']=='surface3d'
    region=page.locator('#properties .plot-region-editor')
    original=dict(snap()['scene3d']['plots'][-1]['bounds'])
-   assert not region.locator('button').count()
+   assert region.get_by_role('button',name='Apply ±').count()==1
    value=region.get_by_label('x max');value.fill('2pi')
    value.locator('..').dblclick(position={'x':7,'y':13})
-   samples=[float(el.input_value()) for el in region.locator('input').all()]
+   samples=[float(el.input_value()) for el in region.locator('input:not([aria-label="Centered half-range"])').all()]
    assert all(abs(abs(v)-2*math.pi)<1e-9 for v in samples),samples
    assert snap()['scene3d']['plots'][-1]['bounds']==original
    value.press('Enter')

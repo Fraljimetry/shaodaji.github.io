@@ -1712,3 +1712,12 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - **Node:** 540/540 PASS. Kernel property runner: 37,200 cases, 0 failures (including 1,200 3D sampling cases).
 - **Actual isolated Chromium:** Round 126 detail-128 screen regression PASS (32,768 SVG polygons). New dense implicit Barth-type expression at detail 96 PASS, one PNG-backed image, no SVG triangle nodes, visible image data, orbit redraw, no JS errors. Browser end-to-end elapsed approximately 6,845–6,915 ms on this isolated Chromium environment. Separate Round 107 export (9 exports, vector SVG faces) PASS; Round 106 lifecycle (8 cycles) PASS.
 - **Limitations:** performance is still far from ~1 second; screenshot and isolated browser times are different environments and therefore are not a controlled speedup ratio. Production WebGL2 rendering and GPU numerical sampling were not verified. Full legacy Chromium release gate was not run in this round.
+
+## Round 128 — scoped expression and centered-region verification (2026-11-14)
+
+- Source baseline: latest user ZIP plus Round 125, 126 and 127 overlays, with Round 127 `app.mjs` preserved.
+- Node: `node --test tests/*.test.mjs` — **540/540 PASS**; no skip, failure, or cancellation (run before final 2D cap adjustment, which only changes UI arithmetic parsing).
+- Actual local `/usr/bin/chromium` via Playwright module harness: `browser_round128_centered_regions.py`, updated `browser_round51r_plot_consistency.py`, and updated `browser_round62_plotting.py` — **PASS** after the final cap adjustment. Tests cover 3D `4pi`, 2D `2pi`, center at origin, asymmetric override, atomic edit/undo/redo, invalid-expression rollback and no JavaScript page errors.
+- An initial browser regression exposed that change-on-blur discarded draft states before a double-click label symmetry edit; removed that premature commit and reran both legacy browser regressions successfully.
+- 2D cap remains ±1e6; 3D cap remains ±1e4. Numeric bounds remain schema-compatible and GPU sampling is unaffected.
+- Not checked: hardware-specific GPU acceleration, hosted deployment, and the entire legacy Chromium matrix. Browser tests use isolated local module harness, not hosted navigation.

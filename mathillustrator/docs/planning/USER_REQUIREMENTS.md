@@ -1557,3 +1557,10 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Distinguish sampling, projection, SVG DOM creation and actual GPU hardware acceleration; do not claim GPU execution without hardware-level evidence.
 - For dense 3D scenes, replace hundreds of thousands of on-screen per-triangle SVG elements with a bounded high-density canvas raster embedded atomically in the editor SVG. Maintain SVG vector export, exact sampled triangle geometry, existing camera/cache semantics, color, lighting, ordering and opacity. Retain normal SVG for smaller scenes.
 - Longer term: use a verified WebGL2 framebuffer for rasterizing dense triangles, or indexed-mesh acceleration, to approach the former roughly one-second time without lowering fidelity.
+
+## Round 128 — expression-aware drawing regions and centered scopes
+
+- Accept mathematical constants and arithmetic in drawing-region bounds: `4pi`, `-pi/2`, `sqrt(2)`, and equivalent strict arithmetic notation. Never evaluate JavaScript or permit free variables in bounds.
+- Allow an explicit **Centered half-range** input with **Apply ±** for both 2D vector/domain-coloring regions (center `(0,0)`) and 3D plot regions (center `(0,0,0)`). For radius `R`, each axis receives `[-R,R]`; existing asymmetric min/max fields remain available.
+- Region changes are atomic, undoable, export as numeric bounds (no new schema field), and reject invalid/out-of-range expressions without partial mutation. Keep old label-double-click symmetry and Enter-to-commit behavior.
+- Preserve existing 2D bounds cap of ±1e6 and 3D cap of ±1e4. Do not change mathematical sampling limits, mesh detail, or any tool glyphs.
