@@ -1,4 +1,4 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,transformPoint} from './geometry_round50.mjs?cut=round60';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round74';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round70';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -338,7 +338,7 @@ export function intersectStraightLines(a,b){
  if(!a||!b||!safeCoord(a.a)||!safeCoord(b.a)||!safeCoord(a.d)||!safeCoord(b.d))return null;
  const det=a.d[0]*b.d[1]-a.d[1]*b.d[0];
  // Sine of the acute angle between normalized direction vectors.
- if(!Number.isFinite(det)||Math.abs(det)<=1e-10)return null;
+ if(!Number.isFinite(det)||Math.abs(det)<PARALLEL_SINE_EPS)return null;
  const d=[b.a[0]-a.a[0],b.a[1]-a.a[1]];
  const t=(d[0]*b.d[1]-d[1]*b.d[0])/det;
  const u=(d[0]*a.d[1]-d[1]*a.d[0])/det;
@@ -432,8 +432,18 @@ export function createResolver(doc){
      const r={at:ref=>cache.get(ref)||null,line:ref=>lines.get(typeof ref==='string'?ref:ref?.id)||null,
       circle:ref=>circles.get(typeof ref==='string'?ref:ref?.id)||null,
       points:ref=>(ref.refs||[]).map(id=>cache.get(id)||null),object:ref=>objects.get(ref)};
-     const image=r50Shape(obj,r,2);
-     if(image.length===1&&safeCoord(image[0]))p=image[0];
+     // Resolve transformed points from the already-cached parent point.
+     // r50Shape() recursively expanded ancestors and overflowed at 4,000.
+     const source=cache.get(obj.refs[0]),anchor=cache.get(obj.refs[1]);
+     if(safeCoord(source)){
+      if(obj.transform==='reflect'){
+       const mirror=lines.get(obj.refs[1]);if(mirror)p=transformPoint(source,'reflect',mirror.a,0,[mirror.a[0]+mirror.d[0],mirror.a[1]+mirror.d[1]]);
+      }else if(obj.transform==='invert'){
+       const circle=circles.get(obj.refs[1]);
+       if(circle){const image=transformPoint(source,'invert',circle.center,circle.radius);
+        if(image&&Math.hypot(image[0]-circle.center[0],image[1]-circle.center[1])<1e6)p=image;}
+      }else p=transformPoint(source,obj.transform,anchor,obj.amount,cache.get(obj.refs[2]));
+     }
     }
     if(obj.type==='midpoint'&&obj.refs?.length===2){
      const a=cache.get(obj.refs[0]),b=cache.get(obj.refs[1]);
@@ -442,12 +452,13 @@ export function createResolver(doc){
     if(obj.type==='triangleCenter')p=triangleCenter(obj.refs.map(r=>cache.get(r)),obj.centerKind||'centroid');
     if(obj.type==='pointOnObject'&&obj.refs?.length===1){
      const ref=objects.get(obj.refs[0]),r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circles.get(typeof o==='string'?o:o?.id)||null,points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
-     p=pointOnObject(ref,obj.parameter,r,r50SourceShape,obj.constraintMode);
+     p=pointOnObject(ref,obj.parameter,r,r50SourceShape,obj.constraintMode,obj.distance);
     }
     if(obj.type==='generalIntersection'&&obj.refs?.length===2){
      const r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circles.get(typeof o==='string'?o:o?.id)||null,points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
-     const roots=generalCrossings(objects.get(obj.refs[0]),objects.get(obj.refs[1]),r,160);
-     p=roots[obj.rootIndex||0]||null;
+     // A legacy overloaded curve must not crash project import/render.
+     try{const roots=generalCrossings(objects.get(obj.refs[0]),objects.get(obj.refs[1]),r,160);
+      p=roots[obj.rootIndex||0]||null;}catch(e){if(!(e instanceof RangeError))throw e;p=null;}
     }
     if(obj.type==='perpendicularFoot'&&obj.refs?.length===2){
      const point=cache.get(obj.refs[0]),support=lines.get(obj.refs[1]);
@@ -640,10 +651,12 @@ export function validateDoc(raw){
   if(!o.style||!HEX.test(o.style.stroke)||!HEX.test(o.style.fill)||!finite(o.style.width)||o.style.width<0.1||o.style.width>100||!finite(o.style.opacity)||o.style.opacity<0||o.style.opacity>1)throw Error('Invalid object style or color.');
   if(R50_TYPES.includes(o.type)){
    if(o.type==='pointOnObject'&&(!finite(o.parameter)||o.parameter<0||o.parameter>1))throw Error('Invalid constrained point parameter.');
+   if(o.type==='pointOnObject'&&o.distance!==undefined&&(!finite(o.distance)||
+      !['line','ray','parallelThrough','perpendicularThrough','perpBisector','angleBisector','tangentCircle','axis','transformCopy'].includes(roleObjects.get(o.refs?.[0])?.type)))throw Error('Invalid signed distance for constrained point.');
    if(o.type==='pointOnObject'&&o.constraintMode!==undefined&&o.constraintMode!=='angleRay')throw Error('Invalid constrained-point mode.');
    if(o.type==='transformCopy'&&(!TRANSFORM_MODES.includes(o.transform)||!finite(o.amount??0)||(o.transform==='dilate'&&Math.abs(o.amount)<1e-9)))throw Error('Invalid transformation parameters.');
    if(o.type==='triangleCenter'&&!CENTER_KINDS.includes(o.centerKind))throw Error('Invalid triangle center kind.');
-   if(o.type==='generalIntersection'&&(!Number.isInteger(o.rootIndex)||o.rootIndex<0||o.rootIndex>31))throw Error('Invalid curve intersection branch.');
+   if(o.type==='generalIntersection'&&(!Number.isInteger(o.rootIndex)||o.rootIndex<0||o.rootIndex>=MAX_GENERAL_ROOTS))throw Error('Invalid curve intersection branch.');
    if(o.type==='fixedLength'&&(!finite(o.length)||o.length<=1e-8||o.length>1e6))throw Error('Invalid fixed length.');
    if(o.type==='fixedAngle'&&(!finite(o.angle)||Math.abs(o.angle)>Math.PI*2))throw Error('Invalid fixed angle.');
    if(o.type==='transformCopy'&&o.transform==='translate'&&o.refs?.length!==3)throw Error('Translation requires source and two points.');
@@ -691,6 +704,7 @@ export function validateDoc(raw){
  }
  if(o.type!=='vectorField'&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
  if(!['parametric','pointOnObject'].includes(o.type)&&o.parameter!==undefined)throw Error('Unexpected parametric symbol.');
+ if(o.type!=='pointOnObject'&&o.distance!==undefined)throw Error('Unexpected constrained-point distance.');
  if(!['parametric','vectorField'].includes(o.type)&&(o.xExpr!==undefined||o.yExpr!==undefined)||o.type!=='parametric'&&(o.tMin!==undefined||o.tMax!==undefined))throw Error('Unexpected parametric properties.');
 
   if(o.type==='morphism'&&!xmlTextSafe(o.text))throw Error('Morphism label contains characters illegal in SVG XML.');
@@ -778,7 +792,15 @@ export function validateDoc(raw){
  const resolver=d.objects.some(o=>constrained.has(o.type)||o.edgeIndex!==undefined)?createResolver(d):null;
  for(const o of d.objects)if(constrained.has(o.type)||o.edgeIndex!==undefined){
   if(STRAIGHT_TYPES.has(o.type)){if(!resolver.line(o))throw Error('Invalid line dependencies for '+o.type+'.');continue;}
-  if(['intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)){if(!resolver.at(o.id))throw Error('Intersection is undefined on the selected source domains.');continue;}
+  if(['intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)){
+   // Old v1 projects could save a numerically false general intersection.
+   // Keep that construction in a loaded project (unresolved and not rendered)
+   // rather than rejecting the entire illustration after tolerance repair.
+   // Newly created intersections are independently checked in the UI before
+   // appending. IDs, references and rootIndex still undergo strict validation.
+   if(!resolver.at(o.id)&&o.type!=='generalIntersection')throw Error('Intersection is undefined on the selected source domains.');
+   continue;
+  }
   if(o.type==='transformCopy'&&o.transform==='invert'&&!r50Shape(o,resolver,96).some(p=>p&&p.every(Number.isFinite)))throw Error('Circle inversion has no finite image.');
   if(['pointOnObject','generalIntersection','tangentCircle','transformCopy','locus','parabola'].includes(o.type))continue;
   const p=resolver.points(o);if(!p.every(Boolean))throw Error('Invalid construction anchors for '+o.type+'.');

@@ -1,11 +1,11 @@
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round60';
+import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round74';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round69';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round74';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round69';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round71';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round73';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round74';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round70';
@@ -2047,9 +2047,14 @@ function r50ObjectTap(e,pt){
  if(mode==='pointOnObject'){
   if(!draftReference){if(!obj||r50SourceShape(obj,createResolver(doc),70).length<2){notice('Choose a valid existing geometric object.');return;}draftReference=obj.id;scheduleRender();return;}
   const source=get(doc,draftReference),resolver=createResolver(doc);if(!source){clearDraft();return;}
-  const path=r50SourceShape(source,resolver,120);const snapped=projectToCurve(pt,path,geometricCircle(source,resolver)||source.type==='ellipse');
+  const path=r50SourceShape(source,resolver,120),line=resolver.line(source);
+  const snapped=projectToCurve(pt,path,geometricCircle(source,resolver)||source.type==='ellipse');
   if(!snapped){notice('Choose a point on the selected object.');return;}
-  if(update(()=>{selected=append(doc,{type:'pointOnObject',refs:[source.id],parameter:snapped.parameter}).id;})){clearDraft();afterOneConstruction();}scheduleRender();return;
+  // Unbounded lines need a world-distance, not projection on a 15/30-unit
+  // drawing sample. Persist this separately so legacy parameter stays valid.
+  const distance=line&&line.domain!=='segment'?
+   Math.max(line.domain==='ray'?0:-1e9,Math.min(1e9,(pt[0]-line.a[0])*line.d[0]+(pt[1]-line.a[1])*line.d[1])):null;
+  if(update(()=>{selected=append(doc,{type:'pointOnObject',refs:[source.id],parameter:Math.max(0,Math.min(1,snapped.parameter)),...(distance!==null?{distance}:{})}).id;})){clearDraft();afterOneConstruction();}scheduleRender();return;
  }
  if(['tangentCircle','parabola','reflection','rotation','translation','dilation','circleInversion','locus','generalIntersection'].includes(mode)){
   if(!draftReference){
@@ -2092,7 +2097,8 @@ function r50ObjectTap(e,pt){
    if(update(()=>{selected=append(doc,{type:'locus',refs:[first.id,ref.id]}).id;})){clearDraft();afterOneConstruction();}return;
   }
   if(mode==='generalIntersection'){
-   const r=createResolver(doc),roots=generalCrossings(first,ref,r,160);
+   const r=createResolver(doc);let roots;
+   try{roots=generalCrossings(first,ref,r,160);}catch(error){notice(error.message);return;}
    if(!roots.length){notice('No sampled crossing was found. Try another pair of curves.');return;}
    if(update(()=>{for(let i=0;i<roots.length;i++)selected=append(doc,{type:'generalIntersection',refs:[first.id,ref.id],rootIndex:i}).id;})){constructionEmphasis.clear();constructionEmphasis.add(first.id);constructionEmphasis.add(ref.id);clearDraft();afterOneConstruction();}return;
   }
@@ -2280,7 +2286,13 @@ function r50MoveConstrained(o,world){
   const dist=(world[0]-vertex[0])*Math.cos(a)+(world[1]-vertex[1])*Math.sin(a);
   o.parameter=Math.max(.001,Math.min(1,dist/30));return;
  }
- const projected=projectToCurve(world,r50SourceShape(source,createResolver(doc),120),['circle','circleThrough3','ellipse'].includes(source.type));
+ const resolver=createResolver(doc),line=resolver.line(source);
+ if(line&&line.domain!=='segment'){
+  const distance=(world[0]-line.a[0])*line.d[0]+(world[1]-line.a[1])*line.d[1];
+  if(Number.isFinite(distance)&&Math.abs(distance)<1e9)o.distance=line.domain==='ray'?Math.max(0,distance):distance;
+  return;
+ }
+ const projected=projectToCurve(world,r50SourceShape(source,resolver,120),['circle','circleThrough3','ellipse'].includes(source.type));
  if(projected)o.parameter=projected.parameter;
 }
 function pointerMove(e){
@@ -2410,13 +2422,13 @@ function pointerUp(e){
  scheduleRender();
 }
 function onWheel(e){if(in3D()){e.preventDefault();const zoom=doc.scene3d.options.zoom,delta=Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0013);update(()=>{doc.scene3d.options.zoom=Math.max(.25,Math.min(5,zoom*delta));},{refreshList:false});return;}
-if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;e.preventDefault();if(drag)cancelDrag();const [x,y]=xyEvent(e),before=unproject(x,y),wheelPixels=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?Math.max(1,size.h):1),factor=Math.exp(-Math.max(-200,Math.min(200,wheelPixels))*.0013);view.scale=Math.max(5,Math.min(1000,view.scale*factor));const after=unproject(x,y);view.cx+=before[0]-after[0];view.cy+=before[1]-after[1];scheduleRender();}
+if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;e.preventDefault();if(drag)cancelDrag();const [x,y]=xyEvent(e),before=unproject(x,y),wheelPixels=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?Math.max(1,size.h):1),factor=Math.exp(-Math.max(-200,Math.min(200,wheelPixels))*.0013);view.scale=Math.max(1e-12,Math.min(1000,view.scale*factor));const after=unproject(x,y);view.cx+=before[0]-after[0];view.cy+=before[1]-after[1];scheduleRender();}
 function fit(){if(in3D()){update(()=>{doc.scene3d.options.zoom=1;});return;}
 
  if(drag)cancelDrag();
  const result=fitSceneView(doc,createResolver(doc),size);
  view={cx:result.cx,cy:result.cy,scale:result.scale};
- if(result.clipped)notice('Some fixed-size labels are wider than this viewport. Enlarge the canvas or reduce font size.');
+ if(result.clipped)notice('Some fixed-size labels cannot fit this viewport. Enlarge the canvas or reduce font size.');
  render();
 }
 function deleteObject(id){
@@ -3104,7 +3116,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    lastStored=latest;clearTimeout(saveTimer);dirty=false;setStorageConflict(false);saveStatus('Same project synchronized');
   }else setStorageConflict(true);
  });
- $('zoom-out').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.max(.25,doc.scene3d.options.zoom/1.3);});else{if(drag)cancelDrag();view.scale=Math.max(5,view.scale/1.3);render();}};$('zoom-in').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.min(5,doc.scene3d.options.zoom*1.3);});else{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();}};$('zoom-reset').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=1;doc.scene3d.options.yaw=-38;doc.scene3d.options.pitch=26;});else{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();}};$('fit').onclick=fit;
+ $('zoom-out').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.max(.25,doc.scene3d.options.zoom/1.3);});else{if(drag)cancelDrag();view.scale=Math.max(1e-12,view.scale/1.3);render();}};$('zoom-in').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.min(5,doc.scene3d.options.zoom*1.3);});else{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();}};$('zoom-reset').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=1;doc.scene3d.options.yaw=-38;doc.scene3d.options.pitch=26;});else{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();}};$('fit').onclick=fit;
  const mobile=window.matchMedia('(max-width:700px)');
  const refreshPanelWidths=setupPanelResizing(mobile);
  const propertyLayout=setupPropertiesLayout(mobile);

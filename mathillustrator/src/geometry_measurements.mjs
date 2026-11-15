@@ -37,6 +37,10 @@ export function polygonArea(vertices){
 export function measureGeometry(o,resolver){
  if(!o||!resolver)return null;
  const p=resolver.points(o);
+ if(o.type==='transformCopy'&&resolver.line(o)?.domain==='segment'){
+  const length=resolver.line(o).length;
+  return {kind:'length',value:Number.isFinite(length)&&length>=0?length:null};
+ }
  if(o.type==='segment'||o.type==='fixedLength'){
   if(p.length!==2||!p.every(valid))return {kind:'length',value:null};
   const length=o.type==='fixedLength'?resolver.line(o)?.length:Math.hypot(p[1][0]-p[0][0],p[1][1]-p[0][1]);

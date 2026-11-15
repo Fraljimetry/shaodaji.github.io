@@ -1300,3 +1300,31 @@ User requests recorded, with implemented items distinguished from unresolved one
 - Spatial-index buckets should exclude remote off-canvas anchors that can neither be clicked nor snapped, but retain near-edge markers using the actual marker radius and 12px snap tolerance. Keep lookup bounded for dense saved scenes.
 - Keep controls, glyphs, morphisms, free-curve arrows, Diagram grid-snap override, and current plot types unchanged in this cut. Verify actual Chromium startup, selection, Fit, property edits, undo/redo, SVG/JSON, plus a representative cross-section of 2D, Diagram and 3D tests. Update the cumulative current test report with red/green evidence and explicit unverified paths.
 - Future section-by-section work should independently assess correctness, rendering, performance, keyboard/touch and import/export/persistence, with a red test before each fix and a browser check for each UI change; no opportunistic large rewrite.
+
+### Round 72 — Section-by-section bug discovery, not repair (2026-11-14)
+
+- Use the user-provided latest authoritative Round 71 ZIP. Starting in Round 72, debug 2D then subsequent application sections systematically for mathematical correctness, stability, performance, responsiveness, compatibility, input modalities, persistence, import/export, and UX. Look explicitly for subtle, second-order, boundary, dynamic, and cross-feature issues. Retain existing glyphs and the complete cumulative requirements.
+- **Special Round 72 instruction:** **locate as many defects as possible first; make no fixes of any kind.** Document reproducible problems, distinguish confirmed failures from speculative audit targets, and preserve explicit failing correctness tests separate from the ordinary green regressions. Deliver documentation and audit tests only as a website-root changed/new-files-only ZIP. No Git commits.
+- Round 72 begins with **2D Points & measurements / Lines & constructions**. The detailed 12-item open-bug register, evidence, severity and known missing certification are in `docs/quality/ROUND72_POINTS_LINES_BUG_AUDIT.md`. As subsequent rounds address issues, change status only after independently observed red→green regression and real Chromium verification; keep the active cumulative quality report updated.
+
+
+### Round 73 — 2D Points & Lines: focused analytic intersection repair (2026-11-14)
+
+- Move from discovery-only Round 72 to small red-to-green fixes, beginning with demonstrably wrong **general intersection/incidence** results (R72-04, R72-06, R72-07). The mathematical solver must reject nonincident points and disjoint circles/lines at small radius and near tangency, without widening an absolute squared-coordinate epsilon into fictitious roots.
+- Preserve legitimate tangencies and two distinct roots just inside tangency; preserve finite line segment/ray domains, exact affine roles, visible point semantics, and the unchanged JSON v1 schema, UI glyphs, Diagram and plotting behaviors.
+- Avoid making formerly valid saved projects unloadable after tightening numerical tests: keep old `generalIntersection` objects in JSON if the former algorithm invented their root; show no marker while geometrically undefined. Reject new invalid intersections before creation. Maintain undo/edit/save/restore correctness.
+- Require active Node red→green regression and real Chromium UI import/creation/export smoke. Do not declare unrelated R72 issues fixed. **Next focus:** stable general-intersection branch tracking (R72-08), Fit clipping (R72-01/R72-12), and deep transformation resolver overflow (R72-11), each in a separate limited cut with source and browser regressions.
+
+
+### Round 74 — Resolve remaining Round 72 defects (2026-11-14)
+
+- Repair **all nine outstanding Round 72 issues** (R72-01/02/03/05/08/09/10/11/12) with independent green correctness tests, full Node gates and real Chromium. Maintain the prior Round 73 incidence repairs. Fit must permit framing distant finite points below the former 5px/unit navigation floor, but must distinguish genuinely oversized screen-space labels from wide world geometry.
+- Ray and infinite-line constrained points must move to arbitrary representable finite distances without 15/30-world-unit cutoff; keep legacy `parameter`-only v1 points at their old locations, and add an optional validated *signed distance* only for new/unbounded point constraints. Undo, save, import and drag must work. Do not reinterpret fixed-length and ordinary finite segment parameters.
+- Use relative conditioning for noncollinear tiny triangles and consistent near-parallel straight-line solvers; keep signed stable branches for **analytic** circle–circle and line–circle intersections. Preserve the historical root order for arbitrary **sampled** curves to avoid silently moving existing imported intersection points.
+- Return more than 32 genuine roots; reject excessive counts explicitly rather than silently truncating. A 4,000-deep point-transform chain must resolve iteratively without stack overflow; transformed exact segments must show live length. Keep UI glyphs and JSON v1 project format unchanged.
+- Deliver only changed/new website-root-relative files, update user tutorial, cumulative requirements and current quality report. No Git commits.
+
+### Round 75 — Second-pass discovery without fixes (2026-11-14)
+
+- After repairing the nine outstanding defects, search for **new** subtle and second-order failures in Points & Lines, including tiny-scale incidence/tangent tests, transformed-shape Fit, fixed-angle ray constraints, cubic-curve intersections and nonpoint dependency stacks. Do **not** fix any newly discovered defect during this discovery phase.
+- Place proven failures and minimal reproducible *expected-RED* tests in `docs/quality/ROUND75_POINTS_LINES_FOLLOWUP_BUG_AUDIT.md` and `tests/round75_followup.pending.mjs`. Keep speculative targets clearly separate from reproduced failures and exclude the expected-RED suite from ordinary release acceptance. Continue section-by-section repairs in later focused rounds.

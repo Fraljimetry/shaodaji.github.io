@@ -8,8 +8,12 @@ test('Round 55 exports the exact geometry contract required at startup',()=>{
  for (const api of [generalCrossings,polylineCrossings,r50Shape,r50SourceShape,circleTangents,pointOnObject,triangleCenter]) {
   assert.equal(typeof api,'function');
  }
+ const versions=[];
  for (const module of ['../src/app.mjs','../src/model.mjs']) {
-  assert.match(read(module),/from ['"]\.\/geometry_round50\.mjs\?cut=round60['"]/);
+  const match=read(module).match(/from ['"]\.\/geometry_round50\.mjs\?cut=(round\d+)['"]/);
+  assert.ok(match,`Missing versioned geometry import in ${module}`);
+  versions.push(match[1]);
  }
+ assert.equal(versions[0],versions[1],'Editor and resolver must use the same geometry module URL');
  assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=round(?:6[3-9]|[7-9]\d|[1-9]\d{2,})"/);
 });

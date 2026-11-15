@@ -201,10 +201,12 @@ export function fitSceneView(doc,resolver,size){
  const xSpan=Math.max(2,(bounds.maxX-bounds.minX)*1.3);
  const ySpan=Math.max(2,(bounds.maxY-bounds.minY)*1.3);
  const possible=pxW>0&&pxH>0;
- const scale=possible?Math.max(5,Math.min(1000,pxW/xSpan,pxH/ySpan)):5;
+ // Do not impose the ordinary 5 px/unit navigation floor when the user
+ // explicitly asks to frame finite geometry: distant anchors need zoom <5.
+ const scale=possible?Math.max(1e-12,Math.min(1000,pxW/xSpan,pxH/ySpan)):5;
  return {cx:(bounds.minX+bounds.maxX)/2+(right-left)/(2*scale),
   cy:(bounds.minY+bounds.maxY)/2+(top-bottom)/(2*scale),scale,
-  clipped:!possible||pxW/xSpan<5||pxH/ySpan<5};
+  clipped:!possible,clipReason:!possible?'labels':null};
 }
 
 // Do not duplicate font metrics or create a render/geometry import cycle.
