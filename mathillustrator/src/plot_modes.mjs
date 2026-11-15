@@ -3,9 +3,19 @@
  * Complex evaluation uses two real components, with bounded sampling later.
  */
 const valid=v=>typeof v==='number'&&Number.isFinite(v);
-const REAL_FUNCS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,sqrt:Math.sqrt,abs:Math.abs,log:Math.log,ln:Math.log,exp:Math.exp,floor:Math.floor,ceil:Math.ceil};
+const clamp=(x,a,b)=>Math.min(Math.max(x,a),b);
+const REAL_FUNCS={
+ sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,
+ sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,asinh:Math.asinh,acosh:Math.acosh,atanh:Math.atanh,
+ sec:x=>1/Math.cos(x),csc:x=>1/Math.sin(x),cot:x=>1/Math.tan(x),
+ sqrt:Math.sqrt,cbrt:Math.cbrt,abs:Math.abs,sign:Math.sign,
+ log:Math.log,ln:Math.log,log10:Math.log10,log2:Math.log2,exp:Math.exp,expm1:Math.expm1,log1p:Math.log1p,
+ floor:Math.floor,ceil:Math.ceil,round:Math.round,trunc:Math.trunc,
+ min:Math.min,max:Math.max,hypot:Math.hypot,atan2:Math.atan2,pow:Math.pow,mod:(x,y)=>((x%y)+y)%y,clamp
+};
 const REAL_FUNCTIONS=Object.keys(REAL_FUNCS);
-const COMPLEX_FUNCTIONS=['sin','cos','tan','sinh','cosh','tanh','sqrt','abs','log','ln','exp','conj','arg','re','im'];
+const COMPLEX_FUNCTIONS=['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','sec','csc','cot','sqrt','cbrt','abs','sign','log','ln','log10','log2','log1p','exp','expm1','conj','arg','re','im','norm','pow'];
+const FUNCTION_ARITY={min:[2,32],max:[2,32],hypot:[2,32],atan2:[2,2],pow:[2,2],mod:[2,2],clamp:[3,3]};
 const VARIABLES=['x','y','t','u','v','z','i'];
 const TOKENS=[...new Set([...REAL_FUNCTIONS,...COMPLEX_FUNCTIONS,'pi','e',...VARIABLES])].sort((a,b)=>b.length-a.length);
 function tokenize(source){
@@ -20,21 +30,35 @@ function tokenize(source){
    if(!word)throw Error('Unknown symbol near: '+source.slice(i,i+16));
    result.push({kind:'word',value:word,start:i,end:i+word.length});i+=word.length;continue;
   }
-  if('()+-*/^'.includes(c)){result.push({kind:c,value:c});i++;continue;}
+  if('(),+-*/^'.includes(c)){result.push({kind:c,value:c});i++;continue;}
   throw Error('Unsupported character in expression.');
  }
  return result;
 }
 const R={
  num:x=>x,add:(a,b)=>a+b,sub:(a,b)=>a-b,mul:(a,b)=>a*b,div:(a,b)=>a/b,pow:(a,b)=>a**b,neg:a=>-a,
- fun:(name,x)=>REAL_FUNCS[name](x),fromVar:(name,vars)=>vars[name],fromConst:name=>name==='pi'?Math.PI:Math.E
+ fun:(name,args)=>REAL_FUNCS[name](...args),fromVar:(name,vars)=>vars[name],fromConst:name=>name==='pi'?Math.PI:Math.E
 };
 const C={
  num:x=>[x,0],add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],
  mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],
  div:(a,b)=>{const d=b[0]**2+b[1]**2;return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];},
  neg:a=>[-a[0],-a[1]],fromVar:(_name,vars)=>vars.z,fromConst:name=>name==='pi'?[Math.PI,0]:name==='e'?[Math.E,0]:[0,1],
- fun(name,z){const [x,y]=z,r=Math.hypot(x,y),a=Math.atan2(y,x);
+ fun(name,args){const z=args[0], [x,y]=z,r=Math.hypot(x,y),a=Math.atan2(y,x);
+  if(name==='pow')return C.pow(z,args[1]);
+  if(name==='norm')return [r*r,0];
+  if(name==='sign')return r===0?[0,0]:[x/r,y/r];
+  if(name==='log10'||name==='log2'){const w=C.fun('log',[z]),d=Math.log(name==='log10'?10:2);return [w[0]/d,w[1]/d];}
+  if(name==='log1p')return C.fun('log',[C.add([1,0],z)]);
+  if(name==='expm1')return C.sub(C.fun('exp',[z]),[1,0]);
+  if(name==='cbrt')return C.pow(z,[1/3,0]);
+  if(name==='sec'||name==='csc'||name==='cot')return C.div([1,0],C.fun(name==='sec'?'cos':name==='csc'?'sin':'tan',[z]));
+  if(name==='asinh')return C.fun('log',[C.add(z,C.fun('sqrt',[C.add(C.mul(z,z),[1,0])]))]);
+  if(name==='acosh')return C.fun('log',[C.add(z,C.mul(C.fun('sqrt',[C.add(z,[1,0])]),C.fun('sqrt',[C.sub(z,[1,0])])))]);
+  if(name==='atanh')return C.mul([.5,0],C.sub(C.fun('log',[C.add([1,0],z)]),C.fun('log',[C.sub([1,0],z)])));
+  if(name==='asin'){const iz=C.mul([0,1],z),inside=C.add(iz,C.fun('sqrt',[C.sub([1,0],C.mul(z,z))]));return C.mul([0,-1],C.fun('log',[inside]));}
+  if(name==='acos')return C.sub([Math.PI/2,0],C.fun('asin',[z]));
+  if(name==='atan'){const iz=C.mul([0,1],z);return C.mul([0,-.5],C.sub(C.fun('log',[C.add([1,0],iz)]),C.fun('log',[C.sub([1,0],iz)])));}
   if(name==='re')return [x,0];if(name==='im')return [y,0];if(name==='conj')return [x,-y];
   if(name==='arg')return [a,0];if(name==='abs')return [r,0];
   if(name==='log'||name==='ln')return [Math.log(r),a];
@@ -44,15 +68,15 @@ const C={
   if(name==='cos')return [Math.cos(x)*Math.cosh(y),-Math.sin(x)*Math.sinh(y)];
   if(name==='sinh')return [Math.sinh(x)*Math.cos(y),Math.cosh(x)*Math.sin(y)];
   if(name==='cosh')return [Math.cosh(x)*Math.cos(y),Math.sinh(x)*Math.sin(y)];
-  if(name==='tan')return C.div(C.fun('sin',z),C.fun('cos',z));
-  if(name==='tanh')return C.div(C.fun('sinh',z),C.fun('cosh',z));
+  if(name==='tan')return C.div(C.fun('sin',[z]),C.fun('cos',[z]));
+  if(name==='tanh')return C.div(C.fun('sinh',[z]),C.fun('cosh',[z]));
   throw Error('Unsupported complex function: '+name);
  }
 };
 C.pow=(a,b)=>{
  if(b[0]===0&&b[1]===0)return [1,0];
  if(a[0]===0&&a[1]===0&&b[1]===0&&b[0]>0)return [0,0];
- return C.fun('exp',C.mul(b,C.fun('log',a)));
+ return C.fun('exp',[C.mul(b,C.fun('log',[a]))]);
 };
 function compile(source,variables,complex=false){
  const allowed=new Set(variables);const ts=tokenize(source),ops=complex?C:R,functions=complex?COMPLEX_FUNCTIONS:REAL_FUNCTIONS;
@@ -68,7 +92,11 @@ function compile(source,variables,complex=false){
    if(name==='pi'||name==='e'||complex&&name==='i')return ()=>ops.fromConst(name);
    if(functions.includes(name)){
     if(take()?.kind!=='(')throw Error(`Function ${name} requires parentheses.`);
-    const inner=expr(0);if(take()?.kind!==')')throw Error('Missing closing parenthesis.');return vars=>ops.fun(name,inner(vars));
+    const args=[expr(0)];while(peek()?.kind===','){take();args.push(expr(0));if(args.length>32)throw Error('Too many function arguments.');}
+    if(take()?.kind!==')')throw Error('Missing closing parenthesis.');
+    const [min,max]=FUNCTION_ARITY[name]||[1,1];
+    if(args.length<min||args.length>max)throw Error(`${name} expects ${min===max?min:`${min}–${max}`} arguments.`);
+    return vars=>ops.fun(name,args.map(fn=>fn(vars)));
    }
    throw Error('Unknown symbol: '+name);
   }

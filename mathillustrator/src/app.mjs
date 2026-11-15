@@ -3227,6 +3227,24 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  }
  $('left-collapse').onclick=()=>{if(mobile.matches){document.body.classList.toggle('mobile-left-open');document.body.classList.remove('mobile-right-open');}else document.body.classList.toggle('left-collapsed');syncPanelButtons();};
  $('right-collapse').onclick=()=>{if(mobile.matches){document.body.classList.toggle('mobile-right-open');document.body.classList.remove('mobile-left-open');}else document.body.classList.toggle('right-collapsed');syncPanelButtons();};
+ // Mobile drawers cover the opposite toggle at narrow widths. A tap outside
+ // dismisses the drawer without falling through into a point/drag operation.
+ // Capture before canvas handlers, but never consume interactions inside a drawer.
+ document.addEventListener('pointerdown',event=>{
+  if(!mobile.matches)return;
+  const left=document.body.classList.contains('mobile-left-open');
+  const right=document.body.classList.contains('mobile-right-open');
+  if(!left&&!right)return;
+  const drawer=left?document.querySelector('.leftpanel'):document.querySelector('.rightpanel');
+  if(drawer?.contains(event.target))return;
+  document.body.classList.remove('mobile-left-open','mobile-right-open');
+  syncPanelButtons();event.preventDefault();event.stopImmediatePropagation();
+ },true);
+ document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||!mobile.matches||!document.body.classList.contains('mobile-left-open')&&!document.body.classList.contains('mobile-right-open'))return;
+  document.body.classList.remove('mobile-left-open','mobile-right-open');syncPanelButtons();
+  event.preventDefault();event.stopImmediatePropagation();
+ },true);
  mobile.addEventListener('change',()=>{document.body.classList.remove('mobile-left-open','mobile-right-open');syncPanelButtons();});syncPanelButtons();
 
  const resize=new ResizeObserver(()=>{const b=svg.getBoundingClientRect();size={w:Math.max(1,Math.round(b.width)),h:Math.max(1,Math.round(b.height))};scheduleRender();});resize.observe(svg);

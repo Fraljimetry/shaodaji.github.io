@@ -1599,3 +1599,13 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 ### Round 135 — UI control audit
 - Verify interactive controls and on-screen alignment across desktop, tablet and compact viewport widths; ensure toolbar, properties and plot input functionality remains usable and preserves existing icon design.
 - Keep approved four-point Bézier glyph and one-center-point Regular Polygon glyph; update obsolete test expectations rather than modifying artwork.
+
+### Round 136 — stateful UI audit continuation (2026-11-15)
+- Continue systematic **real-interaction** coverage of every subsection of Properties, Settings, Geometry, Diagrams, 2D/3D Plotting, object management, toolbars, imports/exports and responsive layouts. Exercise selection transitions, editing, Enter/change commits, toggles, dragging, undo/redo, storage reload, invalid inputs, theme/language switching, asynchronous rendering and stale handlers. Fix reproducible issues at their source and add corresponding tests. Do not alter existing glyphs without authorization.
+- Mobile panels must remain dismissible when the open drawer covers the opposite panel toggle. Round 136 adds outside-pointer and Escape dismissal, preventing the dismissing pointer from falling through to drawing tools. Further comprehensive section-by-section audit is still pending.
+
+### User-facing math functions and tutorial (Round 137)
+- Expand the actual mathematical expression evaluator substantially, including ordinary functions such as `min` and `max`, multi-argument syntax, common inverse/hyperbolic functions, logarithm variants and utility functions.
+- Publish separate, accurate lists of supported **real** and **complex** functions in both English and Chinese, covering syntax, argument counts, examples, branches and unsupported capabilities. Only document functions implemented in the production evaluator.
+- Make `tutorial.html` an end-user guide rather than a release history, developer reference, or verification log. Remove round/version chronology; organize by actual tasks and expected user interactions. Preserve technical historical documentation separately.
+- Preserve existing geometry, plotting, glyphs, saved-project compatibility, and 3D numerical parity.

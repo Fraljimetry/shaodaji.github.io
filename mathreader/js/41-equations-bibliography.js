@@ -818,7 +818,14 @@ function normalizeSequentialStructureEntries(entries) {
     const max = occurrences.reduce((current, entry) => Math.max(current, strength(entry)), 0);
     const good = occurrences.filter(entry => strength(entry) === max);
     const byPage = new Map();
-    for (const entry of good) if (!byPage.has(entry.page)) byPage.set(entry.page,entry);
+    for (const entry of good) {
+      // A detector can return same-page observations in an arbitrary OCR order.
+      // Keep the earliest *measured* declaration rather than the first emitted
+      // candidate; missing geometry must never outrank a measured position.
+      const prior = byPage.get(entry.page);
+      const valid = (row) => row && Number.isFinite(row.ratio) && row.ratio >= 0 && row.ratio <= 1;
+      if (!prior || (valid(entry) && (!valid(prior) || entry.ratio < prior.ratio))) byPage.set(entry.page, entry);
+    }
     if (max > 1) for (const entry of byPage.values()) chosen.add(entry);
     else chosen.add(good[0]);
   }
@@ -5004,6 +5011,34 @@ function pruneIsolatedNumericEntriesFromAuthorKeyBibliography(entries) {
   return rejected.size ? list.filter((entry) => !rejected.has(entry)) : list;
 }
 
+// Resolve repeated chapter-local labels in printed order. A forward-only
+// declaration is not evidence of a proof dependency or derived corollary.
+// Keep unknown coordinates conservative instead of interpreting null as zero.
+function resolveStructureReferenceOccurrence(candidates, owner) {
+  if (!Array.isArray(candidates) || !owner) return null;
+  const ownerPage = Number(owner.proofPage ?? owner.page);
+  const ownerRatio = owner.proofRatio ?? owner.ratio;
+  if (!Number.isInteger(ownerPage) || ownerPage < 1) return null;
+  const ratioValid = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+  const matches = candidates.filter((entry) => {
+    const page = Number(entry?.page);
+    if (entry === owner || !Number.isInteger(page) || page < 1 || page > ownerPage) return false;
+    // Same-page occurrences need measured positions when the owner has one.
+    if (page === ownerPage && ratioValid(ownerRatio)) {
+      if (!ratioValid(entry?.ratio) || entry.ratio > ownerRatio) return false;
+    }
+    return true;
+  });
+  matches.sort((a, b) => {
+    const pageDiff = Number(b.page) - Number(a.page);
+    if (pageDiff) return pageDiff;
+    const ar = ratioValid(a.ratio) ? a.ratio : -1;
+    const br = ratioValid(b.ratio) ? b.ratio : -1;
+    return br - ar;
+  });
+  return matches[0] || null;
+}
+
 function credibleStructureProofReferences(owner, structureByLabel) {
   const output = [];
   const seen = new Set();
@@ -5539,14 +5574,9 @@ async function buildStructureIndex({ force = false } = {}) {
     // physical link resolution is local to the proof owner when a name occurs
     // in several chapters. Ambiguous forward references remain unresolved.
     const structureByLabel = new Map([...structureOccurrences].map(([key, rows]) => [key, rows[0]]));
-    const nearbyResult = (label, owner) => {
-      const candidates = structureOccurrences.get(normalizedStructureResultReference(label)) || [];
-      if (candidates.length === 1) return candidates[0];
-      const ownerPosition = Number(owner?.proofPage || owner?.page || 0) + Number(owner?.proofRatio ?? owner?.ratio ?? 0) / 10;
-      const earlier = candidates.filter(entry => entry !== owner &&
-        Number(entry.page || 0) + Number(entry.ratio || 0) / 10 <= ownerPosition);
-      return earlier.length ? earlier[earlier.length - 1] : null;
-    };
+    const nearbyResult = (label, owner) => resolveStructureReferenceOccurrence(
+      structureOccurrences.get(normalizedStructureResultReference(label)) || [], owner
+    );
     for (const owner of sequenceCleanEntries) {
       owner.proofReferences = credibleStructureProofReferences(owner, structureByLabel);
       const resolved = [];
