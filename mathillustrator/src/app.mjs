@@ -1693,9 +1693,9 @@ function renderProperties(){
   });
   const polarLabel=document.createElement('label');polarLabel.className='check compact-property-check';
   const polarToggle=document.createElement('input');polarToggle.type='checkbox';polarToggle.checked=o.polar===true;
-  polarToggle.setAttribute('aria-label',translated('Polar',uiPrefs.language));
+  polarToggle.setAttribute('aria-label',translated('Use polar coordinates',uiPrefs.language));
   polarToggle.onchange=()=>{if(edit(live=>{live.polar=polarToggle.checked;if(live.polar){live.rExpr??='1';}})!==false)renderProperties();};
-  polarLabel.append(polarToggle,document.createTextNode(' '+translated('Polar',uiPrefs.language)));root.append(polarLabel);
+  polarLabel.append(polarToggle,document.createTextNode(' '+translated('Use polar coordinates',uiPrefs.language)));root.append(polarLabel);
   if(o.polar){
    field(root,'r(t)',o.rExpr??'1','text',v=>edit(live=>{r50ParseExpr(v,['t']);live.rExpr=v;}));
 

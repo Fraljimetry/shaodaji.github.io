@@ -1744,3 +1744,5 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - While hovering over a selectable geometric object, visibly preview the object the current tool would pick, before clicking. Respect point-first selection over overlapping lines and tool-specific construction operand types; don't alter the document or the actual selection on hover.
 - In Move mode, drag whole Free Curve objects, including their original data, without altering geometry style; support undo and cancellation.
 - Keep Node `Font size` and `Node border` on one compact horizontal row. Preserve bilingual labels and narrow layouts.
+
+- Round 169: Keep the full **Use polar coordinates** label (使用极坐标) on the parametric plot checkbox; do not abbreviate it to “Polar”.

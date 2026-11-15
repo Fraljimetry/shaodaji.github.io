@@ -2005,3 +2005,5 @@ See `STABILITY_AUDIT_ROUND144.md`. Node 553/553 PASS. Chromium 1440/390 px 90-ob
 ## Round 168 — Hover and Free Curve drag
 
 Confirmed and fixed absent preselection hover feedback, missing Free Curve translation in Move mode, and split Node Font size/Node border rows. Node **568/568 passed**; JavaScript syntax check passed. Actual Chromium `browser_round168_hover_drag.py` passed at 1440/1024 px for semantic hover, overlapping point, Free Curve drag and undo, Node layout; historical R167 point-over-line browser passed at the same widths. See `ROUND168_HOVER_FREECURVE.md`. Mobile touch, all construction tools, full browser history, GPU and hosted-site checks remain unexecuted.
+
+- Round 169: Polar-checkbox full-label restoration; syntax and Node 568/568 passed; local Chromium bilingual test passed at 1440 px, 390 px incomplete. See ROUND169_POLAR_LABEL.md.
