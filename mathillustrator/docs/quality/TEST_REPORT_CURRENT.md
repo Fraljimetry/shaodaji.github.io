@@ -1783,3 +1783,14 @@ Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotatio
 - Node `node --test tests/*.test.mjs`: **553/553 PASS**, no skipped tests; `node --check src/plot_modes.mjs` PASS. New `round137_math_functions.test.mjs` verifies real functions, multi-argument syntax, implicit/vector integration, complex identities, rejection of invalid input and arity.
 - **Actual Chromium:** real application inline fixture creates Function (`max/min`), Implicit (`hypot`) and Domain coloring (`asin/log10`) plots through actual UI Enter interactions. Tutorial English at 1200 px and Chinese at 390 px rendered with both tables, no horizontal page overflow. `tests/browser_round137_functions.py`: **PASS**.
 - Not verified: hosted-site deployment, every legacy Chromium script, hardware-specific GPU, external browser engines, exhaustive numerical accuracy at every complex branch cut, and production HTTP navigation (environment blocks local file URL access; browser tests used actual source in isolated inline fixtures).
+
+
+## Round 138 — Chinese UI / responsive display verification (2026-11-15)
+
+- Baseline: latest uploaded authoritative source + Round 136 and Round 137 overlays, in that order.
+- Node: `node --test tests/*.test.mjs` **553/553 PASS**, zero skipped/failures, exit 0.
+- Syntax: `node --check src/i18n.mjs` and `node --check src/app.mjs` PASS.
+- Actual headless Chromium: `tests/browser_round138_i18n.py` **PASS** at 1440, 768, 390, 320 px. Interactions switched language and 3D mode, checked 3D setting headings/numeric labels and dynamic plot mode, created a 3D vector plot, checked translated region editors, changed a camera numeric value, and switched zh→en→zh. Controls remained in viewport and within owning labels. No page exceptions.
+- Reproduced defect (red): dynamic 3D plot-mode choice stayed in Chinese after switching back to English; fixed by retaining an English source string for localization and translating after dynamic option creation (green).
+- UI localization is additive: user-defined project data, mathematical formulas, glyphs and export formats unchanged.
+- Limitations: Chromium tests use `page.set_content` with inlined source, not live hosted deployment. Native OS font metrics, assistive technology, GPU performance, the full historical Chromium suite, and exhaustive translation of every error/notification message were not verified.

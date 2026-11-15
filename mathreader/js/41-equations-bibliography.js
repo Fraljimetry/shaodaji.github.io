@@ -829,16 +829,38 @@ function normalizeSequentialStructureEntries(entries) {
     if (max > 1) for (const entry of byPage.values()) chosen.add(entry);
     else chosen.add(good[0]);
   }
+  // OCR text layers can emit right-column declarations before left-column ones.
+  // Evaluate weak monotonicity in printed order rather than arrival order.
+  const validRatio = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+  const ordered = observed.map((entry, index) => ({ entry, index })).filter(({entry}) => chosen.has(entry));
+  // A two-column PDF reads top-to-bottom within each column, not in
+  // alternating vertical Y order. Require multiple located declarations in
+  // both columns before applying the left-first profile; isolated x offsets
+  // in an ordinary single-column paper must not change reading order.
+  const byPage = new Map();
+  for (const item of ordered) {
+    const page = Number(item.entry.page);
+    if (!byPage.has(page)) byPage.set(page, []);
+    byPage.get(page).push(item.entry);
+  }
+  const twoColumnPages = new Set();
+  for (const [page, rows] of byPage) {
+    const validX = rows.map((row) => row.declarationXStartRatio).filter((x) => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= 1);
+    if (validX.filter((x) => x < 0.44).length >= 2 && validX.filter((x) => x > 0.50).length >= 2) twoColumnPages.add(page);
+  }
+  const column = (entry) => twoColumnPages.has(Number(entry.page))
+    && typeof entry.declarationXStartRatio === 'number' && Number.isFinite(entry.declarationXStartRatio)
+    ? (entry.declarationXStartRatio > 0.50 ? 1 : 0) : 0;
+  ordered.sort((a, b) => Number(a.entry.page) - Number(b.entry.page)
+    || column(a.entry) - column(b.entry)
+    || (validRatio(a.entry.ratio) ? a.entry.ratio : 2) - (validRatio(b.entry.ratio) ? b.entry.ratio : 2)
+    || a.index - b.index);
   const accepted = [];
   const lastNumericByType = new Map();
-  for (const entry of observed) {
-    if (!chosen.has(entry)) continue;
+  for (const { entry } of ordered) {
     const parsed = parsedSequentialLabel(entry?.label);
     if (parsed && !parsed.prefix) {
       const lastNumeric = lastNumericByType.get(parsed.type) || null;
-      // A prior weak citation must not erase a number-first printed theorem.
-      // Monotonicity cannot override independent strong named evidence when
-      // each chapter/lecture restarts its own numbering scheme.
       if (lastNumeric && compareNumberParts(parsed.parts, lastNumeric.parts) < 0
         && strength(entry) === 1) continue;
       lastNumericByType.set(parsed.type, parsed);
@@ -886,8 +908,19 @@ function equationLineFragmentForColumns(line, parts, columnIndex, columnStartRat
   if (!Array.isArray(parts) || !parts.length) return null;
   const ordered = [...parts].sort((a, b) => Number(a.start || 0) - Number(b.start || 0));
   const source = String(line?.text || '');
-  const start = Math.min(...ordered.map((part) => Number(part.start || 0)));
-  const end = Math.max(...ordered.map((part) => Number(part.end || 0)));
+  let start = Infinity, end = -Infinity;
+  let minX = Infinity, maxX = -Infinity;
+  for (const part of ordered) {
+    const partStart = Number(part.start || 0), partEnd = Number(part.end || 0);
+    const xStart = Number(part.xStartRatio || 0), xEnd = Number(part.xEndRatio || 0);
+    if (!Number.isFinite(partStart) || !Number.isFinite(partEnd) || partStart < 0 || partEnd < partStart
+        || !Number.isFinite(xStart) || !Number.isFinite(xEnd) || xStart < 0 || xEnd > 1 || xEnd < xStart) return null;
+    start = Math.min(start, partStart);
+    end = Math.max(end, partEnd);
+    minX = Math.min(minX, xStart);
+    maxX = Math.max(maxX, xEnd);
+  }
+  if (start >= source.length || end > source.length) return null;
   const raw = source.slice(start, end).replace(/\s+/g, ' ').trim();
   if (!raw) return null;
   const leading = source.slice(start, end).search(/\S/);
@@ -901,8 +934,8 @@ function equationLineFragmentForColumns(line, parts, columnIndex, columnStartRat
     ...line,
     text: raw,
     parts: fragmentParts,
-    xStartRatio: Math.min(...ordered.map((part) => Number(part.xStartRatio || 0))),
-    xEndRatio: Math.max(...ordered.map((part) => Number(part.xEndRatio || 0))),
+    xStartRatio: minX,
+    xEndRatio: maxX,
     equationTwoColumn: true,
     equationColumnIndex: columnIndex,
     equationColumnStartRatio: columnStartRatio,
@@ -932,10 +965,16 @@ function equationColumnAwareSupplementLines(rawLines) {
     if (!best) continue;
     const lp = parts.slice(0, best.index + 1);
     const rp = parts.slice(best.index + 1);
-    const leftStart = Math.min(...lp.map((part) => Number(part.xStartRatio || 0)));
-    const leftEnd = Math.max(...lp.map((part) => Number(part.xEndRatio || 0)));
-    const rightStart = Math.min(...rp.map((part) => Number(part.xStartRatio || 0)));
-    const rightEnd = Math.max(...rp.map((part) => Number(part.xEndRatio || 0)));
+    const bounds = (items) => {
+      let start = Infinity, end = -Infinity;
+      for (const part of items) {
+        start = Math.min(start, Number(part.xStartRatio || 0));
+        end = Math.max(end, Number(part.xEndRatio || 0));
+      }
+      return [start, end];
+    };
+    const [leftStart, leftEnd] = bounds(lp);
+    const [rightStart, rightEnd] = bounds(rp);
     if (leftStart <= 0.20 && leftEnd >= 0.28 && rightStart >= 0.44 && rightEnd >= 0.70) {
       evidence.push({ leftStart, leftEnd, rightStart, rightEnd });
     }
@@ -5583,9 +5622,9 @@ async function buildStructureIndex({ force = false } = {}) {
       for (const reference of owner.proofReferences || []) {
         const target = nearbyResult(reference, owner);
         if (!target || target === owner) continue;
-        if (!resolved.some((item) => item.label === target.label)) resolved.push({ label: target.label, page: target.page, ratio: target.ratio });
+        if (!resolved.some((item) => item.label === target.label && item.page === target.page && item.ratio === target.ratio)) resolved.push({ label: target.label, page: target.page, ratio: target.ratio });
         target.usedByProofs = target.usedByProofs || [];
-        if (!target.usedByProofs.some((item) => item.label === owner.label)) target.usedByProofs.push({ label: owner.label, page: owner.proofPage || owner.page, ratio: owner.proofRatio || owner.ratio });
+        if (!target.usedByProofs.some((item) => item.label === owner.label && item.page === (owner.proofPage || owner.page) && item.ratio === (owner.proofRatio ?? owner.ratio))) target.usedByProofs.push({ label: owner.label, page: owner.proofPage || owner.page, ratio: owner.proofRatio ?? owner.ratio });
       }
       owner.proofUses = resolved.slice(0, 12);
     }
@@ -5599,9 +5638,9 @@ async function buildStructureIndex({ force = false } = {}) {
         const parent = nearbyResult(ref, entry);
         if (!parent || parent === entry) continue;
         parent.corollaries = parent.corollaries || [];
-        if (!parent.corollaries.some((item) => item.label === entry.label)) parent.corollaries.push({ label: entry.label, page: entry.page, ratio: entry.ratio });
+        if (!parent.corollaries.some((item) => item.label === entry.label && item.page === entry.page && item.ratio === entry.ratio)) parent.corollaries.push({ label: entry.label, page: entry.page, ratio: entry.ratio });
         entry.derivedFrom = entry.derivedFrom || [];
-        if (!entry.derivedFrom.some((item) => item.label === parent.label)) entry.derivedFrom.push({ label: parent.label, page: parent.page, ratio: parent.ratio });
+        if (!entry.derivedFrom.some((item) => item.label === parent.label && item.page === parent.page && item.ratio === parent.ratio)) entry.derivedFrom.push({ label: parent.label, page: parent.page, ratio: parent.ratio });
       }
     }
 

@@ -1365,7 +1365,7 @@ function field(parent,label,value,type,onChange,opts={}){
  input.value=String(value??'');if(opts.step)input.step=opts.step;
  if(opts.min!==undefined)input.min=opts.min;
  if(opts.max!==undefined)input.max=opts.max;
- const hint=rangeHint(opts);if(hint){wrap.title=hint;input.title=hint;}
+ const hint=rangeHint(opts);if(hint){wrap.title=translated(hint,uiPrefs.language);input.title=translated(hint,uiPrefs.language);}
  let accepted=input.value;
  input.onchange=()=>{
   if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}
@@ -1427,11 +1427,11 @@ function parse2DRegionBound(source){
 // an additional mutable setting: imported/exported files keep numeric bounds.
 function installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension){
  const row=document.createElement('div');row.className='region-extras';
- const label=document.createElement('label');label.className='field';label.textContent='Centered half-range';
- const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Enter a positive half-range to set ±R along every axis.';
- const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.textContent='Region inequality';
+ const label=document.createElement('label');label.className='field';label.textContent=translated('Centered half-range',uiPrefs.language);
+ const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label',translated('Centered half-range',uiPrefs.language));radius.title=translated('Enter a positive half-range to set ±R along every axis.',uiPrefs.language);
+ const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.textContent=translated('Region inequality',uiPrefs.language);
  const region=document.createElement('input');region.type='text';region.value=conditionValue||'';region.placeholder=dimension===3?'x^2+y^2+z^2<16':'x^2+y^2<16';
- region.setAttribute('aria-label','Region inequality');region.title='Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.';
+ region.setAttribute('aria-label',translated('Region inequality',uiPrefs.language));region.title=translated('Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.',uiPrefs.language);
  function useRadius(){
   let value;try{value=parseBound(radius.value);}catch(err){notice(err.message);return;}
   if(!(value>0)){notice('Centered half-range must be positive.');return;}
@@ -1449,7 +1449,7 @@ function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeE
  const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
  for(const [key,input] of Object.entries(inputs)){
   const caption=input.closest('label');
-  caption.title='Double-click this label to fill symmetric ranges for all axes; Enter to redraw.';
+  caption.title=translated('Double-click this label to fill symmetric ranges for all axes; Enter to redraw.',uiPrefs.language);
   caption.addEventListener('dblclick',event=>{
    if(event.target!==caption)return;
    const raw=input.value.trim();let numeric;
@@ -1793,7 +1793,7 @@ function sync3DInterface(){
  $('scene3d-export-transparent').checked=!!doc.settings.exportTransparent;
  const options=doc.scene3d?.options;
  if(options)for(const [id,key] of [['scene3d-projection','projection'],['scene3d-detail','detail'],['scene3d-yaw','yaw'],['scene3d-pitch','pitch'],['scene3d-opacity','opacity'],['scene3d-cube','cube'],['scene3d-lighting','lighting'],['scene3d-grid','grid'],['scene3d-axes','axes']]){
-  const input=$(id);if(input.type==='checkbox')input.checked=options[key];else input.value=options[key];
+  const input=$(id);if(input.type==='checkbox')input.checked=options[key];else input.value=['yaw','pitch'].includes(key)&&Number.isFinite(options[key])?String(Number(options[key].toFixed(2))):options[key];
  }
  const select=$('plot-mode'),prior=select.value,desired=enabled?
   [['surface3d','Function'],['parametric3d','Parametric surface'],['implicit3d','Implicit surface'],['vector3d','Vector field'],['domain3d','Domain coloring']]:
@@ -1803,6 +1803,7 @@ function sync3DInterface(){
   select.value=desired.some(([key])=>key===prior)?prior:desired[0][0];
   select.dispatchEvent(new Event('input'));
  }
+ localizeUI(select,uiPrefs.language);
  syncPlotModeControl();
  $('mode-label').textContent=enabled?'3D':'Select · drag points to edit';
 }

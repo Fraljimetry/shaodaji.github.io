@@ -1609,3 +1609,10 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Publish separate, accurate lists of supported **real** and **complex** functions in both English and Chinese, covering syntax, argument counts, examples, branches and unsupported capabilities. Only document functions implemented in the production evaluator.
 - Make `tutorial.html` an end-user guide rather than a release history, developer reference, or verification log. Remove round/version chronology; organize by actual tasks and expected user interactions. Preserve technical historical documentation separately.
 - Preserve existing geometry, plotting, glyphs, saved-project compatibility, and 3D numerical parity.
+
+
+## Round 138 — Chinese display and locale transitions (2026-11-15)
+
+User requirement: Chinese mode must translate user-facing 2D/3D Settings and Properties completely; investigate display overflow and locale switching without changing object names, formulas, glyphs, or project serialization. The audit includes the screenshot-reported 3D visualization and vector-field editor.
+
+Implemented: added missing 3D settings labels (mesh detail, opacity, camera yaw/pitch), 3D region action labels, symmetric range/inequality fields, object search placeholders, accessible help labels, and common controls. Fixed stale dynamic plot-mode choices when switching zh → en → zh. Existing mathematical expressions and user-defined object names are deliberately language-neutral. Camera yaw/pitch numeric display is limited to two decimal places, without quantizing stored camera state. No glyph, mathematical engine, or schema changes.
