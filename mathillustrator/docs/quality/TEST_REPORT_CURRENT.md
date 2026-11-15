@@ -1,3 +1,10 @@
+## Round 170 — Selection preview control and subtle highlight (2026-11-15)
+
+- Replaced the Interface **Tooltips** checkbox with **Selection preview** (default on), retaining persistent layout preferences while retiring `showTooltips`. Tool buttons keep their native accessibility titles regardless of the new preference.
+- Hover preview now uses the identical single-shadow filter as actual selection, preserving each object's original color. Disabling instantly clears any existing preview; actual selection and construction hit-testing remain independent.
+- PASS: `node --check` on changed modules; Node **568/568** (no failures or skips); real local Chromium round170 at **1440/390px** for switch, on/off/re-enable, selection independence and Chinese translation; Round168 hover/Free Curve drag Chromium at **1440/1024px**.
+- NOT RUN: complete historical Chromium collection, physical touch, GPU stress, hosted deployment.
+
 ## Round 161 — Expression-capable numeric controls and localization (2026-11-15)
 
 - Baseline: source ZIP supplied as Round 158 with Round 159 and Round 160 overlays applied in order.

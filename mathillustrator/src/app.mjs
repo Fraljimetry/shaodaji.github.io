@@ -192,7 +192,7 @@ function initialSiteTheme(){
 }
 let selected3d=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
-let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,showTooltips:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
+let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 function notice(msg){const e=$('toast');e.textContent=translated(msg,uiPrefs.language);e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
 function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(e){notice('Local save unavailable: '+e.message);return false;}}
 function saveStatus(message,canRetry=false){
@@ -756,7 +756,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   item=el('image',{x:a[0],y:a[1],width:b[0]-a[0],height:b[1]-a[1],href:uri,opacity:o.style.opacity,preserveAspectRatio:'none'});
   // Domain coloring is raster content; do not apply the normal stroke/fill style.
  }
- if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');if(o.id===hoverPickId)item.classList.add('pick-preview');svg.append(item);
+ if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');if(uiPrefs.selectionPreview!==false&&o.id===hoverPickId)item.classList.add('pick-preview');svg.append(item);
  if(!exporting&&sty.opacity>0&&(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)||o.type==='transformCopy'&&geometricLine(o,resolver))){
   const paths=o.type==='vectorField'&&o.colorRange===true?[...item.querySelectorAll('path')]:[item.tagName.toLowerCase()==='g'?item.querySelector('path'):item];
   for(const path of paths){if(!path)continue;const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.removeAttribute('class');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
@@ -1856,13 +1856,6 @@ function syncGeometryVisibility(){
  // Round 44: every Geometry tool is permanently available; no essential subset.
  for(const button of document.querySelectorAll('[data-advanced-geometry]'))button.hidden=false;
 }
-function syncTooltips(){
- for(const button of document.querySelectorAll('[data-tool-choice]')){
-  if(button.hasAttribute('title'))button.dataset.fullTooltip=button.getAttribute('title');
-  if(uiPrefs.showTooltips===false)button.removeAttribute('title');
-  else if(button.dataset.fullTooltip)button.title=button.dataset.fullTooltip;
- }
-}
 function polarParametric(o){
  const r=r50ParseExpr(o.rExpr,['t']);
  return t=>{const radius=r({t});return Number.isFinite(radius)
@@ -2003,6 +1996,7 @@ function hoverPick(e,sx,sy){
  return null;
 }
 function setHoverPick(id){
+ if(uiPrefs.selectionPreview===false)id=null;
  if(hoverPickId===id)return;
  const svg=$('drawing');
  if(hoverPickId)for(const node of svg.querySelectorAll('[data-id]'))if(node.dataset.id===hoverPickId)node.classList.remove('pick-preview');
@@ -2919,15 +2913,14 @@ function savePrefs(){try{localStorage.setItem('mathillustrator-layout-v1',JSON.s
 function setupInterface(){
  try{const prefs=JSON.parse(localStorage.getItem('mathillustrator-layout-v1')||'{}');if(prefs&&typeof prefs==='object')uiPrefs={...uiPrefs,...prefs};}catch{}
  // Retire preferences whose controls no longer exist; do not persist stale toggles.
- for(const key of ['showCoordinates','reduceMotion','essentialGeometry'])delete uiPrefs[key];
+ for(const key of ['showCoordinates','reduceMotion','essentialGeometry','showTooltips'])delete uiPrefs[key];
  const fontMap={system:'system-ui, sans-serif',serif:'Georgia, serif',sans:'Arial, sans-serif',mono:'Consolas, monospace',verdana:'Verdana, sans-serif',trebuchet:'Trebuchet MS, sans-serif',palatino:'Palatino Linotype, serif',times:'Times New Roman, serif'};
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
  $('auto-pan').checked=uiPrefs.autoPan!==false;$('auto-pan').onchange=()=>{uiPrefs.autoPan=$('auto-pan').checked;savePrefs();};
- for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['tooltips','showTooltips'],['fast-3d-orbit','fast3DOrbit']]){
-  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels'||key==='fast3DOrbit')scheduleRender();else syncTooltips();};
+ for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['selection-preview','selectionPreview'],['fast-3d-orbit','fast3DOrbit']]){
+  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels'||key==='fast3DOrbit')scheduleRender();else setHoverPick(null);};
  }
- syncTooltips();
  function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
  const languageSwitch=$('ui-language');

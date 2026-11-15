@@ -1746,3 +1746,5 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - Keep Node `Font size` and `Node border` on one compact horizontal row. Preserve bilingual labels and narrow layouts.
 
 - Round 169: Keep the full **Use polar coordinates** label (使用极坐标) on the parametric plot checkbox; do not abbreviate it to “Polar”.
+
+- Round 170: Replace the Tooltips Interface checkbox with a persistent, default-on “Selection preview” checkbox (中文：选择预览). Hover must highlight the object that would be selected using the same subdued effect as actual selection, not a stronger double glow. Disabling preview must leave actual selection and object construction unaffected.

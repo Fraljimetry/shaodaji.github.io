@@ -1053,7 +1053,7 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 }
 
 /* Round 168: live semantic hit preview, retaining original object colors. */
-#drawing .pick-preview{filter:drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 2px var(--accent));}
+#drawing .pick-preview{filter:drop-shadow(0 0 2px #7e66df90);}
 #drawing .pick-preview.clickable{cursor:pointer;}
 .properties .node-font-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;margin:8px 0;min-width:0;}
 .properties .node-font-row>.field{display:grid;grid-template-columns:65px minmax(0,1fr);gap:5px;margin:0;min-width:0;align-items:center;}
