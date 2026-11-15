@@ -1595,3 +1595,7 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - Preserve existing budgets for implicit and parametric curves and vector fields; preserve 3D mesh/detail caps and export raster bounds. Retain a bounded 12-million-character plot cache for high-resolution raster redraws.
 
 - Round 134: Circle inversion glyph direction refined to point east again while preserving larger circle radius and wider point separation.
+
+### Round 135 — UI control audit
+- Verify interactive controls and on-screen alignment across desktop, tablet and compact viewport widths; ensure toolbar, properties and plot input functionality remains usable and preserves existing icon design.
+- Keep approved four-point Bézier glyph and one-center-point Regular Polygon glyph; update obsolete test expectations rather than modifying artwork.

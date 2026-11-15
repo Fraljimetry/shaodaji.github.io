@@ -406,9 +406,15 @@ function resultProofHeading(text) {
 function resultProofTarget(entries, printedReference, page, proofLine) {
   const available = Array.isArray(entries) ? entries : [];
   const explicit = String(printedReference || '').trim();
+  const proofRatio = proofLine?.ratio == null ? NaN : Number(proofLine.ratio);
   const candidates = available.filter((entry) => Number.isInteger(Number(entry?.page))
     && Number(entry.page) <= Number(page)
-    && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(String(entry.label || '')));
+    && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(String(entry.label || ''))
+    // A declaration physically below this proof cannot be its owner. Missing
+    // coordinates keep the legacy fallback rather than fabricating geometry.
+    && (Number(entry.page) !== Number(page) || !Number.isFinite(proofRatio)
+      || entry?.ratio == null || !Number.isFinite(Number(entry.ratio))
+      || Number(entry.ratio) <= proofRatio + 0.003));
   if (explicit) {
     const wanted = normalizedStructureResultReference(explicit);
     // Explicit cross-references can legitimately point several pages back.
@@ -425,6 +431,13 @@ function resultProofTarget(entries, printedReference, page, proofLine) {
     // A left-column proof must not claim an unrelated right-column result.
     return Math.abs(x - entryX) <= 0.24;
   }) || null;
+}
+
+function proofLineSameColumn(proofX, currentX) {
+  if (proofX == null || currentX == null) return true;
+  const anchor = Number(proofX), candidate = Number(currentX);
+  return !Number.isFinite(anchor) || !Number.isFinite(candidate)
+    || Math.abs(anchor - candidate) <= 0.24;
 }
 
 function detectedStructureResult(lines, lineIndex, page) {
@@ -5129,12 +5142,18 @@ async function buildStructureIndex({ force = false } = {}) {
             // Otherwise references on this unrelated proof leak backwards.
             activeProofEntry = null;
             if (target && !target.proofPage) {
-              target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch.printedReference ? `Proof of ${proofMatch.printedReference}` : 'Proof';
+              target.proofPage = page; target.proofRatio = line.ratio;
+              target.proofXStartRatio = line?.xStartRatio == null || !Number.isFinite(Number(line.xStartRatio))
+                ? null : Number(line.xStartRatio);
+              target.proofTitle = proofMatch.printedReference ? `Proof of ${proofMatch.printedReference}` : 'Proof';
               activeProofEntry = target;
             }
           }
           if (activeProofEntry && activeProofEntry.proofPage) {
-            const references = cleaned.match(STRUCTURE_REFERENCE_RE) || [];
+            // Side-by-side text columns are not a single proof. Do not let
+            // an unrelated column contaminate its dependency graph.
+            const sameProofColumn = proofLineSameColumn(activeProofEntry.proofXStartRatio, line?.xStartRatio);
+            const references = sameProofColumn ? (cleaned.match(STRUCTURE_REFERENCE_RE) || []) : [];
             for (const reference of references) {
               const normalizedRef = normalizedReferenceLabel(reference);
               if (!normalizedRef || normalizedRef === normalizedReferenceLabel(activeProofEntry.label)) continue;
@@ -5142,7 +5161,9 @@ async function buildStructureIndex({ force = false } = {}) {
             }
           }
   
-          if (activeProofEntry && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
+          if (activeProofEntry
+            && proofLineSameColumn(activeProofEntry.proofXStartRatio, line?.xStartRatio)
+            && /(?:\bQ\.?\s*E\.?\s*D\.?\b|[□∎])/.test(cleaned)) {
             activeProofEntry.proofEndPage = page; activeProofEntry.proofEndRatio = line.ratio; activeProofEntry = null;
           }
         }
@@ -5538,7 +5559,10 @@ async function buildStructureIndex({ force = false } = {}) {
 
     // Internal classifier strength is an implementation detail, not a
     // user-authored annotation or a new persisted reading-data contract.
-    for (const entry of sequenceCleanEntries) delete entry.declarationEvidence;
+    for (const entry of sequenceCleanEntries) {
+      delete entry.declarationEvidence;
+      delete entry.proofXStartRatio;
+    }
     structureEntries = sequenceCleanEntries.slice(0, 500);
     bibliographyEntries = cleanedBibliography.slice(0, 400);
     structureIndexVersion = STRUCTURE_INDEX_VERSION;

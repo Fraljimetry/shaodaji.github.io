@@ -1761,3 +1761,11 @@ Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotatio
 - **Audit:** budget fail-closed paths for vector/implicit/parametric inspected and boundary-regressed; 3D mesh/detail and export caps inspected but not changed. Stress and hardware verification beyond this scope remain unverified.
 
 - Round 134: Circle inversion glyph direction refined to point east again while preserving larger circle radius and wider point separation.
+
+### Round 135 — UI control and alignment sweep
+- Node suite: 550/550 PASS.
+- Real Chromium: interactive compact toolbar (construction command, search/filter, undo/redo, SVG export, language switching) and responsive visibility through 320 px PASS.
+- Independent geometry scans at 1600, 1100 and 768 px: no off-viewport or text-overflow interactive controls; tested 150 visible controls per width. Native checkboxes and palette swatches are intentionally small.
+- Updated outdated test expectations for approved Bézier four control points, Regular Polygon one-center marker and full 24-unit icon bounds. No product glyph changes.
+- Separate full-page 390 px layout fixture timed out; mobile coverage is therefore partial, not a full pass. This audit does not prove every app action works in every state.
+- Additional actual Chromium checks: Round128 centered-range and Round130 strict-region controls PASS.

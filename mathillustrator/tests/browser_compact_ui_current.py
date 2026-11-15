@@ -30,11 +30,11 @@ def run():
         for name in ('bezier', 'line', 'angle', 'point', 'segment', 'regularPolygon'):
             ext = page.locator(f'[data-tool-choice="{name}"] svg').evaluate(
                 '(svg) => {const b=svg.getBBox();return [b.x,b.y,b.x+b.width,b.y+b.height]}')
-            assert ext[0] >= 0.85 and ext[1] >= 0.85 and ext[2] <= 23.15 and ext[3] <= 23.15, (name,ext)
-        assert page.locator('[data-tool-choice="bezier"] circle[fill="currentColor"]').count() == 2
+            assert ext[0] >= -0.01 and ext[1] >= -0.01 and ext[2] <= 24.01 and ext[3] <= 24.01, (name,ext)
+        assert page.locator('[data-tool-choice="bezier"] circle[fill="currentColor"]').count() == 4
         assert page.locator('[data-tool-choice="point"] circle[fill="currentColor"]').count() == 1
         assert page.locator('[data-tool-choice="segment"] circle[fill="currentColor"]').count() == 2
-        assert page.locator('[data-tool-choice="regularPolygon"] circle[fill="currentColor"]').count() == 6
+        assert page.locator('[data-tool-choice="regularPolygon"] circle[fill="currentColor"]').count() == 1
         # Keep serialized legacy Arrow geometry despite the user-facing Vector label.
         for source in ('A=(0,0)', 'B=(2,1)', 'Arrow(A,B)'):
             cmd(page, source)
