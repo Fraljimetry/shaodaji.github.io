@@ -1798,3 +1798,7 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - **Structural/gallery feature (Done for six examples):** provide six bilingual links in the tutorial opening validated, editable native MathIllustrator JSON projects: Golden Ratio/Fibonacci tiling with logarithmic spiral; Spirograph; Phase Portraits; Gyroid; Enneper Surface; Circle Inversion. Each uses genuine supported object/plot types and normal project validation. Linked editor opens in a new tab; existing work requires confirmation before replacement.
 - **Quality limit:** local Chromium runs in an opaque-origin fixture, so full deployed-origin navigation, cross-tab autosave conflict behavior and hosted rendering are not certified. GPU stress is outside this round.
 
+
+## Round 181–182 — tutorial examples and final hardening
+- Round 181 supersedes the Round 179 tutorial gallery requirement: **do not show any example gallery or example-project links in the English or Chinese tutorial**. Keep the six native example JSON files for potential later reuse, not as active tutorial content.
+- A final hardening audit must keep historical tests aligned with deliberate UI removals without discarding preserved project-schema and mathematical-invariant coverage; record incomplete GPU, hosted, physical touch, and exhaustive error-path certification accurately.

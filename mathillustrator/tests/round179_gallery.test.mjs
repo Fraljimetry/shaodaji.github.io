@@ -8,11 +8,11 @@ import {parse3D} from '../src/plot3d.mjs';
 const dir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../examples');
 const names=['golden-ratio','spirograph','phase-portraits','gyroid','enneper','circle-inversion'];
 const load=name=>validateDoc(JSON.parse(fs.readFileSync(path.join(dir,`gallery-${name}.json`),'utf8')));
-test('six linked tutorial gallery projects are native, valid and editable',()=>{
+test('six archived gallery projects remain native and valid, without tutorial links',()=>{
  const guide=fs.readFileSync(path.resolve(dir,'../tutorial.html'),'utf8');
  for(const name of names){
   const d=load(name);
-  assert.ok(guide.includes(`href="./?example=${name}"`));
+  assert.ok(!guide.includes(`href="./?example=${name}"`), 'removed tutorial link must not reappear');
   assert.ok(d.objects.length+d.scene3d.plots.length>0);
   assert.equal(d.format,'mathillustrator-project');
   assert.deepEqual(validateDoc(JSON.parse(JSON.stringify(d))),d);

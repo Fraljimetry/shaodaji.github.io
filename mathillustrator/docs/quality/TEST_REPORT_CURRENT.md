@@ -2091,3 +2091,8 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - Node: **586/586 passed**, 0 failed, 0 skipped; JavaScript syntax passed.
 - Real Chromium: new empty-state and repeated-switch test passed at 1440, 768, 390 and 320 px; populated point Properties and 3D plot-mode options passed at 1440 and 768 px. Historical Round 174 runtime localization passed at 1440/768/390 and Round 175 arrowhead/option localization passed at 1440/768/390.
 - Limitations: not a proof of zero translation defects in every rare dialog, imported malformed project, graphics-library error or hosted deployment. Entire historical Chromium suite not executed.
+
+### Round 182 — final local hardening (2026-11-15)
+- Full baseline: authoritative archive + overlays 159–181. Initial Node 592/593 due to obsolete Round 179 gallery-link assertion conflicting with intentional Round 181 removal. Updated that test to assert no links while preserving native JSON checks; final **593/593 PASS**, no skips. No runtime code changes.
+- Module syntax PASS; mathematical property tests **6200/6200**; individually completed real Chromium interaction regressions for layout, translation, geometry picking, Free Curve dragging, 2D/3D plotting, export, history, cancellation, dense raster and performance PASS.
+- Legacy `browser_gpu3d_acceleration.py` **FAIL** (stale WebGL2/CPU SVG text expectations); current Round 127 dense-raster test PASS. Hardware GPU parity, entire historical browser collection, hosted site and physical touch **INCOMPLETE**. Detailed provenance: `docs/quality/ROUND182_FINAL_HARDENING.md`.
