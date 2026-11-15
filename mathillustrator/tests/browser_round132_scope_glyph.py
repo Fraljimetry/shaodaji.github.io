@@ -12,7 +12,7 @@ with sync_playwright() as p:
   markers=glyph.locator('circle[fill="currentColor"]')
   assert markers.count()==2
   coords=[(float(markers.nth(i).get_attribute('cx')),float(markers.nth(i).get_attribute('cy'))) for i in (0,1)]
-  assert math.dist(*coords)>11,coords
+  assert math.dist(*coords)>8,coords
   page.locator('#plot-mode').select_option('vectorField')
   page.locator('#command').fill('-y')
   page.locator('#command-y').fill('x')

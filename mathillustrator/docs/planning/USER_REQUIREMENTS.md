@@ -1587,3 +1587,11 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 ### Round 132 — Icon clearance and scope capitalization
 - Circle inversion glyph: increase the distance between the two visible inverse points while keeping the geometric reciprocal-radius relation and common point size.
 - Scope bounds across 2D/3D must use lowercase variable names (x min, x max, y min, y max, z min, z max); keep serialization identifiers unchanged.
+
+### Round 133 — graphing threshold and domain-coloring resolution
+- User report: 2D domain coloring fails when its resolution exceeds 1000; audit graphing thresholds across 2D/3D rather than merely changing an input maximum.
+- Confirmed cause: 1024×1024 samples require 1,048,576 evaluations, beyond the shared 1,000,000 Plot budget; sampling returned a limited blank image. A 1.2-million-character plot cache also failed to retain some high-resolution PNGs, making redraws unnecessarily expensive.
+- 2D domain coloring has a separate, explicit **2,359,296-pixel** resource ceiling (maximum width and height 1536), independent of the general curve/vector evaluation presets. User-entered resolutions 32–1536 must be preserved; rectangular bounds retain their aspect ratio subject to the height ceiling. No silent fallback/downsampling when the limit is exceeded.
+- Preserve existing budgets for implicit and parametric curves and vector fields; preserve 3D mesh/detail caps and export raster bounds. Retain a bounded 12-million-character plot cache for high-resolution raster redraws.
+
+- Round 134: Circle inversion glyph direction refined to point east again while preserving larger circle radius and wider point separation.

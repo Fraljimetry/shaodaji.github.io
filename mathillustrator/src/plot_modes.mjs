@@ -149,12 +149,14 @@ export function domainColor(re,im,mode='phase-modulus'){
  const f=n=>{const k=(n+hue/30)%12,a=saturation*Math.min(light,1-light);return Math.round(255*(light-a*Math.max(-1,Math.min(k-3,9-k,1))));};
  return [f(0),f(8),f(4),255];
 }
+export const MAX_DOMAIN_RESOLUTION=1536;
+export const MAX_DOMAIN_PIXELS=MAX_DOMAIN_RESOLUTION*MAX_DOMAIN_RESOLUTION;
 export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
  validatePlotRegion(region);
- if(!Number.isInteger(resolution)||resolution<32||resolution>1024||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
+ if(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
  const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin);
- const height=Math.max(16,Math.min(1024,Number.isFinite(ratio)?Math.round(resolution*ratio):1024));
- const width=resolution;if(width*height>maxEvaluations)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
+ const height=Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION));
+ const width=resolution;if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
  const rgba=new Uint8ClampedArray(width*height*4);
  for(let j=0;j<height;j++)for(let i=0;i<width;i++){
   let result;try{result=fn(region.xMin+(i+.5)*(region.xMax-region.xMin)/width,region.yMax-(j+.5)*(region.yMax-region.yMin)/height);}catch{}

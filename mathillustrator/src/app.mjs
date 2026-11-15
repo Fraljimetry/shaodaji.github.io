@@ -10,7 +10,7 @@ import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,n
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated} from './i18n.mjs?cut=round54';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
@@ -25,7 +25,8 @@ import {layoutMorphismLabels,strokeObstacleRectangles} from './morphism_label_la
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
 import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round54';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
-const plotCache=createPlotCache();
+// Large raster PNGs must remain cacheable: otherwise every redraw recomputes millions of samples.
+const plotCache=createPlotCache({maxCharacters:12_000_000});
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>',segment:'<path d="M4 20L20 4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="currentColor"/>',rectangle:'<path d="M4 6H20V18H4Z"/><circle cx="4" cy="6" r="2" fill="currentColor"/><circle cx="20" cy="6" r="2" fill="currentColor"/><circle cx="20" cy="18" r="2" fill="currentColor"/><circle cx="4" cy="18" r="2" fill="currentColor"/>',polygon:'<path d="M6 3L18 3L22 12L18 21L6 21L2 12Z"/><circle cx="6" cy="3" r="2" fill="currentColor"/><circle cx="18" cy="3" r="2" fill="currentColor"/><circle cx="22" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="21" r="2" fill="currentColor"/><circle cx="6" cy="21" r="2" fill="currentColor"/><circle cx="2" cy="12" r="2" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="5" r="2" fill="currentColor"/><circle cx="14" cy="13" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
@@ -139,12 +140,12 @@ glyph.reflection='<path d="M12 2V22M4 12H20"/>'+glyphDots([[5,12],[19,12]]);
 // occupying one corner; the origin remains distinct from the two orbit points.
 glyph.rotation='<path d="M2.4 15A10.8 10.8 0 0 1 21.6 15"/>'+glyphDots([[12,19.92],[2.4,15],[21.6,15]]);
 glyph.dilation='<path d="M4 12H21"/>'+glyphDots([[4,12],[11,12],[21,12]]);
-// Circle inversion: diagonal placement maximizes separation inside the 24-unit
-// glyph while retaining true reciprocal distances and the standard 8-unit ring.
-// C=(9,9), R=8, P'=(20.5,20.5), P=C+(R²/|P'-C|²)(P'-C).
+// Circle inversion: east-facing placement keeps the two points well separated
+// while restoring the user-preferred direction and preserving reciprocal distances.
+// C=(8,9), R=8, P'=(21.2,9), P=C+(R²/|P'-C|²)(P'-C).
 // The inversion center is neither drawn nor connected to either point.
-const inversionGlyphCenter=[9,9], inversionGlyphFar=[20.5,20.5];
-const inversionGlyphScale=8**2/((inversionGlyphFar[0]-9)**2+(inversionGlyphFar[1]-9)**2);
+const inversionGlyphCenter=[8,9], inversionGlyphFar=[21.2,9];
+const inversionGlyphScale=8**2/((inversionGlyphFar[0]-inversionGlyphCenter[0])**2+(inversionGlyphFar[1]-inversionGlyphCenter[1])**2);
 const inversionGlyphNear=inversionGlyphCenter.map((v,i)=>v+inversionGlyphScale*(inversionGlyphFar[i]-v));
 glyph.circleInversion=glyphCrossSectionCircle(...inversionGlyphCenter,8)+`<path d="M${inversionGlyphNear.join(' ')}L${inversionGlyphFar.join(' ')}"/>`+glyphDots([inversionGlyphNear,inversionGlyphFar]);
 // Replace each *filled* glyph circle radius including older shared glyphs;
@@ -730,9 +731,9 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   }
   if(!colored)item=mk('path',{d:parts.join(''),fill:'none'});
  }else if(o.type==='domainColoring'){
-  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,o.regionCondition||'',doc.settings.plotBudget]);
+  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,o.regionCondition||'',MAX_DOMAIN_PIXELS]);
   const uri=plotCache.get(key,()=>{
-   const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:doc.settings.plotBudget});
+   const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:MAX_DOMAIN_PIXELS});
    if(result.limited){limitedPlotKeys.add(key);return '';}
    limitedPlotKeys.delete(key);
    const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
@@ -1630,7 +1631,7 @@ function renderProperties(){
   const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
   const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
-  field(root,'Coloring resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>1024)throw Error('Resolution must be 32–1024.');live.resolution=v;}),{min:32,max:1024,step:64});
+  field(root,'Coloring resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
  }
  if(['vectorField','domainColoring'].includes(o.type)){
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));

@@ -390,6 +390,43 @@ function structureResultSplitBaselineLabel(lines, lineIndex, cleaned, page) {
   return null;
 }
 
+// Distinguish an unnumbered proof from a damaged explicit "Proof of X".
+// The latter must remain unresolved, rather than borrowing a nearby theorem.
+function resultProofHeading(text) {
+  const value = String(text || '').trim();
+  const match = value.match(/^Proof(?:\s+of\s+((?:Theorem|Lemma|Proposition|Corollary|Claim)\s+(?:(?:[A-Z]{1,2}[.·-])?\d+(?:[.·-]\d+)*|[A-Z]{1,2})))?\b[.:]?/i);
+  if (!match) return null;
+  return { printedReference: match[1] || '', explicitTarget: /^Proof\s+of\b/i.test(value) };
+}
+
+// A printed "Proof of Lemma 4.2" is an explicit link, not permission to
+// attach the proof to whichever earlier theorem happens to be nearest.
+// Unnumbered proofs may attach only to a nearby declaration, and where both
+// visual column coordinates are available they must belong to the same column.
+function resultProofTarget(entries, printedReference, page, proofLine) {
+  const available = Array.isArray(entries) ? entries : [];
+  const explicit = String(printedReference || '').trim();
+  const candidates = available.filter((entry) => Number.isInteger(Number(entry?.page))
+    && Number(entry.page) <= Number(page)
+    && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(String(entry.label || '')));
+  if (explicit) {
+    const wanted = normalizedStructureResultReference(explicit);
+    // Explicit cross-references can legitimately point several pages back.
+    // The latest matching preceding declaration wins, without guessing a
+    // different theorem when that exact target was never indexed.
+    return [...candidates].reverse().find((entry) =>
+      normalizedStructureResultReference(entry.label) === wanted) || null;
+  }
+  const nearby = candidates.filter(entry => Number(page) - Number(entry.page) <= 1);
+  const x = proofLine?.xStartRatio == null ? NaN : Number(proofLine.xStartRatio);
+  return [...nearby].reverse().find((entry) => {
+    const entryX = entry?.declarationXStartRatio == null ? NaN : Number(entry.declarationXStartRatio);
+    if (!Number.isFinite(x) || !Number.isFinite(entryX)) return true;
+    // A left-column proof must not claim an unrelated right-column result.
+    return Math.abs(x - entryX) <= 0.24;
+  }) || null;
+}
+
 function detectedStructureResult(lines, lineIndex, page) {
   const line = lines?.[lineIndex];
   const cleaned = structureResultExpandJoinedHeading(normalizedStructureResultText(line?.text));
@@ -5076,21 +5113,23 @@ async function buildStructureIndex({ force = false } = {}) {
           } else if (detectedResult) {
             const key = `${page}:${normalizedReferenceLabel(detectedResult.label)}`;
             if (!nextEntries.some((entry) => entry.key === key)) {
-              const entry = { key, ...detectedResult, proofReferences: [], usedByProofs: [] };
+              const entry = { key, ...detectedResult,
+                declarationXStartRatio: Number.isFinite(Number(line.xStartRatio)) ? Number(line.xStartRatio) : null,
+                proofReferences: [], usedByProofs: [] };
               nextEntries.push(entry); activeProofEntry = entry;
             }
           }
   
-          const proofMatch = cleaned.match(/^Proof(?:\s+of\s+((?:Theorem|Lemma|Proposition|Corollary)\s+(?:[A-Z]?\d+(?:\.\d+)*|[A-Z])))?\b[.:]?/i);
+          const proofMatch = resultProofHeading(cleaned);
           if (proofMatch) {
-            let target = null;
-            if (proofMatch[1]) {
-              const wanted = normalizedStructureResultReference(proofMatch[1]);
-              target = [...nextEntries].reverse().find((entry) => normalizedStructureResultReference(entry.label) === wanted) || null;
-            }
-            if (!target) target = [...nextEntries].reverse().find((entry) => page - entry.page <= 1 && /^(?:theorem|lemma|proposition|corollary|claim)\b/i.test(entry.label || '')) || null;
+            const target = proofMatch.explicitTarget && !proofMatch.printedReference ? null
+              : resultProofTarget(nextEntries, proofMatch.printedReference, page, line);
+            // Clear the previous proof's reference collector even if the
+            // explicitly printed target is missing or already has a proof.
+            // Otherwise references on this unrelated proof leak backwards.
+            activeProofEntry = null;
             if (target && !target.proofPage) {
-              target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch[1] ? `Proof of ${proofMatch[1]}` : 'Proof';
+              target.proofPage = page; target.proofRatio = line.ratio; target.proofTitle = proofMatch.printedReference ? `Proof of ${proofMatch.printedReference}` : 'Proof';
               activeProofEntry = target;
             }
           }

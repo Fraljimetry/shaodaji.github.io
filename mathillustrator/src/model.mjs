@@ -723,7 +723,7 @@ export function validateDoc(raw){
   }else{
    if(typeof o.expr!=='string'||!['phase-modulus','phase','contours'].includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
    parseComplexExpression(o.expr);
-   if(!Number.isInteger(o.resolution??128)||(o.resolution??768)<32||(o.resolution??768)>1024)throw Error('Invalid domain resolution.');
+   if(!Number.isInteger(o.resolution??128)||(o.resolution??768)<32||(o.resolution??768)>1536)throw Error('Invalid domain resolution.');
   }
  }
  if(o.type!=='vectorField'&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');

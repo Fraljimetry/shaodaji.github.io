@@ -1750,3 +1750,14 @@ Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotatio
 - Changed 2D region labels and scope i18n keys to lowercase axis letters, consistent with existing 3D region labels. No schema changes.
 
 **Round 132 verification (local isolated fixture):** `node --check` app and i18n PASS; full `node --test tests/*.test.mjs` **545/545 PASS**; actual Chromium `browser_round57_inversion_glyph.py`, `browser_round132_scope_glyph.py`, `browser_round131_glyphs.py`, and `browser_smoke.py` PASS. No hardware GPU or live-site deployment tests were performed. One early combined browser test timed out during incorrect selector setup; it was corrected and rerun successfully. No changes to project schema or mathematical geometry computations.
+
+### Round 133 — graphing threshold audit and domain-coloring fix
+- **Source-reproduced defect:** at domain resolution 1024 and a square region, production sampled 1,048,576 pixels, exceeding Plot budget's maximum of 1,000,000; the returned `limited` result was rendered as empty. The old per-image cache limit could also prevent reuse of high-resolution PNG strings.
+- **Changes:** a dedicated, hard-bounded domain-coloring budget of 1536² pixels; matching editor/model/JSON Schema maximum of 1536; larger but bounded production plot cache (12 million characters); no alteration to existing implicit/parametric/vector budgets or 3D detail limits.
+- **Node:** `node --test tests/*.test.mjs` **550/550 PASS**; five new threshold regressions cover 1000, 1001, 1024, aspect ratios, invalid limits, legacy validation, raster caching, vector/implicit budget exits. Existing bound-height test updated to enforce 1536 rather than outdated 1024.
+- **Real Chromium kernel/raster:** PASS for full 1024×1024 domain sampling and Canvas pixel rendering to PNG (1,048,576 samples, nonempty bitmap and alpha). This is the real production kernel imported into Chromium, not an application-level test.
+- **Real Chromium full application UI:** NOT VERIFIED — legacy inline HTML fixture timed out during initialization; no claim of an end-to-end UI or SVG/PNG export pass in this round.
+- **Hardware-specific GPU:** NOT RUN; this 2D domain-coloring path is CPU sampling + browser Canvas and does not rely on experimental GPU numerical sampling.
+- **Audit:** budget fail-closed paths for vector/implicit/parametric inspected and boundary-regressed; 3D mesh/detail and export caps inspected but not changed. Stress and hardware verification beyond this scope remain unverified.
+
+- Round 134: Circle inversion glyph direction refined to point east again while preserving larger circle radius and wider point separation.

@@ -494,7 +494,7 @@
         "resolution": {
           "type": "integer",
           "minimum": 32,
-          "maximum": 1024
+          "maximum": 1536
         },
         "colorMode": {
           "enum": [

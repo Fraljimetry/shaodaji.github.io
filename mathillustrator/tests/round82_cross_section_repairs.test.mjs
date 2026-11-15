@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {transformPoint,parabolaPoints,hyperbolaPoints,projectToCurve,alongCurve,generalCrossings} from '../src/geometry_round50.mjs';
-import {parseComplexExpression,sampleDomainColors} from '../src/plot_modes.mjs';
+import {parseComplexExpression,sampleDomainColors,MAX_DOMAIN_RESOLUTION} from '../src/plot_modes.mjs';
 import {newScene3D,add3DPlot,sample3DPlot,validate3D} from '../src/plot3d.mjs';
 import {focalEllipse} from '../src/model.mjs';
 import {r50SourceShape} from '../src/geometry_round50.mjs';
@@ -68,7 +68,7 @@ test('R81-12 complex exponent: zero to exponent zero must use algebraic constant
 });
 test('R81-13 domain coloring: limited result must have safe bounded bitmap dimensions',()=>{
  const result=sampleDomainColors((x,y)=>[x,y],{xMin:0,xMax:1e-300,yMin:0,yMax:1},{resolution:32});
- assert.ok(Number.isSafeInteger(result.height)&&result.height<=1024,`unsafe bitmap height: ${result.height}`);
+ assert.ok(Number.isSafeInteger(result.height)&&result.height<=MAX_DOMAIN_RESOLUTION,`unsafe bitmap height: ${result.height}`);
 });
 
 test('R81-14 ellipses: tiny valid three-point focal ellipse must not disappear',()=>{
