@@ -187,9 +187,13 @@ export function sampleParametricPlot(fn,start,end,project,{quality='balanced',ma
  for(let i=1;i<=steps;i++){const b=start+(end-start)*i/steps,pb=sample(b);trace(a,pa,b,pb,0);if(limited)break;a=b;pa=pb;}
  flush();return {segments,evaluations,limited,breaks};
 }
-/** Bounded marching squares; ambiguous saddle cells use center sign.
- * No extrapolation through nonfinite cells. Segments are screen coordinates.
- * Numeric approximation, not a certified implicit topology solver. */
+/** Bounded marching squares with edge-root verification.
+ * A sign reversal alone does not imply F=0: poles (1/x) and jumps can
+ * reverse sign without a zero. Refine each crossing and require the function
+ * jump to contract, not explode as the bracket shrinks. Tangent/even-order
+ * zeros without sign reversal still require a separate contour algorithm.
+ * Purely numerical, not a certified topology solver.
+ */
 export function sampleImplicitPlot(fn,xAtPx,yAtPx,width,height,{quality='balanced',cellPx=12,maxEvaluations=80000}={}){
  if(typeof fn!=='function'||typeof xAtPx!=='function'||typeof yAtPx!=='function'||!valid(width)||!valid(height)||width<=0||height<=0||width>10000||height>10000)throw Error('Invalid implicit viewport.');
  if(!['fast','balanced','detailed'].includes(quality)||!Number.isInteger(cellPx)||cellPx<6||cellPx>24)throw Error('Invalid implicit plot detail.');
@@ -197,29 +201,61 @@ export function sampleImplicitPlot(fn,xAtPx,yAtPx,width,height,{quality='balance
  const factor={fast:1.5,balanced:1,detailed:.7}[quality],step=cellPx*factor;
  const nx=Math.max(1,Math.ceil(width/step)),ny=Math.max(1,Math.ceil(height/step));
  if((nx+1)*(ny+1)>maxEvaluations)return {segments:[],evaluations:0,breaks:0,limited:true};
- let evaluations=0,breaks=0;const vals=new Float64Array((nx+1)*(ny+1));
+ let evaluations=0,breaks=0,limited=false;const vals=new Float64Array((nx+1)*(ny+1));
  const idx=(x,y)=>y*(nx+1)+x;
- for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){
-  const px=width*i/nx,py=height*j/ny;let f;
-  try{f=fn(xAtPx(px),yAtPx(py));}catch{f=NaN;}
-  vals[idx(i,j)]=valid(f)?f:NaN;evaluations++;
+ const at=(px,py)=>{
+  if(evaluations>=maxEvaluations){limited=true;return NaN;}
+  evaluations++;try{const v=fn(xAtPx(px),yAtPx(py));return valid(v)?v:NaN;}catch{return NaN;}
+ };
+ for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)vals[idx(i,j)]=at(width*i/nx,height*j/ny);
+ const segments=[],edgeCache=new Map();
+ const interpolate=(a,b,fa,fb)=>{
+  const denom=fa-fb,t=!valid(denom)||denom===0?.5:Math.max(0,Math.min(1,fa/denom));
+  return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+ };
+ function rootOnEdge(a,b,fa,fb,key){
+  if(edgeCache.has(key))return edgeCache.get(key);
+  let result=null;
+  if(fa===0)result=a;
+  else if(fb===0)result=b;
+  else if((fa<0)!==(fb<0)){
+   const initialJump=Math.abs(fa-fb),initialScale=Math.max(Math.abs(fa),Math.abs(fb));
+   let lo=a,hi=b,fl=fa,fh=fb;
+   for(let k=0;k<12;k++){
+    const mid=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2],fm=at(mid[0],mid[1]);
+    if(!valid(fm))break;
+    if(fm===0){result=mid;break;}
+    if((fl<0)===(fm<0)){lo=mid;fl=fm;}else{hi=mid;fh=fm;}
+   }
+   // A genuine continuous crossing contracts its signed bracket as we
+   // bisect. At a pole the amplitude instead grows, so no contour exists.
+   const shrink=valid(initialJump)?Math.abs(fl-fh)<initialJump*.75:
+     Math.max(Math.abs(fl),Math.abs(fh))<initialScale*.75;
+   if(!limited&&!result&&shrink)result=interpolate(lo,hi,fl,fh);
+  }
+  edgeCache.set(key,result);return result;
  }
- const segments=[];
- function interp(a,b,fa,fb){const denom=fa-fb,t=denom===0?.5:Math.max(0,Math.min(1,fa/denom));return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
   const x0=width*i/nx,x1=width*(i+1)/nx,y0=height*j/ny,y1=height*(j+1)/ny;
   const p=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
   const z=[vals[idx(i,j)],vals[idx(i+1,j)],vals[idx(i+1,j+1)],vals[idx(i,j+1)]];
   if(z.some(v=>!valid(v))){breaks++;continue;}
-  const crossings=[];for(let e=0;e<4;e++){const k=(e+1)%4;if((z[e]<0)!==(z[k]<0))crossings.push(interp(p[e],p[k],z[e],z[k]));}
+  const crossings=[];let unresolved=false;
+  for(let e=0;e<4;e++){
+   const k=(e+1)%4;if((z[e]<0)===(z[k]<0))continue;
+   const key=e===0?`h:${j}:${i}`:e===1?`v:${j}:${i+1}`:e===2?`h:${j+1}:${i}`:`v:${j}:${i}`;
+   const point=rootOnEdge(p[e],p[k],z[e],z[k],key);
+   if(!point){unresolved=true;break;}
+   crossings.push(point);
+  }
+  if(unresolved){breaks++;continue;}
   if(crossings.length===2)segments.push(crossings);
-  else if(crossings.length===4){const cx=(x0+x1)/2,cy=(y0+y1)/2;let center;try{center=fn(xAtPx(cx),yAtPx(cy));}catch{center=NaN;}
-   evaluations++;if(evaluations>maxEvaluations)return {segments:[],evaluations,breaks,limited:true};
+  else if(crossings.length===4){
+   const center=at((x0+x1)/2,(y0+y1)/2);
    if(!valid(center)){breaks++;continue;}
-   // Keep the center-connected sign component continuous; isolate opposite corners.
    const same=(center<0)===(z[0]<0);
    segments.push([crossings[0],crossings[same?1:3]],[crossings[same?2:1],crossings[same?3:2]]);
   }
  }
- return {segments,evaluations,limited:false,breaks};
+ return limited?{segments:[],evaluations,limited:true,breaks}:{segments,evaluations,limited:false,breaks};
 }

@@ -82,7 +82,7 @@ export function pointOnObject(owner,parameter,resolver,shapeSamples,constraintMo
  }
  const line=resolver.line(owner);if(line){const length=line.domain==='segment'?line.length:line.domain==='ray'?15:30;
   return add(line.a,mul(line.d,line.domain==='infinite'?(parameter-.5)*length:parameter*length));}
- const circle=['circle','circleThrough3'].includes(owner.type)?resolver.circle(owner):null;
+ const circle=resolver.circle(owner);
  if(circle)return add(circle.center,mul([Math.cos(parameter*tau),Math.sin(parameter*tau)],circle.radius));
  return alongCurve(shapeSamples(owner,resolver),parameter,owner.type==='ellipse');
 }
@@ -197,7 +197,7 @@ export function r50Shape(o,resolver,samples=120){if(!o)return [];
   if(o.transform==='reflect'){const line=resolver.line(o.refs[1]);if(!line)return [];return r50SourceShape(src,resolver,samples).map(p=>transformPoint(p,'reflect',line.a,0,add(line.a,line.d))).filter(coord);}
   if(o.transform==='invert'){
    const circle=resolver.circle(o.refs[1]);if(!circle||!coord(circle.center)||!(circle.radius>1e-9))return [];
-   const isPoint=['point','midpoint','perpendicularFoot','pointOnObject','triangleCenter','intersection','circleIntersection','circleCircleIntersection','generalIntersection'].includes(src.type);
+   const isPoint=!!resolver.at(src.id);
    const sourcePath=r50SourceShape(src,resolver,Math.max(96,samples));
    if(!sourcePath.length)return [];
    // Straight edges become circular arcs after inversion. Subdivide BEFORE

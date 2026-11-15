@@ -1,6 +1,7 @@
+import {POINT_LIKE,pointRole} from './model.mjs?cut=round69';
 /** Transient editor selection helpers. Never serialize selection into project JSON. */
 export const FILL_TYPES=new Set(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node']);
-export const POINT_TYPES=new Set(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot']);
+export const POINT_TYPES=new Set(POINT_LIKE);
 export function toggleIds(current,id){
  const next=new Set(current);
  if(id){if(next.has(id))next.delete(id);else next.add(id);}
@@ -27,6 +28,8 @@ export function commonValue(objects,property){
  const first=objects[0].style?.[property];
  return objects.every(o=>o.style?.[property]===first)?first:null;
 }
-export function compatibleObjects(objects,property){
- return objects.filter(o=>!o.locked&&(property==='fill'?FILL_TYPES.has(o.type):property==='pointSize'?POINT_TYPES.has(o.type):['stroke','width','opacity'].includes(property)));
+/** Resolve transformed-point styling through the semantic source chain.
+ * The optional lookup is deliberately absent for legacy standalone callers. */
+export function compatibleObjects(objects,property,lookup=()=>null){
+ return objects.filter(o=>!o.locked&&(property==='fill'?FILL_TYPES.has(o.type):property==='pointSize'?pointRole(o,lookup):['stroke','width','opacity'].includes(property)));
 }

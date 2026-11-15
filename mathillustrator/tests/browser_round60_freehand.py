@@ -12,7 +12,7 @@ with sync_playwright() as pw:
  browser=pw.chromium.launch(executable_path=os.getenv('MATHILLUSTRATOR_CHROMIUM','/usr/bin/chromium'),headless=True,args=['--no-sandbox'])
  try:
   page=browser.new_page(viewport={'width':1450,'height':900}); errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.accept())
-  page.set_content(inline_html(legacy_search_expanded=False),wait_until='load')
+  page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load')
   page.locator('#open-file').set_input_files({'name':'round60.json','mimeType':'application/json','buffer':json.dumps(doc).encode()})
   page.locator('#objects .object').first.click()
   options=page.get_by_label('Arrowheads').locator('option').all_text_contents()
@@ -23,8 +23,18 @@ with sync_playwright() as pw:
      const l=path.getTotalLength(),end=path.getPointAtLength(l);
      return {tipX:nums[0],tipY:nums[1],endX:end.x,endY:end.y,span:Math.hypot(nums[2]-nums[4],nums[3]-nums[5])};}''')
   regular=measure();assert regular['tipX']>regular['endX']+.5,regular
-  page.get_by_label('Line style').select_option('double')
-  double=measure();assert double['span']>regular['span']*1.4,(regular,double)
+  # Round 63 superseded the original Double-head size expectation:
+  # decorative Double/Wavy shafts are intentionally headless, while the
+  # stored choice must survive a switch back to a compatible stroke.
+  for pattern in ['double','wavy']:
+   page.get_by_label('Line style').select_option(pattern)
+   assert page.locator('#drawing [data-id="o1"] polygon.freehand-arrowhead').count()==0, pattern
+   assert page.get_by_label('Arrowheads').is_disabled(), pattern
+   stored=json.loads(page.evaluate('window.__round36Snapshot()'))['objects'][0]
+   assert stored['curveHeads']=='end', stored
+  page.get_by_label('Line style').select_option('solid')
+  assert not page.get_by_label('Arrowheads').is_disabled()
+  restored=measure();assert abs(restored['span']-regular['span'])<.01,(regular,restored)
   assert not errors,errors
-  print('ROUND60_CHROMIUM_PASS: four arrow modes, sharp tip beyond round cap, double-line head size')
+  print('ROUND69_FREEHAND_CHROMIUM_PASS: four arrow modes, tip alignment, Double/Wavy suppression, stored-head restoration')
  finally:browser.close()

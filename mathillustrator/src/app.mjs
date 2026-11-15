@@ -1,15 +1,15 @@
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round54';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round60';
-import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round54';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round58';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round69';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,geometricPoint,geometricLine,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round58';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round69';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round58';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round62';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round54';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated} from './i18n.mjs?cut=round54';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
@@ -516,6 +516,7 @@ function decoratedHeads(group,path,mode,stroke,width,latex=false,lineStyle='soli
 
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
  if(!isObjectVisible(doc,o,resolver.object))return;
+ const pointObject=geometricPoint(o,resolver);
  const isSel=(selectedIds.has(o.id)||selected===o.id||constructionEmphasis.has(o.id)||draftReference===o.id)&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
  const coords=p.every(Boolean)?p.map(project):null;
  // Avoid building large, fully offscreen SVG subtrees. This is deliberately
@@ -527,7 +528,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  if(o.type==='circle'&&coords?.length===2&&circleOutsideViewport(coords[0],
     Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),size.w,size.h,cullMargin))return;
  const mk=(tag,a)=>el(tag,{...sty,...a});let item=null;
- if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)){
+ if(pointObject){
   const pt=resolver.at(o.id);if(!pt)return;const [x,y]=project(pt);
   const radius=Number(o.style.pointSize??doc.settings.pointSize)||5;
   const displayedLabel=o.pointLabel||o.name;
@@ -538,6 +539,28 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;
    if(o.pointLabel&&o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
    else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
+ }else if(o.type==='transformCopy'&&geometricLine(o,resolver)){
+  // Affine images of straight objects are exact geometric lines, not short
+  // sampled strokes that visually stop while their analytic line continues.
+  const line=resolver.line(o);
+  let a=project(line.a),b=project([line.a[0]+line.d[0]*line.length,line.a[1]+line.d[1]*line.length]);
+  if(line.domain==='infinite'){
+   const clipped=clipInfiniteLine(a,b,size.w,size.h);if(!clipped)return;[a,b]=clipped;
+  }else if(line.domain==='ray'){
+   const clipped=clipRay(a,b,size.w,size.h);if(!clipped)return;[a,b]=clipped;
+  }
+  let source=o;
+  while(source?.type==='transformCopy')source=resolver.object(source.refs?.[0]);
+  if(source?.type==='arrow'){
+   const head=arrowHeadPoints(b,a,o.style.width);
+   item=el('g');item.append(mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'}));
+   if(head.length)item.append(el('polygon',{class:'arrowhead',points:head.map(q=>q.join(',')).join(' '),fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));
+  }else item=mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'});
+ }else if(o.type==='transformCopy'&&geometricCircle(o,resolver)){
+  // A similarity image of a circle remains exactly circular, even at high zoom.
+  const c=resolver.circle(o),[cx,cy]=project(c.center),radius=c.radius*view.scale;
+  if(circleOutsideViewport([cx,cy],radius,size.w,size.h,cullMargin))return;
+  item=mk('circle',{cx,cy,r:radius,fill:'none'});
  }else if(['circularArc','parabola','hyperbola','transformCopy','fixedAngle','locus'].includes(o.type)){
   const path=o.type==='locus'?r50Locus(o):r50Shape(o,resolver,Math.min(160,Math.max(80,Math.ceil(size.w/7))));
   if(path.length===1&&Array.isArray(path[0])){const [x,y]=project(path[0]);item=mk('circle',{cx:x,cy:y,r:4,fill:o.style.stroke});}
@@ -671,7 +694,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    }
   }
  }else if(['function','parametric','implicit'].includes(o.type)){
-  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.tMin,o.tMax,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
+  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
   const path=plotCache.get(key,()=>{
    const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
    const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
@@ -718,13 +741,13 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   // Domain coloring is raster content; do not apply the normal stroke/fill style.
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');svg.append(item);
- if(!exporting&&sty.opacity>0&&['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)){
+ if(!exporting&&sty.opacity>0&&(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)||o.type==='transformCopy'&&geometricLine(o,resolver))){
   const paths=o.type==='vectorField'&&o.colorRange===true?[...item.querySelectorAll('path')]:[item.tagName.toLowerCase()==='g'?item.querySelector('path'):item];
   for(const path of paths){if(!path)continue;const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.removeAttribute('class');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
  }
  // Optional geometric labels follow the referenced world anchors on every redraw.
  // SVG export uses the exact same path; project JSON stores only author text/mode.
- if(doc.settings.showLabels&&o.displayLabel&& !['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter','node','morphism','text'].includes(o.type)){
+ if(doc.settings.showLabels&&o.displayLabel&&!pointRole(o,id=>resolver.object(id))&&!['node','morphism','text'].includes(o.type)){
   const anchor=geometryLabelAnchor(o,resolver);
   if(anchor&&anchor.every(Number.isFinite)&&anchor[0]>-250&&anchor[0]<size.w+250&&anchor[1]>-100&&anchor[1]<size.h+100){
    const placed=labelPositions?.get(o.id),[x,y]=placed?[placed.x,placed.y]:[anchor[0]+9,anchor[1]-10],mode=o.displayLabelMode||'plain';
@@ -875,7 +898,7 @@ function draw(svg,{exporting=false}={}){
  if(doc.settings.showLabels&&doc.settings.labelPlacement==='avoid'){
   const build=()=>{
    const entries=[];
-   for(const o of doc.objects){if(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)||o.hidden||o.style?.opacity===0)continue;
+   for(const o of doc.objects){if(!geometricPoint(o,resolver)||o.hidden||o.style?.opacity===0)continue;
     const p=resolver.at(o.id);if(!p)continue;const [x,y]=project(p);
     if(x < -100||x > size.w+100||y < -100||y > size.h+100)continue;
     entries.push({id:o.id,x,y,text:o.pointLabel||o.name});
@@ -883,7 +906,7 @@ function draw(svg,{exporting=false}={}){
    // Geometry display labels join the same collision budget as point labels;
    // new projects avoid text-to-text overlaps without changing author content.
    for(const o of doc.objects){
-    if(o.hidden||o.style?.opacity===0||!o.displayLabel||['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter','node','morphism','text'].includes(o.type))continue;
+    if(o.hidden||o.style?.opacity===0||!o.displayLabel||(pointRole(o,id=>resolver.object(id))||['node','morphism','text'].includes(o.type)))continue;
     const anchor=geometryLabelAnchor(o,resolver);
     if(!anchor||!anchor.every(Number.isFinite)||anchor[0]<-100||anchor[0]>size.w+100||anchor[1]<-100||anchor[1]>size.h+100)continue;
     entries.push({id:o.id,x:anchor[0],y:anchor[1],text:o.displayLabel});
@@ -1300,22 +1323,22 @@ function renderBulkProperties(root,objects){
   if(bounds&&(!finite(value)||value<bounds.min||value>bounds.max))throw Error(`${bounds.label}: ${bounds.min}–${bounds.max}.`);
   if(documentGeneration!==generation||ids.length!==activeSelection().length||ids.some(id=>!selectedIds.has(id)))throw Error('Selection changed while editing.');
   const indexed=new Map(doc.objects.map(o=>[o.id,o]));
-  const targets=compatibleObjects(ids.map(id=>indexed.get(id)).filter(Boolean),property);
+  const targets=compatibleObjects(ids.map(id=>indexed.get(id)).filter(Boolean),property,id=>indexed.get(id));
   if(!targets.length)throw Error('No editable objects for this style.');
   for(const obj of targets)obj.style[property]=value;
  });
  const grid=document.createElement('div');grid.className='style-controls-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','Selected objects appearance');
  const slot=(name)=>{const e=document.createElement('div');e.className='style-slot style-'+name;grid.append(e);return e;};
  function addColor(property,label){
-  if(!compatibleObjects(objects,property).length)return;
-  const target=slot(property.toLowerCase()),value=commonValue(compatibleObjects(objects,property),property);
-  const control=field(target,label,value||compatibleObjects(objects,property)[0].style[property],'color',v=>edit(property,v));
+  if(!compatibleObjects(objects,property,id=>get(doc,id)).length)return;
+  const target=slot(property.toLowerCase()),value=commonValue(compatibleObjects(objects,property,id=>get(doc,id)),property);
+  const control=field(target,label,value||compatibleObjects(objects,property,id=>get(doc,id))[0].style[property],'color',v=>edit(property,v));
   if(value===null)control.closest('label').dataset.mixed='true';
   appendColorSwatches(target,{scope:'bulk',property,apply:v=>edit(property,v)});
  }
  function addNumber(property,label,min,max,step){
-  if(!compatibleObjects(objects,property).length)return;
-  const target=slot(property.toLowerCase()),value=commonValue(compatibleObjects(objects,property),property);
+  if(!compatibleObjects(objects,property,id=>get(doc,id)).length)return;
+  const target=slot(property.toLowerCase()),value=commonValue(compatibleObjects(objects,property,id=>get(doc,id)),property);
   const control=field(target,label,value===null?'':value,'number',v=>edit(property,v,{min,max,label}),{min,max,step});
   if(value===null){control.placeholder=translated('Mixed',uiPrefs.language);control.dataset.mixed='true';}
  }
@@ -1415,7 +1438,7 @@ function renderProperties(){
   fn(live);
  });
  const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
- if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)){
+ if(pointRole(o,id=>get(doc,id))){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex'&&live.pointLabel)validateLatexInput(live.pointLabel);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
@@ -1423,7 +1446,7 @@ function renderProperties(){
  }
  // Diagram nodes, morphisms and Text already use their editable 'text' property.
  // All other shapes now expose optional independent on-canvas labels, never names/IDs.
- if(!['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter','node','morphism','text'].includes(o.type)){
+ if(!pointRole(o,id=>get(doc,id))&&!['node','morphism','text'].includes(o.type)){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const select=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
   select.value=o.displayLabelMode||'plain';select.onchange=()=>edit(live=>{if(select.value==='latex'&&live.displayLabel)validateLatexInput(live.displayLabel);live.displayLabelMode=select.value;});mode.append(select);root.append(mode);
@@ -1558,14 +1581,14 @@ function renderProperties(){
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
  field(styleSlot('width'),styleGrid.classList.contains('stroke-only-grid')?'Width':'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
- if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type))field(styleSlot('pointsize'),'Point size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
+ if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Point size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  localizeUI(root,uiPrefs.language);
  const actions=document.createElement('div');actions.className='props-actions';
  const del=document.createElement('button');del.textContent='Delete + dependents';del.onclick=()=>{if(currentObject(o)&&selected===o.id)deleteSelected();};
  const up=document.createElement('button');up.textContent='Bring forward';up.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>=0&&n<doc.objects.length-1)doc.objects.splice(n,2,doc.objects[n+1],live);});
  const down=document.createElement('button');down.textContent='Send backward';down.onclick=()=>edit(live=>{const n=doc.objects.indexOf(live);if(n>0)doc.objects.splice(n-1,2,live,doc.objects[n-1]);});
- const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter','node'].includes(live.type)?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
+ const focus=document.createElement('button');focus.textContent='Center view';focus.onclick=()=>{const live=get(doc,o.id);if(live!==o)return;const p=pointRole(live,id=>get(doc,id))||live.type==='node'?position(doc,live.id):live.xy||position(doc,live.refs?.[0]);if(p){view.cx=p[0];view.cy=p[1];scheduleRender();}};
  actions.append(del,focus,down,up);root.append(actions);localizeUI(root,uiPrefs.language);
 }
 function renderAll(){renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
@@ -2024,14 +2047,17 @@ function r50ObjectTap(e,pt){
  if(mode==='pointOnObject'){
   if(!draftReference){if(!obj||r50SourceShape(obj,createResolver(doc),70).length<2){notice('Choose a valid existing geometric object.');return;}draftReference=obj.id;scheduleRender();return;}
   const source=get(doc,draftReference),resolver=createResolver(doc);if(!source){clearDraft();return;}
-  const path=r50SourceShape(source,resolver,120);const snapped=projectToCurve(pt,path,['circle','circleThrough3','ellipse'].includes(source.type));
+  const path=r50SourceShape(source,resolver,120);const snapped=projectToCurve(pt,path,geometricCircle(source,resolver)||source.type==='ellipse');
   if(!snapped){notice('Choose a point on the selected object.');return;}
   if(update(()=>{selected=append(doc,{type:'pointOnObject',refs:[source.id],parameter:snapped.parameter}).id;})){clearDraft();afterOneConstruction();}scheduleRender();return;
  }
  if(['tangentCircle','parabola','reflection','rotation','translation','dilation','circleInversion','locus','generalIntersection'].includes(mode)){
   if(!draftReference){
    const needsPoint=['tangentCircle','parabola','locus'].includes(mode);
-   const source=needsPoint?pointHit:pointHit||obj;
+   // Honor the actual SVG object under the pointer before a nearby point
+   // detected by the broader snap radius. On a circle through P, a click on
+   // the visible arc must not silently choose P as the transformation source.
+   const source=needsPoint?pointHit:obj||pointHit;
    if(!source||needsPoint&&!geometricPoint(source,resolver)){
     notice(needsPoint?'Click the center of an existing point marker (not the curve or a preview).':'Choose an existing geometric object.');return;
    }
@@ -2044,7 +2070,7 @@ function r50ObjectTap(e,pt){
    if(update(()=>{selected=append(doc,{type:'transformCopy',refs:[first.id,draftPoints[0],pointHit.id],transform:'translate',amount:0}).id;})){clearDraft();afterOneConstruction();}return;
   }
   const referencePredicate=['tangentCircle','circleInversion'].includes(mode)
-   ?o=>['circle','circleThrough3'].includes(o.type)
+   ?o=>geometricCircle(o,resolver)
    :['parabola','reflection'].includes(mode)?o=>geometricLine(o,resolver)
    :mode==='locus'?o=>o.type==='pointOnObject'
    :mode==='generalIntersection'?o=>o.id!==first.id&&r50SourceShape(o,resolver,80).length>=1
@@ -2053,7 +2079,7 @@ function r50ObjectTap(e,pt){
    :get(doc,constructionHit(e,referencePredicate));
   if(!ref||ref.id===first.id){notice('Choose a different supporting object.');return;}
   if(mode==='tangentCircle'){
-   if(!['circle','circleThrough3'].includes(ref.type)){notice('Choose a circle.');return;}
+   if(!geometricCircle(ref,resolver)){notice('Choose a circle.');return;}
    const r=createResolver(doc);if(!circleTangents(r.at(first.id),r.circle(ref)).length){notice('The point must lie outside the circle.');return;}
    if(update(()=>{for(const branch of [-1,1])selected=append(doc,{type:'tangentCircle',refs:[first.id,ref.id],branch}).id;})){constructionEmphasis.clear();constructionEmphasis.add(first.id);constructionEmphasis.add(ref.id);clearDraft();afterOneConstruction();}return;
   }
@@ -2071,7 +2097,7 @@ function r50ObjectTap(e,pt){
    if(update(()=>{for(let i=0;i<roots.length;i++)selected=append(doc,{type:'generalIntersection',refs:[first.id,ref.id],rootIndex:i}).id;})){constructionEmphasis.clear();constructionEmphasis.add(first.id);constructionEmphasis.add(ref.id);clearDraft();afterOneConstruction();}return;
   }
   if(mode==='circleInversion'){
-   if(!['circle','circleThrough3'].includes(ref.type)){notice('Choose an inversion circle.');return;}
+   if(!geometricCircle(ref,resolver)){notice('Choose an inversion circle.');return;}
    const proposed={type:'transformCopy',refs:[first.id,ref.id],transform:'invert',amount:0};
    if(!r50Shape(proposed,createResolver(doc),96).some(p=>p&&p.every(Number.isFinite))){notice('This inversion has no finite geometry (the circle center has no image).');return;}
    if(update(()=>{selected=append(doc,proposed).id;})){clearDraft();afterOneConstruction();}return;
@@ -2092,19 +2118,19 @@ function performConstructionTap(e,pt){
   // A nearby anchor takes priority for the first point; straight objects
   // are selected from the SVG hit-path, not by their label or object order.
   const resolver=createResolver(doc);
-  const hit=constructionHit(e,tool==='circleCircleIntersection'?o=>['circle','circleThrough3'].includes(o.type)
-   :tool==='circleIntersection'?o=>geometricLine(o,resolver)||['circle','circleThrough3'].includes(o.type)
+  const hit=constructionHit(e,tool==='circleCircleIntersection'?o=>geometricCircle(o,resolver)
+   :tool==='circleIntersection'?o=>geometricLine(o,resolver)||geometricCircle(o,resolver)
    :tool==='intersection'||draftReference?o=>geometricLine(o,resolver):()=>true);
   const clicked=get(doc,hit),line=clicked&&resolver.line(clicked);
   if(tool==='circleCircleIntersection'){
-   const candidate=clicked&&['circle','circleThrough3'].includes(clicked.type)?clicked:null;
+   const candidate=clicked&&geometricCircle(clicked,resolver)?clicked:null;
    if(!candidate){notice('Choose an existing circle.');return;}
    if(!draftReference){draftReference=candidate.id;scheduleRender();return;}
    const first=get(doc,draftReference);
    if(!first||first.id===candidate.id){notice('Choose a different circle.');return;}
    const ok=update(()=>{
     const resolver=createResolver(doc);
-    const roots=intersectCircles(circleGeometry(first,id=>resolver.at(id)),circleGeometry(candidate,id=>resolver.at(id)));
+    const roots=intersectCircles(resolver.circle(first),resolver.circle(candidate));
     if(!roots.minus&&!roots.plus)throw Error('These circles do not intersect at a unique point or pair.');
     for(const branch of roots.tangent?[-1]:[-1,1])if((branch===-1?roots.minus:roots.plus))
      selected=append(doc,{type:'circleCircleIntersection',refs:[first.id,candidate.id],branch}).id;
@@ -2112,15 +2138,15 @@ function performConstructionTap(e,pt){
    if(ok){clearDraft();afterOneConstruction();}scheduleRender();return;
   }
   if(tool==='circleIntersection'){
-   const candidate=clicked&&(STRAIGHT_TYPES.has(clicked.type)||['circle','circleThrough3'].includes(clicked.type))?clicked:null;
+   const candidate=clicked&&(geometricLine(clicked,resolver)||geometricCircle(clicked,resolver))?clicked:null;
    if(!candidate){notice('Choose a straight object or circle.');return;}
    if(!draftReference){draftReference=candidate.id;scheduleRender();return;}
    const first=get(doc,draftReference);
    if(!first||first.id===candidate.id){notice('Choose a different source object.');return;}
-   const lineObject=STRAIGHT_TYPES.has(first.type)?first:STRAIGHT_TYPES.has(candidate.type)?candidate:null;
-   const circleObject=['circle','circleThrough3'].includes(first.type)?first:['circle','circleThrough3'].includes(candidate.type)?candidate:null;
-   const bothLines=STRAIGHT_TYPES.has(first.type)&&STRAIGHT_TYPES.has(candidate.type);
-   const bothCircles=['circle','circleThrough3'].includes(first.type)&&['circle','circleThrough3'].includes(candidate.type);
+   const lineObject=geometricLine(first,resolver)?first:geometricLine(candidate,resolver)?candidate:null;
+   const circleObject=geometricCircle(first,resolver)?first:geometricCircle(candidate,resolver)?candidate:null;
+   const bothLines=geometricLine(first,resolver)&&geometricLine(candidate,resolver);
+   const bothCircles=geometricCircle(first,resolver)&&geometricCircle(candidate,resolver);
    const ok=update(()=>{
     const r=createResolver(doc);
     if(bothLines){

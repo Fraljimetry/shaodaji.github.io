@@ -1,6 +1,6 @@
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape} from './geometry_round50.mjs?cut=round60';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,transformPoint} from './geometry_round50.mjs?cut=round60';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round54';
-import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round54';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -95,7 +95,34 @@ export function pointRole(o,object,visited=new Set()){
 export function geometricPoint(o,resolver){
  return !!o&&!!resolver&&pointRole(o,id=>resolver.object(id))&&!!resolver.at(o.id);
 }
-export function geometricLine(o,resolver){return !!o&&STRAIGHT_TYPES.has(o.type)&&!!resolver?.line(o);}
+/** Affine images retain exact straight/circular roles. Inversion is excluded:
+ * its images may change type or have a puncture at the inversion center.
+ * A zero dilation never becomes a spurious line or circle. */
+const AFFINE_TRANSFORMS=new Set(['reflect','rotate','translate','dilate']);
+export function lineRole(o,object,visited=new Set()){
+ let current=o;
+ while(current){
+  if(visited.has(current.id))return false;
+  if(STRAIGHT_TYPES.has(current.type))return true;
+  if(current.type!=='transformCopy'||!AFFINE_TRANSFORMS.has(current.transform)||
+     (current.transform==='dilate'&&(!finite(current.amount)||Math.abs(current.amount)<1e-9)))return false;
+  visited.add(current.id);current=object(current.refs?.[0]);
+ }
+ return false;
+}
+export function circleRole(o,object,visited=new Set()){
+ let current=o;
+ while(current){
+  if(visited.has(current.id))return false;
+  if(['circle','circleThrough3'].includes(current.type))return true;
+  if(current.type!=='transformCopy'||!AFFINE_TRANSFORMS.has(current.transform)||
+     (current.transform==='dilate'&&(!finite(current.amount)||Math.abs(current.amount)<1e-9)))return false;
+  visited.add(current.id);current=object(current.refs?.[0]);
+ }
+ return false;
+}
+export function geometricLine(o,resolver){return !!o&&!!resolver&&lineRole(o,id=>resolver.object(id))&&!!resolver.line(o);}
+export function geometricCircle(o,resolver){return !!o&&!!resolver&&circleRole(o,id=>resolver.object(id))&&!!resolver.circle(o);}
 const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,angleBisector:3,parallelThrough:2,perpendicularThrough:2,perpendicularFoot:2,pointOnObject:1,tangentCircle:2,circularArc:3,parabola:2,hyperbola:3,generalIntersection:2,transformCopy:2,locus:2,fixedLength:2,fixedAngle:2,triangleCenter:3,intersection:2,circleIntersection:2,circleCircleIntersection:2,circle:2,circleThrough3:3,ellipse:2,rectangle:3,parallelogram:3,bezier:4,angle:3,regularPolygon:2,morphism:2};
 /** Three-point ellipse: focus, focus, any point on the curve.
  * The old two-reference rectangle-bounds ellipse is intentionally retained.
@@ -186,10 +213,10 @@ export function append(doc,obj){
  if(doc.objects.some(o=>o.name===name||(!obj.name&&o.name.toLowerCase()===name.toLowerCase())))throw Error('Name already in use: '+name);
  doc.nextId++;
  const style={stroke:doc.settings.stroke,fill:doc.settings.fill,width:obj.type==='morphism'?1:doc.settings.width,opacity:doc.settings.opacity};
- if(POINT_LIKE.has(obj.type))style.pointSize=doc.settings.pointSize;
+ if(POINT_LIKE.has(obj.type)||obj.type==='transformCopy'&&pointRole(obj,id=>get(doc,id)))style.pointSize=doc.settings.pointSize;
  const o={id,hidden:false,locked:false,style,...obj,name};
- if(POINT_LIKE.has(obj.type)&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
- else if(!POINT_LIKE.has(obj.type)&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
+ if(pointRole(o,id=>get(doc,id))&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
+ else if(!pointRole(o,id=>get(doc,id))&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
  if(['text','node','morphism'].includes(obj.type)&&o.textMode===undefined)o.textMode='latex';
  if(obj.type==='morphism'){if(o.labelAvoid===undefined)o.labelAvoid=true;if(o.routing===undefined)o.routing='direct';if(o.labelDistance===undefined)o.labelDistance=10;}
  doc.objects.push(o);return o;
@@ -251,7 +278,7 @@ export function addPoint(doc,p,name){if(!safeCoord(p))throw Error('Point coordin
 export function preserveInheritedPointSizes(doc){
  let pinned=0;
  for(const o of doc.objects){
-  if(POINT_LIKE.has(o.type)&&o.style?.pointSize===undefined){o.style.pointSize=doc.settings.pointSize;pinned++;}
+  if(pointRole(o,id=>get(doc,id))&&o.style?.pointSize===undefined){o.style.pointSize=doc.settings.pointSize;pinned++;}
  }
  return pinned;
 }
@@ -382,7 +409,7 @@ export function intersectCircles(a,b){
  * No recursion on user-created point graphs: 10,000-deep chains stay bounded.
  */
 export function createResolver(doc){
- const objects=new Map([...Object.values(AXIS_OBJECTS).map(o=>[o.id,o]),...doc.objects.map(o=>[o.id,o])]),cache=new Map(),lines=new Map(Object.entries(AXIS_LINES));
+ const objects=new Map([...Object.values(AXIS_OBJECTS).map(o=>[o.id,o]),...doc.objects.map(o=>[o.id,o])]),cache=new Map(),lines=new Map(Object.entries(AXIS_LINES)),circles=new Map();
  const side=o=>derivedSidePoints(o,objects.get(o.edgeOf),ref=>cache.get(ref)||null);
  const pointForLine=ref=>cache.get(ref)||null;
  pointForLine.side=side;
@@ -403,7 +430,7 @@ export function createResolver(doc){
     // path happened to contain a single valid vertex.
     if(obj.type==='transformCopy'&&pointRole(obj,ref=>objects.get(ref))){
      const r={at:ref=>cache.get(ref)||null,line:ref=>lines.get(typeof ref==='string'?ref:ref?.id)||null,
-      circle:ref=>circleGeometry(typeof ref==='string'?objects.get(ref):ref,id=>cache.get(id)||null),
+      circle:ref=>circles.get(typeof ref==='string'?ref:ref?.id)||null,
       points:ref=>(ref.refs||[]).map(id=>cache.get(id)||null),object:ref=>objects.get(ref)};
      const image=r50Shape(obj,r,2);
      if(image.length===1&&safeCoord(image[0]))p=image[0];
@@ -414,11 +441,11 @@ export function createResolver(doc){
     }
     if(obj.type==='triangleCenter')p=triangleCenter(obj.refs.map(r=>cache.get(r)),obj.centerKind||'centroid');
     if(obj.type==='pointOnObject'&&obj.refs?.length===1){
-     const ref=objects.get(obj.refs[0]),r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circleGeometry(typeof o==='string'?objects.get(o):o,id=>cache.get(id)||null),points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
+     const ref=objects.get(obj.refs[0]),r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circles.get(typeof o==='string'?o:o?.id)||null,points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
      p=pointOnObject(ref,obj.parameter,r,r50SourceShape,obj.constraintMode);
     }
     if(obj.type==='generalIntersection'&&obj.refs?.length===2){
-     const r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circleGeometry(typeof o==='string'?objects.get(o):o,id=>cache.get(id)||null),points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
+     const r={line:o=>lines.get(typeof o==='string'?o:o?.id),circle:o=>circles.get(typeof o==='string'?o:o?.id)||null,points:o=>(o.refs||[]).map(id=>cache.get(id)),at:id=>cache.get(id),object:id=>objects.get(id)};
      const roots=generalCrossings(objects.get(obj.refs[0]),objects.get(obj.refs[1]),r,160);
      p=roots[obj.rootIndex||0]||null;
     }
@@ -430,23 +457,44 @@ export function createResolver(doc){
     if(obj.type==='intersection'&&obj.refs?.length===2)
      p=intersectStraightLines(lines.get(obj.refs[0]),lines.get(obj.refs[1]));
     if(obj.type==='circleCircleIntersection'&&obj.refs?.length===2){
-     const first=circleGeometry(objects.get(obj.refs[0]),ref=>cache.get(ref)||null);
-     const second=circleGeometry(objects.get(obj.refs[1]),ref=>cache.get(ref)||null);
+     const first=circles.get(obj.refs[0]);
+     const second=circles.get(obj.refs[1]);
      const roots=intersectCircles(first,second);
      p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
     }
     if(obj.type==='circleIntersection'&&obj.refs?.length===2){
-     const circle=circleGeometry(objects.get(obj.refs[1]),ref=>cache.get(ref)||null);
+     const circle=circles.get(obj.refs[1]);
      const roots=intersectLineCircle(lines.get(obj.refs[0]),circle);
      p=obj.branch===-1?roots.minus:obj.branch===1?roots.plus:null;
     }
     if(STRAIGHT_TYPES.has(obj.type)){
      if(obj.type==='axis'){/* fixed world-coordinate line */}
      else if(obj.type==='tangentCircle'){
-      const point=cache.get(obj.refs?.[0]),circle=circleGeometry(objects.get(obj.refs?.[1]),id=>cache.get(id)),tangents=circleTangents(point,circle);
+      const point=cache.get(obj.refs?.[0]),circle=circles.get(obj.refs?.[1]),tangents=circleTangents(point,circle);
       const target=tangents[obj.branch===1?1:0],d=target&&point?[target[0]-point[0],target[1]-point[1]]:null,len=d&&Math.hypot(...d);
       lines.set(current,len>1e-9?{a:[...point],d:[d[0]/len,d[1]/len],domain:'infinite',length:len}:null);
      }else lines.set(current,computedStraight(obj,pointForLine,ref=>lines.get(ref)||null));
+    }
+    if(['circle','circleThrough3'].includes(obj.type))
+     circles.set(current,circleGeometry(obj,id=>cache.get(id)||null));
+    if(obj.type==='transformCopy'&&AFFINE_TRANSFORMS.has(obj.transform)){
+     const baseLine=lines.get(obj.refs[0]),baseCircle=circles.get(obj.refs[0]);
+     const ref=obj.refs[1],anchor=cache.get(ref),other=obj.transform==='translate'?cache.get(obj.refs[2]):null;
+     const mirror=obj.transform==='reflect'?lines.get(ref):null;
+     const move=xy=>obj.transform==='reflect'
+      ?mirror&&transformPoint(xy,'reflect',mirror.a,0,[mirror.a[0]+mirror.d[0],mirror.a[1]+mirror.d[1]])
+      :transformPoint(xy,obj.transform,anchor,obj.amount,other);
+     if(baseLine){
+      const a=move(baseLine.a),b=move([baseLine.a[0]+baseLine.d[0],baseLine.a[1]+baseLine.d[1]]);
+      const delta=a&&b?[b[0]-a[0],b[1]-a[1]]:null,scale=delta&&Math.hypot(...delta);
+      lines.set(current,scale>1e-9&&finite(scale)&&finite(baseLine.length*scale)?
+       {a,d:[delta[0]/scale,delta[1]/scale],domain:baseLine.domain,length:baseLine.length*scale}:null);
+     }
+     if(baseCircle){
+      const center=move(baseCircle.center),factor=obj.transform==='dilate'?Math.abs(obj.amount):1;
+      const radius=baseCircle.radius*factor;
+      circles.set(current,center&&finite(radius)&&radius>1e-9?{center,radius}:null);
+     }
     }
     cache.set(current,p);active.delete(current);continue;
    }
@@ -463,7 +511,12 @@ export function createResolver(doc){
   if(!id)return null;
   at(id);return lines.get(id)||null;
  }
- return {at,line,circle:o=>circleGeometry(typeof o==='string'?objects.get(o):o,at),points:o=>o.type==='segment'&&o.edgeIndex!==undefined
+ function circle(o){
+  const id=typeof o==='string'?o:o?.id;
+  if(!id)return null;
+  at(id);return circles.get(id)||null;
+ }
+ return {at,line,circle,points:o=>o.type==='segment'&&o.edgeIndex!==undefined
    ?derivedSidePoints(o,objects.get(o.edgeOf),at)||[]:(o.refs||[]).map(at),object:id=>objects.get(id)};
 }
 export function position(doc,id){return createResolver(doc).at(id);}
@@ -559,9 +612,10 @@ export function command(doc,source){
   const first=byName(doc,m[2].trim()),second=byName(doc,m[3].trim());
   if(!first||!second)throw Error('Unknown construction reference.');
   const refs=[first.id,second.id];
+  const resolver=createResolver(doc);
   if(type==='intersection'){
-   if(!STRAIGHT_TYPES.has(first.type)||!STRAIGHT_TYPES.has(second.type)||!intersectStraightLines(createResolver(doc).line(first),createResolver(doc).line(second)))throw Error('Choose two crossing straight objects.');
-  }else if(!POINT_LIKE.has(first.type)||!STRAIGHT_TYPES.has(second.type)||!createResolver(doc).line(second))throw Error('Choose a point and a valid straight object.');
+   if(!geometricLine(first,resolver)||!geometricLine(second,resolver)||!intersectStraightLines(resolver.line(first),resolver.line(second)))throw Error('Choose two crossing straight objects.');
+  }else if(!geometricPoint(first,resolver)||!geometricLine(second,resolver))throw Error('Choose a point and a valid straight object.');
   return append(doc,{type,refs});
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*"([^"\\]{1,180})"\s*\)$/i);
@@ -575,7 +629,7 @@ export function command(doc,source){
 export function validateDoc(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.format!=='mathillustrator-project'||raw.version!==VERSION||!Array.isArray(raw.objects)||raw.objects.length>10000)throw Error('Not a supported MathIllustrator v1 project.');
  const d=clone(raw);if(d.settings?.plot3dEnabled!==undefined&&typeof d.settings.plot3dEnabled!=='boolean')throw Error('3D toggle must be boolean.');if(d.settings?.plot3dEnabled&&!d.scene3d)throw Error('3D scene is missing.');if(d.scene3d!==undefined)validate3D(d.scene3d);if(!d.settings||typeof d.settings!=='object'||!d.meta||typeof d.meta.title!=='string'||d.meta.title.length>240||!Number.isSafeInteger(d.nextId)||d.nextId<1)throw Error('Project structure is invalid.');
- const ids=new Set(),names=new Set();let max=0;
+ const ids=new Set(),names=new Set(),roleObjects=new Map(d.objects.map(o=>[o?.id,o]));let max=0;
  for(const o of d.objects){
   if(!o||typeof o!=='object'||!/^o[1-9]\d*$/.test(o.id)||ids.has(o.id)||!SUPPORTED.includes(o.type)||typeof o.name!=='string'||!o.name.trim()||o.name.length>180)throw Error('Invalid or repeated object ID/type/name.');
   if(!xmlTextSafe(o.name))throw Error('Object name contains characters illegal in SVG XML.');
@@ -594,7 +648,7 @@ export function validateDoc(raw){
    if(o.type==='fixedAngle'&&(!finite(o.angle)||Math.abs(o.angle)>Math.PI*2))throw Error('Invalid fixed angle.');
    if(o.type==='transformCopy'&&o.transform==='translate'&&o.refs?.length!==3)throw Error('Translation requires source and two points.');
   }
-  if(o.style.pointSize!==undefined&&(!POINT_LIKE.has(o.type)||!finite(o.style.pointSize)||o.style.pointSize<1||o.style.pointSize>100))throw Error('Object point size must be 1–100 on points or midpoints.');
+  if(o.style.pointSize!==undefined&&(!pointRole(o,id=>roleObjects.get(id))||!finite(o.style.pointSize)||o.style.pointSize<1||o.style.pointSize>100))throw Error('Object point size must be 1–100 on points or midpoints.');
   const len=o.type==='transformCopy'&&o.transform==='translate'?3:o.type==='segment'&&o.edgeIndex!==undefined&&o.refs?.length===3?3:(o.type==='ellipse'||o.type==='rectangle')&&o.refs?.length===2?2:o.type==='ellipse'&&o.refs?.length===3?3:REF_LENGTHS[o.type];
   if(len!==undefined){if(!Array.isArray(o.refs)||o.refs.length!==len||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid reference count for '+o.type);}
   else if(o.type==='polygon'||o.type==='polyline'||o.type==='spline'){if(!Array.isArray(o.refs)||o.refs.length<(o.type==='polyline'?2:3)||o.refs.length>2000||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid vertex references.');}
@@ -603,10 +657,10 @@ export function validateDoc(raw){
   if(o.type==='freehand'&&(!Array.isArray(o.path)||o.path.length<2||o.path.length>20000||!o.path.every(safeCoord)))throw Error('Invalid freehand path.');
   if(o.path!==undefined&&o.type!=='freehand')throw Error('Unexpected drawing path.');
   if(['text','node'].includes(o.type)){if(!xmlTextSafe(o.text))throw Error('Text contains characters illegal in SVG XML.');if(o.text.length>(o.type==='text'?2000:1000)||!finite(o.fontSize??18)||o.fontSize<5||o.fontSize>200)throw Error('Invalid text label.');}
-  if(o.pointLabel!==undefined&&(!POINT_LIKE.has(o.type)||typeof o.pointLabel!=='string'||o.pointLabel.length>1000||!xmlTextSafe(o.pointLabel)))throw Error('Invalid point label text.');
-  if(o.pointLabelMode!==undefined&&(!POINT_LIKE.has(o.type)||!['plain','latex'].includes(o.pointLabelMode)))throw Error('Invalid point label mode.');
-  if(o.displayLabel!==undefined&&(['point','midpoint','circleIntersection','circleCircleIntersection','perpendicularFoot','text','node','morphism'].includes(o.type)||typeof o.displayLabel!=='string'||o.displayLabel.length>1000||!xmlTextSafe(o.displayLabel)))throw Error('Invalid object display label.');
-  if(o.displayLabelMode!==undefined&&(['point','midpoint','circleIntersection','circleCircleIntersection','perpendicularFoot','text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.displayLabelMode)))throw Error('Invalid object display label format.');
+  if(o.pointLabel!==undefined&&(!pointRole(o,id=>roleObjects.get(id))||typeof o.pointLabel!=='string'||o.pointLabel.length>1000||!xmlTextSafe(o.pointLabel)))throw Error('Invalid point label text.');
+  if(o.pointLabelMode!==undefined&&(!pointRole(o,id=>roleObjects.get(id))||!['plain','latex'].includes(o.pointLabelMode)))throw Error('Invalid point label mode.');
+  if(o.displayLabel!==undefined&&(pointRole(o,id=>roleObjects.get(id))||['text','node','morphism'].includes(o.type)||typeof o.displayLabel!=='string'||o.displayLabel.length>1000||!xmlTextSafe(o.displayLabel)))throw Error('Invalid object display label.');
+  if(o.displayLabelMode!==undefined&&(pointRole(o,id=>roleObjects.get(id))||['text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.displayLabelMode)))throw Error('Invalid object display label format.');
   if(o.fontFamily!==undefined&&(!['text','node','morphism'].includes(o.type)||!['Georgia, serif','Arial, sans-serif','Consolas, monospace','Verdana, sans-serif','Trebuchet MS, sans-serif','Palatino Linotype, serif','Times New Roman, serif'].includes(o.fontFamily)))throw Error('Invalid label font.');
   if(o.textMode!==undefined&&(!['text','node','morphism'].includes(o.type)||!['plain','latex'].includes(o.textMode)))throw Error('Invalid mathematical label mode.');
   if(o.branch!==undefined&&(!['circleIntersection','circleCircleIntersection','tangentCircle'].includes(o.type)||![-1,1].includes(o.branch)))throw Error('Invalid circle intersection branch.');
@@ -717,7 +771,7 @@ export function validateDoc(raw){
   const wantLine=o.type==='parabola'&&i===1||o.type==='transformCopy'&&o.transform==='reflect'&&i===1||o.type==='intersection'||(o.type==='circleIntersection'&&i===0)||(['parallelThrough','perpendicularThrough','perpendicularFoot'].includes(o.type)&&i===1);
   const wantCircle=o.type==='transformCopy'&&o.transform==='invert'&&i===1||o.type==='tangentCircle'&&i===1||o.type==='circleCircleIntersection'||(o.type==='circleIntersection'&&i===1);
   const wantAny=o.type==='pointOnObject'||o.type==='generalIntersection'||o.type==='locus'&&i===0||o.type==='transformCopy'&&i===0;
-  const valid=o.type==='morphism'?parent.type==='node':wantLine?STRAIGHT_TYPES.has(parent.type):wantCircle?['circle','circleThrough3'].includes(parent.type):wantAny?true:pointRole(parent,id=>objects.get(id));
+  const valid=o.type==='morphism'?parent.type==='node':wantLine?lineRole(parent,id=>objects.get(id)):wantCircle?circleRole(parent,id=>objects.get(id)):wantAny?true:pointRole(parent,id=>objects.get(id));
   if(!valid)throw Error('Invalid reference target for '+o.type);}
  // Iterative graph walk avoids stack exhaustion with deeply nested midpoint chains.
  const constrained=new Set([...R50_TYPES,'rectangle','parallelogram','regularPolygon','ray','perpBisector','circleThrough3','spline','parallelThrough','perpendicularThrough','perpendicularFoot','intersection','circleIntersection','circleCircleIntersection']);
