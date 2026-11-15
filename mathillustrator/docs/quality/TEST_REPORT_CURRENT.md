@@ -1734,3 +1734,13 @@ Implemented a fail-closed unified gate (`tests/verification/release_gate.py`) wi
 - Verified local Node suite 545/545 PASS (including five dedicated strict region tests), and actual Chromium focused scope UI, centered Enter, strict Enter, rollback, removal, 2D/3D persistence; previous Round128, Round126 and Round127 Chromium tests and Round107 3D export PASS.
 - Limitations: strict boundary approximated by triangle edges (not analytically exact for curved inequalities), and vector arrows crossing a boundary are omitted rather than partially clipped; GPU-device-specific behavior remains unverified. Tests are local isolated Chromium, not deployment validation.
 - HTTP-served Chromium startup probe was attempted but blocked by local browser administration (`ERR_BLOCKED_BY_ADMINISTRATOR`); isolated real Chromium module-graph tests passed instead. No production-host verification claim.
+
+## Round 131 — Geometry glyph sizing (local verification, 2026-11-15)
+
+Changed app glyph markup for Regular Polygon, Circle inversion, Ellipse, Rotation, Bézier and 3-point Circle. No geometry modeling, plotting or project serialization changed. Updated the existing approved-icon hash snapshot and the inverse-points geometry regression to reflect authorized changes.
+
+- JavaScript syntax: `node --check src/app.mjs` PASS.
+- Node regression: `node --test tests/*.test.mjs` 545/545 PASS, 0 skipped.
+- Real local Chromium (Playwright, inline HTML): `tests/browser_round131_glyphs.py` PASS, checking rendered glyphs, sizes, point counts and absence of page errors.
+- Real local Chromium: Round 128 centered-range regression PASS, Round 130 strict region regression PASS.
+- Hosted website, Firefox/Safari, real GPU: not tested (glyph changes do not modify GPU code).

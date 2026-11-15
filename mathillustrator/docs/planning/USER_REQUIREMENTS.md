@@ -1573,3 +1573,13 @@ Restricted expression-to-GLSL compilation added as non-production groundwork. Ke
 - A 2D inequality uses x/y; a 3D inequality uses x/y/z. Accept one `<` or `>` with safe arithmetic (examples `x>0`, `x^2+y^2<4`, `x^2+y^2+z^2<16`); clear then Enter to remove the restriction. Reject chained/non-strict comparisons, malformed expressions, and unknown variables without changing the project.
 - Restrict geometry, not just the visible controls: 3D surfaces/implicit/domain meshes and vector-field segments, and 2D vector fields/domain coloring, with scene export and persistence compatibility. Preserve old projects without conditions.
 - Implement smooth/linear boundary approximation rather than exact symbolic inequality boundary solving; protect performance for unrestricted plots.
+
+## Round 131 — Requested Geometry glyph adjustments (2026-11-15)
+
+- Enlarge Regular Polygon to approximately Polygon glyph bounds; preserve its center marker.
+- Enlarge Circle inversion circumference and separate inverse point markers while preserving their inverse-distance relation and keeping the center unmarked.
+- Increase the Ellipse glyph eccentricity slightly, maintaining mathematically located foci.
+- Enlarge/recenter Rotation sweep arc within the glyph without changing its three control markers.
+- Remove two dashed control-handle segments from Bézier; retain the four defining points.
+- Standardize ordinary single-circle glyph radii to 8 SVG units unless geometric overlap/layout specifically requires otherwise.
+- Restrict edits to these explicitly requested glyphs.
