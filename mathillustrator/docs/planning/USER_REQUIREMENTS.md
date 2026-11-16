@@ -1809,3 +1809,12 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 - Make the bilingual MathIllustrator guide navigable with the same information architecture pattern as MathReader: chapter directory, anchor links, accessible chapter headings, mobile layout, independent theme and language controls.
 - Provide a comprehensive standalone PDF manual explaining existing capabilities and mathematical limitations, and a hands-on inspection checklist. The manual must distinguish source-confirmed behavior, historical regressions, and unverified runtime combinations.
 - Preserve English/Chinese content, expression function reference tables, unsupported-format caveats and past tutorial instructions.
+
+## Round 184 — Finished export menu
+- Show only the six maintained export choices: SVG, PNG, JPEG, WebP, semantic tikz-cd, and editable JSON project. Do not expose legacy TikZ/PGF, PDF, Asymptote, or GIF/video entries, including disabled placeholders.
+- Retain feature-dependent availability (semantic tikz-cd only in compatible 2D diagrams, JPEG unavailable with transparent background, raster exports may wait for pending 3D rendering). Keep legacy exporters in source for compatibility unless a separate verified removal is authorized.
+
+
+## Round 185 — Release cleanup without feature expansion (2026-11-15)
+
+Retire permanently disabled Float buttons for Objects, Properties and Tools and the inactive floating-Properties corner. Panels remain docked; existing collapse and splitter controls remain in place. Simplify the diagram-render route loop to the already-authoritative direct-routing path, removing an unreachable global optimization branch and discarded crossing arrays. Preserve old saved `routing` values on import; render them directly exactly as in Round 56. Do not delete archived modules or historic project formats during release stabilization.

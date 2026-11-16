@@ -18,7 +18,6 @@ import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
 import {boxRect,routeDiagramEdge,pathData,smoothRoutePath,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
-import {optimizeGlobalArrowRoutes} from './diagram_global_routing.mjs?cut=round54';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round71';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round172';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
@@ -835,34 +834,17 @@ function draw(svg,{exporting=false}={}){
  // considers only earlier visible arrows; it never moves nodes or rewrites refs.
  // Reusing this map for rendering, label placement, and exported figures avoids
  // discrepancies between the UI and the serialized SVG/raster output.
- const morphismRoutes=new Map(),earlierArrowPaths=[],routeEntries=[];
+ // All visible morphisms use direct routes; never retain unused legacy
+ // crossing/rerouting state. The routes also feed labels and exports.
+ const morphismRoutes=new Map();
  for(const o of doc.objects){
   if(o.type!=='morphism'||o.hidden||o.style?.opacity===0)continue;
   const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
   if(!from||!to||from.hidden||to.hidden||from.style?.opacity===0||to.style?.opacity===0)continue;
   const p=resolver.points(o);if(!p.every(Boolean))continue;
   const a=project(p[0]),b=project(p[1]),fb=arrowTargetBox(from),tb=arrowTargetBox(to);
-  const mode='direct'; // Even imported legacy modes draw directly; stored values are untouched.
-  const obstacles=mode!=='direct'&&diagramBoxes?[...diagramBoxes].filter(([id])=>!o.refs.includes(id)).map(([,rect])=>rect):[];
-  const baseRoute=routeDiagramEdge(a,b,fb,tb,obstacles,mode==='scene-crossings'?'avoid':mode,mode==='avoid-crossings'?earlierArrowPaths:[]);
-  const route=mode==='direct'?curveEndpointRoute(a,b,fb,tb,baseRoute,o.bend||0):baseRoute;
-  morphismRoutes.set(o.id,route);
-  let crossingPath=route.points;
-  if(route.points.length>1){
-   // Direct curved arrows need a small bounded polyline approximation for
-   // screen-space crossing tests; exact quadratic intersections are not claimed.
-   if(mode==='direct'&&o.bend){const begin=route.points[0],end=route.points.at(-1),curve=arrowCurve(begin,end,o.bend);
-    if(curve){const points=[];for(let i=0;i<=12;i++){const t=i/12,u=1-t;points.push([u*u*begin[0]+2*u*t*curve.control[0]+t*t*end[0],u*u*begin[1]+2*u*t*curve.control[1]+t*t*end[1]]);}earlierArrowPaths.push(points);crossingPath=points;}
-    else earlierArrowPaths.push(route.points);
-   }else earlierArrowPaths.push(route.points);
-  }
-  routeEntries.push({id:o.id,a,b,fromBox:fb,toBox:tb,obstacles,mode,crossingPath});
- }
- // Cut25 opt-in whole-scene refinement. It examines later arrows as well as
- // earlier ones, but never changes routes for objects in legacy modes.
- if(false){ // Global rerouting is disabled.
-  const globallyRefined=optimizeGlobalArrowRoutes(routeEntries,morphismRoutes);
-  for(const [id,route] of globallyRefined)morphismRoutes.set(id,route);
+  const route=routeDiagramEdge(a,b,fb,tb,[],'direct',[]);
+  morphismRoutes.set(o.id,curveEndpointRoute(a,b,fb,tb,route,o.bend||0));
  }
  // Cut23: reserve manually positioned diagram labels and visible nodes before
  // best-effort placement of opted-in morphism labels. Use the same positions
@@ -2879,7 +2861,7 @@ function rasterSupported(type){
 let exportBusy=false;
 function setupExport(){
  const ready=!plotLimitedInScene&&!sceneRenderPending;
- const opts=[['SVG','svg',ready],['PNG','png',ready&&rasterSupported('png')],['JPEG','jpeg',ready&&!doc.settings.exportTransparent&&rasterSupported('jpeg')],['WebP','webp',ready&&rasterSupported('webp')],['TikZ / PGF','tikz',!in3D()&&canTikz()],['tikz-cd (semantic)','tikzcd',!in3D()&&canExportTikzCd(doc)],['JSON project','json',true],['PDF','pdf',false],['Asymptote','asy',false],['GIF / video','animation',false]];
+ const opts=[['SVG','svg',ready],['PNG','png',ready&&rasterSupported('png')],['JPEG','jpeg',ready&&!doc.settings.exportTransparent&&rasterSupported('jpeg')],['WebP','webp',ready&&rasterSupported('webp')],['tikz-cd (semantic)','tikzcd',!in3D()&&canExportTikzCd(doc)],['JSON project','json',true]];
  const root=$('export-options');root.replaceChildren();for(const [name,type,supported]of opts){
   const b=document.createElement('button');b.textContent=name;b.disabled=!supported||exportBusy;b.title=supported?'Export current illustration':sceneRenderPending&&['svg','png','jpeg','webp'].includes(type)?'Wait for 3D rendering to finish':type==='jpeg'&&doc.settings.exportTransparent?'JPEG cannot preserve transparency; choose PNG, WebP or SVG.':'Not implemented or not representable in current scene';
   b.onclick=async()=>{if(exportBusy)return;exportBusy=true;for(const other of root.querySelectorAll('button'))other.disabled=true;try{
@@ -3158,7 +3140,6 @@ function setupPropertiesLayout(mobile){
  const pane=$('properties-dock'),left=document.querySelector('.leftpanel'),panel=$('properties');
  const toggle=$('properties-toggle'),split=$('properties-splitter');
  let preferred=normalizePropertiesLayout(uiPrefs.propertiesPanel),gesture=null;
- $('properties-undock').hidden=true;
  function limits(){
   // Both 2D and 3D object lists are flexible content, never fixed chrome.
   // Counting the visible 3D list here makes the upper bound follow the drag,
@@ -3215,9 +3196,6 @@ function setupPropertiesLayout(mobile){
 /** Objects and Tools stay docked; only the established sidebars/drawers resize/collapse. */
 function setupDockablePanels(mobile,propertiesLayout){
  const workspace=document.querySelector('.workspace');
- for(const side of ['left','right']){
-  const button=$(side==='left'?'objects-undock':'tools-undock');button.hidden=true;
- }
  function apply(){
   document.body.classList.remove('objects-floating','tools-floating','floating-panel-moving','floating-panel-resizing');
   const left=document.querySelector('.leftpanel'),right=document.querySelector('.rightpanel');

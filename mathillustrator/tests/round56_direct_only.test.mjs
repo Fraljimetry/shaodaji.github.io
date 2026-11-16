@@ -14,7 +14,7 @@ test('Round 56: direct is the only new morphism routing default',()=>{
 test('Round 56: old automatic routing cannot affect rendered arrows',()=>{
  const app=readFileSync(new URL('../src/app.mjs',import.meta.url),'utf8');
  assert.doesNotMatch(app,/id='morphism-routing'/);
- assert.match(app,/const mode='direct'; \/\/ Even imported legacy modes/);
+ assert.match(app,/routeDiagramEdge\(a,b,fb,tb,\[\],'direct',\[\]\)/);
  assert.match(app,/const auto=false; \/\/ Round 56/);
  assert.match(app,/routing:'direct',labelDistance:10/);
 });

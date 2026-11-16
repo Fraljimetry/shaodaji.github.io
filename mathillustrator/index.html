@@ -30,7 +30,7 @@
   <div id="object-action-menu" class="object-action-menu" role="menu" aria-label="Object actions" hidden></div>
   <main class="workspace">
     <aside class="leftpanel" aria-label="Objects and properties">
-      <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="objects-undock" type="button" class="panel-undock" title="Float Objects panel" aria-label="Float Objects panel" hidden disabled>Float</button><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
+      <div class="panelhead"><h2>Objects <span id="object-count">0</span></h2><button id="left-collapse" aria-label="Toggle objects panel" aria-controls="objects" aria-expanded="true" title="Toggle objects panel">‹</button></div>
       <div id="left-resizer" class="panel-resizer left-resizer" role="separator" tabindex="0" aria-label="Resize Objects panel" aria-orientation="vertical" aria-controls="objects" title="Resize panel"></div>
       <div class="commandbox"><div class="command-heading"><label for="command">Construction input</label><select id="parameter-symbol" aria-label="Parameter symbol" title="Use the same parameter in x and y" hidden><option value="t">t</option></select><select id="plot-mode" aria-label="Plot input mode" title="Choose a plotting mode"><option value="function">Function</option><option value="parametric">Parametric</option><option value="implicit">Implicit</option><option value="vectorField">Vector field</option><option value="domainColoring">Domain coloring</option></select><span id="plot-mode-preview" aria-hidden="true"></span></div><form id="command-form"><div id="plot-inputs"><input id="command" autocomplete="off" spellcheck="false" placeholder="sin(x)" aria-label="Function or construction command"><input id="command-y" autocomplete="off" spellcheck="false" placeholder="sin(t)" aria-label="Second component" hidden><input id="command-z" autocomplete="off" spellcheck="false" placeholder="z component" aria-label="Third component" hidden></div><button aria-label="Add construction" title="Add curve or construction">↵</button></form></div>
       <div class="object-tools"><span id="object-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span><input id="object-search" type="search" placeholder="Find…" aria-label="Search objects"><label><input type="checkbox" id="show-hidden" checked> Hidden</label></div>
@@ -38,10 +38,9 @@
       <section id="properties-dock" class="properties-dock" aria-label="Properties panel">
         <div id="properties-splitter" class="properties-splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-controls="properties" aria-label="Resize Properties height" title="Resize panel"></div>
         <div id="properties-head" class="properties-head" tabindex="-1" aria-label="Move Properties panel">
-          <strong>Properties</strong><div class="properties-head-actions"><button id="properties-undock" type="button" aria-label="Float Properties panel" title="Float Properties panel" hidden disabled>Float</button><button id="properties-toggle" type="button" aria-controls="properties" aria-expanded="true" title="Collapse Properties">−</button></div>
+          <strong>Properties</strong><div class="properties-head-actions"><button id="properties-toggle" type="button" aria-controls="properties" aria-expanded="true" title="Collapse Properties">−</button></div>
         </div>
         <div id="properties" class="properties"></div>
-        <div id="properties-corner" class="properties-corner" tabindex="-1" role="group" aria-label="Resize floating Properties panel" title="Resize Properties"></div>
       </section>
     </aside>
     <section class="stage" aria-label="Illustration canvas">
@@ -50,7 +49,7 @@
       <div class="canvas-footer"><span id="coords">x 0.00 · y 0.00</span><span class="save-feedback"><span id="autosave-info" role="status" aria-live="polite">Local backup ready</span><button id="retry-autosave" title="Retry saving the current project in this browser" hidden>Retry local save</button></span><span id="render-info">Ready</span></div>
     </section>
     <aside class="rightpanel" aria-label="Drawing tools and settings">
-      <div class="panelhead"><h2>Tools</h2><button id="tools-undock" type="button" class="panel-undock" title="Float Tools panel" aria-label="Float Tools panel" hidden disabled>Float</button><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
+      <div class="panelhead"><h2>Tools</h2><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
       <div id="right-resizer" class="panel-resizer right-resizer" role="separator" tabindex="0" aria-label="Resize Tools panel" aria-orientation="vertical" aria-controls="panel-sections" title="Resize panel"></div>
       <div class="scrollpanel" id="panel-sections">
         <div class="preset" hidden><label for="preset" hidden>Drawing preset</label><select id="preset"></select></div>

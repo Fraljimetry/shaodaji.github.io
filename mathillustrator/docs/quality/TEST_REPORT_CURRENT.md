@@ -2107,3 +2107,15 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - Actual Chromium 1440/768/390/320 PASS for independent guide rendering (set_content from actual HTML due local file URL policy), EN→ZH→EN, theme toggle, anchors, left-aligned tables and no horizontal overflow.
 - Full editor E2E, hosted deployment, browser-local storage integration, and all mathematical workflows NOT RUN in this documentation-only cut.
 - No source math or editor runtime files changed.
+
+## Round 184 — Export menu scope and visible unfinished UI audit (2026-11-15)
+- Removed four legacy/unsupported export buttons (TikZ / PGF, PDF, Asymptote, GIF / video) from the export UI; preserved SVG, PNG, JPEG, WebP, semantic tikz-cd, and native JSON. No new formats or mathematical features. Existing internal TikZ/PGF code remains unused by the export menu.
+- Other disabled controls observed in code are normally contextual rather than unfinished features: Undo/Redo at history boundaries, curve arrowheads with incompatible line styles, 3D color picker while multicolor is active, JPEG under transparent export, semantic tikz-cd for incompatible scenes, and page-region export for infinite canvas.
+- Historic browser tests that click the removed TikZ/PGF button now conflict with current product requirements; they have not been silently rewritten or counted as passing. No claim of full historical browser pass.
+
+
+## Round 185 — Targeted obsolete-UI and dead-code cleanup
+
+Changes: remove three never-visible Float buttons and the dormant Properties floating resize corner; stop referencing these absent elements in the dock-only layout code. Remove unreachable `if(false)` global arrow-routing call, its unused import, and per-edge arrays used only by that dead branch. The direct route and bent-curve endpoint geometry remain. Update a Round 56 test to assert the active route rather than a deleted source literal; add Round 185 tests preventing reintroduction of dead controls and routing.
+
+Local verification: `node --check src/app.mjs` PASS; `node --test tests/*.test.mjs` 599 passed / 0 failed / 0 skipped; actual isolated Chromium picking regression PASS at 1440 and 1024 px; docked-control initialization check PASS at 1440 and 390 px. Historical `browser_round22_docked_ui.py` did not finish within its bounded execution and was stopped; it is NOT certified. Full historical browser collection, physical touchscreen, GPU stress and hosted deployment were not run. No geometry algorithms, glyphs, serialized project schema, or UI feature additions changed.

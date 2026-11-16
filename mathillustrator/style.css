@@ -269,22 +269,10 @@ html[data-theme="dark"] .object-action-menu button[data-action="delete"]:not(:di
 .properties-splitter{position:absolute;top:-6px;left:0;right:0;height:12px;z-index:9;cursor:row-resize;touch-action:none}
 .properties-splitter::after{content:"";position:absolute;left:0;right:0;top:5px;height:2px;background:transparent}
 .properties-splitter:hover::after,.properties-splitter:focus-visible::after{background:var(--accent)}
-.properties-corner{display:none}
-@media(min-width:701px){
- body.properties-floating>.properties-dock{position:fixed;z-index:18;flex:none;min-height:0;min-width:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 14px 44px #0005}
- body.properties-floating>.properties-dock .properties-head{cursor:move;touch-action:none;user-select:none;background:var(--subtle)}
- body.properties-floating>.properties-dock .properties-head:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
- body.properties-floating>.properties-dock .properties-corner{display:block;position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;z-index:20;background:linear-gradient(135deg,transparent 56%,var(--muted) 58%,var(--muted) 62%,transparent 64%,transparent 73%,var(--muted) 75%,var(--muted) 79%,transparent 81%);background-size:14px 14px;background-repeat:no-repeat;background-position:bottom 4px right 4px}
- body.properties-floating>.properties-dock.is-folded .properties-corner{display:none}
- body.properties-floating>.properties-dock.is-folded{height:auto!important}
- body.properties-moving{cursor:move;user-select:none}
- body.properties-resizing{cursor:nwse-resize;user-select:none}
-}
 @media(max-width:700px){
  .properties-dock{flex:0 1 220px;max-height:45%;height:auto!important;width:auto!important;position:relative!important;top:auto!important;left:auto!important;border-radius:0;box-shadow:none}
  body.mobile-left-open .leftpanel>.properties-dock{display:flex}
- .properties-splitter,.properties-corner{display:none!important}
- .properties-head-actions #properties-undock{display:none}
+ .properties-splitter{display:none!important}
  .properties-dock .properties{max-height:none!important}
 }
 @media (pointer:coarse){.properties-head-actions button{min-width:40px;min-height:40px}}
@@ -386,7 +374,7 @@ html[data-theme="dark"]{--accent:#81b8ec;--hover:#294967}
 .properties .style-slot input[data-mixed=true]{border-style:dashed}
 
 /* Round 22: fixed dock layout; no detachable panels at any breakpoint. */
-#properties-undock,#objects-undock,#tools-undock,.floating-panel-corner,.dock-placeholder,.dock-restore,.properties-corner{display:none!important}
+.floating-panel-corner,.dock-placeholder,.dock-restore{display:none!important}
 /* Inspector and newly created styles use the same two-column palette. */
 .properties .style-controls-grid{display:grid;grid-template-rows:auto auto auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 9px}
 .properties .style-controls-grid .style-stroke{grid-area:1 / 1 / 2 / 2}
