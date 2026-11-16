@@ -10,7 +10,7 @@ import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
+import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated} from './i18n.mjs?cut=round54';
@@ -22,7 +22,6 @@ import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round71';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round172';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotCache} from './plot_cache.mjs?cut=round54';
-import {layoutMorphismLabels,strokeObstacleRectangles} from './morphism_label_layout.mjs?cut=round54';
 import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
 import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round54';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
@@ -192,7 +191,7 @@ function initialSiteTheme(){
 }
 let selected3d=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
-let uiPrefs={language:'en',font:'system',autoPan:true,autoDiagramLabels:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
+let uiPrefs={language:'en',font:'system',autoPan:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 function localizedConfirm(message){return window.confirm(translated(message,uiPrefs.language));}
 function localizedPrompt(message,initial){return window.prompt(translated(message,uiPrefs.language),initial);}
 function notice(msg){const e=$('toast');e.textContent=translated(msg,uiPrefs.language);e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
@@ -850,56 +849,9 @@ function draw(svg,{exporting=false}={}){
   const route=routeDiagramEdge(a,b,fb,tb,[],'direct',[]);
   morphismRoutes.set(o.id,curveEndpointRoute(a,b,fb,tb,route,o.bend||0));
  }
- // Cut23: reserve manually positioned diagram labels and visible nodes before
- // best-effort placement of opted-in morphism labels. Use the same positions
- // for the editor and SVG/raster exports. This is presentation-only.
- let computedMorphismLabels=new Map();
- if(uiPrefs.autoDiagramLabels!==false&&doc.objects.some(o=>o.type==='morphism'&&!o.hidden&&o.style?.opacity!==0&&o.text&&o.labelAvoid!==false)){
-  const nodeRects=[],nodeRectById=new Map(),entries=[];
-  for(const o of doc.objects){if(o.type!=='node'||o.hidden||o.style?.opacity===0)continue;
-   const pt=resolver.at(o.id);if(pt){const r=boxRect(project(pt),arrowTargetBox(o));nodeRects.push(r);nodeRectById.set(o.id,r);}
-  }
-  // All visible diagram arrows are physical obstacles for semantic labels.
-  // Sample direct quadratic paths; routed polylines use their real waypoints.
-  // Never reserve the full diagonal bounding box, which would falsely block
-  // labels far away from a thin diagonal arrow.
-  const obstacleBudget=3000;
-  for(const edge of doc.objects){
-   if(edge.type!=='morphism'||edge.hidden||edge.style?.opacity===0||nodeRects.length>=obstacleBudget)continue;
-   const path=morphismRoutes.get(edge.id);
-   if(!path?.points?.length)continue;
-   let vertices=path.points;
-   if(true){ // All arrows use the direct quadratic geometry.
-    const a=vertices[0],b=vertices.at(-1),curve=arrowCurve(a,b,edge.bend||0);
-    if(curve)vertices=Array.from({length:25},(_,i)=>{const t=i/24,q=1-t;return [q*q*a[0]+2*q*t*curve.control[0]+t*t*b[0],q*q*a[1]+2*q*t*curve.control[1]+t*t*b[1]];});
-   }
-   const boxes=strokeObstacleRectangles(vertices,Math.max(3,(edge.style?.width??2)/2+2),Math.min(128,obstacleBudget-nodeRects.length));
-   nodeRects.push(...boxes.map(box=>({...box,owner:edge.id})));
-  }
-  // Text annotations are also visible diagram elements, not empty space.
-  for(const annotation of doc.objects){
-   if(annotation.type!=='text'||annotation.hidden||annotation.style?.opacity===0||nodeRects.length>=obstacleBudget)continue;
-   const at=resolver.at(annotation.id);if(!at)continue;
-   const [x,y]=project(at),b=labelBox(annotation);
-   nodeRects.push({left:x-3,right:x+b.width+3,top:y-b.height-3,bottom:y+4});
-  }
-  for(const o of doc.objects){if(o.type!=='morphism'||o.hidden||o.style?.opacity===0||!o.text)continue;
-   const p=resolver.points(o);if(!p.every(Boolean))continue;
-   const from=resolver.object(o.refs[0]),to=resolver.object(o.refs[1]);
-   if(!from||!to||from.hidden||to.hidden||from.style.opacity===0||to.style.opacity===0)continue;
-   const a=project(p[0]),b=project(p[1]),fb=arrowTargetBox(from),tb=arrowTargetBox(to);
-   const auto=false; // Round 56: legacy routing codes are rendered as Direct.
-   const route=morphismRoutes.get(o.id);if(!route?.points.length)continue;
-   const begin=route.points[0],finish=route.points.at(-1),curve=auto?null:arrowCurve(begin,finish,o.bend||0);
-   if(!auto&&!curve)continue;
-   const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
-   const place=at=>auto?labelOnPolyline(route.points,t,at,!!o.swap,dx,dy):labelOnQuadratic(begin,curve.control,finish,t,at,!!o.swap,dx,dy);
-   const pos=place(distance),far=place(distance+1);
-   if(pos){const sideNormal=far?[far[0]-pos[0],far[1]-pos[1]]:null;
-    entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],distance,sideNormal,auto:o.labelAvoid!==false&&uiPrefs.autoDiagramLabels!==false});}
-  }
-  computedMorphismLabels=layoutMorphismLabels(entries,nodeRects,size.w,size.h);
- }
+ // Morphism labels follow their explicit geometric anchor, distance and shifts.
+ // No global collision avoidance: preserve deterministic placement and manual edits.
+ const computedMorphismLabels=new Map();
  // Optional screen-space point-label decluttering. Keep the exact same layout
  // in editor and SVG/raster export; never hide labels or change model text.
  let labels=null;
@@ -1500,7 +1452,8 @@ function renderProperties3D(root){
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
- installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));}),{parseBound:parse3DRangeExpression,conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;}),dimension:3});
+ installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));
+  if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...p.bounds};}),{parseBound:parse3DRangeExpression,conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;}),dimension:3});
  root.append(block);
  if(selectedPlot.kind==='domain3d'){
   const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
@@ -1866,6 +1819,7 @@ function syncPlotModeControl(){
 function sync3DInterface(){
  const enabled=in3D();document.documentElement.classList.toggle('three-d',enabled);$('scene3d-enable').checked=enabled;
  $('objects').hidden=enabled;$('objects-3d').hidden=!enabled;
+ $('scene3d-fix-region').checked=doc.scene3d?.options.fixRegion===true;
  $('scene3d-background').value=doc.settings.background;
  $('scene3d-export-scale').value=String(doc.settings.exportScale);
  $('scene3d-theme').value=$('theme').value;
@@ -1938,6 +1892,11 @@ function setupSettings(){
  $('scene3d-export-scale').onchange=()=>update(()=>{doc.settings.exportScale=Number($('scene3d-export-scale').value);},{refreshList:false,renderCanvas:false});
  $('scene3d-export-transparent').onchange=()=>update(()=>{doc.settings.exportTransparent=$('scene3d-export-transparent').checked;},{refreshList:false,renderCanvas:false});
  $('scene3d-theme').onchange=()=>{$('theme').value=$('scene3d-theme').value;$('theme').onchange();};
+ $('scene3d-fix-region').onchange=()=>{
+  if(!in3D()||!doc.scene3d)return;
+  const enabled=$('scene3d-fix-region').checked;
+  update(()=>set3DFixRegion(doc.scene3d,enabled));
+ };
  $('scene3d-enable').onchange=()=>{const state=$('scene3d-enable').checked;const success=update(()=>{if(state&&!doc.scene3d)doc.scene3d=newScene3D();doc.settings.plot3dEnabled=state;selected3d=null;});if(success)sync3DInterface();};
  const theme=$('theme');theme.value=initialSiteTheme();
  document.documentElement.dataset.theme=theme.value;theme.onchange=()=>{document.documentElement.dataset.theme=theme.value;safeStorageSet(SETTINGS,JSON.stringify({theme:theme.value}));};
@@ -2892,13 +2851,13 @@ function savePrefs(){try{localStorage.setItem('mathillustrator-layout-v1',JSON.s
 function setupInterface(){
  try{const prefs=JSON.parse(localStorage.getItem('mathillustrator-layout-v1')||'{}');if(prefs&&typeof prefs==='object')uiPrefs={...uiPrefs,...prefs};}catch{}
  // Retire preferences whose controls no longer exist; do not persist stale toggles.
- for(const key of ['showCoordinates','reduceMotion','essentialGeometry','showTooltips'])delete uiPrefs[key];
+ for(const key of ['showCoordinates','reduceMotion','essentialGeometry','showTooltips','autoDiagramLabels'])delete uiPrefs[key];
  const fontMap={system:'system-ui, sans-serif',serif:'Georgia, serif',sans:'Arial, sans-serif',mono:'Consolas, monospace',verdana:'Verdana, sans-serif',trebuchet:'Trebuchet MS, sans-serif',palatino:'Palatino Linotype, serif',times:'Times New Roman, serif'};
  $('ui-font').value=fontMap[uiPrefs.font]?uiPrefs.font:'system';document.documentElement.style.setProperty('--ui-font',fontMap[$('ui-font').value]);
  $('ui-font').onchange=()=>{uiPrefs.font=$('ui-font').value;document.documentElement.style.setProperty('--ui-font',fontMap[uiPrefs.font]);savePrefs();};
  $('auto-pan').checked=uiPrefs.autoPan!==false;$('auto-pan').onchange=()=>{uiPrefs.autoPan=$('auto-pan').checked;savePrefs();};
- for(const [id,key] of [['auto-diagram-labels','autoDiagramLabels'],['selection-preview','selectionPreview'],['fast-3d-orbit','fast3DOrbit']]){
-  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='autoDiagramLabels'||key==='fast3DOrbit')scheduleRender();else setHoverPick(null);};
+ for(const [id,key] of [['selection-preview','selectionPreview'],['fast-3d-orbit','fast3DOrbit']]){
+  const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='fast3DOrbit')scheduleRender();else setHoverPick(null);};
  }
  function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);syncPlotModeControl();renderProperties();}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';

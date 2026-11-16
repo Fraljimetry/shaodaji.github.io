@@ -280,3 +280,6 @@ export function translated(s,language='en'){
  return zh[s]||s;
 }
 export const supportedLanguages=['en','zh'];
+
+// Region locking is a persistent 3D project option, not a camera lock.
+Object.assign(zh,{"Fix region":"固定绘图范围"});

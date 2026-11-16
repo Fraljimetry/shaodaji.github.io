@@ -1,4 +1,4 @@
-"""Round193 actual Chromium: auto labels have a visible gap and can be toggled off."""
+"""Legacy Round193 fixture: retired auto-label toggle and deterministic placement."""
 import json, os
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -21,13 +21,14 @@ with sync_playwright() as pw:
   page.locator('#open-file').set_input_files({'name':'labels.json','mimeType':'application/json','buffer':json.dumps(d).encode()})
   def position():
    return page.locator('#drawing [data-id="o3"].morphism-label').evaluate('e => [Number(e.getAttribute("x")),Number(e.getAttribute("y"))]')
-  toggle=page.locator('#auto-diagram-labels')
-  toggle.uncheck();page.wait_for_timeout(150);without=position()
-  toggle.check();page.wait_for_timeout(150);with_auto=position()
-  assert abs(with_auto[1]-without[1])>=3,(without,with_auto)
-  assert abs(with_auto[0]-without[0])<1,(without,with_auto)
-  toggle.uncheck();page.wait_for_timeout(150);again=position()
-  assert again==without,(without,again)
+  # The auto-place checkbox was retired; legacy flags must not move labels.
+  assert page.locator('#auto-diagram-labels').count()==0
+  page.wait_for_timeout(100);old=position()
+  d['objects'][2]['labelAvoid']=False
+  page.locator('#open-file').set_input_files({'name':'manual.json','mimeType':'application/json','buffer':json.dumps(d).encode()})
+  page.wait_for_timeout(100);manual=position()
+  assert old==manual,(old,manual)
+  assert all(abs(value)<10000 for value in manual),manual
   assert not errors,errors
-  print('ROUND193_CHROMIUM_PASS: real editor auto on/off, visible glyph clearance, stable manual layout')
+  print('ROUND193_CHROMIUM_PASS: retired toggle, legacy flags preserve deterministic label positioning')
  finally:browser.close()

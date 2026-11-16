@@ -637,9 +637,12 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  width:100%!important;max-width:100%!important;min-width:0;
  box-sizing:border-box;font-size:11px;padding-inline:4px;
 }
-/* Keep 3D mode in the first cell, Fast 3D orbit in the top-right cell. */
-.interface-check-grid>.check:has(#scene3d-enable) {grid-column:1;grid-row:1;}
-.interface-check-grid>.check:has(#fast-3d-orbit) {grid-column:2;grid-row:1;}
+/* 2D interface: Auto Pan / Move + Selection preview above 3D plotting mode. */
+.interface-check-grid>.check:has(#auto-pan) {grid-column:1;grid-row:1;}
+.interface-check-grid>.check:has(#selection-preview) {grid-column:2;grid-row:1;}
+.interface-check-grid>.check:has(#scene3d-enable) {grid-column:1;grid-row:2;}
+.interface-check-grid>.check:has(#fast-3d-orbit) {grid-column:1;grid-row:1;}
+.interface-check-grid>.check:has(#scene3d-fix-region) {grid-column:2;grid-row:1;}
 /* Unlike the 3D inspector, 2D vector retains its established two-column shape. */
 
 
@@ -1076,3 +1079,6 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  .rightpanel .settings-sections .controls > .section-body > .background-transparent-row > .field,
  .rightpanel .settings-sections .controls > .section-body > .background-transparent-row > .check{font-size:10px}
 }
+
+/* Hide only controls belonging to the other workspace; retain the 3D mode toggle. */
+html.three-d .interface-check-grid .settings-2d-only{display:none!important;}

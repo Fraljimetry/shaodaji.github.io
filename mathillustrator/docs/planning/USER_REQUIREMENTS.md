@@ -1853,3 +1853,9 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 ### Round 193: Automatic diagram label spacing
 - When automatic arrow-label placement is enabled, keep a readable glyph-aware gap from the morphism itself, on the selected label side. Prioritize nearby positions before larger collision-avoidance moves.
 - Turning off automatic placement returns to the stored user-defined label position. Manual edits, morphism routing, saved JSON and tikz-cd semantics must not change.
+
+### Round 195 — 3D fixed region and streamlined Interface
+- In 2D, display Auto Pan / Move and Selection preview on the first row, with 3D plotting mode on the second row left.
+- In 3D, display Fast 3D orbit and Fix region on the first row, with 3D plotting mode on the second row left. Do not duplicate Grid or Axes.
+- Fix region captures the combined bounds of visible 3D plots; subsequent additions, hiding, or editing other plots must not silently change the shared camera projection region. Newly created plots inherit fixed bounds; manually committing a plot region redefines the fixed region. Camera orbit, pan, zoom and Fast 3D orbit remain independent.
+- The choice is stored with JSON projects; old projects load with Fix region off. Disabling the switch returns automatic union bounds.

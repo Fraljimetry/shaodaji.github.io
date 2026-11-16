@@ -37,6 +37,19 @@ export function enforce3DVisibility(scene,preferredId=null){
 }
 export const defaultBounds3D=()=>({xMin:-4,xMax:4,yMin:-4,yMax:4,zMin:-4,zMax:4});
 export const newScene3D=()=>({plots:[],nextId:1,options:{...DEFAULT_3D_OPTIONS}});
+/** The camera's shared plotting region; individual plots retain independent sampling bounds. */
+export function scene3DBounds(scene){
+ const plots=scene.plots.filter(p=>!p.hidden).slice(-MAX_VISIBLE_3D_PLOTS);
+ return plots.length?Object.fromEntries(['x','y','z'].flatMap(axis=>[
+  [axis+'Min',Math.min(...plots.map(p=>p.bounds[axis+'Min']))],
+  [axis+'Max',Math.max(...plots.map(p=>p.bounds[axis+'Max']))]
+ ])):defaultBounds3D();
+}
+export function set3DFixRegion(scene,enabled){
+ if(enabled){scene.options.fixedBounds=scene3DBounds(scene);scene.options.fixRegion=true;}
+ else{scene.options.fixRegion=false;delete scene.options.fixedBounds;}
+}
+
 const color=/^#[0-9a-fA-F]{6}$/;
 export function parse3D(plot){
  if(plot.kind==='domain3d'){
@@ -66,6 +79,12 @@ export function parse3D(plot){
 export function validate3D(scene){
  if(!scene||typeof scene!=='object'||Array.isArray(scene)||!Array.isArray(scene.plots)||scene.plots.length>80||!Number.isSafeInteger(scene.nextId)||scene.nextId<1)throw Error('Invalid 3D scene.');
  const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>128||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
+ if(o.fixRegion!==undefined&&typeof o.fixRegion!=='boolean')throw Error('Invalid 3D fixed-region flag.');
+ if(o.fixedBounds!==undefined){
+  const r=o.fixedBounds;
+  if(!r||typeof r!=='object'||!['x','y','z'].every(axis=>ok(r[axis+'Min'])&&ok(r[axis+'Max'])&&Math.abs(r[axis+'Min'])<=1e4&&Math.abs(r[axis+'Max'])<=1e4&&r[axis+'Min']<r[axis+'Max']))throw Error('Invalid fixed 3D region.');
+ }
+ if(o.fixRegion===true&&!o.fixedBounds)throw Error('Fixed 3D region requires valid bounds.');
  const ids=new Set();let highest=0;
  for(const plot of scene.plots){
   if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>100||!color.test(plot.color)||!ok(plot.opacity)||plot.opacity<.05||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
@@ -83,7 +102,7 @@ export function validate3D(scene){
  if(scene.nextId<=highest)throw Error('Invalid next 3D ID.');
  return scene;
 }
-export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
+export function add3DPlot(scene,kind,inputs,bounds=scene.options.fixRegion===true?scene.options.fixedBounds:defaultBounds3D()){
  if(scene.plots.length>=80)throw Error('3D plot limit (80) reached.');
  const id=scene.nextId,[a='',b='',c='']=inputs;
  const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false,locked:false,colorRange:false};
@@ -98,7 +117,7 @@ export function add3DPlot(scene,kind,inputs,bounds=defaultBounds3D()){
    const x=bounds.xMin+(bounds.xMax-bounds.xMin)*i/6,y=bounds.yMin+(bounds.yMax-bounds.yMin)*j/6;
    try{const value=f(x,y),height=Math.hypot(...value);if(ok(height)&&height<=1e4)maxHeight=Math.max(maxHeight,height);}catch{}
   }
-  plot.bounds.zMin=0;plot.bounds.zMax=Math.max(4,Math.min(10000,Math.ceil(maxHeight*1.05)));
+  if(scene.options.fixRegion!==true){plot.bounds.zMin=0;plot.bounds.zMax=Math.max(4,Math.min(10000,Math.ceil(maxHeight*1.05)));}
  }
  // Validate a prospective scene *before* touching the caller's object.
  // A malformed expression or region must not burn an ID, leave a half-added
@@ -381,10 +400,7 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
  const active=scene.plots.filter(p=>!p.hidden),plots=active.slice(-MAX_VISIBLE_3D_PLOTS);
  // Mixed plots previously projected using the FIRST plot's bounds; this could
  // put later plots behind the camera, creating giant/inverted polygons or blanks.
- const bounds=plots.length?Object.fromEntries(['x','y','z'].flatMap(axis=>[
-  [axis+'Min',Math.min(...plots.map(p=>p.bounds[axis+'Min']))],
-  [axis+'Max',Math.max(...plots.map(p=>p.bounds[axis+'Max']))]
- ])):defaultBounds3D();
+ const bounds=opt.fixRegion===true?opt.fixedBounds:scene3DBounds(scene);
  const camera=makeCamera(bounds,opt,width,height);let evaluations=0,limited=active.length>MAX_VISIBLE_3D_PLOTS;
  const facePlotCount=plots.filter(plot=>plot.kind!=='vector3d').length;
  const totalFaceBudget=facePlotCount>1?MAX_3D_MULTI_FACES:MAX_3D_FACES;

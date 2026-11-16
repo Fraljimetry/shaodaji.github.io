@@ -2174,3 +2174,9 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Added outward glyph-bound clearance on the correct side of straight/curved morphisms, retaining nearby collision candidates and manual-position invariance.
 - Node tests: 614/614 PASS; JS syntax checks PASS. Historical tikz-cd bend test corrected to align with already-supported bend export.
 - Actual Chromium: Round 193 auto-label toggle PASS; Round 192 label placement PASS; Round 191 arrow parity (20 cases) PASS. Full historical Chromium suite not executed. Hosted website not verified.
+
+### Round 195 — Fix region and Interface regression
+- Implemented persistent project-level Fix region for shared 3D projection bounds, preserving independently editable plot bounds and camera movement. Added scoped UI mode controls, Chinese translation, and updated historical interface regression for 3D-only options.
+- Focused Node fixed-region tests: 4/4 PASS. Baseline all Node before new tests: 614/614 PASS. Full updated Node suite: 618/618 PASS (no skips).
+- Real Chromium: Round 195 3D multi-plot/checkbox/2D–3D transitions PASS; Round 194 interface PASS (updated obsolete 3D expectation); Round 106 lifecycle PASS; Round 128 region editing PASS; Round 170 selection preview at 1440 and 390 PASS.
+- Historical Round 193 browser test initially FAILED because it attempted to interact with a retired auto-label checkbox. Updated to test deterministic labels with legacy settings; rerun PASS. Full historical browser suite and hosted deployment not certified.
