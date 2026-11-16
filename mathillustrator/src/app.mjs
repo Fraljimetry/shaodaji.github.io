@@ -468,8 +468,8 @@ function r50Locus(o){
  return points;
 }
 
-// Round 58: independent line pattern and arrow-tip conventions; existing freehand
-// arrows deliberately keep their filled, non-LaTeX appearance.
+// Independent line patterns share the attached-tip geometry for decorated arrows.
+// Ordinary free curves retain their filled arrowheads for solid/dashed/dotted.
 const LINE_CHOICES=[['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['double','Double'],['wavy','Wavy']];
 const HEAD_CHOICES=[['none','None'],['end','End'],['start','Start'],['both','Both'],['double-end','Double end'],['hook','Hook'],['tail','Tail'],['harpoon','Harpoon']];
 const FREE_CURVE_HEAD_CHOICES=HEAD_CHOICES.slice(0,4);
@@ -648,7 +648,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const shapeMode=o.curveShape||'free',pattern=shapeMode==='free'?(o.curveLine||'solid'):SHAPE_LINE_CHOICES.some(([v])=>v===o.curveLine)?o.curveLine:'solid',heads=shapeMode==='free'?(o.curveHeads||(o.curveArrows||'none')):'none';
   if(pattern==='solid'&&heads==='none'){item=path;}
   else{item=el('g');item.append(path);styleDecoratedPath(item,path,pattern,mk,visibleArrowheads(pattern,heads));
-   decoratedHeads(item,path,visibleArrowheads(pattern,heads),o.style.stroke,o.style.width,false,pattern);}
+   decoratedHeads(item,path,visibleArrowheads(pattern,heads),o.style.stroke,o.style.width,true,pattern);}
  }else if(o.type==='text'){const [x,y]=project(o.xy),fontSize=o.fontSize||18;if(textOutside(x,y,o.text,fontSize))return;
   if(o.textMode==='latex'){item=latexDisplay(o,x,y,fontSize,{exporting});if(!exporting)item.setAttribute('pointer-events','visiblePainted');}
   else{item=el('text',{'xml:space':'preserve',x,y,'font-size':fontSize,'font-family':o.fontFamily||'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity});
@@ -1553,7 +1553,7 @@ function renderNewFreehandControls(root){
  const shaped=freehandShapeMode!=='free';
  choice('Line style',shaped&&!SHAPE_LINE_CHOICES.some(([v])=>v===freehandLine)?'solid':freehandLine,shaped?SHAPE_LINE_CHOICES:LINE_CHOICES,v=>freehandLine=v);
  choice('Arrowheads',shaped?'none':visibleArrowheads(freehandLine,freehandHeads),FREE_CURVE_HEAD_CHOICES,v=>freehandHeads=v);
- const arrow=grid.querySelector('select[aria-label="Arrowheads"]');arrow.disabled=shaped||HEADLESS_LINE_STYLES.has(freehandLine);
+ const arrow=grid.querySelector('select[aria-label="Arrowheads"]');arrow.disabled=shaped;
 }
 function renderProperties(){
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}

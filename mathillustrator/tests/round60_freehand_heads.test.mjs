@@ -8,10 +8,9 @@ test('Round 60: free curve selector offers four basic modes while morphisms reta
  assert.match(app,/buildChoice\('Arrowheads',[^\n]+FREE_CURVE_HEAD_CHOICES/);
  assert.match(app,/morphChoice\('Arrowheads',visibleArrowheads\(appearance\.line,appearance\.heads\)/);
 });
-test('Round 60: end cap compensated and double-line heads enlarged; morphism kept unchanged',()=>{
- assert.match(app,/const advance=!latex&&vlen>1e-5/);
- assert.match(app,/lineStyle==='double'\?Math\.max\(width,3\.5\):width/);
- assert.match(app,/decoratedHeads\(item,path,visibleArrowheads\(pattern,heads\),o\.style\.stroke,o\.style\.width,false,pattern\)/);
+test('Round 191: Free Curves and morphisms share open-tip arrow rendering for every line style',()=>{
+ assert.match(app,/decoratedHeads\(item,path,visibleArrowheads\(pattern,heads\),o\.style\.stroke,o\.style\.width,true,pattern\)/);
+ assert.match(app,/decoratedHeads\(item,path,visibleArrowheads\(appearance\.line,appearance\.heads\),o\.style\.stroke,o\.style\.width,true,appearance\.line,!!o\.swap\)/);
 });
 test('Round 60: imported historical curve arrowheads remain schema-compatible',()=>{
  for(const choice of ['double-end','hook','tail','harpoon']){

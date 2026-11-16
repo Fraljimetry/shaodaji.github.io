@@ -1837,3 +1837,10 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 
 - Double and Wavy remain limited to None, End, Start, and Both arrowheads (no Double end/Hook/Tail/Harpoon).
 - When arrowheads are present, visible Double shafts and Wavy strokes must meet the sharp arrow-tip location cleanly, without detached parallel ends, a visible protruding wave, or a microscopic tip. Preserve editing, project compatibility, and tikz-cd export.
+
+### Round 190 — Free Curve arrow rendering
+- Free Curve Double/Wavy line styles support None, End, Start and Both; their parallel/wavy strokes must meet the visible arrow tips, matching the diagram morphism convention.
+- Solid/Dashed/Dotted free curves keep the original filled arrow tips; shape-mode ellipse/polygon free curves remain headless.
+
+### Round 191 — Shared arrow appearance
+- Free Curves and diagram morphisms use the same visible arrowhead geometry for matching line styles, arrowhead modes, stroke colors, and widths. Solid, Dashed, Dotted, Double and Wavy use the same open V-shaped tips; preserve the underlying curve geometry and node attachment behavior.

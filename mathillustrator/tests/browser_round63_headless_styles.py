@@ -23,7 +23,7 @@ with sync_playwright() as pw:
   assert page.locator('#drawing .latex-morphism-hook').count()==1
   for line in ['double','wavy']:
    lines.select_option(line)
-   assert heads.is_disabled() and heads.input_value()=='none',line
+   assert not heads.is_disabled() and heads.input_value()=='none',line
    assert page.locator('#drawing g[data-id="o3"] .latex-morphism-tip').count()==0,line
    assert page.locator('#drawing g[data-id="o3"] .latex-morphism-hook').count()==0,line
   # A line-style switch must not destroy the stored hook preference.
@@ -36,10 +36,11 @@ with sync_playwright() as pw:
   assert heads.input_value()=='both'
   for line in ['double','wavy']:
    lines.select_option(line)
-   assert heads.is_disabled() and heads.input_value()=='none',line
+   assert not heads.is_disabled() and heads.input_value()=='both',line
+   assert page.locator('#drawing [data-id="o4"] .latex-morphism-tip').count()==4,line
    assert page.locator('#drawing .freehand-arrowhead').count()==0,line
   lines.select_option('solid');assert not heads.is_disabled() and heads.input_value()=='both'
-  assert page.locator('#drawing .freehand-arrowhead').count()==2
+  assert page.locator('#drawing [data-id="o4"] .latex-morphism-tip').count()==4
   assert not errors,errors
-  print('ROUND63_CHROMIUM_PASS: hook semicircle, double/wavy head suppression, disabled property, preserved saved choice, freehand restoration')
+  print('ROUND190_CHROMIUM_PASS: legacy hook restoration, four-mode decorated arrows, freehand open tips')
  finally:b.close()

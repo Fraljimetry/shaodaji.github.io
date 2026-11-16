@@ -2151,3 +2151,13 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Preserved four arrowhead choices (None, End, Start, Both) for Double/Wavy; all other arrowhead controls and tikz-cd semantics unchanged.
 - Verification on reconstructed authoritative Round 188 source: `node --test tests/*.test.mjs` **605/605 PASS**, `node --check src/app.mjs` **PASS**, `python tests/browser_round58_arrow_styles.py` **PASS**, including new assertions that decorated lines terminate at the underlying arrow endpoint.
 - Not verified: production deployment/browser cache, exhaustive responsive layouts or full historical Chromium suite.
+
+### Round 190 — Free Curve decorated-arrow endpoint consistency
+- Double/Wavy Free Curves now use the same open V-shaped arrow tips as diagram morphisms, with shafts tapered to the endpoint. Solid/Dashed/Dotted Free Curves retain their filled tips.
+- Fixed new Free Curve tool panel crash from obsolete `HEADLESS_LINE_STYLES` constant.
+- Updated legacy freehand/arrow regression assumptions to four choices (None/End/Start/Both).
+- Verification: Node 605/605 PASS; JavaScript syntax PASS; Chromium Free Curve geometry and four-mode UI, Round 58/63 regressions PASS. Full historical Chromium suite not executed.
+
+### Round 191 — Arrow rendering parity
+- Unified Free Curve and diagram morphism arrowheads through the existing `decoratedHeads` path (open V-shaped tips, consistent sizing and endpoint placement for all line patterns).
+- No changes to glyphs, selectable arrow choices, saved project schema or node routing. Browser and Node verification are reported in the delivery summary.
