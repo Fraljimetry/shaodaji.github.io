@@ -874,7 +874,7 @@ function draw(svg,{exporting=false}={}){
     if(curve)vertices=Array.from({length:25},(_,i)=>{const t=i/24,q=1-t;return [q*q*a[0]+2*q*t*curve.control[0]+t*t*b[0],q*q*a[1]+2*q*t*curve.control[1]+t*t*b[1]];});
    }
    const boxes=strokeObstacleRectangles(vertices,Math.max(3,(edge.style?.width??2)/2+2),Math.min(128,obstacleBudget-nodeRects.length));
-   nodeRects.push(...boxes);
+   nodeRects.push(...boxes.map(box=>({...box,owner:edge.id})));
   }
   // Text annotations are also visible diagram elements, not empty space.
   for(const annotation of doc.objects){

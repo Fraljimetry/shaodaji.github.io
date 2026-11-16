@@ -2161,3 +2161,9 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 ### Round 191 — Arrow rendering parity
 - Unified Free Curve and diagram morphism arrowheads through the existing `decoratedHeads` path (open V-shaped tips, consistent sizing and endpoint placement for all line patterns).
 - No changes to glyphs, selectable arrow choices, saved project schema or node routing. Browser and Node verification are reported in the delivery summary.
+
+
+### Round 192 — Compact automatic morphism label placement
+- Corrected the automatic label planner to exclude a label’s own arrow stroke from its obstacle search, while retaining obstacles from other arrows, nodes, text and manually positioned labels. Added 12 px candidate offsets and increased the penalty for long displacement; retained larger fallback offsets where necessary to clear real obstacles. No model/schema, export code or glyph changes.
+- Node tests: **610/610 PASS** (includes three new focused placement regressions). Browser: **PASS** focused real Chromium module checks for own-arrow locality, unrelated-arrow collision and crowded close placement. A historical Chromium script `browser_round32_dynamic_label.py` remains **FAILED/OUTDATED**: it searches for the removed `TikZ / PGF` button (30-second locator timeout), unrelated to this change. Full historical Chromium suite **NOT EXECUTED**. Production deployment and visual approval **NOT VERIFIED**.
+- The user withdrew an earlier request to change Free Curve default width. That change is explicitly excluded from this overlay.

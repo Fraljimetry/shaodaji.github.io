@@ -1844,3 +1844,7 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 
 ### Round 191 — Shared arrow appearance
 - Free Curves and diagram morphisms use the same visible arrowhead geometry for matching line styles, arrowhead modes, stroke colors, and widths. Solid, Dashed, Dotted, Double and Wavy use the same open V-shaped tips; preserve the underlying curve geometry and node attachment behavior.
+
+
+### Round 192 — Compact automatic morphism labels
+- Keep automatic labels near their original morphism attachment and avoid treating the same morphism’s own stroke as an external collision. Preserve manual label placements, side swapping, other-arrow and node avoidance, and existing project values. Crowded diagrams may still show overlaps rather than distant floating labels.
