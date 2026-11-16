@@ -1802,3 +1802,10 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 ## Round 181–182 — tutorial examples and final hardening
 - Round 181 supersedes the Round 179 tutorial gallery requirement: **do not show any example gallery or example-project links in the English or Chinese tutorial**. Keep the six native example JSON files for potential later reuse, not as active tutorial content.
 - A final hardening audit must keep historical tests aligned with deliberate UI removals without discarding preserved project-schema and mathematical-invariant coverage; record incomplete GPU, hosted, physical touch, and exhaustive error-path certification accurately.
+
+
+## Round 183 — Documentation and tools-page parity
+- Remove the redundant MathIllustrator tutorial link from the root Tools landing page, matching MathReader's landing-page behavior; preserve the editor's own Help guide access.
+- Make the bilingual MathIllustrator guide navigable with the same information architecture pattern as MathReader: chapter directory, anchor links, accessible chapter headings, mobile layout, independent theme and language controls.
+- Provide a comprehensive standalone PDF manual explaining existing capabilities and mathematical limitations, and a hands-on inspection checklist. The manual must distinguish source-confirmed behavior, historical regressions, and unverified runtime combinations.
+- Preserve English/Chinese content, expression function reference tables, unsupported-format caveats and past tutorial instructions.

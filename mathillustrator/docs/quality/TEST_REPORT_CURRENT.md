@@ -2096,3 +2096,14 @@ Confirmed and fixed absent preselection hover feedback, missing Free Curve trans
 - Full baseline: authoritative archive + overlays 159–181. Initial Node 592/593 due to obsolete Round 179 gallery-link assertion conflicting with intentional Round 181 removal. Updated that test to assert no links while preserving native JSON checks; final **593/593 PASS**, no skips. No runtime code changes.
 - Module syntax PASS; mathematical property tests **6200/6200**; individually completed real Chromium interaction regressions for layout, translation, geometry picking, Free Curve dragging, 2D/3D plotting, export, history, cancellation, dense raster and performance PASS.
 - Legacy `browser_gpu3d_acceleration.py` **FAIL** (stale WebGL2/CPU SVG text expectations); current Round 127 dense-raster test PASS. Hardware GPU parity, entire historical browser collection, hosted site and physical touch **INCOMPLETE**. Detailed provenance: `docs/quality/ROUND182_FINAL_HARDENING.md`.
+
+
+## Round 183 — Guide parity and functional reference (2026-11-15)
+- Compared bundled MathReader guide (chapter navigation, bilingual controls) and the supplied root tools.html.
+- Removed only the redundant MathIllustrator “View tutorial” button from tools.html, retained the editor Help icon and direct tutorial URL.
+- Rebuilt MathIllustrator tutorial with nine bilingual anchored chapters, responsive on-page navigation, theme/language toggles, complete existing function tables and shortcuts.
+- Produced a separate 20-page PDF functional manual, with a 42-tool geometry catalog, evidence legend, known limitations, failure paths and a 30-item acceptance worksheet. PDF is separately delivered, not a site dependency.
+- Node 596/596 PASS (`node --test tests/*.test.mjs`). Includes updated Round 181 and new Round 183 tutorial regression tests.
+- Actual Chromium 1440/768/390/320 PASS for independent guide rendering (set_content from actual HTML due local file URL policy), EN→ZH→EN, theme toggle, anchors, left-aligned tables and no horizontal overflow.
+- Full editor E2E, hosted deployment, browser-local storage integration, and all mathematical workflows NOT RUN in this documentation-only cut.
+- No source math or editor runtime files changed.
