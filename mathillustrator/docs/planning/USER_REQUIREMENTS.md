@@ -1818,3 +1818,8 @@ Exact geometry recognition must accept mathematical constants (`pi`, `e`, case-i
 ## Round 185 — Release cleanup without feature expansion (2026-11-15)
 
 Retire permanently disabled Float buttons for Objects, Properties and Tools and the inactive floating-Properties corner. Panels remain docked; existing collapse and splitter controls remain in place. Simplify the diagram-render route loop to the already-authoritative direct-routing path, removing an unreachable global optimization branch and discarded crossing arrays. Preserve old saved `routing` values on import; render them directly exactly as in Round 56. Do not delete archived modules or historic project formats during release stabilization.
+
+## Round 186 — Maintenance-only reliability (2026-11-15)
+- The distributable MathIllustrator website directory must be independently verifiable. A hosting-site `tools.html` is optional external integration, not part of its required source ZIP.
+- Plot path cache configuration must reject invalid/negative/non-finite budgets rather than crashing during eviction. Zero budgets must remain supported as an explicit no-cache mode.
+- Preserve existing six export formats, editor behavior, glyph artwork, serialization, and user-oriented bilingual tutorial; no new features.

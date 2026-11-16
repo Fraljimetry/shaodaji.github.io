@@ -2,6 +2,8 @@
  * Only immutable path strings are cached, never mutable documents or functions.
  */
 export function createPlotCache({maxEntries=32,maxCharacters=1200000}={}){
+ if(!Number.isSafeInteger(maxEntries)||maxEntries<0||!Number.isSafeInteger(maxCharacters)||maxCharacters<0)
+  throw new RangeError('Plot cache limits must be nonnegative safe integers.');
  const entries=new Map();let characters=0,hits=0,misses=0;
  return {
   get(key,compute){
