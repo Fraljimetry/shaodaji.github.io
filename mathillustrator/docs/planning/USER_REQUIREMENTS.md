@@ -1874,3 +1874,8 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 ### Round 198 — Maintenance stress coverage
 - Do not add features for stress testing. Keep bounded mathematical sampling, finite coordinates and safe cancellation for singular/high-curvature 2D plots and mixed 3D plots; preserve independent 3D camera controls, the three-visible-surface limit, and Fix region behavior.
 - Retain regression fixtures for complicated 2D plotting, 3D mixed-surface rendering and crowded geometry, including JSON reopen and SVG export. A successful render is not by itself a claim of visual or numerical fidelity at every resolution.
+
+### Round 199 — Geometry olympiad stress and honest dependency reporting
+- Retain an actual IMO 2011 Problem 6 geometry fixture and test the reflection/tangency invariants, finite dependent points, valid project structure, physical dragging, undo/redo, JSON reopen, and supported illustration exports.
+- Distinguish fixed-coordinate auxiliary geometry from true live dependent constructions. Never claim that the entire olympiad configuration remains a theorem-valid construction after dragging a vertex unless every relevant dependency has been modeled and tested.
+- Avoid changing reliable production code solely to satisfy an obsolete browser-test selector; report incomplete historical checks separately from tested user-visible behaviors.

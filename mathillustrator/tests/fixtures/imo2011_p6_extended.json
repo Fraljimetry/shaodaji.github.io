@@ -1,0 +1,2033 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "IMO 2011 Problem 6 — reflected tangent and homothetic triangles (extended construction)"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 1.25,
+    "pointSize": 4,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "standard",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": false
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "type": "point",
+      "name": "A",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        -0.28530486,
+        2.03004954
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "A"
+    },
+    {
+      "id": "o2",
+      "type": "point",
+      "name": "B",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        -1.75719297,
+        -1.05582805
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "B"
+    },
+    {
+      "id": "o3",
+      "type": "point",
+      "name": "C",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        1.88703495,
+        -0.80099881
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "C"
+    },
+    {
+      "id": "o4",
+      "type": "triangleCenter",
+      "name": "O",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "O",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "circumcenter"
+    },
+    {
+      "id": "o5",
+      "type": "point",
+      "name": "T",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        1.85793096,
+        0.86636744
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "T"
+    },
+    {
+      "id": "o6",
+      "type": "point",
+      "name": "Ap",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        -3.39871416,
+        2.74883672
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "A^{\\prime}"
+    },
+    {
+      "id": "o7",
+      "type": "point",
+      "name": "Bp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        4.26585127,
+        4.65982751
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "B^{\\prime}"
+    },
+    {
+      "id": "o8",
+      "type": "point",
+      "name": "Cp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        2.23606496,
+        -1.97930436
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "C^{\\prime}"
+    },
+    {
+      "id": "o9",
+      "type": "triangleCenter",
+      "name": "Onew",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "O_1",
+      "refs": [
+        "o6",
+        "o7",
+        "o8"
+      ],
+      "centerKind": "circumcenter"
+    },
+    {
+      "id": "o10",
+      "type": "point",
+      "name": "K",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 5.3
+      },
+      "xy": [
+        -0.76773702,
+        -1.90081032
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "K"
+    },
+    {
+      "id": "o11",
+      "type": "point",
+      "name": "A2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "xy": [
+        -2.0247611,
+        0.32069065
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "A^{\\prime\\prime}"
+    },
+    {
+      "id": "o12",
+      "type": "point",
+      "name": "B2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "xy": [
+        1.6372028,
+        1.2337208
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "B^{\\prime\\prime}"
+    },
+    {
+      "id": "o13",
+      "type": "point",
+      "name": "C2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "xy": [
+        0.66741472,
+        -1.93831308
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "C^{\\prime\\prime}"
+    },
+    {
+      "id": "o14",
+      "type": "point",
+      "name": "Q",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "xy": [
+        -0.76773702,
+        -1.90081032
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Q"
+    },
+    {
+      "id": "o15",
+      "type": "midpoint",
+      "name": "Mab",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{AB}",
+      "refs": [
+        "o1",
+        "o2"
+      ]
+    },
+    {
+      "id": "o16",
+      "type": "midpoint",
+      "name": "Mbc",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{BC}",
+      "refs": [
+        "o2",
+        "o3"
+      ]
+    },
+    {
+      "id": "o17",
+      "type": "midpoint",
+      "name": "Mca",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{CA}",
+      "refs": [
+        "o3",
+        "o1"
+      ]
+    },
+    {
+      "id": "o18",
+      "type": "perpendicularFoot",
+      "name": "Da",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "D_a",
+      "refs": [
+        "o1",
+        "o37"
+      ]
+    },
+    {
+      "id": "o19",
+      "type": "perpendicularFoot",
+      "name": "Db",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "D_b",
+      "refs": [
+        "o2",
+        "o38"
+      ]
+    },
+    {
+      "id": "o20",
+      "type": "perpendicularFoot",
+      "name": "Dc",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "D_c",
+      "refs": [
+        "o3",
+        "o36"
+      ]
+    },
+    {
+      "id": "o21",
+      "type": "triangleCenter",
+      "name": "H",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "H",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "orthocenter"
+    },
+    {
+      "id": "o22",
+      "type": "triangleCenter",
+      "name": "G",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "G",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "centroid"
+    },
+    {
+      "id": "o23",
+      "type": "triangleCenter",
+      "name": "I",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "I",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "incenter"
+    },
+    {
+      "id": "o24",
+      "type": "point",
+      "name": "O9",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "xy": [
+        -0.07773144,
+        0.08661134
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "N"
+    },
+    {
+      "id": "o25",
+      "type": "triangleCenter",
+      "name": "Gnew",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "G_1",
+      "refs": [
+        "o6",
+        "o7",
+        "o8"
+      ],
+      "centerKind": "centroid"
+    },
+    {
+      "id": "o26",
+      "type": "triangleCenter",
+      "name": "Hnew",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "H_1",
+      "refs": [
+        "o6",
+        "o7",
+        "o8"
+      ],
+      "centerKind": "orthocenter"
+    },
+    {
+      "id": "o27",
+      "type": "triangleCenter",
+      "name": "Inew",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.5
+      },
+      "pointLabelMode": "latex",
+      "pointLabel": "I_1",
+      "refs": [
+        "o6",
+        "o7",
+        "o8"
+      ],
+      "centerKind": "incenter"
+    },
+    {
+      "id": "o28",
+      "type": "point",
+      "name": "Irad",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.8
+      },
+      "xy": [
+        0.94069493,
+        0.08550237
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Irad"
+    },
+    {
+      "id": "o29",
+      "type": "point",
+      "name": "Inewrad",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.8
+      },
+      "xy": [
+        3.2640356,
+        1.69952702
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Inewrad"
+    },
+    {
+      "id": "o30",
+      "type": "point",
+      "name": "O9rad",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 3.8
+      },
+      "xy": [
+        0.94726856,
+        0.08661134
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "O9rad"
+    },
+    {
+      "id": "o31",
+      "type": "circle",
+      "name": "Gamma",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 2.05,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o4",
+        "o1"
+      ],
+      "displayLabelMode": "latex",
+      "displayLabel": "\\Gamma"
+    },
+    {
+      "id": "o32",
+      "type": "circle",
+      "name": "Gamma1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 2.05,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o9",
+        "o6"
+      ],
+      "displayLabelMode": "latex",
+      "displayLabel": "\\Gamma_1"
+    },
+    {
+      "id": "o33",
+      "type": "circle",
+      "name": "incircleABC",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o23",
+        "o28"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o34",
+      "type": "circle",
+      "name": "incirclePrime",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o27",
+        "o29"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o35",
+      "type": "circle",
+      "name": "ninePointCircle",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o24",
+        "o30"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o36",
+      "type": "segment",
+      "name": "Triangle_AB",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 2,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o37",
+      "type": "segment",
+      "name": "Triangle_BC",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 2,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o38",
+      "type": "segment",
+      "name": "Triangle_CA",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 2,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o3",
+        "o1"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o39",
+      "type": "segment",
+      "name": "ReflectedTriangle_ApBp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 2.15,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o6",
+        "o7"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o40",
+      "type": "segment",
+      "name": "ReflectedTriangle_BpCp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 2.15,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o7",
+        "o8"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o41",
+      "type": "segment",
+      "name": "ReflectedTriangle_CpAp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 2.15,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o8",
+        "o6"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o42",
+      "type": "point",
+      "name": "Tt1",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        5.15012722,
+        -6.19377022
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Tt1"
+    },
+    {
+      "id": "o43",
+      "type": "point",
+      "name": "Tt2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        -1.4342653,
+        7.9265051
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Tt2"
+    },
+    {
+      "id": "o44",
+      "type": "segment",
+      "name": "tangent_t",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#c38b2e",
+        "fill": "#c38b2e",
+        "width": 1.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o42",
+        "o43"
+      ],
+      "displayLabelMode": "latex",
+      "displayLabel": "t"
+    },
+    {
+      "id": "o45",
+      "type": "segment",
+      "name": "radius_OT",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.95,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o5"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o46",
+      "type": "point",
+      "name": "taL",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        4.6973919,
+        6.07133333
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "taL"
+    },
+    {
+      "id": "o47",
+      "type": "point",
+      "name": "taR",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        1.80452432,
+        -3.39081018
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "taR"
+    },
+    {
+      "id": "o48",
+      "type": "segment",
+      "name": "reflection_ta",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.75,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o46",
+        "o47"
+      ],
+      "displayLabelMode": "latex",
+      "displayLabel": "t_a"
+    },
+    {
+      "id": "o49",
+      "type": "point",
+      "name": "tbL",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        -4.52939576,
+        3.69759123
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "tbL"
+    },
+    {
+      "id": "o50",
+      "type": "point",
+      "name": "tbR",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        3.36674655,
+        -2.92805888
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "tbR"
+    },
+    {
+      "id": "o51",
+      "type": "segment",
+      "name": "reflection_tb",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.75,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o49",
+        "o50"
+      ],
+      "displayLabelMode": "latex",
+      "displayLabel": "t_b"
+    },
+    {
+      "id": "o52",
+      "type": "point",
+      "name": "tcL",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        -4.83087066,
+        2.39176
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "tcL"
+    },
+    {
+      "id": "o53",
+      "type": "point",
+      "name": "tcR",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.3,
+        "opacity": 0.97,
+        "pointSize": 3.8
+      },
+      "xy": [
+        5.69800776,
+        5.01690423
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "tcR"
+    },
+    {
+      "id": "o54",
+      "type": "segment",
+      "name": "reflection_tc",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.75,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o52",
+        "o53"
+      ],
+      "displayLabelMode": "latex",
+      "displayLabel": "t_c"
+    },
+    {
+      "id": "o55",
+      "type": "point",
+      "name": "Fa",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.5
+      },
+      "xy": [
+        1.97409885,
+        -0.79491071
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Fa"
+    },
+    {
+      "id": "o56",
+      "type": "segment",
+      "name": "reflection_axis_a",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o5",
+        "o55"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o57",
+      "type": "point",
+      "name": "Fb",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.5
+      },
+      "xy": [
+        1.07097323,
+        0.26251353
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Fb"
+    },
+    {
+      "id": "o58",
+      "type": "segment",
+      "name": "reflection_axis_b",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o5",
+        "o57"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o59",
+      "type": "point",
+      "name": "Fc",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.5
+      },
+      "xy": [
+        -0.34025337,
+        1.91484758
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Fc"
+    },
+    {
+      "id": "o60",
+      "type": "segment",
+      "name": "reflection_axis_c",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.85,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o5",
+        "o59"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o61",
+      "type": "segment",
+      "name": "chord_A2B2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.55,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o11",
+        "o12"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o62",
+      "type": "segment",
+      "name": "chord_B2C2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.55,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o12",
+        "o13"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o63",
+      "type": "segment",
+      "name": "chord_C2A2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.55,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o13",
+        "o11"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o64",
+      "type": "segment",
+      "name": "equal_chord_TA",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o5",
+        "o1"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o65",
+      "type": "segment",
+      "name": "equal_chord_TB",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o5",
+        "o2"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o66",
+      "type": "segment",
+      "name": "equal_chord_TC",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o5",
+        "o3"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o67",
+      "type": "segment",
+      "name": "equal_chord_AA2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o1",
+        "o11"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o68",
+      "type": "segment",
+      "name": "equal_chord_BB2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o2",
+        "o12"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o69",
+      "type": "segment",
+      "name": "equal_chord_CC2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o3",
+        "o13"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o70",
+      "type": "segment",
+      "name": "homothety_Ap_A2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o6",
+        "o11"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o71",
+      "type": "segment",
+      "name": "homothety_Bp_B2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o7",
+        "o12"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o72",
+      "type": "segment",
+      "name": "homothety_Cp_C2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.3,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o8",
+        "o13"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o73",
+      "type": "segment",
+      "name": "Q_connection_Ap",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o14",
+        "o6"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o74",
+      "type": "segment",
+      "name": "Q_connection_Bp",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o14",
+        "o7"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o75",
+      "type": "segment",
+      "name": "Q_connection_Cp",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o14",
+        "o8"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o76",
+      "type": "segment",
+      "name": "Q_connection_A2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o14",
+        "o11"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o77",
+      "type": "segment",
+      "name": "Q_connection_B2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o14",
+        "o12"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o78",
+      "type": "segment",
+      "name": "Q_connection_C2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o14",
+        "o13"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o79",
+      "type": "segment",
+      "name": "center_line",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#c38b2e",
+        "fill": "#c38b2e",
+        "width": 1.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o9"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o80",
+      "type": "segment",
+      "name": "common_tangency_radius",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#c38b2e",
+        "fill": "#c38b2e",
+        "width": 1.65,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o10"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o81",
+      "type": "segment",
+      "name": "secondary_tangency_radius",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#c38b2e",
+        "fill": "#c38b2e",
+        "width": 1.65,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o9",
+        "o10"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o82",
+      "type": "segment",
+      "name": "altitude_A",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.9,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o1",
+        "o18"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o83",
+      "type": "segment",
+      "name": "altitude_B",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.9,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o2",
+        "o19"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o84",
+      "type": "segment",
+      "name": "altitude_C",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.9,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o3",
+        "o20"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o85",
+      "type": "segment",
+      "name": "median_A",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o1",
+        "o16"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o86",
+      "type": "segment",
+      "name": "median_B",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o2",
+        "o17"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o87",
+      "type": "segment",
+      "name": "median_C",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.8,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o3",
+        "o15"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o88",
+      "type": "segment",
+      "name": "euler_O_H",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.7,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o21"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o89",
+      "type": "segment",
+      "name": "euler_O_G",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.7,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o22"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o90",
+      "type": "segment",
+      "name": "euler_I_O",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 0.7,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o23",
+        "o4"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o91",
+      "type": "segment",
+      "name": "second_radius_Ap",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 0.85,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o9",
+        "o6"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o92",
+      "type": "segment",
+      "name": "second_radius_Bp",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 0.85,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o9",
+        "o7"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o93",
+      "type": "segment",
+      "name": "second_radius_Cp",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 0.85,
+        "opacity": 0.97
+      },
+      "refs": [
+        "o9",
+        "o8"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o94",
+      "type": "segment",
+      "name": "original_radius_A2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o11"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o95",
+      "type": "segment",
+      "name": "original_radius_B2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o12"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o96",
+      "type": "segment",
+      "name": "original_radius_C2",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 0.75,
+        "opacity": 0.77
+      },
+      "refs": [
+        "o4",
+        "o13"
+      ],
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o97",
+      "type": "point",
+      "name": "X11",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        2.61180378,
+        -0.75031804
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X11"
+    },
+    {
+      "id": "o98",
+      "type": "point",
+      "name": "X12",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        2.39422596,
+        -1.46198301
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X12"
+    },
+    {
+      "id": "o99",
+      "type": "point",
+      "name": "X21",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        0.91298781,
+        -0.86911082
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X21"
+    },
+    {
+      "id": "o100",
+      "type": "point",
+      "name": "X22",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        3.79478219,
+        -3.28722342
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X22"
+    },
+    {
+      "id": "o101",
+      "type": "point",
+      "name": "X23",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        -0.93036738,
+        0.67764784
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X23"
+    },
+    {
+      "id": "o102",
+      "type": "point",
+      "name": "X32",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        -1.24826518,
+        3.28500387
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X32"
+    },
+    {
+      "id": "o103",
+      "type": "point",
+      "name": "X33",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.3,
+        "opacity": 0.77,
+        "pointSize": 2.3
+      },
+      "xy": [
+        0.52404696,
+        3.72689091
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "X33"
+    }
+  ],
+  "nextId": 104
+}
