@@ -13,7 +13,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated} from './i18n.mjs?cut=round54';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round54';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -69,7 +69,7 @@ function syncColorSwatches(){
 function appendColorSwatches(parent,{scope,property,apply}){
  const group=document.createElement('div');group.className='color-swatches';group.dataset.colorSwatches=scope;
  group.dataset.colorProperty=property;group.setAttribute('role','group');
- group.setAttribute('aria-label',scope==='plot3d'?'Surface colors':property==='stroke'?'Stroke colors':'Fill colors');
+ group.setAttribute('aria-label',translated(scope==='plot3d'?'Surface colors':property==='stroke'?'Stroke colors':'Fill colors',uiPrefs.language));
  for(const [name,hex] of COMMON_COLORS){
   const button=document.createElement('button');button.type='button';button.className='color-swatch';
   button.dataset.color=hex;button.style.setProperty('--swatch',hex);
@@ -657,7 +657,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   if(bboxOutsideViewport([[x-width/2,y-height/2],[x+width/2,y+height/2]],size.w,size.h,cullMargin))return;
   item=el('g',{'data-id':o.id});
   if(o.nodeBorder)item.append(el('rect',{x:x-width/2,y:y-height/2,width,height,rx:7,stroke:sty.stroke,'stroke-width':sty['stroke-width'],fill:sty.fill,'fill-opacity':.18,opacity:sty.opacity}));
-  else if(!exporting)item.append(el('rect',{x:x-width/2,y:y-height/2,width,height,fill:'transparent','pointer-events':'all','data-id':o.id,'aria-label':'Select diagram node'}));
+  else if(!exporting)item.append(el('rect',{x:x-width/2,y:y-height/2,width,height,fill:'transparent','pointer-events':'all','data-id':o.id,'aria-label':translated('Select diagram node',uiPrefs.language)}));
   if(o.textMode==='latex')item.append(latexDisplay(o,x,y,o.fontSize||17,{anchor:'middle',vertical:'middle',exporting}));
   else{const label=el('text',{'xml:space':'preserve','text-anchor':'middle','font-size':o.fontSize||17,'font-family':o.fontFamily||'Georgia, serif',fill:sty.stroke,opacity:sty.opacity,'pointer-events':'none'});
    const startY=y-(lines.length-1)*lineHeight/2+(o.fontSize||17)*.32;
@@ -704,7 +704,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
      const top=metrics?ly-metrics.ascent:ly-14;
      const hit=el('rect',{x:lx-w/2-4,y:top-4,width:w+8,height:h+8,
       fill:'transparent','pointer-events':'all','data-id':o.id,'data-label-handle':o.id,
-      'aria-label':'Drag arrow label'});
+      'aria-label':translated('Drag arrow label',uiPrefs.language)});
      hit.style.cursor='move';item.append(hit);
     }
    }
@@ -951,6 +951,8 @@ function paint3DCanvasPrimitive(ctx,primitive){
   ctx.lineTo(b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux);ctx.closePath();ctx.fill();
  }
 }
+let renderInfoSource='Ready';
+function setRenderInfo(message){renderInfoSource=message;$('render-info').textContent=translated(message,uiPrefs.language);}
 let sceneRenderEpoch=0,sceneRenderFrame=0,sceneRenderTask=null,sceneRenderPending=false,orbitRenderQueued=false;
 function cancelSceneRender(){
  sceneRenderPending=false;
@@ -964,7 +966,7 @@ function render(){
  const start=performance.now(),svg=$('drawing');plotLimitedInScene=false;
  if(!in3D()){
   svg.replaceChildren();draw(svg);lastRender=performance.now()-start;
-  $('render-info').textContent=`${doc.objects.length} objects · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`;
+  setRenderInfo(`${doc.objects.length} objects · ${Math.round(lastRender*10)/10} ms${plotLimitedInScene?' · PLOT LIMIT: zoom/adjust detail':''}`);
   return;
  }
  // Keep the previous complete scene visible while building the next frame.
@@ -974,7 +976,7 @@ function render(){
  const snapshot=JSON.parse(JSON.stringify(doc.scene3d)),interactive=!!cameraDrag&&uiPrefs.fast3DOrbit!==false;
  sceneRenderTask=create3DProjectionTask(snapshot,size.w,size.h,{interactive});
  sceneRenderPending=true;
- $('render-info').textContent=`${snapshot.plots.length} 3D plots · rendering…`;
+ setRenderInfo(`${snapshot.plots.length} 3D plots · rendering…`);
  const paintResult=result=>{
   if(epoch!==sceneRenderEpoch)return;
   sceneRenderTask=null;
@@ -1011,7 +1013,7 @@ function render(){
     // One atomic replacement: no half-lit or partly missing 3D scene.
     svg.replaceChildren(staged);sceneRenderPending=false;
     if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;
-    $('render-info').textContent=`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?' · drag preview':''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`;
+    setRenderInfo(`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?' · drag preview':''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`);
     if(cameraDrag&&orbitRenderQueued){orbitRenderQueued=false;scheduleRender();}
    }
   };
@@ -1026,7 +1028,7 @@ function render(){
    // Do not destroy the last complete scene when a new mesh fails; the user
    // must still be able to orbit, edit or remove the offending expression.
    sceneRenderTask?.cancel();sceneRenderTask=null;sceneRenderPending=false;
-   $('render-info').textContent='3D rendering failed · previous view preserved';
+   setRenderInfo('3D rendering failed · previous view preserved');
    notice('3D rendering failed: '+e.message);
   }
  };
@@ -1146,11 +1148,11 @@ function render3DList(){
   if(filter&&!`${plot.name} ${plot.kind} ${plot.a}`.toLowerCase().includes(filter))continue;
   const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);row.dataset.locked=plot.locked?'true':'false';
   if(plot.hidden)row.classList.add('hidden');if(selected3d===plot.id)row.classList.add('selected');
-  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=plot.name;name.title=plot.name;const summary=document.createElement('small');summary.textContent=compactSubtitle(plot.a);summary.title=plot.a;info.append(name);if(summary.textContent.trim())info.append(summary);
+  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=translatedGeneratedPlotName(plot.name,plot.kind,uiPrefs.language);name.title=name.textContent;const summary=document.createElement('small');summary.textContent=compactSubtitle(plot.a);summary.title=plot.a;info.append(name);if(summary.textContent.trim())info.append(summary);
   row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
   function action(label,callback,disabled=false){
    const button=document.createElement('button');button.type='button';button.className='plot3d-action';button.title=translated(label,uiPrefs.language);button.setAttribute('aria-label',translated(label,uiPrefs.language));button.disabled=disabled;
-   button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg><span class="sr-only">${label}</span>`;
+   button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg><span class="sr-only">${translated(label,uiPrefs.language)}</span>`;
    button.onclick=e=>{e.stopPropagation();callback();};row.append(button);
   }
   const objectIcon=document.createElement('span');objectIcon.className='glyph';
@@ -2653,7 +2655,7 @@ function renderTrash(){
   const title=document.createElement('span');title.className='trash-names';
   const plots3d=Array.isArray(entry.plots3d)?entry.plots3d:[];
   const names=[...entry.objects,...plots3d].map(o=>typeof o.name==='string'&&o.name.trim()?o.name.trim():o.id).filter(Boolean);
-  title.textContent=`${plots3d.length?'3D · ':''}${names.join(', ')||entry.objects.length+' object(s)'} · ${new Date(entry.at).toLocaleString()}`;
+  title.textContent=`${plots3d.length?'3D · ':''}${names.join(', ')||translated(`${entry.objects.length} object(s)`,uiPrefs.language)} · ${new Date(entry.at).toLocaleString()}`;
   title.title=names.join(', ');
   const button=document.createElement('button');button.textContent='Restore';
   button.onclick=()=>{
@@ -2859,7 +2861,7 @@ function setupInterface(){
  for(const [id,key] of [['selection-preview','selectionPreview'],['fast-3d-orbit','fast3DOrbit']]){
   const input=$(id);input.checked=uiPrefs[key]!==false;input.onchange=()=>{uiPrefs[key]=input.checked;savePrefs();if(key==='fast3DOrbit')scheduleRender();else setHoverPick(null);};
  }
- function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);syncPlotModeControl();renderProperties();}
+ function applyLanguage(){closeObjectMenu();document.documentElement.lang=uiPrefs.language==='zh'?'zh':'en';localizeUI(document.documentElement,uiPrefs.language);updateModeLabel(tool);syncPlotModeControl();renderProperties();setRenderInfo(renderInfoSource);}
  $('ui-language').value=uiPrefs.language==='zh'?'zh':'en';
  const languageSwitch=$('ui-language');
  languageSwitch.title='Click once to switch English / 中文';

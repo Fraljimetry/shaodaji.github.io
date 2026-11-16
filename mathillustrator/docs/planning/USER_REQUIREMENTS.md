@@ -1879,3 +1879,15 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Retain an actual IMO 2011 Problem 6 geometry fixture and test the reflection/tangency invariants, finite dependent points, valid project structure, physical dragging, undo/redo, JSON reopen, and supported illustration exports.
 - Distinguish fixed-coordinate auxiliary geometry from true live dependent constructions. Never claim that the entire olympiad configuration remains a theorem-valid construction after dragging a vertex unless every relevant dependency has been modeled and tested.
 - Avoid changing reliable production code solely to satisfy an obsolete browser-test selector; report incomplete historical checks separately from tested user-visible behaviors.
+
+### Round 200 — Localization maintenance
+- Ensure switching Chinese/English translates not only static labels but live 3D object-list names, render/sampling status, autosave/error notices, property labels and accessibility labels. Switching languages must not trigger a costly scene rebuild.
+- Preserve user-entered object names, equations and stored JSON values verbatim. Automatically generated plot names may be localized for display only, if they match the application's exact built-in kind/name pattern.
+- Exercise reversible locale switching in actual Chromium and document untested mobile/high-detail conditions rather than reporting false success.
+
+
+### Round 201 — Bilingual interface completeness
+- All built-in geometry construction tool instructions must switch between English and Chinese, including screen-reader descriptions.
+- Localize rarely seen recovery, validation, autosave conflict, import/export and confirmation text; retain the original technical details of external exceptions.
+- Bilingual UI must never translate user-authored labels, mathematical expressions, saved project identities or JSON payloads.
+- Include source-backed translation coverage for built-in construction guidance and Chromium switches at desktop, tablet and mobile widths.

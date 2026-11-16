@@ -275,11 +275,170 @@ export function translated(s,language='en'){
  if(labelLimit)return '标签超过 '+labelLimit[1]+' 字符，未添加对象。';
  const deleted=/^Deleted (\d+) objects\. Restore them under Recently Deleted\.$/.exec(s);
  if(deleted)return '已删除 '+deleted[1]+' 个对象，可在最近删除中恢复。';
- const prefixed=/^(Local save unavailable|Label move rejected|Move rejected|Open failed|Import failed|Cannot load other tab|LaTeX renderer failed): (.*)$/.exec(s);
+ const objectCount=/^(\d+) object\(s\)$/.exec(s);
+ if(objectCount)return `${objectCount[1]} 个对象`;
+ const status2d=/^(\d+) objects · ([\d.]+) ms(?: · (PLOT LIMIT: zoom\/adjust detail))?$/.exec(s);
+ if(status2d)return `${status2d[1]} 个对象 · ${status2d[2]} 毫秒${status2d[3]?' · '+translated(status2d[3],language):''}`;
+ const status3d=/^(\d+) 3D plots · (rendering…|[\d.]+ ms)(?: · (drag preview))?(?: · (PLOT LIMIT: reduce detail\/plots))?$/.exec(s);
+ if(status3d)return `${status3d[1]} 个三维图形 · ${status3d[2]==='rendering…'?translated(status3d[2],language):status3d[2].replace(' ms',' 毫秒')}${status3d[3]?' · '+translated(status3d[3],language):''}${status3d[4]?' · '+translated(status3d[4],language):''}`;
+ const prefixed=/^(Local save unavailable|Autosave unavailable|Save coordination failed|3D rendering failed|Label move rejected|Move rejected|Open failed|Import failed|Cannot load other tab|LaTeX renderer failed): (.*)$/.exec(s);
  if(prefixed)return (zh[prefixed[1]]||prefixed[1])+'：'+(zh[prefixed[2]]||prefixed[2]);
  return zh[s]||s;
 }
 export const supportedLanguages=['en','zh'];
 
+// Round 200: runtime messages and automatically generated 3D names are UI text.
+// Mathematical expressions, authored names and project data remain untouched.
+Object.assign(zh,{
+ 'Saved locally':'已保存到本地',
+ 'Saved locally · cross-tab lock unavailable':'已保存到本地 · 无法使用跨标签页锁',
+ 'Local changes pending…':'本地更改待保存…',
+ 'Autosave paused · conflict':'自动保存已暂停 · 存在冲突',
+ 'Autosave paused · resolve conflict first':'自动保存已暂停 · 请先解决冲突',
+ 'No unsaved local changes':'没有未保存的本地更改',
+ 'Save coordination failed · download JSON':'保存协调失败 · 请下载 JSON',
+ 'Another tab changed this project.':'其他标签页已修改此项目。',
+ 'drag preview':'拖动预览',
+ 'rendering…':'正在渲染…',
+ 'PLOT LIMIT: zoom/adjust detail':'绘图限制：请缩放或调整精度',
+ 'PLOT LIMIT: reduce detail/plots':'绘图限制：请降低精度或减少图形',
+ 'objects':'个对象',
+ '3D plot moved to Recently Deleted.':'三维图形已移至最近删除。',
+ 'Choose a different vertex from the center.':'请选择不同于中心的顶点。',
+ 'Autosave unavailable':'自动保存不可用',
+ 'Cannot read latest local project · autosave paused':'无法读取最新本地项目 · 自动保存已暂停',
+ 'Same project synchronized':'相同项目已同步',
+ '3D rendering failed':'三维渲染失败',
+ '3D rendering failed · previous view preserved':'三维渲染失败 · 已保留先前视图',
+ 'Centered half-range':'中心对称半宽',
+ 'Region inequality':'区域不等式',
+ 'Excenter A':'A 旁心',
+ 'Excenter B':'B 旁心',
+ 'Excenter C':'C 旁心',
+ 'Save coordination failed':'保存协调失败',
+ 'Local save unavailable':'本地保存不可用',
+ 'Object actions':'对象操作',
+ 'Reorder section':'调整分区顺序',
+ 'No SVG icon for tool':'工具缺少 SVG 图标',
+});
+export function translatedGeneratedPlotName(name,kind,language='en'){
+ if(language!=='zh'||typeof name!=='string')return name;
+ // Only the exact built-in auto-name for its actual plot kind may be translated.
+ // User-customized names, even similar strings, remain user-owned text.
+ const prefix={surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind];
+ if(!prefix)return name;
+ const match=/^(.*) ([1-9]\d*)$/.exec(name);
+ return match&&match[1]===prefix?`${translated(prefix,language)} ${match[2]}`:name;
+}
 // Region locking is a persistent 3D project option, not a camera lock.
 Object.assign(zh,{"Fix region":"固定绘图范围"});
+
+// Round 201: source-backed coverage for construction guidance and rare runtime paths.
+Object.assign(zh,{
+ "Click the canvas.": "点击画布。",
+ "Click an existing line, circle or curve; then click the desired constrained position.": "选择已有直线、圆或曲线，再点击要约束的位置。",
+ "Click an external point, then a circle. Both tangents are constructed.": "依次点击圆外一点和圆，构造两条切线。",
+ "Click start, a point on the arc, and end.": "依次点击起点、弧上一点和终点。",
+ "Click focus point, then a directrix line.": "依次点击焦点和准线。",
+ "Click two foci, then a point on the hyperbola.": "依次点击两个焦点和双曲线上一点。",
+ "Click two different curves to construct their crossings.": "选择两条不同曲线，构造交点。",
+ "Click a geometric object, then a mirror line.": "依次选择几何对象和对称轴。",
+ "Choose an object, then an inversion circle. The circle center has no image.": "依次选择对象和反演圆；圆心在反演下没有像。",
+ "Click a geometric object, then a center; enter the rotation angle (degrees).": "选择几何对象和旋转中心，再输入旋转角度（度）。",
+ "Click an object, then a translation start and end point.": "选择对象，再点击平移向量的起点和终点。",
+ "Click a geometric object, then a center; enter a scale factor.": "选择几何对象和位似中心，再输入比例因子。",
+ "Click a dependent point, then a point constrained to an object.": "依次选择因变量点和受对象约束的驱动点。",
+ "Click the start point; enter a length, then choose its direction. Drag the endpoint to rotate.": "点击起点，输入长度并选择方向；可拖动端点旋转。",
+ "Choose a reference ray point and vertex, then enter an angle; drag the point on the resulting ray.": "选择参考射线上的点和顶点，再输入角度；可沿生成的射线拖动点。",
+ "Click three noncollinear triangle vertices; center kind can be changed in Properties.": "选择三个不共线的三角形顶点；可在属性中更改中心类型。",
+ "Click a source point, then a straight line, ray or segment; the foot remains dynamically attached.": "依次选择点和直线、射线或线段；垂足将保持动态依赖。",
+ "Click three points; the second point is the vertex of the angle.": "点击三个点，第二个点为角的顶点。",
+ "Click a point, then a straight line, segment, or ray.": "依次选择点和直线、线段或射线。",
+ "Click two crossing straight objects.": "选择两条相交的直线类对象。",
+ "Click two straight objects, two circles, or one of each; all finite intersections are created.": "选择两条直线类对象、两个圆，或各一个；构造全部有限交点。",
+ "Click two points; the midpoint follows both.": "点击两个点；中点将随它们移动。",
+ "Click the start, then the direction point.": "依次点击起点和方向点。",
+ "Click two points; the bisector stays perpendicular as they move.": "点击两个点；移动时垂直平分线会同步更新。",
+ "Click two opposite ends of a diameter.": "点击直径的两个端点。",
+ "Click three noncollinear points.": "点击三个不共线的点。",
+ "Click three vertices.": "依次点击三个顶点。",
+ "Click four vertices.": "依次点击四个顶点。",
+ "Click at least three points; Enter finishes.": "点击至少三个点，按 Enter 完成。",
+ "Click at least three points; click the starting point to close smoothly.": "点击至少三个点，再点击起点平滑闭合。",
+ "Drag objects to move; drag empty canvas to pan. Shift-drag empty canvas selects a rectangle.": "拖动对象以移动；拖动空白画布以平移；按住 Shift 在空白处拖动可框选。",
+ "Drag the canvas.": "拖动画布以平移。",
+ "Click vertices; click the starting point to close.": "依次点击顶点，再点击起点闭合。",
+ "Click vertices; Enter finishes.": "依次点击顶点，按 Enter 完成。",
+ "Click four control points.": "依次点击四个控制点。",
+ "Click three points (vertex second).": "点击三个点（第二个为顶点）。",
+ "Drag to draw a free curve.": "拖动以绘制自由曲线。",
+ "Click source and target nodes.": "依次点击源节点和目标节点。",
+ "Click center, then a vertex.": "依次点击中心和一个顶点。",
+ "Click the canvas to add a node.": "点击画布以添加节点。",
+ "Click the first focus, second focus, then a point on the ellipse.": "依次点击第一焦点、第二焦点和椭圆上一点。",
+ "Click an edge start, edge end, then a point indicating perpendicular height.": "依次点击一条边的起点、终点和确定垂直高度的第三点。",
+ "Click three consecutive vertices.": "依次点击三个相邻顶点。",
+ "Grid snapping temporarily enabled for diagram editing.": "绘制交换图时已暂时启用网格吸附。",
+ "Grid snapping restored to your saved setting.": "网格吸附已恢复为保存的设置。",
+ "Select diagram node": "选择交换图节点",
+ "Drag arrow label": "拖动箭头标签",
+ "Arrows are unavailable for ellipses and polygons.": "椭圆和多边形不支持箭头。",
+ "Surface colors": "曲面颜色",
+ "Browser storage is restricted: use Save to download JSON.": "浏览器存储受限，请使用“保存”下载 JSON。",
+ "Add more vertices before finishing.": "完成前请再添加顶点。",
+ "Centered half-range must be positive.": "中心对称半宽必须为正数。",
+ "Choose a center point.": "请选择中心点。",
+ "Choose a circle.": "请选择圆。",
+ "Choose a constrained driver that controls the target point.": "请选择控制目标点的受约束驱动点。",
+ "Choose a diagram node.": "请选择交换图节点。",
+ "Choose a different circle.": "请选择另一个圆。",
+ "Choose a different point to define the direction.": "请选择另一个点来确定方向。",
+ "Choose a different source object.": "请选择另一个源对象。",
+ "Choose a different straight object.": "请选择另一个直线类对象。",
+ "Choose a different supporting object.": "请选择另一个支撑对象。",
+ "Choose a mirror line.": "请选择对称轴。",
+ "Choose a point on the selected object.": "请选择所选对象上的一点。",
+ "Choose a second focus away from the first.": "请选择与第一焦点不同的第二焦点。",
+ "Choose a straight line, ray or segment.": "请选择直线、射线或线段。",
+ "Choose a straight object or circle.": "请选择直线类对象或圆。",
+ "Choose a valid directrix line.": "请选择有效的准线。",
+ "Choose a valid existing geometric object.": "请选择有效的已有几何对象。",
+ "Choose an existing circle.": "请选择已有的圆。",
+ "Choose an existing straight line, segment or ray.": "请选择已有的直线、线段或射线。",
+ "Choose an existing translation point.": "请选择已有的平移参考点。",
+ "Choose an inversion circle.": "请选择反演圆。",
+ "Draw a larger closed stroke for this shape.": "请绘制更大的闭合轮廓。",
+ "Enter a finite bound first.": "请先输入有限的边界值。",
+ "Enter a finite parameter.": "请输入有限参数值。",
+ "High-resolution domain coloring raised Plot budget to 1,000,000 evaluations. Adjust it in Plotting settings.": "高分辨率定义域着色已将绘图计算上限提高到 1,000,000 次；可在绘图设置中调整。",
+ "Imported a semantic tikz-cd diagram.": "已导入语义 tikz-cd 交换图。",
+ "Layout preferences could not be saved.": "无法保存布局偏好设置。",
+ "Length must be positive and at most 1000000.": "长度必须大于零且不超过 1000000。",
+ "Loaded newer local project": "已加载较新的本地项目",
+ "Morphism label (LaTeX):": "态射标签（LaTeX）：",
+ "Morphism label exceeds 1000 characters. Nothing was added.": "态射标签超过 1000 字符，未添加对象。",
+ "No sampled crossing was found. Try another pair of curves.": "未检测到采样交点，请尝试另一组曲线。",
+ "Not saved locally · download JSON": "未保存到本地 · 请下载 JSON",
+ "Number of polygon sides (3–100):": "多边形边数（3–100）：",
+ "Numeric value is required.": "请输入数值。",
+ "Older undo states were evicted to limit memory use.": "为限制内存占用，已清理较早的撤销历史。",
+ "Other tab changed this project. Resolve conflict before autosaving.": "其他标签页已修改此项目；请先解决冲突再自动保存。",
+ "Overwrite the other tab’s local project with this tab’s version? This may discard its changes.": "用当前标签页版本覆盖另一个标签页的本地项目？这可能丢失其修改。",
+ "Project opened.": "项目已打开。",
+ "Recently Deleted could not be saved. Export a JSON backup.": "无法保存最近删除记录，请导出 JSON 备份。",
+ "Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.": "已恢复空白编辑器；损坏的存档会保留至您明确选择保留当前标签页。",
+ "Regular polygon sides must be 3–100.": "正多边形边数必须在 3–100 之间。",
+ "Replace the current illustration with the imported diagram?": "用导入的交换图替换当前绘图？",
+ "Replace the current illustration with this JSON project?": "用此 JSON 项目替换当前绘图？",
+ "Replace this tab with the newer local project? Download your current version first if needed.": "用较新的本地项目替换当前标签页？如有需要，请先下载当前版本。",
+ "Resolve the other-tab conflict before restoring.": "恢复前请先解决其他标签页冲突。",
+ "Restore blocked: an object ID or name is already used.": "恢复失败：对象 ID 或名称已被使用。",
+ "Save coordination failed · download JSON": "保存协调失败 · 请下载 JSON",
+ "Some fixed-size labels cannot fit this viewport. Enlarge the canvas or reduce font size.": "部分固定字号标签无法在当前视图中显示；请扩大画布或缩小字号。",
+ "Start a new illustration? Download the current project first if needed.": "新建绘图？如有需要，请先下载当前项目。",
+ "Symmetric range must have nonzero width.": "对称范围的宽度必须非零。",
+ "The object changed. Reopen its menu.": "对象已更改，请重新打开菜单。",
+ "The point must lie on or outside the circle.": "该点必须在圆上或圆外。",
+ "This inversion has no finite geometry (the circle center has no image).": "该反演没有有限几何结果（圆心没有像）。",
+ "Unlock the 3D plot before deleting.": "删除前请解锁三维图形。"
+});
