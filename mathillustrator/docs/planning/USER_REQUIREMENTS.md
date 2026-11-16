@@ -1832,3 +1832,8 @@ Retire permanently disabled Float buttons for Objects, Properties and Tools and 
 
 ## Round 188 — Decorated morphism arrowhead limit (2026-11-15)
 Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double end, Hook, Tail, Harpoon remain available for Solid/Dashed/Dotted morphisms. Historical projects with unsupported decorated heads remain loadable; they display/export as None for decorated styles without changing stored data. Double uses equal/Rightarrow/Leftarrow/Leftrightarrow, while Wavy uses squiggly with no head/leftarrow/leftrightarrow/default head.
+
+### Round 189 — Arrow endpoint rendering quality
+
+- Double and Wavy remain limited to None, End, Start, and Both arrowheads (no Double end/Hook/Tail/Harpoon).
+- When arrowheads are present, visible Double shafts and Wavy strokes must meet the sharp arrow-tip location cleanly, without detached parallel ends, a visible protruding wave, or a microscopic tip. Preserve editing, project compatibility, and tikz-cd export.

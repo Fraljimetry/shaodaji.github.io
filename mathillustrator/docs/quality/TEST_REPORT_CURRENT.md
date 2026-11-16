@@ -2143,3 +2143,11 @@ Local verification: `node --check src/app.mjs` PASS; `node --test tests/*.test.m
 
 ## Round 188 — Decorated morphism arrowhead limit (2026-11-15)
 Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double end, Hook, Tail, Harpoon remain available for Solid/Dashed/Dotted morphisms. Historical projects with unsupported decorated heads remain loadable; they display/export as None for decorated styles without changing stored data. Double uses equal/Rightarrow/Leftarrow/Leftrightarrow, while Wavy uses squiggly with no head/leftarrow/leftrightarrow/default head.
+
+### Round 189 — Decorated-arrow endpoint continuity
+
+- Fixed detached-looking Double morphism arrowheads: paired shafts converge at headed endpoints instead of terminating as separate parallel strokes beneath the arrow tip.
+- Fixed Wavy endpoint appearance: oscillation tapers near headed ends and the V-shaped tip is drawn at a readable size. Both forward/reverse directions and curved morphisms retain their original incidence and path geometry.
+- Preserved four arrowhead choices (None, End, Start, Both) for Double/Wavy; all other arrowhead controls and tikz-cd semantics unchanged.
+- Verification on reconstructed authoritative Round 188 source: `node --test tests/*.test.mjs` **605/605 PASS**, `node --check src/app.mjs` **PASS**, `python tests/browser_round58_arrow_styles.py` **PASS**, including new assertions that decorated lines terminate at the underlying arrow endpoint.
+- Not verified: production deployment/browser cache, exhaustive responsive layouts or full historical Chromium suite.

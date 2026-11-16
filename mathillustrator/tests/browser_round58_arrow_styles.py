@@ -27,6 +27,21 @@ with sync_playwright() as pw:
     for head in ['none','end','start','both']:
      heads.select_option(head)
      assert root.locator('.latex-morphism-tip').count()==({'none':0,'end':2,'start':2,'both':4}[head]),(line,head)
+     # The visible decorated stroke must actually reach the arrow tip.
+     # Merely drawing V-shaped tips near the endpoint is not sufficient.
+     if head!='none':
+      endpoint=page.evaluate('''() => {
+       const g=document.querySelector('#drawing g[data-id="o3"]');
+       const center=g.querySelector('path');
+       const visible=[...g.querySelectorAll(':scope > path')].filter(p=>p!==center && !p.classList.contains('latex-morphism-tip') && p.getAttribute('stroke')!=='none');
+       const start=center.getPointAtLength(0),end=center.getPointAtLength(center.getTotalLength());
+       const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+       return {count:visible.length,ds:visible.map(p=>dist(p.getPointAtLength(0),start)),
+         de:visible.map(p=>dist(p.getPointAtLength(p.getTotalLength()),end))};
+      }''')
+      assert endpoint['count']==(2 if line=='double' else 1),(line,head,endpoint)
+      if head in ('start','both'):assert max(endpoint['ds'])<0.6,(line,head,endpoint)
+      if head in ('end','both'):assert max(endpoint['de'])<0.6,(line,head,endpoint)
   lines.select_option('solid')
   for h in ['none','end','start','both','double-end','hook','tail','harpoon']:
    heads.select_option(h)

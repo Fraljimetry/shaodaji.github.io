@@ -483,7 +483,7 @@ function inheritedMorphismAppearance(o){
  return {line:o.morphismLine||({'dashed':'dashed','dotted':'dotted','hook-dashed':'dashed'}[old]||'solid'),
   heads:o.morphismHeads||({'hook':'hook','hook-dashed':'hook','twohead':'both','tail':'tail'}[old]||'end')};
 }
-function styleDecoratedPath(parent,path,line,mk){
+function styleDecoratedPath(parent,path,line,mk,heads='none'){
  if(line==='dashed')path.setAttribute('stroke-dasharray','7 5');
  if(line==='dotted')path.setAttribute('stroke-dasharray','2 5');
  if(!['double','wavy'].includes(line))return;
@@ -496,8 +496,12 @@ function styleDecoratedPath(parent,path,line,mk){
   return [pt.x-dy/n*offset,pt.y+dx/n*offset];};
  const trace=(fn)=>{let d='';for(let i=0;i<=steps;i++){const v=sample(i*length/steps,fn(i*length/steps));d+=(i?'L':'M')+v[0].toFixed(2)+' '+v[1].toFixed(2)+' ';}return d;};
  path.setAttribute('stroke','none');
- if(line==='double')for(const side of [-1,1])parent.append(mk('path',{d:trace(()=>side*2.1),fill:'none','stroke-width':Math.max(.8,Number(path.getAttribute('stroke-width'))||1)}));
- else parent.append(mk('path',{d:trace(t=>2.8*Math.sin(t*Math.PI/8)*Math.min(1,t/9,(length-t)/9)),fill:'none'}));
+ const startHead=heads==='start'||heads==='both',endHead=heads==='end'||heads==='both';
+ // The two shafts must converge at a headed endpoint. Without convergence
+ // their separate caps leave a conspicuous gap underneath a V-shaped tip.
+ const taper=(t,nearStart,nearEnd)=>Math.min(1,nearStart?Math.max(0,t)/11:1,nearEnd?Math.max(0,length-t)/11:1);
+ if(line==='double')for(const side of [-1,1])parent.append(mk('path',{d:trace(t=>side*2.1*taper(t,startHead,endHead)),fill:'none','stroke-width':Math.max(.8,Number(path.getAttribute('stroke-width'))||1),'stroke-linecap':'round'}));
+ else parent.append(mk('path',{d:trace(t=>2.8*Math.sin(t*Math.PI/8)*Math.min(1,t/9,(length-t)/9)*taper(t,startHead,endHead)),fill:'none','stroke-linecap':'round'}));
 }
 function decoratedHeads(group,path,mode,stroke,width,latex=false,lineStyle='solid',swapSide=false){
  if(mode==='none')return;
@@ -511,10 +515,10 @@ function decoratedHeads(group,path,mode,stroke,width,latex=false,lineStyle='soli
   const advance=!latex&&vlen>1e-5?Math.min(2.5,Math.max(.55,width/2+.35)):0;
   const tip=vlen>1e-5?[endpoint[0]+vx/vlen*advance,endpoint[1]+vy/vlen*advance]:endpoint;
   const dx=tip[0]-inward[0],dy=tip[1]-inward[1],norm=Math.hypot(dx,dy);if(norm<1e-5)return;
-  const ux=dx/norm,uy=dy/norm,px=-uy,py=ux,size=Math.min(8,Math.max(5,4.8+width*.6));
+  const ux=dx/norm,uy=dy/norm,px=-uy,py=ux,size=['double','wavy'].includes(lineStyle)?Math.min(11,Math.max(8,7.6+width*.5)):Math.min(8,Math.max(5,4.8+width*.6));
   if(latex){const branches=kind==='harpoon'?[swapSide?-1:1]:[-1,1];
    for(const sign of branches){const bx=tip[0]-size*ux+sign*size*.45*px,by=tip[1]-size*uy+sign*size*.45*py;
-    group.append(el('path',{d:`M${bx} ${by}L${tip[0]} ${tip[1]}`,stroke,'stroke-width':Math.max(.9,width),'stroke-linecap':'round',fill:'none','pointer-events':'none',class:'latex-morphism-tip'}));}
+    group.append(el('path',{d:`M${bx} ${by}L${tip[0]} ${tip[1]}`,stroke,'stroke-width':['double','wavy'].includes(lineStyle)?Math.max(1.35,width*1.25):Math.max(.9,width),'stroke-linecap':'round',fill:'none','pointer-events':'none',class:'latex-morphism-tip'}));}
   }else{const headWidth=!latex&&lineStyle==='double'?Math.max(width,3.5):width;
    const pts=arrowHeadPoints(tip,inward,headWidth);if(pts.length)group.append(el('polygon',{class:'arrowhead freehand-arrowhead',points:pts.map(v=>v.join(',')).join(' '),fill:stroke,'pointer-events':'none'}));}
  };
@@ -643,7 +647,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const path=mk('path',{d:o.curveShape&&o.curveShape!=='free'?`M${pathCoords.map(p=>p.join(' ')).join(' L')} Z`:freehandCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
   const shapeMode=o.curveShape||'free',pattern=shapeMode==='free'?(o.curveLine||'solid'):SHAPE_LINE_CHOICES.some(([v])=>v===o.curveLine)?o.curveLine:'solid',heads=shapeMode==='free'?(o.curveHeads||(o.curveArrows||'none')):'none';
   if(pattern==='solid'&&heads==='none'){item=path;}
-  else{item=el('g');item.append(path);styleDecoratedPath(item,path,pattern,mk);
+  else{item=el('g');item.append(path);styleDecoratedPath(item,path,pattern,mk,visibleArrowheads(pattern,heads));
    decoratedHeads(item,path,visibleArrowheads(pattern,heads),o.style.stroke,o.style.width,false,pattern);}
  }else if(o.type==='text'){const [x,y]=project(o.xy),fontSize=o.fontSize||18;if(textOutside(x,y,o.text,fontSize))return;
   if(o.textMode==='latex'){item=latexDisplay(o,x,y,fontSize,{exporting});if(!exporting)item.setAttribute('pointer-events','visiblePainted');}
@@ -677,7 +681,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const d=`M${start[0].toFixed(2)} ${start[1].toFixed(2)} Q${curve.control[0].toFixed(2)} ${curve.control[1].toFixed(2)} ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
   item=el('g',{'data-id':o.id,'data-route-status':route.status});
   const path=mk('path',{d,fill:'none'});item.append(path);
-  styleDecoratedPath(item,path,appearance.line,mk);
+  styleDecoratedPath(item,path,appearance.line,mk,visibleArrowheads(appearance.line,appearance.heads));
   decoratedHeads(item,path,visibleArrowheads(appearance.line,appearance.heads),o.style.stroke,o.style.width,true,appearance.line,!!o.swap);
   if(hook)item.append(el('path',{d:hook.d,stroke:o.style.stroke,'stroke-width':o.style.width,fill:'none','stroke-linecap':'round','pointer-events':'none',class:'latex-morphism-hook'}));
   if(o.text){const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
