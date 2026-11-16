@@ -5,7 +5,7 @@ import { translated } from '../src/i18n.mjs';
 test('Round 174 construction and native dialog strings are translated',()=>{
  for(const text of [
   'Choose a center point.', 'Choose an existing circle.',
-  'Double and Wavy lines have no arrowheads.',
+  'Double and Wavy lines support four basic arrowhead options.',
   'Start a new illustration? Download the current project first if needed.',
   'Number of polygon sides (3–100):',
   'The locally saved project is invalid.',

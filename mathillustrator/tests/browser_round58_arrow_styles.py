@@ -22,7 +22,12 @@ with sync_playwright() as pw:
   for line in ['solid','dashed','dotted','double','wavy']:
    lines.select_option(line)
    root=page.locator('#drawing g[data-id="o3"]');assert root.count()==1,line
-   if line in ['double','wavy']:assert root.locator('path').count()>=2,line
+   if line in ['double','wavy']:
+    assert root.locator('path').count()>=2,line
+    for head in ['none','end','start','both']:
+     heads.select_option(head)
+     assert root.locator('.latex-morphism-tip').count()==({'none':0,'end':2,'start':2,'both':4}[head]),(line,head)
+  lines.select_option('solid')
   for h in ['none','end','start','both','double-end','hook','tail','harpoon']:
    heads.select_option(h)
    root=page.locator('#drawing g[data-id="o3"]')
@@ -35,9 +40,11 @@ with sync_playwright() as pw:
   for line in ['solid','dashed','dotted','double','wavy']:
    lines.select_option(line)
    root=page.locator('#drawing [data-id="o4"]');assert root.count()>=1,line
+  lines.select_option('solid')
   for h in ['none','start','end','both']:
    heads.select_option(h)
    assert page.locator('#drawing [data-id="o4"]').count()>=1,h
+  lines.select_option('wavy')
   # Persist both styles; undo/redo must maintain the independent fields.
   stored=json.loads(download(page,'Save').read_text())
   f=next(o for o in stored['objects'] if o['type']=='freehand')

@@ -153,7 +153,7 @@ Object.assign(zh,{
  "Choose an existing straight line, segment or ray.": "请选择已有直线、线段或射线。",
  "Choose an existing translation point.": "请选择已有平移参考点。",
  "Choose an inversion circle.": "请选择反演圆。",
- "Double and Wavy lines have no arrowheads.": "双线和波浪线不支持箭头。",
+ "Double and Wavy lines support four basic arrowhead options.": "双线和波浪线支持四种基本箭头选项。",
  "Draw a larger closed stroke for this shape.": "请绘制更大的闭合路径来创建此形状。",
  "Enter a finite bound first.": "请先输入有限的边界值。",
  "Enter a finite parameter.": "请输入有限的参数值。",

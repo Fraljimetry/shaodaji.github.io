@@ -20,22 +20,36 @@ function splitTopLevel(input,separator){
  if(depth!==0||quote)fail('unbalanced label or braces.');out.push(buf.trim());return out;
 }
 const TIKZ_HEADS={none:'no head',end:null,start:'leftarrow',both:'leftrightarrow','double-end':'two heads',hook:'hook',tail:'tail',harpoon:'harpoon'};
-const TIKZ_LINES={solid:null,dashed:'dashed',dotted:'dotted',double:'Rightarrow',wavy:'squiggly'};
+const TIKZ_LINES={solid:null,dashed:'dashed',dotted:'dotted',double:'equal',wavy:'squiggly'};
 const HEAD_FROM_TIKZ=Object.fromEntries(Object.entries(TIKZ_HEADS).filter(([,v])=>v).map(([k,v])=>[v,k]));
 const LINE_FROM_TIKZ=Object.fromEntries(Object.entries(TIKZ_LINES).filter(([,v])=>v).map(([k,v])=>[v,k]));
+const DOUBLE_ARROW_TIKZ={none:'equal',end:'Rightarrow',start:'Leftarrow',both:'Leftrightarrow'};
+const DOUBLE_ARROW_FROM_TIKZ={equal:'none',Rightarrow:'end',Leftarrow:'start',Leftrightarrow:'both'};
 function morphismAppearance(edge){
  const old=edge.arrowStyle||'solid';
  const line=edge.morphismLine||({dashed:'dashed',dotted:'dotted','hook-dashed':'dashed'}[old]||'solid');
  const storedHeads=edge.morphismHeads||({hook:'hook','hook-dashed':'hook',twohead:'both',tail:'tail'}[old]||'end');
- return {heads:['double','wavy'].includes(line)?'none':storedHeads,line};
+ return {heads:['double','wavy'].includes(line)&&!['none','end','start','both'].includes(storedHeads)?'none':storedHeads,line};
 }
 function parseArrow(raw){
- const args=splitTopLevel(raw,',');let direction=null,label='',swap=false,foundLabel=false,heads='end',line='solid',sawHead=false,sawLine=false;
+ const args=splitTopLevel(raw,',');let direction=null,label='',swap=false,foundLabel=false,heads='end',line='solid',bend=0,sawHead=false,sawLine=false,sawBend=false;
  for(const part of args){const p=part.trim();if(/^[rlud]{1,24}$/.test(p)){if(direction)fail('multiple directions.');direction=p;}
   else{const match=p.match(/^"([\s\S]*)"(')?$/);if(match){
     if(foundLabel)fail('multiple labels on one arrow are unsupported.');
     if(match[1].length>1000)fail('arrow label exceeds 1000 characters.');
     label=match[1];swap=!!match[2];foundLabel=true;
+   }else if(/^bend (?:left|right)(?:=\d+(?:\.\d+)?)?$/.test(p)){
+    if(sawBend)fail('multiple bend options.');sawBend=true;
+    const m=p.match(/^bend (left|right)(?:=(\d+(?:\.\d+)?))?$/);
+    const degrees=m[2]===undefined?30:Number(m[2]);
+    if(!(degrees>0&&degrees<=75))fail('bend angle must be in (0, 75] degrees.');
+    // Canvas bend uses screen coordinates (y down); tikz-cd uses y up.
+    bend=(m[1]==='right'?1:-1)*degrees/15;
+   }else if(Object.hasOwn(DOUBLE_ARROW_FROM_TIKZ,p)){
+    if(sawLine||sawHead)fail('duplicate double-arrow style.');
+    line='double';heads=DOUBLE_ARROW_FROM_TIKZ[p];sawLine=true;
+   }else if(p==='double'){
+    if(sawLine)fail('multiple line-style options.');line='double';sawLine=true;
    }else if(Object.hasOwn(HEAD_FROM_TIKZ,p)){
     if(sawHead)fail('multiple arrowhead options.'); heads=HEAD_FROM_TIKZ[p];sawHead=true;
    }else if(Object.hasOwn(LINE_FROM_TIKZ,p)){
@@ -45,7 +59,7 @@ function parseArrow(raw){
  const dx=[...direction].reduce((s,ch)=>s+(ch==='r'?1:ch==='l'?-1:0),0);
  const dy=[...direction].reduce((s,ch)=>s+(ch==='d'?1:ch==='u'?-1:0),0);
  if(dx===0&&dy===0)fail('zero-length arrow is not supported.');
- return {dx,dy,label,swap,heads,line};
+ return {dx,dy,label,swap,heads,line,bend};
 }
 export function importTikzCd(source){
  if(typeof source!=='string'||source.length>100000)fail('input exceeds 100 KB limit.');
@@ -71,7 +85,7 @@ export function importTikzCd(source){
  if(!parsed.length)fail('no labeled nodes.');
  const doc=newDoc();Object.assign(doc.settings,PRESETS['Commutative diagrams']);doc.meta.title='Imported commutative diagram';
  const lookup=new Map();for(const n of parsed){const obj=append(doc,{type:'node',xy:[n.c*CELL_X,-n.r*CELL_Y],text:n.label,fontSize:17,textMode:'latex'});lookup.set(`${n.r}:${n.c}`,obj.id);}
- for(const a of arrows){const from=lookup.get(`${a.r}:${a.c}`),to=lookup.get(`${a.r+a.dy}:${a.c+a.dx}`);if(!from||!to)fail('arrow points to an empty cell.');append(doc,{type:'morphism',refs:[from,to],text:a.label,bend:0,swap:a.swap,textMode:'latex',morphismHeads:a.heads,morphismLine:a.line});}
+ for(const a of arrows){const from=lookup.get(`${a.r}:${a.c}`),to=lookup.get(`${a.r+a.dy}:${a.c+a.dx}`);if(!from||!to)fail('arrow points to an empty cell.');append(doc,{type:'morphism',refs:[from,to],text:a.label,bend:a.bend,swap:a.swap,textMode:'latex',morphismHeads:a.heads,morphismLine:a.line});}
  return doc;
 }
 /** Semantic only; mathematical content and directed incidences are retained, but styling is not. */
@@ -83,12 +97,9 @@ export function exportTikzCd(doc){
  if(nodes.some(o=>!o.text||/"|\r|\n/.test(o.text)))fail('nodes require nonempty labels without double quotes or line breaks.');
  for(const edge of edges){const {heads,line}=morphismAppearance(edge);
   if(!Object.hasOwn(TIKZ_HEADS,heads)||!Object.hasOwn(TIKZ_LINES,line))fail('unsupported morphism style.');
-  // Arrowhead and shaft styles are independent in MathIllustrator; some
-  // combinations cannot be expressed faithfully by tikz-cd (e.g. squiggly
-  // with double shafts). Reject rather than changing the mathematical symbol.
-  if(line==='double'&&heads!=='end')fail('double shaft with this arrowhead is not round-trip safe in tikz-cd.');
+  if(!Number.isFinite(edge.bend||0)||Math.abs(edge.bend||0)>5)fail('bend outside supported range.');
  }
- if(edges.some(o=>/"|\r|\n/.test(o.text)||Math.abs(o.bend||0)>1e-8))fail('quoted or bent morphisms are not yet representable.');
+ if(edges.some(o=>/"|\r|\n/.test(o.text)))fail('quoted morphism labels are not representable.');
  const coordinateIndex=(values,reverse=false)=>{
   const sorted=[...values].sort((a,b)=>reverse?b-a:a-b),groups=[];
   for(const n of sorted){const current=groups.at(-1);if(current&&Math.abs(n-current[0])<0.12)current.push(n);else groups.push([n]);}
@@ -104,8 +115,9 @@ export function exportTikzCd(doc){
   if(!direction||direction.length>24)fail('unsupported arrow direction.');
   const label=edge.text?`, "${edge.text}"${edge.swap?"'":''}`:'';
   const {heads,line}=morphismAppearance(edge);
-  const headOption=TIKZ_HEADS[heads],lineOption=TIKZ_LINES[line];
-  const styleOptions=[headOption,lineOption].filter(Boolean).map(x=>`, ${x}`).join('');
+  const headOption=line==='double'?null:TIKZ_HEADS[heads],lineOption=line==='double'?DOUBLE_ARROW_TIKZ[heads]:TIKZ_LINES[line];
+  const bendOption=Math.abs(edge.bend||0)>1e-8?`bend ${edge.bend>0?'right':'left'}=${(Math.abs(edge.bend)*15).toFixed(8)}`:null;
+  const styleOptions=(line==='double'?[lineOption,headOption,bendOption]:[headOption,lineOption,bendOption]).filter(Boolean).map(x=>`, ${x}`).join('');
   const key=`${a.r}:${a.c}`;arrows.set(key,[...(arrows.get(key)||[]),`\\arrow[${direction}${styleOptions}${label}]`]);
  }
  const lines=[];for(let r=0;r<=maxRow;r++){const cols=[];for(let c=0;c<=maxCol;c++){const key=`${r}:${c}`,node=cells.get(key);cols.push([node?.text||'',...(arrows.get(key)||[])].join(' ').trim());}lines.push('  '+cols.join(' & '));}
@@ -122,7 +134,7 @@ export function exportTikzCd(doc){
  }
  if(recoveredNodes.size!==nodes.length)fail('node label is not round-trip safe.');
  for(const [key,node] of cells)if(recoveredNodes.get(key)!==node.text)fail('node label is not round-trip safe.');
- const keyFor=(edge,positions)=>{const {heads,line}=morphismAppearance(edge);return JSON.stringify([positions.get(edge.refs[0]),positions.get(edge.refs[1]),edge.text,!!edge.swap,heads,line]);};
+ const keyFor=(edge,positions)=>{const {heads,line}=morphismAppearance(edge);return JSON.stringify([positions.get(edge.refs[0]),positions.get(edge.refs[1]),edge.text,!!edge.swap,heads,line,Math.round((edge.bend||0)*1e7)]);};
  const expectedIds=new Map([...nodePosition].map(([id,{r,c}])=>[id,`${r}:${c}`]));
  const expected=edges.map(edge=>keyFor(edge,expectedIds)).sort();
  const received=recovered.objects.filter(o=>o.type==='morphism').map(o=>keyFor(o,recoveredIds)).sort();

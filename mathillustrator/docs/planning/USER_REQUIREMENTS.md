@@ -1823,3 +1823,12 @@ Retire permanently disabled Float buttons for Objects, Properties and Tools and 
 - The distributable MathIllustrator website directory must be independently verifiable. A hosting-site `tools.html` is optional external integration, not part of its required source ZIP.
 - Plot path cache configuration must reject invalid/negative/non-finite budgets rather than crashing during eviction. Zero budgets must remain supported as an explicit no-cache mode.
 - Preserve existing six export formats, editor behavior, glyph artwork, serialization, and user-oriented bilingual tutorial; no new features.
+
+
+### Round 187 — Semantic tikz-cd arrow compatibility
+- Preserve the complete eight-arrowhead/five-shaft morphology menu without redesigning glyphs. For headless Double, emit `equal` rather than `Rightarrow`; Wavy uses `no head, squiggly` (requires the LaTeX `decorations.pathmorphing` library).
+- Export/import signed bends using supported tikz-cd `bend left=…` / `bend right=…`, maintaining internal sign and reversibility. Keep arbitrary PGF/TikZ import disabled and JSON as the fully editable project format.
+- A visible diagram containing only grid-distinguishable nodes and morphisms, such as a four-node diagram with a hook, dashed shaft, and bent arrow, should export.
+
+## Round 188 — Decorated morphism arrowhead limit (2026-11-15)
+Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double end, Hook, Tail, Harpoon remain available for Solid/Dashed/Dotted morphisms. Historical projects with unsupported decorated heads remain loadable; they display/export as None for decorated styles without changing stored data. Double uses equal/Rightarrow/Leftarrow/Leftrightarrow, while Wavy uses squiggly with no head/leftarrow/leftrightarrow/default head.

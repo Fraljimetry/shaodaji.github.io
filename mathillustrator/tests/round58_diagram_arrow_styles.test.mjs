@@ -26,9 +26,9 @@ test('Round 58: invalid style and cross-object leakage rejected',()=>{
 });
 test('Round 58: TikZ-cd must not silently discard nonstandard arrows',()=>{
  const {d,m}=sample();m.morphismHeads='none';assert.match(exportTikzCd(d),/no head/);
- m.morphismHeads='end';m.morphismLine='wavy';assert.match(exportTikzCd(d),/no head, squiggly/);
- m.morphismLine='double';assert.throws(()=>exportTikzCd(d),/not round-trip safe/i);
- m.morphismHeads='hook';assert.throws(()=>exportTikzCd(d),/not round-trip safe/i);
+ m.morphismHeads='end';m.morphismLine='wavy';assert.match(exportTikzCd(d),/squiggly/);
+ m.morphismLine='double';assert.match(exportTikzCd(d),/Rightarrow/);
+ m.morphismHeads='hook';assert.match(exportTikzCd(d),/equal/);
  m.morphismLine='solid';assert.match(exportTikzCd(d),/\\begin\{tikzcd\}/);
 });
 test('Round 58: morphism is arrowless-capable with no forced polygon tips',()=>{

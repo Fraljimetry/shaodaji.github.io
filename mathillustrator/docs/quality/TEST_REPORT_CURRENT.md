@@ -2130,3 +2130,16 @@ Local verification: `node --check src/app.mjs` PASS; `node --test tests/*.test.m
 **Post-fix evidence:** `node --test tests/*.test.mjs` **602 passed / 0 failed / 0 skipped**; numerical kernel property tests **37,200 cases / 0 failures** (`--cases=1200`). Real local Chromium scripts PASS: Round 171 responsive layout/transparency (1440/768/390/320), Round 172 semantic geometry picking (1440/1024), Round 109 cancellation/export, Round 106 3D lifecycle/memory, Round 92 undo/redo/import/export, and Round 175 bilingual option switching (1440/768/390). No JS runtime module other than `plot_cache.mjs` modified.
 
 **Not certified:** complete historical browser collection (including known obsolete export assumptions), deployed site, original hosting `tools.html`, physical touchscreen, hardware GPU parity, or exhaustive implicit-surface numerical topology. This maintenance cut did not claim resolution of these areas.
+
+
+## Round 187 — tikz-cd arrow semantics (2026-11-15)
+- Source baseline: authoritative Round 185 ZIP plus Round 186 overlay. No glyphs or other export formats changed.
+- Root causes: all nonzero morphism bends were incorrectly rejected; headless Double incorrectly mapped to `Rightarrow` (arrowhead) instead of `equal` (headless double shaft). Historical tests encoded those restrictions.
+- Repair: accepted deterministic `bend left/right[=degrees]` import and export (±5 canvas bend -> up to 75 degrees); adjusted old negative-test assumptions; verified all 8 head controls × 5 line styles × five bend values. For headless Double/Wavy the currently rendered no-head behavior is retained regardless of stored head selection.
+- Node suite: **605/605 PASS**. Actual Chromium screenshot-equivalent export: **EN and ZH PASS**; exported LaTeX successfully compiled via `pdflatex`. Full 40-style LaTeX compilation: **PASS** when loading `\usetikzlibrary{decorations.pathmorphing}`. First compile without that library correctly failed for Wavy, and is a documented LaTeX requirement.
+- Limitation: tikz-cd bend angles are semantic approximations to the SVG quadratic curve, not pixel-identical; visible non-diagram objects, duplicate grid cells, displaced nodes, and arbitrary PGF/TikZ remain unsupported. JSON is lossless.
+- Historical Chromium Round 58 initially failed because its test selected a disabled head control after switching to Wavy; test now returns to Solid for head selection, then restores Wavy for persistence checks. **Rerun PASS**. Round 63 headless-line behavior **PASS**. This is a test-only correction; no visible-control behavior changed.
+- Automated evidence here does not certify pixel-identical SVG/LaTeX bends or general tikz-cd TeX parsing; both remain intentionally limited.
+
+## Round 188 — Decorated morphism arrowhead limit (2026-11-15)
+Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double end, Hook, Tail, Harpoon remain available for Solid/Dashed/Dotted morphisms. Historical projects with unsupported decorated heads remain loadable; they display/export as None for decorated styles without changing stored data. Double uses equal/Rightarrow/Leftarrow/Leftrightarrow, while Wavy uses squiggly with no head/leftarrow/leftrightarrow/default head.

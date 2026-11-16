@@ -473,11 +473,11 @@ function r50Locus(o){
 const LINE_CHOICES=[['solid','Solid'],['dashed','Dashed'],['dotted','Dotted'],['double','Double'],['wavy','Wavy']];
 const HEAD_CHOICES=[['none','None'],['end','End'],['start','Start'],['both','Both'],['double-end','Double end'],['hook','Hook'],['tail','Tail'],['harpoon','Harpoon']];
 const FREE_CURVE_HEAD_CHOICES=HEAD_CHOICES.slice(0,4);
-const HEADLESS_LINE_STYLES=new Set(['double','wavy']);
+const SIMPLE_DECORATED_HEADS=new Set(['none','end','start','both']);
 const SHAPE_CHOICES=[['free','Free'],['ellipse','Ellipse'],['polygon','Polygon']];
 const SHAPE_LINE_CHOICES=LINE_CHOICES.slice(0,3);
 let freehandShapeMode='free',freehandRegular=true,freehandLine='solid',freehandHeads='none';
-const visibleArrowheads=(line,heads)=>HEADLESS_LINE_STYLES.has(line)?'none':heads;
+const visibleArrowheads=(line,heads)=>['double','wavy'].includes(line)&&!SIMPLE_DECORATED_HEADS.has(heads)?'none':heads;
 function inheritedMorphismAppearance(o){
  const old=o.arrowStyle||'solid';
  return {line:o.morphismLine||({'dashed':'dashed','dotted':'dotted','hook-dashed':'dashed'}[old]||'solid'),
@@ -497,7 +497,7 @@ function styleDecoratedPath(parent,path,line,mk){
  const trace=(fn)=>{let d='';for(let i=0;i<=steps;i++){const v=sample(i*length/steps,fn(i*length/steps));d+=(i?'L':'M')+v[0].toFixed(2)+' '+v[1].toFixed(2)+' ';}return d;};
  path.setAttribute('stroke','none');
  if(line==='double')for(const side of [-1,1])parent.append(mk('path',{d:trace(()=>side*2.1),fill:'none','stroke-width':Math.max(.8,Number(path.getAttribute('stroke-width'))||1)}));
- else parent.append(mk('path',{d:trace(t=>2.8*Math.sin(t*Math.PI/8)),fill:'none'}));
+ else parent.append(mk('path',{d:trace(t=>2.8*Math.sin(t*Math.PI/8)*Math.min(1,t/9,(length-t)/9)),fill:'none'}));
 }
 function decoratedHeads(group,path,mode,stroke,width,latex=false,lineStyle='solid',swapSide=false){
  if(mode==='none')return;
@@ -1640,8 +1640,8 @@ function renderProperties(){
   });
   const heads=o.curveHeads||o.curveArrows||'none';
   const headSelect=buildChoice('Arrowheads',isShape?'none':visibleArrowheads(line,FREE_CURVE_HEAD_CHOICES.some(([v])=>v===heads)?heads:'none'),FREE_CURVE_HEAD_CHOICES,next=>{freehandHeads=next;edit(live=>{live.curveHeads=next;});});
-  headSelect.disabled=isShape||HEADLESS_LINE_STYLES.has(line);
-  headSelect.title=isShape?'Arrows are unavailable for ellipses and polygons.':HEADLESS_LINE_STYLES.has(line)?'Double and Wavy lines have no arrowheads.':'';
+  headSelect.disabled=isShape;
+  headSelect.title=isShape?'Arrows are unavailable for ellipses and polygons.':'';
  }
  if(o.type==='morphism'){
   const appearance=inheritedMorphismAppearance(o);
@@ -1649,11 +1649,10 @@ function renderProperties(){
   const morphChoice=(title,value,options,key)=>{const label=document.createElement('label');label.className='field';label.textContent=title;const choice=document.createElement('select');choice.setAttribute('aria-label',title);
    for(const [id,caption] of options){const option=document.createElement('option');option.value=id;option.textContent=caption;choice.append(option);}
    choice.value=value;choice.onchange=()=>{const next=choice.value;if(edit(live=>{live[key]=next;})===false)return;
-    if(key==='morphismLine'){const heads=root.querySelector('select[aria-label="Arrowheads"]');if(heads){const headless=HEADLESS_LINE_STYLES.has(next);heads.disabled=headless;const current=get(doc,o.id);heads.value=visibleArrowheads(next,current?inheritedMorphismAppearance(current).heads:'end');heads.title=headless?'Double and Wavy lines have no arrowheads.':'';}}
+    if(key==='morphismLine')renderProperties();
    };label.append(choice);morphStyleGrid.append(label);};
   morphChoice('Line style',appearance.line,LINE_CHOICES,'morphismLine');
-  morphChoice('Arrowheads',visibleArrowheads(appearance.line,appearance.heads),HEAD_CHOICES,'morphismHeads');
-  if(HEADLESS_LINE_STYLES.has(appearance.line)){const select=root.querySelector('select[aria-label="Arrowheads"]');select.disabled=true;select.title='Double and Wavy lines have no arrowheads.';}
+  morphChoice('Arrowheads',visibleArrowheads(appearance.line,appearance.heads),['double','wavy'].includes(appearance.line)?HEAD_CHOICES.slice(0,4):HEAD_CHOICES,'morphismHeads');
 
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
   const side=document.createElement('label');side.className='check compact-property-check';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!o.swap;

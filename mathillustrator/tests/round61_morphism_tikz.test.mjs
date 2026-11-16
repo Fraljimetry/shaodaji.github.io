@@ -8,7 +8,7 @@ test('Round 61: arrowless, harpoon, hooks and line patterns export and import wi
  for(const heads of ['none','end','start','both','double-end','hook','tail','harpoon'])for(const line of ['solid','dashed','dotted','wavy',...(heads==='none'?[]:[])]){
   const {d,e}=diagram();e.morphismHeads=heads;e.morphismLine=line;e.swap=true;
   const tex=exportTikzCd(d);const recovered=importTikzCd(tex).objects.find(x=>x.type==='morphism');
-  assert.equal(recovered.morphismHeads,['double','wavy'].includes(line)?'none':heads,`${heads}/${line} ${tex}`);assert.equal(recovered.morphismLine,line);assert.equal(recovered.swap,true);
+  assert.equal(recovered.morphismHeads,['double','wavy'].includes(line)&&['double-end','hook','tail','harpoon'].includes(heads)?'none':heads,`${heads}/${line} ${tex}`);assert.equal(recovered.morphismLine,line);assert.equal(recovered.swap,true);
  }
 });
 test('Round 61: harpoon flips with label side; hook uses genuine semicircle and is not replaced by the broken Bezier',()=>{
