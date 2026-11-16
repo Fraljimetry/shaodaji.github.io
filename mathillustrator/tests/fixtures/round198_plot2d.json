@@ -1,0 +1,181 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Untitled illustration"
+  },
+  "settings": {
+    "grid": true,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": true,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "sin(8*x)*cos(3*x)",
+      "name": "Function 1",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "1/(x-1)",
+      "name": "Function 2",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "tan(x)",
+      "name": "Function 3",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "exp(-x*x/5)*sin(20*x)",
+      "name": "Function 4",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "sqrt(abs(x))",
+      "name": "Function 5",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "sin(x*x)",
+      "name": "Function 6",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "atan(30*x)",
+      "name": "Function 7",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "function",
+      "expr": "log(abs(x))",
+      "name": "Function 8",
+      "displayLabelMode": "latex"
+    }
+  ],
+  "nextId": 9
+}

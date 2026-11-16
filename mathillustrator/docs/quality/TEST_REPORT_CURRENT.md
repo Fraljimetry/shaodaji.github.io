@@ -2180,3 +2180,38 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Focused Node fixed-region tests: 4/4 PASS. Baseline all Node before new tests: 614/614 PASS. Full updated Node suite: 618/618 PASS (no skips).
 - Real Chromium: Round 195 3D multi-plot/checkbox/2D–3D transitions PASS; Round 194 interface PASS (updated obsolete 3D expectation); Round 106 lifecycle PASS; Round 128 region editing PASS; Round 170 selection preview at 1440 and 390 PASS.
 - Historical Round 193 browser test initially FAILED because it attempted to interact with a retired auto-label checkbox. Updated to test deterministic labels with legacy settings; rerun PASS. Full historical browser suite and hosted deployment not certified.
+
+### Round 196 — Canvas-aware tikz-cd export
+- Implemented global column/row spacing derived from median coordinate gaps, plus native label `pos`, `inner sep` and manual x/y shifts. Export-only change; previous tikz-cd import without spacing remains accepted. New restricted importer explicitly validates spacing and label options.
+- Node regression: 622/622 PASS (including 4 new geometry/import safety regressions). One obsolete test expected labels with no options; adjusted its syntax expectation and reran PASS.
+- Actual Chromium: 33-object, 21-morphism JSON import and tikz-cd browser download PASS; Round 195 Fix region PASS; Round 193 retired-label-toggle compatibility PASS. JavaScript module syntax PASS.
+- `pdflatex` fixture compilation PASS for 33 objects, rendered PDF visually inspected. Hardware/browser deployment and the entire historical Chromium suite not executed.
+- Constraints: tikz-cd retains a grid with uniform per-axis separation, so uneven gaps, exact Bezier curvature, typography and pixel-perfect label clearance are not guaranteed. Original JSON remains the authoritative editable layout.
+
+
+## Round 197 — Extreme tikz-cd export stress and fidelity audit (2026-11-15)
+
+Baseline: Round 196. Three reproducible MathIllustrator JSON fixtures:
+
+| Fixture | Nodes | Morphisms | Chromium import/download | LaTeX compile | Export→import→export |
+|---|---:|---:|---|---|---|
+| dense_5x6 | 30 | 95 | PASS | PASS | PASS |
+| uneven_4x7 | 28 | 76 | PASS | PASS | PASS |
+| crossing_6x6 | 36 | 117 | PASS | PASS | PASS |
+
+**Confirmed bug fixed:** Round 196's exporter postcondition incorrectly reconstructed the imported nodes with the obsolete default `CELL_X/CELL_Y` grid dimensions, despite exporting custom `column sep` and `row sep`. Consequently, valid dense diagrams could fail with `node label is not round-trip safe` before producing any LaTeX. Round 197 derives the postcondition coordinates from the actual emitted dimensions, preserving the independent safety check. Added four focused Node tests plus three real-browser fixture runs.
+
+**Completed verification:** 626/626 Node tests, 0 failures; 33 JavaScript modules checked; Chromium Round 197 three fixtures + Round 196 export + Round 195 region + Round 191 parity all PASS; three `pdflatex -halt-on-error` compilations PASS, rendered PNGs inspected. Browser tests use isolated inline HTML and cannot certify remote deployment. Canvas screenshots are not a precise pixel comparison: web-font/mathematics layout and scaling differ between SVG and LaTeX.
+
+**Explicit fidelity gaps (not considered PASS):** Irregular node-column distances are intentionally collapsed to one global median `column sep` by tikz-cd. For `uneven_4x7`, original horizontal intervals are 1.5, 1.6, 4.8, 1.6, 1.6, 5.9 units; export uses 46.08pt globally, so relative node spacing is not retained. Crossing-heavy diagrams retain incidence and arrow styles but show numerous label intersections in both SVG and TeX; no collision-free typesetting is claimed. Curve shapes, arrow-tip appearance, and manual label shifts are not pixel-perfect. The standalone browser harness reports localStorage denied, which is expected in its data-URL context and was not interpreted as a hosted-site defect. The full historical Chromium battery and hosted deployment were not tested.
+
+## Round 198 — Extreme 2D plotting, 3D plotting and geometry (2026-11-15)
+
+**Baseline:** authoritative source through Round 197. No production source changes. Added reproducible functional stress tests and three JSON projects built through the actual application's command editor.
+
+- **2D:** 40 adaptive explicit-function traces (ten families including poles, trigonometric asymptotes, strong oscillations and high curvature); implicit curves, 256-resolution complex coloring, vector field and parametric sampling. A real Chromium scene with eight simultaneously drawn explicit functions rendered without page errors. Sampling budgets and finiteness checked. Screenshot shows an intentionally cluttered composite: overlap is expected and aesthetic quality is not certified.
+- **3D:** all five types (surface, parametric surface, implicit surface, vector field, complex domain coloring) sampled at detail 18 with repeatability and boundedness assertions. Real Chromium constructed two surfaces and one implicit sphere, then added a fourth plot with Fix region enabled; exactly three remained visible and completed asynchronous painting. Final rendering shows polygonal facets, so smooth-surface fidelity at higher detail is not certified. Fixed bounds preserved; legacy Round 195 Chromium regression passed.
+- **Geometry:** 63 objects (24 point anchors, 18 segments, 12 circles, 9 angles) created in Chromium, SVG exported and checked. Additional 3,000 nondegenerate triangle configurations checked center and transform finiteness. This is a large-object smoke, not a full constraint-dependency mutation oracle or proof of geometric correctness.
+- **JSON reopen:** generated geometry, 2D and 3D projects reimported in Chromium with expected object/plot counts and retained Fix region setting. Snapshot images recorded after complete asynchronous 3D render, not intermediate blank-cube state.
+
+**Final tests:** 631/631 Node tests PASS (5 new); focused real Chromium creation/export/reimport PASS for all three scenarios, no page errors; historical Round 195 Fix region Chromium PASS; Round 197 tikz-cd Chromium PASS for all 3 large fixtures. No production bugs confirmed or fixed this round. `localStorage` blocked in the isolated data-URL harness; production autosave cannot be certified by these runs. Full historical Chromium suite, GPU hardware parity, large high-detail multi-surface scenes, complete geometry dependency/edit/undo chains and hosted website not executed. Do not call those PASS.

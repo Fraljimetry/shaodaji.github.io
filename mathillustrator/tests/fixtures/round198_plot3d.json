@@ -1,0 +1,154 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Untitled illustration"
+  },
+  "settings": {
+    "grid": true,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": true,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": true,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [
+      {
+        "id": 1,
+        "kind": "surface3d",
+        "name": "Surface 1",
+        "a": "sin(x*y)/(1+x*x+y*y)",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -4,
+          "xMax": 4,
+          "yMin": -4,
+          "yMax": 4,
+          "zMin": -4,
+          "zMax": 4
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": true,
+        "locked": false,
+        "colorRange": false
+      },
+      {
+        "id": 2,
+        "kind": "surface3d",
+        "name": "Surface 2",
+        "a": "cos(x)+sin(y)",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -4,
+          "xMax": 4,
+          "yMin": -4,
+          "yMax": 4,
+          "zMin": -4,
+          "zMax": 4
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": false,
+        "locked": false,
+        "colorRange": false
+      },
+      {
+        "id": 3,
+        "kind": "implicit3d",
+        "name": "Implicit surface 3",
+        "a": "x*x+y*y+z*z=9",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -4,
+          "xMax": 4,
+          "yMin": -4,
+          "yMax": 4,
+          "zMin": -4,
+          "zMax": 4
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": false,
+        "locked": false,
+        "colorRange": false
+      },
+      {
+        "id": 4,
+        "kind": "surface3d",
+        "name": "Surface 4",
+        "a": "sin(x)+cos(y)",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -4,
+          "xMax": 4,
+          "yMin": -4,
+          "yMax": 4,
+          "zMin": -4,
+          "zMax": 4
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": false,
+        "locked": false,
+        "colorRange": false
+      }
+    ],
+    "nextId": 5,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false,
+      "fixedBounds": {
+        "xMin": -4,
+        "xMax": 4,
+        "yMin": -4,
+        "yMax": 4,
+        "zMin": -4,
+        "zMax": 4
+      },
+      "fixRegion": true
+    }
+  },
+  "objects": [],
+  "nextId": 1
+}

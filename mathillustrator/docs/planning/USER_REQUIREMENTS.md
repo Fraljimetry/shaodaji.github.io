@@ -1859,3 +1859,18 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - In 3D, display Fast 3D orbit and Fix region on the first row, with 3D plotting mode on the second row left. Do not duplicate Grid or Axes.
 - Fix region captures the combined bounds of visible 3D plots; subsequent additions, hiding, or editing other plots must not silently change the shared camera projection region. Newly created plots inherit fixed bounds; manually committing a plot region redefines the fixed region. Camera orbit, pan, zoom and Fast 3D orbit remain independent.
 - The choice is stored with JSON projects; old projects load with Fix region off. Disabling the switch returns automatic union bounds.
+
+### Round 196 — Canvas-aware semantic tikz-cd layout
+- Preserve meaningful diagram proportions on tikz-cd export by deriving global column/row spacing from node coordinates (not arbitrary default TikZ cell spacing). Do not alter the canvas or JSON format.
+- Export morphism label positions along their arrows and existing manual X/Y label shifts as restricted native TikZ label options. Do not introduce collision heuristics or untrusted TeX execution.
+- Keep the restricted importer compatible with both legacy option-free tikz-cd and the geometry-bearing export subset. Irregular per-column spacing and exact curved paths remain approximations, not pixel-exact claims.
+
+
+### Round 197 maintenance requirement — export fidelity
+- Keep extreme valid diagram JSON projects exportable; validate exporter round-trips using emitted grid dimensions, not hardcoded legacy defaults.
+- Test native tikz-cd semantic incidence and style preservation with dense grids, crossing arrows, and uneven node spacing.
+- Report fidelity limitations explicitly: ordinary tikz-cd provides one global row/column separation, so nonuniform canvas intervals and collision-heavy labels may not reproduce visually. Do not silently convert those to unsupported TeX or alter existing project formats.
+
+### Round 198 — Maintenance stress coverage
+- Do not add features for stress testing. Keep bounded mathematical sampling, finite coordinates and safe cancellation for singular/high-curvature 2D plots and mixed 3D plots; preserve independent 3D camera controls, the three-visible-surface limit, and Fix region behavior.
+- Retain regression fixtures for complicated 2D plotting, 3D mixed-surface rendering and crowded geometry, including JSON reopen and SVG export. A successful render is not by itself a claim of visual or numerical fidelity at every resolution.

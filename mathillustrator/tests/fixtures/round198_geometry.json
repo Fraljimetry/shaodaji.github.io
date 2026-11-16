@@ -1,0 +1,1228 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Untitled illustration"
+  },
+  "settings": {
+    "grid": true,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": true,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P1",
+      "xy": [
+        -3.5,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P2",
+      "xy": [
+        -2,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P3",
+      "xy": [
+        -0.5,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P4",
+      "xy": [
+        1,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P5",
+      "xy": [
+        2.5,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P6",
+      "xy": [
+        4,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P7",
+      "xy": [
+        5.5,
+        -2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P8",
+      "xy": [
+        -5,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o9",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P9",
+      "xy": [
+        -3.5,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o10",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P10",
+      "xy": [
+        -2,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o11",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P11",
+      "xy": [
+        -0.5,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o12",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P12",
+      "xy": [
+        1,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o13",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P13",
+      "xy": [
+        2.5,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o14",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P14",
+      "xy": [
+        4,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o15",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P15",
+      "xy": [
+        5.5,
+        0
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o16",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P16",
+      "xy": [
+        -5,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o17",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P17",
+      "xy": [
+        -3.5,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o18",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P18",
+      "xy": [
+        -2,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o19",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P19",
+      "xy": [
+        -0.5,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o20",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P20",
+      "xy": [
+        1,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o21",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P21",
+      "xy": [
+        2.5,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o22",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P22",
+      "xy": [
+        4,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o23",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P23",
+      "xy": [
+        5.5,
+        2
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o24",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "type": "point",
+      "name": "P24",
+      "xy": [
+        -5,
+        4
+      ],
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o25",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "Segment 25",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o26",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "name": "Segment 26",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o27",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o3",
+        "o4"
+      ],
+      "name": "Segment 27",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o28",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o4",
+        "o5"
+      ],
+      "name": "Segment 28",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o29",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o5",
+        "o6"
+      ],
+      "name": "Segment 29",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o30",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o6",
+        "o7"
+      ],
+      "name": "Segment 30",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o31",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o7",
+        "o8"
+      ],
+      "name": "Segment 31",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o32",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o8",
+        "o9"
+      ],
+      "name": "Segment 32",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o33",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o9",
+        "o10"
+      ],
+      "name": "Segment 33",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o34",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o10",
+        "o11"
+      ],
+      "name": "Segment 34",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o35",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o11",
+        "o12"
+      ],
+      "name": "Segment 35",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o36",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o12",
+        "o13"
+      ],
+      "name": "Segment 36",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o37",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o13",
+        "o14"
+      ],
+      "name": "Segment 37",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o38",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o14",
+        "o15"
+      ],
+      "name": "Segment 38",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o39",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o15",
+        "o16"
+      ],
+      "name": "Segment 39",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o40",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o16",
+        "o17"
+      ],
+      "name": "Segment 40",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o41",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o17",
+        "o18"
+      ],
+      "name": "Segment 41",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o42",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "segment",
+      "refs": [
+        "o18",
+        "o19"
+      ],
+      "name": "Segment 42",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o43",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "Circle 43",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o44",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "name": "Circle 44",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o45",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o3",
+        "o4"
+      ],
+      "name": "Circle 45",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o46",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o4",
+        "o5"
+      ],
+      "name": "Circle 46",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o47",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o5",
+        "o6"
+      ],
+      "name": "Circle 47",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o48",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o6",
+        "o7"
+      ],
+      "name": "Circle 48",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o49",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o7",
+        "o8"
+      ],
+      "name": "Circle 49",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o50",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o8",
+        "o9"
+      ],
+      "name": "Circle 50",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o51",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o9",
+        "o10"
+      ],
+      "name": "Circle 51",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o52",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o10",
+        "o11"
+      ],
+      "name": "Circle 52",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o53",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o11",
+        "o12"
+      ],
+      "name": "Circle 53",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o54",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "circle",
+      "refs": [
+        "o12",
+        "o13"
+      ],
+      "name": "Circle 54",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o55",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "name": "Angle 55",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o56",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o2",
+        "o3",
+        "o4"
+      ],
+      "name": "Angle 56",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o57",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o3",
+        "o4",
+        "o5"
+      ],
+      "name": "Angle 57",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o58",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o4",
+        "o5",
+        "o6"
+      ],
+      "name": "Angle 58",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o59",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o5",
+        "o6",
+        "o7"
+      ],
+      "name": "Angle 59",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o60",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o6",
+        "o7",
+        "o8"
+      ],
+      "name": "Angle 60",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o61",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o7",
+        "o8",
+        "o9"
+      ],
+      "name": "Angle 61",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o62",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o8",
+        "o9",
+        "o10"
+      ],
+      "name": "Angle 62",
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o63",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "type": "angle",
+      "refs": [
+        "o9",
+        "o10",
+        "o11"
+      ],
+      "name": "Angle 63",
+      "displayLabelMode": "latex"
+    }
+  ],
+  "nextId": 64
+}

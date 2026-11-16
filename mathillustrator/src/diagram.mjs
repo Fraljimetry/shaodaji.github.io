@@ -1,6 +1,10 @@
 /** Restricted, deterministic tikz-cd interchange. Never evaluates TeX. */
 import {newDoc, append, PRESETS} from './model.mjs?cut=round147';
 const CELL_X=3.5,CELL_Y=2.4;
+// Match the 2D canvas's reference scale (48 px per world unit), while
+// keeping a 3x4 diagram within a normal LaTeX page.
+const PT_PER_WORLD=28.8;
+const formatPt=n=>Number(n.toFixed(2))+'pt';
 function fail(msg){throw Error('tikz-cd: '+msg);}
 function splitTopLevel(input,separator){
  const out=[];let buf='',depth=0,quote=false;
@@ -32,12 +36,20 @@ function morphismAppearance(edge){
  return {heads:['double','wavy'].includes(line)&&!['none','end','start','both'].includes(storedHeads)?'none':storedHeads,line};
 }
 function parseArrow(raw){
- const args=splitTopLevel(raw,',');let direction=null,label='',swap=false,foundLabel=false,heads='end',line='solid',bend=0,sawHead=false,sawLine=false,sawBend=false;
+ const args=splitTopLevel(raw,',');let direction=null,label='',swap=false,foundLabel=false,heads='end',line='solid',bend=0,sawHead=false,sawLine=false,sawBend=false,labelT=.5,labelDx=0,labelDy=0;
  for(const part of args){const p=part.trim();if(/^[rlud]{1,24}$/.test(p)){if(direction)fail('multiple directions.');direction=p;}
-  else{const match=p.match(/^"([\s\S]*)"(')?$/);if(match){
+  else{const match=p.match(/^"([^"]*)"(')?(?:\{([^{}]*)\})?$/);if(match){
     if(foundLabel)fail('multiple labels on one arrow are unsupported.');
     if(match[1].length>1000)fail('arrow label exceeds 1000 characters.');
     label=match[1];swap=!!match[2];foundLabel=true;
+    if(match[3])for(const opt of splitTopLevel(match[3],',')){
+     const v=opt.trim();let m;
+     if((m=v.match(/^pos=(0?\.\d+|1(?:\.0+)?)$/))){labelT=Number(m[1]);if(labelT<.05||labelT>.95)fail('label position out of range.');}
+     else if((m=v.match(/^(xshift|yshift)=(-?\d+(?:\.\d+)?)pt$/))){
+      const n=Number(m[2])/.6;if(!Number.isFinite(n)||Math.abs(n)>300)fail('label shift out of range.');
+      if(m[1]==='xshift')labelDx=n;else labelDy=-n;
+     }else if(v==='inner sep=2pt'){}else fail('unsupported label option: '+v.slice(0,45));
+    }
    }else if(/^bend (?:left|right)(?:=\d+(?:\.\d+)?)?$/.test(p)){
     if(sawBend)fail('multiple bend options.');sawBend=true;
     const m=p.match(/^bend (left|right)(?:=(\d+(?:\.\d+)?))?$/);
@@ -59,14 +71,23 @@ function parseArrow(raw){
  const dx=[...direction].reduce((s,ch)=>s+(ch==='r'?1:ch==='l'?-1:0),0);
  const dy=[...direction].reduce((s,ch)=>s+(ch==='d'?1:ch==='u'?-1:0),0);
  if(dx===0&&dy===0)fail('zero-length arrow is not supported.');
- return {dx,dy,label,swap,heads,line,bend};
+ return {dx,dy,label,swap,heads,line,bend,labelT,labelDx,labelDy};
 }
 export function importTikzCd(source){
  if(typeof source!=='string'||source.length>100000)fail('input exceeds 100 KB limit.');
- const trimmed=source.trim();const match=trimmed.match(/^\\begin\{tikzcd\}\s*([\s\S]*?)\s*\\end\{tikzcd\}$/);
+ const trimmed=source.trim();const match=trimmed.match(/^\\begin\{tikzcd\}(?:\[([^\]\r\n]*)\])?\s*([\s\S]*?)\s*\\end\{tikzcd\}$/);
+ // Allow only the two spacing options emitted by our exporter. Do not interpret TeX.
+ const spacings={};
+ if(match&&match[1]){
+  const seen=new Set();for(const option of splitTopLevel(match[1],',')){
+   const m=option.trim().match(/^(column sep|row sep)=(\d+(?:\.\d+)?)pt$/);
+   if(!m||seen.has(m[1])||Number(m[2])<1||Number(m[2])>500)fail('unsupported grid-spacing option.');
+   seen.add(m[1]);spacings[m[1]]=Number(m[2]);
+  }
+ }
  if(!match)fail('expected a single \\begin{tikzcd} ... \\end{tikzcd} environment.');
  // Row breaks are exactly two backslashes. \\arrow and other commands remain single backslashes.
- const rows=splitTopLevel(match[1],'\\\\').map(row=>splitTopLevel(row,'&'));
+ const rows=splitTopLevel(match[2],'\\\\').map(row=>splitTopLevel(row,'&'));
  if(rows.length>40||rows.some(row=>row.length>40))fail('maximum supported grid is 40 by 40.');
  const parsed=[],arrows=[];
  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++){
@@ -84,8 +105,10 @@ export function importTikzCd(source){
  }
  if(!parsed.length)fail('no labeled nodes.');
  const doc=newDoc();Object.assign(doc.settings,PRESETS['Commutative diagrams']);doc.meta.title='Imported commutative diagram';
- const lookup=new Map();for(const n of parsed){const obj=append(doc,{type:'node',xy:[n.c*CELL_X,-n.r*CELL_Y],text:n.label,fontSize:17,textMode:'latex'});lookup.set(`${n.r}:${n.c}`,obj.id);}
- for(const a of arrows){const from=lookup.get(`${a.r}:${a.c}`),to=lookup.get(`${a.r+a.dy}:${a.c+a.dx}`);if(!from||!to)fail('arrow points to an empty cell.');append(doc,{type:'morphism',refs:[from,to],text:a.label,bend:a.bend,swap:a.swap,textMode:'latex',morphismHeads:a.heads,morphismLine:a.line});}
+ const importedX=spacings['column sep']?spacings['column sep']/PT_PER_WORLD:CELL_X;
+ const importedY=spacings['row sep']?spacings['row sep']/PT_PER_WORLD:CELL_Y;
+ const lookup=new Map();for(const n of parsed){const obj=append(doc,{type:'node',xy:[n.c*importedX,-n.r*importedY],text:n.label,fontSize:17,textMode:'latex'});lookup.set(`${n.r}:${n.c}`,obj.id);}
+ for(const a of arrows){const from=lookup.get(`${a.r}:${a.c}`),to=lookup.get(`${a.r+a.dy}:${a.c+a.dx}`);if(!from||!to)fail('arrow points to an empty cell.');append(doc,{type:'morphism',refs:[from,to],text:a.label,bend:a.bend,swap:a.swap,textMode:'latex',morphismHeads:a.heads,morphismLine:a.line,labelT:a.labelT,labelDx:a.labelDx,labelDy:a.labelDy});}
  return doc;
 }
 /** Semantic only; mathematical content and directed incidences are retained, but styling is not. */
@@ -107,13 +130,34 @@ export function exportTikzCd(doc){
   return val=>{const i=groups.findIndex(group=>Math.abs(val-group[0])<0.12);if(i<0)fail('node positions are not grid-aligned.');return i;};
  };
  const colIndex=coordinateIndex(nodes.map(o=>o.xy[0])),rowIndex=coordinateIndex(nodes.map(o=>o.xy[1]),true);
+ const centers=(axis,reverse=false)=>{
+  const ordered=[...nodes.map(n=>n.xy[axis])].sort((a,b)=>reverse?b-a:a-b),groups=[];
+  for(const n of ordered){if(groups.length&&Math.abs(n-groups.at(-1)[0])<.12)groups.at(-1).push(n);else groups.push([n]);}
+  return groups.map(g=>g.reduce((a,b)=>a+b,0)/g.length);
+ };
+ const colsX=centers(0),rowsY=centers(1,true);
+ const gaps=coords=>coords.slice(1).map((x,i)=>Math.abs(x-coords[i]));
+ const columnGaps=gaps(colsX),rowGaps=gaps(rowsY);
+ // tikz-cd has one global row/column separation. Use the median gap;
+ // do not silently rescale the diagram to its smallest separation.
+ const median=a=>{const sorted=[...a].sort((x,y)=>x-y);return sorted[Math.floor(sorted.length/2)];};
+ const columnSep=columnGaps.length?formatPt(Math.max(12,Math.min(360,median(columnGaps)*PT_PER_WORLD))):null;
+ const rowSep=rowGaps.length?formatPt(Math.max(12,Math.min(360,median(rowGaps)*PT_PER_WORLD))):null;
  const cells=new Map(),nodePosition=new Map();let maxRow=0,maxCol=0;
  for(const node of nodes){const r=rowIndex(node.xy[1]),c=colIndex(node.xy[0]),key=`${r}:${c}`;if(cells.has(key))fail('more than one node occupies the same grid cell.');cells.set(key,node);nodePosition.set(node.id,{r,c});maxRow=Math.max(maxRow,r);maxCol=Math.max(maxCol,c);}
  if(maxRow*maxCol>1600)fail('diagram grid is too large.');
  const arrows=new Map();for(const edge of edges){const a=nodePosition.get(edge.refs[0]),b=nodePosition.get(edge.refs[1]);if(!a||!b)fail('morphism endpoint is hidden.');
   const direction='r'.repeat(Math.max(0,b.c-a.c))+'l'.repeat(Math.max(0,a.c-b.c))+'d'.repeat(Math.max(0,b.r-a.r))+'u'.repeat(Math.max(0,a.r-b.r));
   if(!direction||direction.length>24)fail('unsupported arrow direction.');
-  const label=edge.text?`, "${edge.text}"${edge.swap?"'":''}`:'';
+  const label=edge.text?(()=>{
+   const t=edge.labelT??.5,dx=edge.labelDx??0,dy=edge.labelDy??0;
+   // Position along the arrow and screen-relative manual displacement.
+   // TikZ retains its own native clearance; avoid duplicating it here.
+   const opts=[`pos=${Number(t.toFixed(4))}`,'inner sep=2pt'];
+   if(Math.abs(dx)>.01)opts.push(`xshift=${formatPt(dx*.6)}`);
+   if(Math.abs(dy)>.01)opts.push(`yshift=${formatPt(-dy*.6)}`);
+   return `, "${edge.text}"${edge.swap?"'":''}{${opts.join(', ')}}`;
+  })():'';
   const {heads,line}=morphismAppearance(edge);
   const headOption=line==='double'?null:TIKZ_HEADS[heads],lineOption=line==='double'?DOUBLE_ARROW_TIKZ[heads]:TIKZ_LINES[line];
   const bendOption=Math.abs(edge.bend||0)>1e-8?`bend ${edge.bend>0?'right':'left'}=${(Math.abs(edge.bend)*15).toFixed(8)}`:null;
@@ -121,7 +165,8 @@ export function exportTikzCd(doc){
   const key=`${a.r}:${a.c}`;arrows.set(key,[...(arrows.get(key)||[]),`\\arrow[${direction}${styleOptions}${label}]`]);
  }
  const lines=[];for(let r=0;r<=maxRow;r++){const cols=[];for(let c=0;c<=maxCol;c++){const key=`${r}:${c}`,node=cells.get(key);cols.push([node?.text||'',...(arrows.get(key)||[])].join(' ').trim());}lines.push('  '+cols.join(' & '));}
- const result=['\\begin{tikzcd}',lines.join(' ' + String.raw`\\` + '\n'),'\\end{tikzcd}'].join('\n');
+ const gridOptions=[columnSep&&`column sep=${columnSep}`,rowSep&&`row sep=${rowSep}`].filter(Boolean);
+ const result=[`\\begin{tikzcd}${gridOptions.length?'['+gridOptions.join(', ')+']':''}`,lines.join(' ' + String.raw`\\` + '\n'),'\\end{tikzcd}'].join('\n');
  // No best-effort TeX interpretation: a source label containing unescaped &,
  // embedded \arrow commands or row breaks could otherwise invent/delete nodes.
  // Import exactly what we intend to export and compare the semantic graph.
