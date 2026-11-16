@@ -2167,3 +2167,10 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Corrected the automatic label planner to exclude a label’s own arrow stroke from its obstacle search, while retaining obstacles from other arrows, nodes, text and manually positioned labels. Added 12 px candidate offsets and increased the penalty for long displacement; retained larger fallback offsets where necessary to clear real obstacles. No model/schema, export code or glyph changes.
 - Node tests: **610/610 PASS** (includes three new focused placement regressions). Browser: **PASS** focused real Chromium module checks for own-arrow locality, unrelated-arrow collision and crowded close placement. A historical Chromium script `browser_round32_dynamic_label.py` remains **FAILED/OUTDATED**: it searches for the removed `TikZ / PGF` button (30-second locator timeout), unrelated to this change. Full historical Chromium suite **NOT EXECUTED**. Production deployment and visual approval **NOT VERIFIED**.
 - The user withdrew an earlier request to change Free Curve default width. That change is explicitly excluded from this overlay.
+
+
+### Round 193 — Label clearance regression
+- Fixed: auto morphism labels could sit against the stroke because baseline offset ignored text bounds; automatic toggle had little visible effect.
+- Added outward glyph-bound clearance on the correct side of straight/curved morphisms, retaining nearby collision candidates and manual-position invariance.
+- Node tests: 614/614 PASS; JS syntax checks PASS. Historical tikz-cd bend test corrected to align with already-supported bend export.
+- Actual Chromium: Round 193 auto-label toggle PASS; Round 192 label placement PASS; Round 191 arrow parity (20 cases) PASS. Full historical Chromium suite not executed. Hosted website not verified.

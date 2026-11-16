@@ -1848,3 +1848,8 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 
 ### Round 192 — Compact automatic morphism labels
 - Keep automatic labels near their original morphism attachment and avoid treating the same morphism’s own stroke as an external collision. Preserve manual label placements, side swapping, other-arrow and node avoidance, and existing project values. Crowded diagrams may still show overlaps rather than distant floating labels.
+
+
+### Round 193: Automatic diagram label spacing
+- When automatic arrow-label placement is enabled, keep a readable glyph-aware gap from the morphism itself, on the selected label side. Prioritize nearby positions before larger collision-avoidance moves.
+- Turning off automatic placement returns to the stored user-defined label position. Manual edits, morphism routing, saved JSON and tikz-cd semantics must not change.

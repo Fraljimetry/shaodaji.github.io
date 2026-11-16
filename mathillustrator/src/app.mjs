@@ -896,7 +896,7 @@ function draw(svg,{exporting=false}={}){
    const place=at=>auto?labelOnPolyline(route.points,t,at,!!o.swap,dx,dy):labelOnQuadratic(begin,curve.control,finish,t,at,!!o.swap,dx,dy);
    const pos=place(distance),far=place(distance+1);
    if(pos){const sideNormal=far?[far[0]-pos[0],far[1]-pos[1]]:null;
-    entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],sideNormal,auto:o.labelAvoid!==false&&uiPrefs.autoDiagramLabels!==false});}
+    entries.push({id:o.id,text:o.text,x:pos[0],y:pos[1],distance,sideNormal,auto:o.labelAvoid!==false&&uiPrefs.autoDiagramLabels!==false});}
   }
   computedMorphismLabels=layoutMorphismLabels(entries,nodeRects,size.w,size.h);
  }

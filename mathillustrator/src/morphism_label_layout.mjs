@@ -10,6 +10,19 @@ const CELL=96;
 const MOVES=[[0,0],[0,-12],[0,12],[12,0],[-12,0],[0,-24],[0,24],
  [12,-12],[-12,-12],[12,12],[-12,12],[24,0],[-24,0],
  [24,-12],[-24,-12],[24,12],[-24,12],[0,-48],[0,48],[48,0],[-48,0],[0,-72],[0,72]];
+// Auto placement uses a glyph-aware minimum gap measured perpendicular to its
+// own arrow. A baseline-distance alone is not sufficient (especially below a
+// horizontal shaft or alongside a vertical one).
+const LABEL_GAP=6;
+function minimumOutwardShift(e,normal){
+ const distance=e.distance;
+ if(!good(distance)||distance<0||distance>10000)return 0;
+ const b=textBounds(e,e.x,e.y),nx=normal[0],ny=normal[1];
+ // Minimum projection of the approximate text rectangle onto the outward normal.
+ const minX=nx>=0?b.left-e.x:b.right-e.x;
+ const minY=ny>=0?b.top-e.y:b.bottom-e.y;
+ return Math.max(0,LABEL_GAP-distance-nx*minX-ny*minY);
+}
 const good=n=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<1e8;
 const intersect=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*
  Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
@@ -85,10 +98,14 @@ export function layoutMorphismLabels(entries,rectangles,width,height){
   // When a side normal is supplied, search along the selected side only.
   // Plain screen-space offsets could leap back across a morphism after Swap.
   const side=Array.isArray(e.sideNormal)&&e.sideNormal.length===2&&e.sideNormal.every(good)&&Math.abs(Math.hypot(...e.sideNormal)-1)<.01?e.sideNormal:null;
-  const moves=side?[[0,0],[-24,0],[24,0],[0,24],[-48,0],[48,0],[-24,24],[24,24],[0,48],[-48,24],[48,24],[-72,0],[72,0],[0,72]]:MOVES;
+  const moves=side?[[0,0],[-12,0],[12,0],[0,8],[-24,0],[24,0],[-12,8],[12,8],
+   [0,16],[-24,8],[24,8],[-36,0],[36,0],[0,24],[-36,12],[36,12],
+   [-48,0],[48,0],[0,36]]:MOVES;
+  const clearance=side?minimumOutwardShift(e,side):0;
   for(let i=0;i<moves.length;i++){
-   const [along,out]=moves[i];const dx=side?side[1]*along+side[0]*out:along;
-   const dy=side?-side[0]*along+side[1]*out:out;
+   const [along,out]=moves[i],outward=out+clearance;
+   const dx=side?side[1]*along+side[0]*outward:along;
+   const dy=side?-side[0]*along+side[1]*outward:out;
    const x=e.x+dx,y=e.y+dy,b=textBounds(e,x,y);
    const area=index.overlap(b,e.id);
    const outside=Math.max(0,-b.left)+Math.max(0,b.right-width)+Math.max(0,-b.top)+Math.max(0,b.bottom-height);
