@@ -1,3 +1,10 @@
+## Round 210 — Orbit projection performance and output fidelity (2026-11-17)
+- Optimized the hot camera-orbit path without modifying sampling, mesh topology, resolution, transparency, materials, colors, export data, or JSON format. Cached the nonlinear world-space shading result per triangle and merged already sorted face/line streams in linear time. Existing weak-key caching does not pin evicted meshes; lighting-off stays shade=1.
+- Reproducible local Node `--expose-gc` 120-orbit/scene benchmark, 12 alternating blocks of 10 yaw changes with forced GC before each block; median milliseconds per settled projection. Round 209 -> 210: dense surface detail128 44.83 -> 24.19 (1.85x), mixed surface+vector detail115 37.70 -> 21.90 (1.72x), implicit sphere detail60 33.74 -> 22.61 (1.49x). This measures Node-side projection including sorting; excludes browser raster painting, SVG serialization, and initial mesh generation. Raw benchmark in this working session (`/mnt/data/mi210_bench_stable.mjs`).
+- PASS: full Node **685/685**, zero fail/skip, using bounded test concurrency 2; 33/33 JS source syntax; 4 new tests covering nine exact baseline projection hashes (three mixed/multi-vector scenes × three camera angles), synchronous/progressive parity, camera-only cache reuse and repeated lighting toggles. The unrestricted parallel suite timed out, then bounded suite passed.
+- PASS: real headless Chromium Round205 dense raster/16,200-face SVG/orbit/cancel isolation; Round41 implicit/pole/lighting/scene lifecycle; Round40 domain coloring and mobile Chinese layout; Round107 three 3D export cycles (nine outputs); Round200 translation 1440px/768px.
+- NOT RUN: full historical Chromium battery, physical-device frame timing, hosted deployment and GPU-specific tests. No claim of complete release certification.
+
 ## Round 181 — Tutorial example gallery removal (2026-11-15)
 - Removed six example links and gallery introductions in both English and Chinese. Removed unused gallery-only CSS. Kept editor and existing native example assets unchanged to avoid unrelated behavior changes.
 - Verification: bilingual static markup assertions and Node regression; full browser suite not run.
@@ -2245,3 +2252,139 @@ Baseline: Round 196. Three reproducible MathIllustrator JSON fixtures:
 **Verified:** 639/639 Node tests PASS (3 new); 33/33 src `.mjs` `node --check` PASS; actual Chromium 1440/768/390 widths with zh→en→zh tool switches PASS; archived Round 177 locale test at 1440/768/390/320 PASS; Round 200 desktop/tablet generated 3D locale test PASS. None of these runs were skipped.
 
 **Limits:** A finite source review and deterministic bilingual fixture checks cannot certify every exceptional third-party error payload, future UI string or rarely reachable conditional branch. Full historical browser suite and production deployment were not executed. Runtime error details originating in browser/OS libraries intentionally remain verbatim for diagnostics. No Git commit.
+
+## Round 203 — Adversarial storage durability sweep (2026-11-16)
+
+**Newly covered:** corrupt local project, storage quota exceptions, a storage implementation which acknowledges but silently discards writes, explicit recovery/retry, autosave persistence through undo/redo, deferred cross-tab locks, and identical-payload synchronization.
+
+**Confirmed issue:** `compareAndWrite` previously considered a completed `setItem` successful without rereading the stored project, so a silently discarded write could falsely display `Saved locally`. A reproduced silent-drop storage shim demonstrated this false-success path. The smallest possible fix re-reads the key after writing and throws an actionable error if it did not retain the payload. The existing autosave error handler preserves unsaved changes and exposes retry. Native browser `localStorage` normally guarantees persistence or throws; this regression specifically protects against adversarial shims, browser extensions, and broken storage implementations, rather than claiming a widespread native-browser defect.
+
+**Focused tests:** Four new Node storage coordination tests pass. Actual headless Chromium test passes: malformed startup payload remains intact until explicit recovery, forced quota denial leaves old snapshot intact, silent write drop reports failure rather than success, Retry writes the latest complete state after recovery, and undo/redo persist their respective snapshots. Historical browser storage and Round 201 bilingual responsive regressions also pass.
+
+**Verification limitations:** This test harness runs app modules in an isolated data-URL page with injected storage; it is not a real-origin multi-tab transactional guarantee or a hosted-website test. The full local verification gate outcome is recorded separately and must not be treated as PASS until all its checks complete with zero failures. No JSON-format changes, feature additions, or Git commits.
+
+**Historical gate maintenance:** The first full local gate correctly returned FAIL for three obsolete checks: startup still demanded retired PDF/TikZ-PGF choices; the archived GPU test expected a WebGL accelerator that current CPU/SVG code explicitly does not ship; and the cache-eviction benchmark hardcoded 192 MiB while production uses 224 MiB and failed to copy a now-required region-condition module. Test-only updates now assert current export formats, actual CPU/SVG dense-mesh/export parity without pretending to test GPU acceleration, and genuine LRU cache eviction on an isolated 1 MiB cache. Individually rerun: browser startup PASS, CPU/SVG scene/export PASS (12,800 mesh polygons), cache-eviction PASS. The code does not restore removed exporters or GPU acceleration to satisfy old tests.
+
+**Final local gate:** PASS, 17/17 checks, zero failures and zero incomplete; 639/639 Node regressions PASS, all 33 source JavaScript modules syntax-check, mathematical-property run with 10,000 cases per family PASS, browser lifecycle/export/interaction/performance, cache stress and corrected cache-eviction checks PASS. The separately executed Round 203 fault-injection Chromium script PASS. This is a local gate, **not** deployed-release certification; hosted production, physical hardware GPU/touch and cross-origin concurrent browser transactions were not verified.
+
+
+## Round 204 — Closure of historical verification gaps (2026-11-16)
+
+**Authoritative fixture recovered:** `tests/fixtures/MathIllustrator_IMO2011_P6_Dynamic_Geometry.json` (67 objects, 64 derived). The initial Round 202 report incorrectly treated it as unavailable in all earlier files; it was not in the ZIP but was subsequently recovered from a previous uploaded project file.
+
+**PASS:** `node --test tests/round204_dynamic_imo.test.mjs` (3/3). Independent invariants cover tangency of circumcircles, tangent perpendicular to radius, three reflected tangent lines, triple reflected-line intersection incidence, and all resolved point roles across 120 reproducible A/B/C+tangent perturbations. Dependency closure deletion + exact pre-deletion restoration validation passes.
+
+**PASS:** `python tests/browser_round204_dynamic_imo.py` with real headless Chromium running the source app as an inline local document: 24 actual pointer drags (8 for each A/B/C), 67 objects preserved, undo/redo exact document, JSON save/re-import, and SVG/PNG/JPEG/WebP signature and payload checks. Historical R198 import tests (2D, 3D, geometry), R199 IMO Chromium export/drag test, R201 responsive translation test (1440/768/390), R202 storage fault-injection Chromium, and touch/pen-interruption Chromium regression PASS. 33/33 source syntax modules PASS. Local quick gate completed module syntax, existing 639 Node regressions, 150-case-per-family mathematical properties, and browser startup with PASS; full gate did not finish. An additional seven focused Node tests (R202+R204 combined) PASS; they are not included in the gate's existing 639 count.
+
+**NOT VERIFIED:** True same-origin two-tab Web Locks and StorageEvents. An opt-in real-origin test was authored, but Chromium navigation to both loopback HTTP and intercepted HTTPS was denied by the execution environment with `net::ERR_BLOCKED_BY_ADMINISTRATOR`. The prior mocked-storage check is not proof of real-origin transactions. Physical touchscreen and GPU behavior remain unverified; touch emulation is not physical-device certification. The hosted site was reachable by remote text retrieval, but hosted Chromium interaction, deployed asset hash parity, and deployment certification were not performed.
+
+**INCOMPLETE:** Two attempted local/quick release-gate runs were terminated by execution timeouts. The quick run reached `browser-point-lines` after its first four stages PASS; the larger local run reached `math-properties` after syntax+Node PASS. Neither is a completed local/release gate. Existing historical 17/17 Round 203 evidence remains historical, not a rerun.
+
+**Production changes:** None. Added exact original dynamic fixture and focused test harnesses. No regression failure in tested source paths required a speculative runtime change.
+
+## Round 205 — 3D performance optimization and quality parity (2026-11-16)
+
+**Source baseline:** user-uploaded `mathillustrator(20261116-065010).zip` plus Round 203 and 204 overlays. Changed production modules: `src/plot3d.mjs` and `src/app.mjs`. No geometry sampling, triangulation, camera equations, lighting formula, budget limits, or export algorithms changed.
+
+**Implementation:** weakly referenced world-face lighting values, frame-local shared-vertex projection caching, and lowering the *editor-only* high-density raster threshold from 50,000 to 12,000 primitives. Screen raster uses the existing device-scale, painter-sorted, atomic-publish path; full SVG export still emits original vector faces. Weak cache keys do not retain evicted meshes; camera cache is recreated per projection.
+
+**Exact-output parity:** newly added `round205_projection_parity.test.mjs` verifies 15 full SHA-256 baselines captured from the unmodified Round 204 implementation (surface/parametric/implicit/domain/vector, three yaws each), including face positions, depth/lighting, vector strokes, painter order and cube. All 6 tests PASS including repeated task cancellation. Earlier Round123 mesh-hash fixtures also pass as part of full suite.
+
+**Measured Node benchmark, same machine, median of 15 warmed orbital projections (no resampling):** 32,768-face surface 86.8 → 52.0 ms (1.67×); 30,840-face implicit 64.6 → 50.4 ms (1.28×); 32,576-face domain 68.4 → 50.0 ms (1.37×). These are Node projection timings, NOT browser FPS or GPU metrics; benchmark variability applies. Cold mesh sampling performance improvement is not claimed.
+
+**PASS:** Full `node --test tests/*.test.mjs` 648/648; JavaScript syntax 34/34; independent mathematical property suite 9,300 trials, 0 failed. Real Chromium `browser_round205_3d_performance.py`: 16,200-face scene on viewport raster, 12 rapid camera changes, all 16,200 faces retained in SVG export, 2D/3D switching without stale raster, no page errors. Real Chromium `browser_round127_dense_raster.py`, `browser_gpu3d_acceleration.py` (updated to accept raster display plus strict full-vector export), `browser_round107_3d_export.py` (9 exports), `browser_round70_3d_sweep.py`, `browser_round40_3d_domain.py`, and `browser_round41_3d_pipeline.py` all PASS. Covers pole rejection, preserved lighting and scene, phase coloring, and older project compatibility.
+
+**INCOMPLETE:** A separate extended browser batch exceeded the tool execution window while attempting additional scene-lifecycle and IMO tests. No clean result from that batch is counted. No physical GPU/device, real-origin two-tab browser, or hosted deployment certification was performed. Raster image interpolation on different mobile hardware was not visually certified.
+
+## Round 206 — Cold implicit-surface optimization (2026-11-16)
+
+**Source:** cumulative Round 205 local source. Production change limited to `src/plot3d.mjs`; no modified geometry formula, tetrahedral layout, clipping, budgets, cache capacity, or visualization styling.
+
+**Optimization:** Reuse synchronous compiled implicit expression's `{x,y,z}` argument record, and replace each verified lattice-edge string key with a bounded collision-free numeric key (`minIndex * latticeSize + maxIndex`). At maximum 114-cell resolution, latticeSize = 115^3 and the largest key is below `Number.MAX_SAFE_INTEGER`. Cache still lives only within one sampling invocation; failures and discontinuities are cached exactly as before.
+
+**Exact mesh parity:** All six full SHA-256 mesh golden cases from Round 205 match (sphere, hyperboloid and oscillating implicit surface, detail 48 and 80). Identical face coordinates, winding/order, evaluation counts, and completion flags. Two additional tests cover key injectivity/safe integer bound and cancellation. New tests: 8/8 PASS.
+
+**Cold sampler timing:** one baseline measurement and three post-change runs using Node 22 on the same container (uncontrolled machine load; these are not paired statistical estimates). Baseline → post-change median in milliseconds: sphere 48: 200.8 → 145.9 (1.38×); sphere 80: 406.2 → 263.0 (1.54×); hyperboloid 48: 201.3 → 153.6 (1.31×); hyperboloid 80: 453.4 → 332.1 (1.37×); oscillatory 48: 410.9 → 288.2 (1.43×); oscillatory 80: 908.0 → 646.8 (1.40×). First cold generation only; no browser-FPS claim.
+
+**PASS:** Full Node `node --test tests/*.test.mjs` 656/656; source JavaScript syntax 34/34; Chromium `browser_round205_3d_performance.py`, `browser_round41_3d_pipeline.py`, and `browser_round70_3d_sweep.py` (dense raster and full vector export, implicit continuity and pole rejection, lighting/camera, rapid orbit, persistence, 2D isolation).
+
+**NOT VERIFIED:** Physical hardware/GPU frame-rate, full historical Chromium release gate, hosted deployment, real-origin concurrent tabs. Existing release gaps remain open; no Git commit.
+
+
+### Round 207 — Implicit triangulation and clipping performance (local)
+- Baseline: authoritative Round 206 local working copy + prior delivered overlays; only `src/plot3d.mjs`, new `tests/round207_implicit_assembly.test.mjs`, and these two maintenance documents changed.
+- Optimizations: direct tetrahedron crossing assembly (eliminates temporary boundary arrays/repeated lookups), and skip generic six-plane box clipping for implicit-only triangles constructed by interpolation within the sampling bounds. Region-condition clipping is retained. No topology or numerical threshold changes.
+- Measured alternating paired Node benchmark, eight measured runs per variant, median in milliseconds, detail=80: sphere **170.0 → 122.4 (1.39×)**; hyperboloid **356.0 → 270.7 (1.31×)**; oscillatory **746.5 → 584.2 (1.28×)**. This measures synchronous initial sampler time, not Chromium FPS, GPU speed, or total editor time.
+- Exact full-mesh SHA-256 comparison: six previously retained Round 205 reference hashes plus five additional Round 206 reference hashes (zero-valued lattice, pole, strict region, exact boundary box, folded periodic surface), **11/11 PASS**; hashes include vertex coordinates/order, face winding, evaluations and limit flags.
+- New tests **6/6 PASS**, including cooperative cancellation without partial mesh publishing. Full `node --test tests/*.test.mjs` **662/662 PASS**, zero failures/skips. `node --check src/plot3d.mjs` **PASS**. Actual Chromium `browser_round205_3d_performance.py`, `browser_round70_3d_sweep.py`, `browser_round41_3d_pipeline.py` **PASS** (dense editor raster with complete vector export, mathematical pole rejection, lighting, region boundaries, persistence, stale-frame cancellation and 2D isolation).
+- Initial new fixture run was 3/6 due solely to passing `null` as optional bounds in the test harness; corrected to `undefined` and reran **6/6 PASS**.
+- Not verified in this batch: complete historical Chromium battery, hosted deployment, physical GPU/phone behavior and visual pixel-diff against deployment.
+- No deployment, Git commit, unrelated UI/glyph modification or new major feature.
+
+
+### Round 208 — Implicit 3D root refinement (local, 2026-11-17 UTC)
+- Production change: `src/plot3d.mjs` keeps implicit edge-root bracket coordinates in scalars, avoiding allocations during intermediate probes. Accepted crossings and interpolation use the same arithmetic as Round 207.
+- Median warmed direct Node `sample3DPlot` (8 baseline + 8 optimized measurements, alternating runs, detail 80): sphere 130.1 → 116.7 ms (1.12x); hyperboloid 279.9 → 202.2 ms (1.38x); oscillatory surface 664.3 → 537.8 ms (1.24x). Performance varies by machine/scene, and timings exclude browser painting.
+- Node: 669/669 PASS (`node --test tests/*.test.mjs`), including 7 new Round 208 tests. JavaScript syntax verification: 33 modules, 0 errors.
+- Exact Round 207 output hashes: 5/5 PASS; progressive/synchronous equivalence and interruption recovery: PASS. Round 206–207 parity tests: 14/14 PASS.
+- Real Chromium: `browser_round205_3d_performance.py` PASS (16,200-face raster preview, 12 rapid camera changes, full-vector SVG export, 2D/3D isolation); `browser_round41_3d_pipeline.py` PASS (implicit preview, geometry, save/export, cancellation, 2D isolation).
+- Not executed: complete historical Chromium battery, hosted deployment, physical GPU/device FPS, cross-browser visual comparisons. No Git commit.
+
+### Round 209 — Real-expression evaluation closeout (2026-11-16)
+
+Production changes: `src/plot_modes.mjs` selects unary real math functions and
+binary real arithmetic operators once at expression-parse time, removing
+per-sample array/spread allocation and operator dispatch. `src/plot3d.mjs`
+reuses private variable records for surface, parametric, and vector-field
+functions. There is no `eval`, shader backend, mesh-detail change, or change to
+complex arithmetic operations.
+
+- Full Node suite: **681/681 passed**, zero skipped or failed.
+- JavaScript source syntax: **33/33 passed**.
+- New Round 209 Node fidelity tests: **12/12 passed**. Ten complete
+  Round 208 output SHA-256 fixtures cover surface, parametric, implicit,
+  vector-field, and complex domain-coloring modes. Also tested interleaved
+  1,000-sample evaluation-record isolation and cancellation/restart.
+- Existing exact camera-projection, implicit root, boundary, clipping,
+  geometry, history, and UI regressions passed as part of the Node suite.
+- Actual Chromium: Round 205 dense raster display, 12 orbit changes, 16,200
+  full SVG triangles and 2D/3D isolation **passed**; Round 41 implicit
+  continuity/cancellation/legacy import **passed**; Round 107 three export
+  cycles / nine export checks **passed**; Round 40 complex 3D/domain coloring,
+  import/history/Chinese/mobile-viewport checks **passed**.
+- Round 106 extended lifecycle browser test **timed out**, not passed.
+- Full historical Chromium battery, real touch hardware, hosted deployment,
+  and physical-device performance **not certified**.
+
+Performance: alternating eight runs per implementation, warmed Node process,
+compared to the unmodified Round 208 sampler. At detail 80 oscillatory implicit
+mesh median 537.45 -> 312.50 ms (**1.72x**). Detail 60 folded trigonometric
+implicit mesh median 586.28 -> 338.16 ms (**1.73x**). Detail 128 smooth
+surface 41.09 -> 31.94 ms (**1.29x**). Polynomial sphere timings were noisy
+(133.65 -> 171.24 ms in that run) and **do not establish a mesh speedup**.
+Pure scalar evaluator microbenchmark (500,000 calls x 14 alternating trials):
+oscillatory 244.4 -> 100.2 ms (**2.44x**), folded 553.6 -> 212.3 ms
+(**2.61x**), polynomial sphere 64.9 -> 50.8 ms (**1.28x**).
+These are machine-local elapsed timings, not guaranteed end-user frame rates.
+
+Remaining measurable opportunities (not declared eliminated): initial high-detail
+implicit sampling is inherently CPU-heavy; browser paint can dominate large
+scenes; device/browser differences, cancellation responsiveness, and memory
+pressure require on-device profiling. No change to mesh topology or rendering
+quality was accepted without byte-for-byte parity evidence.
+
+
+## Round 211 — whole-application regression audit (local evidence)
+
+Scope: inspected the cumulative Round 210 working tree in `/mnt/data/mi210_mathillustrator`; no production source modifications. The run verifies representative functional families, but does not claim exhaustive enumeration of all UI states.
+
+- **PASS** Complete Node suite: `node --test --test-concurrency=2 tests/*.test.mjs`; 685 passed, 0 failed, 0 skipped, 0 cancelled (28.6 s).
+- **PASS** Source syntax: `node tests/verification/check_syntax.mjs`; 33 modules, 0 failures.
+- **PASS** Seeded mathematical-property test: `node tests/verification/run_kernel_properties.mjs --seed=1511506142 --cases=1500`; 46,500 property trials, 0 failures, six coordinate scales from 1e-9 to 1e6.
+- **PASS** Real headless Chromium, 18 individual scripts, all return code zero: `browser_smoke.py`, `browser_round204_dynamic_imo.py`, `browser_round202_resilience.py`, `browser_round205_3d_performance.py`, `browser_round40_3d_domain.py`, `browser_round41_3d_pipeline.py`, `browser_round91_history.py`, `browser_round107_3d_export.py`, `browser_round108_export_fidelity.py`, `browser_round109_export_interruptions.py`, `browser_round201_translation_completeness.py`, `browser_round69_2d_sweep.py`, `browser_round102_seeded_interactions.py`, `browser_round95_touch_marquee.py`, `browser_round70_3d_sweep.py`, `browser_round106_3d_lifecycle.py`, `browser_round103_performance.py`, and `browser_round76_remaining_points_lines.py`.
+- **PASS** Node performance budget, cache-stability, and cache-eviction benchmarks: all three standalone scripts returned 0 with `passed: true` (eviction reports actual LRU promotion and deterministic recomputation).
+- Confirmed 67-object dynamic IMO fixture browser flow: 24 drags, undo/redo, JSON reopening, SVG/PNG/JPEG/WebP. Confirmed 16,200-face 3D dense raster viewport with full vector export. Verified corruption/quota/write-discard recovery, touch-emulation safeguards, import/export, 2D/3D isolation, camera/lighting, discontinuity rejection, translation at widths 1440/768/390, and repeat scene lifecycle.
+- A first attempted **concurrent aggregate** Chromium run exceeded the execution window and yielded no complete aggregate report; all 18 named browser scripts were then rerun directly and passed. A separate initial grouped run also hit the environment limit while starting the Round 107 script; its later isolated rerun passed. Do not equate the interrupted aggregate runs with completed release-gate evidence.
+- **NOT EXECUTED / UNVERIFIED:** Hosted `https://shaodaji.cc/mathillustrator/` deployment certification; real physical touchscreen/GPU/mobile hardware; genuinely shared-origin cross-tab concurrency; exhaustive historic Chromium inventory and full `release_gate.py --profile release` evidence. No assertion of global, exhaustive, bug-free operation is warranted.
+
+Conclusion: **PASS for executed local checks**, no confirmed new source defect in their tested scope. **Release certification remains INCOMPLETE**, and a successful local run does not establish actual production-deployment fidelity.

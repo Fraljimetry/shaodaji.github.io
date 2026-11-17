@@ -923,7 +923,10 @@ function draw(svg,{exporting=false}={}){
 // each triangle as an SVG DOM element can take seconds and retains huge DOMs.
 // Preserve the exact projected/ordered mesh for vector export; only the editor
 // display is rasterized at device resolution when the primitive count is large.
-const DENSE_3D_RASTER_THRESHOLD=50000;
+// Browser SVG DOM cost dominates well before the old 50k-face cutoff.
+// Rasterize only the editor viewport at device resolution; export stays native
+// full-detail vector, and small mathematical diagrams remain SVG for crispness.
+const DENSE_3D_RASTER_THRESHOLD=12000;
 function dense3DCanvas(result){
  if(result.primitives.length<DENSE_3D_RASTER_THRESHOLD)return null;
  const canvas=document.createElement('canvas');

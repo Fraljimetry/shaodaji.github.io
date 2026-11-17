@@ -11,6 +11,9 @@ export function compareAndWrite(storage,key,expected,payload){
  if(current===payload)return current===expected?{ok:true}:{ok:true,alreadyCurrent:true};
  if(current!==expected)return {ok:false,reason:'conflict'};
  storage.setItem(key,payload);
+ // A storage shim/privacy layer can acknowledge a write without retaining it.
+ // Never claim that the only local recovery copy was saved unless readback agrees.
+ if(storage.getItem(key)!==payload)throw Error('Local storage did not retain the project.');
  return {ok:true};
 }
 export function coordinateSave(locks,key,commit){

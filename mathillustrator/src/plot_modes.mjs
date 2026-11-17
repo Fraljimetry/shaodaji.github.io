@@ -99,6 +99,11 @@ function compile(source,variables,complex=false){
     if(take()?.kind!==')')throw Error('Missing closing parenthesis.');
     const [min,max]=FUNCTION_ARITY[name]||[1,1];
     if(args.length<min||args.length>max)throw Error(`${name} expects ${min===max?min:`${min}–${max}`} arguments.`);
+    // Real scalar fields evaluate this closure millions of times. For the
+    // overwhelmingly common unary functions, avoid allocating an argument
+    // array and spreading it on every sample. Keep the complex interpreter
+    // and multi-argument semantics unchanged.
+    if(!complex&&args.length===1){const arg=args[0],operation=REAL_FUNCS[name];return vars=>operation(arg(vars));}
     return vars=>ops.fun(name,args.map(fn=>fn(vars)));
    }
    throw Error('Unknown symbol: '+name);
@@ -112,7 +117,16 @@ function compile(source,variables,complex=false){
   const implied=t.kind==='num'||t.kind==='word'||t.kind==='(';
   const op=implied?'*':t.kind,p=priority[op];if(p===undefined||p<min)break;
   if(!implied)take();const right=expr(op==='^'?p:p+1),prev=left;
-  left=vars=>op==='+'?ops.add(prev(vars),right(vars)):op==='-'?ops.sub(prev(vars),right(vars)):op==='*'?ops.mul(prev(vars),right(vars)):op==='/'?ops.div(prev(vars),right(vars)):ops.pow(prev(vars),right(vars));
+  // Select the real operator once at parse time instead of branching and
+  // dispatching through the interpreter for every scalar-field sample.
+  // Complex expressions retain their established vector operations.
+  if(!complex){
+   if(op==='+')left=vars=>prev(vars)+right(vars);
+   else if(op==='-')left=vars=>prev(vars)-right(vars);
+   else if(op==='*')left=vars=>prev(vars)*right(vars);
+   else if(op==='/')left=vars=>prev(vars)/right(vars);
+   else left=vars=>prev(vars)**right(vars);
+  }else left=vars=>op==='+'?ops.add(prev(vars),right(vars)):op==='-'?ops.sub(prev(vars),right(vars)):op==='*'?ops.mul(prev(vars),right(vars)):op==='/'?ops.div(prev(vars),right(vars)):ops.pow(prev(vars),right(vars));
  }return left;}
  const result=expr(0);if(i!==ts.length)throw Error('Unexpected token: '+ts[i].value);return result;
 }

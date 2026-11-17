@@ -59,20 +59,27 @@ export function parse3D(plot){
    const result=[x,y,z];result.domainRGB=plot.colorMode==='solid'?null:domainColor(re,im,plot.colorMode);return result;};
  }
  if(plot.kind==='surface3d'){
-  const f=parseCurveExpression(plot.a,['x','y']);return (x,y)=>[x,y,f({x,y})];
+  const f=parseCurveExpression(plot.a,['x','y']),vars={x:0,y:0};
+  return (x,y)=>{vars.x=x;vars.y=y;return [x,y,f(vars)];};
  }
  if(plot.kind==='parametric3d'){
   const fx=parseCurveExpression(plot.a,['u','v']),fy=parseCurveExpression(plot.b,['u','v']),fz=parseCurveExpression(plot.c,['u','v']);
-  return (u,v)=>{const vars={u,v};return [fx(vars),fy(vars),fz(vars)];};
+  const vars={u:0,v:0};
+  return (u,v)=>{vars.u=u;vars.v=v;return [fx(vars),fy(vars),fz(vars)];};
  }
  if(plot.kind==='implicit3d'){
   const parts=plot.a.split('=');if(parts.length>2)throw Error('3D implicit expression has too many equal signs.');
   const left=parseCurveExpression(parts[0],['x','y','z']);const right=parts.length===2?parseCurveExpression(parts[1],['x','y','z']):()=>0;
-  return (x,y,z)=>left({x,y,z})-right({x,y,z});
+  // The sampler calls this synchronously millions of times. Reuse the
+  // variable record instead of allocating two temporary objects per call.
+  // Expression closures only read their argument during evaluation.
+  const vars={x:0,y:0,z:0};
+  return (x,y,z)=>{vars.x=x;vars.y=y;vars.z=z;return left(vars)-right(vars);};
  }
  if(plot.kind==='vector3d'){
   const f=[plot.a,plot.b,plot.c].map(s=>parseCurveExpression(s,['x','y','z']));
-  return (x,y,z)=>{const vars={x,y,z};return f.map(fn=>fn(vars));};
+  const vars={x:0,y:0,z:0};
+  return (x,y,z)=>{vars.x=x;vars.y=y;vars.z=z;return [f[0](vars),f[1](vars),f[2](vars)];};
  }
  throw Error('Unsupported 3D mode.');
 }
@@ -140,13 +147,20 @@ const MAX_MESH_CACHE_BYTES=224*1024*1024;
 function makeCamera(bounds,options,width,height){
  const yaw=options.yaw*Math.PI/180,pitch=options.pitch*Math.PI/180,cos=Math.cos(yaw),sin=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const center=['x','y','z'].map(axis=>(bounds[axis+'Min']+bounds[axis+'Max'])/2),span=['x','y','z'].map(axis=>(bounds[axis+'Max']-bounds[axis+'Min'])/2);
+ // Adjacent world triangles reuse their vertex arrays. Cache only during this
+ // projection frame: the next orbit gets its own camera and its own cache.
+ const projectedVertices=new WeakMap();
  function turn(point){
-  const p=point.map((v,i)=>(v-center[i])/span[i]);
-  const x=p[0]*cos-p[1]*sin,depth=p[0]*sin+p[1]*cos;
-  return [x,depth*sp-p[2]*cp,depth*cp+p[2]*sp];
+  const px=(point[0]-center[0])/span[0],py=(point[1]-center[1])/span[1],pz=(point[2]-center[2])/span[2];
+  const x=px*cos-py*sin,depth=px*sin+py*cos;
+  return [x,depth*sp-pz*cp,depth*cp+pz*sp];
  }
- function project(point){const [x,y,depth]=turn(point),perspective=options.projection==='perspective'?3.5/(3.5-depth):1,scale=Math.min(width,height)*.32*options.zoom;
-  return [width/2+x*scale*perspective,height/2+y*scale*perspective,depth];}
+ function project(point){
+  const cached=projectedVertices.get(point);if(cached)return cached;
+  const [x,y,depth]=turn(point),perspective=options.projection==='perspective'?3.5/(3.5-depth):1,scale=Math.min(width,height)*.32*options.zoom;
+  const value=[width/2+x*scale*perspective,height/2+y*scale*perspective,depth];
+  projectedVertices.set(point,value);return value;
+ }
  return {project,turn};
 }
 function inBounds(p,b){return p.every((value,i)=>value>=b[['xMin','yMin','zMin'][i]]&&value<=b[['xMax','yMax','zMax'][i]]);}
@@ -183,7 +197,9 @@ export function* sample3DPlotSteps(plot,detail){
   // Preserve per-face phase colors across any region-clipped subtriangles.
   const rgb=plot.kind==='domain3d'?a.domainRGB:null;
   const faceColor=rgb?'#'+rgb.slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join(''):null;
-  const clipped=clipTriangle([a,c,d],b);
+  // Implicit roots interpolate between lattice vertices already inside the
+  // rectangular bounds. Their triangles need no six-plane clipping pass.
+  const clipped=plot.kind==='implicit3d'?[[a,c,d]]:clipTriangle([a,c,d],b);
   for(const vertices of (condition?clipped.flatMap(t=>clipConditionTriangle(t,condition)):clipped)){
    if(!validTriangle(...vertices))continue;
    if(faces.length>=cap){limited=true;return;}
@@ -237,7 +253,7 @@ export function* sample3DPlotSteps(plot,detail){
   const stride=n+1,values=new Float64Array(stride**3),index=(i,j,k)=>k*stride*stride+j*stride+i;
   // Every tetrahedron in adjacent cubes must agree on whether a crossing
   // is genuine. Cache validated edge roots by shared lattice-vertex pair.
-  const verifiedEdges=new Map();
+  const verifiedEdges=new Map(),latticeSize=stride**3;
   const at=(i,j,k)=>[b.xMin+(b.xMax-b.xMin)*i/n,b.yMin+(b.yMax-b.yMin)*j/n,b.zMin+(b.zMax-b.zMin)*k/n];
   // Work directly in scalar coordinates; allocate no temporary 3-vector per
   // sample. Yield for each row, not each plane, to keep heavy meshes cancelable.
@@ -274,11 +290,13 @@ export function* sample3DPlotSteps(plot,detail){
     const lattice=[base,base+1,base+row+1,base+row,base+plane,base+plane+1,base+plane+row+1,base+plane+row];
     const v=[a,c,d,e,f,g,h,l];
     const pts=cube.map(([cx,cy,cz])=>at(i+cx,j+cy,k+cz));
-    for(const ids of tets){const z=ids.map(q=>v[q]);if(z.some(x=>!ok(x)))continue;
+    for(const ids of tets){
+     const z=[v[ids[0]],v[ids[1]],v[ids[2]],v[ids[3]]];
+     if(!ok(z[0])||!ok(z[1])||!ok(z[2])||!ok(z[3]))continue;
      const inside=[],outside=[];for(let m=0;m<4;m++)(z[m]<0?inside:outside).push(m);
      if(inside.length===0||outside.length===0)continue;
      const edge=(u,w)=>{
-      const from=ids[u],to=ids[w],a=lattice[from],c=lattice[to],key=a<c?`${a}:${c}`:`${c}:${a}`;
+      const from=ids[u],to=ids[w],a=lattice[from],c=lattice[to],key=a<c?a*latticeSize+c:c*latticeSize+a;
       if(verifiedEdges.has(key))return verifiedEdges.get(key);
       let result=null,fl=z[u],fh=z[w],lo=pts[from],hi=pts[to];
       if(fl===0)result=lo;
@@ -293,33 +311,38 @@ export function* sample3DPlotSteps(plot,detail){
        // bracket has not contracted enough, refine up to three more times:
        // rejecting it early can punch real holes into an otherwise smooth
        // implicit surface. A pole retains its large jump and is still rejected.
+       let lx=lo[0],ly=lo[1],lz=lo[2],hx=hi[0],hy=hi[1],hz=hi[2];
        for(let probe=0;probe<6&&!limited;probe++){
         if(probe>=3&&Math.abs(fl-fh)<initialJump*.72)break;
-        const mid=lo.map((a,d)=>(a+hi[d])/2);let fm;
-        try{fm=fn(...mid);}catch{fm=NaN;}evaluations++;
+        // The bracket lives in scalar registers: only accepted roots
+        // allocate a position vector, never the intermediate probes.
+        const mx=(lx+hx)/2,my=(ly+hy)/2,mz=(lz+hz)/2;let fm;
+        try{fm=fn(mx,my,mz);}catch{fm=NaN;}evaluations++;
         if(evaluations>MAX_3D_EVALUATIONS){limited=true;break;}
         if(!ok(fm))break;
-        if(fm===0){result=mid;break;}
-        if((fl<0)===(fm<0)){lo=mid;fl=fm;}else{hi=mid;fh=fm;}
+        if(fm===0){result=[mx,my,mz];break;}
+        if((fl<0)===(fm<0)){lx=mx;ly=my;lz=mz;fl=fm;}else{hx=mx;hy=my;hz=mz;fh=fm;}
        }
        if(!result&&!limited&&Math.abs(fl-fh)<initialJump*.72){
         const t=Math.max(0,Math.min(1,fl/(fl-fh)));
-        result=lo.map((a,d)=>a+(hi[d]-a)*t);
+        result=[lx+(hx-lx)*t,ly+(hy-ly)*t,lz+(hz-lz)*t];
        }
       }
       verifiedEdges.set(key,result);return result;
      };
-     // Never emit a partial tetrahedron around a rejected discontinuity;
-     // doing so creates artificial hanging triangles along the pole.
-     const boundary=[];for(const u of inside)for(const w of outside)boundary.push([u,w,edge(u,w)]);
-     if(boundary.some(item=>!item[2]))continue;
-     const point=(u,w)=>boundary.find(([a,b])=>a===u&&b===w)?.[2]||boundary.find(([a,b])=>a===w&&b===u)?.[2];
-     if(inside.length===1){const a=inside[0];pushTriangle(point(a,outside[0]),point(a,outside[1]),point(a,outside[2]));}
-     else if(outside.length===1){const a=outside[0];pushTriangle(point(a,inside[0]),point(a,inside[2]),point(a,inside[1]));}
-     else{
-      const [a,c]=inside,[d,e]=outside;
-      const p=point(a,d),q=point(a,e),r=point(c,e),s=point(c,d);
-      pushTriangle(p,q,r);pushTriangle(p,r,s);
+     // Construct crossings in the same order as before, but avoid the
+     // temporary edge-pair list and repeated linear lookups for each face.
+     // An invalid crossing rejects the entire tetrahedron (no hanging faces).
+     if(inside.length===1){
+      const u=inside[0],p=edge(u,outside[0]),q=edge(u,outside[1]),r=edge(u,outside[2]);
+      if(p&&q&&r)pushTriangle(p,q,r);
+     }else if(outside.length===1){
+      const w=outside[0],p=edge(inside[0],w),q=edge(inside[1],w),r=edge(inside[2],w);
+      if(p&&q&&r)pushTriangle(p,r,q);
+     }else{
+      const [u,v]=inside,[w,x]=outside;
+      const p=edge(u,w),q=edge(u,x),s=edge(v,w),r=edge(v,x);
+      if(p&&q&&r&&s){pushTriangle(p,q,r);pushTriangle(p,r,s);}
      }
     }
    }yield;
@@ -346,6 +369,29 @@ export function sample3DPlot(plot,detail){const generator=sample3DPlotSteps(plot
 
 /** World mesh LRU is reusable during orbit and bounded independently of scene size. */
 const meshCache=new Map();let meshCacheBytes=0;
+// World-space face lighting is invariant under camera orbit, pan, zoom, theme,
+// opacity and export size. Weak keys follow the existing bounded mesh LRU and
+// do not retain evicted meshes. Do not mutate face arrays: native JSON and
+// exact mesh-parity fixtures must remain byte-for-byte unchanged.
+const faceLightingCache=new WeakMap();
+// Shading is also invariant during orbit; compute the nonlinear light curve once.
+const faceShadeCache=new WeakMap();
+function worldFaceLight(triangle){
+ let light=faceLightingCache.get(triangle);
+ if(light!==undefined)return light;
+ const normal=cross(minus(triangle[1],triangle[0]),minus(triangle[2],triangle[0]));
+ const length=Math.hypot(...normal);
+ light=length?Math.abs((.38*normal[0]+.44*normal[1]+.81*normal[2])/length):0;
+ faceLightingCache.set(triangle,light);
+ return light;
+}
+function worldFaceShade(triangle){
+ let shade=faceShadeCache.get(triangle);
+ if(shade!==undefined)return shade;
+ shade=.26+.74*Math.pow(worldFaceLight(triangle),.82);
+ faceShadeCache.set(triangle,shade);
+ return shade;
+}
 export function meshCacheStats(){return {entries:meshCache.size,estimatedBytes:meshCacheBytes,limitBytes:MAX_MESH_CACHE_BYTES};}
 function meshBytes(mesh){return mesh.faces.length*3*3*8+mesh.lines.length*2*3*8+mesh.faces.length*48+mesh.lines.length*32;}
 // Cache only the inputs that affect sampled geometry (and phase colors).
@@ -492,11 +538,10 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   for(const triangle of mesh.faces){
    if(plotFaceCount>=perPlotFaces){limited=true;break;}
    plotFaceCount++;
-   const projected=triangle.map(camera.project),normal=cross(minus(triangle[1],triangle[0]),minus(triangle[2],triangle[0]));
-   const length=Math.hypot(...normal),light=length?Math.abs((.38*normal[0]+.44*normal[1]+.81*normal[2])/length):0;
+   const projected=triangle.map(camera.project);
    // Stable world-anchored illumination: orbit changes view, NOT surface luminance.
    // No order-, orientation- or camera-dependent brightness jumps on two-sided faces.
-   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?.26+.74*Math.pow(light,.82):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
+   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?worldFaceShade(triangle):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
    if((++count&63)===0)yield;
   }
   const magnitudes=plot.colorRange?mesh.lines.map(entry=>entry.magnitude).filter(Number.isFinite):[];
@@ -514,8 +559,19 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
  faces.sort((a,b)=>a.depth-b.depth);lines.sort((a,b)=>a.depth-b.depth);
  // Vector strokes are no longer all drawn on top of every surface: mix them
  // into the same far-to-near painter order. Transparent crossings remain approximate.
- const primitives=[...faces.map(face=>({kind:'face',value:face,depth:face.depth})),...lines.map(line=>({kind:'line',value:line,depth:line.depth}))];
- primitives.sort((a,b)=>a.depth-b.depth);
+ // Faces and strokes have already been sorted by exactly the same depth
+ // comparator. Merge their ordered runs in linear time instead of sorting
+ // every primitive again. At equal depths, the old stable sort put faces
+ // before lines because the input was [all faces, all lines].
+ const primitives=new Array(faces.length+lines.length);
+ let fi=0,li=0,pi=0;
+ while(fi<faces.length&&li<lines.length){
+  const face=faces[fi],line=lines[li];
+  if(face.depth<=line.depth){primitives[pi++]={kind:'face',value:face,depth:face.depth};fi++;}
+  else {primitives[pi++]={kind:'line',value:line,depth:line.depth};li++;}
+ }
+ while(fi<faces.length){const face=faces[fi++];primitives[pi++]={kind:'face',value:face,depth:face.depth};}
+ while(li<lines.length){const line=lines[li++];primitives[pi++]={kind:'line',value:line,depth:line.depth};}
  return {faces,lines,primitives,cube,gridLines,axesLines,evaluations,limited};
 }
 export function project3DScene(scene,width,height){

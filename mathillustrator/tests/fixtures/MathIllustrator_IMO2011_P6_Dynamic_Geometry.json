@@ -1,0 +1,1315 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "IMO 2011 Problem 6 \u2014 dynamically linked reflected tangents and circumcircles"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 1.25,
+    "pointSize": 4,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "standard",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": false
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "type": "point",
+      "name": "A",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "xy": [
+        -0.28530486,
+        2.03004954
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "A"
+    },
+    {
+      "id": "o2",
+      "type": "point",
+      "name": "B",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "xy": [
+        -1.75719297,
+        -1.05582805
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "B"
+    },
+    {
+      "id": "o3",
+      "type": "point",
+      "name": "C",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "xy": [
+        1.88703495,
+        -0.80099881
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "C"
+    },
+    {
+      "id": "o4",
+      "type": "line",
+      "name": "AB_axis",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o1",
+        "o2"
+      ]
+    },
+    {
+      "id": "o5",
+      "type": "line",
+      "name": "BC_axis",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o2",
+        "o3"
+      ]
+    },
+    {
+      "id": "o6",
+      "type": "line",
+      "name": "CA_axis",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o3",
+        "o1"
+      ]
+    },
+    {
+      "id": "o7",
+      "type": "segment",
+      "name": "AB",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o1",
+        "o2"
+      ]
+    },
+    {
+      "id": "o8",
+      "type": "segment",
+      "name": "BC",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o2",
+        "o3"
+      ]
+    },
+    {
+      "id": "o9",
+      "type": "segment",
+      "name": "CA",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o3",
+        "o1"
+      ]
+    },
+    {
+      "id": "o10",
+      "type": "triangleCenter",
+      "name": "O",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "O",
+      "centerKind": "circumcenter"
+    },
+    {
+      "id": "o11",
+      "type": "circle",
+      "name": "Gamma",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o10",
+        "o1"
+      ]
+    },
+    {
+      "id": "o12",
+      "type": "pointOnObject",
+      "name": "T",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "refs": [
+        "o11"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "T",
+      "parameter": 0.06944444480012221
+    },
+    {
+      "id": "o13",
+      "type": "tangentCircle",
+      "name": "tangent_t",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o12",
+        "o11"
+      ]
+    },
+    {
+      "id": "o14",
+      "type": "transformCopy",
+      "name": "reflected_BC",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o13",
+        "o5"
+      ],
+      "transform": "reflect",
+      "amount": 0
+    },
+    {
+      "id": "o15",
+      "type": "transformCopy",
+      "name": "reflected_CA",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o13",
+        "o6"
+      ],
+      "transform": "reflect",
+      "amount": 0
+    },
+    {
+      "id": "o16",
+      "type": "transformCopy",
+      "name": "reflected_AB",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o13",
+        "o4"
+      ],
+      "transform": "reflect",
+      "amount": 0
+    },
+    {
+      "id": "o17",
+      "type": "intersection",
+      "name": "Cp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "refs": [
+        "o14",
+        "o15"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "C^{\\prime}"
+    },
+    {
+      "id": "o18",
+      "type": "intersection",
+      "name": "Ap",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "refs": [
+        "o15",
+        "o16"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "A^{\\prime}"
+    },
+    {
+      "id": "o19",
+      "type": "intersection",
+      "name": "Bp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 5
+      },
+      "refs": [
+        "o16",
+        "o14"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "B^{\\prime}"
+    },
+    {
+      "id": "o20",
+      "type": "triangleCenter",
+      "name": "Onew",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 4
+      },
+      "refs": [
+        "o18",
+        "o19",
+        "o17"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "O_1",
+      "centerKind": "circumcenter"
+    },
+    {
+      "id": "o21",
+      "type": "circle",
+      "name": "Gamma1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o20",
+        "o18"
+      ]
+    },
+    {
+      "id": "o22",
+      "type": "line",
+      "name": "centers_axis",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o20"
+      ]
+    },
+    {
+      "id": "o23",
+      "type": "circleIntersection",
+      "name": "K",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 4
+      },
+      "refs": [
+        "o22",
+        "o11"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "K",
+      "branch": -1
+    },
+    {
+      "id": "o24",
+      "type": "circleIntersection",
+      "name": "K_opposite",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98,
+        "pointSize": 4
+      },
+      "refs": [
+        "o22",
+        "o11"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "K_+",
+      "branch": 1
+    },
+    {
+      "id": "o25",
+      "type": "triangleCenter",
+      "name": "G",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "G",
+      "centerKind": "centroid"
+    },
+    {
+      "id": "o26",
+      "type": "triangleCenter",
+      "name": "H",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "H",
+      "centerKind": "orthocenter"
+    },
+    {
+      "id": "o27",
+      "type": "triangleCenter",
+      "name": "I",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "I",
+      "centerKind": "incenter"
+    },
+    {
+      "id": "o28",
+      "type": "triangleCenter",
+      "name": "Gnew",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o18",
+        "o19",
+        "o17"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Gnew",
+      "centerKind": "centroid"
+    },
+    {
+      "id": "o29",
+      "type": "triangleCenter",
+      "name": "Hnew",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o18",
+        "o19",
+        "o17"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Hnew",
+      "centerKind": "orthocenter"
+    },
+    {
+      "id": "o30",
+      "type": "triangleCenter",
+      "name": "Inew",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#248779",
+        "fill": "#248779",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o18",
+        "o19",
+        "o17"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Inew",
+      "centerKind": "incenter"
+    },
+    {
+      "id": "o31",
+      "type": "midpoint",
+      "name": "MAB",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{AB}"
+    },
+    {
+      "id": "o32",
+      "type": "midpoint",
+      "name": "MBC",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{BC}"
+    },
+    {
+      "id": "o33",
+      "type": "midpoint",
+      "name": "MCA",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o3",
+        "o1"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{CA}"
+    },
+    {
+      "id": "o34",
+      "type": "midpoint",
+      "name": "MR_CA_ABR_AB_BC",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o18",
+        "o19"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{A^{\\prime}B^{\\prime}}"
+    },
+    {
+      "id": "o35",
+      "type": "midpoint",
+      "name": "MR_AB_BCR_BC_CA",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o19",
+        "o17"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{B^{\\prime}C^{\\prime}}"
+    },
+    {
+      "id": "o36",
+      "type": "midpoint",
+      "name": "MR_BC_CAR_CA_AB",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o17",
+        "o18"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "M_{C^{\\prime}A^{\\prime}}"
+    },
+    {
+      "id": "o37",
+      "type": "perpendicularFoot",
+      "name": "Da",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o1",
+        "o5"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Da"
+    },
+    {
+      "id": "o38",
+      "type": "segment",
+      "name": "altitude_Da",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o1",
+        "o37"
+      ]
+    },
+    {
+      "id": "o39",
+      "type": "perpendicularFoot",
+      "name": "Db",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o2",
+        "o6"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Db"
+    },
+    {
+      "id": "o40",
+      "type": "segment",
+      "name": "altitude_Db",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o2",
+        "o39"
+      ]
+    },
+    {
+      "id": "o41",
+      "type": "perpendicularFoot",
+      "name": "Dc",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o3",
+        "o4"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Dc"
+    },
+    {
+      "id": "o42",
+      "type": "segment",
+      "name": "altitude_Dc",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o3",
+        "o41"
+      ]
+    },
+    {
+      "id": "o49",
+      "type": "segment",
+      "name": "ApBp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o18",
+        "o19"
+      ]
+    },
+    {
+      "id": "o50",
+      "type": "segment",
+      "name": "BpCp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o19",
+        "o17"
+      ]
+    },
+    {
+      "id": "o51",
+      "type": "segment",
+      "name": "CpAp",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#bf4f49",
+        "fill": "#bf4f49",
+        "width": 1.25,
+        "opacity": 0.98
+      },
+      "refs": [
+        "o17",
+        "o18"
+      ]
+    },
+    {
+      "id": "o52",
+      "type": "segment",
+      "name": "OT",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o12"
+      ]
+    },
+    {
+      "id": "o53",
+      "type": "segment",
+      "name": "OO1",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o20"
+      ]
+    },
+    {
+      "id": "o54",
+      "type": "segment",
+      "name": "radius_O1Ap",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o20",
+        "o18"
+      ]
+    },
+    {
+      "id": "o55",
+      "type": "segment",
+      "name": "radius_O1Bp",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o20",
+        "o19"
+      ]
+    },
+    {
+      "id": "o56",
+      "type": "segment",
+      "name": "radius_O1Cp",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o20",
+        "o17"
+      ]
+    },
+    {
+      "id": "o57",
+      "type": "segment",
+      "name": "radius_OA",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o1"
+      ]
+    },
+    {
+      "id": "o58",
+      "type": "segment",
+      "name": "radius_OB",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o2"
+      ]
+    },
+    {
+      "id": "o59",
+      "type": "segment",
+      "name": "radius_OC",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o3"
+      ]
+    },
+    {
+      "id": "o60",
+      "type": "line",
+      "name": "support_Ea",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o19",
+        "o17"
+      ]
+    },
+    {
+      "id": "o61",
+      "type": "perpendicularFoot",
+      "name": "Ea",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o18",
+        "o60"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Ea"
+    },
+    {
+      "id": "o62",
+      "type": "segment",
+      "name": "altitude_Ea",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o18",
+        "o61"
+      ]
+    },
+    {
+      "id": "o63",
+      "type": "line",
+      "name": "support_Eb",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o17",
+        "o18"
+      ]
+    },
+    {
+      "id": "o64",
+      "type": "perpendicularFoot",
+      "name": "Eb",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o19",
+        "o63"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Eb"
+    },
+    {
+      "id": "o65",
+      "type": "segment",
+      "name": "altitude_Eb",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o19",
+        "o64"
+      ]
+    },
+    {
+      "id": "o66",
+      "type": "line",
+      "name": "support_Ec",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o18",
+        "o19"
+      ]
+    },
+    {
+      "id": "o67",
+      "type": "perpendicularFoot",
+      "name": "Ec",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o17",
+        "o66"
+      ],
+      "pointLabelMode": "latex",
+      "pointLabel": "Ec"
+    },
+    {
+      "id": "o68",
+      "type": "segment",
+      "name": "altitude_Ec",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o17",
+        "o67"
+      ]
+    },
+    {
+      "id": "o69",
+      "type": "segment",
+      "name": "OK",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o10",
+        "o23"
+      ]
+    },
+    {
+      "id": "o70",
+      "type": "segment",
+      "name": "O1K",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#8695a6",
+        "fill": "#8695a6",
+        "width": 1.25,
+        "opacity": 0.8
+      },
+      "refs": [
+        "o20",
+        "o23"
+      ]
+    },
+    {
+      "id": "o71",
+      "type": "pointOnObject",
+      "name": "tangent_left",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o13"
+      ],
+      "parameter": 0.5,
+      "distance": -4.5
+    },
+    {
+      "id": "o72",
+      "type": "pointOnObject",
+      "name": "tangent_right",
+      "hidden": true,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.8,
+        "pointSize": 4
+      },
+      "refs": [
+        "o13"
+      ],
+      "parameter": 0.5,
+      "distance": 4.5
+    },
+    {
+      "id": "o73",
+      "type": "segment",
+      "name": "tangent_visible_segment",
+      "hidden": false,
+      "locked": false,
+      "style": {
+        "stroke": "#18293d",
+        "fill": "#18293d",
+        "width": 1.25,
+        "opacity": 0.9
+      },
+      "refs": [
+        "o71",
+        "o72"
+      ]
+    }
+  ],
+  "nextId": 74
+}

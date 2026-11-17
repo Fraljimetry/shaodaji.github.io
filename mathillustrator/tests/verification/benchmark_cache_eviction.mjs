@@ -8,12 +8,13 @@ import path from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 const src=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../src');
 const temporary=await mkdtemp(path.join(tmpdir(),'mi-cache-evict-'));
-const budget=1024*1024; // 192 KiB test-only budget; production uses 192 MiB.
+const budget=1024*1024; // 1024 KiB test-only budget; production uses 224 MiB.
 try {
  await cp(path.join(src,'plot_modes.mjs'),path.join(temporary,'plot_modes.mjs'));
+ await cp(path.join(src,'region_condition.mjs'),path.join(temporary,'region_condition.mjs'));
  let code=await readFile(path.join(src,'plot3d.mjs'),'utf8');
- assert(code.includes('const MAX_MESH_CACHE_BYTES=192*1024*1024;'),'production cache budget changed; revisit the test');
- code=code.replace('const MAX_MESH_CACHE_BYTES=192*1024*1024;',`const MAX_MESH_CACHE_BYTES=${budget};`);
+ assert(code.includes('const MAX_MESH_CACHE_BYTES=224*1024*1024;'),'production cache budget changed; revisit the test');
+ code=code.replace('const MAX_MESH_CACHE_BYTES=224*1024*1024;',`const MAX_MESH_CACHE_BYTES=${budget};`);
  // Inspect internal keys without changing the runtime's eviction algorithm.
  code+='\nexport function __testCacheKeys(){return [...meshCache.keys()];}\n';
  await writeFile(path.join(temporary,'plot3d.mjs'),code);
@@ -36,5 +37,5 @@ try {
  assert(__testCacheKeys().includes(firstKey),'recomputed mesh did not reenter cache');
  assert(!before.includes(firstKey),'eviction probe did not actually miss');
  assert(meshCacheStats().estimatedBytes<=budget);
- console.log(JSON.stringify({round:105,passed:true,mode:'isolated-instrumented-production-code',productionCacheLimitMiB:192,testCacheLimitKiB:budget/1024,evictionObserved:true,LRUPromotionObserved:true,deterministicRecomputation:true,cacheEntries:meshCacheStats().entries},null,2));
+ console.log(JSON.stringify({round:105,passed:true,mode:'isolated-instrumented-production-code',productionCacheLimitMiB:224,testCacheLimitKiB:budget/1024,evictionObserved:true,LRUPromotionObserved:true,deterministicRecomputation:true,cacheEntries:meshCacheStats().entries},null,2));
 }finally{await rm(temporary,{recursive:true,force:true});}

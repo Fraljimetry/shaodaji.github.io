@@ -1,3 +1,8 @@
+## Round 210 — 3D performance stabilization
+- Maintain exact image geometry, color, lighting, painter order, and full-resolution SVG export while optimizing 3D orbit projection. Avoid reintroducing camera-dependent light changes, missing implicit surfaces, raster/vector inconsistencies or stale task updates.
+- Weak-key shading reuse must remain bounded by mesh lifetime. Merge sorted faces and vector strokes while retaining stable face-first ordering for equal depth. New exact-baseline fixtures protect mixed scenes at three camera angles.
+- Benchmark performance against preceding accepted source under identical resolutions and include real Chromium rendering and export regressions; report device/host limitations explicitly.
+
 ## Round 181 — Tutorial examples postponed
 - Remove all example-project links from both tutorial languages for now. Do not introduce a replacement showcase. Keep other tutorial content unchanged.
 
@@ -1891,3 +1896,65 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Localize rarely seen recovery, validation, autosave conflict, import/export and confirmation text; retain the original technical details of external exceptions.
 - Bilingual UI must never translate user-authored labels, mathematical expressions, saved project identities or JSON payloads.
 - Include source-backed translation coverage for built-in construction guidance and Chromium switches at desktop, tablet and mobile widths.
+
+### Round 203 — Persistence durability and recovery maintenance
+- Never report autosave as successful solely because the storage API acknowledged `setItem`; verify the project can be read back verbatim. If verification fails, retain dirty state and expose an explicit retry path instead of silently claiming success.
+- Keep corrupt startup data intact until the user authorizes replacement. Preserve existing multi-tab conflict handling and undo/redo semantics; avoid introducing any new user-facing feature.
+- Include adverse-storage actual-Chromium tests covering quota exceptions, silent storage write drops, explicit retry, and persisted undo/redo state.
+
+
+## Round 204 — Close earlier certification gaps (2026-11-16)
+
+- The actual 67-object IMO 2011 Problem 6 dynamic JSON, recovered from the previous project attachment, is now the authoritative mathematical regression fixture. Keep its 67 objects and all reference links intact.
+- Independently test reflected tangents, three intersections, circumcircle membership, circumcircle tangency, and dependent deletion under moves of A/B/C and tangent-point changes; import/render alone is insufficient.
+- Maintain an actual Chromium fixture that rapidly drags the three independent vertices, verifies undo/redo, exact JSON roundtrip, and four graphics formats.
+- Separate secure-origin simultaneous-tab acceptance from mocked StorageEvent tests; only a real shared origin can certify Web Locks and localStorage event behavior.
+- Keep deployment/real-device certification distinct from local browser emulation and static hosted-page inspection. Never claim release certification from these substitutes.
+
+## Round 205 — 3D performance stabilization (2026-11-16)
+- Preserve mathematical sampling, implicit level-set topology, mesh clipping, phase coloring, camera-independent illumination, opacity, painter ordering, and exact high-detail SVG/PNG/JPEG/WebP export semantics while accelerating settled and interactive views.
+- Avoid repeating world-normal lighting calculations for a cached face; invalidate together with the world mesh. Avoid projecting identical shared world vertices multiple times within one camera frame; never share projections between distinct camera poses.
+- Dense 3D scenes should prefer device-pixel-ratio viewport rasterization starting at 12,000 primitives instead of allocating thousands of SVG elements. This does **not** reduce mesh detail or affect vector exports. Smaller scenes remain editable SVG. Preserve atomic completed-frame replacement and abort stale in-flight work.
+- Performance claims must be based on before/after benchmarks and validated against exact full projected output (including ordered primitives and shading), not only counts. Maintain historical 2D, domain coloring, implicit pole rejection, lighting, export, and project-save compatibility.
+- Real GPU implementation remains out of scope in this maintenance cut; no fabricated GPU fallback or acceleration claim.
+
+## Round 206 — Cold implicit-surface acceleration (2026-11-16)
+- Optimize the first high-detail 3D implicit mesh without reducing the sampling lattice, increasing numerical tolerances, changing the root-refinement policy, or altering triangle topology/winding/order.
+- Reuse the scalar expression's per-sample variable record within one synchronous compiled plot function; numerical expression semantics and persisted JSON remain unchanged.
+- Encode a lattice edge's pair of integer indices as a collision-free IEEE-754 safe integer (bounded by the existing maximum grid resolution) instead of allocating a string for each root lookup. Keep root validation, continuity/pole rejection, cancellation, and cache lifetime unchanged.
+- Require SHA-256 parity of full mesh outputs against the Round 205 implementation on smooth closed, open, and oscillatory implicit surfaces at multiple sampling densities. Do not equate benchmark improvements with faster GPU/browser painting.
+
+
+### Round 207 — Implicit mesh assembly performance and fidelity
+- Preserve existing 3D quality, topology, discontinuity rejection, face winding, exact mesh export and clipping semantics while optimizing high-resolution implicit mesh generation.
+- Implicit triangles are built entirely by interpolation between sampling lattice points inside the convex bounding box; bypass redundant generic bounding-box polygon clipping for these triangles only. Keep user-selected region-condition clipping in effect.
+- Avoid repeated edge-pair list construction and searches when assembling conforming tetrahedra. Reject an entire tetrahedron when any required crossing fails. Preserve exact face order and evaluations.
+- Keep cancellation responsive, existing mesh limits, cache behavior and 2D/3D separation unchanged.
+
+
+### Round 208 — Implicit 3D root refinement performance
+- Optimize the high-detail implicit root-refinement inner loop without changing sampling density, root acceptance, pole rejection, triangle order, or existing visual output.
+- Keep root brackets in scalar coordinates during the six-probe refinement loop, allocating a vector only for accepted crossings; preserve evaluation accounting and cancellation.
+- Preserve all existing geometry, legacy JSON, 2D/3D isolation, dense raster preview, and vector SVG export. No new UI controls or features.
+
+### Round 209 — 3D evaluation-performance stabilization
+
+- Preserve the exact 3D mesh coordinates, triangle order, evaluation counts,
+  clipping, discontinuity rejection, lighting, and SVG export semantics.
+- Optimize real-valued mathematical expression evaluation without `eval`,
+  executable code generation, dynamic compilation, or new libraries.
+- Retain the established complex/domain-coloring interpreter and all historical
+  native project JSON compatibility.
+- Reuse mutable evaluation records only inside synchronous, private plot-specific
+  closures; never share them between plots, persistent objects, or async tasks.
+- Guard five 3D modes with immutable Round 208 output hashes. Preserve complete
+  cancellation semantics and do not cache incomplete frame or sampling data.
+- Performance claims distinguish raw scalar evaluation, full mesh construction,
+  browser render, and export; never interpret a sampler speedup as browser FPS.
+
+
+### Round 211 — comprehensive regression-gate requirement
+
+- Preserve the complete Round 210 3D optimization stack and all prior user-facing geometry, diagram, plotting, language, export and storage behaviors.
+- Treat local Node/property/Chromium success as local evidence; distinguish it from hosted deployment, genuine cross-tab concurrency, real hardware, and complete release-gate certification.
+- Keep end-to-end tests for 67-object IMO dynamic movement, storage failure recovery, 3D raster-display/vector-export parity, touch interruption, and plot/persistence operations in the future release check inventory.
