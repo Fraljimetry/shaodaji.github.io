@@ -559,7 +559,10 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   if(lines.length>=MAX_3D_LINES)limited=true;
   yield;
  }
- faces.sort((a,b)=>a.depth-b.depth);lines.sort((a,b)=>a.depth-b.depth);
+ for(const values of [faces,lines]){
+  const sorting=stableDepthSortSteps(values);let state;
+  do{state=sorting.next();if(!state.done)yield;}while(!state.done);
+ }
  // Vector strokes are no longer all drawn on top of every surface: mix them
  // into the same far-to-near painter order. Transparent crossings remain approximate.
  // Faces and strokes have already been sorted by exactly the same depth
@@ -576,6 +579,48 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
  while(fi<faces.length){const face=faces[fi++];primitives[pi++]={kind:'face',value:face,depth:face.depth};}
  while(li<lines.length){const line=lines[li++];primitives[pi++]={kind:'line',value:line,depth:line.depth};}
  return {faces,lines,primitives,cube,gridLines,axesLines,evaluations,limited};
+}
+/** Stable, cancellable depth ordering. Sort short runs natively, then merge
+ * cooperatively so a dense mesh does not block the UI for one long sort.
+ * The comparator and tie order match the previous stable Array#sort path.
+ */
+export function* stableDepthSortSteps(values,runSize=4096){
+ const n=values.length;
+ if(n<2)return values;
+ const run=Math.max(2,Math.min(8192,Math.floor(runSize)||4096));
+ for(let start=0;start<n;start+=run){
+  const end=Math.min(start+run,n);
+  // Array#sort is stable in supported browsers; sorting a run bounds each
+  // uninterrupted native call and preserves equal-depth order within runs.
+  const section=values.slice(start,end);
+  section.sort((a,b)=>a.depth-b.depth);
+  for(let k=0;k<section.length;k++)values[start+k]=section[k];
+  yield;
+ }
+ let source=values,target=new Array(n);
+ for(let width=run;width<n;width*=2){
+  let work=0;
+  for(let start=0;start<n;start+=2*width){
+   let left=start,right=Math.min(start+width,n);
+   const mid=right,end=Math.min(start+2*width,n);
+   for(let k=start;k<end;k++){
+    if(left>=mid)target[k]=source[right++];
+    else if(right>=end)target[k]=source[left++];
+    else if(!(source[right].depth<source[left].depth))target[k]=source[left++];
+    else target[k]=source[right++];
+    if(++work>=4096){work=0;yield;}
+   }
+  }
+  [source,target]=[target,source];
+  yield;
+ }
+ if(source!==values){
+  for(let k=0;k<n;k++){
+   values[k]=source[k];
+   if((k&4095)===4095)yield;
+  }
+ }
+ return values;
 }
 export function project3DScene(scene,width,height){
  const generator=project3DSceneSteps(scene,width,height);let next;do{next=generator.next();}while(!next.done);return next.value;

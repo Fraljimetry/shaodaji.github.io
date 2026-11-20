@@ -1983,3 +1983,36 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Keep the existing Canvas2D renderer authoritative while experimental WebGL2 is not verifiable on the available machine. No backend switching or claimed GPU acceleration without real browser performance and geometric/pixel-fidelity evidence.
 - Continue to treat the golden-ratio trigonometric implicit formula at mesh detail 80 as an end-to-end Chromium benchmark. Report actual settled-orbit time separately from sampling, painting and GPU claims.
 - Small paint-path optimizations must retain exact PNG parity, transparency and face ordering, cancellation and export fidelity. Round216 avoids repeated `globalAlpha` property writes within one raster frame.
+
+### Round 217 — permanent folded implicit-surface performance fixture
+- Retain an executable Chromium performance fixture for `cos(x)*cos(phi*y)+cos(y)*cos(phi*z)+cos(z)*cos(phi*x)=1` at detail 22, 48, 80 and 96; verify deterministic complete raster PNG output at repeated yaw ± angles, with the inherited Round 216 exact detail-80 hashes.
+- Preserve rendering resolution, triangle ordering, lighting, alpha, UI responsiveness, SVG export and cancellation. Do not accept a paint-state micro-optimization without controlled, repeated browser evidence. Negative results must be recorded rather than promoted to production.
+- A headless Chromium camera benchmark is not proof of physical GPU or hosted deployment performance. The permanent fixture must not assert machine-specific latency ceilings as pass/fail criteria.
+
+### Round 218 — 3D Canvas2D bottleneck measured without visual compromises
+- Preserve Round 216 production CPU renderer; reject candidate optimizations when interleaved actual Chromium measurements do not demonstrate reproducible benefit.
+- Keep a permanent isolated Chromium paint-operation diagnostic (`tests/browser_round218_paint_diagnostic.py`) for the folded implicit surface at detail 80, including exact historic PNG hash assertions. Distinguish native `fill()` time from all-path/all-frame cost; an instrumented call is not a standalone user-perceived performance metric.
+- Round 218 observed 184,416 individual triangle fills and 368,832 line-to calls per camera image, showing a per-triangle Canvas2D path construction bottleneck. Future optimization should tackle safely reducing per-face path/API overhead, or benchmark an actually available GPU backend with independent fidelity checks. Never batch nonconsecutive faces if painter ordering, transparency or compositing would change. No resolution reduction or silent fallback.
+- Hex CSS-color and RGB-channel-cache candidates were rejected for lack of repeatable speedup. Maintain baseline source identity; no production rendering change accepted in this round.
+
+## Round 219 — Dense 3D browser responsiveness diagnostics
+
+- Preserve the Round 218 production Canvas2D renderer and exact PNG outputs while investigating main-thread responsiveness at detail 80.
+- Retain `tests/browser_round219_responsiveness.py` as a reproducible real-Chromium diagnostic using the golden-ratio implicit-surface fixture, yaw ± angles, exact PNG hashes, and interval-based stall observations.
+- Do not interpret single-machine timing observations as hard product guarantees. Require repeatable interleaved benchmarks and explicitly assess event-loop stalls before accepting longer rendering slices.
+- The investigated 18 ms paint-slice candidate was not accepted; no production code changes or performance improvement are claimed.
+
+### Round 220 — Dense 3D responsiveness diagnosis
+- Preserve the reference detail-80 folded implicit surface, its 184,416 ordered triangles, and exact raster hashes at both reference camera yaws.
+- Maintain a dedicated isolated Chromium diagnostic separating large-array depth sorting from cooperative projection slices, canvas painting slices, and PNG encoding. Performance measurements are observational, not portable pass/fail thresholds.
+- Investigate the measured 70–85 ms uninterrupted native depth-sort stall; any cooperative alternative must preserve stable painter order, numerical results, cancellation, export fidelity, and acceptable total runtime.
+- Do not report a speedup or add renderer complexity without repeated interleaved browser measurements and exact-image parity. Round 220 introduces diagnostics only; production rendering is unchanged.
+
+### Round 221 — Cooperative depth ordering
+- Replace the blocking full-mesh depth sort with cooperative stable sorting that yields between small work units, retaining identical painter ordering and exact PNG hashes. Preserve cancellation and synchronous projection APIs. Headless Chromium tests demonstrate reduced main-thread stalls but do not establish a reliable end-to-end speedup. Keep the baseline browser-rendering quality and avoid unverified GPU claims.
+
+### Round 222 — 3D performance stabilization closure
+- Close the current speculative CPU optimization program after interleaved Chromium A/B evidence; retain the Round 221 production rendering code. Do not pursue further micro-optimization rounds absent a measurable user-visible regression or a justified new architecture proposal.
+- Preserve exact PNG fidelity, 184,416-face detail-80 benchmark, stable painter order, cooperative scheduling, cancellation and export correctness.
+- Do not claim that physical GPU or full historical browser compatibility is verified. GPU replacement, if reconsidered as a separate project, requires real WebGL2 hardware validation, geometrical and visual parity, fallback/context-loss testing, and stable gains.
+- The Round 222 merge-yield candidate was measured and rejected; the comparison diagnostic remains available for future reproducibility.
