@@ -2016,3 +2016,10 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Preserve exact PNG fidelity, 184,416-face detail-80 benchmark, stable painter order, cooperative scheduling, cancellation and export correctness.
 - Do not claim that physical GPU or full historical browser compatibility is verified. GPU replacement, if reconsidered as a separate project, requires real WebGL2 hardware validation, geometrical and visual parity, fallback/context-loss testing, and stable gains.
 - The Round 222 merge-yield candidate was measured and rejected; the comparison diagnostic remains available for future reproducibility.
+
+
+## Round 223 cleanup note (2026-11-20)
+- Preserve the accepted Round 221 CPU renderer and exact visual fidelity; no speculative speed modifications.
+- Keep the current short Chinese excenter labels; update legacy regression expectations, not the user-facing strings.
+- Do not destructively prune historical files while the legacy package inventory and historical checksums disagree with the current authoritative source.
+- Continue to distinguish verified checks from timed-out, unexecuted, or unverified browser and deployment coverage.

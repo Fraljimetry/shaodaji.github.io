@@ -1,3 +1,13 @@
+## Round 223 — Cleanup and overall verification (2026-11-20)
+
+**Production runtime unchanged.** Corrected the stale expected Chinese excenter option labels in `tests/browser_round148_localization_audit.py` to match the current intended `A 旁心 / B 旁心 / C 旁心` translations. The actual Chromium zh/en select-switch test now passes; no UI copy or translations were changed.
+
+**Executed checks:** Node `--test --test-concurrency=2 tests/*.test.mjs` **687/687 PASS**, `tests/verification/check_syntax.mjs` **33/33 PASS**. Chromium scripts **PASS**: startup smoke, Round 92 undo/redo/import, Round 102 seeded interactions, Round 104 churn, Round 106 3D lifecycle, Round 107 3D exports, Round 108 export fidelity, Round 109 export interruption, Round 148 localized center options (updated), Round 163 bilingual sweep, Round 166 plotting/geometry constants, Round 194 interface, Round 204 dynamic IMO 67-object fixture. No source/runtime files were edited.
+
+**Not fully certified:** Round 212 exact-raster recheck did not complete in this cleanup session; the last completed historical PNG checks remain documented in Round 222. The complete historical Chromium inventory, physical GPUs, and hosted deployment were **not run**. `tests/manage_history.py verify` **FAILS**: the retained file inventory describes an early Round 16 release (83 active files) and no longer matches the current Round 222 tree; the history archive and installed historical originals also have mismatched hashes. The auditor refuses to prune or restore, as designed. Do **not** run `prune --apply` until a separate, explicit, source-backed history reconciliation is performed. `tests/site_integration.py` could not run directly because this uploaded application-only source lacks the website root fixture (`index.html`, `tools.html`); `tests/tikz_compile.py` did not complete within the execution window. These failures/limitations are not hidden or labeled PASS.
+
+**Cleanup decision:** Preserve production CPU renderer, glyphs, historical archive, and existing project assets. Remove no unverified files and do not rewrite historical integrity metadata without authenticated original sources. This is a targeted cleanup plus audited partial verification, **not a complete release certification**.
+
 ## Round 222 — Final 3D performance stabilization decision (2026-11-20)
 
 **Decision: stop speculative CPU micro-optimization; retain the Round 221 cooperative stable sort and production renderer without further modifications.** This is the end of the current optimization program, not a claim that all possible future hardware backends or algorithms are exhausted.

@@ -30,7 +30,7 @@ def main():
     if width<700 and not page.locator('#properties select').first.is_visible():page.locator('#right-collapse').click()
     center=page.locator('#properties label.field').filter(has=page.locator('option[value="excenterA"]')).locator('select')
     assert center.count()==1,(width,page.locator('#properties').inner_text())
-    for language,expected in [('zh',['A 顶点旁心','B 顶点旁心','C 顶点旁心']),('en',['Excenter A','Excenter B','Excenter C']),('zh',['A 顶点旁心','B 顶点旁心','C 顶点旁心']),('en',['Excenter A','Excenter B','Excenter C'])]:
+    for language,expected in [('zh',['A 旁心','B 旁心','C 旁心']),('en',['Excenter A','Excenter B','Excenter C']),('zh',['A 旁心','B 旁心','C 旁心']),('en',['Excenter A','Excenter B','Excenter C'])]:
      page.locator('#ui-language').select_option(language)
      labels=center.locator('option').all_text_contents()
      for label in expected:assert label in labels,(width,language,labels)
