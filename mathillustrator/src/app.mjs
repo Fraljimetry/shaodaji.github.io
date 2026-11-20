@@ -789,11 +789,15 @@ function draw3DBase(svg,result,{exporting=false}={}){
  for(const axis of result.axesLines||[])svg.append(el('line',{x1:axis.from[0],y1:axis.from[1],x2:axis.to[0],y2:axis.to[1],stroke:axis.color,'stroke-width':1.8,'pointer-events':'none'}));
 }
 function face3DFill(face){
- const rgb=[1,3,5].map(i=>parseInt(face.color.slice(i,i+2),16));
- // Domain phase colors retain their identity while receiving subtle depth shading.
- return face.rangeColor?`rgb(${rgb.map(v=>Math.round(v*(.38+.62*face.shade))).join(',')})`:
-  face.domainColoring?`rgb(${rgb.map(v=>Math.round(v*(.74+.26*face.shade))).join(',')})`:
-  `rgb(${rgb.map(v=>Math.round(v+(255-v)*(.1+.56*face.shade))).join(',')})`;
+ // The hot raster path shades hundreds of thousands of faces per orbit.
+ // Avoid RGB array/map allocations while retaining the exact channels and
+ // mathematical operations of the previous implementation.
+ const color=face.color;
+ const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
+ if(face.rangeColor){const factor=.38+.62*face.shade;return `rgb(${Math.round(r*factor)},${Math.round(g*factor)},${Math.round(b*factor)})`;}
+ if(face.domainColoring){const factor=.74+.26*face.shade;return `rgb(${Math.round(r*factor)},${Math.round(g*factor)},${Math.round(b*factor)})`;}
+ const factor=.1+.56*face.shade;
+ return `rgb(${Math.round(r+(255-r)*factor)},${Math.round(g+(255-g)*factor)},${Math.round(b+(255-b)*factor)})`;
 }
 function face3DElement(face){
  const points=face.points.map(p=>p.slice(0,2).map(v=>v.toFixed(2)).join(',')).join(' ');
@@ -939,15 +943,16 @@ function dense3DCanvas(result){
  ctx.scale(canvas.width/size.w,canvas.height/size.h);
  return {canvas,ctx};
 }
-function paint3DCanvasPrimitive(ctx,primitive){
+function paint3DCanvasPrimitive(ctx,primitive,paintState){
  if(primitive.kind==='face'){
   const f=primitive.value,p=f.points;
-  ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);ctx.closePath();
-  ctx.fillStyle=face3DFill(f);ctx.globalAlpha=f.opacity;ctx.fill();
+  ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);
+  // Canvas fill() implicitly closes this triangle; omit a redundant API call.
+  ctx.fillStyle=face3DFill(f);if(paintState.alpha!==f.opacity){ctx.globalAlpha=f.opacity;paintState.alpha=f.opacity;}ctx.fill();
  }else{
   const f=primitive.value,a=f.start,b=f.end,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
   if(len<.5)return;
-  ctx.globalAlpha=f.opacity;ctx.strokeStyle=f.color;ctx.fillStyle=f.color;ctx.lineWidth=f.width??1.5;
+  if(paintState.alpha!==f.opacity){ctx.globalAlpha=f.opacity;paintState.alpha=f.opacity;}ctx.strokeStyle=f.color;ctx.fillStyle=f.color;ctx.lineWidth=f.width??1.5;
   ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
   const head=6*Math.max(.7,Math.min(2,Math.sqrt((f.width??1.5)/1.5))),ux=dx/len,uy=dy/len;
   ctx.beginPath();ctx.moveTo(b[0],b[1]);ctx.lineTo(b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux);
@@ -956,11 +961,31 @@ function paint3DCanvasPrimitive(ctx,primitive){
 }
 let renderInfoSource='Ready';
 function setRenderInfo(message){renderInfoSource=message;$('render-info').textContent=translated(message,uiPrefs.language);}
-let sceneRenderEpoch=0,sceneRenderFrame=0,sceneRenderTask=null,sceneRenderPending=false,orbitRenderQueued=false;
+// Rendering stays cooperative, but a 16 ms animation-frame wait between each
+// off-screen batch makes high-detail implicit scenes feel stalled. Only complete
+// scenes become visible, so cancellable event-loop tasks are appropriate here.
+// MessageChannel continuations avoid the nested setTimeout 4 ms throttle
+// during entirely offscreen 3D work. Each message yields back to the browser;
+// closing its ports safely cancels work when another scene supersedes it.
+function scheduleSceneWork(callback){
+ if(typeof MessageChannel==='undefined'){
+  const timer=setTimeout(callback,0);
+  return ()=>clearTimeout(timer);
+ }
+ const channel=new MessageChannel();
+ let pending=true;
+ channel.port1.onmessage=()=>{
+  if(!pending)return;
+  pending=false;channel.port1.close();channel.port2.close();callback();
+ };
+ channel.port2.postMessage(null);
+ return ()=>{pending=false;channel.port1.close();channel.port2.close();};
+}
+let sceneRenderEpoch=0,sceneRenderTimer=null,sceneRenderTask=null,sceneRenderPending=false,orbitRenderQueued=false;
 function cancelSceneRender(){
  sceneRenderPending=false;
  ++sceneRenderEpoch;
- if(sceneRenderFrame){cancelAnimationFrame(sceneRenderFrame);sceneRenderFrame=0;}
+ if(sceneRenderTimer){sceneRenderTimer();sceneRenderTimer=null;}
  if(sceneRenderTask){sceneRenderTask.cancel();sceneRenderTask=null;}
 }
 function render(){
@@ -990,21 +1015,23 @@ function render(){
   const staged=el('g');draw3DBase(staged,result);
   plotLimitedInScene=result.limited;
   const raster=dense3DCanvas(result);
-  let next=0;
+  let next=0;const paintState={alpha:1};
   const paint=()=>{
-   sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
+   sceneRenderTimer=null;if(epoch!==sceneRenderEpoch)return;
    const fragment=raster?null:document.createDocumentFragment();
    // Bound each UI slice; rasterization avoids thousands of SVG nodes while
    // keeping the same face shading, opacity and painter order as vector export.
-   const deadline=performance.now()+7;
-   const end=Math.min(result.primitives.length,next+(raster?2500:250));
+   // A short time budget preserves pointer/cancellation responsiveness;
+   // a larger raster batch avoids excessive scheduling gaps on dense meshes.
+   const deadline=performance.now()+(raster?10:7);
+   const end=Math.min(result.primitives.length,next+(raster?6000:250));
    for(;next<end;next++){
-    if(raster)paint3DCanvasPrimitive(raster.ctx,result.primitives[next]);
+    if(raster)paint3DCanvasPrimitive(raster.ctx,result.primitives[next],paintState);
     else append3DPrimitive(fragment,result.primitives[next]);
     if((next&63)===63&&performance.now()>=deadline){next++;break;}
    }
    if(fragment)staged.append(fragment);
-   if(next<result.primitives.length)sceneRenderFrame=requestAnimationFrame(paint);
+   if(next<result.primitives.length)sceneRenderTimer=scheduleSceneWork(paint);
    else{
     if(raster){
      // Atomic image installation. Keep the previous SVG intact until encode
@@ -1023,10 +1050,12 @@ function render(){
   paint();
  };
  const compute=()=>{
-  sceneRenderFrame=0;if(epoch!==sceneRenderEpoch)return;
+  sceneRenderTimer=null;if(epoch!==sceneRenderEpoch)return;
   try{const state=sceneRenderTask.step(7);
    if(state.done)paintResult(state.result);
-   else sceneRenderFrame=requestAnimationFrame(compute);
+   // Yield to the event loop, not a full display refresh: sampled partial
+   // geometry is never painted onscreen. cancelSceneRender clears this timer.
+   else sceneRenderTimer=scheduleSceneWork(compute);
   }catch(e){
    // Do not destroy the last complete scene when a new mesh fails; the user
    // must still be able to orbit, edit or remove the offending expression.

@@ -538,10 +538,13 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   for(const triangle of mesh.faces){
    if(plotFaceCount>=perPlotFaces){limited=true;break;}
    plotFaceCount++;
-   const projected=triangle.map(camera.project);
+   // Explicit vertex projection avoids short-lived callback/reduction arrays for
+   // each triangle, while preserving the original sum order and output shape.
+   const p0=camera.project(triangle[0]),p1=camera.project(triangle[1]),p2=camera.project(triangle[2]);
+   const projected=[p0,p1,p2];
    // Stable world-anchored illumination: orbit changes view, NOT surface luminance.
    // No order-, orientation- or camera-dependent brightness jumps on two-sided faces.
-   faces.push({points:projected,depth:projected.reduce((s,p)=>s+p[2],0)/3,shade:opt.lighting?worldFaceShade(triangle):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
+   faces.push({points:projected,depth:((0+p0[2])+p1[2]+p2[2])/3,shade:opt.lighting?worldFaceShade(triangle):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
    if((++count&63)===0)yield;
   }
   const magnitudes=plot.colorRange?mesh.lines.map(entry=>entry.magnitude).filter(Number.isFinite):[];

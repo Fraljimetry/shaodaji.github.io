@@ -1,3 +1,8 @@
+## Round 213 — Remaining implicit 3D browser latency
+- Preserve unchanged high-detail implicit meshes, lighting, painter order, screen PNG bytes and full-vector SVG exports while reducing responsiveness delays for the demanding equation `cos(x)cos(phi y)+cos(y)cos(phi z)+cos(z)cos(phi x)=1`.
+- Offscreen rendering may use cancellable MessageChannel tasks instead of nested zero-delay timers; preserve fallback operation, latest-scene cancellation, user-input responsiveness and atomic complete-frame replacement.
+- Do not substitute lower resolution, cap the mesh silently, or drop correct faces to improve a timing number. Regress actual Chromium, not merely Node-side projections.
+
 ## Round 210 — 3D performance stabilization
 - Maintain exact image geometry, color, lighting, painter order, and full-resolution SVG export while optimizing 3D orbit projection. Avoid reintroducing camera-dependent light changes, missing implicit surfaces, raster/vector inconsistencies or stale task updates.
 - Weak-key shading reuse must remain bounded by mesh lifetime. Merge sorted faces and vector strokes while retaining stable face-first ordering for equal depth. New exact-baseline fixtures protect mixed scenes at three camera angles.
@@ -1958,3 +1963,23 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Preserve the complete Round 210 3D optimization stack and all prior user-facing geometry, diagram, plotting, language, export and storage behaviors.
 - Treat local Node/property/Chromium success as local evidence; distinguish it from hosted deployment, genuine cross-tab concurrency, real hardware, and complete release-gate certification.
 - Keep end-to-end tests for 67-object IMO dynamic movement, storage failure recovery, 3D raster-display/vector-export parity, touch interruption, and plot/persistence operations in the future release check inventory.
+
+
+### Round 212 — Chromium-visible implicit 3D latency
+
+- Optimize actual time from submitting a high-detail implicit surface until its complete viewport image is visible, not just sampler timings. In particular test `cos(x)*cos(phi*y)+cos(y)*cos(phi*z)+cos(z)*cos(phi*x)=1`.
+- Preserve mesh resolution, topology, triangle order, color/shading, precise PNG output, and the independent full-vector SVG export. Do not hide partial scenes or change the face/evaluation budgets.
+- Keep sampling and raster painting cooperative and cancelable on changes of camera, document, plot, mode and viewport; never publish a superseded frame. Avoid waiting for a whole animation frame between off-screen work slices, while bounding each slice to keep controls responsive.
+- Maintain local-versus-hosted verification distinction, since actual deployed bundles may differ.
+
+### Round 214 — high-density camera-paint overhead
+
+- Use the original high-density golden-angle implicit expression as the routine browser orbit benchmark, not only polynomial/sphere samples.
+- Reduce unnecessary per-triangle temporary allocations in projection and solid/phase/range shading, without changing the painter's depth order, lighting coefficients, rounding, raster dimensions, or full vector SVG exports.
+- Preserve byte-identical raster output at multiple camera angles and existing cooperative cancellation. Do not trade visual fidelity for throughput.
+- Report camera-only latency separately from cold sampling and hosted-device timing, and retain changes only when measured in Chromium.
+
+### Round 216 — 3D performance safeguards
+- Keep the existing Canvas2D renderer authoritative while experimental WebGL2 is not verifiable on the available machine. No backend switching or claimed GPU acceleration without real browser performance and geometric/pixel-fidelity evidence.
+- Continue to treat the golden-ratio trigonometric implicit formula at mesh detail 80 as an end-to-end Chromium benchmark. Report actual settled-orbit time separately from sampling, painting and GPU claims.
+- Small paint-path optimizations must retain exact PNG parity, transparency and face ordering, cancellation and export fidelity. Round216 avoids repeated `globalAlpha` property writes within one raster frame.
