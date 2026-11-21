@@ -2627,3 +2627,48 @@ Round 234 executed results (container, headless Chromium, 2026-11-20): full Node
 - Chromium browser_round239_slider_checkbox_alignment.py passed at 1280px and 960px, with checkbox/caption centers within 1.5px and functional toggling.
 - Chromium browser_round237_unified_objects.py passed. All 705 Node tests passed, and syntax checks passed for all src `.mjs` modules.
 - Historical Chromium inventory, hosted deployment, and physical devices not tested in this round.
+
+- Round 240: Removed the unexpected slider glyph from the Properties header, preserving the hollow-circle glyph in the Objects list. Added Chromium parity regression and updated the obsolete Round 238 heading-glyph expectation. Full test outcomes are reported separately; neither hosted deployment nor physical-device behavior is certified.
+
+Round 240 verification (current execution): 705/705 Node tests passed, all 34 JavaScript modules passed node --check; Chromium browser_round240_algebra_parity.py, browser_round238_unified_algebra.py, browser_round237_unified_objects.py, and browser_round239_slider_checkbox_alignment.py passed. Long browser_round230_formula_consistency.py and browser_round235_slider_layout_snap.py did not complete within available execution limits; neither is represented as a pass. Historical browser inventory, hosted deployment and physical GPU not verified. Production changes are restricted to removing the unintended slider glyph from the Properties heading; the Objects-list hollow-circle icon is unchanged.
+
+
+### Round 241 — Round 240 incomplete-check closure (2026-11-21)
+
+- Chromium `browser_round230_formula_consistency.py`: **PASS**. Replaced obsolete removed-tab/form/list selectors with canonical unified Objects input and rows; distinguished Value textbox from the adjacent slider range control. Nested formula parsing, invalid edit rollback, dependent geometry changes and Find/Algebra toggle assertions execute.
+- Chromium `browser_round235_slider_layout_snap.py`: **PASS**. Replaced obsolete removed-tab/form/list selectors. Checks compact two-column Properties, border-checkbox dimensions, Snap-to-Grid slider-body dragging, undo/redo, and free dragging with snapping disabled.
+- Chromium `browser_round240_algebra_parity.py`, `browser_round237_unified_objects.py`, `browser_round239_slider_checkbox_alignment.py`, `browser_round238_unified_algebra.py`: **PASS** separately on the Round 240 production source.
+- Full Node regression: **705/705 PASS** (`node --test tests/*.test.mjs`).
+- The broader `browser_round224_cross_mode_isolation.py` invocation exceeded the execution window and is **not certified in Round 241**. Other old tests still referencing removed `#algebra-toggle`/`#algebra-list`/`#objects-tab` selectors were not comprehensively rewritten or rerun. Complete historical Chromium inventory, hosted deployment and physical GPU verification remain unverified.
+- Production code: **unchanged**. Only historical tests and the two accumulated project documents updated. No new application behavior or broad compatibility claim is implied.
+
+### Round 242 — Find/Algebra field consistency (local Chromium)
+- Reproduced original mismatch: 29 px Algebra field versus 27 px native Find field in Chromium. Both fields now use a shared 29 px box model and matching typography. Removed an obsolete visible Algebra submit-button style (Enter remains the only submit mechanism).
+- New `browser_round242_input_parity.py`: PASS at 960/1280/1600 viewport widths. Checks computed width/height, padding, font, line height, border, draft retention, filtering, Enter submission and Properties selection.
+- Node regression: **705/705 PASS**; JavaScript syntax checks: **34/34 PASS**.
+- Chromium: `browser_round237_unified_objects.py`, `browser_round238_unified_algebra.py`, `browser_round239_slider_checkbox_alignment.py`, `browser_round240_algebra_parity.py`, `browser_round230_formula_consistency.py`, `browser_round235_slider_layout_snap.py` and `browser_round224_cross_mode_isolation.py` **PASS**, individually executed.
+- Complete historical browser inventory, physical device, hosted deployment and WebGL2 hardware testing: **not executed**. Production change limited to shared input CSS.
+
+### Round 243 — Glyph mode, formula parity, cross-mode and performance audit
+- Fixed the **real** Find/Algebra toggle bug: `SVGElement.hidden` property writes did not update the SVG `hidden` attribute in Chromium, so tooltip and mode switched while the icon remained unchanged. `toggleAttribute('hidden', ...)` now reliably alternates `</>` / magnifier. Newly added Chromium test verified the visible glyph, tooltip, default Algebra mode, Enter submission and widths 960/1280/1600.
+- Fixed constant point formulas such as `A = (rad(180), cbrt(27))` which previously failed despite supported Algebra functions. Constant point expressions now use the same safe Algebra evaluator as slider-driven expressions. Historical curve-parser compatibility is retained **only** for unknown-function cases; recognized-but-invalid expressions such as `clamp(1,4,2)` may not be silently reinterpreted by a different parser.
+- Full Node regression: **708/708 PASS**; JavaScript module syntax: **34/34 PASS**.
+- Chromium independently passed: new `browser_round243_glyph_toggle.py`, `browser_round242_input_parity.py`, `browser_round237_unified_objects.py`, `browser_round238_unified_algebra.py`, `browser_round230_formula_consistency.py`, `browser_round235_slider_layout_snap.py`, `browser_round224_cross_mode_isolation.py` (ten plotting modes), `browser_round240_algebra_parity.py`.
+- `browser_round232_parity.py` **TIMED OUT** at 25 seconds (NOT PASS). Earlier batch was interrupted; no overall historical browser certification is claimed.
+- Performance diagnostic: 3,000 nested evaluations ~22.54 ms, 200 recalculations of 250 slider-dependent points ~183.98 ms in this Node process. The cross-mode Chromium script independently reported per-mode rendering figures; these are environment-specific one-run diagnostics, not baseline-versus-candidate claims. No production rendering, 3D or physical GPU performance claims.
+- Remaining scope: Algebra is intentionally 2D-only, not a universal symbolic/scripting language; many specialized geometry Properties cannot yet bind to formulas. Full historical Chromium suite, hosted deployment and GPU/physical-device verification not performed.
+
+
+## Round 244 — Unified Objects historical-test gap closure
+
+- Source baseline: original Round 216 ZIP plus overlays 217–243, applied in order.
+- Production code and 3D renderer: **unchanged**.
+- Repaired archived Chromium scripts from Rounds 228, 232, 234 and 236 to use the unified Objects panel, Enter-only Algebra input and shared Recently Deleted section rather than the intentionally retired Algebra tab.
+- Round 232 exercises panel collapse/expand, keyboard/pointer splitter, named construction selection and Find/Algebra toggling: **PASS** in local headless Chromium.
+- Round 228 checks descendant locks, Delete/Restore, slider rename/formula links and invalid-range rollback: **PASS** in local headless Chromium.
+- Round 234 checks animation modes, dependent geometry, undo/redo and Properties: **PASS** in local headless Chromium.
+- Round 236 checks combined list glyphs, row drag/drop, keyboard reordering and slider range: **PASS** in local headless Chromium.
+- Full Node test suite: **708/708 PASS**; JS syntax checks: **34/34 PASS**.
+- Independent Chromium checks: Round 243 glyph, Round 237 unified Objects, Round 242 textbox parity, Round 230 formulas, Round 235 snapping: **PASS**.
+- Round 224 cross-mode Chromium run: **incomplete (execution timeout)**. Full historical inventory, hosted deployment, and physical GPU/browser checks: **not executed**.
+- Explicit limit: this round closes four obsolete UI tests and does not certify universal algebra support or every historical browser scenario.

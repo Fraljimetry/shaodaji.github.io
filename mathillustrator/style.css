@@ -1162,8 +1162,10 @@ html.three-d .interface-check-grid .settings-2d-only{display:none!important;}
 .object-tools #object-input-toggle svg[hidden]{display:none}
 .object-tools .unified-entry-form{display:flex;align-items:center;flex:1 1 90px;min-width:0;gap:4px;margin:0}
 .object-tools .unified-entry-form[hidden],.object-tools #object-search[hidden]{display:none!important}
-.object-tools .unified-entry-form input{flex:1 1 auto;width:100%;min-width:0;height:29px;min-height:0;padding:5px 6px;font-size:11px;font-family:Consolas,monospace}
-.object-tools .unified-entry-form button{min-height:28px;height:28px;padding:2px 5px;font-size:14px}
+.object-tools .unified-entry-form input{flex:1 1 auto;width:100%;min-width:0;font-family:Consolas,monospace}
+/* Shared Find / Algebra dimensions: native search inputs otherwise render shorter. */
+.object-tools .unified-entry-form input,
+.object-tools #object-search{box-sizing:border-box;height:29px;min-height:29px;margin:0;padding:5px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--ink);font-size:11px;line-height:17px}
 .object-tools #object-search{flex:1 1 90px;width:auto;min-width:0;max-width:none}
 .object-tools label{margin-left:auto;flex:none;font-size:11px}
 #objects .algebra-object-row{min-height:var(--object-row-height,43px)}
@@ -1175,9 +1177,6 @@ html.three-d #object-search{display:block!important}
 
 /* Round 238: Enter submits the unified input; no redundant action button. */
 .object-tools .unified-entry-form input{min-width:0}
-.properties-head .properties-selected-glyph{display:inline-flex;align-items:center;justify-content:center;flex:0 0 22px;margin-left:6px}
-.properties-head .properties-selected-glyph[hidden]{display:none!important}
-.properties-head .properties-selected-glyph svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
 /* Round 239: visually center the slider checkbox caption with its square. */
 .properties .slider-appearance-grid .slider-border-control{align-items:center;min-height:18px;line-height:14px}

@@ -1,4 +1,4 @@
-"""Round 238: Enter-only Algebra and the matching hollow-circle Slider Properties glyph."""
+"""Round 238: Enter-only Algebra; slider glyph belongs in the Objects list, not Properties heading."""
 import os
 from playwright.sync_api import sync_playwright
 from browser_smoke import inline_html
@@ -20,7 +20,8 @@ def run():
     assert page.locator('#unified-algebra-input').input_value()=='',source
    assert page.locator('#objects [data-slider="a"]').count()==1
    page.locator('#objects [data-slider="a"] .algebra-entry-label').click()
-   glyph=page.locator('#properties-selected-glyph')
+   assert page.locator('#properties-selected-glyph').count()==0
+   glyph=page.locator('#objects [data-slider="a"] .slider-algebra-glyph')
    assert glyph.is_visible() and glyph.locator('circle').count()==1
    assert glyph.locator('circle').get_attribute('fill') is None
    page.locator('#object-input-toggle').click()

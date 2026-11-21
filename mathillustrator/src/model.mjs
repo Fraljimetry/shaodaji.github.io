@@ -666,7 +666,18 @@ export function command(doc,source){
   const dynamic=parts.some(expr=>sliderNames.some(name=>new RegExp('\\b'+name+'\\b').test(expr)));
   const xy=parts.map(expr=>{
    if(/^[+\-]?(?:Infinity|NaN)$/i.test(expr.trim()))throw Error('Unsupported coordinate literal.');
-   try{return dynamic?evaluateAlgebra(expr,sliderValues):parseCurveExpression(expr,[])({});}
+   try{
+    // Algebra point coordinates share the same safe numeric vocabulary as sliders
+    // and expression-backed Properties. Keep the historical curve parser as an
+    // explicit compatibility path for pre-existing constant point syntax.
+    if(dynamic)return evaluateAlgebra(expr,sliderValues);
+    try{return evaluateAlgebra(expr);}catch(algebraError){
+     // Only unknown function names are eligible for legacy parsing. Never
+     // reinterpret a recognized-but-invalid Algebra function differently.
+     if(!/^Unknown function: /.test(algebraError.message))throw algebraError;
+     try{return parseCurveExpression(expr,[])({});}catch{throw algebraError;}
+    }
+   }
    catch(error){if(/Numeric literal out of range/.test(error.message))throw Error('Point coordinates must be finite.');throw error;}
   });
   if(!safeCoord(xy)||xy.some(v=>Math.abs(v)>1e6))throw Error('Point coordinates must be finite and within ±1,000,000.');

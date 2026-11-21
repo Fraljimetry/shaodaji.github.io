@@ -2129,3 +2129,22 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 
 ### Round 239 — Slider checkbox alignment
 - Keep the 2D Slider Properties **Show border** checkbox and its caption vertically aligned in the compact right-column appearance layout, without affecting other controls.
+
+- Round 240: Keep the Properties header text-only (plus its collapse control). Slider hollow-circle icon belongs in the unified Objects row, not beside the Properties heading. Preserve expression editing, list glyphs, playback, dependencies and shared panel behavior.
+
+- Round 241 verification maintenance: Unified Objects is the canonical Algebra interface; Chromium regression tests must enter definitions with `#unified-algebra-input` plus Enter, select corresponding rows through `#objects`, and use the actual Properties control roles. Do not restore legacy Algebra tabs or submit buttons merely to satisfy old selectors. The slider value textbox and range control are distinct accessible elements.
+
+### Round 242 — Unified Objects input parity and cleanup
+- Keep the 2D Find and Algebra input fields exactly the same visible height, width, font, padding, border and line height when switching by the existing icon; default remains Algebra and Enter submits expressions.
+- Preserve independent drafts for each mode, search filtering, unified Objects list, selection, Properties and 3D Find-only behavior.
+- Remove obsolete CSS only when it no longer affects any active UI; do not change glyphs, expression semantics, geometry, renderer or JSON schema.
+
+### Round 243 — Unified Find/Algebra toggle and expression consistency
+- The unified Objects input defaults to Algebra with `</>` and changes to magnifier in Find mode and back on click; actual SVG icon visibility must agree with the hover action. Browser regression required at compact, desktop and wide widths.
+- Named 2D point coordinates must evaluate the same documented safe numeric functions for both constant expressions and slider-dependent formulas; malformed known functions cannot bypass Algebra validation through an older parser. Preserve previously supported legacy constant syntax where possible.
+- Maintain distinct Find/Algebra drafts, Enter-only submission, named-object semantics, existing Objects list, and 2D-only scope. Document unsupported general scripting and specialized bindings plainly.
+
+
+### Round 244 maintenance — unified panel test compatibility
+
+Maintain the single Objects panel with Algebra/Find glyph switching and Enter-only Algebra input. Slider playback, Properties docking and resizing, dependency locking, undo/redo and shared Recently Deleted must be tested through the current unified interface, not retired Algebra-tab DOM elements. Preserve existing 2D-only Algebra scope and production rendering behavior.
