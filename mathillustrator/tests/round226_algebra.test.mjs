@@ -29,3 +29,14 @@ test('unknown parameters and damaged JSON are rejected, old documents remain rea
  const bad=JSON.parse(JSON.stringify(doc));bad.algebra.sliders[0].step=0;assert.throws(()=>validateDoc(bad),/Invalid slider/);
  bad.algebra.sliders[0].step=1;bad.objects[0].xyExpr=['unknown','1'];assert.throws(()=>validateDoc(bad),/Undefined parameter/);
 });
+
+test('2D slider appearance uses backwards-compatible optional properties and rejects corrupt imports',()=>{
+ const doc=newDoc();const slider=createSlider(doc,'a',{value:3});
+ assert.equal(validateDoc(doc).algebra.sliders[0].color,undefined);
+ Object.assign(slider,{color:'#ab1288',opacity:.45,border:false});
+ assert.deepEqual(validateDoc(JSON.parse(JSON.stringify(doc))),doc);
+ for(const values of [{color:'red'},{color:'#12345g'},{opacity:2},{opacity:-.1},{opacity:null},{border:'false'}]){
+  const damaged=JSON.parse(JSON.stringify(doc));Object.assign(damaged.algebra.sliders[0],values);
+  assert.throws(()=>validateDoc(damaged),/Invalid slider definition/);
+ }
+});

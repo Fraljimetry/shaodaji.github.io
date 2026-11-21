@@ -64,7 +64,7 @@ export function validateAlgebra(doc){
  const sliders=doc.algebra?.sliders??[];
  if(!Array.isArray(sliders)||sliders.length>64)throw Error('Too many sliders.');
  const seen=new Set();const values={};
- for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
+ for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||(s.color!==undefined&&(!/^#[0-9a-fA-F]{6}$/.test(s.color)))||(s.opacity!==undefined&&(!Number.isFinite(s.opacity)||s.opacity<0||s.opacity>1))||(s.border!==undefined&&typeof s.border!=='boolean')||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
   if(doc.objects?.some(o=>o.name===s.name))throw Error('Slider and object names must be distinct.');
   seen.add(s.name);values[s.name]=s.value;
  }

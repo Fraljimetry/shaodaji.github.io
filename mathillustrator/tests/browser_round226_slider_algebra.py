@@ -51,7 +51,7 @@ def run():
    assert len(snapshot()['algebra']['sliders'])==2
    # Property expression edits participate in ordinary undo and validation.
    page.locator('#objects-tab').click();page.locator('#objects [data-id="'+ids[0]+'"]').click()
-   field=page.locator('#properties').get_by_label('X expression')
+   field=page.locator('#properties .point-coordinate-grid input').first
    field.fill('a+1');field.press('Tab')
    assert snapshot()['objects'][0]['xy'][0]==snapshot()['algebra']['sliders'][0]['value']+1
    # Changing plotting mode must preserve algebra, and not surface sliders in 3D output.

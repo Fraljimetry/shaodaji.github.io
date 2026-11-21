@@ -1561,10 +1561,9 @@ function objectEffectivelyLocked(id,seen=new Set()){
 }
 function selectSlider(name){selected=null;selectedIds.clear();selectedSlider=name;renderList();renderAlgebra();renderProperties();scheduleRender();}
 function renderSliderProperties(root,item){
- const title=document.createElement('strong');title.textContent='Slider '+item.name;root.append(title);
  const generation=documentGeneration;
  const edit=fn=>update(()=>{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(generation!==documentGeneration||!live||selectedSlider!==item.name||live.locked)throw Error('Slider changed or locked.');fn(live);});
- if(item.locked){const message=document.createElement('p');message.className='subtle';message.textContent='Locked — unlock in the three-dot menu.';root.append(message);return;}
+ if(item.locked){const name=field(root,'Name',item.name,'text',()=>false);name.disabled=true;const message=document.createElement('p');message.className='subtle';message.textContent='Locked — unlock in the three-dot menu.';root.append(message);return;}
  field(root,'Name',item.name,'text',v=>{
   const previous=selectedSlider;
   const ok=edit(live=>{
@@ -1576,6 +1575,10 @@ function renderSliderProperties(root,item){
  });
  const range=document.createElement('div');range.className='twocol';root.append(range);
  for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
+ const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
+ const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
+ const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);field(opacitySlot,'Opacity',item.opacity??1,'number',v=>edit(live=>{if(!Number.isFinite(v)||v<0||v>1)throw Error('Opacity must be between 0 and 1.');live.opacity=v;}),{min:0,max:1,step:.1});
+ const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});border.append(borderInput,' Show border');root.append(border);
  const visible=document.createElement('label');visible.className='check';const check=document.createElement('input');check.type='checkbox';check.checked=item.visible;check.onchange=()=>edit(live=>{live.visible=check.checked;});visible.append(check,' Show on canvas');root.append(visible);
 }
 function renderProperties(){
@@ -1585,7 +1588,7 @@ function renderProperties(){
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
  if(!o){if(tool==='freehand'){renderNewFreehandControls(root);localizeUI(root,uiPrefs.language);}return;}
- if(objectEffectivelyLocked(o.id)){const p=document.createElement('p');p.className='subtle';p.textContent='Locked (including dependencies)';root.append(p);return;}
+ if(objectEffectivelyLocked(o.id)){const name=field(root,'Name',o.name,'text',()=>false);name.disabled=true;const p=document.createElement('p');p.className='subtle';p.textContent='Locked (including dependencies)';root.append(p);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
  // replace the document and make the old object reference stale. Resolve by ID in
  // every transaction, preventing false-success edits that silently do nothing.
@@ -1594,9 +1597,9 @@ function renderProperties(){
   if(editorGeneration!==documentGeneration||!live||live.type!==o.type||objectEffectivelyLocked(live.id)||selected!==o.id)throw Error('Object changed while editing. Please reselect it.');
   fn(live);
  });
- if(o.measureExpr){for(const [key,expression] of Object.entries(o.measureExpr))field(root,key==='amount'?'Transformation amount':key==='length'?'Length expression':'Angle (radians) expression',expression,'text',value=>edit(live=>bindMeasurement(doc,live,key,value)));}
- if(o.type==='point'){const expressions=o.xyExpr??o.xy.map(String);for(let axis=0;axis<2;axis++)field(root,(axis===0?'X':'Y')+' expression',expressions[axis],'text',v=>edit(live=>{const next=[...(live.xyExpr??live.xy.map(String))];next[axis]=v;live.xyExpr=next;}));}
+ // Name is the first editable property for every selected geometry object.
  const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+ if(o.measureExpr){for(const [key,expression] of Object.entries(o.measureExpr))field(root,key==='amount'?'Transformation amount':key==='length'?'Length expression':'Angle (radians) expression',expression,'text',value=>edit(live=>bindMeasurement(doc,live,key,value)));}
  if(pointRole(o,id=>get(doc,id))){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
@@ -1618,8 +1621,20 @@ function renderProperties(){
  }
  if(['point','node','text'].includes(o.type)){
   const coords=document.createElement('div');coords.className='twocol point-coordinate-grid';for(let i=0;i<2;i++){
-   const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';input.value=String(o.xy[i]);
-   input.onchange=()=>{let v;try{v=numericExpression(input.value);}catch(error){notice(error.message);input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);return;}if(Object.is(v,get(doc,o.id)?.xy?.[i])){input.value=String(v);return;}const ok=edit(live=>{const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});input.value=String(get(doc,o.id)?.xy?.[i]??o.xy[i]);};l.append(input);coords.append(l);
+   const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';input.value=String(o.xyExpr?.[i]??o.xy[i]);
+   if(o.type==='point'&&o.xyExpr){input.dataset.numericExpression='false';input.setAttribute('aria-label',i?'Y coordinate or expression':'X coordinate or expression');}
+   input.onchange=()=>{
+    const current=get(doc,o.id),previous=String(current?.xyExpr?.[i]??current?.xy?.[i]??o.xy[i]);const text=input.value.trim();
+    if(text===previous)return;
+    if(o.type==='point'&&current?.xyExpr){
+     const ok=edit(live=>{const next=[...live.xyExpr];next[i]=text;live.xyExpr=next;});
+     if(ok===false)input.value=previous;else input.value=String(get(doc,o.id)?.xyExpr?.[i]??text);
+     return;
+    }
+    let v;try{v=numericExpression(text);}catch(error){notice(error.message);input.value=previous;return;}
+    if(Object.is(v,current?.xy?.[i])){input.value=String(v);return;}
+    const ok=edit(live=>{const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});input.value=ok===false?previous:String(get(doc,o.id)?.xy?.[i]??o.xy[i]);
+   };l.append(input);coords.append(l);
   }root.append(coords);
  }
  if(['text','node','morphism'].includes(o.type)){
@@ -1793,11 +1808,11 @@ function renderProperties(){
 function drawSliderHandles(svg){
  for(const item of doc.algebra?.sliders??[]){if(!item.visible)continue;
   const [x,y]=project(item.xy),width=148,ratio=(item.value-item.min)/(item.max-item.min);
-  const group=el('g',{'data-slider-control':item.name});
-  group.append(el('rect',{x:x-9,y:y-25,width:width+18,height:47,rx:7,fill:'var(--panel-bg, #f8fafc)',stroke:'#94a3b8','stroke-width':1,opacity:.94,'pointer-events':'none'}));
+  const group=el('g',{'data-slider-control':item.name,opacity:item.opacity??1});
+  if(item.border!==false)group.append(el('rect',{x:x-9,y:y-25,width:width+18,height:47,rx:7,fill:'var(--panel-bg, #f8fafc)',stroke:'#94a3b8','stroke-width':1,opacity:.94,'pointer-events':'none'}));
   group.append(el('text',{x,y:y-8,fill:'#334155','font-size':12,'pointer-events':'none'},`${item.name} = ${Number(item.value.toPrecision(7))}`));
   group.append(el('line',{x1:x,x2:x+width,y1:y+10,y2:y+10,stroke:'#64748b','stroke-width':3,'stroke-linecap':'round','pointer-events':'none'}));
-  group.append(el('circle',{cx:x+width*ratio,cy:y+10,r:8,fill:'#2563eb',stroke:'#fff','stroke-width':2,'data-slider-handle':item.name,style:'cursor:ew-resize;touch-action:none'}));
+  group.append(el('circle',{cx:x+width*ratio,cy:y+10,r:8,fill:item.color??'#2563eb',stroke:'#fff','stroke-width':2,'data-slider-handle':item.name,style:'cursor:ew-resize;touch-action:none'}));
   svg.append(group);
  }
 }

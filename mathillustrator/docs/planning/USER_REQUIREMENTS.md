@@ -2064,3 +2064,9 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 - Slider and object locks apply to their full transitive geometric dependency descendants. An independently locked descendant remains locked when an ancestor is unlocked. The original lock flags are preserved rather than copied to descendants.
 - Deleting an unlocked slider removes its formula dependents and their descendants as one reversible transaction. Slider and dependent objects can be restored together using Algebra > Recently Deleted.
 - 3D plotting and existing tool glyphs remain unchanged; no Options or Closed Spline glyph changes.
+
+### Round 229 — Unified 2D Properties and slider appearance
+- Every singly selected 2D object, including an Algebra-created object or slider, begins Properties with **Name**. A locked object shows its name read-only first.
+- Expression-backed points use the existing **x / y coordinate fields** as their only X/Y editors. These fields display and edit the original formulas and preserve reactivity. Do not show duplicate “X expression” / “Y expression” inputs. Invalid formulas must roll back atomically; literal-coordinate behavior for non-expression points remains unchanged.
+- A 2D slider uses ordinary compact Properties styling: Name, Minimum, Maximum, Step, Value, Color palette, Opacity, Show border, Show on canvas. Slider appearance settings are optional JSON properties with legacy defaults: blue handle, full opacity, visible border. Changing an appearance value must not change mathematical slider values or dependent geometry.
+- Keep all previously approved glyphs, the existing 3D renderer and the 2D-only Algebra scope unchanged. Existing dependent locking, Recently Deleted, three-dot actions, and exports remain operational.

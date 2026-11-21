@@ -2555,3 +2555,10 @@ Conclusion: **PASS for executed local checks**, no confirmed new source defect i
 - Real headless Chromium: Round 228 new E2E, Round 226 Slider E2E, Round 227 programmable geometry E2E, and Round 224 cross-mode isolation E2E passed.
 - New E2E verifies compact input size, no browser prompt, rollback of invalid slider range, slider and descendant lock, unlock, visibility, delete, Recently Deleted restore, slider rename updating formulas, locked descendant delete prevention.
 - No production 3D changes. Physical GPU, hosted deployment and entire historical browser suite not run; these are not claimed as passed.
+
+### Round 229 — 2D unified Properties and slider styling (2026-11-20)
+- Production changes: `src/app.mjs` and `src/algebra.mjs`. Name is first, duplicated point formula fields removed, original X/Y fields edit live formulas, slider Color/Opacity/Show border stored as optional, schema-validated fields. No 3D changes or new glyphs.
+- Full Node suite: **694/694 PASS**, exit 0; **34/34** source syntax checks, exit 0.
+- Real headless Chromium (inline real application modules): `browser_round229_properties.py` PASS; `browser_round226_slider_algebra.py` PASS after updating obsolete X-expression selector to the now-shared X coordinate field; `browser_round228_algebra_ui.py` PASS; `browser_round227_programmable_geometry.py` PASS; `browser_round224_cross_mode_isolation.py` PASS covering ten plotting modes.
+- Verified formula edit/recalculation, invalid-formula rollback, first Name field, absence of duplicate controls, slider color/opacity/border rendering, invalid-opacity rollback, legacy slider document validation, inherited locks, undo/redo, existing programmatic constructions and 2D/3D isolation.
+- Not verified: full historical browser inventory, hosted production deployment, physical GPU/browser or long-duration stress. No overall release certificate is claimed. Historical inventory discrepancy remains unresolved.
