@@ -1082,3 +1082,7 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 
 /* Hide only controls belonging to the other workspace; retain the 3D mode toggle. */
 html.three-d .interface-check-grid .settings-2d-only{display:none!important;}
+
+.algebra-heading{padding:4px 12px}.algebra-heading button{width:100%;text-align:left}.algebra-panel{padding:8px 12px;max-height:220px;overflow:auto}.algebra-panel[hidden]{display:none}.algebra-panel form{display:flex;gap:4px}.algebra-panel form input{min-width:0;flex:1}.algebra-entry{display:flex;align-items:center;gap:6px;padding:4px 0;flex-wrap:wrap}.algebra-entry>span{min-width:68px;font-size:12px}.algebra-entry input[type=range]{flex:1;min-width:72px}.algebra-entry button{padding:3px 6px}
+
+.algebra-heading{display:flex;gap:4px}.algebra-heading button{width:50%;text-align:center}.algebra-heading [aria-selected=true]{font-weight:700;border-bottom:2px solid currentColor}.leftpanel.algebra-open .object-tools,.leftpanel.algebra-open #objects,.leftpanel.algebra-open #objects-3d,.leftpanel.algebra-open #recently-deleted{display:none !important}

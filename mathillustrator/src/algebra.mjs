@@ -1,0 +1,74 @@
+/** Safe, deterministic real arithmetic for named slider parameters and point coordinates.
+ * No eval, dynamic JS, implicit writes, or external dependencies. */
+const FUNCTIONS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,
+ sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp,ln:Math.log,log:Math.log,log10:Math.log10,
+ floor:Math.floor,ceil:Math.ceil,round:Math.round,min:Math.min,max:Math.max,
+ pow:Math.pow,atan2:Math.atan2,hypot:Math.hypot};
+const CONSTANTS={pi:Math.PI,e:Math.E,phi:(1+Math.sqrt(5))/2};
+const NAME=/^[A-Za-z][A-Za-z0-9_]*$/;
+export function validSliderName(name){return NAME.test(name)&&!Object.hasOwn(FUNCTIONS,name.toLowerCase())&&!Object.hasOwn(CONSTANTS,name.toLowerCase())&&name.length<=40;}
+export function evaluateAlgebra(source,values={}){
+ if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
+ const tokens=[];let s=source.replaceAll('π','pi').replaceAll('φ','phi').replaceAll('ϕ','phi'),i=0;
+ while(i<s.length){if(/\s/.test(s[i])){i++;continue;}
+  const chunk=s.slice(i),m=chunk.match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?/);
+  if(m){const n=Number(m[0]);if(!Number.isFinite(n)||Math.abs(n)>=1e9)throw Error('Numeric literal out of range.');tokens.push({type:'number',value:n});i+=m[0].length;continue;}
+  const w=chunk.match(/^[A-Za-z][A-Za-z0-9_]*/);
+  if(w){tokens.push({type:'name',value:w[0]});i+=w[0].length;continue;}
+  if('+-*/^(),'.includes(s[i])){tokens.push({type:s[i]});i++;continue;}
+  throw Error('Unsupported expression character.');
+ }
+ let cursor=0;const peek=()=>tokens[cursor]?.type;
+ function atom(){const t=tokens[cursor++];if(!t)throw Error('Incomplete expression.');
+  if(t.type==='+'||t.type==='-'){const n=expression(3);return t.type==='-'?-n:n;}
+  if(t.type==='('){const n=expression(0);if(tokens[cursor++]?.type!==')')throw Error('Missing closing parenthesis.');return n;}
+  if(t.type==='number')return t.value;
+  if(t.type==='name'){
+   const name=t.value,lower=name.toLowerCase();
+   if(peek()==='('){if(!Object.hasOwn(FUNCTIONS,lower))throw Error('Unknown function: '+name);cursor++;const args=[];
+    if(peek()!==')'){args.push(expression(0));while(peek()===','){cursor++;if(args.length>=16)throw Error('Too many arguments.');args.push(expression(0));}}
+    if(tokens[cursor++]?.type!==')')throw Error('Missing function parenthesis.');
+    if((['min','max','hypot'].includes(lower)&&args.length<2)||(['atan2','pow'].includes(lower)&&args.length!==2)||(!['min','max','hypot','atan2','pow'].includes(lower)&&args.length!==1))throw Error('Incorrect function argument count.');
+    return FUNCTIONS[lower](...args);
+   }
+   if(Object.hasOwn(values,name))return values[name];
+   if(Object.hasOwn(CONSTANTS,lower))return CONSTANTS[lower];
+   throw Error('Undefined parameter: '+name);
+  }
+  throw Error('Expected number or parameter.');
+ }
+ const precedence={'+':1,'-':1,'*':2,'/':2,'^':4};
+ function expression(min){let x=atom();while(precedence[peek()]>=min){const op=tokens[cursor++].type,p=precedence[op],y=expression(p+(op==='^'?0:1));
+  x=op==='+'?x+y:op==='-'?x-y:op==='*'?x*y:op==='/'?x/y:x**y;
+  if(!Number.isFinite(x)||Math.abs(x)>1e9)throw Error('Expression result out of range.');
+ }return x;}
+ const v=expression(0);if(cursor!==tokens.length)throw Error('Unexpected expression token.');if(!Number.isFinite(v)||Math.abs(v)>1e9)throw Error('Expression result out of range.');return v;
+}
+export function validateAlgebra(doc){
+ const sliders=doc.algebra?.sliders??[];
+ if(!Array.isArray(sliders)||sliders.length>64)throw Error('Too many sliders.');
+ const seen=new Set();const values={};
+ for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
+  if(doc.objects?.some(o=>o.name===s.name))throw Error('Slider and object names must be distinct.');
+  seen.add(s.name);values[s.name]=s.value;
+ }
+ for(const o of doc.objects??[]){if(o.xyExpr!==undefined){if(o.type!=='point'||!Array.isArray(o.xyExpr)||o.xyExpr.length!==2||o.xyExpr.some(x=>typeof x!=='string'))throw Error('Invalid expression point.');
+  const xy=o.xyExpr.map(x=>evaluateAlgebra(x,values));if(xy.some(x=>Math.abs(x)>1e6))throw Error('Expression point outside coordinate range.');
+  if(!Array.isArray(o.xy)||o.xy.some((n,i)=>Math.abs(n-xy[i])>1e-7))throw Error('Stale expression point coordinates.');
+ }}return values;
+}
+export function recalculateAlgebra(doc){const values=Object.fromEntries((doc.algebra?.sliders??[]).map(s=>[s.name,s.value]));
+ for(const o of doc.objects??[])if(o.xyExpr)o.xy=o.xyExpr.map(x=>evaluateAlgebra(x,values));
+ return values;
+}
+export function createSlider(doc,name,{min=0,max=10,step=.1,value=5,xy=[0,0],visible=true}={}){
+ if(!validSliderName(name)||doc.objects.some(o=>o.name===name)||(doc.algebra?.sliders??[]).some(s=>s.name===name))throw Error('Slider name is invalid or already in use.');
+ const s={name,min,max,step,value,xy,visible};doc.algebra??={sliders:[]};doc.algebra.sliders.push(s);validateAlgebra(doc);return s;
+}
+export function algebraPoint(doc,name,xExpr,yExpr,appendPoint){
+ if(doc.objects.some(o=>o.name===name)||(doc.algebra?.sliders??[]).some(s=>s.name===name))throw Error('Name already in use.');
+ const values=Object.fromEntries((doc.algebra?.sliders??[]).map(s=>[s.name,s.value]));
+ const xy=[xExpr,yExpr].map(x=>evaluateAlgebra(x,values));
+ if(xy.some(x=>Math.abs(x)>1e6))throw Error('Coordinates must be within ±1,000,000.');
+ const point=appendPoint(doc,xy,name);point.xyExpr=[xExpr,yExpr];return point;
+}

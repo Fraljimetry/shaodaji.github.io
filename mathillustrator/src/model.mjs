@@ -1,3 +1,4 @@
+import {validateAlgebra} from './algebra.mjs?cut=round226';
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
 import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
@@ -50,7 +51,7 @@ export function derivedSidePoints(edge,owner,at){
  return i<vertices.length?[vertices[i],vertices[(i+1)%vertices.length]]:null;
 }
 export const VERSION = 1;
-export const TOOLS = ['select','pan','point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','perpendicularFoot',...R50_TYPES,'reflection','rotation','translation','dilation','circleInversion','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
+export const TOOLS = ['select','pan','slider','point','midpoint','segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','perpendicularFoot',...R50_TYPES,'reflection','rotation','translation','dilation','circleInversion','intersection','circleIntersection','circleCircleIntersection','circle','circleThrough3','circleDiameter','triangle','ellipse','rectangle','parallelogram','polygon','polyline','bezier','angle','regularPolygon','spline','closedSpline','freehand','text','node','morphism'];
 export const PRESETS = {
   General: {grid:true,snap:false,snapStep:0.5,correction:'ultra',plotQuality:'balanced',plotBudget:1000000,implicitGrid:12,showAxes:true,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
   'Olympiad geometry': {grid:false,snap:true,snapStep:0.25,correction:'strong',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
@@ -685,6 +686,7 @@ export function command(doc,source){
 export function validateDoc(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.format!=='mathillustrator-project'||raw.version!==VERSION||!Array.isArray(raw.objects)||raw.objects.length>10000)throw Error('Not a supported MathIllustrator v1 project.');
  const d=clone(raw);if(d.settings?.plot3dEnabled!==undefined&&typeof d.settings.plot3dEnabled!=='boolean')throw Error('3D toggle must be boolean.');if(d.settings?.plot3dEnabled&&!d.scene3d)throw Error('3D scene is missing.');if(d.scene3d!==undefined)validate3D(d.scene3d);if(!d.settings||typeof d.settings!=='object'||!d.meta||typeof d.meta.title!=='string'||d.meta.title.length>240||!Number.isSafeInteger(d.nextId)||d.nextId<1)throw Error('Project structure is invalid.');
+ validateAlgebra(d);
  const ids=new Set(),names=new Set(),roleObjects=new Map(d.objects.map(o=>[o?.id,o]));let max=0;
  for(const o of d.objects){
   if(!o||typeof o!=='object'||!/^o[1-9]\d*$/.test(o.id)||ids.has(o.id)||!SUPPORTED.includes(o.type)||typeof o.name!=='string'||!o.name.trim()||o.name.length>180)throw Error('Invalid or repeated object ID/type/name.');

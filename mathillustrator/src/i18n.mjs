@@ -442,3 +442,5 @@ Object.assign(zh,{
  "This inversion has no finite geometry (the circle center has no image).": "该反演没有有限几何结果（圆心没有像）。",
  "Unlock the 3D plot before deleting.": "删除前请解锁三维图形。"
 });
+
+Object.assign(zh,{'Slider':'滑块','Algebra':'代数','Algebra ▸':'代数 ▸','Show on canvas':'在画布上显示','Click the canvas to place a slider. Drag its handle to update dependent geometry.':'单击画布放置滑块；拖动滑块控制点以更新依赖的几何对象。','X expression':'X 表达式','Y expression':'Y 表达式','Edit slider range':'编辑滑块范围','Delete slider':'删除滑块','Slider range: min, max, step':'滑块范围：最小值、最大值、步长'});

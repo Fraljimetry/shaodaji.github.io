@@ -2038,3 +2038,12 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Maintain current bilingual tutorial section structure, rather than preserving old HTML headings for test compatibility.
 - Preserve the accepted Round 221 renderer. Do not prune, reconstruct, or overwrite historical archives without a verifiable authoritative inventory.
 - For every browser test claimed as PASS, run the executable against the current application; keep physical GPU and hosted verification clearly separate.
+
+
+## Round 226 — Slider / Algebra UI and programmable geometry groundwork (2026-11-20)
+
+Approved design: single-track slider glyph next to Move/Pan, Objects/Algebra tabs in the left sidebar (Objects default), expression-aware Properties, and one shared 2D object/dependency model. Never build a disconnected second geometry model. The Algebra panel is hidden by default.
+
+Delivered initial foundation: named numeric sliders with min/max/step/value, on-canvas handle placement and dragging, visible/hidden control state, range editing and deletion with dependency rejection; safe arithmetic expression evaluator; formula-defined 2D point coordinates; existing construction commands may refer to formula-defined points, and dependent geometry follows the existing resolver. Formula-backed points expose X/Y expressions in Properties, and values and expressions survive document JSON/undo/redo. Expressions and object names cannot collide with sliders. Invalid edits are rejected atomically. Existing 3D rendering and all preexisting glyphs remain unchanged.
+
+**Not yet delivered / do not misrepresent as supported:** arbitrary loops/conditions/scripting, complete programmatic constructors for every geometric type, formula editing of each possible numeric property (fixed angles/lengths, radii, control-point parameters and transformations), slider bindings into 2D graph formulas and 3D plot formulas, timeline animation, physical-device/browser release acceptance. These are subsequent feature phases and require their own verified implementation. Do not silently substitute numeric snapshots for live expressions.
