@@ -2148,3 +2148,28 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 ### Round 244 maintenance — unified panel test compatibility
 
 Maintain the single Objects panel with Algebra/Find glyph switching and Enter-only Algebra input. Slider playback, Properties docking and resizing, dependency locking, undo/redo and shared Recently Deleted must be tested through the current unified interface, not retired Algebra-tab DOM elements. Preserve existing 2D-only Algebra scope and production rendering behavior.
+
+
+### Round 245 — Slider glyph and Algebra guide readability
+- The 2D Slider toolbar glyph and Objects-row glyph must use a single shared hollow-circle-on-track definition, visually different from the filled point glyph. Do not change unrelated glyphs.
+- The English/Chinese algebra constructor reference must group commands into a readable table with per-command semantics and horizontally contained narrow-screen layouts; previously documented syntax remains supported.
+- The 2D guide must describe the current unified Objects input instead of the retired Algebra tab.
+
+### Round 246 — Theme action label and 2D/3D input assistance
+- The guide's theme-switch button must display the **target** theme (Light/Dark; 浅色/深色), mirroring the neighboring language-switch button, and update its accessible label after toggling theme or language. Persist the selected site theme while preserving existing settings.
+- Unified Objects Algebra input and all 2D/3D Construction expression fields must offer non-destructive, contextual suggestions on focus/typing, click or Tab acceptance, arrow-key selection, Escape dismissal, automatic balanced parentheses, and suggestions for existing named 2D objects.
+- Enter must continue to submit the existing input. Suggestion acceptance must never bypass the existing parser or create objects by itself. 3D is **plot-expression assistance only**; do not silently enable programmable 3D object construction.
+- Preserve Find/Algebra switching, slider playback, 2D/3D rendering, language, undo/redo and saved JSON compatibility.
+
+### Round 247 — Smart input completion correctness
+- Complete the **token at the caret**, including when editing inside an existing long 2D Algebra formula or 2D/3D plotting expression; preserve all surrounding text and existing call parentheses.
+- Do not duplicate an existing `(` after a function; select/Tab/mouse completion must only insert text, never submit geometry or mutate the project.
+- Keep Enter submission, Shift+Tab navigation, Escape dismissal, normal paired-parenthesis behavior, IME composition safety, unified Objects mode switching, and mode-specific 3D plot suggestions.
+- Suggestions are deterministic typing assistance, **not** complete mathematical parsing, a symbolic algebra engine or programmable 3D geometry.
+
+
+### Round 248 — Structured input-editor completion
+- Preserve Enter-only submission and the established parsers for Algebra and every 2D/3D plotting mode.
+- Make contextual completion caret-aware, with argument-position help, safe bracket pairing/deletion, diagnostic feedback for mismatched brackets, and Ctrl+Space reopening.
+- Keep editing hints non-destructive and display errors without claiming full grammar validation.
+- Retain IME handling, existing named-object completion, and keyboard/mouse completion behavior.

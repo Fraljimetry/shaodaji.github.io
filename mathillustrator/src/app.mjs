@@ -1,3 +1,4 @@
+import {attachInputAssistant} from './input_assist.mjs?cut=round246';
 import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round227';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
@@ -31,7 +32,7 @@ const plotCache=createPlotCache({maxCharacters:12_000_000});
 const labelCache=createLabelLayoutCache();
 const limitedPlotKeys=new Set();let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>',segment:'<path d="M4 20L20 4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="currentColor"/>',rectangle:'<path d="M4 6H20V18H4Z"/><circle cx="4" cy="6" r="2" fill="currentColor"/><circle cx="20" cy="6" r="2" fill="currentColor"/><circle cx="20" cy="18" r="2" fill="currentColor"/><circle cx="4" cy="18" r="2" fill="currentColor"/>',polygon:'<path d="M6 3L18 3L22 12L18 21L6 21L2 12Z"/><circle cx="6" cy="3" r="2" fill="currentColor"/><circle cx="18" cy="3" r="2" fill="currentColor"/><circle cx="22" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="21" r="2" fill="currentColor"/><circle cx="6" cy="21" r="2" fill="currentColor"/><circle cx="2" cy="12" r="2" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="5" r="2" fill="currentColor"/><circle cx="14" cy="13" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
-glyph.slider='<path d="M3 12H21"/><circle cx="11" cy="12" r="2" fill="currentColor" stroke="none"/>';
+glyph.slider='<path d="M3 12H21"/><circle cx="11" cy="12" r="3.3" fill="none"/>';
 glyph.parallelogram='<path d="M3 18L16 18L21 6L8 6Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="16" cy="18" r="2" fill="currentColor"/><circle cx="21" cy="6" r="2" fill="currentColor"/><circle cx="8" cy="6" r="2" fill="currentColor"/>';
 glyph.line='<path d="M2 22L22 2"/><circle cx="7" cy="17" r="2" fill="currentColor" stroke="none"/><circle cx="17" cy="7" r="2" fill="currentColor" stroke="none"/>';glyph.ellipse='<ellipse cx="12" cy="12" rx="9" ry="7.2"/><circle cx="6.6" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="17.4" cy="12" r="2" fill="currentColor" stroke="none"/>'; glyph.bezier='<path d="M4 19C5 6 19 6 20 19"/><circle cx="4" cy="19" r="2" fill="currentColor"/><circle cx="20" cy="19" r="2" fill="currentColor"/>';glyph.regularPolygon='<path d="M12 1.5L21.99 8.76L18.18 20.49L5.82 20.49L2.01 8.76Z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>';glyph.angle='<path d="M3.5 5L8.5 19H21M7 14.8Q10.6 13.8 12.6 19"/><circle cx="3.5" cy="5" r="2" fill="currentColor"/><circle cx="8.5" cy="19" r="2" fill="currentColor"/><circle cx="21" cy="19" r="2" fill="currentColor"/>';glyph.node='<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 12h8"/>';glyph.morphism='<rect x="2" y="8.5" width="5" height="7"/><rect x="17" y="8.5" width="5" height="7"/><path d="M9 12H15M12 9l3 3-3 3"/>'; 
 glyph.arrow='<path d="M4 20L20 4M12 4H20V12"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/>';
@@ -1926,7 +1927,7 @@ function renderAlgebra(){
  for(const item of [...(doc.algebra?.sliders??[])].reverse()){
   const row=document.createElement('div');row.className='object algebra-object-row'+(selectedSlider===item.name?' selected':'')+(!item.visible?' hidden':'');row.dataset.slider=item.name;row.dataset.locked=item.locked?'true':'false';row.tabIndex=0;row.setAttribute('role','listitem');
   row.append(algebraSliderGrip(row,item.name));
-  const icon=document.createElement('span');icon.className='glyph slider-algebra-glyph';icon.innerHTML='<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true"><path d="M3 12H21"/><circle cx="11" cy="12" r="3.3"/></svg>';row.append(icon);
+  const icon=document.createElement('span');icon.className='glyph slider-algebra-glyph';icon.innerHTML=`<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${glyph.slider}</svg>`;row.append(icon);
   const info=document.createElement('span');info.className='object-label';const name=document.createElement('strong');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(8));name.title=name.textContent;info.append(name);row.append(info);
   const play=document.createElement('button');play.type='button';play.className='slider-play-toggle';play.textContent=playingSliders.has(item.name)?'⏸':'▶';play.title=playingSliders.has(item.name)?'Pause slider':'Play slider';play.setAttribute('aria-label',play.title+' '+item.name);play.disabled=item.locked||!item.visible;play.onclick=e=>{e.stopPropagation();toggleSliderPlayback(item.name);};row.append(play);
   algebraMore(row,item.name,btn=>openAlgebraActions(item.name,btn));
@@ -3559,6 +3560,11 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
   algebraEntry.focus();
  };
  setObjectInputMode('algebra',{focus:false});
+ // Context-sensitive, non-destructive assistance for Algebra and all 2D/3D plot inputs.
+ for(const input of [algebraEntry,plotInput,plotY,$('command-z')]){
+  attachInputAssistant(input,()=>({kind:input===algebraEntry?'algebra':'plot',dimension:in3D()?'3d':'2d',mode:plotMode.value,
+   symbols:input===algebraEntry?doc.objects.map(o=>o.name).filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name)):[]}));
+ }
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   let raisedDomainBudget=false;
   const success=update(()=>{

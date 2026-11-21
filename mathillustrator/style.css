@@ -1181,3 +1181,15 @@ html.three-d #object-search{display:block!important}
 /* Round 239: visually center the slider checkbox caption with its square. */
 .properties .slider-appearance-grid .slider-border-control{align-items:center;min-height:18px;line-height:14px}
 .properties .slider-appearance-grid .slider-border-control>span{display:inline-flex;align-items:center;min-height:14px;line-height:14px;transform:translateY(-1px)}
+/* Contextual expression assistance: popup is anchored to the input, not the canvas. */
+#command-form #plot-inputs,.object-tools .unified-entry-form{position:relative}
+.input-assist-popup{position:absolute;left:0;top:calc(100% + 3px);width:100%;min-width:165px;max-height:190px;overflow-y:auto;z-index:40;border:1px solid var(--border);border-radius:7px;box-shadow:var(--shadow);background:var(--surface);padding:3px}
+.input-assist-popup[hidden]{display:none!important}
+.input-assist-option{display:block;width:100%;padding:5px 7px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;border-radius:4px;font:11px/1.5 Consolas,monospace;background:transparent;color:var(--ink)}
+.input-assist-option[data-selected="true"],.input-assist-option:hover{background:var(--hover)}
+
+/* Round 248: unobtrusive structured argument hints and lexical diagnostics. */
+.input-assist-status{position:absolute;left:0;top:calc(100% + 3px);max-width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--muted);font:11px/1.4 Consolas,monospace;z-index:39;overflow-wrap:anywhere;pointer-events:none}
+.input-assist-status[hidden]{display:none!important}
+.input-assist-status[data-severity="error"]{color:var(--danger,var(--ink))}
+.input-assist-popup:not([hidden]) + .input-assist-status:not([hidden]){top:calc(100% + 198px)}

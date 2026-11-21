@@ -2672,3 +2672,29 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Independent Chromium checks: Round 243 glyph, Round 237 unified Objects, Round 242 textbox parity, Round 230 formulas, Round 235 snapping: **PASS**.
 - Round 224 cross-mode Chromium run: **incomplete (execution timeout)**. Full historical inventory, hosted deployment, and physical GPU/browser checks: **not executed**.
 - Explicit limit: this round closes four obsolete UI tests and does not certify universal algebra support or every historical browser scenario.
+
+
+### Round 245 — Slider glyph and constructor guide
+- Production: one shared hollow slider glyph in toolbar and Objects rows; no geometry/model changes. Tutorial: EN/ZH grouped constructor tables (21 reference rows each), mobile overflow containment, and current Objects-panel text.
+- Verified locally: 708/708 Node tests; all current src/*.mjs syntax checks; Chromium browser_round245_slider_guide.py (hollow glyph and bilingual mobile tables), browser_round237_unified_objects.py, browser_round243_glyph_toggle.py, browser_round242_input_parity.py all PASS.
+- Unverified: complete historical Chromium inventory, hosted deployment, physical-device GPU.
+
+### Round 246 — Theme and contextual input completion
+- Change: guide theme button shows and announces the next theme in English/Chinese; state persists to existing UI settings. New `input_assist.mjs` supports conservative completion of numeric functions and existing object references in 2D Algebra, plus context-specific samples in all five 2D and five 3D plotting modes. Suggestions are typing aids, not parser replacements.
+- Verified: Node full suite **710/710 PASS**; `src/*.mjs` JavaScript syntax **PASS**; `browser_round246_input_assist.py`, `browser_round245_slider_guide.py`, `browser_round242_input_parity.py`, `browser_round237_unified_objects.py`, and `browser_round224_cross_mode_isolation.py` **PASS** in headless Chromium.
+- Limitations: no hosted deployment, no physical GPU, no complete historical Chromium inventory; auto-suggestion is not a full natural-language or symbolic inference system, and does not introduce programmable 3D geometry.
+
+### Round 247 — Smart input functional and compatibility audit
+- Confirmed defect: Round 246 completions matched the **last text token** rather than the **caret token**. Editing `A = (sqr(9), 1)` or `sin(0)+co(2)` in place could not reliably complete the intended function. Corrected token matching, suffix replacement and preserved existing call parentheses.
+- New Node regression: in-place cursor replacement, suffix retention, pre-existing call syntax, unknown 3D mode sample fallback, bracket pairing. All **712/712** Node tests passed; **35/35** `src/*.mjs` syntax checks passed.
+- Headless Chromium: `browser_round247_smart_input_parity.py` PASS (caret edits, click/Tab acceptance, brackets, non-submission), `browser_round246_input_assist.py` PASS (Algebra/3D suggestions and theme), `browser_round237_unified_objects.py` PASS, `browser_round242_input_parity.py` PASS, `browser_round224_cross_mode_isolation.py` PASS across all 10 plotting modes.
+- Extended historical suite: one later combined run was interrupted during the old Round 240 Properties parity test; it was **not counted as passed**. Full historical inventory, hosted deployment, physical-device and hardware GPU behavior not verified.
+- Production changed **only** `src/input_assist.mjs`; existing algebra/parser geometry model, renderers, themes, appearance and project JSON are unchanged.
+
+
+### Round 248 — Structured editor audit (2026-11-20)
+- 715/715 Node regression cases PASS and 35/35 JavaScript syntax checks PASS.
+- Targeted Chromium Round 248 argument hints, lexical errors, paired deletion, submission, 3D context PASS.
+- Existing Round 246 and 247 Chromium Smart Input regressions PASS.
+- Lexical diagnostics deliberately do not replace the authoritative numeric/geometry parser; unsupported arbitrary scripting remains unsupported.
+- Hosted deployment, complete historical browser inventory and physical GPU were not verified.
