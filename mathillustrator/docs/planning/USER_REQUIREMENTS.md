@@ -2179,3 +2179,24 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 - Keep plot variables mode-specific, including the complex imaginary unit; do not guess which t/u/v parametric variable is active.
 - Account for nested square brackets and quoted labels while determining current call arguments and bracket diagnostics.
 - Preserve Enter submission, current focus and IME behavior, and unchanged JSON/model/renderer contracts.
+
+### Round 250 — Final editor stabilization and popup consistency
+- Complete one comprehensive consolidation pass instead of leaving a speculative next-feature priority. Include full Node/syntax/math property checks, current Chromium editor interactions, ten plotting modes, export and persistence compatibility, and scoped stress coverage; accurately distinguish archived tests from current-contract checks.
+- Smart Input drop-down options must use exactly the typeface/size of their associated Algebra or 2D/3D Construction field, a matching field width without forced minimum on narrow panels, and a normal input-sized row height. Preserve light/dark palettes.
+- Use accessible listbox options, not form buttons, so suggestions cannot hijack form submit selectors or behavior. Enter submits and dismisses the popup; mouse, keyboard and touch still select options without submitting. Never obscure the Objects list after a completed Enter submission.
+- Autocomplete remains parser-limited, with mode-specific real/complex function vocabularies and no invented general 3D Algebra geometry. Do not rewrite renderers to satisfy obsolete test expectations.
+
+
+### Round 251 — Objects/Properties and dropdown parity (2026-11-21)
+- Suggestion dropdown uses the same ink color as the Algebra input, including the selected option, across light and dark themes; no blue selected-row highlight.
+- Left Objects entries show names only, including 3D entries; remove second-line subtitles.
+- Properties provides an editable Algebra expression for supported points, functions and construction references below their Label controls. Stable ID references are displayed with their current names, so rename updates are automatic.
+- Preserve original object IDs and dependencies on edit; validate through the existing geometric engine and reject unsupported transformations instead of creating unrelated objects. Not all advanced/freehand geometry has an executable Algebra representation; expose this limit explicitly.
+
+
+### Round 252 — Semantic expressions for editable construction types (2026-11-21)
+- Freehand remains non-algebraic. Ordinary 2D geometry, R50 derived geometry, diagram objects and 2D plot definitions must expose semantic definitions in Properties when a meaningful mathematical representation exists.
+- References display current object names from stable persisted IDs; renaming dependencies must update all Properties formulas without rewriting or breaking the reference graph.
+- Specialized reference-based constructors support typed options and transactional validation. Invalid references, cycles, domain-invalid configurations and unsupported structural changes must not mutate the source project.
+- Parent-owned polygon sides display a read-only `Side(parent,index)` semantic definition; edits to polygon vertex order must synchronize side refs and preserve side IDs. Parent ownership and vertex-count invariants remain authoritative.
+- Extended Properties syntax does not imply all constructors are accepted by the shorter Algebra Construction input command parser. 3D plotting continues to use its dedicated editors.

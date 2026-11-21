@@ -1,3 +1,4 @@
+import {constructionExpression,applyConstructionExpression} from './construction_expression.mjs?cut=round252';
 import {attachInputAssistant} from './input_assist.mjs?cut=round246';
 import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round227';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
@@ -1233,7 +1234,7 @@ function render3DList(){
   if(filter&&!`${plot.name} ${plot.kind} ${plot.a}`.toLowerCase().includes(filter))continue;
   const row=document.createElement('div');row.className='object';row.dataset.plot3d=String(plot.id);row.dataset.locked=plot.locked?'true':'false';
   if(plot.hidden)row.classList.add('hidden');if(selected3d===plot.id)row.classList.add('selected');
-  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=translatedGeneratedPlotName(plot.name,plot.kind,uiPrefs.language);name.title=name.textContent;const summary=document.createElement('small');summary.textContent=compactSubtitle(plot.a);summary.title=plot.a;info.append(name);if(summary.textContent.trim())info.append(summary);
+  const info=document.createElement('div');info.className='object-label';const name=document.createElement('strong');name.textContent=translatedGeneratedPlotName(plot.name,plot.kind,uiPrefs.language);name.title=name.textContent;info.append(name);
   row.onclick=()=>{selected3d=plot.id;render3DList();renderProperties();};
   function action(label,callback,disabled=false){
    const button=document.createElement('button');button.type='button';button.className='plot3d-action';button.title=translated(label,uiPrefs.language);button.setAttribute('aria-label',translated(label,uiPrefs.language));button.disabled=disabled;
@@ -1355,7 +1356,7 @@ function renderListWindow(){
   else if(Object.hasOwn(PLOTTING_GLYPHS,o.type))objectIcon.innerHTML=plotGlyphSvg(o.type);
   else throw Error('Missing matching Objects-list icon for '+o.type);
   row.append(addObjectOrderGrip(row,o.id,'2d'),objectIcon);
-  const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;strong.title=o.name;const small=document.createElement('small');const fullDescription=desc(o);small.textContent=shortObjectSubtitle(o);small.title=fullDescription;label.append(strong);if(small.textContent.trim())label.append(small);row.append(label);
+  const label=document.createElement('span');label.className='object-label';const strong=document.createElement('strong');strong.textContent=o.name;strong.title=o.name;label.append(strong);row.append(label);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title=translated('Object actions',uiPrefs.language);more.setAttribute('aria-label',`${translated('Object actions',uiPrefs.language)}: ${o.name}`);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.setAttribute('aria-expanded','false');
   more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};
   more.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();openObjectMenu(o,more);}};
@@ -1532,6 +1533,7 @@ function renderProperties3D(root){
  if(selectedPlot.locked){const note=document.createElement('p');note.className='subtle';note.textContent=translated('Locked',uiPrefs.language);root.append(note);return;}
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
+ if(['surface3d','implicit3d','domain3d'].includes(selectedPlot.kind))field(root,'Algebra expression',selectedPlot.a,'text',v=>edit(p=>{p.a=v;parse3D(p);}));
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['X(u, v)','Y(u, v)','Z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
@@ -1680,6 +1682,16 @@ function renderProperties(){
   select.value=o.displayLabelMode||'plain';select.onchange=()=>edit(live=>{if(select.value==='latex'&&live.displayLabel)validateLatexInput(live.displayLabel);live.displayLabelMode=select.value;});mode.append(select);root.append(mode);
   field(root,'Label',o.displayLabel||'','text',v=>edit(live=>{if(live.displayLabelMode==='latex'&&v)validateLatexInput(v);live.displayLabel=v;})).closest('label').classList.add('short-label-field');
  }
+ // Always print referenced names from live IDs. Text/diagram labels appear in
+ // their dedicated Label control, so put the expression after that control.
+ const renderConstructionExpression=()=>{
+  const definition=constructionExpression(doc,o);
+  if(definition===null)return;
+  const algebraInput=field(root,'Algebra expression',definition,'text',value=>edit(live=>applyConstructionExpression(doc,live.id,value)));
+  algebraInput.classList.add('construction-expression-editor');
+  if(o.edgeOf){algebraInput.readOnly=true;algebraInput.title='Derived side: edit the parent construction to change this edge.';}
+ };
+ if(!['text','node','morphism'].includes(o.type))renderConstructionExpression();
  if(o.type==='triangleCenter'){
   const label=document.createElement('label');label.className='field';label.textContent='Center';const pick=document.createElement('select');
   for(const kind of ['centroid','circumcenter','incenter','orthocenter','excenterA','excenterB','excenterC']){const opt=document.createElement('option');opt.value=kind;opt.textContent=kind.startsWith('excenter')?'Excenter '+kind.at(-1):kind[0].toUpperCase()+kind.slice(1);pick.append(opt);}
@@ -1708,6 +1720,7 @@ function renderProperties(){
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.textMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.text);live.textMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
   field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>{if(live.textMode==='latex')validateLatexInput(v);live.text=v;}));}
+ if(['text','node','morphism'].includes(o.type))renderConstructionExpression();
  if(['text','node','morphism'].includes(o.type)&&o.textMode!=='latex'){
   const family=document.createElement('label');family.className='field';family.textContent='Font';const pick=document.createElement('select');
   for(const [value,label] of [['Georgia, serif','Serif'],['Arial, sans-serif','Sans-serif'],['Consolas, monospace','Monospace'],['Verdana, sans-serif','Verdana'],['Trebuchet MS, sans-serif','Trebuchet'],['Palatino Linotype, serif','Palatino'],['Times New Roman, serif','Times']]){const option=document.createElement('option');option.value=value;option.textContent=label;pick.append(option);}
@@ -3563,7 +3576,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  // Context-sensitive, non-destructive assistance for Algebra and all 2D/3D plot inputs.
  for(const input of [algebraEntry,plotInput,plotY,$('command-z')]){
   attachInputAssistant(input,()=>({kind:input===algebraEntry?'algebra':'plot',dimension:in3D()?'3d':'2d',mode:plotMode.value,
-   symbols:input===algebraEntry?doc.objects.map(o=>o.name).filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name)):[]}));
+   symbols:input===algebraEntry?[...doc.objects.map(o=>o.name),...(doc.algebra?.sliders??[]).map(s=>s.name)].filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name)):[]}));
  }
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   let raisedDomainBudget=false;

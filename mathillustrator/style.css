@@ -1207,3 +1207,17 @@ html.three-d #object-search{display:block!important}
 /* The popup fits its input even when the left panel is narrowed. */
 #command-form #plot-inputs .input-assist-popup,
 .object-tools .unified-entry-form .input-assist-popup{min-width:0;max-width:100%;}
+
+/* Round 251: suggestions use the exact Algebra field ink/surface, never blue
+   syntax colors or the blue selected-row highlight. */
+.input-assist-popup,
+.input-assist-popup .input-assist-option,
+.input-assist-popup .input-assist-option[data-selected="true"],
+.input-assist-popup .input-assist-option:hover {color:var(--ink)!important;}
+.input-assist-popup .input-assist-option[data-selected="true"],
+.input-assist-popup .input-assist-option:hover {background:var(--subtle)!important;}
+.input-assist-option {font-family:Consolas,monospace;}
+/* Object list names only; no second-line description in 2D or 3D. */
+#objects .object-label small,#objects-3d .object-label small{display:none!important}
+/* Round 252: match the plotting input's 31px control height as well as its ink and type. */
+#command-form #plot-inputs .input-assist-popup .input-assist-option{min-height:31px;box-sizing:border-box;}

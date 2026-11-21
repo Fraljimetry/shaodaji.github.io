@@ -35,6 +35,7 @@ with sync_playwright() as pw:
   page.locator('#scene3d-enable').check(force=True)
   page.locator('#plot-mode').select_option('implicit3d')
   plot.fill('')
+  plot.press('Control+Space')  # explicit request after mode switch resets the field
   assert page.locator('#command-suggestions').get_by_text('x^2+y^2+z^2=4').count()==1
   assert not errors,errors
   print('ROUND248_EDITOR_CHROMIUM_PASS')

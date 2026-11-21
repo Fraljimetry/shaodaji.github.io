@@ -23,7 +23,7 @@ def run():
    assert page.locator('#properties-selected-glyph').count()==0
    glyph=page.locator('#objects [data-slider="a"] .slider-algebra-glyph')
    assert glyph.is_visible() and glyph.locator('circle').count()==1
-   assert glyph.locator('circle').get_attribute('fill') is None
+   assert glyph.locator('circle').get_attribute('fill') == 'none'  # R245 approved hollow handle
    page.locator('#object-input-toggle').click()
    assert page.locator('#object-search').is_visible()
    page.locator('#object-input-toggle').click()

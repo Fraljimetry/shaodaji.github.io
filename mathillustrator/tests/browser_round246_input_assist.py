@@ -33,6 +33,7 @@ def run():
     enable.check(force=True)
     p.locator('#plot-mode').select_option('implicit3d')
     cmd.fill('')
+    cmd.press('Control+Space')  # explicit completion after mode change
     assert p.locator('#command-suggestions').is_visible()
     assert p.locator('#command-suggestions').get_by_text('x^2+y^2+z^2=4').count()==1
    assert not errors,errors

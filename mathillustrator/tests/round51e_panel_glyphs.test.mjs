@@ -12,7 +12,7 @@ test('R51E: Objects and Tools reuse one SVG factory with identical viewBox and p
  assert.match(app,/button\.innerHTML=`\$\{toolGlyphSvg\(type\)\}<span>\$\{label\}<\/span>`/);
  assert.match(css,/\.tool svg,\.objects \.object \.glyph svg\{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1\.7/);
  assert.match(css,/\.objects \.object \.glyph\{width:29px;height:29px;flex:0 0 29px;color:var\(--ink\)\}/);
- assert.match(html,/style\.css\?cut=round51f/);
+ assert.match(html,/style\.css\?cut=round(?:51f|[1-9]\d{2,})/);
  assert.match(html,/src\/app\.mjs\?cut=round(?:6[3-9]|[7-9]\d|[1-9]\d{2,})/);
 });
 

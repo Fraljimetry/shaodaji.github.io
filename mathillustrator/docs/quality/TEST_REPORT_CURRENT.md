@@ -2705,3 +2705,50 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Local headless Chromium: `browser_round249_input_parity.py`, `browser_round248_editor.py`, `browser_round247_smart_input_parity.py`, and `browser_round224_cross_mode_isolation.py` **PASS**; latter covers all ten modes after fixing an obsolete selector that accidentally matched popup option buttons.
 - Browser checks use inlined source with local Chromium, not the hosted domain. Unverified: entire historical Chromium inventory, deployment, physical GPU and long-session memory stress.
 - Scope: editor assistance, focused tests and bilingual guide; no changes to parser semantics, construction model, JSON serialization or 3D CPU renderer.
+
+### Round 250 — Consolidated maintenance and Smart Input compatibility (2026-11-20)
+
+**Scope and baseline.** The user-supplied Round 248 source ZIP plus the earlier Round 249 editor changes. The website-root overlay includes only files whose bytes differ from that authoritative ZIP; no changes to model, plotting parser, geometry renderer, JSON contract, external services, or secrets.
+
+**Confirmed production defects and red/green evidence:**
+1. Autocomplete advertised no matching 2D parameter or named slider in some contexts; it suggested executable functions within quoted strings and Ctrl+Space did nothing after an operator. New Round 250 Node and Chromium tests failed before and passed after repair.
+2. The suggestion list inherited the broad `#command-form button` rule and rendered at 19px beside a 12px plot expression; it also imposed a 165px minimum width even if the parent editor was narrower. Real Chromium computed-font/geometry assertions failed before and passed after correcting the specificity, inheriting font metrics from the field, and matching the field width.
+3. A popup could obscure the Objects row after Enter and suggestion buttons conflicted with historical `#command-form button` selection. Enter now closes the popup without blocking submit, and suggestions use accessible listbox options (`role=option`) rather than nested action buttons. Mouse, touch, keyboard, and object selection are verified.
+4. A visible popup retained an obsolete width when the input resized. ResizeObserver now keeps popup and hint aligned; a live-width red/green Chromium test confirms this.
+5. ArrowDown could select an offscreen item without scrolling the popup. The active option now scrolls into view and a keyboard red/green Chromium test covers it.
+
+**Executed verified tests:**
+- All **720/720** Node tests passed, zero failed or skipped, using `node --test tests/*.test.mjs`. All **35/35** JavaScript source modules passed `node --check`.
+- **6200/6200** seeded mathematical property cases passed (no failures).
+- Round 250 editor behavior, dropdown/font/width/resizing, touch and keyboard, focus and object-panel parity PASS in actual local headless Chromium.
+- Round 224 2D/3D cross-mode tests PASS for **all ten plotting modes**. Round 217 dense implicit 3D deterministic raster-hash benchmark, Round 219 UI responsiveness/hash, Round 205 accelerated raster/export, Round 108 SVG/raster export fidelity, Round 106 3D lifecycle, and Round 245 bilingual guide/slider glyph tests passed in the local browser inventory.
+- Round 246 and Round 248 historical editor fixtures were updated to explicitly request Ctrl+Space after switching to an empty field; hidden assumptions of automatic completion when there is no input event were outdated. No editor behavior was restored solely for these fixtures.
+
+**Full historical Chromium diagnostic inventory:** **255/255 attempted; 134 PASS, 120 FAIL, 1 TIMEOUT, 0 process errors.** This was a broad diagnostic sweep started before the final fixes were complete, so its PASS/FAIL totals describe mixed source snapshots rather than the final release gate. The one timed-out entry (`browser_cut24_sweep.py`) is a recursive archived multi-script runner, not an isolated product action. Common errors include retired `#algebra-toggle`, permanently visible `#object-search`, selectors matching the new suggestions as buttons before final fixes, old dialog translations, changed geometric object structure, and HTTP navigation blocked by this sandbox. Other archived mismatches are *not individually certified harmless*; none is silently counted as passing. A separate current-source release gate determines the focused verified result.
+
+**Environment limitations.** The Chromium harness uses local inlined HTML/ESM because direct navigation to a local or hosted origin returns `net::ERR_BLOCKED_BY_ADMINISTRATOR`. Deployment, full real HTTP origin loading, and physical-GPU/hardware-specific behavior cannot be certified here. The local Chromium GPU uses SwiftShader. This is not a claim of universal performance or complete support for arbitrary mathematical input.
+
+**Disposition.** No further speculative editor feature priorities were created in this maintenance batch. The tested, current-contract editor functionality is complete for the defined scope; the archived test inventory and environment limitations are reported transparently.
+
+**Final-source Chromium release gate (separate from historical diagnostic): 18/18 PASS, 0 failures, 0 skipped/timeouts.** Exactly these tests were executed against the completed source: `browser_round250_dropdown_visual_parity.py`, `browser_round250_editor_interactions.py`, `browser_round250_final_stabilization.py`, `browser_round249_input_parity.py`, `browser_round248_editor.py`, `browser_round247_smart_input_parity.py`, `browser_round246_input_assist.py`, `browser_round245_slider_guide.py`, `browser_round242_input_parity.py`, `browser_round240_algebra_parity.py`, `browser_round238_unified_algebra.py`, `browser_round224_cross_mode_isolation.py`, `browser_round217_performance_fixture.py`, `browser_round219_responsiveness.py`, `browser_round205_3d_performance.py`, `browser_round108_export_fidelity.py`, `browser_round106_3d_lifecycle.py`, and `browser_round166_plot_geometry_constants.py`. This covers browser UI, input interactions, ten plotting modes, dense 3D deterministic raster hashes, responsiveness, 3D lifecycle, and SVG/raster export behavior. All were launched from Python Playwright using the real local Chromium binary, with local inline module loading rather than hosted HTTP.
+
+**Packaging and source hygiene:** 16-file cumulative changed-files-only overlay relative to the user-uploaded Round 248 ZIP (includes Round 249 and Round 250). ZIP path/CRC safety, updated Python test-source syntax and changed-file whitespace checks verified at packaging. No production services managed and no Git commit performed.
+
+
+## Round 251 — targeted expression/Objects integration
+- Root cause: selected suggestion rows inherited a visual blue highlight even after typography fixes; selected and hovered options now use neutral `--subtle` backgrounds and the same `--ink` as the Algebra input.
+- Removed second-line subtitles for 2D and 3D object lists.
+- Added ID-derived construction expressions and safe same-type transactional editing for supported constructors; function and point changes preserve object IDs. Rename propagation is derived from referenced IDs, not textual substitution.
+- Targeted Node tests: 4/4 PASS; real Chromium tests: dropdown typography, keyboard/touch interactions, and construction Properties/color/rename integration PASS.
+- Historical suites and full source syntax must be rerun after the final package is frozen; unsupported advanced geometry/full handwritten path re-expression and live hosted site are not certified.
+
+- **Cache invalidation fix:** versioned `index.html` stylesheet and app module URLs both bumped to Round 251 so clients cannot continue to display the previously cached blue suggestion rows.
+
+
+## Round 252 — semantic geometry Properties coverage (2026-11-21)
+- Source baseline: uploaded Round 248 full archive plus Round 251 cumulative overlay.
+- Expanded reference-backed expression rendering/editing to all representable non-freehand 2D geometry types; added semantic options for branches, constraints, transforms, centers, fixed measurements, regular polygons and 2D plotting, plus nodes and diagram arrows.
+- Edits validate against existing scene/model semantics and reject dependency cycles; preserve IDs and undo-compatible transactional mutations. Polygon vertex reorder now synchronizes owned edge refs without changing edge IDs. Structural vertex-count changes remain rejected.
+- Full Node suite: 730/730 PASS (includes new Round 252 tests); JavaScript syntax and browser outcomes are recorded in the delivery summary.
+- Chromium verified the interactive Properties integration, derived edge read-only behavior, polygon rewiring and light/dark modes. Historical Round 251 and Round 248 targeted browser tests also completed.
+- Limitations: freehand cannot be algebraically reconstructed; generated sides must be changed through parents; arbitrary changes to vertex count, curve representation, and 3D programmable object construction are unsupported. The broader hosted/GPU environment was not tested.
