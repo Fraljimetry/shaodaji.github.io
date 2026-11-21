@@ -280,16 +280,46 @@ function synchronizeConstructionExpression(){
  const live=get(doc,input.dataset.objectId);
  const expression=live&&constructionExpression(doc,live);
  if(expression===null||expression===undefined)return;
- if(input.value!==expression)input.value=expression;
+ if(input.value!==expression){input.value=expression;input.dispatchEvent(new CustomEvent('properties-synced',{detail:{value:expression}}));}
 }
 function synchronizeSliderExpression(){
  const expression=$('properties')?.querySelector('.slider-expression-editor');
  if(!expression||document.activeElement===expression)return;
  const live=doc.algebra?.sliders?.find(item=>item.name===selectedSlider);
- if(live){const expected=sliderExpression(live);if(expression.value!==expected)expression.value=expected;}
+ if(live){const expected=sliderExpression(live);if(expression.value!==expected){expression.value=expected;expression.dispatchEvent(new CustomEvent('properties-synced',{detail:{value:expected}}));}}
+}
+// A focused Properties editor blocks full panel replacement, but must not
+// freeze *other* fields representing the same state. Sync committed model
+// values into idle controls, never into the focused draft or its undo buffer.
+function synchronizeRelatedPropertyFields(){
+ const root=$('properties');if(!root||in3D())return;
+ const setIdle=(input,value)=>{
+  if(!input||input===document.activeElement||value===undefined||value===null)return;
+  const next=String(value);if(input.value!==next){input.value=next;
+   // field() retains its own accepted value. Updating a retained control
+   // must also update that baseline, or a later rejected edit rolls back
+   // to the pre-sync value.
+   input.dispatchEvent(new CustomEvent('properties-synced',{detail:{value:next}}));
+  }
+ };
+ const findField=(caption)=>[...root.querySelectorAll('label.field')].find(label=>label.firstChild?.nodeType===Node.TEXT_NODE&&label.firstChild.textContent.trim()===caption)?.querySelector('input,select');
+ if(selectedSlider){
+  const slider=doc.algebra?.sliders.find(s=>s.name===selectedSlider);if(!slider)return;
+  setIdle(findField('Name'),slider.name);
+  for(const [label,key] of [['Minimum','min'],['Maximum','max'],['Step','step'],['Value','value'],['Speed (cycles/s)','playSpeed']])setIdle(findField(label),slider[key]??(key==='playSpeed'?1:undefined));
+  setIdle(findField('Play mode'),slider.playMode??'periodic');
+  const range=root.querySelector('.slider-property-value-range');if(range){range.min=String(slider.min);range.max=String(slider.max);range.step=String(slider.step);setIdle(range,slider.value);}
+  return;
+ }
+ const live=get(doc,selected);if(!live)return;
+ setIdle(findField('Name'),live.name);
+ if(['point','node','text'].includes(live.type)){
+  const coords=root.querySelectorAll('.point-coordinate-grid input');
+  for(let i=0;i<2;i++)setIdle(coords[i],live.xyExpr?.[i]??live.xy?.[i]);
+ }
 }
 function refreshAfterMutation(forceProperties=false){
- syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();synchronizeConstructionExpression();synchronizeSliderExpression();
+ syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();synchronizeConstructionExpression();synchronizeSliderExpression();synchronizeRelatedPropertyFields();
  // Editing controls must not be replaced after the next animation frame while
  // focus remains inside the property pane: two rapid changes otherwise race
  // against detached onchange handlers and silently lose one of the edits.
@@ -1442,6 +1472,7 @@ function field(parent,label,value,type,onChange,opts={}){
  if(opts.max!==undefined)input.max=opts.max;
  const hint=rangeHint(opts);if(hint){wrap.title=translated(hint,uiPrefs.language);input.title=translated(hint,uiPrefs.language);}
  let accepted=input.value;
+ input.addEventListener('properties-synced',event=>{accepted=event.detail.value;});
  input.onchange=()=>{
   if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}
   const next=input.value;
@@ -1738,16 +1769,33 @@ function renderProperties(){
   const coords=document.createElement('div');coords.className='twocol point-coordinate-grid';for(let i=0;i<2;i++){
    const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';input.value=String(o.xyExpr?.[i]??o.xy[i]);
    if(o.type==='point'&&o.xyExpr){input.dataset.numericExpression='false';input.setAttribute('aria-label',i?'Y coordinate or expression':'X coordinate or expression');}
+   // Coordinate text is not committed until change/blur. While it is being
+   // edited, preview a *valid* coordinate in Expression so the two Properties
+   // controls never visibly disagree. Do not mutate the document or history
+   // during typing; the existing transactional onchange remains authoritative.
+   if(o.type==='point')input.addEventListener('input',()=>{
+    const expression=root.querySelector('.construction-expression-editor');
+    if(!expression||document.activeElement===expression)return;
+    const live=get(doc,o.id);if(!live||live.type!=='point')return;
+    const values=[...(live.xyExpr||live.xy)];
+    try{
+     const candidate=input.value.trim();
+     if(live.xyExpr){if(!candidate)return;values[i]=candidate;}
+     else values[i]=numericExpression(candidate);
+     if(values.some(value=>value===undefined||value===null))return;
+     expression.value=`(${values.join(', ')})`;
+    }catch{/* Incomplete/invalid input is not a mathematical expression. */}
+   });
    input.onchange=()=>{
     const current=get(doc,o.id),previous=String(current?.xyExpr?.[i]??current?.xy?.[i]??o.xy[i]);const text=input.value.trim();
-    if(text===previous)return;
+    if(text===previous){synchronizeConstructionExpression();return;}
     if(o.type==='point'&&current?.xyExpr){
      const ok=edit(live=>{const next=[...live.xyExpr];next[i]=text;live.xyExpr=next;});
      if(ok===false)input.value=previous;else input.value=String(get(doc,o.id)?.xyExpr?.[i]??text);
      return;
     }
-    let v;try{v=numericExpression(text);}catch(error){notice(error.message);input.value=previous;return;}
-    if(Object.is(v,current?.xy?.[i])){input.value=String(v);return;}
+    let v;try{v=numericExpression(text);}catch(error){notice(error.message);input.value=previous;synchronizeConstructionExpression();return;}
+    if(Object.is(v,current?.xy?.[i])){input.value=String(v);synchronizeConstructionExpression();return;}
     const ok=edit(live=>{const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});input.value=ok===false?previous:String(get(doc,o.id)?.xy?.[i]??o.xy[i]);
    };l.append(input);coords.append(l);
   }root.append(coords);

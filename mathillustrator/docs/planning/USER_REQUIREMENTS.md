@@ -2231,3 +2231,8 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 - Include constrained points, branches, tangent constructions, loci, triangle centers, transformations, diagram labels and diameter-defined circles.
 - Existing Properties expressions stay name-free and use live referenced names; polygon-owned edges remain read-only.
 - Distinguish general 3D programmable geometry (unavailable) from existing 3D plotting expressions.
+
+### Round 259 — Cross-field state synchronization
+- Editing point X/Y updates the visible name-free Expression immediately; committing the Expression updates the other coordinate fields.
+- Slider Expression, range, value, step, speed, mode, and range track reflect the same authoritative slider state.
+- A focused draft is preserved; unrelated controls synchronize after transactions; invalid edits restore the last accepted value without stale baselines.

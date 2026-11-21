@@ -2792,3 +2792,8 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Construction attempted on a deep copy, then only newly created objects are committed after validation to preserve existing object identity, IDs, and error atomicity.
 - Affected sources: `construction_expression.mjs`, `app.mjs`, `input_assist.mjs`; updated inline browser module test harness and documentation.
 - Verification: see this round's final report for exact executed command results. Hosted production, physical GPU, and native touch were not executed.
+
+### Round 259 — Properties cross-field synchronization
+- Point coordinate draft and Expression updates, and committed Expression → X/Y synchronization verified in Chromium light and dark themes.
+- Slider Expression → min/max/step/value/speed/mode and Value → Expression verified in Chromium. Focused inputs are protected while other controls follow the model; accepted baselines synchronize to prevent stale rollback.
+- Full Node regression 741/741 PASS; all 36 JavaScript source syntax checks PASS. Targeted Chromium tests for R259 coordinate, field synchronization, R253 rename, R256 ordering, R257 slider and R258 programmable geometry PASS. Broad historical browser test R252 did not complete within timeout and is not counted as PASS. Hosted and physical GPU checks not run.
