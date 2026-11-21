@@ -13,10 +13,8 @@ def run():
    page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load')
    page.locator('[data-tool-choice="slider"]').wait_for()
    snapshot=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
-   assert page.locator('#algebra-panel').is_hidden()
-   page.locator('#algebra-toggle').click()
    def enter(value):
-    page.locator('#algebra-input').fill(value);page.locator('#algebra-form button').click()
+    page.locator('#unified-algebra-input').fill(value);page.locator('#unified-algebra-input').press('Enter')
    enter('a = Slider(1, 6, 0.5, 2)')
    enter('A = (a*cos(0), a*sin(pi/2))')
    enter('B = (0, 0)')
@@ -24,20 +22,20 @@ def run():
    d=snapshot();assert len(d['objects'])==3 and len(d['algebra']['sliders'])==1
    assert d['objects'][0]['xy']==[2,2] and d['objects'][2]['type']=='segment'
    ids=[o['id'] for o in d['objects']]
-   page.locator('#algebra-list [data-slider="a"] .algebra-entry-label').click();page.locator('#properties .slider-property-value-range').fill('4')
+   page.locator('#objects [data-slider="a"] .algebra-entry-label').click();page.locator('#properties .slider-property-value-range').fill('4')
    d=snapshot();assert d['objects'][0]['xy']==[4,4] and d['objects'][2]['refs']==ids[:2]
    page.locator('#undo').click();assert snapshot()['objects'][0]['xy']==[2,2]
    page.locator('#redo').click();assert snapshot()['objects'][0]['xy']==[4,4]
    enter('C = (missingVariable, 2)');assert len(snapshot()['objects'])==3
-   page.locator('#algebra-list [data-slider="a"] .object-menu-toggle').click()
+   page.locator('#objects [data-slider="a"] .object-menu-toggle').click()
    page.locator('#object-action-menu [data-action="lock"]').click()
    assert snapshot()['algebra']['sliders'][0]['locked'] is True
-   page.locator('#algebra-list [data-slider="a"] .object-menu-toggle').click()
+   page.locator('#objects [data-slider="a"] .object-menu-toggle').click()
    page.locator('#object-action-menu [data-action="lock"]').click()
    assert len(snapshot()['algebra']['sliders'])==1 and snapshot()['objects'][0]['xy']==[4,4]
    # Move the on-canvas control: the same dependent geometry must update.
    old_cx=page.locator('#drawing [data-slider-handle="a"]').get_attribute('cx')
-   page.locator('#algebra-list [data-slider="a"] .algebra-entry-label').click()
+   page.locator('#objects [data-slider="a"] .algebra-entry-label').click()
    page.locator('#properties .slider-property-value-range').fill('2')
    # A pending RAF may still display the handle at the previous slider value.
    # Wait for the current model value to be painted before attempting the drag.
@@ -51,7 +49,7 @@ def run():
    page.locator('#drawing').click(position={'x':550,'y':400})
    assert len(snapshot()['algebra']['sliders'])==2
    # Property expression edits participate in ordinary undo and validation.
-   page.locator('#objects-tab').click();page.locator('#objects [data-id="'+ids[0]+'"]').click()
+   page.locator('#objects [data-id="'+ids[0]+'"]').click()
    field=page.locator('#properties .point-coordinate-grid input').first
    field.fill('a+1');field.press('Tab')
    assert snapshot()['objects'][0]['xy'][0]==snapshot()['algebra']['sliders'][0]['value']+1

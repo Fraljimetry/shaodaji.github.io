@@ -40,7 +40,7 @@ def main():
    ring_left=page.locator('#drawing circle[data-id="o5"]').bounding_box()
    ring_right=page.locator('#drawing circle[data-id="o6"]').bounding_box()
    assert ring_left and ring_right
-   tool('circleCircleIntersection')
+   tool('circleIntersection')  # Unified intersection tool handles two circles.
    page.mouse.click(ring_left['x']+ring_left['width']*.146447,ring_left['y']+ring_left['height']*.146447)
    page.wait_for_timeout(90)
    page.mouse.click(ring_right['x']+ring_right['width']*.853553,ring_right['y']+ring_right['height']*.146447)

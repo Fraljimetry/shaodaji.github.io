@@ -1,0 +1,128 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Untitled illustration"
+  },
+  "settings": {
+    "grid": true,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": true,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#ffffff",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": true,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": true,
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [
+      {
+        "id": 1,
+        "kind": "implicit3d",
+        "name": "Implicit surface 1",
+        "a": "cos(x)*cos(phi*y)+cos(y)*cos(phi*z)+cos(z)*cos(phi*x)=1",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -5.1,
+          "xMax": 5.1,
+          "yMin": -5.1,
+          "yMax": 5.1,
+          "zMin": -5.1,
+          "zMax": 5.1
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": true,
+        "locked": false,
+        "colorRange": true,
+        "regionCondition": "xx+yy+zz<5.1*5.1"
+      },
+      {
+        "id": 2,
+        "kind": "implicit3d",
+        "name": "Implicit surface 2",
+        "a": "-cos(x)-cos(y)-cos(z)",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -6.283185307179586,
+          "xMax": 6.283185307179586,
+          "yMin": -6.283185307179586,
+          "yMax": 6.283185307179586,
+          "zMin": -6.283185307179586,
+          "zMax": 6.283185307179586
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": true,
+        "locked": false,
+        "colorRange": true
+      },
+      {
+        "id": 3,
+        "kind": "implicit3d",
+        "name": "Implicit surface 3",
+        "a": "sin(x)+sin(y)+sin(z)",
+        "b": "",
+        "c": "",
+        "bounds": {
+          "xMin": -3.141592653589793,
+          "xMax": 3.141592653589793,
+          "yMin": -3.141592653589793,
+          "yMax": 3.141592653589793,
+          "zMin": -3.141592653589793,
+          "zMax": 3.141592653589793
+        },
+        "color": "#000000",
+        "opacity": 1,
+        "hidden": false,
+        "locked": false,
+        "colorRange": true
+      }
+    ],
+    "nextId": 4,
+    "options": {
+      "yaw": 57.12011718750003,
+      "pitch": 11.719906005859373,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 16,
+      "zoom": 0.9999999999999986,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [],
+  "nextId": 1,
+  "algebra": {
+    "sliders": []
+  }
+}

@@ -2311,3 +2311,9 @@ Concurrent 2D slider playback: multiple sliders can play simultaneously, each wi
 
 ### Round 279 — Properties synchronization consistency
 When Properties focus protects an in-progress edit, all other visible fields representing the committed model should still update. This includes derived measurement values during slider playback and duplicated semantic/function-specific formula fields. Keep the focused draft unchanged; never round stored geometric values or create undo entries merely by refreshing the UI.
+
+
+### Round 280 — Numerical low-detail implicit-surface seam repair
+- Fix reproducible missing triangles in the supplied `sin(x)+sin(y)+sin(z)=0` 3D scene at Mesh detail 16 without changing the saved formula, bounds or appearance. Preserve all earlier 3D regressions and high-detail renderer fidelity.
+- For bounded, finite, unclipped coarse-grid level sets, retain the existing mesh if it is already manifold in the interior; apply consistent near-zero lattice sign resolution only if a separately constructed candidate reduces interior cracks. Record extra evaluations, honor cooperative cancellation, and do not fill intentional domain/region openings.
+- Keep numerical sampling limitations explicit; no universal watertightness or WebGL/Z-buffer claim.

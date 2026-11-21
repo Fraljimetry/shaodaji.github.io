@@ -11,12 +11,11 @@ def run():
    errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load')
    snap=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
-   page.locator('#algebra-toggle').click()
    def enter(src):
-    page.locator('#algebra-input').fill(src);page.locator('#algebra-form button').click()
+    page.locator('#unified-algebra-input').fill(src);page.locator('#unified-algebra-input').press('Enter')
    enter('a = Slider(0, 10, 0.1, 3)')
    enter('A = (a*cos(pi/3), a)')
-   page.locator('#algebra-list [data-id]').first.click()
+   page.locator('#objects .object[data-id]').first.click()
    props=page.locator('#properties')
    assert props.locator('label.field').first.inner_text().startswith('Name')
    assert props.get_by_label('X expression').count()==0
@@ -28,7 +27,7 @@ def run():
    assert point['xyExpr']==['2*a','a'] and point['xy']==[6,3],point
    xs=props.locator('.point-coordinate-grid input');xs.nth(0).fill('undefined_name');xs.nth(0).press('Tab')
    assert next(x for x in snap()['objects'] if x['name']=='A')['xyExpr'][0]=='2*a'
-   page.locator('#algebra-list [data-slider="a"] .algebra-entry-label').click()
+   page.locator('#objects [data-slider="a"] .algebra-entry-label').click()
    assert props.locator('label.field').first.inner_text().startswith('Name')
    props.locator('input[type=color]').fill('#ee3377');props.locator('input[type=color]').press('Tab')
    props.get_by_label('Opacity').fill('0.5');props.get_by_label('Opacity').press('Tab')
@@ -41,8 +40,8 @@ def run():
    assert group.locator('[data-slider-handle]').get_attribute('fill')=='#ee3377'
    props.get_by_label('Opacity').fill('2');props.get_by_label('Opacity').press('Tab')
    assert snap()['algebra']['sliders'][0]['opacity']==.5
-   page.locator('#objects-tab').click()
-   page.locator('#objects [data-id]').first.click()
+
+   page.locator('#objects .object[data-id]').first.click()
    assert props.locator('label.field').first.inner_text().startswith('Name')
    assert not errors,errors
    print('ROUND229_PROPERTIES_CHROMIUM_PASS')

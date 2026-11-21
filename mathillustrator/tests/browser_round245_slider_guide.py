@@ -30,7 +30,7 @@ def run():
     p=browser.new_page(viewport={'width':390,'height':780})
     p.set_content(guide,wait_until='load')
     p.evaluate("lang=>{document.documentElement.dataset.lang=lang}",lang)
-    tables=p.locator('.constructor-table:visible')
+    tables=p.locator(f'#algebra .lang.{lang} .constructor-table:visible')
     assert tables.count()==1,(lang,tables.count())
     assert tables.locator('tbody tr').count()==21
     widths=tables.evaluate('e=>({table:e.getBoundingClientRect().width,parent:e.parentElement.getBoundingClientRect().width,scroll:e.parentElement.scrollWidth})')

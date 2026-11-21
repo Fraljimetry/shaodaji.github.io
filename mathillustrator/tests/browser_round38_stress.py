@@ -8,6 +8,7 @@ def run():
   browser=pw.chromium.launch(executable_path=os.environ.get('MATHILLUSTRATOR_CHROMIUM','/usr/bin/chromium'),headless=True,args=['--no-sandbox'])
   try:
    page=browser.new_page(viewport={'width':1420,'height':860},accept_downloads=True)
+   page.set_default_timeout(6000)
    page.on('dialog',lambda dialog:dialog.accept())
    errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load')
@@ -23,7 +24,7 @@ def run():
     add('domainColoring',expression)
    for expression in ['1/x','sin(100x)/(1+x^2)','tan(x)']:add('function',expression)
    page.locator('#plot-mode').select_option('parametric')
-   page.locator('#parameter-symbol').select_option('t')
+   assert page.locator('#parameter-symbol').input_value()=='t'  # Current UI keeps this fixed and hidden.
    for x,y in [('cos(30t)','sin(30t)'),('t cos(t)','t sin(t)')]:add('parametric',x,y)
    for expression in ['x^2+y^2-4','xy=1','sin(x)cos(y)=0']:add('implicit',expression)
    data=json.loads(page.evaluate('window.__round36Snapshot()'))
@@ -40,10 +41,15 @@ def run():
    # A deliberately over-budget single field must warn and prevent false image success.
    page.locator('#plot-budget').select_option('20000')
    page.locator('[data-tool-choice="select"]').click()
-   last_color=[o for o in data['objects'] if o['type']=='domainColoring'][-1]
-   page.locator('#objects [data-id="'+last_color['id']+'"]').click()
-   page.locator('#properties').get_by_label('Coloring resolution').fill('256')
-   page.locator('#properties').get_by_label('Coloring resolution').press('Tab')
+   # Stress the actual geometry evaluation budget: high-detail implicit
+   # sampling over a large viewport, rather than domain-coloring resolution
+   # (which has an independent MAX_DOMAIN_PIXELS contract).
+   page.locator('#implicit-grid').fill('6')
+   page.locator('#implicit-grid').press('Tab')
+   page.locator('#plot-quality').select_option('detailed')
+   page.set_viewport_size({'width':1920,'height':1200})
+   page.wait_for_timeout(500)
+   print('Render info:',repr(page.locator('#render-info').inner_text()),flush=True)
    assert 'PLOT LIMIT' in page.locator('#render-info').inner_text()
    page.locator('#export-open').click()
    assert page.locator('#export-options button').filter(has_text='SVG').is_disabled()

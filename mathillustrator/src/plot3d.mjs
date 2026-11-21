@@ -185,12 +185,35 @@ function clipTriangle(points,b){
 function validTriangle(a,b,c){
  const n=cross(minus(b,a),minus(c,a));return Number.isFinite(n[0])&&Math.hypot(...n)>1e-11;
 }
+// Count only nondegenerate free edges wholly inside the sample box, never
+// the legitimate open contour where a level surface meets a plotting bound.
+// Quantized keys absorb last-bit arithmetic differences between adjacent tets.
+function countInteriorSeams(faces,bounds){
+ const edges=new Map();
+ const resolution=1e-7;
+ const key=p=>p.map(x=>Math.round(x/resolution)).join(',');
+ for(const triangle of faces)for(let i=0;i<3;i++){
+  const a=key(triangle[i]),c=key(triangle[(i+1)%3]);
+  const edge=a<c?`${a}|${c}`:`${c}|${a}`;
+  edges.set(edge,(edges.get(edge)||0)+1);
+ }
+ let total=0;
+ for(const [edge,count] of edges){
+  if(count!==1)continue;
+  const points=edge.split('|').map(k=>k.split(',').map(Number).map(x=>x*resolution));
+  if(points.every(p=>p.every((x,axis)=>{
+   const name=['x','y','z'][axis],min=bounds[name+'Min'],max=bounds[name+'Max'];
+   return x>min+resolution*100&&x<max-resolution*100;
+  })))total++;
+ }
+ return total;
+}
 /** Cooperative CPU sampler. Every iteration yields after bounded rows / layers.
  * Consumers may abandon the generator at any point; partial meshes never enter
  * the cache or exports. The synchronous public sampler drains the same work. */
-export function* sample3DPlotSteps(plot,detail){
+export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
  const condition=compileRegionCondition(plot.regionCondition,3);
- const fn=parse3D(plot),b=plot.kind==='domain3d'&&plot.heightMode==='argument'&&plot.bounds.zMin===0?{...plot.bounds,zMin:-Math.PI,zMax:Math.PI}:plot.bounds,faces=[],lines=[],cap=MAX_MESH_FACES;let evaluations=0,limited=false;
+ const fn=parse3D(plot),b=plot.kind==='domain3d'&&plot.heightMode==='argument'&&plot.bounds.zMin===0?{...plot.bounds,zMin:-Math.PI,zMax:Math.PI}:plot.bounds,faces=[],lines=[],cap=MAX_MESH_FACES;let evaluations=0,limited=false,allFiniteSamples=false,roundoffVertices=0;
  const safeEval=(...args)=>{evaluations++;let value;try{value=fn(...args);}catch{return null;}return finitePoint(value)?value:null;};
  const pushTriangle=(a,c,d)=>{
   if(![a,c,d].every(finitePoint))return;
@@ -267,6 +290,20 @@ export function* sample3DPlotSteps(plot,detail){
      evaluations++;values[offset+i]=ok(value)?value:NaN;
     }
     yield;
+   }
+  }
+  // Alternate lattice sign resolution is only considered after the regular
+  // mesh has been checked for genuine interior cracks. Never impose it on
+  // discontinuous fields or on a normal watertight mesh.
+  let maxSample=0;allFiniteSamples=true;
+  for(const v of values){if(!ok(v)){allFiniteSamples=false;continue;}
+   maxSample=Math.max(maxSample,Math.abs(v));
+  }
+  if(maxSample>0){
+   const tolerance=maxSample*1e-13;
+   for(let vi=0;vi<values.length;vi++)if(Math.abs(values[vi])<=tolerance){
+    roundoffVertices++;
+    if(zeroTieBreak)values[vi]=tolerance;
    }
   }
   for(let k=0;k<n&&!limited;k++)for(let j=0;j<n&&!limited;j++){
@@ -361,6 +398,24 @@ export function* sample3DPlotSteps(plot,detail){
     const endpoints=[center.map((v,q)=>v-unit[q]*length*.5),center.map((v,q)=>v+unit[q]*length*.5)];
     if(endpoints.every(p=>inBounds(p,b)&&inRegion(condition,...p)))lines.push({endpoints,magnitude:mag});
    }yield;
+  }
+ }
+ // For coarse, continuous implicit samples, zero-valued lattice vertices can
+ // leave nondegenerate triangular cracks. Compare the original mesh with a
+ // consistently signed near-zero lattice, and keep the candidate ONLY if its
+ // interior seam count improves. The unchanged mesh wins ties; intentional
+ // region clipping and poles never enter this topology-repair path.
+ if(plot.kind==='implicit3d'&&!zeroTieBreak&&!limited&&!condition&&allFiniteSamples&&
+    roundoffVertices>0&&implicitGridCells(detail)<=21){
+  const initialSeams=countInteriorSeams(faces,b);
+  if(initialSeams>0){
+   const alternative=sample3DPlotSteps(plot,detail,true);
+   let next;
+   do{next=alternative.next();if(!next.done)yield;}while(!next.done);
+   const result=next.value;
+   evaluations+=result.evaluations;
+   if(!result.limited&&countInteriorSeams(result.faces,b)<initialSeams)
+    return {...result,evaluations};
   }
  }
  return {faces,lines,evaluations,limited};

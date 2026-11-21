@@ -11,9 +11,8 @@ def run():
    errors=[];page.on('pageerror',lambda err:errors.append(str(err)))
    page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load')
    snap=lambda: json.loads(page.evaluate('window.__round36Snapshot()'))
-   page.locator('#algebra-toggle').click()
    def enter(s):
-    page.locator('#algebra-input').fill(s);page.locator('#algebra-form button').click()
+    page.locator('#unified-algebra-input').fill(s);page.locator('#unified-algebra-input').press('Enter')
    enter('a = Slider(0, 10, 0.5, 3)')
    enter('P = (a, 2)')
    slider=lambda: snap()['algebra']['sliders'][0]

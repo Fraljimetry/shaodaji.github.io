@@ -8,12 +8,12 @@ def run():
   browser=pw.chromium.launch(headless=True,executable_path=os.environ.get('MATHILLUSTRATOR_CHROMIUM','/usr/bin/chromium'),args=['--no-sandbox'])
   try:
    page=browser.new_page(viewport={'width':1440,'height':880})
+   page.set_default_timeout(5000)
    errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.set_content(inline_html(legacy_search_expanded=False,expose_state=True),wait_until='load')
-   page.locator('#algebra-toggle').click()
    snap=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
    def enter(text):
-    page.locator('#algebra-input').fill(text);page.locator('#algebra-form button').click()
+    page.locator('#unified-algebra-input').fill(text);page.locator('#unified-algebra-input').press('Enter')
    enter('a = Slider(1, 5, 0.5, 2)')
    enter('A = (0,0)');enter('B = (2,0)')
    enter('C = (a,a)')
@@ -22,7 +22,7 @@ def run():
    d=snap();assert len(d['objects'])==8,d['objects']
    assert d['objects'][2]['xy']==[2,2]
    assert len([o for o in d['objects'] if o.get('measureExpr')])==4
-   page.locator('#algebra-list input[type=range]').fill('4')
+   page.locator('#objects [data-slider="a"]').click();page.get_by_label('Value',exact=True).fill('4');page.get_by_label('Value',exact=True).press('Enter')
    d=snap();assert d['objects'][2]['xy']==[4,4]
    assert [o['amount'] for o in d['objects'] if o['type']=='transformCopy']==[2,4]
    assert [o['length'] for o in d['objects'] if o['type']=='fixedLength']==[4]
@@ -32,10 +32,10 @@ def run():
    enter('FixedLength(A,B,1/0)');assert snap()==before
    enter('Rotate(B,A,badName)');assert snap()==before
    # Invalid range must not damage any existing construction.
-   page.locator('#algebra-list input[type=range]').fill('1')
+   page.locator('#objects [data-slider="a"]').click();page.get_by_label('Value',exact=True).fill('1');page.get_by_label('Value',exact=True).press('Enter')
    before=snap();enter('FixedLength(A,B,-a)');assert snap()==before
    # Existing commands and property editing must coexist.
-   page.locator('#objects-tab').click()
+
    length=next(o for o in before['objects'] if o['type']=='fixedLength')
    page.locator('#objects [data-id="'+length['id']+'"]').click()
    editor=page.locator('#properties').get_by_label('Length expression')

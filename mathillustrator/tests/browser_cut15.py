@@ -47,6 +47,7 @@ def test():
   assert count(page)==2,'A second touch outside SVG failed to cancel a pending point'
   print('CUT15_PASS second finger on controls interrupts canvas operation')
   page.locator('#new').click();assert count(page)==0
+  page.locator('[data-tool-choice="point"]').click()
   pointer(page,'pointerdown',31,x-50,y)
   pointer(page,'pointerdown',32,x+30,y,primary=False)
   pointer(page,'pointerup',31,x-50,y)
