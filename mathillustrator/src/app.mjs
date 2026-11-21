@@ -1,4 +1,4 @@
-import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName} from './algebra.mjs?cut=round227';
+import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments} from './algebra.mjs?cut=round227';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
@@ -1573,13 +1573,12 @@ function renderSliderProperties(root,item){
   if(ok===false)selectedSlider=previous;
   return ok;
  });
- const range=document.createElement('div');range.className='twocol';root.append(range);
+ const range=document.createElement('div');range.className='slider-range-grid';root.append(range);
  for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
- const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
+ const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
  const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);field(opacitySlot,'Opacity',item.opacity??1,'number',v=>edit(live=>{if(!Number.isFinite(v)||v<0||v>1)throw Error('Opacity must be between 0 and 1.');live.opacity=v;}),{min:0,max:1,step:.1});
  const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});border.append(borderInput,' Show border');root.append(border);
- const visible=document.createElement('label');visible.className='check';const check=document.createElement('input');check.type='checkbox';check.checked=item.visible;check.onchange=()=>edit(live=>{live.visible=check.checked;});visible.append(check,' Show on canvas');root.append(visible);
 }
 function renderProperties(){
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
@@ -1821,8 +1820,7 @@ function openAlgebraActions(name,trigger){
  const generation=documentGeneration;objectMenuContext={id:'slider:'+name,trigger,generation};trigger.setAttribute('aria-expanded','true');menu.replaceChildren();
  const actions=[['visibility',item.visible?'Hide':'Show'],['lock',item.locked?'Unlock':'Lock'],['delete','Delete']];
  for(const [action,label] of actions){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.setAttribute('role','menuitem');button.title=label;button.setAttribute('aria-label',label);
-  const icons={Hide:'<path d="M3 3l18 18M9.9 5.2a10.9 10.9 0 0 1 2.1-.2c4.9 0 8.9 4.7 10 7a15 15 0 0 1-3.6 4.5"/>',Show:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',Lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'};
-  button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[label]}</svg>`;
+  button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg>`;
   button.onclick=()=>{
    closeObjectMenu();if(documentGeneration!==generation||!doc.algebra.sliders.includes(item)){notice('Slider changed. Reopen its menu.');return;}
    if(action==='delete')deleteSlider(name);else update(()=>{if(action==='visibility')item.visible=!item.visible;else item.locked=!item.locked;});
@@ -3427,9 +3425,9 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  syncPlotMode();
  const algebraForm=$('algebra-form');if(algebraForm)algebraForm.onsubmit=e=>{e.preventDefault();const source=$('algebra-input').value.trim();if(!source)return;
   const ok=update(()=>{let match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Slider\((.*)\)$/i);
-   if(match){const args=match[2].split(',').map(x=>evaluateAlgebra(x));if(args.length<2||args.length>4)throw Error('Use Slider(min, max, step, value).');createSlider(doc,match[1],{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0]});return;}
+   if(match){const args=splitAlgebraArguments(match[2]).map(x=>evaluateAlgebra(x));if(args.length<2||args.length>4)throw Error('Use Slider(min, max, step, value).');createSlider(doc,match[1],{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0]});return;}
    match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.*)\)$/);
-   if(match){const xy=match[2].split(',');if(xy.length!==2)throw Error('A point needs two coordinate expressions.');algebraPoint(doc,match[1],xy[0].trim(),xy[1].trim(),(d,p,name)=>append(d,{type:'point',xy:p,name}));return;}
+   if(match){const xy=splitAlgebraArguments(match[2]);if(xy.length!==2)throw Error('A point needs two coordinate expressions.');algebraPoint(doc,match[1],xy[0].trim(),xy[1].trim(),(d,p,name)=>append(d,{type:'point',xy:p,name}));return;}
    command(doc,source);
   });if(ok)$('algebra-input').value='';
  };

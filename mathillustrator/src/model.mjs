@@ -1,4 +1,4 @@
-import {validateAlgebra,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round227';
+import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round227';
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
 import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
@@ -647,7 +647,7 @@ export function command(doc,source){
  const s=String(source).trim();if(!s)throw Error('Enter a construction command.');
  let m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.+)\)$/);
  if(m){
-  const parts=m[2].split(',');if(parts.length!==2)throw Error('A point needs exactly two coordinate expressions.');
+  const parts=splitAlgebraArguments(m[2]);if(parts.length!==2)throw Error('A point needs exactly two coordinate expressions.');
   const sliderValues=Object.fromEntries((doc.algebra?.sliders??[]).map(item=>[item.name,item.value]));
   const sliderNames=Object.keys(sliderValues);
   const dynamic=parts.some(expr=>sliderNames.some(name=>new RegExp('\\b'+name+'\\b').test(expr)));

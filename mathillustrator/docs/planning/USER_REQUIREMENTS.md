@@ -2068,5 +2068,17 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 ### Round 229 — Unified 2D Properties and slider appearance
 - Every singly selected 2D object, including an Algebra-created object or slider, begins Properties with **Name**. A locked object shows its name read-only first.
 - Expression-backed points use the existing **x / y coordinate fields** as their only X/Y editors. These fields display and edit the original formulas and preserve reactivity. Do not show duplicate “X expression” / “Y expression” inputs. Invalid formulas must roll back atomically; literal-coordinate behavior for non-expression points remains unchanged.
-- A 2D slider uses ordinary compact Properties styling: Name, Minimum, Maximum, Step, Value, Color palette, Opacity, Show border, Show on canvas. Slider appearance settings are optional JSON properties with legacy defaults: blue handle, full opacity, visible border. Changing an appearance value must not change mathematical slider values or dependent geometry.
+- A 2D slider uses ordinary compact Properties styling: Name, Minimum, Maximum, Step, Value, Color palette, Opacity, Show border. Visibility is controlled exclusively through the Algebra three-dot Show/Hide action. Slider appearance settings are optional JSON properties with legacy defaults: blue handle, full opacity, visible border. Changing an appearance value must not change mathematical slider values or dependent geometry.
 - Keep all previously approved glyphs, the existing 3D renderer and the 2D-only Algebra scope unchanged. Existing dependent locking, Recently Deleted, three-dot actions, and exports remain operational.
+
+
+### Round 230 — 2D Algebra formula consistency audit
+- Nested-argument mathematical functions, such as `A = (min(a, 2), max(a, 3))`, must be accepted in algebra entry and the shared model constructor; commas inside parentheses are not coordinate separators.
+- Slider arguments may likewise be expressions with nested functions, e.g. `a = Slider(0, max(5, 10), 0.5, min(4, 7))`.
+- Preserve Name-first Properties, existing coordinate/formula field unification, compact UI, dependency updates, undo/redo, lock descendants, trash restore and JSON compatibility.
+- Continue to limit Algebra/Slider to 2D. A formula entry is not arbitrary JavaScript; numeric expressions must be finite and supported by the explicit safe function list. No implicit multiplication or arbitrary functions are promised.
+
+### Round 231 — Slider Properties density and visibility consistency
+- Slider range fields use two columns with compact labels and numeric editors; Color and Opacity share a row. Name remains first.
+- Remove the redundant Show on canvas checkbox from Properties; retain the saved `visible` setting and Show/Hide under the Algebra three-dot menu.
+- Algebra Hide/Show uses the exact shared 2D object eye icon paths. No existing object/tool glyph changes.

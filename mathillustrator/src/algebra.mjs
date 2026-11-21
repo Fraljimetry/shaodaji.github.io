@@ -7,6 +7,20 @@ const FUNCTIONS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math
 const CONSTANTS={pi:Math.PI,e:Math.E,phi:(1+Math.sqrt(5))/2};
 const NAME=/^[A-Za-z][A-Za-z0-9_]*$/;
 export function validSliderName(name){return NAME.test(name)&&!Object.hasOwn(FUNCTIONS,name.toLowerCase())&&!Object.hasOwn(CONSTANTS,name.toLowerCase())&&name.length<=40;}
+/** Split function arguments only at top-level commas, not inside nested calls.
+ * Reject unmatched parentheses here rather than accidentally creating a partial object. */
+export function splitAlgebraArguments(source){
+ if(typeof source!=='string'||source.length>1200)throw Error('Invalid argument list.');
+ const result=[];let depth=0,start=0;
+ for(let i=0;i<source.length;i++){
+  const c=source[i];
+  if(c==='('){depth++;if(depth>32)throw Error('Expression nesting is too deep.');}
+  else if(c===')'){if(--depth<0)throw Error('Unmatched closing parenthesis.');}
+  else if(c===','&&depth===0){result.push(source.slice(start,i).trim());start=i+1;}
+ }
+ if(depth!==0)throw Error('Unclosed expression parenthesis.');
+ result.push(source.slice(start).trim());return result;
+}
 export function evaluateAlgebra(source,values={}){
  if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
  const tokens=[];let s=source.replaceAll('π','pi').replaceAll('φ','phi').replaceAll('ϕ','phi'),i=0;

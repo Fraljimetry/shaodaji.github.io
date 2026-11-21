@@ -2562,3 +2562,16 @@ Conclusion: **PASS for executed local checks**, no confirmed new source defect i
 - Real headless Chromium (inline real application modules): `browser_round229_properties.py` PASS; `browser_round226_slider_algebra.py` PASS after updating obsolete X-expression selector to the now-shared X coordinate field; `browser_round228_algebra_ui.py` PASS; `browser_round227_programmable_geometry.py` PASS; `browser_round224_cross_mode_isolation.py` PASS covering ten plotting modes.
 - Verified formula edit/recalculation, invalid-formula rollback, first Name field, absence of duplicate controls, slider color/opacity/border rendering, invalid-opacity rollback, legacy slider document validation, inherited locks, undo/redo, existing programmatic constructions and 2D/3D isolation.
 - Not verified: full historical browser inventory, hosted production deployment, physical GPU/browser or long-duration stress. No overall release certificate is claimed. Historical inventory discrepancy remains unresolved.
+
+
+### Round 230 — Formula breadth, UI and compatibility audit
+**Confirmed defect fixed:** Direct point definitions and the Algebra submit handler naïvely split on every comma. Nested calls such as `min(a,2)` and `atan2(a,2)` could not be entered as coordinates, despite being supported by the arithmetic evaluator. The common `splitAlgebraArguments` parser now tracks parentheses and rejects unmatched groups or excessive nesting. Both input routes share the fix.
+
+**Verified in this execution:** full Node suite 697/697 after three new initial tests (a fourth function-matrix test was added subsequently and will be included in the final rerun); JavaScript syntax 34/34; Chromium `browser_round230_formula_consistency.py`, rounds 226/227/228/229, cross-mode round 224 (all ten plot types), bilingual round 201, IMO round 199 all passed independently. The UI regression checks Name-first Properties, absence of duplicate X/Y fields, nested-coordinate formula editing, invalid-formula rollback, slider-value propagation, and Objects/Algebra switching.
+
+**Outstanding coverage and limits:** a longer round-106 3D lifecycle test did not complete within its execution window and is not counted as a pass for this run; full historical browser inventory, hosted deployment and physical GPU remain unverified. Formula support is limited to explicit real arithmetic/functions, named 2D sliders, expression-backed point coordinates, and supported measurement fields. Arbitrary programming, implicit multiplication, formula bindings to all geometry properties, and 3D algebra are not implemented or claimed. No change to rendering or glyphs.
+
+### Round 231 — Slider UI consistency
+- Changes: shared Hide/Show menu icon, no duplicate visibility checkbox, compact two-column range inputs and adjacent Color/Opacity. No changes to serialization, the 2D geometry engine, or 3D.
+- 698/698 Node tests passed; Chromium tests `browser_round231_slider_compact.py`, `browser_round229_properties.py`, and `browser_round228_algebra_ui.py` passed.
+- Hosted deployment, hardware GPU and full historical Chromium inventory not verified in this round.
