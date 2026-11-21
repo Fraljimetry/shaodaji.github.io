@@ -2082,3 +2082,23 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 - Slider range fields use two columns with compact labels and numeric editors; Color and Opacity share a row. Name remains first.
 - Remove the redundant Show on canvas checkbox from Properties; retain the saved `visible` setting and Show/Hide under the Algebra three-dot menu.
 - Algebra Hide/Show uses the exact shared 2D object eye icon paths. No existing object/tool glyph changes.
+
+### Round 232 — Objects/Algebra dock and construction parity
+- Algebra is a genuine alternative left-side object list: it shares the same flexible vertical viewport as Objects, with its independent scrolling area above the *same* permanently docked Properties inspector. Collapsing and resizing Properties (mouse splitter or keyboard) must work identically in both tabs and preserve saved dock preferences.
+- In Slider Properties, Show border sits directly below Opacity in the right-hand appearance column; Color remains on the left and Name is first.
+- Algebra supports explicitly named existing 2D constructors, for example `s = Segment(A,B)` and `T = Triangle(A,B,C)`, with duplicate-name rejection. These are regular persisted geometry objects with normal references, selection, Properties, visibility, locking, undo/redo, and dependence on slider-controlled points; no separate geometry engine.
+- The Algebra list exposes all 2D geometric objects, whether created visually or by an expression, so selection and Properties access work from either tab. Restrict the feature to 2D; do not modify 3D, existing glyphs, or rendering algorithms.
+
+## Round 233 — Movable on-canvas 2D sliders
+
+- In Move or Pan mode, drag a slider's on-canvas label or non-knob track area to reposition the whole control without changing its value or any dependent geometry. Dragging its round knob still updates the value.
+- The new position persists in the same existing `algebra.sliders[].xy` project field and participates in undo/redo and autosave. Pointer cancellation restores the original project. Locked/hidden sliders cannot be repositioned. The Slider construction tool retains canvas-click creation even when the click overlaps a slider body.
+- No new 3D behavior, object glyph modifications, or schema migration.
+- Run `tests/browser_round233_slider_position.py` to exercise canvas dragging, value isolation, undo/redo, and knob behavior in Chromium.
+
+### Round 234 — 2D Slider playback (implemented)
+- Algebra slider supports play/pause and three play modes: Periodic (wrap), Oscillatory (ping-pong), and Once (stop at upper bound).
+- Properties includes Speed (cycles/s; 0.05–10) and Play mode. Only one slider animation runs at a time, keeping undo atomic.
+- `Slider(min,max[,step[,value[,speed[,mode]]]])` accepts optional playback parameters; `Slider(0,10,0.1,2,2,oscillatory)` is an example. The fifth argument may also be a mode without speed.
+- Playback is 2D-only. Live geometry updates use existing dependencies and are checkpointed into a single undo state when paused. Animation pauses on backgrounding, editing, dragging or switching contexts. Running status is not saved to JSON; playback speed/mode and latest committed value are saved.
+- Preserve existing 2D/3D rendering, glyphs, layout patterns, and previously saved Slider definitions.

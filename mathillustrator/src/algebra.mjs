@@ -6,6 +6,18 @@ const FUNCTIONS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math
  pow:Math.pow,atan2:Math.atan2,hypot:Math.hypot};
 const CONSTANTS={pi:Math.PI,e:Math.E,phi:(1+Math.sqrt(5))/2};
 const NAME=/^[A-Za-z][A-Za-z0-9_]*$/;
+export const SLIDER_PLAY_MODES=Object.freeze(['periodic','oscillatory','once']);
+export function sliderPlaybackValue(slider,elapsedSeconds,startValue=slider.value){
+ const {min,max,step}=slider,mode=slider.playMode??'periodic',speed=slider.playSpeed??1;
+ if(!SLIDER_PLAY_MODES.includes(mode)||!Number.isFinite(speed)||speed<=0||!Number.isFinite(elapsedSeconds)||elapsedSeconds<0)throw Error('Invalid slider animation.');
+ if(elapsedSeconds===0)return {value:startValue,finished:mode==='once'&&startValue>=max};
+ const span=max-min,travel=(startValue-min)/span+elapsedSeconds*speed;
+ const phase=mode==='oscillatory'?1-Math.abs(1-((travel%2)+2)%2):mode==='once'?Math.min(1,travel):((travel%1)+1)%1;
+ const target=min+phase*span;
+ const index=Math.round((target-min)/step);
+ const value=Math.min(max,Math.max(min,Number((min+index*step).toPrecision(12))));
+ return {value,finished:mode==='once'&&travel>=1};
+}
 export function validSliderName(name){return NAME.test(name)&&!Object.hasOwn(FUNCTIONS,name.toLowerCase())&&!Object.hasOwn(CONSTANTS,name.toLowerCase())&&name.length<=40;}
 /** Split function arguments only at top-level commas, not inside nested calls.
  * Reject unmatched parentheses here rather than accidentally creating a partial object. */
@@ -78,7 +90,7 @@ export function validateAlgebra(doc){
  const sliders=doc.algebra?.sliders??[];
  if(!Array.isArray(sliders)||sliders.length>64)throw Error('Too many sliders.');
  const seen=new Set();const values={};
- for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||(s.color!==undefined&&(!/^#[0-9a-fA-F]{6}$/.test(s.color)))||(s.opacity!==undefined&&(!Number.isFinite(s.opacity)||s.opacity<0||s.opacity>1))||(s.border!==undefined&&typeof s.border!=='boolean')||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
+ for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||(s.color!==undefined&&(!/^#[0-9a-fA-F]{6}$/.test(s.color)))||(s.opacity!==undefined&&(!Number.isFinite(s.opacity)||s.opacity<0||s.opacity>1))||(s.border!==undefined&&typeof s.border!=='boolean')||(s.playSpeed!==undefined&&(!Number.isFinite(s.playSpeed)||s.playSpeed<0.05||s.playSpeed>10))||(s.playMode!==undefined&&!SLIDER_PLAY_MODES.includes(s.playMode))||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
   if(doc.objects?.some(o=>o.name===s.name))throw Error('Slider and object names must be distinct.');
   seen.add(s.name);values[s.name]=s.value;
  }
@@ -105,9 +117,9 @@ export function recalculateAlgebra(doc){const values=Object.fromEntries((doc.alg
  }
  return values;
 }
-export function createSlider(doc,name,{min=0,max=10,step=.1,value=5,xy=[0,0],visible=true}={}){
+export function createSlider(doc,name,{min=0,max=10,step=.1,value=5,xy=[0,0],visible=true,playSpeed=1,playMode='periodic'}={}){
  if(!validSliderName(name)||doc.objects.some(o=>o.name===name)||(doc.algebra?.sliders??[]).some(s=>s.name===name))throw Error('Slider name is invalid or already in use.');
- const s={name,min,max,step,value,xy,visible};doc.algebra??={sliders:[]};doc.algebra.sliders.push(s);validateAlgebra(doc);return s;
+ const s={name,min,max,step,value,xy,visible,playSpeed,playMode};doc.algebra??={sliders:[]};doc.algebra.sliders.push(s);validateAlgebra(doc);return s;
 }
 export function algebraPoint(doc,name,xExpr,yExpr,appendPoint){
  if(doc.objects.some(o=>o.name===name)||(doc.algebra?.sliders??[]).some(s=>s.name===name))throw Error('Name already in use.');

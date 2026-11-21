@@ -1112,3 +1112,22 @@ html.three-d .interface-check-grid .settings-2d-only{display:none!important;}
 .properties .slider-appearance-grid .style-stroke .field{min-height:29px;margin:0;font-size:11px}
 .properties .slider-appearance-grid .color-swatches{margin-top:4px}
 .properties .slider-appearance-grid .color-swatch{height:18px;min-height:18px}
+
+/* Round 232: Objects and Algebra share the same flex viewport and inspector.
+   Algebra is the scrollable list; the dock is NEVER part of its scroll area. */
+.leftpanel.algebra-open #algebra-panel{display:flex;flex:1 1 0;flex-direction:column;min-height:0;max-height:none;overflow:hidden;padding:4px 0 0}
+.leftpanel.algebra-open #algebra-form{flex:0 0 auto;margin:0 8px 5px}
+.leftpanel.algebra-open #algebra-list{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 8px;overscroll-behavior:contain}
+.leftpanel.algebra-open #algebra-recently-deleted{flex:0 0 auto;max-height:145px;overflow-y:auto;margin:0}
+.leftpanel.algebra-open #properties-dock{flex-shrink:0}
+.properties .slider-appearance-grid+.slider-border-control{display:flex;align-items:center;margin:0 0 5px 0;font-size:11px}
+@media(max-width:700px){body.mobile-left-open .leftpanel.algebra-open #algebra-panel{display:flex;min-height:0;max-height:none}}
+
+/* Round 234: compact 2D slider animation controls. */
+.slider-playback-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:end}
+.slider-playback-grid .slider-play-button{min-height:28px;align-self:end}
+.slider-playback-grid .field{min-width:0;margin:0}
+.slider-playback-grid .field:last-child{grid-column:1/-1}
+.slider-playback-grid select{width:100%;min-width:0;max-width:100%}
+.slider-play-toggle{flex:0 0 24px;width:24px;height:24px;border:0;background:transparent;color:inherit;cursor:pointer}
+.slider-play-toggle:disabled{opacity:.35;cursor:not-allowed}

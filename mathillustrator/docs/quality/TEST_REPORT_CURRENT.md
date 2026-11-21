@@ -1,3 +1,12 @@
+
+## Round 233 — 2D slider positioning and Algebra command reference
+
+**Implementation:** Drag the slider label or background/track in Move/Pan mode to reposition it; drag the knob to change the numeric value. The position is stored in the existing `xy` slider property, with undo/redo and cancellation semantics. The Slider creation tool remains authoritative for canvas clicks.
+
+**Executed:** Full Node suite 700/700 PASS; JS syntax 34/34 PASS. Chromium PASS: Round 233 reposition/undo/knob, Round 226 slider/algebra, Round 227 programmable geometry, Round 228 Algebra UI, Round 229 Properties, Round 231 compact slider, Round 232 parity, Round 224 cross-mode (ten modes). The first regression run caught slider creation clicks being intercepted by body dragging; the handler now reserves reposition gestures for Move/Pan.
+
+**Not executed:** all historical browser scripts, production deployment, physical GPU/device checks.
+
 ## Round 227 — 2D Algebra/Slider expansion (2026-11-20)
 
 **Scope:** Existing 2D UI and shared geometry model only; no new glyphs, no Options/Closed Spline glyph replacements, and no 3D runtime changes. Added live scalar-formula measurements for fixed lengths, fixed angles (radians), rotations and dilations; expanded point-reference constructors; ordinary named-point commands now understand named sliders. Formula editing in Properties, strict JSON validation, rollback, undo/redo, and old-project compatibility remain mandatory. No broad claim of all-object programmability.
@@ -2575,3 +2584,14 @@ Conclusion: **PASS for executed local checks**, no confirmed new source defect i
 - Changes: shared Hide/Show menu icon, no duplicate visibility checkbox, compact two-column range inputs and adjacent Color/Opacity. No changes to serialization, the 2D geometry engine, or 3D.
 - 698/698 Node tests passed; Chromium tests `browser_round231_slider_compact.py`, `browser_round229_properties.py`, and `browser_round228_algebra_ui.py` passed.
 - Hosted deployment, hardware GPU and full historical Chromium inventory not verified in this round.
+
+### Round 232 — Objects/Algebra parity and explicit construction names
+- Fixed prior Algebra viewport `max-height:40vh` clipping and dock-height measurement mistakenly counting the Algebra list as fixed chrome. The Algebra list is now the flexible scroll pane above the same Properties dock used by Objects; collapse, expansion, keyboard resizing, and real pointer splitter dragging passed headless Chromium verification.
+- Slider Show border moved below Opacity within the right appearance column. Algebra lists both manually and programmatically created objects and uses the same persisted geometry objects in both tabs. Named constructors now support `name = Constructor(args)` for the existing recognized 2D constructors; collision errors are validated before insertion.
+- Full Node regression: **700/700 passed**; 34 JavaScript source syntax checks passed. New named-construction Node test **2/2**; new real Chromium parity test passed, including Properties collapse/reopen, pointer dragging, selection from both tabs, and slider appearance. Existing Chromium rounds 226, 227, 228, 229, 230, 231 and all-ten-mode round 224 passed independently.
+- Inline-module headless Chromium used, not a deployed-site browser or physical GPU. Full historical browser inventory, hosted deployment, and device verification remain unexecuted. No 3D changes or glyph changes.
+
+### Round 234 — 2D slider playback verification
+Added dedicated deterministic Node playback-math/validation tests and Chromium animation/undo/Properties tests. Regression results and non-executed checks must be reported separately. Animation uses existing geometry refresh path, no 3D playback or GPU changes.
+
+Round 234 executed results (container, headless Chromium, 2026-11-20): full Node suite **703/703 passed**, all current `src/*.mjs` syntax checks passed, dedicated playback/undo/Properties Chromium test passed, and targeted Round 233 slider position, Round 232 Objects–Algebra parity, Round 231 compact Properties, Round 229 Properties, and Round 228 Algebra UI Chromium scripts passed. The broader combined browser sweep exceeded its execution window and was not certified; hosted deployment, complete historical inventory and physical GPU runs were not executed. One earlier browser test exposed buttons detaching during animation; this was fixed by updating slider value text in place instead of recreating the Algebra list per animation frame.

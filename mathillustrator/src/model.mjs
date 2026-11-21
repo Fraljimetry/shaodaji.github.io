@@ -645,6 +645,19 @@ export function checkNewGeometry(type,p){
 function pointName(doc,name){const o=byName(doc,name.trim());if(!o||!geometricPoint(o,createResolver(doc)))throw Error('Unknown point: '+name.trim());return o.id;}
 export function command(doc,source){
  const s=String(source).trim();if(!s)throw Error('Enter a construction command.');
+ // An explicit name on any supported construction is an alias for the SAME
+ // persisted geometric object produced by its unnamed toolbar constructor.
+ // Fail before constructing so name conflicts never leave partial geometry.
+ const named=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*((?:Segment|Vector|Arrow|Line|Ray|PerpBisector|PerpendicularBisector|Circle|CircleThrough3|Ellipse|Rectangle|Parallelogram|Polygon|Triangle|Quadrilateral|Polyline|Bezier|Angle|AngleBisector|Midpoint|Spline|ClosedSpline|CircularArc|Hyperbola|Parallel|Perpendicular|Foot|Intersect|FixedLength|FixedAngle|Rotate|Dilate|RegularPolygon)\s*\(.*\))$/i);
+ if(named){
+  const name=named[1];
+  if(byName(doc,name)||(doc.algebra?.sliders??[]).some(slider=>slider.name===name))throw Error('Name already in use.');
+  const object=command(doc,named[2]);
+  if(!object||!object.id)throw Error('Construction did not create an object.');
+  object.name=name;
+  return object;
+ }
+
  let m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.+)\)$/);
  if(m){
   const parts=splitAlgebraArguments(m[2]);if(parts.length!==2)throw Error('A point needs exactly two coordinate expressions.');

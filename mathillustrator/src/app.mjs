@@ -1,4 +1,4 @@
-import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments} from './algebra.mjs?cut=round227';
+import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round227';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
@@ -265,7 +265,7 @@ function recordUndo(before){
  future=[];syncHistory();
 }
 function syncHistory(){$('undo').disabled=!history.length;$('redo').disabled=!future.length;}
-function restore(s){constructionEmphasis.clear();lastMoveCanvasTap=null;doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();renderAll();}
+function restore(s){stopAllSliderPlayback();constructionEmphasis.clear();lastMoveCanvasTap=null;doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();renderAll();}
 function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.push(JSON.stringify(doc));restore(history.pop());syncHistory();}
 function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
 let pendingPropertiesFrame=0;
@@ -280,7 +280,53 @@ function refreshAfterMutation(forceProperties=false){
   if(forceProperties||!$('properties').contains(document.activeElement)){renderProperties();localizeUI($('properties'),uiPrefs.language);}
  });
 }
+// Playback is ephemeral; saved documents contain only validated values and settings.
+// One RAF loop coordinates all active 2D sliders and never creates undo entries per frame.
+const playingSliders=new Map();let playbackFrame=0,playbackLast=0;
+function stopSliderPlayback(name,{commit=true,refresh=true}={}){
+ const state=playingSliders.get(name);if(!state)return;
+ playingSliders.delete(name);
+ if(commit&&state.before!==JSON.stringify(doc)){recordUndo(state.before);documentRevision++;enqueueSave();}
+ if(!playingSliders.size&&playbackFrame){cancelAnimationFrame(playbackFrame);playbackFrame=0;playbackLast=0;}
+ if(refresh){renderAlgebra();renderProperties();}
+}
+function stopAllSliderPlayback(){for(const name of [...playingSliders.keys()])stopSliderPlayback(name,{refresh:false});}
+function playbackTick(timestamp){
+ playbackFrame=0;if(!playingSliders.size||document.hidden){stopAllSliderPlayback();renderAlgebra();renderProperties();return;}
+ // Large elapsed gaps must not skip entire cycles or cause unstable updates.
+ const dt=playbackLast?Math.min(.1,Math.max(0,(timestamp-playbackLast)/1000)):0;
+ playbackLast=timestamp;let changed=false;
+ for(const [name,state] of [...playingSliders]){
+  const item=doc.algebra?.sliders.find(s=>s.name===name);
+  if(!item||item.locked||!item.visible||in3D()){stopSliderPlayback(name,{refresh:false});continue;}
+  state.elapsed+=dt;
+  const next=sliderPlaybackValue(item,state.elapsed,state.startValue);
+  if(next.value!==item.value){const previous=item.value;item.value=next.value;
+   try{recalculateAlgebra(doc);validateDoc(doc);changed=true;}
+   catch(error){item.value=previous;recalculateAlgebra(doc);stopSliderPlayback(name,{refresh:false});notice('Animation stopped: '+error.message);}
+  }
+  if(next.finished)stopSliderPlayback(name,{refresh:false});
+ }
+ if(changed){
+  for(const [name] of playingSliders){const item=doc.algebra.sliders.find(s=>s.name===name);const row=[...$('algebra-list').querySelectorAll('[data-slider]')].find(el=>el.dataset.slider===name);
+   if(item&&row){const label=row.querySelector('.algebra-entry-label'),input=row.querySelector('input[type=range]');if(label)label.textContent=item.name+' = '+Number(item.value.toPrecision(8));if(input)input.value=item.value;}
+  }
+  scheduleRender();
+ }
+ if(playingSliders.size)playbackFrame=requestAnimationFrame(playbackTick);
+ else{playbackLast=0;renderAlgebra();renderProperties();}
+}
+function toggleSliderPlayback(name){
+ if(playingSliders.has(name)){stopSliderPlayback(name);return;}
+ const item=doc.algebra?.sliders.find(s=>s.name===name);
+ if(!item||item.locked||!item.visible||in3D())return;
+ stopAllSliderPlayback(); // One active animation keeps undo/redo atomic.
+ playingSliders.set(name,{before:JSON.stringify(doc),startValue:item.value,elapsed:0});
+ if(!playbackFrame){playbackLast=0;playbackFrame=requestAnimationFrame(playbackTick);}
+ renderAlgebra();renderProperties();
+}
 function update(mutator,{refreshList=true,renderCanvas=true}={}){
+ if(playingSliders.size)stopAllSliderPlayback();
  if(drag)cancelDrag(); // A document mutation must not leave an old gesture able to commit later.
  const old=JSON.stringify(doc),previousSelected=selected,previousIds=new Set(selectedIds),beforeDoc=doc;
  // A rejected edit rolls back JSON but does not replace the *logical* project.
@@ -1575,10 +1621,14 @@ function renderSliderProperties(root,item){
  });
  const range=document.createElement('div');range.className='slider-range-grid';root.append(range);
  for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
+ const playback=document.createElement('div');playback.className='slider-playback-grid';root.append(playback);
+ const button=document.createElement('button');button.type='button';button.className='slider-play-button';button.textContent=playingSliders.has(item.name)?'Pause':'Play';button.setAttribute('aria-label',button.textContent+' slider '+item.name);button.onclick=()=>toggleSliderPlayback(item.name);playback.append(button);
+ field(playback,'Speed (cycles/s)',item.playSpeed??1,'number',v=>edit(live=>{if(v<.05||v>10)throw Error('Speed must be between 0.05 and 10 cycles/s.');live.playSpeed=v;}),{min:.05,max:10});
+ const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;});modeLabel.append(mode);playback.append(modeLabel);localizeUI(playback,uiPrefs.language);
  const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
  const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);field(opacitySlot,'Opacity',item.opacity??1,'number',v=>edit(live=>{if(!Number.isFinite(v)||v<0||v>1)throw Error('Opacity must be between 0 and 1.');live.opacity=v;}),{min:0,max:1,step:.1});
- const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});border.append(borderInput,' Show border');root.append(border);
+ const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});border.append(borderInput,' Show border');border.classList.add('slider-border-control');opacitySlot.append(border);
 }
 function renderProperties(){
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
@@ -1842,15 +1892,16 @@ function renderAlgebra(){
  for(const item of doc.algebra?.sliders??[]){const row=document.createElement('div');row.className='algebra-entry'+(selectedSlider===item.name?' selected':'');row.dataset.slider=item.name;
   const name=document.createElement('span');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(8));row.append(name);
   const input=document.createElement('input');input.type='range';input.min=item.min;input.max=item.max;input.step=item.step;input.value=item.value;input.disabled=Boolean(item.locked);input.setAttribute('aria-label','Slider '+item.name);
-  let initial=null;input.onpointerdown=()=>{initial=JSON.stringify(doc);};input.onkeydown=()=>{initial??=JSON.stringify(doc);};
+  let initial=null;input.onpointerdown=()=>{stopAllSliderPlayback();initial=JSON.stringify(doc);};input.onkeydown=()=>{initial??=JSON.stringify(doc);};
   input.oninput=()=>{if(item.locked)return;initial??=JSON.stringify(doc);const before=JSON.stringify(doc),value=Number(input.value);try{item.value=value;recalculateAlgebra(doc);validateDoc(doc);documentRevision++;name.textContent=item.name+' = '+value;renderList();scheduleRender();}catch(err){doc=JSON.parse(before);notice(err.message);renderAlgebra();render();}};
   input.onchange=()=>{if(initial&&initial!==JSON.stringify(doc)){recordUndo(initial);documentRevision++;enqueueSave();}initial=null;renderAlgebra();if(selectedSlider===item.name&&!$('properties').contains(document.activeElement))renderProperties();};row.append(input);
+  const play=document.createElement('button');play.type='button';play.className='slider-play-toggle';play.textContent=playingSliders.has(item.name)?'⏸':'▶';play.title=playingSliders.has(item.name)?'Pause slider':'Play slider';play.setAttribute('aria-label',play.title+' '+item.name);play.disabled=item.locked||!item.visible;play.onclick=e=>{e.stopPropagation();toggleSliderPlayback(item.name);};row.append(play);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title='Slider actions';more.setAttribute('aria-label','Slider actions: '+item.name);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.onclick=e=>{e.stopPropagation();openAlgebraActions(item.name,more);};row.append(more);
-  row.onclick=e=>{if(e.target===more||e.target===input)return;selectSlider(item.name);};wrapper.append(row);
+  row.onclick=e=>{if(e.target===more||e.target===input||e.target===play)return;selectSlider(item.name);};wrapper.append(row);
  }
- for(const o of doc.objects.filter(o=>o.xyExpr||o.measureExpr)){
-  const line=document.createElement('div');line.className='algebra-entry';line.dataset.id=o.id;
-  const text=document.createElement('span');text.className='algebra-entry-label';text.textContent=o.xyExpr?`${o.name} = (${o.xyExpr.join(', ')})`:`${o.name}: ${Object.entries(o.measureExpr).map(([key,value])=>key+' = '+value).join(', ')}`;line.append(text);
+ for(const o of doc.objects){
+  const line=document.createElement('div');line.className='algebra-entry'+(selected===o.id?' selected':'');line.dataset.id=o.id;
+  const text=document.createElement('span');text.className='algebra-entry-label';text.textContent=o.xyExpr?`${o.name} = (${o.xyExpr.join(', ')})`:o.measureExpr?`${o.name}: ${Object.entries(o.measureExpr).map(([key,value])=>key+' = '+value).join(', ')}`:`${o.name} · ${o.type}`;line.append(text);
   const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title='Object actions';more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};line.append(more);
   line.onclick=e=>{if(e.target!==more)select(o.id);};wrapper.append(line);
  }
@@ -2255,8 +2306,17 @@ function pointerDown(e){
    const [x,y]=project(item.xy),knob=x+148*(item.value-item.min)/(item.max-item.min);
    return Math.hypot(sx-knob,sy-y-10)<=11;
   })?.name;
-  if(candidate&&doc.algebra?.sliders.some(s=>s.name===candidate&&s.visible&&!s.locked)){
-   drag={kind:'slider',pointerId:e.pointerId,name:candidate,before:JSON.stringify(doc),startX:sx};
+  const sliderBody=e.target.closest?.('[data-slider-control]')?.getAttribute('data-slider-control')||[...(doc.algebra?.sliders??[])].reverse().find(item=>{
+   if(!item.visible)return false;
+   const [x,y]=project(item.xy),knob=x+148*(item.value-item.min)/(item.max-item.min);
+   // The handle always wins, even if another slider overlaps the body.
+   return sx>=x-9&&sx<=x+157&&sy>=y-25&&sy<=y+22&&Math.hypot(sx-knob,sy-y-10)>11;
+  })?.name;
+  const name=candidate||(['select','pan'].includes(tool)?sliderBody:null);
+  if(name&&doc.algebra?.sliders.some(s=>s.name===name&&s.visible&&!s.locked)){
+   stopAllSliderPlayback();
+   const item=doc.algebra.sliders.find(s=>s.name===name);
+   drag={kind:candidate?'slider':'slider-position',pointerId:e.pointerId,name,before:JSON.stringify(doc),startX:sx,sx,sy,xy:[...item.xy]};
    try{$('drawing').setPointerCapture(e.pointerId);}catch{}
    e.preventDefault();return;
   }
@@ -2645,6 +2705,16 @@ function pointerMove(e){
  // coordinates or alter construction previews while another pointer is captured.
  if(e.isPrimary===false||(drag&&drag.pointerId!==e.pointerId))return;
  const [sx,sy]=xyEvent(e),world=unproject(sx,sy);
+ if(drag?.kind==='slider-position'){
+  const item=doc.algebra?.sliders.find(s=>s.name===drag.name);
+  if(item){const dx=(sx-drag.sx)/view.scale,dy=-(sy-drag.sy)/view.scale;
+   const newXY=[drag.xy[0]+dx,drag.xy[1]+dy];
+   if(newXY.every(v=>Number.isFinite(v)&&Math.abs(v)<=1e6)){
+    item.xy=newXY;documentRevision++;scheduleRender();
+   }
+  }
+  return;
+ }
  if(drag?.kind==='slider'){const item=doc.algebra?.sliders.find(s=>s.name===drag.name);if(item){const before=JSON.stringify(doc),[x]=project(item.xy);item.value=Math.max(item.min,Math.min(item.max,item.min+(item.max-item.min)*(sx-x)/148));item.value=Math.max(item.min,Math.min(item.max,Math.round((item.value-item.min)/item.step)*item.step+item.min));item.value=Number(item.value.toPrecision(12));try{recalculateAlgebra(doc);validateDoc(doc);documentRevision++;}catch(err){doc=JSON.parse(before);notice(err.message);}scheduleRender();}return;}
  if(!drag)setHoverPick(hoverPick(e,sx,sy));
  hover=(drag||tool==='select'||tool==='pan')?world:tool==='point'?constructionPoint(world):constructionVertex(world);$('coords').textContent=`x ${(Math.abs(world[0])<.005?0:world[0]).toFixed(2)} · y ${(Math.abs(world[1])<.005?0:world[1]).toFixed(2)}`;
@@ -2709,7 +2779,7 @@ function pointerUp(e){
  if(!drag||e?.pointerId!==undefined&&e.pointerId!==drag.pointerId)return;
  if(e?.type==='pointercancel'||e?.type==='lostpointercapture'){cancelDrag();return;}
  const completed=drag;drag=null;
- if(completed.kind==='slider'){try{recalculateAlgebra(doc);validateDoc(doc);if(JSON.stringify(doc)!==completed.before){recordUndo(completed.before);documentRevision++;enqueueSave();}renderAlgebra();renderList();renderProperties();scheduleRender();}catch(err){doc=JSON.parse(completed.before);notice(err.message);renderAll();}return;}
+ if(completed.kind==='slider'||completed.kind==='slider-position'){try{recalculateAlgebra(doc);validateDoc(doc);if(JSON.stringify(doc)!==completed.before){recordUndo(completed.before);documentRevision++;enqueueSave();}renderAlgebra();renderList();renderProperties();scheduleRender();}catch(err){doc=JSON.parse(completed.before);notice(err.message);renderAll();}return;}
  if(lastMoveCanvasTap&&['point','label','pan','marquee'].includes(completed.kind)&&Math.hypot(xyEvent(e)[0]-completed.sx,xyEvent(e)[1]-completed.sy)>9)lastMoveCanvasTap=null;
  // Browser pointerup is authoritative: the last position is not guaranteed to
  // have been preceded by a pointermove (pen hardware, coalesced pointer events).
@@ -3266,7 +3336,7 @@ function setupPropertiesLayout(mobile){
   // Both 2D and 3D object lists are flexible content, never fixed chrome.
   // Counting the visible 3D list here makes the upper bound follow the drag,
   // collapsing Properties to 38 px whenever the user drags its divider up.
-  const fixed=[...left.children].filter(e=>e!==pane&&!['objects','objects-3d'].includes(e.id)&&!e.classList.contains('panel-resizer')&&getComputedStyle(e).display!=='none').reduce((a,e)=>a+e.getBoundingClientRect().height,0);
+  const fixed=[...left.children].filter(e=>e!==pane&&!['objects','objects-3d','algebra-panel'].includes(e.id)&&!e.classList.contains('panel-resizer')&&getComputedStyle(e).display!=='none').reduce((a,e)=>a+e.getBoundingClientRect().height,0);
   return fitDockPropertiesHeight(preferred.dockHeight,left.clientHeight,fixed);
  }
  function apply(){
@@ -3425,13 +3495,18 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  syncPlotMode();
  const algebraForm=$('algebra-form');if(algebraForm)algebraForm.onsubmit=e=>{e.preventDefault();const source=$('algebra-input').value.trim();if(!source)return;
   const ok=update(()=>{let match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Slider\((.*)\)$/i);
-   if(match){const args=splitAlgebraArguments(match[2]).map(x=>evaluateAlgebra(x));if(args.length<2||args.length>4)throw Error('Use Slider(min, max, step, value).');createSlider(doc,match[1],{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0]});return;}
+   if(match){const raw=splitAlgebraArguments(match[2]);if(raw.length<2||raw.length>6)throw Error('Use Slider(min, max[, step, value, speed, mode]).');
+    const last=raw.at(-1)?.trim().replace(/^['"]|['"]$/g,'').toLowerCase();
+    const hasMode=raw.length>=5&&SLIDER_PLAY_MODES.includes(last);const mode=hasMode?last:'periodic';
+    if(raw.length===6&&!hasMode)throw Error('Slider mode must be periodic, oscillatory, or once.');
+    const args=((hasMode)?raw.slice(0,-1):raw).map(x=>evaluateAlgebra(x));
+    createSlider(doc,match[1],{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0],playSpeed:args[4]??1,playMode:mode});return;}
    match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.*)\)$/);
    if(match){const xy=splitAlgebraArguments(match[2]);if(xy.length!==2)throw Error('A point needs two coordinate expressions.');algebraPoint(doc,match[1],xy[0].trim(),xy[1].trim(),(d,p,name)=>append(d,{type:'point',xy:p,name}));return;}
    command(doc,source);
   });if(ok)$('algebra-input').value='';
  };
- function selectAlgebraTab(open){$('algebra-panel').hidden=!open;$('algebra-toggle').setAttribute('aria-selected',String(open));$('objects-tab').setAttribute('aria-selected',String(!open));document.querySelector('.leftpanel').classList.toggle('algebra-open',open);if(open)$('algebra-input').focus();}
+ function selectAlgebraTab(open){$('algebra-panel').hidden=!open;$('algebra-toggle').setAttribute('aria-selected',String(open));$('objects-tab').setAttribute('aria-selected',String(!open));document.querySelector('.leftpanel').classList.toggle('algebra-open',open);if(open)$('algebra-input').focus();propertyLayout.apply();}
  $('algebra-toggle').onclick=()=>selectAlgebraTab(true);$('objects-tab').onclick=()=>selectAlgebraTab(false);
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   let raisedDomainBudget=false;
@@ -3498,7 +3573,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!localizedConfirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}});
- document.addEventListener('visibilitychange',()=>{
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&playingSliders.size){stopAllSliderPlayback();renderAlgebra();renderProperties();}
   // A gesture in progress has not committed an undoable transaction. Do not
   // allow autosave or tab switching to preserve its temporary coordinates.
   if(document.visibilityState==='hidden'){pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}if(dirty&&!storageConflict)persistNow();}
