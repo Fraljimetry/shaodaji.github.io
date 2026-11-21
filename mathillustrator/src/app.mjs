@@ -1,5 +1,5 @@
-import {constructionExpression,applyConstructionExpression} from './construction_expression.mjs?cut=round255';
-import {attachInputAssistant} from './input_assist.mjs?cut=round246';
+import {constructionExpression,applyConstructionExpression,createSemanticConstruction} from './construction_expression.mjs?cut=round258';
+import {attachInputAssistant} from './input_assist.mjs?cut=round258';
 import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
@@ -282,8 +282,14 @@ function synchronizeConstructionExpression(){
  if(expression===null||expression===undefined)return;
  if(input.value!==expression)input.value=expression;
 }
+function synchronizeSliderExpression(){
+ const expression=$('properties')?.querySelector('.slider-expression-editor');
+ if(!expression||document.activeElement===expression)return;
+ const live=doc.algebra?.sliders?.find(item=>item.name===selectedSlider);
+ if(live){const expected=sliderExpression(live);if(expression.value!==expected)expression.value=expected;}
+}
 function refreshAfterMutation(forceProperties=false){
- syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();synchronizeConstructionExpression();
+ syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();synchronizeConstructionExpression();synchronizeSliderExpression();
  // Editing controls must not be replaced after the next animation frame while
  // focus remains inside the property pane: two rapid changes otherwise race
  // against detached onchange handlers and silently lose one of the edits.
@@ -327,7 +333,7 @@ function playbackTick(timestamp){
   const selected=doc.algebra?.sliders.find(s=>s.name===selectedSlider);
   const propertySlider=$('properties')?.querySelector('.slider-property-value-range');
   if(selected&&propertySlider&&document.activeElement!==propertySlider)propertySlider.value=String(selected.value);
-  scheduleRender();
+  synchronizeSliderExpression();scheduleRender();
  }
  if(playingSliders.size)playbackFrame=requestAnimationFrame(playbackTick);
  else{playbackLast=0;renderAlgebra();renderProperties();}
@@ -1625,10 +1631,25 @@ function objectEffectivelyLocked(id,seen=new Set()){
  return [...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])].some(dep=>objectEffectivelyLocked(dep,seen));
 }
 function selectSlider(name){selected=null;selectedIds.clear();selectedSlider=name;renderList();renderAlgebra();renderProperties();scheduleRender();}
+// A slider's semantic definition is independent of its Name, like every other
+// Properties Expression. Do not store a second formula that could go stale.
+function sliderExpression(slider){
+ return `Slider(${[slider.min,slider.max,slider.step,slider.value,slider.playSpeed??1,slider.playMode??'periodic'].join(', ')})`;
+}
+function parseSliderExpression(source){
+ const match=String(source).trim().match(/^Slider\s*\((.*)\)$/i);
+ if(!match)throw Error('Use Slider(min, max[, step, value, speed, mode]).');
+ const args=splitAlgebraArguments(match[1]);
+ if(args.length<2||args.length>6||args.some(a=>!a.trim()))throw Error('Slider requires 2–6 nonempty arguments.');
+ let mode='periodic';
+ if(args.length===6){mode=args.pop().trim().replace(/^["']|["']$/g,'').toLowerCase();if(!SLIDER_PLAY_MODES.includes(mode))throw Error('Slider mode must be periodic, oscillatory, or once.');}
+ const numbers=args.map(arg=>evaluateAlgebra(arg));
+ return {min:numbers[0],max:numbers[1],step:numbers[2]??0.1,value:numbers[3]??numbers[0],playSpeed:numbers[4]??1,playMode:mode};
+}
 function renderSliderProperties(root,item){
  const generation=documentGeneration;
  const edit=fn=>update(()=>{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(generation!==documentGeneration||!live||selectedSlider!==item.name||live.locked)throw Error('Slider changed or locked.');fn(live);});
- if(item.locked){const name=field(root,'Name',item.name,'text',()=>false);name.disabled=true;const message=document.createElement('p');message.className='subtle';message.textContent='Locked — unlock in the three-dot menu.';root.append(message);return;}
+ if(item.locked){const name=field(root,'Name',item.name,'text',()=>false);name.disabled=true;const expression=field(root,'Expression',sliderExpression(item),'text',()=>false);expression.readOnly=true;const message=document.createElement('p');message.className='subtle';message.textContent='Locked — unlock in the three-dot menu.';root.append(message);return;}
  field(root,'Name',item.name,'text',v=>{
   const previous=selectedSlider;
   const ok=edit(live=>{
@@ -1638,6 +1659,10 @@ function renderSliderProperties(root,item){
   if(ok===false)selectedSlider=previous;
   return ok;
  });
+ const expressionInput=field(root,'Expression',sliderExpression(item),'text',value=>edit(live=>{
+  Object.assign(live,parseSliderExpression(value));
+ }));
+ expressionInput.classList.add('construction-expression-editor','slider-expression-editor');
  const range=document.createElement('div');range.className='slider-range-grid';root.append(range);
  for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
  const playback=document.createElement('div');playback.className='slider-playback-grid';root.append(playback);
@@ -1650,7 +1675,7 @@ function renderSliderProperties(root,item){
  valueInput.onpointerdown=startTrackEdit;valueInput.onkeydown=startTrackEdit;
  valueInput.oninput=()=>{
   startTrackEdit();const before=JSON.stringify(doc);
-  try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(8));renderList();scheduleRender();}
+  try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);expressionInput.value=sliderExpression(live);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(8));renderList();scheduleRender();}
   catch(error){doc=JSON.parse(before);valueInput.value=String(doc.algebra?.sliders.find(s=>s.name===item.name)?.value??item.value);notice(error.message);renderList();scheduleRender();}
  };
  valueInput.onchange=()=>{if(sliderBefore&&sliderBefore!==JSON.stringify(doc)){recordUndo(sliderBefore);documentRevision++;enqueueSave();}sliderBefore=null;renderAlgebra();renderProperties();};
@@ -3559,7 +3584,14 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
     createSlider(doc,match[1],{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0],playSpeed:args[4]??1,playMode:mode});return;}
    match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.*)\)$/);
    if(match){const xy=splitAlgebraArguments(match[2]);if(xy.length!==2)throw Error('A point needs two coordinate expressions.');algebraPoint(doc,match[1],xy[0].trim(),xy[1].trim(),(d,p,name)=>append(d,{type:'point',xy:p,name}));return;}
-   command(doc,source);
+   // Semantic option syntax is distinct from the older positional commands.
+   // Prefer the semantic parser only for keyword options; retain existing
+   // positional numeric commands and their compatibility contract unchanged.
+   if(/\b(?:Rotate|Dilate)\s*\([^)]*\bamount\s*=/.test(source))createSemanticConstruction(doc,source);
+   else try{command(doc,source);}catch(error){
+    if(!/Unsupported command/.test(error.message))throw error;
+    createSemanticConstruction(doc,source);
+   }
   });if(ok)$('algebra-input').value='';
  };
  const algebraEntry=$('unified-algebra-input'),algebraSearch=$('object-search');

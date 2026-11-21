@@ -7,7 +7,7 @@ const PLOT_REAL_FUNCTIONS = ['sin','cos','tan','asin','acos','atan','atan2','sin
 const PLOT_COMPLEX_FUNCTIONS = ['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','sec','csc','cot','sqrt','cbrt','abs','exp','expm1','log1p','ln','log','log10','log2','sign','pow','conj','arg','re','im','norm'];
 const COMPLEX_MODES = new Set(['domainColoring','domain3d']);
 const MODE_VARIABLES = Object.freeze({function:['x'],parametric:['t'],implicit:['x','y'],vectorField:['x','y'],domainColoring:['z','i'],surface3d:['x','y'],parametric3d:['u','v'],implicit3d:['x','y','z'],vector3d:['x','y','z'],domain3d:['z','i']});
-const CONSTRUCTORS = ['Slider','Segment','Vector','Arrow','Line','Ray','Midpoint','PerpBisector','Circle','CircleThrough3','Ellipse','Rectangle','Parallelogram','Triangle','Quadrilateral','Polygon','Polyline','Bezier','Spline','ClosedSpline','Angle','AngleBisector','CircularArc','Hyperbola','Parallel','Perpendicular','Foot','Intersect','RegularPolygon','Rotate','Dilate','FixedLength','FixedAngle','Node','Morphism'];
+const CONSTRUCTORS = ['Slider','Segment','Vector','Arrow','Line','Ray','Midpoint','PerpBisector','Circle','CircleThrough3','Ellipse','Rectangle','Parallelogram','Triangle','Quadrilateral','Polygon','Polyline','Bezier','Spline','ClosedSpline','Angle','AngleBisector','CircularArc','Hyperbola','Parallel','Perpendicular','Foot','Intersect','RegularPolygon','Rotate','Dilate','FixedLength','FixedAngle','Point','Text','Node','Morphism','CircleDiameter','PointOnObject','TangentCircle','Parabola','GeneralIntersection','Locus','TriangleCenter','CircleIntersection','CircleCircleIntersection','Reflect','Translate','Invert','Transform'];
 const CONSTANTS = ['pi','e','phi'];
 const PLOT_TEMPLATES = Object.freeze({
  '2d:function':['sin(x)','cos(x)','x^2','sqrt(abs(x))'],
@@ -90,7 +90,12 @@ const SIGNATURES=Object.freeze({
  RegularPolygon:['center','vertex','side count'],
  Rotate:['point','center','angle (radians)'],Dilate:['point','center','factor'],
  FixedLength:['point A','point B','length'],FixedAngle:['point A','point B','angle (radians)'],
- Node:['x','y','label?'],Morphism:['node A','node B','label?'],
+ Point:['x','y'],Text:['x','y','quoted text'],Node:['x','y','label?'],Morphism:['node A','node B','quoted label'],
+ CircleDiameter:['endpoint A','endpoint B'],PointOnObject:['geometry','parameter?'],TangentCircle:['point','circle','branch?'],
+ Parabola:['focus','directrix'],GeneralIntersection:['curve A','curve B','rootIndex?'],Locus:['dependent point','constrained driver'],
+ TriangleCenter:['point A','point B','point C','centerKind?'],CircleIntersection:['line','circle','branch?'],
+ CircleCircleIntersection:['circle A','circle B','branch?'],Reflect:['source','mirror line'],
+ Translate:['source','point A','point B'],Invert:['source','circle'],Transform:['source','reference','transform?','amount?'],
  Intersect:['line A','line B'],Foot:['point','line'],Parallel:['point','line'],Perpendicular:['point','line'],
  sin:['x'],cos:['x'],tan:['x'],asin:['x'],acos:['x'],atan:['x'],asinh:['x'],acosh:['x'],atanh:['x'],sec:['x'],csc:['x'],cot:['x'],conj:['z'],arg:['z'],re:['z'],im:['z'],norm:['z'],expm1:['x'],log1p:['x'],
  sinh:['x'],cosh:['x'],tanh:['x'],sqrt:['x'],cbrt:['x'],abs:['x'],exp:['x'],ln:['x'],log:['x'],log10:['x'],log2:['x'],

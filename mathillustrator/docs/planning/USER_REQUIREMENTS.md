@@ -2218,3 +2218,16 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 - Editing accepts name-free definitions; legacy `Name = ...` entries remain accepted. Live referenced names continue to follow rename changes.
 
 - Round 256: Properties field order for representable 2D objects is Name → Expression → Label format → Label (where labels apply). Name-free Expression editing and existing construction semantics are unchanged.
+
+### Round 257 — Slider Expression in Properties
+
+- Sliders must expose editable name-free `Slider(min, max, step, value, speed, mode)` directly under Name, matching geometric object Expression layout.
+- Changes to other slider controls, playback and track movement must synchronize Expression without disrupting an actively edited Expression. Invalid edits roll back; locking makes Expression read-only.
+
+
+### Round 258 — Programmable geometric-tool parity
+- Every non-freehand geometric toolbar construction must have a programmatic creation path using the same persisted geometry model; freehand remains the deliberate exception.
+- Extended constructors are entered in the unified Objects Algebra field with optional `Name =` assignment, and must be validated atomically.
+- Include constrained points, branches, tangent constructions, loci, triangle centers, transformations, diagram labels and diameter-defined circles.
+- Existing Properties expressions stay name-free and use live referenced names; polygon-owned edges remain read-only.
+- Distinguish general 3D programmable geometry (unavailable) from existing 3D plotting expressions.

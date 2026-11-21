@@ -2778,3 +2778,17 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 ## Round 256 — Properties field order
 
 - Move name-free Expression immediately below Name, before label controls for all supported 2D objects; preserve editing, read-only derived sides and renaming.
+
+## Round 257 — Slider semantic Expression
+
+- Implementation: editable name-free `Slider(min, max, step, value, speed, mode)` in Properties immediately after Name. Uses existing slider model and validation with atomic edits; no extra persisted fields. External slider edits, range track, and animation synchronize expression without overwriting an active edit. Locked slider shows a read-only Expression.
+- Chromium verification: `tests/browser_round257_slider_expression.py` tests ordering, editing, invalid rollback, rename, value synchronization in light/dark themes.
+- Historical complete Chromium inventory, hosted site and physical GPU not certified by this isolated change.
+
+
+### Round 258 — Geometric tool parity verification (local)
+- Source: latest uploaded base ZIP with all R249–257 overlays applied in order.
+- Added `createSemanticConstruction` for tools previously representable only in the Properties semantics: constrained points, tangent-circle branches, parabola, intersection branches, loci, triangle centers, five transforms, point/text/node coordinates, and circle diameter composition.
+- Construction attempted on a deep copy, then only newly created objects are committed after validation to preserve existing object identity, IDs, and error atomicity.
+- Affected sources: `construction_expression.mjs`, `app.mjs`, `input_assist.mjs`; updated inline browser module test harness and documentation.
+- Verification: see this round's final report for exact executed command results. Hosted production, physical GPU, and native touch were not executed.

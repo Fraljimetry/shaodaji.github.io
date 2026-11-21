@@ -1,5 +1,6 @@
-import {clone,command,parseExpression,validateDoc} from './model.mjs?cut=round227';
+import {clone,command,parseExpression,validateDoc,append,appendDerivedShapeEdges,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint} from './model.mjs?cut=round227';
 import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round254';
+import {r50SourceShape,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=round69';
 
 // Every reference is printed from its persistent ID, never a stored name.
@@ -194,4 +195,106 @@ export function applyConstructionExpression(doc,objectId,source){
   }
  }
  commit(doc,objectId,patch);
+}
+
+// Programmatic creation uses the SAME persisted construction types as canvas
+// tools. Work on a copy and publish only after every reference/geometry check.
+// This keeps failed Algebra submissions from leaving orphan objects or IDs.
+const CREATE_SEMANTIC={
+ PointOnObject:'pointOnObject',TangentCircle:'tangentCircle',Parabola:'parabola',
+ GeneralIntersection:'generalIntersection',Locus:'locus',TriangleCenter:'triangleCenter',
+ CircleIntersection:'circleIntersection',CircleCircleIntersection:'circleCircleIntersection',
+ Reflect:'transformCopy',Rotate:'transformCopy',Translate:'transformCopy',
+ Dilate:'transformCopy',Invert:'transformCopy',Transform:'transformCopy',
+ Text:'text',Node:'node',Point:'point',CircleDiameter:'circleDiameter',
+};
+const CREATE_TRANSFORM={Reflect:'reflect',Rotate:'rotate',Translate:'translate',Dilate:'dilate',Invert:'invert'};
+const CREATE_DEFAULTS={
+ pointOnObject:{parameter:0.5},tangentCircle:{branch:1},generalIntersection:{rootIndex:0},
+ triangleCenter:{centerKind:'centroid'},circleIntersection:{branch:1},circleCircleIntersection:{branch:1},
+ transformCopy:{amount:0},
+};
+export const PROGRAMMATIC_SEMANTIC_CONSTRUCTORS=Object.freeze(Object.keys(CREATE_SEMANTIC));
+export function createSemanticConstruction(doc,source){
+ const raw=String(source).trim();
+ const assignment=raw.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*([A-Za-z][A-Za-z0-9_]*\s*\([\s\S]*\))$/);
+ const name=assignment?.[1],rhs=assignment?assignment[2]:raw;
+ const {kind,args,options}=parseConstructor(rhs),type=CREATE_SEMANTIC[kind];
+ if(!type)throw Error('Unsupported semantic constructor.');
+ if(name&&(byName(doc,name)||doc.algebra?.sliders?.some(s=>s.name===name)))throw Error('Name already in use.');
+ const temp=clone(doc),resolver=createResolver(temp);
+ if(['Point','Text','Node'].includes(kind)){
+  if(Object.keys(options).length)throw Error('Coordinate constructors do not accept options.');
+  const needsLabel=kind!=='Point';
+  if(args.length!==(needsLabel?3:2))throw Error(`${kind} needs ${needsLabel?'two coordinates and quoted text':'two coordinates'}.`);
+  const xy=args.slice(0,2).map(v=>evaluateAlgebra(v));
+  if(!xy.every(v=>Number.isFinite(v)&&Math.abs(v)<=1e6))throw Error('Invalid geometric coordinates.');
+  let created;
+  if(needsLabel){let label;try{label=JSON.parse(args[2]);}catch{throw Error('Text must be a JSON quoted string.');}
+   if(typeof label!=='string')throw Error('Text must be a string.');
+   created=append(temp,{type:kind.toLowerCase(),xy,text:label,...(name?{name}:{})});
+  }else created=addPoint(temp,xy,name);
+  validateCandidate(temp);doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;
+  return doc.objects.find(o=>o.id===created.id);
+ }
+ const refs=args.map(arg=>{
+  const found=byName(temp,arg);
+  if(!found)throw Error('Unknown construction reference: '+arg);
+  return found.id;
+ });
+ if(kind==='CircleDiameter'){
+  if(Object.keys(options).length||refs.length!==2)throw Error('CircleDiameter requires two endpoints.');
+  const a=temp.objects.find(o=>o.id===refs[0]),b=temp.objects.find(o=>o.id===refs[1]);
+  if(!geometricPoint(a,resolver)||!geometricPoint(b,resolver)||refs[0]===refs[1])throw Error('CircleDiameter requires distinct points.');
+  const center=append(temp,{type:'midpoint',refs});
+  const circle=append(temp,{type:'circle',refs:[center.id,refs[0]],...(name?{name}:{})});
+  validateCandidate(temp);doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;
+  return doc.objects.find(o=>o.id===circle.id);
+ }
+ const expectedCount=type==='transformCopy'&&kind==='Translate'?3:2;
+ const count=({pointOnObject:1,triangleCenter:3,locus:2,parabola:2}[type]??expectedCount);
+ if(refs.length!==count)throw Error(`${kind} requires ${count} references.`);
+ const objects=refs.map(id=>temp.objects.find(o=>o.id===id));
+ const point=i=>geometricPoint(objects[i],resolver);
+ const line=i=>geometricLine(objects[i],resolver);
+ const circle=i=>geometricCircle(objects[i],resolver);
+ if(type==='triangleCenter'&&!objects.every((_,i)=>point(i)))throw Error('TriangleCenter requires three geometric points.');
+ if(type==='parabola'&&!(point(0)&&line(1)))throw Error('Parabola requires a point and directrix line.');
+ if(type==='tangentCircle'&&!(point(0)&&circle(1)))throw Error('TangentCircle requires a point and circle.');
+ if(type==='circleIntersection'&&!((line(0)&&circle(1))||(circle(0)&&line(1))))throw Error('CircleIntersection requires a line and a circle.');
+ if(type==='circleCircleIntersection'&&!(circle(0)&&circle(1)))throw Error('CircleCircleIntersection requires two circles.');
+ if(type==='locus'&&!(point(0)&&objects[1].type==='pointOnObject'&&affected(temp,refs[1]).has(refs[0])))throw Error('Locus requires a dependent point and its constrained driver.');
+ if(type==='transformCopy'){
+  const transform=CREATE_TRANSFORM[kind]||'rotate';
+  if(kind==='Transform'&&!Object.hasOwn(options,'transform'))throw Error('Transform requires transform= option.');
+  const actual=kind==='Transform'?options.transform:transform;
+  if(!['reflect','rotate','translate','dilate','invert'].includes(actual))throw Error('Invalid transformation.');
+  if(actual==='translate'?!(point(1)&&point(2)):actual==='reflect'?!line(1):actual==='invert'?!circle(1):!point(1))throw Error('Invalid transformation reference roles.');
+  if(actual!=='translate'&&refs[0]===refs[1])throw Error('Source and transformation reference must differ.');
+ }
+ if(type==='pointOnObject'&&r50SourceShape(objects[0],resolver,70).length<2)throw Error('Invalid constrained-point source.');
+ if(type==='generalIntersection'){
+  if(refs[0]===refs[1])throw Error('Intersection objects must differ.');
+  const roots=generalCrossings(objects[0],objects[1],resolver,160);
+  if(!roots.length)throw Error('No intersection found for these objects.');
+  if((options.rootIndex??0)>=roots.length)throw Error('Intersection branch does not exist.');
+ }
+ if(type==='tangentCircle'&&!circleTangents(resolver.at(refs[0]),resolver.circle(objects[1])).length)throw Error('No tangent exists.');
+ const validKeys=REFERENCE_OPTIONS[type]||[];
+ if(Object.keys(options).some(k=>!validKeys.includes(k)))throw Error('Unsupported constructor option.');
+ const base={type,refs,...CREATE_DEFAULTS[type]};
+ if(type==='transformCopy')base.transform=CREATE_TRANSFORM[kind]||options.transform||'rotate';
+ Object.assign(base,options);
+ for(const [key,val] of Object.entries(options)){
+  if(NUMERIC.has(key)&&(!Number.isFinite(val)||typeof val!=='number')){
+   if(!['amount','length','angle'].includes(key)||typeof val!=='string')throw Error(`Invalid ${key}.`);
+  }
+  if(ENUMS[key]&&!ENUMS[key].includes(val))throw Error(`Invalid ${key}.`);
+ }
+ if(type==='transformCopy'&&base.transform==='translate'&&refs.length!==3)throw Error('Translate requires three references.');
+ const created=append(temp,{...base,...(name?{name}:{})});
+ validateCandidate(temp);
+ // Assignment is atomic: no failed submission can alter the live scene.
+ doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;
+ return doc.objects.find(o=>o.id===created.id);
 }
