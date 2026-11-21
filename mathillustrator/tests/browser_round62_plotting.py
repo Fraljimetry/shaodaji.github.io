@@ -30,13 +30,14 @@ def run():
    assert snap()['scene3d']['plots'][-1]['kind']=='surface3d'
    region=page.locator('#properties .plot-region-editor')
    original=dict(snap()['scene3d']['plots'][-1]['bounds'])
-   assert region.get_by_role('button',name='Apply ±').count()==1
-   value=region.get_by_label('x max');value.fill('2pi')
-   value.locator('..').dblclick(position={'x':7,'y':13})
-   samples=[float(el.input_value()) for el in region.locator('input:not([aria-label="Centered half-range"])').all()]
-   assert all(abs(abs(v)-2*math.pi)<1e-9 for v in samples),samples
+   assert region.get_by_role('button',name='Apply ±').count()==0
+   centered=region.get_by_label('Centered half-range')
+   assert centered.count()==1
+   centered.fill('2pi')
    assert snap()['scene3d']['plots'][-1]['bounds']==original
-   value.press('Enter')
+   centered.press('Enter')
+   samples=[float(region.get_by_label(k).input_value()) for k in ['x min','x max','y min','y max','z min','z max']]
+   assert all(abs(abs(v)-2*math.pi)<1e-9 for v in samples),samples
    assert abs(snap()['scene3d']['plots'][-1]['bounds']['xMax']-2*math.pi)<1e-9
    page.locator('#undo').click();assert snap()['scene3d']['plots'][-1]['bounds']==original
    page.locator('#redo').click();assert abs(snap()['scene3d']['plots'][-1]['bounds']['zMax']-2*math.pi)<1e-9
@@ -46,8 +47,8 @@ def run():
    assert not errors,errors
    # Render existing bilingual guide: the code-command sample must be absent.
    guide=(ROOT/'tutorial.html').read_text()
-   assert '<h2 id="plotting">2D plotting</h2>' in guide
-   assert '<h2>二维绘图</h2>' in guide
+   assert 'id="plots2d"' in guide and '2D plotting workflows' in guide
+   assert '5. 二维绘图' in guide
    assert 'Segment(A, B)' not in guide
    print('ROUND62_PLOTTING_CHROMIUM_PASS: 2D invalid rollback, complex backdrop, 3D finite surface, pi bounds, symmetry, atomic Enter, undo/redo, bilingual guide')
   finally:browser.close()

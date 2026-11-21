@@ -28,14 +28,14 @@ def run():
    submit(p,'function','A=(0,0)');assert exported(p)['objects'][-1]['type']=='point'
    # New parametric curves use one chosen parameter consistently in both inputs.
    p.locator('#plot-mode').select_option('parametric');assert p.locator('#command-y').is_visible()
-   p.locator('#parameter-symbol').select_option('u')
-   submit(p,'parametric','cos(u)','sin(u)');d=exported(p);para=d['objects'][-1]
-   assert para['type']=='parametric' and para['tMin']==0 and 6.28<para['tMax']<6.29
+   assert p.locator('#parameter-symbol').is_hidden() and p.locator('#parameter-symbol').input_value()=='t'
+   submit(p,'parametric','cos(t)','sin(t)');d=exported(p);para=d['objects'][-1]
+   assert para['type']=='parametric' and para['parameter']=='t' and para['tMin']==0 and 6.28<para['tMax']<6.29
    assert p.locator(f'#drawing [data-id="{para["id"]}"]').first.get_attribute('d').startswith('M')
    p.locator(f'#objects [data-id="{para["id"]}"]').click()
-   assert p.locator('#properties').get_by_text('Parameter start').count()==1
-   p.locator('#properties').get_by_label('Parameter start').fill('-2')
-   p.locator('#properties').get_by_label('Parameter start').press('Tab')
+   assert p.locator('#properties').get_by_text('t min').count()==1
+   p.locator('#properties').get_by_label('t min').fill('-2')
+   p.locator('#properties').get_by_label('t min').press('Tab')
    assert exported(p)['objects'][-1]['tMin']==-2
    p.locator('#undo').click();assert exported(p)['objects'][-1]['tMin']==0
    p.locator('#redo').click();assert exported(p)['objects'][-1]['tMin']==-2
@@ -49,7 +49,7 @@ def run():
    submit(p,'implicit','x*y-1');obj=exported(p)['objects'][-1]
    assert obj['expr']=='x*y-1' and p.locator(f'#drawing [data-id="{obj["id"]}"]').first.get_attribute('d').startswith('M')
    before=exported(p);submit(p,'implicit','x==1');assert exported(p)==before
-   submit(p,'parametric','cos(u)','window.alert(1)');assert exported(p)==before
+   submit(p,'parametric','cos(t)','window.alert(1)');assert exported(p)==before
    # Settings change must invalidate plot-cache results without modifying curve definitions.
    p.locator('#plot-budget').select_option('20000');p.locator('#implicit-grid').fill('18');p.locator('#implicit-grid').press('Tab')
    d=exported(p);assert d['settings']['plotBudget']==20000 and d['settings']['implicitGrid']==18

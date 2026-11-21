@@ -24,21 +24,18 @@ def run():
             assert p.locator('#parameter-symbol').is_hidden()
             add(p,'function','2PI + 3e + xsin(x)')
             p.locator('#plot-mode').select_option('parametric')
-            assert p.locator('#parameter-symbol').is_visible()
+            # The current 2D authoring UI intentionally uses one fixed parameter t.
+            assert p.locator('#parameter-symbol').is_hidden()
             assert p.locator('#parameter-symbol').input_value()=='t'
-            p.locator('#parameter-symbol').select_option('u')
-            p.locator('#command').fill('2u*cos(u)')
-            p.locator('#command-y').fill('2u*sin(u)')
+            p.locator('#command').fill('2t*cos(t)')
+            p.locator('#command-y').fill('2t*sin(t)')
             p.locator('#command-form button').click()
             param=state(p)['objects'][-1]
-            assert param['type']=='parametric' and param['parameter']=='u'
-            assert p.locator('#properties').get_by_text('Parameter symbol').count()==1
-            p.locator('#properties select[aria-label="Parameter symbol"]').select_option('v')
-            param=state(p)['objects'][-1]
-            assert param['parameter']=='v' and param['xExpr']=='2v*cos(v)' and param['yExpr']=='2v*sin(v)',param
+            assert param['type']=='parametric' and param['parameter']=='t'
+            assert param['xExpr']=='2t*cos(t)' and param['yExpr']=='2t*sin(t)',param
             assert p.locator('#drawing path[data-id="'+param['id']+'"]').count()>0
             add(p,'implicit','x^2+y^2=4')
-            assert p.locator('#properties').get_by_text('F(x, y) =',exact=True).count()==1
+            assert p.locator('#properties').get_by_text('F(x, y)',exact=True).count()==1
             field=add(p,'vectorField','-y','x')
             assert field['type']=='vectorField' and field['density']==12 and field['normalized'] is False
             assert field['region']['xMin']<field['region']['xMax']
@@ -49,7 +46,7 @@ def run():
             inputs=group.locator('input')
             inputs.nth(0).fill('-2');inputs.nth(1).fill('2');inputs.nth(2).fill('-3');inputs.nth(3).fill('3')
             assert state(p)['objects'][-1]['region']==before
-            group.get_by_role('button',name='Redraw region').click()
+            inputs.nth(3).press('Enter')
             field=state(p)['objects'][-1]
             assert field['region']=={'xMin':-2,'xMax':2,'yMin':-3,'yMax':3},field
             p.locator('#properties label.check').filter(has_text='Normalize lengths').locator('input').check()
@@ -86,6 +83,6 @@ def run():
             p.set_viewport_size({'width':390,'height':820})
             assert p.locator('#plot-mode').count()==1
             assert not errors,errors
-            print('PASS Round38 Chromium: 5 modes, parameter rename, 2D region apply, arrows, domain PNG image, style, JSON/SVG, undo/redo, ZH/mobile')
+            print('PASS Round38 Chromium: 5 modes, fixed-t parameter, 2D region apply, arrows, domain PNG image, style, JSON/SVG, undo/redo, ZH/mobile')
         finally:browser.close()
 if __name__=='__main__':run()

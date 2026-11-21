@@ -2023,3 +2023,18 @@ Double and Wavy morphisms/free curves expose only None, End, Start, Both. Double
 - Keep the current short Chinese excenter labels; update legacy regression expectations, not the user-facing strings.
 - Do not destructively prune historical files while the legacy package inventory and historical checksums disagree with the current authoritative source.
 - Continue to distinguish verified checks from timed-out, unexecuted, or unverified browser and deployment coverage.
+
+
+### Round 224 — Cross-mode render reliability audit
+- Verify the past implicit-3D rendering failure classes across **all** plotting modes, including 2D function/parametric/implicit/vector-field/domain coloring and 3D explicit/parametric/implicit/vector-field/domain coloring.
+- Protect image determinism, stale-render cancellation, 2D/3D state isolation, no fabricated contours, malformed-expression rollback, export quality, and scene memory lifecycle.
+- Preserve the current Round 221 CPU renderer and all established UI/geometry/export behavior. Add regression coverage; do not claim hardware-independent performance gains from a single headless Chromium timing.
+- Document obsolete historical test assumptions separately from verified product defects, and disclose unexecuted GPU/hosted/browser-inventory testing.
+
+
+### Round 225 — Close historical plotting-test coverage gaps (2026-11-20)
+- Keep the current UI contract: 2D parametric authoring uses fixed `t`; the parameter selector remains hidden. Historical imports may retain compatibility fields, but tests must not demand retired authoring controls.
+- Current 2D/3D region bounds use Enter to commit; the centered half-range control applies symmetric ±R in one atomic edit. Legacy `Redraw region` and `Apply ±` buttons must not be restored just to satisfy historical tests.
+- Maintain current bilingual tutorial section structure, rather than preserving old HTML headings for test compatibility.
+- Preserve the accepted Round 221 renderer. Do not prune, reconstruct, or overwrite historical archives without a verifiable authoritative inventory.
+- For every browser test claimed as PASS, run the executable against the current application; keep physical GPU and hosted verification clearly separate.
