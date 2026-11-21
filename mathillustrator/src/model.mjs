@@ -1,4 +1,4 @@
-import {validateAlgebra} from './algebra.mjs?cut=round226';
+import {validateAlgebra,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round227';
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
 import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
@@ -648,20 +648,36 @@ export function command(doc,source){
  let m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.+)\)$/);
  if(m){
   const parts=m[2].split(',');if(parts.length!==2)throw Error('A point needs exactly two coordinate expressions.');
+  const sliderValues=Object.fromEntries((doc.algebra?.sliders??[]).map(item=>[item.name,item.value]));
+  const sliderNames=Object.keys(sliderValues);
+  const dynamic=parts.some(expr=>sliderNames.some(name=>new RegExp('\\b'+name+'\\b').test(expr)));
   const xy=parts.map(expr=>{
    if(/^[+\-]?(?:Infinity|NaN)$/i.test(expr.trim()))throw Error('Unsupported coordinate literal.');
-   try{return parseCurveExpression(expr,[])({});}
+   try{return dynamic?evaluateAlgebra(expr,sliderValues):parseCurveExpression(expr,[])({});}
    catch(error){if(/Numeric literal out of range/.test(error.message))throw Error('Point coordinates must be finite.');throw error;}
   });
   if(!safeCoord(xy)||xy.some(v=>Math.abs(v)>1e6))throw Error('Point coordinates must be finite and within ±1,000,000.');
-  if(byName(doc,m[1]))throw Error('Name already in use.');return addPoint(doc,xy,m[1]);
+  if(byName(doc,m[1])||(doc.algebra?.sliders??[]).some(item=>item.name===m[1]))throw Error('Name already in use.');const point=addPoint(doc,xy,m[1]);if(dynamic)point.xyExpr=parts.map(v=>v.trim());return point;
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(x\)\s*=\s*(.+)$/);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2]);return append(doc,{type:'function',name:m[1],expr:m[2]});}
- m=s.match(/^(Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|AngleBisector|Midpoint)\s*\(([^()]*)\)$/i);
- if(m){const type=m[1].toLowerCase()==='anglebisector'?'angleBisector':m[1].toLowerCase(),parts=m[2].split(',').map(s=>s.trim());const min={angleBisector:3,segment:2,arrow:2,line:2,circle:2,ellipse:2,rectangle:3,parallelogram:3,polygon:3,polyline:2,bezier:4,angle:3,anglebisector:3,midpoint:2}[type];
-  if(parts.some(x=>!x)||parts.length<(type==='rectangle'?2:min)||(!['polygon','polyline'].includes(type)&&(['ellipse','rectangle'].includes(type)?[2,3].includes(parts.length):parts.length===min)===false))throw Error('Incorrect number of point arguments.');
-  const refs=parts.map(name=>pointName(doc,name));checkNewGeometry(type,refs.map(id=>position(doc,id)));const result=append(doc,{type,refs});if(type==='polygon')appendPolygonEdges(doc,result.id);if(['rectangle','parallelogram'].includes(type))appendDerivedShapeEdges(doc,result.id);return result;
+ // A single named-point constructor path is shared by GUI and Algebra.
+ // Tool aliases are explicitly mapped to persisted model types.
+ m=s.match(/^(Segment|Vector|Arrow|Line|Ray|PerpBisector|PerpendicularBisector|Circle|CircleThrough3|Ellipse|Rectangle|Parallelogram|Polygon|Triangle|Quadrilateral|Polyline|Bezier|Angle|AngleBisector|Midpoint|Spline|ClosedSpline|CircularArc|Hyperbola)\s*\(([^()]*)\)$/i);
+ if(m){
+  const kind=m[1].toLowerCase(),aliases={vector:'arrow',perpendicularbisector:'perpBisector',perpbisector:'perpBisector',anglebisector:'angleBisector',circlethrough3:'circleThrough3',closedSpline:'spline',closedspline:'spline',circulararc:'circularArc',triangle:'polygon',quadrilateral:'polygon'};
+  const type=aliases[kind]??kind,parts=m[2].split(',').map(value=>value.trim());
+  const counts={segment:[2,2],vector:[2,2],arrow:[2,2],line:[2,2],ray:[2,2],perpbisector:[2,2],perpendicularbisector:[2,2],circle:[2,2],circlethrough3:[3,3],ellipse:[2,3],rectangle:[2,3],parallelogram:[3,3],polygon:[3,2000],triangle:[3,3],quadrilateral:[4,4],polyline:[2,2000],bezier:[4,4],angle:[3,3],anglebisector:[3,3],midpoint:[2,2],spline:[3,2000],closedspline:[3,2000],circulararc:[3,3],hyperbola:[3,3]};
+  const [min,max]=counts[kind];
+  if(parts.some(value=>!value)||parts.length<min||parts.length>max)throw Error('Incorrect number of point arguments.');
+  const refs=parts.map(name=>pointName(doc,name));
+  const positions=refs.map(id=>position(doc,id));
+  if(['segment','arrow','line','ray','perpBisector','circle','circleThrough3','ellipse','rectangle','parallelogram','angle','angleBisector','circularArc','hyperbola'].includes(type))checkNewGeometry(type,positions);
+  if((type==='polygon'||type==='spline')&&new Set(refs).size!==refs.length)throw Error('Construction vertices must be distinct.');
+  const result=append(doc,{type,refs,...(kind==='closedspline'?{closed:true}:{})});
+  if(type==='polygon')appendPolygonEdges(doc,result.id);
+  if(['rectangle','parallelogram'].includes(type))appendDerivedShapeEdges(doc,result.id);
+  return result;
  }
  m=s.match(/^(Parallel|Perpendicular|Foot|Intersect)\s*\(\s*([A-Za-z][A-Za-z0-9_ ]*)\s*,\s*([A-Za-z][A-Za-z0-9_ ]*)\s*\)$/i);
  if(m){
@@ -674,6 +690,25 @@ export function command(doc,source){
    if(!geometricLine(first,resolver)||!geometricLine(second,resolver)||!intersectStraightLines(resolver.line(first),resolver.line(second)))throw Error('Choose two crossing straight objects.');
   }else if(!geometricPoint(first,resolver)||!geometricLine(second,resolver))throw Error('Choose a point and a valid straight object.');
   return append(doc,{type,refs});
+ }
+ // Programmatic measurement constructions reference the same live geometry IDs
+ // as mouse tools. Numeric fields are derived from named 2D sliders.
+ m=s.match(/^(FixedLength|FixedAngle|Rotate|Dilate)\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*(.+)\)$/i);
+ if(m){
+  const kind=m[1].toLowerCase(),first=byName(doc,m[2]),second=byName(doc,m[3]);
+  if(!first||!second)throw Error('Unknown construction reference.');
+  const resolver=createResolver(doc);
+  if(kind==='fixedlength'||kind==='fixedangle'){
+   if(!geometricPoint(first,resolver)||!geometricPoint(second,resolver))throw Error('Choose two geometric points.');
+   const points=[resolver.at(first.id),resolver.at(second.id)];
+   checkNewGeometry('fixedLength',points);
+   const result=append(doc,{type:kind==='fixedlength'?'fixedLength':'fixedAngle',refs:[first.id,second.id],...(kind==='fixedlength'?{length:1}:{angle:0})});
+   return bindMeasurement(doc,result,kind==='fixedlength'?'length':'angle',m[4].trim());
+  }
+  if(!geometricPoint(second,resolver))throw Error('Transformation center must be a geometric point.');
+  if(first.id===second.id)throw Error('Source and center must be distinct.');
+  const result=append(doc,{type:'transformCopy',refs:[first.id,second.id],transform:kind==='rotate'?'rotate':'dilate',amount:1});
+  return bindMeasurement(doc,result,'amount',m[4].trim());
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*"([^"\\]{1,180})"\s*\)$/i);
  if(m){if(byName(doc,m[1]))throw Error('Name already in use.');return append(doc,{type:'node',name:m[1],xy:[Number(m[2]),Number(m[3])],text:m[4],fontSize:17});}

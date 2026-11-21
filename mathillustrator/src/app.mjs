@@ -1,4 +1,4 @@
-import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra} from './algebra.mjs?cut=round226';
+import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName} from './algebra.mjs?cut=round227';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
@@ -6,7 +6,7 @@ import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selecti
 import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round147';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round227';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
@@ -191,7 +191,7 @@ function initialSiteTheme(){
  }
  return 'dark'; // The site's default navy appearance; the user's explicit choice remains authoritative.
 }
-let selected3d=null, cameraDrag=null;
+let selected3d=null, selectedSlider=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
 let uiPrefs={language:'en',font:'system',autoPan:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 function localizedConfirm(message){return window.confirm(translated(message,uiPrefs.language));}
@@ -244,7 +244,7 @@ function activeSelection(){
  return doc.objects.filter(o=>selectedIds.has(o.id));
 }
 function setSelection(ids,primary=null){
- constructionEmphasis.clear();
+ selectedSlider=null;constructionEmphasis.clear();
  const available=new Set(doc.objects.map(o=>o.id));
  selectedIds.clear();
  for(const id of ids)if(available.has(id))selectedIds.add(id);
@@ -265,7 +265,7 @@ function recordUndo(before){
  future=[];syncHistory();
 }
 function syncHistory(){$('undo').disabled=!history.length;$('redo').disabled=!future.length;}
-function restore(s){constructionEmphasis.clear();lastMoveCanvasTap=null;doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;activeSelection();clearDraft();enqueueSave();renderAll();}
+function restore(s){constructionEmphasis.clear();lastMoveCanvasTap=null;doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();renderAll();}
 function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.push(JSON.stringify(doc));restore(history.pop());syncHistory();}
 function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
 let pendingPropertiesFrame=0;
@@ -1099,7 +1099,7 @@ function openObjectMenu(o,trigger){
   Lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
   Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'};
- const blocked=[...affected(doc,o.id)].some(id=>get(doc,id)?.locked);
+ const blocked=[...affected(doc,o.id)].some(id=>objectEffectivelyLocked(id));
  for(const [action,label] of actions){const button=document.createElement('button');button.type='button';button.dataset.action=action;
   const blockedDelete=action==='delete'&&blocked;
   const description=translated(blockedDelete?'Unlock dependents before deleting.':label,uiPrefs.language);
@@ -1296,7 +1296,7 @@ function renderListWindow(){
  function spacer(px){const e=document.createElement('div');e.className='list-spacer';e.style.height=px+'px';e.setAttribute('aria-hidden','true');return e;}
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
-  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=o.locked?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
+  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=objectEffectivelyLocked(o.id)?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
   const objectIcon=document.createElement('span');objectIcon.className='glyph';
   const toolGlyph=objectGlyphTool(o);
   if(toolGlyph)objectIcon.innerHTML=toolGlyphSvg(toolGlyph);
@@ -1545,22 +1545,56 @@ function renderNewFreehandControls(root){
  choice('Arrowheads',shaped?'none':visibleArrowheads(freehandLine,freehandHeads),FREE_CURVE_HEAD_CHOICES,v=>freehandHeads=v);
  const arrow=grid.querySelector('select[aria-label="Arrowheads"]');arrow.disabled=shaped;
 }
+// A lock propagates through every transitive geometric dependency without
+// modifying descendants' own lock flags. Independently locked children stay locked
+// when their parent is unlocked. Algebra expressions can depend on named sliders.
+function algebraUses(expression,name){return typeof expression==='string'&&new RegExp('(?:^|[^A-Za-z0-9_])'+name+'(?:$|[^A-Za-z0-9_])').test(expression);}
+function sliderAffected(name){
+ const ids=new Set();for(const o of doc.objects){const formulas=[...(o.xyExpr||[]),...Object.values(o.measureExpr||{})];if(formulas.some(f=>algebraUses(f,name)))for(const id of affected(doc,o.id))ids.add(id);}
+ return ids;
+}
+function objectEffectivelyLocked(id,seen=new Set()){
+ if(seen.has(id))return false;seen.add(id);const o=get(doc,id);if(!o)return false;
+ if(o.locked)return true;
+ if((doc.algebra?.sliders||[]).some(s=>s.locked&&[...(o.xyExpr||[]),...Object.values(o.measureExpr||{})].some(f=>algebraUses(f,s.name))))return true;
+ return [...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])].some(dep=>objectEffectivelyLocked(dep,seen));
+}
+function selectSlider(name){selected=null;selectedIds.clear();selectedSlider=name;renderList();renderAlgebra();renderProperties();scheduleRender();}
+function renderSliderProperties(root,item){
+ const title=document.createElement('strong');title.textContent='Slider '+item.name;root.append(title);
+ const generation=documentGeneration;
+ const edit=fn=>update(()=>{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(generation!==documentGeneration||!live||selectedSlider!==item.name||live.locked)throw Error('Slider changed or locked.');fn(live);});
+ if(item.locked){const message=document.createElement('p');message.className='subtle';message.textContent='Locked — unlock in the three-dot menu.';root.append(message);return;}
+ field(root,'Name',item.name,'text',v=>{
+  const previous=selectedSlider;
+  const ok=edit(live=>{
+   if(!validSliderName(v)||doc.objects.some(o=>o.name===v)||doc.algebra.sliders.some(x=>x!==live&&x.name===v))throw Error('Invalid or duplicate slider name.');
+   const old=live.name;for(const o of doc.objects){if(o.xyExpr)o.xyExpr=o.xyExpr.map(f=>f.replace(new RegExp('\\b'+old+'\\b','g'),v));if(o.measureExpr)for(const k of Object.keys(o.measureExpr))o.measureExpr[k]=o.measureExpr[k].replace(new RegExp('\\b'+old+'\\b','g'),v);}live.name=v;selectedSlider=v;
+  });
+  if(ok===false)selectedSlider=previous;
+  return ok;
+ });
+ const range=document.createElement('div');range.className='twocol';root.append(range);
+ for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
+ const visible=document.createElement('label');visible.className='check';const check=document.createElement('input');check.type='checkbox';check.checked=item.visible;check.onchange=()=>edit(live=>{live.visible=check.checked;});visible.append(check,' Show on canvas');root.append(visible);
+}
 function renderProperties(){
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
 
- const root=$('properties');root.classList.remove('properties-3d');root.replaceChildren();const objects=activeSelection();
+ const root=$('properties');root.classList.remove('properties-3d');root.replaceChildren();if(selectedSlider){const item=doc.algebra?.sliders.find(s=>s.name===selectedSlider);if(item){renderSliderProperties(root,item);localizeUI(root,uiPrefs.language);return;}selectedSlider=null;}const objects=activeSelection();
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
  if(!o){if(tool==='freehand'){renderNewFreehandControls(root);localizeUI(root,uiPrefs.language);}return;}
- if(o.locked){const p=document.createElement('p');p.className='subtle';p.textContent='Locked';root.append(p);return;}
+ if(objectEffectivelyLocked(o.id)){const p=document.createElement('p');p.className='subtle';p.textContent='Locked (including dependencies)';root.append(p);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
  // replace the document and make the old object reference stale. Resolve by ID in
  // every transaction, preventing false-success edits that silently do nothing.
  const editorGeneration=documentGeneration;
  const edit=fn=>update(()=>{const live=get(doc,o.id);
-  if(editorGeneration!==documentGeneration||!live||live.type!==o.type||live.locked||selected!==o.id)throw Error('Object changed while editing. Please reselect it.');
+  if(editorGeneration!==documentGeneration||!live||live.type!==o.type||objectEffectivelyLocked(live.id)||selected!==o.id)throw Error('Object changed while editing. Please reselect it.');
   fn(live);
  });
+ if(o.measureExpr){for(const [key,expression] of Object.entries(o.measureExpr))field(root,key==='amount'?'Transformation amount':key==='length'?'Length expression':'Angle (radians) expression',expression,'text',value=>edit(live=>bindMeasurement(doc,live,key,value)));}
  if(o.type==='point'){const expressions=o.xyExpr??o.xy.map(String);for(let axis=0;axis<2;axis++)field(root,(axis===0?'X':'Y')+' expression',expressions[axis],'text',v=>edit(live=>{const next=[...(live.xyExpr??live.xy.map(String))];next[axis]=v;live.xyExpr=next;}));}
  const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
  if(pointRole(o,id=>get(doc,id))){
@@ -1767,24 +1801,46 @@ function drawSliderHandles(svg){
   svg.append(group);
  }
 }
+function openAlgebraActions(name,trigger){
+ closeObjectMenu();const menu=$('object-action-menu'),item=doc.algebra?.sliders.find(s=>s.name===name);if(!item)return;
+ const generation=documentGeneration;objectMenuContext={id:'slider:'+name,trigger,generation};trigger.setAttribute('aria-expanded','true');menu.replaceChildren();
+ const actions=[['visibility',item.visible?'Hide':'Show'],['lock',item.locked?'Unlock':'Lock'],['delete','Delete']];
+ for(const [action,label] of actions){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.setAttribute('role','menuitem');button.title=label;button.setAttribute('aria-label',label);
+  const icons={Hide:'<path d="M3 3l18 18M9.9 5.2a10.9 10.9 0 0 1 2.1-.2c4.9 0 8.9 4.7 10 7a15 15 0 0 1-3.6 4.5"/>',Show:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',Lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'};
+  button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[label]}</svg>`;
+  button.onclick=()=>{
+   closeObjectMenu();if(documentGeneration!==generation||!doc.algebra.sliders.includes(item)){notice('Slider changed. Reopen its menu.');return;}
+   if(action==='delete')deleteSlider(name);else update(()=>{if(action==='visibility')item.visible=!item.visible;else item.locked=!item.locked;});
+  };menu.append(button);
+ }
+ menu.hidden=false;const r=trigger.getBoundingClientRect(),w=menu.offsetWidth,h=menu.offsetHeight;
+ menu.style.left=`${Math.max(6,Math.min(innerWidth-w-6,r.right-w))}px`;
+ menu.style.top=`${Math.max(6,Math.min(innerHeight-h-6,r.bottom+h+3<innerHeight?r.bottom+3:r.top-h-3))}px`;
+}
+function deleteSlider(name){const slider=doc.algebra?.sliders.find(s=>s.name===name);if(!slider)return;
+ const ids=sliderAffected(name);if(slider.locked||[...ids].some(id=>objectEffectivelyLocked(id))){notice('Unlock slider and dependent objects before deleting.');return;}
+ const objects=clone(doc.objects.filter(o=>ids.has(o.id))),saved=clone(slider);
+ if(update(()=>{doc.algebra.sliders=doc.algebra.sliders.filter(s=>s.name!==name);doc.objects=doc.objects.filter(o=>!ids.has(o.id));if(selectedSlider===name)selectedSlider=null;})){
+  trash.unshift({at:Date.now(),objects,sliders:[saved]});trash=trash.slice(0,20);persistTrash();
+ }
+}
 function renderAlgebra(){
  const wrapper=$('algebra-list');if(!wrapper)return;wrapper.replaceChildren();
- for(const item of doc.algebra?.sliders??[]){const row=document.createElement('div');row.className='algebra-entry';
-  const name=document.createElement('span');name.textContent=item.name+' = '+Number(item.value.toPrecision(8));
-  const input=document.createElement('input');input.type='range';input.min=item.min;input.max=item.max;input.step=item.step;input.value=item.value;input.setAttribute('aria-label','Slider '+item.name);
+ for(const item of doc.algebra?.sliders??[]){const row=document.createElement('div');row.className='algebra-entry'+(selectedSlider===item.name?' selected':'');row.dataset.slider=item.name;
+  const name=document.createElement('span');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(8));row.append(name);
+  const input=document.createElement('input');input.type='range';input.min=item.min;input.max=item.max;input.step=item.step;input.value=item.value;input.disabled=Boolean(item.locked);input.setAttribute('aria-label','Slider '+item.name);
   let initial=null;input.onpointerdown=()=>{initial=JSON.stringify(doc);};input.onkeydown=()=>{initial??=JSON.stringify(doc);};
-  input.oninput=()=>{initial??=JSON.stringify(doc);const before=JSON.stringify(doc),value=Number(input.value);try{item.value=value;recalculateAlgebra(doc);validateDoc(doc);documentRevision++;name.textContent=item.name+' = '+value;renderList();scheduleRender();}catch(err){doc=JSON.parse(before);notice(err.message);renderAlgebra();render();}};
-  input.onchange=()=>{if(initial&&initial!==JSON.stringify(doc)){recordUndo(initial);documentRevision++;enqueueSave();}initial=null;renderAlgebra();};
-  const visible=document.createElement('input');visible.type='checkbox';visible.checked=item.visible;visible.title='Show on canvas';visible.setAttribute('aria-label','Show '+item.name+' on canvas');visible.onchange=()=>update(()=>{doc.algebra.sliders.find(s=>s.name===item.name).visible=visible.checked;});
-  const removeButton=document.createElement('button');removeButton.type='button';removeButton.textContent='×';removeButton.title='Delete slider';removeButton.setAttribute('aria-label','Delete slider '+item.name);removeButton.onclick=()=>update(()=>{doc.algebra.sliders=doc.algebra.sliders.filter(a=>a.name!==item.name);});
-  const edit=document.createElement('button');edit.type='button';edit.textContent='⋯';edit.title='Edit slider range';edit.onclick=()=>{
-   const response=localizedPrompt('Slider range: min, max, step',`${item.min}, ${item.max}, ${item.step}`);if(response===null)return;
-   const parts=response.split(',').map(v=>{try{return evaluateAlgebra(v);}catch{return NaN;}});
-   if(parts.length!==3||parts.some(v=>!Number.isFinite(v))){notice('Invalid slider range.');return;}
-   update(()=>{const s=doc.algebra.sliders.find(a=>a.name===item.name);[s.min,s.max,s.step]=parts;s.value=Math.min(s.max,Math.max(s.min,s.value));});};
-  row.append(name,input,visible,edit,removeButton);wrapper.append(row);
+  input.oninput=()=>{if(item.locked)return;initial??=JSON.stringify(doc);const before=JSON.stringify(doc),value=Number(input.value);try{item.value=value;recalculateAlgebra(doc);validateDoc(doc);documentRevision++;name.textContent=item.name+' = '+value;renderList();scheduleRender();}catch(err){doc=JSON.parse(before);notice(err.message);renderAlgebra();render();}};
+  input.onchange=()=>{if(initial&&initial!==JSON.stringify(doc)){recordUndo(initial);documentRevision++;enqueueSave();}initial=null;renderAlgebra();if(selectedSlider===item.name&&!$('properties').contains(document.activeElement))renderProperties();};row.append(input);
+  const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title='Slider actions';more.setAttribute('aria-label','Slider actions: '+item.name);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.onclick=e=>{e.stopPropagation();openAlgebraActions(item.name,more);};row.append(more);
+  row.onclick=e=>{if(e.target===more||e.target===input)return;selectSlider(item.name);};wrapper.append(row);
  }
- for(const o of doc.objects.filter(o=>o.xyExpr)){const line=document.createElement('div');line.className='algebra-entry';line.textContent=`${o.name} = (${o.xyExpr.join(', ')})`;wrapper.append(line);}
+ for(const o of doc.objects.filter(o=>o.xyExpr||o.measureExpr)){
+  const line=document.createElement('div');line.className='algebra-entry';line.dataset.id=o.id;
+  const text=document.createElement('span');text.className='algebra-entry-label';text.textContent=o.xyExpr?`${o.name} = (${o.xyExpr.join(', ')})`:`${o.name}: ${Object.entries(o.measureExpr).map(([key,value])=>key+' = '+value).join(', ')}`;line.append(text);
+  const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title='Object actions';more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};line.append(more);
+  line.onclick=e=>{if(e.target!==more)select(o.id);};wrapper.append(line);
+ }
 }
 function renderAll(){renderAlgebra();renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
 function select(id){setSelection(id?[id]:[],id);}
@@ -2186,7 +2242,7 @@ function pointerDown(e){
    const [x,y]=project(item.xy),knob=x+148*(item.value-item.min)/(item.max-item.min);
    return Math.hypot(sx-knob,sy-y-10)<=11;
   })?.name;
-  if(candidate&&doc.algebra?.sliders.some(s=>s.name===candidate&&s.visible)){
+  if(candidate&&doc.algebra?.sliders.some(s=>s.name===candidate&&s.visible&&!s.locked)){
    drag={kind:'slider',pointerId:e.pointerId,name:candidate,before:JSON.stringify(doc),startX:sx};
    try{$('drawing').setPointerCapture(e.pointerId);}catch{}
    e.preventDefault();return;
@@ -2263,13 +2319,13 @@ function pointerDown(e){
     :{kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy,emptyMove:true};
   }else{
    select(id);
-   const o=get(doc,id);if(o&&!o.hidden&&!o.locked&&!o.xyExpr&&['point','node','text','pointOnObject'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};
-   else if(o?.type==='freehand'&&!o.locked)drag={kind:'freehand-move',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,path:o.path.map(p=>[...p]),rawPath:o.rawPath?.map(p=>[...p])};
+   const o=get(doc,id);if(o&&!o.hidden&&!objectEffectivelyLocked(o.id)&&!o.xyExpr&&['point','node','text','pointOnObject'].includes(o.type))drag={kind:'point',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,moved:false,excluded:affected(doc,id)};
+   else if(o?.type==='freehand'&&!objectEffectivelyLocked(o.id))drag={kind:'freehand-move',pointerId:e.pointerId,id,before:JSON.stringify(doc),sx,sy,path:o.path.map(p=>[...p]),rawPath:o.rawPath?.map(p=>[...p])};
   }
  }else if(tool==='pan'){
   const id=uiPrefs.autoPan!==false?geometryHit(e,sx,sy):null;
   const obj=id&&get(doc,id);
-  if(obj&&!obj.hidden&&!obj.locked&&!obj.xyExpr)drag={kind:'pan-object-pending',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy,id};
+  if(obj&&!obj.hidden&&!objectEffectivelyLocked(obj.id)&&!obj.xyExpr)drag={kind:'pan-object-pending',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy,id};
   else drag={kind:'pan',pointerId:e.pointerId,sx,sy,cx:view.cx,cy:view.cy};
  }
  else if(tool==='freehand'){drag={kind:'freehand',pointerId:e.pointerId,path:[world],startAttachment:freehandAttachment(world)};}
@@ -2584,7 +2640,7 @@ function pointerMove(e){
   const pending=drag,obj=get(doc,pending.id);
   drag=null;selectTool('select');select(pending.id);
   if(obj&&['point','node','text','pointOnObject'].includes(obj.type))drag={kind:'point',pointerId:e.pointerId,id:pending.id,before:JSON.stringify(doc),sx:pending.sx,sy:pending.sy,moved:true,excluded:affected(doc,pending.id)};
-  else if(obj?.type==='freehand'&&!obj.locked)drag={kind:'freehand-move',pointerId:e.pointerId,id:pending.id,before:JSON.stringify(doc),sx:pending.sx,sy:pending.sy,path:obj.path.map(p=>[...p]),rawPath:obj.rawPath?.map(p=>[...p])};
+  else if(obj?.type==='freehand'&&!objectEffectivelyLocked(obj.id))drag={kind:'freehand-move',pointerId:e.pointerId,id:pending.id,before:JSON.stringify(doc),sx:pending.sx,sy:pending.sy,path:obj.path.map(p=>[...p]),rawPath:obj.rawPath?.map(p=>[...p])};
   else drag={kind:'selected-object',pointerId:e.pointerId,id:pending.id};
  }
  if(drag?.kind==='marquee'){drag.ex=sx;drag.ey=sy;}
@@ -2721,7 +2777,7 @@ function fit(){if(in3D()){update(()=>{doc.scene3d.options.zoom=1;});return;}
 function deleteObject(id){
  if(!get(doc,id))return;
  const targets=affected(doc,id);
- if([...targets].some(key=>get(doc,key)?.locked)){notice('Unlock dependents before deleting.');return;}
+ if([...targets].some(key=>objectEffectivelyLocked(key))){notice('Unlock dependents before deleting.');return;}
  const removed=clone(doc.objects.filter(o=>targets.has(o.id)));
  const ok=update(()=>{remove(doc,id);if(selected&&targets.has(selected))selected=null;});
  if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
@@ -2731,14 +2787,16 @@ function persistTrash(){
  try{localStorage.setItem(TRASH,JSON.stringify(trash));}catch(e){notice('Recently Deleted could not be saved. Export a JSON backup.');}
  renderTrash();
 }
-function renderTrash(){
- const root=$('trash-items');if(!root)return;
- root.replaceChildren();$('trash-count').textContent=String(trash.length);
+function renderTrash(rootId='trash-items'){
+ const root=$(rootId);if(!root)return;
+ root.replaceChildren();if($('trash-count'))$('trash-count').textContent=String(trash.length);if($('algebra-trash-count'))$('algebra-trash-count').textContent=String(trash.filter(e=>e.sliders?.length||e.objects?.length).length);
  for(const [index,entry] of trash.entries()){
+  if(rootId==='algebra-trash-items'&&!entry.objects.length&&!entry.sliders?.length)continue;
   const row=document.createElement('div');row.className='trash-row';
   const title=document.createElement('span');title.className='trash-names';
   const plots3d=Array.isArray(entry.plots3d)?entry.plots3d:[];
-  const names=[...entry.objects,...plots3d].map(o=>typeof o.name==='string'&&o.name.trim()?o.name.trim():o.id).filter(Boolean);
+  const savedSliders=Array.isArray(entry.sliders)?entry.sliders:[];
+  const names=[...entry.objects,...plots3d,...savedSliders].map(o=>typeof o.name==='string'&&o.name.trim()?o.name.trim():o.id).filter(Boolean);
   title.textContent=`${plots3d.length?'3D · ':''}${names.join(', ')||translated(`${entry.objects.length} object(s)`,uiPrefs.language)} · ${new Date(entry.at).toLocaleString()}`;
   title.title=names.join(', ');
   const button=document.createElement('button');button.textContent='Restore';
@@ -2747,12 +2805,14 @@ function renderTrash(){
    const source=trash[index];if(!source)return;
    const restored3d=Array.isArray(source.plots3d)?source.plots3d:[];
    if(source.objects.some(o=>get(doc,o.id)||doc.objects.some(existing=>existing.name===o.name))
-      ||restored3d.some(o=>doc.scene3d?.plots.some(p=>p.id===o.id||p.name===o.name))){
+      ||restored3d.some(o=>doc.scene3d?.plots.some(p=>p.id===o.id||p.name===o.name))
+      ||savedSliders.some(s=>doc.algebra?.sliders.some(existing=>existing.name===s.name)||doc.objects.some(o=>o.name===s.name))){
     notice('Restore blocked: an object ID or name is already used.');return;
    }
    // Both 2D and 3D deletion snapshots must restore transactionally; a
    // rejected schema or full 3D plot list leaves Recently Deleted untouched.
    const ok=update(()=>{
+    if(savedSliders.length){doc.algebra??={sliders:[]};doc.algebra.sliders.push(...clone(savedSliders));}
     if(source.objects.length){
      doc.objects.push(...clone(source.objects));
      const maximum=Math.max(...source.objects.map(o=>Number(o.id.slice(1))));
@@ -2770,6 +2830,7 @@ function renderTrash(){
   };
   row.append(title,button);root.append(row);
  }
+ if(rootId==='trash-items')renderTrash('algebra-trash-items');
 }
 // Local wall-clock timestamp, created only when an actual download starts.
 // Consistent across Save and every supported Export format.

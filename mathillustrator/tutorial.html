@@ -15,7 +15,15 @@ A = (a*cos(pi/3), a*sin(pi/3))
 B = (0, 0)
 Segment(A,B)</code></pre>
 <p>Dragging <code>a</code> updates A and the dependent segment. Select A in Objects to edit its X/Y expressions in Properties. Formula-backed points cannot be dragged independently: change their formula or slider instead. Undo/redo and project JSON retain the expressions. A slider cannot be deleted while a point expression requires it.</p>
-<p class="tip"><strong>Current scope:</strong> named numerical sliders, expression-driven 2D point coordinates and existing construction commands/derived objects. Arbitrary scripting, formula-driven properties of every geometry tool, and live 3D plot parameters are not yet implemented. Slider handles are editing UI, excluded from image exports.</p></div>
+<p>Additional live 2D commands:</p><pre><code>C = (a, a)
+FixedLength(A,B,a)
+FixedAngle(A,B,pi/a)
+Rotate(B,A,a/2)
+Dilate(B,A,a)
+Triangle(A,B,C)
+ClosedSpline(A,B,C)</code></pre>
+<p>Length, fixed-angle (in radians), rotation and dilation values can reference sliders. Select the resulting object in Objects to edit its measurement formula in Properties. Vector, Ray, CircleThrough3, Triangle, Quadrilateral, Spline, ClosedSpline, CircularArc, Hyperbola, and other named-point constructions use the same dynamic references. A command that needs a line or circle reference cannot be replaced by a point-only constructor.</p>
+<p class="tip"><strong>Current scope:</strong> 2D only. Invalid or out-of-range slider values are rejected rather than silently breaking dependent geometry. Arbitrary scripting, parameterization of every geometry property, variable polygon side counts, and live 3D plot parameters are not yet implemented. Slider handles are editor controls, excluded from image exports.</p></div>
 <div class="lang zh"><h3>滑块与代数定义</h3>
 <p>在“移动”和“平移”旁选择<strong>滑块</strong>，点击二维画布放置控件，拖动蓝色圆点改变数值。左侧<strong>代数</strong>标签可调整滑块范围、隐藏或显示画布控件，以及输入公式构造；原有<strong>对象</strong>标签和属性面板仍可使用。</p>
 <p>逐行输入：</p><pre><code>a = Slider(1, 5, 0.1, 2)
@@ -23,7 +31,15 @@ A = (a*cos(pi/3), a*sin(pi/3))
 B = (0, 0)
 Segment(A,B)</code></pre>
 <p>拖动 a 会更新 A 以及依赖它的线段。可在对象属性中编辑 A 的 X/Y 表达式。公式点不能直接拖动，应修改公式或滑块。撤销、重做和 JSON 保存均保留公式；有依赖时不能删除滑块。</p>
-<p class="tip"><strong>当前范围：</strong>命名数值滑块、公式驱动的二维点和已有命令所构造的依赖几何。尚不支持完整脚本、所有几何属性的公式输入或三维绘图参数联动。导出图像不会包含滑块编辑控件。</p></div></div></section><section class="chapter" id="syntax"><h2><span class="lang en">4. Expressions &amp; supported functions</span><span class="lang zh">4. 数学表达式与函数</span></h2><div class="lang en"><p>Plotting expressions are numerical formulas, <strong>not</strong> JavaScript and not LaTeX. Use <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code> and parentheses. Function calls require parentheses, for example <code>max(x,0)</code>. Use commas to separate arguments. Constants <code>pi</code>, <code>e</code> and <code>phi</code> (golden ratio, also <code>φ</code>) work in real and complex plots; <code>i</code> works in complex plots only. Names are case-insensitive. Multiplication may be implicit: <code>2pi</code>, <code>3x</code>, <code>2sin(x)</code>, <code>(x+1)(x-1)</code>. Write <code>1/(2*x)</code> when grouping matters.</p><h3>Real-valued functions (2D and 3D)</h3><p>All the functions below are actually implemented for real expressions. Angle inputs and outputs use <strong>radians</strong>.</p><table><tr><th>Category</th><th>Supported functions</th><th>Examples / meaning</th></tr>
+<p>新增二维参数构造示例：</p><pre><code>C = (a, a)
+FixedLength(A,B,a)
+FixedAngle(A,B,pi/a)
+Rotate(B,A,a/2)
+Dilate(B,A,a)
+Triangle(A,B,C)
+ClosedSpline(A,B,C)</code></pre>
+<p>长度、固定角（弧度）、旋转和缩放都可使用滑块公式。在对象属性中可修改其数值表达式。向量、射线、三点圆、三角形、四边形、样条、闭合样条、圆弧、双曲线等命名点构造可保持动态依赖。需要直线或圆作为输入的命令不能直接用点取代。</p>
+<p class="tip"><strong>当前范围：</strong>仅二维。非法或越界公式会被拒绝，避免破坏现有构造。不支持任意脚本、所有几何属性参数化、滑块控制多边形边数或三维图形联动。导出图像不包含滑块编辑控件。</p></div></div></section><section class="chapter" id="syntax"><h2><span class="lang en">4. Expressions &amp; supported functions</span><span class="lang zh">4. 数学表达式与函数</span></h2><div class="lang en"><p>Plotting expressions are numerical formulas, <strong>not</strong> JavaScript and not LaTeX. Use <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code> and parentheses. Function calls require parentheses, for example <code>max(x,0)</code>. Use commas to separate arguments. Constants <code>pi</code>, <code>e</code> and <code>phi</code> (golden ratio, also <code>φ</code>) work in real and complex plots; <code>i</code> works in complex plots only. Names are case-insensitive. Multiplication may be implicit: <code>2pi</code>, <code>3x</code>, <code>2sin(x)</code>, <code>(x+1)(x-1)</code>. Write <code>1/(2*x)</code> when grouping matters.</p><h3>Real-valued functions (2D and 3D)</h3><p>All the functions below are actually implemented for real expressions. Angle inputs and outputs use <strong>radians</strong>.</p><table><tr><th>Category</th><th>Supported functions</th><th>Examples / meaning</th></tr>
 <tr><td>Trigonometric</td><td><code>sin cos tan sec csc cot</code></td><td><code>sin(pi*x)</code>, <code>sec(x)=1/cos(x)</code></td></tr>
 <tr><td>Inverse trig</td><td><code>asin acos atan atan2</code></td><td><code>atan2(y,x)</code> takes two arguments (y then x)</td></tr>
 <tr><td>Hyperbolic</td><td><code>sinh cosh tanh asinh acosh atanh</code></td><td><code>asinh(x)</code></td></tr>

@@ -2047,3 +2047,20 @@ Approved design: single-track slider glyph next to Move/Pan, Objects/Algebra tab
 Delivered initial foundation: named numeric sliders with min/max/step/value, on-canvas handle placement and dragging, visible/hidden control state, range editing and deletion with dependency rejection; safe arithmetic expression evaluator; formula-defined 2D point coordinates; existing construction commands may refer to formula-defined points, and dependent geometry follows the existing resolver. Formula-backed points expose X/Y expressions in Properties, and values and expressions survive document JSON/undo/redo. Expressions and object names cannot collide with sliders. Invalid edits are rejected atomically. Existing 3D rendering and all preexisting glyphs remain unchanged.
 
 **Not yet delivered / do not misrepresent as supported:** arbitrary loops/conditions/scripting, complete programmatic constructors for every geometric type, formula editing of each possible numeric property (fixed angles/lengths, radii, control-point parameters and transformations), slider bindings into 2D graph formulas and 3D plot formulas, timeline animation, physical-device/browser release acceptance. These are subsequent feature phases and require their own verified implementation. Do not silently substitute numeric snapshots for live expressions.
+
+
+## Round 227 — 2D programmable geometry expansion (2026-11-20)
+
+Keep Slider and Algebra strictly in 2D. Do not implement the proposed Options or Closed Spline glyph replacements; preserve every existing glyph. Preserve the Objects/Algebra tabs and the current 3D renderer.
+
+Extend ordinary construction commands to cover named-point lines, rays, vectors, circle-through-three, polygons (triangle/quadrilateral), splines (including closed), circular arcs, conics with point-only inputs, and existing primitive types. Add reactive numeric formulas for FixedLength, FixedAngle (radians), Rotate and Dilate using the same scalar slider namespace and legacy model IDs. Formula values must round-trip through JSON/undo/redo and be editable in Properties. Invalid or stale formulas must be rejected; no silent parameter snapshots. The Algebra command parser must also recognize slider names in ordinary named-point definitions.
+
+Do not claim full programmable geometry yet. Variable polygon side counts, arbitrary scripting, full coverage of all object properties and 3D bindings are explicitly out of scope. New data should be optional for v1 JSON compatibility; old objects are unchanged.
+
+### Round 228 — 2D Algebra interaction consistency
+- Algebra uses compact typography and input sizes consistent with Objects; Objects remains the default tab.
+- Algebra slider rows and expression-object rows expose actions only through the same three-dot menu pattern as Objects: show/hide, lock/unlock, delete.
+- Slider settings (name, minimum, maximum, increment, current value, canvas visibility) are edited in docked Properties; never via browser prompt dialogs.
+- Slider and object locks apply to their full transitive geometric dependency descendants. An independently locked descendant remains locked when an ancestor is unlocked. The original lock flags are preserved rather than copied to descendants.
+- Deleting an unlocked slider removes its formula dependents and their descendants as one reversible transaction. Slider and dependent objects can be restored together using Algebra > Recently Deleted.
+- 3D plotting and existing tool glyphs remain unchanged; no Options or Closed Spline glyph changes.

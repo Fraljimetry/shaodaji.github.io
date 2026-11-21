@@ -1,3 +1,11 @@
+## Round 227 — 2D Algebra/Slider expansion (2026-11-20)
+
+**Scope:** Existing 2D UI and shared geometry model only; no new glyphs, no Options/Closed Spline glyph replacements, and no 3D runtime changes. Added live scalar-formula measurements for fixed lengths, fixed angles (radians), rotations and dilations; expanded point-reference constructors; ordinary named-point commands now understand named sliders. Formula editing in Properties, strict JSON validation, rollback, undo/redo, and old-project compatibility remain mandatory. No broad claim of all-object programmability.
+
+**Completed checks in current environment:** Full Node `node --test --test-concurrency=2 tests/*.test.mjs`: **693/693 PASS**, no skips or failures. JS syntax `node tests/verification/check_syntax.mjs`: **34/34 PASS**. Headless Chromium (real application module in isolated HTML fixture) **PASS**: Round 227 programmable geometry, Round 226 slider/drag/undo, Round 224 all ten plotting modes, historical Round 36/38/62 plotting, Round 201 bilingual layout (1440/768/390), Round 106 3D scene lifecycle, Round 199 IMO geometry/export, Round 172 picking at 1440/1024, Round 107 three-cycle 3D SVG/PNG export. New tests cover invalid expressions, bounds, stale JSON values, named 2D constructors, and downstream reference stability. One aggregate browser-run command reached the execution limit after its preceding scripts passed; Round 106 was rerun separately and passed. One attempted test filename was incorrect (`browser_round107_3d_exports.py`); the actual `browser_round107_3d_export.py` was run and passed.
+
+**Not tested:** Complete historical Chromium inventory, physical devices/GPU, hosted deployment, multi-hour stress, and programmatic commands for every geometry object/property. No historical archive reconciliation, no Git commit.
+
 ## Round 223 — Cleanup and overall verification (2026-11-20)
 
 **Production runtime unchanged.** Corrected the stale expected Chinese excenter option labels in `tests/browser_round148_localization_audit.py` to match the current intended `A 旁心 / B 旁心 / C 旁心` translations. The actual Chromium zh/en select-switch test now passes; no UI copy or translations were changed.
@@ -2539,3 +2547,11 @@ Conclusion: **PASS for executed local checks**, no confirmed new source defect i
 
 
 **Final Round 226 post-fix verification:** after improving geometric slider-handle hit detection and correcting an asynchronous Chromium-test race, the slider E2E succeeded **five consecutive runs**. Final full Node execution **690/690**, zero failures/skips; syntax **34/34**. Following that fix, the Round 226 slider E2E, Round 36 plotting and Round 224 all-mode Chromium scripts each returned code 0. The expanded earlier sweep also passed Round 38, Round 62, Round 201 (three viewport widths), Round 106, Round 166, Round 172 and Round 199. `git diff --no-index --check` over changed files and the final ZIP manifest verification are included in delivery validation.
+
+### Round 228 — Algebra compact UI, Properties, inherited locks and trash
+- Development baseline: authoritative Round 227 overlay layered on the latest provided source.
+- Implemented compact Algebra sizing, shared three-dot actions, slider editing in Properties, inherited transitive lock behavior, and reversible slider deletion with dependent objects.
+- Node suite: 693/693 pass. All 34 source JavaScript modules syntax checked.
+- Real headless Chromium: Round 228 new E2E, Round 226 Slider E2E, Round 227 programmable geometry E2E, and Round 224 cross-mode isolation E2E passed.
+- New E2E verifies compact input size, no browser prompt, rollback of invalid slider range, slider and descendant lock, unlock, visibility, delete, Recently Deleted restore, slider rename updating formulas, locked descendant delete prevention.
+- No production 3D changes. Physical GPU, hosted deployment and entire historical browser suite not run; these are not claimed as passed.

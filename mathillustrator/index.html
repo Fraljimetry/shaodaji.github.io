@@ -36,7 +36,7 @@
       <div class="algebra-heading" role="tablist" aria-label="Objects or Algebra"><button id="objects-tab" type="button" role="tab" aria-selected="true" aria-controls="objects">Objects</button><button id="algebra-toggle" type="button" role="tab" aria-selected="false" aria-controls="algebra-panel">Algebra</button></div>
       <section id="algebra-panel" class="algebra-panel" role="tabpanel" hidden aria-label="Algebra expressions">
         <form id="algebra-form"><input id="algebra-input" autocomplete="off" spellcheck="false" aria-label="Algebra definition" placeholder="a = Slider(0, 10, 0.1)"/><button type="submit" title="Add algebra definition">↵</button></form>
-        <div id="algebra-list" aria-live="off"></div>
+        <div id="algebra-list" aria-live="off"></div><details id="algebra-recently-deleted" class="trash-panel"><summary>Recently Deleted <span id="algebra-trash-count">0</span></summary><div id="algebra-trash-items"></div></details>
       </section>
       <div class="object-tools"><span id="object-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span><input id="object-search" type="search" placeholder="Find…" aria-label="Search objects"><label><input type="checkbox" id="show-hidden" checked> Hidden</label></div>
       <div id="objects" class="objects" role="list" aria-label="Drawable objects"></div><div id="objects-3d" class="objects" role="list" aria-label="3D plots" hidden></div><details id="recently-deleted" class="trash-panel"><summary>Recently Deleted <span id="trash-count">0</span></summary><div id="trash-items"></div></details>
@@ -141,6 +141,6 @@
     },4000));
   })();
   </script>
-  <script type="module" src="./src/app.mjs?cut=round226"></script>
+  <script type="module" src="./src/app.mjs?cut=round227"></script>
 </body>
 </html>

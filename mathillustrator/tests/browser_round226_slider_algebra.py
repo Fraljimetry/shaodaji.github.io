@@ -29,7 +29,11 @@ def run():
    page.locator('#undo').click();assert snapshot()['objects'][0]['xy']==[2,2]
    page.locator('#redo').click();assert snapshot()['objects'][0]['xy']==[4,4]
    enter('C = (missingVariable, 2)');assert len(snapshot()['objects'])==3
-   page.locator('#algebra-list button[aria-label="Delete slider a"]').click()
+   page.locator('#algebra-list [data-slider="a"] .object-menu-toggle').click()
+   page.locator('#object-action-menu [data-action="lock"]').click()
+   assert snapshot()['algebra']['sliders'][0]['locked'] is True
+   page.locator('#algebra-list [data-slider="a"] .object-menu-toggle').click()
+   page.locator('#object-action-menu [data-action="lock"]').click()
    assert len(snapshot()['algebra']['sliders'])==1 and snapshot()['objects'][0]['xy']==[4,4]
    # Move the on-canvas control: the same dependent geometry must update.
    old_cx=page.locator('#drawing [data-slider-handle="a"]').get_attribute('cx')

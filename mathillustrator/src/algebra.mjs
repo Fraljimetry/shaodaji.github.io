@@ -44,21 +44,51 @@ export function evaluateAlgebra(source,values={}){
  }return x;}
  const v=expression(0);if(cursor!==tokens.length)throw Error('Unexpected expression token.');if(!Number.isFinite(v)||Math.abs(v)>1e9)throw Error('Expression result out of range.');return v;
 }
+// Parameterized measurement properties are stored beside their numeric cache.
+// The renderer sees only ordinary numeric fields; the document retains formulas.
+export const MEASUREMENT_FIELDS=Object.freeze({
+ fixedLength:Object.freeze({length:[1e-8,1e6]}),
+ fixedAngle:Object.freeze({angle:[-2*Math.PI,2*Math.PI]}),
+ transformCopy:Object.freeze({amount:[-1e6,1e6]})
+});
+export function bindMeasurement(doc,object,field,expression){
+ const bounds=MEASUREMENT_FIELDS[object.type]?.[field];
+ if(!bounds||typeof expression!=='string')throw Error('Unsupported programmable measurement.');
+ const values=Object.fromEntries((doc.algebra?.sliders??[]).map(s=>[s.name,s.value]));
+ const value=evaluateAlgebra(expression,values);
+ if(value<bounds[0]||value>bounds[1]||(object.type==='transformCopy'&&object.transform==='dilate'&&Math.abs(value)<1e-9))throw Error('Measurement is outside its permitted range.');
+ object.measureExpr={...(object.measureExpr||{}),[field]:expression};object[field]=value;
+ return object;
+}
 export function validateAlgebra(doc){
  const sliders=doc.algebra?.sliders??[];
  if(!Array.isArray(sliders)||sliders.length>64)throw Error('Too many sliders.');
  const seen=new Set();const values={};
- for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
+ for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
   if(doc.objects?.some(o=>o.name===s.name))throw Error('Slider and object names must be distinct.');
   seen.add(s.name);values[s.name]=s.value;
  }
- for(const o of doc.objects??[]){if(o.xyExpr!==undefined){if(o.type!=='point'||!Array.isArray(o.xyExpr)||o.xyExpr.length!==2||o.xyExpr.some(x=>typeof x!=='string'))throw Error('Invalid expression point.');
+ for(const o of doc.objects??[]){
+  if(o.measureExpr!==undefined){
+   const fields=MEASUREMENT_FIELDS[o.type];
+   if(!fields||!o.measureExpr||typeof o.measureExpr!=='object'||Array.isArray(o.measureExpr)||Object.keys(o.measureExpr).length===0)throw Error('Invalid programmable measurement.');
+   for(const [field,expression] of Object.entries(o.measureExpr)){
+    if(!Object.hasOwn(fields,field)||typeof expression!=='string')throw Error('Invalid measurement formula.');
+    const value=evaluateAlgebra(expression,values),[min,max]=fields[field];
+    if(value<min||value>max||Math.abs(value-o[field])>1e-7*Math.max(1,Math.abs(value)))throw Error('Invalid or stale measurement value.');
+    if(o.type==='transformCopy'&&o.transform==='dilate'&&Math.abs(value)<1e-9)throw Error('Dilation factor cannot be zero.');
+   }
+  }
+  if(o.xyExpr!==undefined){if(o.type!=='point'||!Array.isArray(o.xyExpr)||o.xyExpr.length!==2||o.xyExpr.some(x=>typeof x!=='string'))throw Error('Invalid expression point.');
   const xy=o.xyExpr.map(x=>evaluateAlgebra(x,values));if(xy.some(x=>Math.abs(x)>1e6))throw Error('Expression point outside coordinate range.');
   if(!Array.isArray(o.xy)||o.xy.some((n,i)=>Math.abs(n-xy[i])>1e-7))throw Error('Stale expression point coordinates.');
  }}return values;
 }
 export function recalculateAlgebra(doc){const values=Object.fromEntries((doc.algebra?.sliders??[]).map(s=>[s.name,s.value]));
- for(const o of doc.objects??[])if(o.xyExpr)o.xy=o.xyExpr.map(x=>evaluateAlgebra(x,values));
+ for(const o of doc.objects??[]){
+  if(o.xyExpr)o.xy=o.xyExpr.map(x=>evaluateAlgebra(x,values));
+  if(o.measureExpr)for(const [field,expression] of Object.entries(o.measureExpr))o[field]=evaluateAlgebra(expression,values);
+ }
  return values;
 }
 export function createSlider(doc,name,{min=0,max=10,step=.1,value=5,xy=[0,0],visible=true}={}){
