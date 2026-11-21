@@ -2173,3 +2173,9 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 - Make contextual completion caret-aware, with argument-position help, safe bracket pairing/deletion, diagnostic feedback for mismatched brackets, and Ctrl+Space reopening.
 - Keep editing hints non-destructive and display errors without claiming full grammar validation.
 - Retain IME handling, existing named-object completion, and keyboard/mouse completion behavior.
+
+### Round 249 — Parser-aware Smart Input and lexical robustness
+- Align Algebra, real plotting and complex plotting completion to functions actually implemented by their respective interpreters, rather than advertising unsupported calls.
+- Keep plot variables mode-specific, including the complex imaginary unit; do not guess which t/u/v parametric variable is active.
+- Account for nested square brackets and quoted labels while determining current call arguments and bracket diagnostics.
+- Preserve Enter submission, current focus and IME behavior, and unchanged JSON/model/renderer contracts.

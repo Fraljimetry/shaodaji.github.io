@@ -1193,3 +1193,17 @@ html.three-d #object-search{display:block!important}
 .input-assist-status[hidden]{display:none!important}
 .input-assist-status[data-severity="error"]{color:var(--danger,var(--ink))}
 .input-assist-popup:not([hidden]) + .input-assist-status:not([hidden]){top:calc(100% + 198px)}
+
+/* Round 250: suggestion rows match the expression field, rather than the
+   construction form's 19px submit-arrow button or generic object buttons. */
+#command-form #plot-inputs .input-assist-popup .input-assist-option{
+  font-family:Consolas,monospace;font-size:12px;font-weight:400;line-height:17px;
+  min-height:0;padding:5px 7px;letter-spacing:normal;
+}
+.object-tools .unified-entry-form .input-assist-popup .input-assist-option{
+  font-family:Consolas,monospace;font-size:11px;font-weight:400;line-height:17px;
+  min-height:0;padding:5px 7px;letter-spacing:normal;
+}
+/* The popup fits its input even when the left panel is narrowed. */
+#command-form #plot-inputs .input-assist-popup,
+.object-tools .unified-entry-form .input-assist-popup{min-width:0;max-width:100%;}

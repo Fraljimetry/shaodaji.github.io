@@ -44,7 +44,7 @@ def run():
                 if b is not None:page.locator('#command-y').fill(b)
                 if c is not None:page.locator('#command-z').fill(c)
                 t=time.monotonic()
-                page.locator('#command-form button').click()
+                page.locator('#command-form > button').click()
                 finish()
                 return round((time.monotonic()-t)*1000)
             report={}
@@ -62,7 +62,7 @@ def run():
             snapshot=state()['objects']
             page.locator('#plot-mode').select_option('function')
             page.locator('#command').fill('unknown(x)')
-            page.locator('#command-form button').click()
+            page.locator('#command-form > button').click()
             assert state()['objects']==snapshot, 'Invalid formula changed existing plots'
             assert len(snapshot)==before+1
             doc2d=state()['objects']

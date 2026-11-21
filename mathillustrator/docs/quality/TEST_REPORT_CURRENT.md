@@ -2698,3 +2698,10 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Existing Round 246 and 247 Chromium Smart Input regressions PASS.
 - Lexical diagnostics deliberately do not replace the authoritative numeric/geometry parser; unsupported arbitrary scripting remains unsupported.
 - Hosted deployment, complete historical browser inventory and physical GPU were not verified.
+
+### Round 249 — Mathematical input parser parity (2026-11-20)
+- Confirmed: shared completion previously advertised Algebra-only `rad/deg` in plot fields, omitted plot-supported `sec/conj/asinh` depending on context, and could miscount nested bracket/quoted-label commas in argument hints. Corrected context-aware vocabulary and delimiter scanner.
+- Node: **717/717 PASS**, **0 failed, 0 skipped**; JavaScript syntax checks **35/35 PASS**.
+- Local headless Chromium: `browser_round249_input_parity.py`, `browser_round248_editor.py`, `browser_round247_smart_input_parity.py`, and `browser_round224_cross_mode_isolation.py` **PASS**; latter covers all ten modes after fixing an obsolete selector that accidentally matched popup option buttons.
+- Browser checks use inlined source with local Chromium, not the hosted domain. Unverified: entire historical Chromium inventory, deployment, physical GPU and long-session memory stress.
+- Scope: editor assistance, focused tests and bilingual guide; no changes to parser semantics, construction model, JSON serialization or 3D CPU renderer.

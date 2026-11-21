@@ -1,7 +1,12 @@
 /** Conservative, context-aware completions shared by Algebra, 2D and 3D plot inputs.
  * Suggestions only insert text; authoritative application parsers validate on Enter.
  */
-const FUNCTIONS = ['sin','cos','tan','asin','acos','atan','atan2','sinh','cosh','tanh','sqrt','cbrt','abs','exp','ln','log','log10','log2','min','max','pow','hypot','floor','ceil','round','trunc','sign','clamp','mod','rad','deg'];
+// Keep the assistant's vocabulary aligned with the actual algebra and plot parsers.
+const ALGEBRA_FUNCTIONS = ['sin','cos','tan','asin','acos','atan','atan2','sinh','cosh','tanh','asinh','acosh','atanh','sqrt','cbrt','abs','exp','ln','log','log10','log2','min','max','pow','hypot','floor','ceil','round','trunc','sign','clamp','mod','rad','deg'];
+const PLOT_REAL_FUNCTIONS = ['sin','cos','tan','asin','acos','atan','atan2','sinh','cosh','tanh','asinh','acosh','atanh','sec','csc','cot','sqrt','cbrt','abs','exp','expm1','log1p','ln','log','log10','log2','min','max','pow','hypot','floor','ceil','round','trunc','sign','clamp','mod'];
+const PLOT_COMPLEX_FUNCTIONS = ['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','sec','csc','cot','sqrt','cbrt','abs','exp','expm1','log1p','ln','log','log10','log2','sign','pow','conj','arg','re','im','norm'];
+const COMPLEX_MODES = new Set(['domainColoring','domain3d']);
+const MODE_VARIABLES = Object.freeze({function:['x'],parametric:[],implicit:['x','y'],vectorField:['x','y'],domainColoring:['z','i'],surface3d:['x','y'],parametric3d:['u','v'],implicit3d:['x','y','z'],vector3d:['x','y','z'],domain3d:['z','i']});
 const CONSTRUCTORS = ['Slider','Segment','Vector','Arrow','Line','Ray','Midpoint','PerpBisector','Circle','CircleThrough3','Ellipse','Rectangle','Parallelogram','Triangle','Quadrilateral','Polygon','Polyline','Bezier','Spline','ClosedSpline','Angle','AngleBisector','CircularArc','Hyperbola','Parallel','Perpendicular','Foot','Intersect','RegularPolygon','Rotate','Dilate','FixedLength','FixedAngle','Node','Morphism'];
 const CONSTANTS = ['pi','e','phi'];
 const PLOT_TEMPLATES = Object.freeze({
@@ -26,12 +31,13 @@ export function completionCandidates(input,{kind='algebra',dimension='2d',mode='
  const prefix=text.slice(0,pos);
  const tail=prefix.match(/[A-Za-z][A-Za-z0-9_]*$/)?.[0]||'';
  const isAlgebra=kind==='algebra';
- const names=isAlgebra?[...symbols.slice(0,300),...CONSTRUCTORS,...FUNCTIONS,...CONSTANTS]:[...FUNCTIONS,...CONSTANTS];
+ const functions=isAlgebra?ALGEBRA_FUNCTIONS:COMPLEX_MODES.has(mode)?PLOT_COMPLEX_FUNCTIONS:PLOT_REAL_FUNCTIONS;
+ const names=isAlgebra?[...symbols.slice(0,300),...CONSTRUCTORS,...functions,...CONSTANTS]:[...functions,...CONSTANTS,...(MODE_VARIABLES[mode]||[])];
  const options=[];
  if(tail.length>=1){
   for(const name of new Set(names)){
    if(name.toLowerCase().startsWith(tail.toLowerCase())){
-    const isFunction=FUNCTIONS.includes(name)||CONSTRUCTORS.includes(name);
+    const isFunction=functions.includes(name)||(isAlgebra&&CONSTRUCTORS.includes(name));
     // Avoid duplicating an existing call's opening parenthesis.
     const next=text.slice(pos).match(/^[A-Za-z0-9_]*/)?.[0]||'';
     const alreadyOpen=text[pos+next.length]==='(';
@@ -80,37 +86,43 @@ const SIGNATURES=Object.freeze({
  FixedLength:['point A','point B','length'],FixedAngle:['point A','point B','angle (radians)'],
  Node:['x','y','label?'],Morphism:['node A','node B','label?'],
  Intersect:['line A','line B'],Foot:['point','line'],Parallel:['point','line'],Perpendicular:['point','line'],
- sin:['x'],cos:['x'],tan:['x'],asin:['x'],acos:['x'],atan:['x'],
+ sin:['x'],cos:['x'],tan:['x'],asin:['x'],acos:['x'],atan:['x'],asinh:['x'],acosh:['x'],atanh:['x'],sec:['x'],csc:['x'],cot:['x'],conj:['z'],arg:['z'],re:['z'],im:['z'],norm:['z'],expm1:['x'],log1p:['x'],
  sinh:['x'],cosh:['x'],tanh:['x'],sqrt:['x'],cbrt:['x'],abs:['x'],exp:['x'],ln:['x'],log:['x'],log10:['x'],log2:['x'],
  floor:['x'],ceil:['x'],round:['x'],trunc:['x'],sign:['x'],rad:['degrees'],deg:['radians'],
  atan2:['y','x'],pow:['base','exponent'],min:['x','y','…'],max:['x','y','…'],
  clamp:['value','minimum','maximum'],mod:['value','divisor'],hypot:['x','y','…']
 });
-export function argumentContext(input,caret=String(input??'').length){
- const text=String(input??'');const stack=[];
+/** Scan delimiters and quoted labels without interpreting or evaluating expressions. */
+function delimiterScan(input,caret,trackCalls=false){
+ const text=String(input??'');const stack=[];let quote='',escaped=false,error=-1;
  const pos=Math.max(0,Math.min(text.length,Number.isInteger(caret)?caret:text.length));
  for(let i=0;i<pos;i++){
   const ch=text[i];
-  if(ch==='('){const name=text.slice(0,i).match(/([A-Za-z][A-Za-z0-9_]*)\s*$/)?.[1]||'';stack.push({name,index:0,at:i});}
-  else if(ch===')'){if(stack.length)stack.pop();}
-  else if(ch===','&&stack.length)stack[stack.length-1].index++;
+  if(quote){if(escaped)escaped=false;else if(ch==='\\')escaped=true;else if(ch===quote)quote='';continue;}
+  if(ch==='"'||ch==="'"){quote=ch;continue;}
+  if(ch==='('||ch==='['){
+   const name=ch==='('?text.slice(0,i).match(/([A-Za-z][A-Za-z0-9_]*)\s*$/)?.[1]||'':'';
+   stack.push({ch,name,index:0});
+  }else if(ch===')'||ch===']'){
+   if(!stack.length||stack[stack.length-1].ch!==(ch===')'?'(': '[')){error=i;break;}
+   stack.pop();
+  }else if(ch===','&&stack.length&&stack[stack.length-1].ch==='(')stack[stack.length-1].index++;
  }
- const active=[...stack].reverse().find(x=>SIGNATURES[x.name]);
+ return {stack,error,quote};
+}
+export function argumentContext(input,caret=String(input??'').length){
+ const {stack,error}=delimiterScan(input,caret,true);
+ if(error!==-1)return null;
+ const active=[...stack].reverse().find(x=>x.ch==='('&&Object.hasOwn(SIGNATURES,x.name));
  return active?{name:active.name,index:active.index,args:SIGNATURES[active.name]}:null;
 }
 /** Only diagnose lexical errors that are certain at edit time; incomplete formulas
  * are intentionally allowed until the real parser validates submission.
  */
 export function expressionDiagnostics(input){
- const text=String(input??'');const stack=[];
- for(let i=0;i<text.length;i++){
-  const ch=text[i];
-  if(ch==='('||ch==='[')stack.push(ch);
-  if(ch===')'||ch===']'){
-   const last=stack.pop();if(last!==(ch===')'?'(': '['))return {severity:'error',message:'Mismatched closing bracket',position:i};
-  }
- }
- if(stack.length)return {severity:'hint',message:'Complete the closing bracket'};
+ const {stack,error,quote}=delimiterScan(input,String(input??'').length);
+ if(error!==-1)return {severity:'error',message:'Mismatched closing bracket',position:error};
+ if(stack.length||quote)return {severity:'hint',message:quote?'Complete the closing quote':'Complete the closing bracket'};
  return null;
 }
 
