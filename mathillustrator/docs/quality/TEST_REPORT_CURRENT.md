@@ -2774,3 +2774,7 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Full Node: 734/734 PASS (`node --test tests/*.test.mjs`).
 - Real Chromium regression: browser_round253_expression_rename, browser_round251_construction_properties, browser_round252_semantic_properties PASS.
 - Production browser cache key updated to round255. Hosted deployment and physical GPU were not tested.
+
+## Round 256 — Properties field order
+
+- Move name-free Expression immediately below Name, before label controls for all supported 2D objects; preserve editing, read-only derived sides and renaming.

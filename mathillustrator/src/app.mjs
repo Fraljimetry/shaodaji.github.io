@@ -1678,6 +1678,17 @@ function renderProperties(){
  });
  // Name is the first editable property for every selected geometry object.
  const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+ // Place the name-free semantic expression immediately after Name for every
+ // supported construction, before any Label controls or other properties.
+ const renderConstructionExpression=()=>{
+  const definition=constructionExpression(doc,o);
+  if(definition===null)return;
+  const algebraInput=field(root,'Expression',definition,'text',value=>edit(live=>applyConstructionExpression(doc,live.id,value)));
+  algebraInput.classList.add('construction-expression-editor');
+  algebraInput.dataset.objectId=o.id;
+  if(o.edgeOf){algebraInput.readOnly=true;algebraInput.title='Derived side: edit the parent construction to change this edge.';}
+ };
+ renderConstructionExpression();
  if(o.measureExpr){for(const [key,expression] of Object.entries(o.measureExpr))field(root,key==='amount'?'Transformation amount':key==='length'?'Length expression':'Angle (radians) expression',expression,'text',value=>edit(live=>bindMeasurement(doc,live,key,value)));}
  if(pointRole(o,id=>get(doc,id))){
   const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
@@ -1693,17 +1704,6 @@ function renderProperties(){
   select.value=o.displayLabelMode||'plain';select.onchange=()=>edit(live=>{if(select.value==='latex'&&live.displayLabel)validateLatexInput(live.displayLabel);live.displayLabelMode=select.value;});mode.append(select);root.append(mode);
   field(root,'Label',o.displayLabel||'','text',v=>edit(live=>{if(live.displayLabelMode==='latex'&&v)validateLatexInput(v);live.displayLabel=v;})).closest('label').classList.add('short-label-field');
  }
- // Always print referenced names from live IDs. Text/diagram labels appear in
- // their dedicated Label control, so put the expression after that control.
- const renderConstructionExpression=()=>{
-  const definition=constructionExpression(doc,o);
-  if(definition===null)return;
-  const algebraInput=field(root,'Expression',definition,'text',value=>edit(live=>applyConstructionExpression(doc,live.id,value)));
-  algebraInput.classList.add('construction-expression-editor');
-  algebraInput.dataset.objectId=o.id;
-  if(o.edgeOf){algebraInput.readOnly=true;algebraInput.title='Derived side: edit the parent construction to change this edge.';}
- };
- if(!['text','node','morphism'].includes(o.type))renderConstructionExpression();
  if(o.type==='triangleCenter'){
   const label=document.createElement('label');label.className='field';label.textContent='Center';const pick=document.createElement('select');
   for(const kind of ['centroid','circumcenter','incenter','orthocenter','excenterA','excenterB','excenterC']){const opt=document.createElement('option');opt.value=kind;opt.textContent=kind.startsWith('excenter')?'Excenter '+kind.at(-1):kind[0].toUpperCase()+kind.slice(1);pick.append(opt);}
@@ -1732,7 +1732,6 @@ function renderProperties(){
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.textMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.text);live.textMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
   field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>{if(live.textMode==='latex')validateLatexInput(v);live.text=v;}));}
- if(['text','node','morphism'].includes(o.type))renderConstructionExpression();
  if(['text','node','morphism'].includes(o.type)&&o.textMode!=='latex'){
   const family=document.createElement('label');family.className='field';family.textContent='Font';const pick=document.createElement('select');
   for(const [value,label] of [['Georgia, serif','Serif'],['Arial, sans-serif','Sans-serif'],['Consolas, monospace','Monospace'],['Verdana, sans-serif','Verdana'],['Trebuchet MS, sans-serif','Trebuchet'],['Palatino Linotype, serif','Palatino'],['Times New Roman, serif','Times']]){const option=document.createElement('option');option.value=value;option.textContent=label;pick.append(option);}

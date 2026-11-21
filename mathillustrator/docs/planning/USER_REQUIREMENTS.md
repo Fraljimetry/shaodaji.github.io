@@ -2216,3 +2216,5 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 ### Round 255 — Expression display
 - Properties → Expression displays the right-hand semantic definition only; never prefix the selected object name. Name stays in its own field.
 - Editing accepts name-free definitions; legacy `Name = ...` entries remain accepted. Live referenced names continue to follow rename changes.
+
+- Round 256: Properties field order for representable 2D objects is Name → Expression → Label format → Label (where labels apply). Name-free Expression editing and existing construction semantics are unchanged.
