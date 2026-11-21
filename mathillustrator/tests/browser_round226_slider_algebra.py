@@ -24,7 +24,7 @@ def run():
    d=snapshot();assert len(d['objects'])==3 and len(d['algebra']['sliders'])==1
    assert d['objects'][0]['xy']==[2,2] and d['objects'][2]['type']=='segment'
    ids=[o['id'] for o in d['objects']]
-   page.locator('#algebra-list input[type=range]').fill('4')
+   page.locator('#algebra-list [data-slider="a"] .algebra-entry-label').click();page.locator('#properties .slider-property-value-range').fill('4')
    d=snapshot();assert d['objects'][0]['xy']==[4,4] and d['objects'][2]['refs']==ids[:2]
    page.locator('#undo').click();assert snapshot()['objects'][0]['xy']==[2,2]
    page.locator('#redo').click();assert snapshot()['objects'][0]['xy']==[4,4]
@@ -37,7 +37,8 @@ def run():
    assert len(snapshot()['algebra']['sliders'])==1 and snapshot()['objects'][0]['xy']==[4,4]
    # Move the on-canvas control: the same dependent geometry must update.
    old_cx=page.locator('#drawing [data-slider-handle="a"]').get_attribute('cx')
-   page.locator('#algebra-list input[type=range]').fill('2')
+   page.locator('#algebra-list [data-slider="a"] .algebra-entry-label').click()
+   page.locator('#properties .slider-property-value-range').fill('2')
    # A pending RAF may still display the handle at the previous slider value.
    # Wait for the current model value to be painted before attempting the drag.
    page.wait_for_function("old => { const e=document.querySelector('#drawing [data-slider-handle=\"a\"]');return e && e.getAttribute('cx') !== old; }",arg=old_cx)

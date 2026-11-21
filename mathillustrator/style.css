@@ -1131,3 +1131,44 @@ html.three-d .interface-check-grid .settings-2d-only{display:none!important;}
 .slider-playback-grid select{width:100%;min-width:0;max-width:100%}
 .slider-play-toggle{flex:0 0 24px;width:24px;height:24px;border:0;background:transparent;color:inherit;cursor:pointer}
 .slider-play-toggle:disabled{opacity:.35;cursor:not-allowed}
+
+/* Round 235: two compact playback fields; prevent inherited oversized checkbox styling. */
+.properties .slider-playback-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 9px;align-items:start;margin:5px 0 8px}
+.properties .slider-playback-grid>.field{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;margin:0;font-size:11px;align-items:start}
+.properties .slider-playback-grid>.field:last-child{grid-column:auto}
+.properties .slider-playback-grid>.field>select,.properties .slider-playback-grid>.field>input{box-sizing:border-box;width:100%;max-width:100%;min-width:0;height:29px;min-height:29px;margin:0;padding:4px 6px;font-size:12px}
+.properties .slider-appearance-grid .slider-border-control{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;margin:6px 0 0;font-size:11px;line-height:1.2;white-space:nowrap;min-height:20px}
+.properties .slider-appearance-grid .slider-border-control>input[type=checkbox]{appearance:auto;position:static;display:inline-block;flex:none;width:14px;height:14px;min-width:14px;min-height:14px;max-width:14px;max-height:14px;padding:0;margin:0;vertical-align:middle;accent-color:var(--accent,#2563eb)}
+/* Override the generic stroke-only opacity input width rule for the checkbox. */
+.properties .style-controls-grid.stroke-only-grid.slider-appearance-grid .style-opacity>.slider-border-control>input[type=checkbox]{width:14px!important;min-width:14px!important;max-width:14px!important;height:14px!important;min-height:14px!important;max-height:14px!important;flex:0 0 14px!important;padding:0!important}
+
+/* Round 236: Algebra uses the same glyph/row/drag affordances as Objects. */
+#algebra-list .algebra-object-row{height:45px;min-height:45px;max-height:45px;padding:5px 8px;gap:6px;flex-wrap:nowrap}
+#algebra-list .algebra-object-row .object-label{flex:1;min-width:0}
+#algebra-list .algebra-object-row .algebra-entry-label{font-size:12px;font-weight:650;display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#algebra-list .algebra-object-row .object-order-grip{flex:0 0 20px;width:20px;min-width:20px;height:30px;padding:0;border:0;background:transparent;color:var(--muted);font-size:18px;cursor:grab}
+#algebra-list .algebra-object-row .object-order-grip:active{cursor:grabbing}
+#algebra-list .algebra-object-row .glyph svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#algebra-list .algebra-object-row .slider-play-toggle{flex:0 0 24px;width:24px;padding:0;font-size:14px}
+#algebra-list .algebra-object-row.object-drop-target{outline:2px solid var(--accent);outline-offset:-2px}
+.properties .slider-property-track{margin:2px 0 10px;display:flex;align-items:center;width:100%}
+.properties .slider-property-value-range{width:100%;min-width:0;max-width:100%;cursor:pointer;accent-color:var(--accent)}
+
+/* Round 237: one Objects list, two modes for the single-line entry. */
+.algebra-heading{display:none!important}
+#algebra-panel{display:none!important}
+.object-tools #object-input-toggle{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;min-height:28px;padding:3px;border:none;background:transparent;color:var(--muted)}
+.object-tools #object-input-toggle:hover{color:var(--ink);background:var(--hover)}
+.object-tools #object-input-toggle svg[hidden]{display:none}
+.object-tools .unified-entry-form{display:flex;align-items:center;flex:1 1 90px;min-width:0;gap:4px;margin:0}
+.object-tools .unified-entry-form[hidden],.object-tools #object-search[hidden]{display:none!important}
+.object-tools .unified-entry-form input{flex:1 1 auto;width:100%;min-width:0;height:29px;min-height:0;padding:5px 6px;font-size:11px;font-family:Consolas,monospace}
+.object-tools .unified-entry-form button{min-height:28px;height:28px;padding:2px 5px;font-size:14px}
+.object-tools #object-search{flex:1 1 90px;width:auto;min-width:0;max-width:none}
+.object-tools label{margin-left:auto;flex:none;font-size:11px}
+#objects .algebra-object-row{min-height:var(--object-row-height,43px)}
+html.three-d #unified-algebra-form{display:none!important}
+
+/* The 3D workspace keeps its existing Find field; Algebra is 2D-only. */
+html.three-d #object-input-toggle{display:none!important}
+html.three-d #object-search{display:block!important}

@@ -308,9 +308,12 @@ function playbackTick(timestamp){
   if(next.finished)stopSliderPlayback(name,{refresh:false});
  }
  if(changed){
-  for(const [name] of playingSliders){const item=doc.algebra.sliders.find(s=>s.name===name);const row=[...$('algebra-list').querySelectorAll('[data-slider]')].find(el=>el.dataset.slider===name);
-   if(item&&row){const label=row.querySelector('.algebra-entry-label'),input=row.querySelector('input[type=range]');if(label)label.textContent=item.name+' = '+Number(item.value.toPrecision(8));if(input)input.value=item.value;}
+  for(const [name] of playingSliders){const item=doc.algebra.sliders.find(s=>s.name===name);const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===name);
+   if(item&&row){const label=row.querySelector('.algebra-entry-label');if(label)label.textContent=item.name+' = '+Number(item.value.toPrecision(8));}
   }
+  const selected=doc.algebra?.sliders.find(s=>s.name===selectedSlider);
+  const propertySlider=$('properties')?.querySelector('.slider-property-value-range');
+  if(selected&&propertySlider&&document.activeElement!==propertySlider)propertySlider.value=String(selected.value);
   scheduleRender();
  }
  if(playingSliders.size)playbackFrame=requestAnimationFrame(playbackTick);
@@ -1201,7 +1204,7 @@ function addObjectOrderGrip(row,id,dimension){
   if(!items.some(o=>o.id===id))return;
   const changed=update(()=>shiftVisible(dimension==='3d'?doc.scene3d.plots:doc.objects,id,up));
   if(changed)requestAnimationFrame(()=>{
-   const selector=dimension==='3d'?`#objects-3d .object[data-plot3d="${id}"] .object-order-grip`:`#objects .object[data-id="${id}"] .object-order-grip`;
+   const selector=dimension==='3d'?`#objects-3d .object[data-plot3d="${id}"] .object-order-grip`:dimension==='algebra2d'?`#algebra-list .object[data-id="${id}"] .object-order-grip`:`#objects .object[data-id="${id}"] .object-order-grip`;
    document.querySelector(selector)?.focus({preventScroll:true});
   });
  };
@@ -1257,13 +1260,15 @@ function render3DList(){
   root.append(row);
  }
 }
+let objectInputMode='algebra'; // 2D default; the 3D list always remains searchable.
+let unifiedSliderRows=[];
 function renderList({resetScroll=false}={}){
  if(in3D()){render3DList();return;}
  $('objects').hidden=false;$('objects-3d').hidden=true;
  closeObjectMenu();
  const wrapper=$('objects');
  $('object-count').textContent=String(doc.objects.length);
- const filter=($('object-search')?.value||'').toLowerCase().trim(),showHidden=$('show-hidden').checked;
+ const filter=objectInputMode==='find'?($('object-search')?.value||'').toLowerCase().trim():'',showHidden=$('show-hidden').checked;
  // Build the name index once. Search descriptions with many live references must
  // not call an O(scene-size) lookup for every name in every row.
  const nameById=new Map(doc.objects.map(o=>[o.id,o.name]));
@@ -1334,7 +1339,7 @@ function navigateToObject(id){
 }
 function renderListWindow(){
  if(in3D())return;
- const wrapper=$('objects'),count=listedObjects.length,scroll=Math.max(0,wrapper.scrollTop),height=Math.max(90,wrapper.clientHeight);
+ const wrapper=$('objects'),count=listedObjects.length,sliderRows=unifiedSliderRows.filter(row=>{const slider=doc.algebra?.sliders?.find(item=>item.name===row.dataset.slider);return slider&&( $('show-hidden').checked||slider.visible )&&(objectInputMode!=='find'||`${slider.name} ${slider.value}`.toLowerCase().includes(($('object-search').value||'').toLowerCase().trim()));}),sliderHeight=sliderRows.length*LIST_ROW_HEIGHT,scroll=Math.max(0,wrapper.scrollTop-sliderHeight),height=Math.max(90,wrapper.clientHeight);
  const visibilityIndex=new Map(doc.objects.map(o=>[o.id,o]));
  const first=Math.min(count,Math.max(0,Math.floor(scroll/LIST_ROW_HEIGHT)-LIST_OVERSCAN));
  const last=Math.min(count,Math.ceil((scroll+height)/LIST_ROW_HEIGHT)+LIST_OVERSCAN);
@@ -1365,13 +1370,13 @@ function renderListWindow(){
   };fragment.append(row);
  }
  if(last<count)fragment.append(spacer((count-last)*LIST_ROW_HEIGHT));
- if(!count){const empty=document.createElement('p');empty.className='subtle empty-objects';empty.textContent=translated(doc.objects.length?'No matches':'No objects',uiPrefs.language);fragment.append(empty);}
- wrapper.replaceChildren(fragment);
+ if(!count&&!sliderRows.length){const empty=document.createElement('p');empty.className='subtle empty-objects';empty.textContent=translated(doc.objects.length?'No matches':'No objects',uiPrefs.language);fragment.append(empty);}
+ wrapper.replaceChildren(...sliderRows,fragment);
 }
 
 function focusListIndex(index){
  const wrapper=$('objects'),o=listedObjects[index];if(!o)return;
- const top=index*LIST_ROW_HEIGHT,bottom=top+LIST_ROW_HEIGHT;
+ const top=unifiedSliderRows.filter(row=>row.parentElement===$('objects')).length*LIST_ROW_HEIGHT+index*LIST_ROW_HEIGHT,bottom=top+LIST_ROW_HEIGHT;
  if(top<wrapper.scrollTop)wrapper.scrollTop=top;
  else if(bottom>wrapper.scrollTop+wrapper.clientHeight)wrapper.scrollTop=Math.max(0,bottom-wrapper.clientHeight);
  renderListWindow();
@@ -1622,9 +1627,20 @@ function renderSliderProperties(root,item){
  const range=document.createElement('div');range.className='slider-range-grid';root.append(range);
  for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
  const playback=document.createElement('div');playback.className='slider-playback-grid';root.append(playback);
- const button=document.createElement('button');button.type='button';button.className='slider-play-button';button.textContent=playingSliders.has(item.name)?'Pause':'Play';button.setAttribute('aria-label',button.textContent+' slider '+item.name);button.onclick=()=>toggleSliderPlayback(item.name);playback.append(button);
- field(playback,'Speed (cycles/s)',item.playSpeed??1,'number',v=>edit(live=>{if(v<.05||v>10)throw Error('Speed must be between 0.05 and 10 cycles/s.');live.playSpeed=v;}),{min:.05,max:10});
- const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;});modeLabel.append(mode);playback.append(modeLabel);localizeUI(playback,uiPrefs.language);
+ const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;});modeLabel.append(mode);playback.append(modeLabel);
+ field(playback,'Speed (cycles/s)',item.playSpeed??1,'number',v=>edit(live=>{if(v<.05||v>10)throw Error('Speed must be between 0.05 and 10 cycles/s.');live.playSpeed=v;}),{min:.05,max:10});localizeUI(playback,uiPrefs.language);
+ const valueTrack=document.createElement('div');valueTrack.className='slider-property-track';root.append(valueTrack);
+ const valueInput=document.createElement('input');valueInput.className='slider-property-value-range';valueInput.type='range';valueInput.min=String(item.min);valueInput.max=String(item.max);valueInput.step=String(item.step);valueInput.value=String(item.value);valueInput.setAttribute('aria-label','Slider value '+item.name);valueTrack.append(valueInput);
+ let sliderBefore=null;
+ const startTrackEdit=()=>{if(playingSliders.size)stopAllSliderPlayback();sliderBefore??=JSON.stringify(doc);};
+ valueInput.onpointerdown=startTrackEdit;valueInput.onkeydown=startTrackEdit;
+ valueInput.oninput=()=>{
+  startTrackEdit();const before=JSON.stringify(doc);
+  try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(8));renderList();scheduleRender();}
+  catch(error){doc=JSON.parse(before);valueInput.value=String(doc.algebra?.sliders.find(s=>s.name===item.name)?.value??item.value);notice(error.message);renderList();scheduleRender();}
+ };
+ valueInput.onchange=()=>{if(sliderBefore&&sliderBefore!==JSON.stringify(doc)){recordUndo(sliderBefore);documentRevision++;enqueueSave();}sliderBefore=null;renderAlgebra();renderProperties();};
+
  const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
  const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);field(opacitySlot,'Opacity',item.opacity??1,'number',v=>edit(live=>{if(!Number.isFinite(v)||v<0||v>1)throw Error('Opacity must be between 0 and 1.');live.opacity=v;}),{min:0,max:1,step:.1});
@@ -1887,25 +1903,40 @@ function deleteSlider(name){const slider=doc.algebra?.sliders.find(s=>s.name===n
   trash.unshift({at:Date.now(),objects,sliders:[saved]});trash=trash.slice(0,20);persistTrash();
  }
 }
-function renderAlgebra(){
- const wrapper=$('algebra-list');if(!wrapper)return;wrapper.replaceChildren();
- for(const item of doc.algebra?.sliders??[]){const row=document.createElement('div');row.className='algebra-entry'+(selectedSlider===item.name?' selected':'');row.dataset.slider=item.name;
-  const name=document.createElement('span');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(8));row.append(name);
-  const input=document.createElement('input');input.type='range';input.min=item.min;input.max=item.max;input.step=item.step;input.value=item.value;input.disabled=Boolean(item.locked);input.setAttribute('aria-label','Slider '+item.name);
-  let initial=null;input.onpointerdown=()=>{stopAllSliderPlayback();initial=JSON.stringify(doc);};input.onkeydown=()=>{initial??=JSON.stringify(doc);};
-  input.oninput=()=>{if(item.locked)return;initial??=JSON.stringify(doc);const before=JSON.stringify(doc),value=Number(input.value);try{item.value=value;recalculateAlgebra(doc);validateDoc(doc);documentRevision++;name.textContent=item.name+' = '+value;renderList();scheduleRender();}catch(err){doc=JSON.parse(before);notice(err.message);renderAlgebra();render();}};
-  input.onchange=()=>{if(initial&&initial!==JSON.stringify(doc)){recordUndo(initial);documentRevision++;enqueueSave();}initial=null;renderAlgebra();if(selectedSlider===item.name&&!$('properties').contains(document.activeElement))renderProperties();};row.append(input);
-  const play=document.createElement('button');play.type='button';play.className='slider-play-toggle';play.textContent=playingSliders.has(item.name)?'⏸':'▶';play.title=playingSliders.has(item.name)?'Pause slider':'Play slider';play.setAttribute('aria-label',play.title+' '+item.name);play.disabled=item.locked||!item.visible;play.onclick=e=>{e.stopPropagation();toggleSliderPlayback(item.name);};row.append(play);
-  const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title='Slider actions';more.setAttribute('aria-label','Slider actions: '+item.name);more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-controls','object-action-menu');more.onclick=e=>{e.stopPropagation();openAlgebraActions(item.name,more);};row.append(more);
-  row.onclick=e=>{if(e.target===more||e.target===input||e.target===play)return;selectSlider(item.name);};wrapper.append(row);
- }
- for(const o of doc.objects){
-  const line=document.createElement('div');line.className='algebra-entry'+(selected===o.id?' selected':'');line.dataset.id=o.id;
-  const text=document.createElement('span');text.className='algebra-entry-label';text.textContent=o.xyExpr?`${o.name} = (${o.xyExpr.join(', ')})`:o.measureExpr?`${o.name}: ${Object.entries(o.measureExpr).map(([key,value])=>key+' = '+value).join(', ')}`:`${o.name} · ${o.type}`;line.append(text);
-  const more=document.createElement('button');more.type='button';more.className='object-menu-toggle';more.textContent='⋯';more.title='Object actions';more.onclick=e=>{e.stopPropagation();openObjectMenu(o,more);};line.append(more);
-  line.onclick=e=>{if(e.target!==more)select(o.id);};wrapper.append(line);
- }
+// The Algebra list shares the same item model and glyphs as the Objects list.
+// Slider order is independent of geometry order; both are persisted in the document.
+let activeAlgebraSliderDrag=null;
+function algebraSliderGrip(row,name){
+ const grip=document.createElement('button');grip.type='button';grip.className='object-order-grip';grip.draggable=true;grip.textContent='⠿';
+ grip.title=translated('Drag to reorder; Alt+Up/Down',uiPrefs.language);grip.setAttribute('aria-label','Drag to reorder: '+name);
+ grip.onclick=e=>e.stopPropagation();
+ grip.ondragstart=e=>{activeAlgebraSliderDrag=name;e.dataTransfer?.setData('text/plain',name);if(e.dataTransfer)e.dataTransfer.effectAllowed='move';row.classList.add('object-dragging');};
+ grip.ondragend=()=>{activeAlgebraSliderDrag=null;document.querySelectorAll('.object-drop-target,.object-dragging').forEach(el=>el.classList.remove('object-drop-target','object-dragging'));};
+ grip.onkeydown=e=>{if(!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();const up=e.key==='ArrowUp';if(update(()=>{const list=doc.algebra.sliders,index=list.findIndex(x=>x.name===name),target=index+(up?1:-1);if(index>=0&&target>=0&&target<list.length)[list[index],list[target]]=[list[target],list[index]];})){requestAnimationFrame(()=>[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(r=>r.dataset.slider===name)?.querySelector('.object-order-grip')?.focus());}};
+ row.ondragover=e=>{if(!activeAlgebraSliderDrag||activeAlgebraSliderDrag===name)return;e.preventDefault();row.classList.add('object-drop-target');};
+ row.ondragleave=e=>{if(!row.contains(e.relatedTarget))row.classList.remove('object-drop-target');};
+ row.ondrop=e=>{row.classList.remove('object-drop-target');const source=activeAlgebraSliderDrag;activeAlgebraSliderDrag=null;if(!source||source===name)return;e.preventDefault();e.stopPropagation();const b=row.getBoundingClientRect();update(()=>{const list=doc.algebra.sliders,from=list.findIndex(x=>x.name===source);if(from<0)return;const [moving]=list.splice(from,1),target=list.findIndex(x=>x.name===name);list.splice(target+(e.clientY<b.top+b.height/2?1:0),0,moving);});};
+ return grip;
 }
+function algebraGlyph(o){const element=document.createElement('span');element.className='glyph';const tool=objectGlyphTool(o);if(tool)element.innerHTML=toolGlyphSvg(tool);else if(Object.hasOwn(PLOTTING_GLYPHS,o.type))element.innerHTML=plotGlyphSvg(o.type);else throw Error('Missing matching Objects-list icon for '+o.type);return element;}
+function algebraMore(row,label,callback){const button=document.createElement('button');button.type='button';button.className='object-menu-toggle';button.textContent='⋯';button.title=translated('Object actions',uiPrefs.language);button.setAttribute('aria-label',translated('Object actions',uiPrefs.language)+': '+label);button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-controls','object-action-menu');button.onclick=e=>{e.stopPropagation();callback(button);};row.append(button);return button;}
+function renderAlgebra(){
+ const wrapper=$('algebra-list');if(!wrapper)return;
+ const previousScroll=wrapper.scrollTop;wrapper.replaceChildren();
+ for(const item of [...(doc.algebra?.sliders??[])].reverse()){
+  const row=document.createElement('div');row.className='object algebra-object-row'+(selectedSlider===item.name?' selected':'')+(!item.visible?' hidden':'');row.dataset.slider=item.name;row.dataset.locked=item.locked?'true':'false';row.tabIndex=0;row.setAttribute('role','listitem');
+  row.append(algebraSliderGrip(row,item.name));
+  const icon=document.createElement('span');icon.className='glyph slider-algebra-glyph';icon.innerHTML='<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true"><path d="M3 12H21"/><circle cx="11" cy="12" r="3.3"/></svg>';row.append(icon);
+  const info=document.createElement('span');info.className='object-label';const name=document.createElement('strong');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(8));name.title=name.textContent;info.append(name);row.append(info);
+  const play=document.createElement('button');play.type='button';play.className='slider-play-toggle';play.textContent=playingSliders.has(item.name)?'⏸':'▶';play.title=playingSliders.has(item.name)?'Pause slider':'Play slider';play.setAttribute('aria-label',play.title+' '+item.name);play.disabled=item.locked||!item.visible;play.onclick=e=>{e.stopPropagation();toggleSliderPlayback(item.name);};row.append(play);
+  algebraMore(row,item.name,btn=>openAlgebraActions(item.name,btn));
+  row.onclick=e=>{if(e.target.closest('button'))return;selectSlider(item.name);};row.onkeydown=e=>{if(e.target===row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selectSlider(item.name);}};wrapper.append(row);
+ }
+ wrapper.scrollTop=previousScroll;
+ unifiedSliderRows=[...wrapper.querySelectorAll('[data-slider]')];
+ if($('objects')&&!in3D())renderListWindow();
+}
+
 function renderAll(){renderAlgebra();renderList();renderProperties();render();syncSettings();localizeUI(document.documentElement,uiPrefs.language);}
 function select(id){setSelection(id?[id]:[],id);}
 function clearDraft(){draftMeasure=null;draftStart=null;draftPoints=[];draftNode=null;draftReference=null;hover=null;pendingTouchTap=null;}
@@ -2708,7 +2739,7 @@ function pointerMove(e){
  if(drag?.kind==='slider-position'){
   const item=doc.algebra?.sliders.find(s=>s.name===drag.name);
   if(item){const dx=(sx-drag.sx)/view.scale,dy=-(sy-drag.sy)/view.scale;
-   const newXY=[drag.xy[0]+dx,drag.xy[1]+dy];
+   const newXY=snapPoint([drag.xy[0]+dx,drag.xy[1]+dy],effectiveSnapSettings());
    if(newXY.every(v=>Number.isFinite(v)&&Math.abs(v)<=1e6)){
     item.xy=newXY;documentRevision++;scheduleRender();
    }
@@ -2779,7 +2810,7 @@ function pointerUp(e){
  if(!drag||e?.pointerId!==undefined&&e.pointerId!==drag.pointerId)return;
  if(e?.type==='pointercancel'||e?.type==='lostpointercapture'){cancelDrag();return;}
  const completed=drag;drag=null;
- if(completed.kind==='slider'||completed.kind==='slider-position'){try{recalculateAlgebra(doc);validateDoc(doc);if(JSON.stringify(doc)!==completed.before){recordUndo(completed.before);documentRevision++;enqueueSave();}renderAlgebra();renderList();renderProperties();scheduleRender();}catch(err){doc=JSON.parse(completed.before);notice(err.message);renderAll();}return;}
+ if(completed.kind==='slider'||completed.kind==='slider-position'){try{if(completed.kind==='slider-position'){const moved=doc.algebra?.sliders.find(s=>s.name===completed.name);if(moved){const [endX,endY]=xyEvent(e);moved.xy=snapPoint([completed.xy[0]+(endX-completed.sx)/view.scale,completed.xy[1]-(endY-completed.sy)/view.scale],effectiveSnapSettings());}}recalculateAlgebra(doc);validateDoc(doc);if(JSON.stringify(doc)!==completed.before){recordUndo(completed.before);documentRevision++;enqueueSave();}renderAlgebra();renderList();renderProperties();scheduleRender();}catch(err){doc=JSON.parse(completed.before);notice(err.message);renderAll();}return;}
  if(lastMoveCanvasTap&&['point','label','pan','marquee'].includes(completed.kind)&&Math.hypot(xyEvent(e)[0]-completed.sx,xyEvent(e)[1]-completed.sy)>9)lastMoveCanvasTap=null;
  // Browser pointerup is authoritative: the last position is not guaranteed to
  // have been preceded by a pointermove (pen hardware, coalesced pointer events).
@@ -3506,8 +3537,28 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    command(doc,source);
   });if(ok)$('algebra-input').value='';
  };
- function selectAlgebraTab(open){$('algebra-panel').hidden=!open;$('algebra-toggle').setAttribute('aria-selected',String(open));$('objects-tab').setAttribute('aria-selected',String(!open));document.querySelector('.leftpanel').classList.toggle('algebra-open',open);if(open)$('algebra-input').focus();propertyLayout.apply();}
- $('algebra-toggle').onclick=()=>selectAlgebraTab(true);$('objects-tab').onclick=()=>selectAlgebraTab(false);
+ const algebraEntry=$('unified-algebra-input'),algebraSearch=$('object-search');
+ const searchIcon=$('object-find-icon'),algebraIcon=$('object-algebra-icon'),inputToggle=$('object-input-toggle');
+ function setObjectInputMode(mode,{focus=true}={}){
+  objectInputMode=mode==='find'?'find':'algebra';
+  const find=objectInputMode==='find';
+  algebraEntry.closest('form').hidden=find;algebraSearch.hidden=!find;
+  searchIcon.hidden=!find;algebraIcon.hidden=find;
+  inputToggle.setAttribute('aria-pressed',String(!find));
+  const hint=translated(find?'Switch to Algebra input':'Switch to Find',uiPrefs.language);
+  inputToggle.title=hint;inputToggle.setAttribute('aria-label',hint);
+  if(focus)(find?algebraSearch:algebraEntry).focus();
+  renderList({resetScroll:true});
+ }
+ inputToggle.onclick=()=>setObjectInputMode(objectInputMode==='algebra'?'find':'algebra');
+ $('unified-algebra-form').onsubmit=e=>{
+  e.preventDefault();if(!algebraEntry.value.trim())return;
+  $('algebra-input').value=algebraEntry.value;
+  algebraForm.requestSubmit();
+  if(!$('algebra-input').value)algebraEntry.value='';
+  algebraEntry.focus();
+ };
+ setObjectInputMode('algebra',{focus:false});
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   let raisedDomainBudget=false;
   const success=update(()=>{

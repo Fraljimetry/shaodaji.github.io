@@ -37,7 +37,7 @@ def run():
    menu.click();assert page.locator('#object-action-menu [data-action="visibility"]').count()==1
    page.locator('#object-action-menu [data-action="lock"]').click()
    assert snap()['algebra']['sliders'][0]['locked'] is True
-   assert page.locator('#algebra-list [data-slider="a"] input[type=range]').is_disabled()
+   assert page.locator('#properties .slider-property-value-range').count()==0
    # The point and its transitive child segment are locked, while unrelated B is free.
    ids=[o['id'] for o in snap()['objects']]
    page.locator('#algebra-list [data-id="'+ids[0]+'"]').click()

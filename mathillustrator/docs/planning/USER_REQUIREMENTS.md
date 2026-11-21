@@ -2102,3 +2102,20 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 - `Slider(min,max[,step[,value[,speed[,mode]]]])` accepts optional playback parameters; `Slider(0,10,0.1,2,2,oscillatory)` is an example. The fifth argument may also be a mode without speed.
 - Playback is 2D-only. Live geometry updates use existing dependencies and are checkpointed into a single undo state when paused. Animation pauses on backgrounding, editing, dragging or switching contexts. Running status is not saved to JSON; playback speed/mode and latest committed value are saved.
 - Preserve existing 2D/3D rendering, glyphs, layout patterns, and previously saved Slider definitions.
+
+### Round 235 — 2D Slider layout and grid snapping
+- Slider Properties: Play mode in the left column and Speed (cycles/s) in the right column, without a redundant Play/Pause button in Properties (Algebra list remains the playback control).
+- Preserve the compact Color/Opacity layout. Show border remains directly under Opacity as a normal-sized checkbox, never a full-width styled numeric input.
+- In Move/Pan mode, dragging the slider control snaps its world-space position using the same Snap to Grid setting and interval as regular 2D geometry, including final pointer release. With snapping off, positioning stays free. Knob changes slider values and does not invoke spatial grid snapping.
+- Retain slider save/reopen, undo/redo, locking, and 2D-only scope; leave 3D and existing glyphs untouched.
+
+### Round 236 — Algebra rows match Objects
+- In the 2D Algebra list, sliders and geometry objects use the same compact row sizing, drag grip, object glyph treatment, selection and three-dot menus as Objects; geometry rows reuse their exact Objects/tool SVGs. Slider rows use the approved single-track icon and retain only Play/Pause as an inline control.
+- Move slider value adjustment from the Algebra list to the Slider Properties inspector. The range track appears immediately below the Play mode / Speed row, with full-width compact styling. It must preserve undo/redo, playback updates, locking and dependency behavior.
+- Reordering must update the existing document arrays, not create separate Algebra objects. Both slider and geometry reorder actions remain undoable, including Alt+Up/Down keyboard controls. Do not change unrelated glyphs or add 3D Algebra.
+
+### Round 237 — Single Objects panel with toggled Algebra / Find
+- Remove the visible Objects/Algebra tabs. Keep one Objects list for 2D sliders and geometry, whether created by mouse or formula, with one shared Properties inspector, undo/redo, drag handles, play/pause actions, menu and Recently Deleted section.
+- The compact entry directly above the Objects list defaults to Algebra on opening the 2D workspace. Its `</>` icon is a button: single-click switches to Find (magnifier), and another click switches back. Hover and accessibility labels must describe the *action* (`Switch to Find` / `Switch to Algebra input`). Preserve each input's current draft when switching.
+- Maintain the existing expression parser, saved Slider data, geometry dependency model and historical project JSON schema. No 3D Algebra or changes to unrelated glyphs.
+- Preserve the existing virtualized large-geometry list; sliders display using the same row treatment, and 3D keeps its Find field.

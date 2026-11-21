@@ -29,7 +29,7 @@ def run():
    stopped=slider()['value'];page.wait_for_timeout(180);assert slider()['value']==stopped
    page.locator('#undo').click();assert slider()['value']==2
    page.locator('#redo').click();assert slider()['value']==stopped
-   page.locator('#algebra-list [data-slider="a"]').click(position={'x':15,'y':10})
+   page.locator('#algebra-list [data-slider="a"] .algebra-entry-label').click()
    assert page.locator('#properties').get_by_label('Play mode').count()==1
    page.locator('#properties').get_by_label('Play mode').select_option('once')
    page.locator('#properties').get_by_label('Speed (cycles/s)').fill('10')
