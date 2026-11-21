@@ -241,7 +241,7 @@ export function append(doc,obj){
  if(POINT_LIKE.has(obj.type)||obj.type==='transformCopy'&&pointRole(obj,id=>get(doc,id)))style.pointSize=doc.settings.pointSize;
  // Explicit incoming style (e.g. a restored construction) wins over defaults.
  if(obj.style?.fillEnabled!==undefined)style.fillEnabled=obj.style.fillEnabled;
- const o={id,hidden:false,locked:false,style,...obj,name};
+ const o={id,hidden:false,locked:false,...obj,name,style:{...style,...obj.style}};
  if(pointRole(o,id=>get(doc,id))&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
  else if(!pointRole(o,id=>get(doc,id))&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
  if(['text','node','morphism'].includes(obj.type)&&o.textMode===undefined)o.textMode='latex';

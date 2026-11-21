@@ -1,3 +1,7 @@
+## Round 271 — Keep prior fixes stable
+- Every new object constructed with a partial appearance override must retain required defaults (stroke, fill, line width, opacity and inherited point size). Explicit overrides and per-type fill defaults must coexist; JSON save/reload cannot silently create malformed styles.
+- Preserve cross-feature regressions from R249–270: single slider/object selection, independent concurrent playback, lock semantics, synchronized Properties and semantic Expressions, 2D slider parameters in all five plotting modes, closed-curve fill, per-type fill defaults, bilingual headings, and export fidelity. Do not reintroduce previous UI or mathematical-engine behavior.
+
 ## Round 266 — Unified single-selection and 2D plotting slider parameters
 - A selected slider and selected geometric object must never appear selected simultaneously. Direct creation of a new geometry object clears slider selection, and switching between object rows and sliders refreshes both sets of selection highlights. Existing explicit multi-geometry selection shortcuts remain separate.
 - All five 2D Construction plot modes must accept references to existing named sliders (Function, Parametric, Implicit, Vector field and Domain coloring), retain formulas, update actual rendered output and plot caches during slider changes/playback, support reference renaming, preserve Properties edits and JSON round-trip, and reject missing identifiers atomically.

@@ -1,3 +1,10 @@
+## Round 271 — Post-slider regression sweep and partial-style repair (local, 2026-11-21)
+- Baseline: Round 270, assembled from the uploaded authoritative source and ordered overlays. Scope: slider selection/playback, five slider-driven 2D plotting modes, dependent geometry, fill defaults, Properties synchronization, semantic Algebra and bilingual UI.
+- **Reproduced production defect**: `append()` discarded inherited mandatory appearance fields (`stroke`, `fill`, `width`, `opacity`, point size and type-specific fill default) when a new object supplied a partial `style` override. This could produce invalid JSON or a broken render/export path. Explicit incoming fields now override merged defaults without losing the unspecified fields; existing serialized objects are unchanged.
+- Added two red/green Node tests for partial point and circle style, explicit overrides, new-object fill preference, and JSON validation/round-trip. Updated startup/module cache query and historical query-version assertions only, not their asset-path checks.
+- Verification provenance: full Node and Chromium results recorded in Round 271 response; absence of a failure in tested paths is **not** a universal zero-bug certification. Source syntax checks and archive integrity checked before delivery.
+- Limitations: complete historical Chromium inventory, multi-hour device stress, hosted production, physical GPU and native touch not fully certified. No speculative product features or UI changes.
+
 ## Round 267 — Mathematical expression layout, unified strokes and point styles, tutorial partition (2026-11-21)
 - Baseline: authoritative uploaded project + ordered Round 249–266 overlays. No unrelated service or Git changes.
 - UI correction: removed inherited 53%-width treatment for semantic Expression and 2D/3D formula fields; formulas occupy a full row. New point/line selectors are horizontal and aligned with Label format, above Stroke.
