@@ -282,6 +282,7 @@ export function translated(s,language='en'){
  if(status2d)return `${status2d[1]} 个对象 · ${status2d[2]} 毫秒${status2d[3]?' · '+translated(status2d[3],language):''}`;
  const status3d=/^(\d+) 3D plots · (rendering…|[\d.]+ ms)(?: · (drag preview))?(?: · (PLOT LIMIT: reduce detail\/plots))?$/.exec(s);
  if(status3d)return `${status3d[1]} 个三维图形 · ${status3d[2]==='rendering…'?translated(status3d[2],language):status3d[2].replace(' ms',' 毫秒')}${status3d[3]?' · '+translated(status3d[3],language):''}${status3d[4]?' · '+translated(status3d[4],language):''}`;
+ if(s.startsWith('Animation stopped: '))return '动画已停止：'+translated(s.slice('Animation stopped: '.length),language);
  const prefixed=/^(Local save unavailable|Autosave unavailable|Save coordination failed|3D rendering failed|Label move rejected|Move rejected|Open failed|Import failed|Cannot load other tab|LaTeX renderer failed): (.*)$/.exec(s);
  if(prefixed)return (zh[prefixed[1]]||prefixed[1])+'：'+(zh[prefixed[2]]||prefixed[2]);
  return zh[s]||s;
@@ -445,3 +446,28 @@ Object.assign(zh,{
 });
 
 Object.assign(zh,{'Slider':'滑块','Algebra':'代数','Algebra ▸':'代数 ▸','Show on canvas':'在画布上显示','Click the canvas to place a slider. Drag its handle to update dependent geometry.':'单击画布放置滑块；拖动滑块控制点以更新依赖的几何对象。','X expression':'X 表达式','Y expression':'Y 表达式','Edit slider range':'编辑滑块范围','Delete slider':'删除滑块','Slider range: min, max, step':'滑块范围：最小值、最大值、步长'});
+
+// Round 263: current Properties and slider controls introduced after the
+// earlier localization inventories. Do not translate user names or formulas.
+Object.assign(zh, {
+ 'Expression':'表达式',
+ 'Color':'颜色',
+ 'Step':'步长',
+ 'Value':'数值',
+ 'Show border':'显示边框',
+ 'Locked — unlock in the three-dot menu.':'已锁定 — 请在三点菜单中解锁。',
+ 'Locked (including dependencies)':'已锁定（包括依赖关系）',
+ 'Transformation amount':'变换参数',
+ 'Length expression':'长度表达式',
+ 'Angle (radians) expression':'角度（弧度）表达式',
+ 'Find':'查找',
+ 'Mode':'模式',
+ 'Suggestions':'候选建议',
+ 'No suggestions':'无候选建议',
+ 'Insert suggestion':'插入建议',
+ 'Smart input':'智能输入',
+ 'Argument hints':'参数提示',
+ 'Derived side: edit the parent construction to change this edge.':'派生边：请编辑父构造以修改此边。',
+ 'Slider changed. Reopen its menu.':'滑块已更改，请重新打开其菜单。',
+ 'Unlock slider and dependent objects before deleting.':'删除前请解锁滑块及其依赖对象。',
+});

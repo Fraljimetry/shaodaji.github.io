@@ -16,7 +16,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round54';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round263';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -331,12 +331,20 @@ function refreshAfterMutation(forceProperties=false){
 }
 // Playback is ephemeral; saved documents contain only validated values and settings.
 // One RAF loop coordinates all active 2D sliders and never creates undo entries per frame.
-const playingSliders=new Map();let playbackFrame=0,playbackLast=0;
+const playingSliders=new Map();let playbackFrame=0,playbackLast=0,playbackBefore=null;
+// A concurrent playback session has one shared undo boundary. Individual
+// pauses/completions must not record snapshots containing other moving sliders.
 function stopSliderPlayback(name,{commit=true,refresh=true}={}){
  const state=playingSliders.get(name);if(!state)return;
  playingSliders.delete(name);
- if(commit&&state.before!==JSON.stringify(doc)){recordUndo(state.before);documentRevision++;enqueueSave();}
- if(!playingSliders.size&&playbackFrame){cancelAnimationFrame(playbackFrame);playbackFrame=0;playbackLast=0;}
+ if(!playingSliders.size){
+  if(commit&&playbackBefore!==null&&playbackBefore!==JSON.stringify(doc)){
+   recordUndo(playbackBefore);documentRevision++;enqueueSave();
+  }
+  playbackBefore=null;
+  if(playbackFrame){cancelAnimationFrame(playbackFrame);playbackFrame=0;}
+  playbackLast=0;
+ }
  if(refresh){renderAlgebra();renderProperties();}
 }
 function stopAllSliderPlayback(){for(const name of [...playingSliders.keys()])stopSliderPlayback(name,{refresh:false});}
@@ -363,7 +371,7 @@ function playbackTick(timestamp){
   const selected=doc.algebra?.sliders.find(s=>s.name===selectedSlider);
   const propertySlider=$('properties')?.querySelector('.slider-property-value-range');
   if(selected&&propertySlider&&document.activeElement!==propertySlider)propertySlider.value=String(selected.value);
-  synchronizeSliderExpression();scheduleRender();
+  synchronizeSliderExpression();synchronizeRelatedPropertyFields();scheduleRender();
  }
  if(playingSliders.size)playbackFrame=requestAnimationFrame(playbackTick);
  else{playbackLast=0;renderAlgebra();renderProperties();}
@@ -372,13 +380,19 @@ function toggleSliderPlayback(name){
  if(playingSliders.has(name)){stopSliderPlayback(name);return;}
  const item=doc.algebra?.sliders.find(s=>s.name===name);
  if(!item||item.locked||!item.visible||in3D())return;
- stopAllSliderPlayback(); // One active animation keeps undo/redo atomic.
- playingSliders.set(name,{before:JSON.stringify(doc),startValue:item.value,elapsed:0});
+ // Do not stop other sliders: the shared RAF advances each slider independently.
+ // Capture the session once so pause, once-completion and undo remain atomic.
+ if(!playingSliders.size)playbackBefore=JSON.stringify(doc);
+ playingSliders.set(name,{startValue:item.value,elapsed:0});
  if(!playbackFrame){playbackLast=0;playbackFrame=requestAnimationFrame(playbackTick);}
  renderAlgebra();renderProperties();
 }
-function update(mutator,{refreshList=true,renderCanvas=true}={}){
- if(playingSliders.size)stopAllSliderPlayback();
+function update(mutator,{refreshList=true,renderCanvas=true,preservePlayback=false}={}){
+ // Pure lock toggles must not stop independent animations. Split undo history
+ // at the toggle, leaving the current RAF session running from a new baseline.
+ const splitPlayback=preservePlayback&&playingSliders.size>0;
+ const playbackBoundary=splitPlayback?playbackBefore:null;
+ if(playingSliders.size&&!splitPlayback)stopAllSliderPlayback();
  if(drag)cancelDrag(); // A document mutation must not leave an old gesture able to commit later.
  const old=JSON.stringify(doc),previousSelected=selected,previousIds=new Set(selectedIds),beforeDoc=doc;
  // A rejected edit rolls back JSON but does not replace the *logical* project.
@@ -395,7 +409,11 @@ function update(mutator,{refreshList=true,renderCanvas=true}={}){
   }
   activeSelection();
  }
- if(JSON.stringify(doc)!==old){recordUndo(old);documentRevision++;enqueueSave();}
+ if(JSON.stringify(doc)!==old){
+  if(splitPlayback&&playbackBoundary!==null&&playbackBoundary!==old)recordUndo(playbackBoundary);
+  recordUndo(old);documentRevision++;enqueueSave();
+ }
+ if(splitPlayback)playbackBefore=JSON.stringify(doc);
  if(refreshList)refreshAfterMutation(replaced||selected!==previousSelected);else{syncSettings();if(renderCanvas)render();}return true;
 }
 function el(tag,attrs={},content){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs)){if(v!==undefined&&v!==null)e.setAttribute(k,String(v));}if(content!==undefined)e.textContent=String(content);return e;}
@@ -1210,7 +1228,7 @@ function openObjectMenu(o,trigger){
    closeObjectMenu();if(!valid){notice('The object changed. Reopen its menu.');return;}
    if(action==='delete')deleteObject(o.id);
    else update(()=>{if(!currentObject(o)||generation!==documentGeneration)throw Error('Stale object control.');
-    if(action==='visibility')o.hidden=!o.hidden;else o.locked=!o.locked;});
+    if(action==='visibility')o.hidden=!o.hidden;else o.locked=!o.locked;},{preservePlayback:action==='lock'});
    const row=[...$('objects').querySelectorAll('.object')].find(r=>r.dataset.id===o.id);
    (row?.querySelector('.object-menu-toggle')||$('object-search')).focus();
   };
@@ -1581,7 +1599,6 @@ function renderProperties3D(root){
  if(selectedPlot.locked){const note=document.createElement('p');note.className='subtle';note.textContent=translated('Locked',uiPrefs.language);root.append(note);return;}
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
- if(['surface3d','implicit3d','domain3d'].includes(selectedPlot.kind))field(root,'Expression',selectedPlot.a,'text',v=>edit(p=>{p.a=v;parse3D(p);}));
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['X(u, v)','Y(u, v)','Z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
@@ -1987,7 +2004,7 @@ function openAlgebraActions(name,trigger){
   button.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PLOT3D_ACTION_PATHS[label]}</svg>`;
   button.onclick=()=>{
    closeObjectMenu();if(documentGeneration!==generation||!doc.algebra.sliders.includes(item)){notice('Slider changed. Reopen its menu.');return;}
-   if(action==='delete')deleteSlider(name);else update(()=>{if(action==='visibility')item.visible=!item.visible;else item.locked=!item.locked;});
+   if(action==='delete')deleteSlider(name);else update(()=>{if(action==='visibility')item.visible=!item.visible;else item.locked=!item.locked;},{preservePlayback:action==='lock'});
   };menu.append(button);
  }
  menu.hidden=false;const r=trigger.getBoundingClientRect(),w=menu.offsetWidth,h=menu.offsetHeight;

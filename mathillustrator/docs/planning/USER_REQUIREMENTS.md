@@ -2236,3 +2236,18 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 - Editing point X/Y updates the visible name-free Expression immediately; committing the Expression updates the other coordinate fields.
 - Slider Expression, range, value, step, speed, mode, and range track reflect the same authoritative slider state.
 - A focused draft is preserved; unrelated controls synchronize after transactions; invalid edits restore the last accepted value without stale baselines.
+
+### Round 260 — 3D Properties formula UI
+3D plots do not display the redundant generic Expression field. Existing named formula editors for surfaces, implicit surfaces, parametric surfaces, vector fields and complex domain coloring remain editable. 2D geometric and slider Expression fields remain unchanged.
+
+
+### Round 261 — Concurrent slider playback
+
+Concurrent 2D slider playback: multiple sliders can play simultaneously, each with independent mode/speed and pause state. Preserve a shared undo boundary for the combined playback session. Do not affect 3D plotting or slider persistence.
+
+- Round 262: preserve multi-slider playback when locking/unlocking a dependent geometric object; lock controls editability, not evaluated position. Keep numeric Value, range control and Slider Expression synchronized while animating; preserve separate undo boundaries for lock toggles.
+
+
+### Round 263 — Translation completeness
+- Keep all current 2D Properties controls, slider fields, locking notices, semantic Expression labels and tool hints localized in English/Chinese. Preserve mathematical formulas, authored names and identifiers verbatim.
+- Validate Chinese → English → Chinese reversibility with real Chromium and maintain source-backed regression keys as features evolve.

@@ -2797,3 +2797,26 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Point coordinate draft and Expression updates, and committed Expression → X/Y synchronization verified in Chromium light and dark themes.
 - Slider Expression → min/max/step/value/speed/mode and Value → Expression verified in Chromium. Focused inputs are protected while other controls follow the model; accepted baselines synchronize to prevent stale rollback.
 - Full Node regression 741/741 PASS; all 36 JavaScript source syntax checks PASS. Targeted Chromium tests for R259 coordinate, field synchronization, R253 rename, R256 ordering, R257 slider and R258 programmable geometry PASS. Broad historical browser test R252 did not complete within timeout and is not counted as PASS. Hosted and physical GPU checks not run.
+
+### Round 260 — 3D Properties formula UI
+3D plots do not display the redundant generic Expression field. Existing named formula editors for surfaces, implicit surfaces, parametric surfaces, vector fields and complex domain coloring remain editable. 2D geometric and slider Expression fields remain unchanged.
+
+
+### Round 261 — Concurrent slider playback
+
+Change: removed the single-slider stop on Play; concurrent sliders share the RAF, with one undo boundary after all stop. Verify independently in Chromium with multiple sliders, mixed modes, dependent points, selective pause, undo/redo, and resume.
+
+Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PASS; real Chromium concurrent-sliders (light and dark) PASS, Round 234 playback PASS, Round 237 unified Objects PASS, Round 257 slider Expression PASS, Round 260 3D Properties PASS. Full historical Chromium inventory, hosted deployment and physical GPU not run.
+
+## Round 262 — playback/lock/Properties consistency
+
+- Corrected stale slider Value field during concurrent RAF playback by syncing idle Properties controls without overwriting the focused editor.
+- Lock/unlock updates now preserve active slider sessions and split undo boundaries around the toggle. A locked dependent point continues following sliders. Other edits retain their existing stop-playback behavior.
+- Verified: Node 741/741 PASS; 36 JS syntax checks PASS; Chromium new `browser_round262_lock_sync.py` both themes PASS; Round 261 concurrent sliders, Round 259 field sync, Round 257 slider Expression, Round 253 renaming, Round 258 geometric programming, Round 256 ordering PASS. Round 260 3D test passed before the runner time limit; complete historical Chromium inventory, hosted deployment, native touch and GPU checks not executed.
+
+
+### Round 263 — bilingual UI audit (local)
+- Source inventory identified untranslated current slider/Properties fields (Expression, Color, Step, Value, Show border), locking notices and measurement labels; added translations and localized the animated-slider failure prefix.
+- Updated bilingual Expression tutorial examples to omit assignment prefixes as required since Round 255.
+- Executed full Node suite: 743/743 passed; JavaScript syntax: 36/36 passed; Chromium translation regression: light/dark passed. Historical browser translation checks R201 (1440/768/390), R177 (1440/768), R200 (1440/768) passed.
+- No hosted deployment, native mobile/touch, or exhaustive historical browser inventory executed.
