@@ -1,5 +1,5 @@
 import {clone,command,parseExpression,validateDoc} from './model.mjs?cut=round227';
-import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round227';
+import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round254';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=round69';
 
 // Every reference is printed from its persistent ID, never a stored name.
@@ -27,22 +27,22 @@ export function constructionExpression(doc,o){
  if(o.edgeOf){const owner=doc.objects.find(item=>item.id===o.edgeOf);
   if(!owner)return null;
   const i=Number.isInteger(o.edgeIndex)?o.edgeIndex:(owner.refs||[]).findIndex((id,j)=>o.refs?.[0]===id&&o.refs?.[1]===owner.refs[(j+1)%owner.refs.length]);
-  return i<0?null:`${o.name} = Side(${owner.name}, ${i+1})`;
+  return i<0?null:`Side(${owner.name}, ${i+1})`;
  }
- if(o.type==='point')return `${o.name} = (${(o.xyExpr||o.xy||[]).join(', ')})`;
- if(o.type==='function')return `${o.name}(x) = ${o.expr}`;
- if(o.type==='implicit')return `${o.name} = Implicit(${quote(o.expr)})`;
- if(o.type==='domainColoring')return `${o.name} = DomainColoring(${quote(o.expr)})`;
- if(o.type==='parametric')return `${o.name} = Parametric(${quote(o.xExpr)}, ${quote(o.yExpr)}, ${quote(o.parameter??'legacy')}${o.polar?`, polar=${quote(o.rExpr)}`:''})`;
- if(o.type==='vectorField')return `${o.name} = VectorField(${quote(o.xExpr)}, ${quote(o.yExpr)})`;
- if(o.type==='text'||o.type==='node')return `${o.name} = ${CONSTRUCTORS[o.type]}(${(o.xy||[]).join(', ')}, ${quote(o.text)})`;
+ if(o.type==='point')return `(${(o.xyExpr||o.xy||[]).join(', ')})`;
+ if(o.type==='function')return `${o.expr}`;
+ if(o.type==='implicit')return `Implicit(${quote(o.expr)})`;
+ if(o.type==='domainColoring')return `DomainColoring(${quote(o.expr)})`;
+ if(o.type==='parametric')return `Parametric(${quote(o.xExpr)}, ${quote(o.yExpr)}, ${quote(o.parameter??'legacy')}${o.polar?`, polar=${quote(o.rExpr)}`:''})`;
+ if(o.type==='vectorField')return `VectorField(${quote(o.xExpr)}, ${quote(o.yExpr)})`;
+ if(o.type==='text'||o.type==='node')return `${CONSTRUCTORS[o.type]}(${(o.xy||[]).join(', ')}, ${quote(o.text)})`;
  const names=namesFor(doc,o);if(!names.every(Boolean))return null;
  const kind=o.type==='transformCopy'?({rotate:'Rotate',dilate:'Dilate',translate:'Translate',reflect:'Reflect',invert:'Invert'}[o.transform]||'Transform'):o.type==='spline'&&o.closed?'ClosedSpline':CONSTRUCTORS[o.type];
  if(!kind)return null;
  let options=optionTokens(o);
  if(o.type==='transformCopy')options=options.filter(x=>!x.startsWith('transform='));
  if(o.type==='spline'&&o.closed===false)options=[];
- return `${o.name} = ${kind}(${[...names,...options].join(', ')})`;
+ return `${kind}(${[...names,...options].join(', ')})`;
 }
 function parseConstructor(rhs){
  const m=rhs.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
@@ -58,9 +58,11 @@ function parseConstructor(rhs){
  return {kind:m[1],args,options};
 }
 function parseNamed(value,name){
+ // Name is edited independently. Accept legacy "Name = Constructor(...)"
+ // input for compatibility, but never include it in displayed expressions.
  const match=value.match(/^(.+?)\s*=\s*([\s\S]+)$/);
- if(!match||match[1].trim()!==name)throw Error('Keep the object name unchanged here; rename using Name.');
- return match[2].trim();
+ if(match&&match[1].trim()===name)return match[2].trim();
+ return value.trim();
 }
 function acyclic(doc){
  const objects=new Map(doc.objects.map(o=>[o.id,o])),seen=new Set(),active=new Set();
@@ -102,8 +104,9 @@ export function applyConstructionExpression(doc,objectId,source){
  if(current.edgeOf||current.type==='freehand')throw Error('This geometry is not an editable algebraic construction.');
  const value=String(source).trim();if(!value||value.length>2000)throw Error('Invalid Algebra expression.');
  if(current.type==='function'){
-  const m=value.match(/^([^()]+)\(x\)\s*=\s*([\s\S]+)$/);if(!m||m[1].trim()!==current.name)throw Error('Use Name(x) = expression; rename using Name.');
-  parseExpression(m[2]);commit(doc,objectId,{expr:m[2]});return;
+  const m=value.match(/^([^()]+)\(x\)\s*=\s*([\s\S]+)$/);
+  const expression=m&&m[1].trim()===current.name?m[2]:value;
+  parseExpression(expression);commit(doc,objectId,{expr:expression});return;
  }
  const rhs=parseNamed(value,current.name);
  if(current.type==='point'){

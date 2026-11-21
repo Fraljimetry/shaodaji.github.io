@@ -28,16 +28,25 @@ export function validSliderName(name){return NAME.test(name)&&!Object.hasOwn(FUN
  * Reject unmatched parentheses here rather than accidentally creating a partial object. */
 export function splitAlgebraArguments(source){
  if(typeof source!=='string'||source.length>1200)throw Error('Invalid argument list.');
- const result=[];let depth=0,start=0;
+ const result=[];let depth=0,start=0,quoted=false,escaped=false;
  for(let i=0;i<source.length;i++){
   const c=source[i];
+  if(quoted){
+   if(escaped){escaped=false;continue;}
+   if(c==='\\'){escaped=true;continue;}
+   if(c==='"')quoted=false;
+   continue;
+  }
+  if(c==='"'){quoted=true;continue;}
   if(c==='('){depth++;if(depth>32)throw Error('Expression nesting is too deep.');}
   else if(c===')'){if(--depth<0)throw Error('Unmatched closing parenthesis.');}
   else if(c===','&&depth===0){result.push(source.slice(start,i).trim());start=i+1;}
  }
+ if(quoted)throw Error('Unclosed quoted argument.');
  if(depth!==0)throw Error('Unclosed expression parenthesis.');
  result.push(source.slice(start).trim());return result;
 }
+
 export function evaluateAlgebra(source,values={}){
  if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
  const tokens=[];let s=source.replaceAll('π','pi').replaceAll('φ','phi').replaceAll('ϕ','phi'),i=0;

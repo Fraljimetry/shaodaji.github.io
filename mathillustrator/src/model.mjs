@@ -1,4 +1,4 @@
-import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round227';
+import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round254';
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
 import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';

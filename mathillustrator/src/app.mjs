@@ -1,6 +1,6 @@
-import {constructionExpression,applyConstructionExpression} from './construction_expression.mjs?cut=round252';
+import {constructionExpression,applyConstructionExpression} from './construction_expression.mjs?cut=round255';
 import {attachInputAssistant} from './input_assist.mjs?cut=round246';
-import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round227';
+import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
@@ -271,8 +271,19 @@ function restore(s){stopAllSliderPlayback();constructionEmphasis.clear();lastMov
 function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.push(JSON.stringify(doc));restore(history.pop());syncHistory();}
 function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
 let pendingPropertiesFrame=0;
+// Keep the displayed definition in sync even when a focused Name input means
+// the Properties tree cannot safely be replaced. Never overwrite an in-progress
+// edit inside the definition field itself.
+function synchronizeConstructionExpression(){
+ const input=$('properties')?.querySelector('.construction-expression-editor');
+ if(!input||document.activeElement===input)return;
+ const live=get(doc,input.dataset.objectId);
+ const expression=live&&constructionExpression(doc,live);
+ if(expression===null||expression===undefined)return;
+ if(input.value!==expression)input.value=expression;
+}
 function refreshAfterMutation(forceProperties=false){
- syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();
+ syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();synchronizeConstructionExpression();
  // Editing controls must not be replaced after the next animation frame while
  // focus remains inside the property pane: two rapid changes otherwise race
  // against detached onchange handlers and silently lose one of the edits.
@@ -1533,7 +1544,7 @@ function renderProperties3D(root){
  if(selectedPlot.locked){const note=document.createElement('p');note.className='subtle';note.textContent=translated('Locked',uiPrefs.language);root.append(note);return;}
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
  field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
- if(['surface3d','implicit3d','domain3d'].includes(selectedPlot.kind))field(root,'Algebra expression',selectedPlot.a,'text',v=>edit(p=>{p.a=v;parse3D(p);}));
+ if(['surface3d','implicit3d','domain3d'].includes(selectedPlot.kind))field(root,'Expression',selectedPlot.a,'text',v=>edit(p=>{p.a=v;parse3D(p);}));
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['X(u, v)','Y(u, v)','Z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
@@ -1687,8 +1698,9 @@ function renderProperties(){
  const renderConstructionExpression=()=>{
   const definition=constructionExpression(doc,o);
   if(definition===null)return;
-  const algebraInput=field(root,'Algebra expression',definition,'text',value=>edit(live=>applyConstructionExpression(doc,live.id,value)));
+  const algebraInput=field(root,'Expression',definition,'text',value=>edit(live=>applyConstructionExpression(doc,live.id,value)));
   algebraInput.classList.add('construction-expression-editor');
+  algebraInput.dataset.objectId=o.id;
   if(o.edgeOf){algebraInput.readOnly=true;algebraInput.title='Derived side: edit the parent construction to change this edge.';}
  };
  if(!['text','node','morphism'].includes(o.type))renderConstructionExpression();

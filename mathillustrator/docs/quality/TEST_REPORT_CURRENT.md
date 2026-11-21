@@ -1,3 +1,14 @@
+## Round 254 — Algebra integration and semantic parsing (local, 2026-11-21)
+- Baseline: Round 252 assembled source + Round 253 overlay (following previously supplied cumulative overlays).
+- Reproduced: shared construction argument splitter separated commas inside quoted labels; Text/Node/Morphism semantic expressions could fail when saved unchanged.
+- Fixed: quote/escape-aware splitting, unmatched quote detection, cache bust for changed module graph. Existing geometric validators, stable IDs, 2D/3D renderers and JSON format unchanged.
+- PASS: new Node quoted-argument, Text/Node/Morphism round-trip tests; full Node 733/733; Chromium Round 252 semantic Properties and Round 253 reference rename in light/dark themes.
+- PASS: Chromium focused integration tests: R242 input parity, R246 completion/theme, R247 Smart Input, R248 editor, R250 dropdown visual parity, R251 construction Properties, R252 semantic polygon Properties, R253 rename synchronization.
+- PASS: bilingual tutorial responsive/browser checks at 390, 768 and 1440px (no horizontal document overflow).
+- PASS: `node --check` for all 36 source `.mjs` modules.
+- INCOMPLETE: broad historical Chromium inventory stalled on R226 slider/Algebra test and was terminated by the runner timeout; not counted as a passing suite.
+- Not certified: entire historical Chromium inventory, production deployment, physical GPU or native touch devices.
+
 
 ## Round 233 — 2D slider positioning and Algebra command reference
 
@@ -2752,3 +2763,14 @@ Round 240 verification (current execution): 705/705 Node tests passed, all 34 Ja
 - Full Node suite: 730/730 PASS (includes new Round 252 tests); JavaScript syntax and browser outcomes are recorded in the delivery summary.
 - Chromium verified the interactive Properties integration, derived edge read-only behavior, polygon rewiring and light/dark modes. Historical Round 251 and Round 248 targeted browser tests also completed.
 - Limitations: freehand cannot be algebraically reconstructed; generated sides must be changed through parents; arbitrary changes to vertex count, curve representation, and 3D programmable object construction are unsupported. The broader hosted/GPU environment was not tested.
+
+### Round 253 — Rename synchronization and Properties label
+- Root cause: Properties refresh was suppressed while Name retained focus, leaving the expression left-hand side stale.
+- Fix: synchronize the existing Expression control from the live object after successful document mutations, without overwriting a focused Expression editor.
+- Tests: browser_round253_expression_rename.py; historical construction/semantic Properties browser checks; full Node tests and JS syntax checks to be recorded with observed outcomes.
+
+
+### Round 255 — Name-free expression display
+- Full Node: 734/734 PASS (`node --test tests/*.test.mjs`).
+- Real Chromium regression: browser_round253_expression_rename, browser_round251_construction_properties, browser_round252_semantic_properties PASS.
+- Production browser cache key updated to round255. Hosted deployment and physical GPU were not tested.

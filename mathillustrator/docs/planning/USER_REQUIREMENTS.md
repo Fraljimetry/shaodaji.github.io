@@ -1,3 +1,9 @@
+
+## Round 254 — Algebra integration compatibility and tutorial
+- Keep editable semantic Properties expressions synchronized with live names/IDs, while preserving validation, stable object IDs, and freehand exclusion.
+- Shared semantic constructor argument handling must distinguish commas and parentheses inside JSON-quoted labels/options, including escaped double quotes.
+- Preserve Construction input / Properties command scope distinction, generated-side read-only semantics, and 3D plotting separation.
+- Maintain a bilingual, categorized user-guide reference with examples, restrictions, and rollback behavior.
 ## Round 213 — Remaining implicit 3D browser latency
 - Preserve unchanged high-detail implicit meshes, lighting, painter order, screen PNG bytes and full-vector SVG exports while reducing responsiveness delays for the demanding equation `cos(x)cos(phi y)+cos(y)cos(phi z)+cos(z)cos(phi x)=1`.
 - Offscreen rendering may use cancellable MessageChannel tasks instead of nested zero-delay timers; preserve fallback operation, latest-scene cancellation, user-input responsiveness and atomic complete-frame replacement.
@@ -2200,3 +2206,13 @@ Maintain the single Objects panel with Algebra/Find glyph switching and Enter-on
 - Specialized reference-based constructors support typed options and transactional validation. Invalid references, cycles, domain-invalid configurations and unsupported structural changes must not mutate the source project.
 - Parent-owned polygon sides display a read-only `Side(parent,index)` semantic definition; edits to polygon vertex order must synchronize side refs and preserve side IDs. Parent ownership and vertex-count invariants remain authoritative.
 - Extended Properties syntax does not imply all constructors are accepted by the shorter Algebra Construction input command parser. 3D plotting continues to use its dedicated editors.
+
+### Round 253 — Live Expression synchronization
+- Properties displays **Expression** (not Algebra expression).
+- After renaming an object while its Name field remains focused, update the displayed Expression immediately, including the object's own name. Referenced names remain ID-backed and update when those objects are renamed.
+- Never replace a focused Expression input during an incomplete edit; keep document persistence and the geometry model unchanged.
+
+
+### Round 255 — Expression display
+- Properties → Expression displays the right-hand semantic definition only; never prefix the selected object name. Name stays in its own field.
+- Editing accepts name-free definitions; legacy `Name = ...` entries remain accepted. Live referenced names continue to follow rename changes.
