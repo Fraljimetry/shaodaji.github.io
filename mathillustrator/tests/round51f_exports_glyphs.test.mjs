@@ -29,7 +29,7 @@ test('R51F: each 2D plotting mode has a unique semantic SVG with the same previe
  assert.match(app,/preview\.innerHTML=plotGlyphSvg\(mode\)/);
  assert.match(html,/<span id="plot-mode-preview" aria-hidden="true"><\/span>/);
  assert.match(css,/#plot-mode-preview svg/);
- assert.match(html,/src\/app\.mjs\?cut=(?:mi271|round(?:6[3-9]|[7-9]\d|[1-9]\d{2,}))/);
+ assert.match(html,/src\/app\.mjs\?cut=(?:mi271|mi274|mi275|round(?:6[3-9]|[7-9]\d|[1-9]\d{2,}))/);
 });
 
 test('R51I: Geometry markers have uniform 2.8-unit rendered size and related diagonal tools use 45 degrees',()=>{

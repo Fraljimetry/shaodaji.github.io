@@ -1240,31 +1240,13 @@ html.three-d #object-search{display:block!important}
 }
 .properties > .appearance-choice-field > select {width:100%!important;min-width:0!important;}
 
-/* Round 272: align the per-type fill preference with Background/Transparent.
-   Keep Object type and its dropdown on the same line even in narrow panels. */
-.rightpanel .style-controls-grid .new-fill-default-row {
-  grid-column:1/-1;display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  align-items:center;column-gap:9px;min-width:0;margin:3px 0 0;
+/* Round 274: selected-object fill, beside Point size on the same grid row. */
+.rightpanel .style-controls-grid .selected-fill-toggle {
+  grid-area:4 / 2;display:inline-flex;align-items:center;gap:6px;
+  margin:0;min-width:0;min-height:30px;align-self:end;
+  font-size:11px;line-height:1.3;
 }
-.rightpanel .style-controls-grid .new-fill-default-row > .field {
-  display:flex;flex-direction:row;align-items:center;justify-content:space-between;
-  gap:5px;min-width:0;min-height:30px;margin:0;font-size:11px;
-  white-space:nowrap;
-}
-.rightpanel .style-controls-grid .new-fill-default-row > .field > select {
-  flex:1 1 auto;width:auto!important;min-width:0;max-width:none;
-  padding:6px 3px;font-size:11px;
-}
-.rightpanel .style-controls-grid .new-fill-default-row > .new-fill-toggle {
-  display:inline-flex;align-items:center;gap:5px;min-width:0;
-  margin:0;font-size:11px;line-height:1.3;white-space:normal;
-}
-.rightpanel .style-controls-grid .new-fill-default-row > .new-fill-toggle > input[type=checkbox] {
-  margin:0;padding:0;appearance:auto;flex:none;width:16px;height:16px;min-width:16px;min-height:16px;
-}
-@media(max-width:360px){
- .rightpanel .style-controls-grid .new-fill-default-row{column-gap:6px}
- .rightpanel .style-controls-grid .new-fill-default-row > .field,
- .rightpanel .style-controls-grid .new-fill-default-row > .new-fill-toggle{font-size:10px}
+.rightpanel .style-controls-grid .selected-fill-toggle > input[type=checkbox] {
+  appearance:auto;flex:none;margin:0;padding:0;width:16px;height:16px;
+  min-width:16px;min-height:16px;
 }

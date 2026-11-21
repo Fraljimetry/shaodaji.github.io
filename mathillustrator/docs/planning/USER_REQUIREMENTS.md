@@ -2298,3 +2298,7 @@ Concurrent 2D slider playback: multiple sliders can play simultaneously, each wi
 - The compact **Enable fill** control appears under **New object style**, immediately after **Point size**. Its object-type selector remembers separate defaults for each fillable closed shape.
 - Changing a default only affects subsequent constructions; existing styles and old JSON must remain unchanged.
 - Object Properties retain per-object Fill color; selecting it can enable the fill.
+
+- Round 274: Enable fill is a compact checkbox immediately to the right of Point size, applying to the currently selected fillable object; no Object type dropdown.
+
+- Round 275: Show roughly seven significant digits in point coordinates and Properties semantic numeric expressions while preserving exact model numbers; full precision reappears on focus. No unintended rounding of JSON, dependencies, or unchanged field blur.

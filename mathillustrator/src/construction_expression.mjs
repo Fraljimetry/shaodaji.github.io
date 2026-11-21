@@ -23,20 +23,30 @@ function optionTokens(o){
  const keys=REFERENCE_OPTIONS[o.type]||[];
  return keys.filter(k=>Object.hasOwn(o,k)).map(k=>`${k}=${quote(o.measureExpr?.[k]??o[k])}`);
 }
-export function constructionExpression(doc,o){
+// Only the Properties display is rounded; the model and JSON keep full precision.
+export function displayCoordinate(value){
+ if(typeof value==='string'){
+  if(!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()))return value;
+  value=Number(value);
+ }
+ if(typeof value!=='number'||!Number.isFinite(value))return String(value);
+ return String(Number(value.toPrecision(7)));
+}
+export function constructionExpression(doc,o,{fullPrecision=false}={}){
+ const show=value=>fullPrecision?String(value):displayCoordinate(value);
  if(o.type==='freehand')return null;
  if(o.edgeOf){const owner=doc.objects.find(item=>item.id===o.edgeOf);
   if(!owner)return null;
   const i=Number.isInteger(o.edgeIndex)?o.edgeIndex:(owner.refs||[]).findIndex((id,j)=>o.refs?.[0]===id&&o.refs?.[1]===owner.refs[(j+1)%owner.refs.length]);
   return i<0?null:`Side(${owner.name}, ${i+1})`;
  }
- if(o.type==='point')return `(${(o.xyExpr||o.xy||[]).join(', ')})`;
+ if(o.type==='point')return `(${(o.xyExpr||o.xy||[]).map(show).join(', ')})`;
  if(o.type==='function')return `${o.expr}`;
  if(o.type==='implicit')return `Implicit(${quote(o.expr)})`;
  if(o.type==='domainColoring')return `DomainColoring(${quote(o.expr)})`;
  if(o.type==='parametric')return `Parametric(${quote(o.xExpr)}, ${quote(o.yExpr)}, ${quote(o.parameter??'legacy')}${o.polar?`, polar=${quote(o.rExpr)}`:''})`;
  if(o.type==='vectorField')return `VectorField(${quote(o.xExpr)}, ${quote(o.yExpr)})`;
- if(o.type==='text'||o.type==='node')return `${CONSTRUCTORS[o.type]}(${(o.xy||[]).join(', ')}, ${quote(o.text)})`;
+ if(o.type==='text'||o.type==='node')return `${CONSTRUCTORS[o.type]}(${(o.xy||[]).map(show).join(', ')}, ${quote(o.text)})`;
  const names=namesFor(doc,o);if(!names.every(Boolean))return null;
  const kind=o.type==='transformCopy'?({rotate:'Rotate',dilate:'Dilate',translate:'Translate',reflect:'Reflect',invert:'Invert'}[o.transform]||'Transform'):o.type==='spline'&&o.closed?'ClosedSpline':CONSTRUCTORS[o.type];
  if(!kind)return null;

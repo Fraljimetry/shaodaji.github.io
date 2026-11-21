@@ -2884,3 +2884,18 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - Added model regressions for type-specific future-only fill defaults and JSON validation.
 - Added real Chromium coverage for dark/light preference switching, new circle creation, legacy object preservation, and bilingual navigation.
 - Full Node, all source syntax checks, and historical regression outcomes are recorded in the current delivery. Hosted deployment and hardware GPU runs are not performed.
+
+
+### Round 274: Selected-object fill toggle
+- Removed per-type Object dropdown; placed Enable fill beside Point size in Settings.
+- Fill checkbox reflects and edits only one selected eligible object, disabled for ineligible/multiple/locked selections.
+- Historical per-type document settings remain loadable, but are no longer edited by this control.
+- Verification: see delivery summary; do not interpret older Round 270 per-type UI browser test as a current UI contract.
+
+- Round 274 final verified: 764/764 Node regressions, 36/36 JS syntax checks, Chromium selected-object fill and grid alignment in light/dark, revised legacy localization check. Full historical Chromium inventory not run.
+
+### Round 275 — Point precision display
+- Display-only seven-significant-digit coordinate formatting in Properties; full persisted precision remains available on focus.
+- New Node tests validate semantic formatting, exact numeric storage and JSON; Chromium regression verifies focus, no-op blur and edited precision in both themes.
+- Historical Round 259 browser fixture adjusted for new display contract, without relaxing model precision.
+- Current test results are recorded in delivery; historical inventory/hosted browser/hardware GPU not universally certified.

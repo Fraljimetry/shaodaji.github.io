@@ -1,4 +1,4 @@
-import {constructionExpression,applyConstructionExpression,createSemanticConstruction} from './construction_expression.mjs?cut=mi266';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,createSemanticConstruction} from './construction_expression.mjs?cut=mi266';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
@@ -315,7 +315,7 @@ function synchronizeRelatedPropertyFields(){
  setIdle(findField('Name'),live.name);
  if(['point','node','text'].includes(live.type)){
   const coords=root.querySelectorAll('.point-coordinate-grid input');
-  for(let i=0;i<2;i++)setIdle(coords[i],live.xyExpr?.[i]??live.xy?.[i]);
+  for(let i=0;i<2;i++)setIdle(coords[i],displayCoordinate(live.xyExpr?.[i]??live.xy?.[i]));
  }
 }
 function refreshAfterMutation(forceProperties=false){
@@ -1782,6 +1782,7 @@ function renderSliderProperties(root,item){
  const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});const borderText=document.createElement('span');borderText.textContent='Show border';border.append(borderInput,borderText);border.classList.add('slider-border-control');opacitySlot.append(border);
 }
 function renderProperties(){
+ syncSelectedObjectFillControls();
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
 
  const root=$('properties');root.classList.remove('properties-3d');root.replaceChildren();if(selectedSlider){const item=doc.algebra?.sliders.find(s=>s.name===selectedSlider);if(item){renderSliderProperties(root,item);localizeUI(root,uiPrefs.language);return;}selectedSlider=null;}const objects=activeSelection();
@@ -1807,6 +1808,20 @@ function renderProperties(){
   const algebraInput=field(root,'Expression',definition,'text',value=>edit(live=>applyConstructionExpression(doc,live.id,value)));
   algebraInput.classList.add('construction-expression-editor');
   algebraInput.dataset.objectId=o.id;
+  if(['point','text','node'].includes(o.type)){
+   // Focus exposes exact stored coordinates. Never write the rounded view back
+   // merely because focus moved away; field() tracks the accepted value.
+   algebraInput.addEventListener('focus',()=>{
+    const live=get(doc,o.id);if(!live)return;
+    const full=constructionExpression(doc,live,{fullPrecision:true});
+    if(full!==null){algebraInput.value=full;algebraInput.dispatchEvent(new CustomEvent('properties-synced',{detail:{value:full}}));}
+   });
+   algebraInput.addEventListener('blur',()=>queueMicrotask(()=>{
+    if(document.activeElement===algebraInput)return;
+    synchronizeConstructionExpression();
+   }));
+  }
+
   if(o.edgeOf){algebraInput.readOnly=true;algebraInput.title='Derived side: edit the parent construction to change this edge.';}
  };
  renderConstructionExpression();
@@ -1832,8 +1847,18 @@ function renderProperties(){
  }
  if(['point','node','text'].includes(o.type)){
   const coords=document.createElement('div');coords.className='twocol point-coordinate-grid';for(let i=0;i<2;i++){
-   const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';input.value=String(o.xyExpr?.[i]??o.xy[i]);
+   const l=document.createElement('label');l.textContent=i?'y':'x';const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';input.value=displayCoordinate(o.xyExpr?.[i]??o.xy[i]);
    if(o.type==='point'&&o.xyExpr){input.dataset.numericExpression='false';input.setAttribute('aria-label',i?'Y coordinate or expression':'X coordinate or expression');}
+   {
+    input.addEventListener('focus',()=>{
+     const live=get(doc,o.id);if(live?.xy)input.value=String(live.xyExpr?.[i]??live.xy[i]);
+    });
+    input.addEventListener('blur',()=>queueMicrotask(()=>{
+     if(document.activeElement===input)return;
+     const live=get(doc,o.id);if(live?.xy)input.value=displayCoordinate(live.xyExpr?.[i]??live.xy[i]);
+    }));
+   }
+
    // Coordinate text is not committed until change/blur. While it is being
    // edited, preview a *valid* coordinate in Expression so the two Properties
    // controls never visibly disagree. Do not mutate the document or history
@@ -1848,7 +1873,7 @@ function renderProperties(){
      if(live.xyExpr){if(!candidate)return;values[i]=candidate;}
      else values[i]=numericExpression(candidate);
      if(values.some(value=>value===undefined||value===null))return;
-     expression.value=`(${values.join(', ')})`;
+     expression.value=`(${values.map(displayCoordinate).join(', ')})`;
     }catch{/* Incomplete/invalid input is not a mathematical expression. */}
    });
    input.onchange=()=>{
@@ -1860,8 +1885,8 @@ function renderProperties(){
      return;
     }
     let v;try{v=numericExpression(text);}catch(error){notice(error.message);input.value=previous;synchronizeConstructionExpression();return;}
-    if(Object.is(v,current?.xy?.[i])){input.value=String(v);synchronizeConstructionExpression();return;}
-    const ok=edit(live=>{const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});input.value=ok===false?previous:String(get(doc,o.id)?.xy?.[i]??o.xy[i]);
+    if(Object.is(v,current?.xy?.[i])){input.value=displayCoordinate(v);synchronizeConstructionExpression();return;}
+    const ok=edit(live=>{const before=clone(doc);live.xy[i]=v;guardAnchorMove(before,doc,live.id);});input.value=ok===false?displayCoordinate(Number(previous)):displayCoordinate(get(doc,o.id)?.xy?.[i]??o.xy[i]);
    };l.append(input);coords.append(l);
   }root.append(coords);
  }
@@ -2033,7 +2058,7 @@ function renderProperties(){
   const check=document.createElement('input');check.type='checkbox';check.checked=o.colorRange===true;
   check.onchange=()=>{if(edit(live=>{live.colorRange=check.checked;})===false){check.checked=!check.checked;return;}picker.disabled=check.checked;for(const button of swatches.querySelectorAll('button'))button.disabled=check.checked;};label.append(check,' '+translated('Color range',uiPrefs.language));mode.append(label);
  }
- if(fillableClosedShape(o,{object:id=>get(doc,id)})||o.type==='node'){
+ if(fillableClosedShape(o,{object:id=>get(doc,id)})){
   const fillSlot=styleSlot('fill');
   field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;}));
   appendColorSwatches(fillSlot,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;})});
@@ -2243,7 +2268,7 @@ function sync3DInterface(){
  $('mode-label').textContent=enabled?'3D':'Select · drag points to edit';
 }
 function syncSettings(){
- syncNewObjectFillControls();
+ syncSelectedObjectFillControls();
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
@@ -2261,17 +2286,33 @@ function syncSettings(){
  syncColorSwatches();
  $('preset').value=matching?.[0]||'Custom';
 }
-// A compact per-type default. Changing the selected type does not mutate geometry;
-// toggling records only a preference for subsequently created objects.
-function syncNewObjectFillControls(){
- const type=$('new-fill-type'),checkbox=$('new-fill-enabled');
- if(!type||!checkbox)return;
- if(!FILLABLE_DEFAULT_TYPES.includes(type.value))type.value='circle';
- checkbox.checked=defaultFillForType(doc.settings,type.value);
+// Fill is an attribute of the current selected object, not a new-object default.
+// An existing document's per-type defaults remain untouched for JSON compatibility.
+function syncSelectedObjectFillControls(){
+ const checkbox=$('new-fill-enabled');if(!checkbox)return;
+ const objects=activeSelection();
+ const o=!in3D()&&!selectedSlider&&objects.length===1?objects[0]:null;
+ const eligible=!!o&&fillableClosedShape(o,{object:id=>get(doc,id)});
+ checkbox.disabled=!eligible||objectEffectivelyLocked(o.id);
+ checkbox.checked=eligible?shapeFillEnabled(o):false;
+ checkbox.title=!eligible?'Select one closed fillable object to change its fill.':
+  checkbox.disabled?'Unlock the selected object to change its fill.':'';
 }
 function setupSettings(){
- const fillType=$('new-fill-type'),fillEnabled=$('new-fill-enabled');
- if(fillType&&fillEnabled){fillType.onchange=syncNewObjectFillControls;fillEnabled.onchange=()=>update(()=>{doc.settings.fillByType={...DEFAULT_FILL_TYPES,...doc.settings.fillByType,[fillType.value]:fillEnabled.checked};});}
+ const fillEnabled=$('new-fill-enabled');
+ if(fillEnabled)fillEnabled.onchange=()=>{
+  const objects=activeSelection(),o=!in3D()&&!selectedSlider&&objects.length===1?objects[0]:null;
+  if(!o||!fillableClosedShape(o,{object:id=>get(doc,id)})||objectEffectivelyLocked(o.id)){
+   syncSelectedObjectFillControls();return;
+  }
+  const enabled=fillEnabled.checked;
+  if(!update(()=>{
+   const live=get(doc,o.id);
+   if(!live||objectEffectivelyLocked(o.id))throw Error('Selected object cannot be edited.');
+   live.style.fillEnabled=enabled;
+   if(live.type==='ellipse')live.ellipseFilled=enabled;
+  }))syncSelectedObjectFillControls();
+ };
 
  for(const property of ['stroke','fill']){
   const picker=$(property==='stroke'?'default-stroke':'default-fill');

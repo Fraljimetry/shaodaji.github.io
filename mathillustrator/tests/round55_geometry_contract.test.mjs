@@ -15,5 +15,5 @@ test('Round 55 exports the exact geometry contract required at startup',()=>{
   versions.push(match[1]);
  }
  assert.equal(versions[0],versions[1],'Editor and resolver must use the same geometry module URL');
- assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=(?:mi271|round(?:6[3-9]|[7-9]\d|[1-9]\d{2,}))"/);
+ assert.match(read('../index.html'),/src="\.\/src\/app\.mjs\?cut=(?:mi271|mi274|mi275|round(?:6[3-9]|[7-9]\d|[1-9]\d{2,}))"/);
 });
