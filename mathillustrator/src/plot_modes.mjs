@@ -20,7 +20,7 @@ const GOLDEN_RATIO=(1+Math.sqrt(5))/2;
 const CONSTANTS={pi:Math.PI,e:Math.E,phi:GOLDEN_RATIO};
 const VARIABLES=['x','y','t','u','v','z','i'];
 const TOKENS=[...new Set([...REAL_FUNCTIONS,...COMPLEX_FUNCTIONS,...Object.keys(CONSTANTS),...VARIABLES])].sort((a,b)=>b.length-a.length);
-function tokenize(source){
+function tokenize(source,extraVariables=[]){
  if(typeof source!=='string'||!source.trim()||source.length>400)throw Error('Expression must contain 1–400 characters.');
  const result=[];let i=0;
  while(i<source.length){
@@ -29,7 +29,7 @@ function tokenize(source){
   if(num){const n=Number(num[0]);if(!valid(n)||Math.abs(n)>=1e9)throw Error('Numeric literal out of range.');result.push({kind:'num',value:n});i+=num[0].length;continue;}
   if(c==='φ'||c==='ϕ'){result.push({kind:'word',value:'phi',start:i,end:i+1});i++;continue;}
   if(/[a-z]/i.test(c)){
-   const word=TOKENS.find(t=>source.slice(i,i+t.length).toLowerCase()===t);
+   const word=[...extraVariables,...TOKENS].sort((a,b)=>b.length-a.length).find(t=>extraVariables.includes(t)?source.slice(i,i+t.length)===t:source.slice(i,i+t.length).toLowerCase()===t);
    if(!word)throw Error('Unknown symbol near: '+source.slice(i,i+16));
    result.push({kind:'word',value:word,start:i,end:i+word.length});i+=word.length;continue;
   }
@@ -46,7 +46,7 @@ const C={
  num:x=>[x,0],add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],
  mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],
  div:(a,b)=>{const d=b[0]**2+b[1]**2;return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];},
- neg:a=>[-a[0],-a[1]],fromVar:(_name,vars)=>vars.z,fromConst:name=>name==='i'?[0,1]:[CONSTANTS[name],0],
+ neg:a=>[-a[0],-a[1]],fromVar:(name,vars)=>name==='z'?vars.z:[vars[name],0],fromConst:name=>name==='i'?[0,1]:[CONSTANTS[name],0],
  fun(name,args){const z=args[0], [x,y]=z,r=Math.hypot(x,y),a=Math.atan2(y,x);
   if(name==='pow')return C.pow(z,args[1]);
   if(name==='norm')return [r*r,0];
@@ -82,7 +82,7 @@ C.pow=(a,b)=>{
  return C.fun('exp',[C.mul(b,C.fun('log',[a]))]);
 };
 function compile(source,variables,complex=false){
- const allowed=new Set(variables);const ts=tokenize(source),ops=complex?C:R,functions=complex?COMPLEX_FUNCTIONS:REAL_FUNCTIONS;
+ const allowed=new Set(variables);const ts=tokenize(source,variables.filter(name=>!TOKENS.includes(name))),ops=complex?C:R,functions=complex?COMPLEX_FUNCTIONS:REAL_FUNCTIONS;
  let i=0;const peek=()=>ts[i],take=()=>ts[i++];
  function atom(){
   const t=take();if(!t)throw Error('Incomplete expression.');
@@ -131,36 +131,46 @@ function compile(source,variables,complex=false){
  const result=expr(0);if(i!==ts.length)throw Error('Unexpected token: '+ts[i].value);return result;
 }
 export function parseCurveExpression(source,variables=['x']){
- if(!Array.isArray(variables)||variables.some(v=>!['x','y','z','t','u','v'].includes(v)))throw Error('Invalid expression variables.');
+ if(!Array.isArray(variables)||variables.length>70||variables.some(v=>typeof v!=='string'||!/^[A-Za-z][A-Za-z0-9_]*$/.test(v)||(!['x','y','z','t','u','v'].includes(v)&&(REAL_FUNCTIONS.includes(v.toLowerCase())||Object.hasOwn(CONSTANTS,v.toLowerCase())))))throw Error('Invalid expression variables.');
  return compile(source,variables);
 }
 /** parameter undefined means compatibility with imported legacy u=v curves only. */
-export function parseParametric(xExpr,yExpr,parameter){
+export function parseParametric(xExpr,yExpr,parameter,parameters={}){
  if(parameter!==undefined&&!['t','u','v'].includes(parameter))throw Error('Parameter must be t, u or v.');
  const vars=parameter?[parameter]:['u','v'];
- const fx=parseCurveExpression(xExpr,vars),fy=parseCurveExpression(yExpr,vars);
- return s=>{const values=parameter?{[parameter]:s}:{u:s,v:s};return [fx(values),fy(values)];};
+ const active=Object.fromEntries(Object.entries(parameters).filter(([name])=>!vars.includes(name)));
+ const fx=parseCurveExpression(xExpr,[...vars,...Object.keys(active)]),fy=parseCurveExpression(yExpr,[...vars,...Object.keys(active)]);
+ return s=>{const values=parameter?{...active,[parameter]:s}:{...active,u:s,v:s};return [fx(values),fy(values)];};
 }
-export function parseImplicit(source){
+export function parseImplicit(source,parameters={}){
  if(typeof source!=='string'||source.length>801)throw Error('Implicit equation is too long.');
  const pieces=source.split('=');if(pieces.length>2)throw Error('Use at most one equals sign.');
- const left=parseCurveExpression(pieces[0],['x','y']);
- const right=pieces.length===2?parseCurveExpression(pieces[1],['x','y']):()=>0;
- return (x,y)=>left({x,y})-right({x,y});
+ const active=Object.fromEntries(Object.entries(parameters).filter(([name])=>!['x','y'].includes(name)));
+ const variables=['x','y',...Object.keys(active)];
+ const left=parseCurveExpression(pieces[0],variables);
+ const right=pieces.length===2?parseCurveExpression(pieces[1],variables):()=>0;
+ return (x,y)=>left({...active,x,y})-right({...active,x,y});
 }
-export function parseVectorField(xExpr,yExpr){
- const x=parseCurveExpression(xExpr,['x','y']),y=parseCurveExpression(yExpr,['x','y']);
- return (a,b)=>[x({x:a,y:b}),y({x:a,y:b})];
+export function parseVectorField(xExpr,yExpr,parameters={}){
+ const active=Object.fromEntries(Object.entries(parameters).filter(([name])=>!['x','y'].includes(name)));
+ const variables=['x','y',...Object.keys(active)];
+ const x=parseCurveExpression(xExpr,variables),y=parseCurveExpression(yExpr,variables);
+ return (a,b)=>[x({...active,x:a,y:b}),y({...active,x:a,y:b})];
 }
 /** Retarget one shared parameter without altering constants, functions or scientific notation. */
-export function renameCurveParameter(source,oldSymbol,newSymbol){
+export function renameCurveParameter(source,oldSymbol,newSymbol,sliderNames=[]){
  if(!['t','u','v'].includes(oldSymbol)||!['t','u','v'].includes(newSymbol))throw Error('Invalid parameter rename.');
  if(!source.trim())return source;
- const words=tokenize(source).filter(t=>t.kind==='word'&&t.value===oldSymbol);let next='',end=0;
- for(const t of words){next+=source.slice(end,t.start)+newSymbol;end=t.end;}
+ // Preserve the historical implicit-multiplication semantics (`tpi` is t*pi),
+ // while accepting additional named sliders alongside built-in symbols.
+ const words=tokenize(source,sliderNames.filter(name=>name!==oldSymbol&&name!==newSymbol)).filter(t=>t.kind==='word'&&t.value===oldSymbol);
+ let next='',end=0;for(const t of words){next+=source.slice(end,t.start)+newSymbol;end=t.end;}
  return next+source.slice(end);
 }
-export function parseComplexExpression(source){const fn=compile(source,['z'],true);return (re,im)=>fn({z:[re,im]});}
+export function parseComplexExpression(source,parameters={}){
+ const active=Object.fromEntries(Object.entries(parameters).filter(([name])=>name!=='z'&&name!=='i'));
+ const fn=compile(source,['z',...Object.keys(active)],true);return (re,im)=>fn({...active,z:[re,im]});
+}
 export function validatePlotRegion(r){
  if(!r||typeof r!=='object'||!['xMin','xMax','yMin','yMax'].every(k=>valid(r[k])&&Math.abs(r[k])<=1e6)||r.xMin>=r.xMax||r.yMin>=r.yMax)throw Error('Region needs ascending finite x and y ranges within ±1,000,000.');
  return r;

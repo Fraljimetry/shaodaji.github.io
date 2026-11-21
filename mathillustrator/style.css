@@ -1221,3 +1221,21 @@ html.three-d #object-search{display:block!important}
 #objects .object-label small,#objects-3d .object-label small{display:none!important}
 /* Round 252: match the plotting input's 31px control height as well as its ink and type. */
 #command-form #plot-inputs .input-assist-popup .input-assist-option{min-height:31px;box-sizing:border-box;}
+
+/* Round 267: Formula and semantic Expression editors occupy a full row. */
+.properties:not(.properties-3d) > .field:has(> input.construction-expression-editor),
+.properties:not(.properties-3d) > .field.formula-expression-field,
+.properties.properties-3d > .field.formula-expression-field {
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;
+ margin:8px 0!important;min-width:0!important;
+}
+.properties > .field:has(> input.construction-expression-editor) > input,
+.properties > .field.formula-expression-field > input {
+ box-sizing:border-box;width:100%!important;max-width:100%!important;min-width:0!important;
+ font-family:Consolas,monospace;
+}
+.properties > .appearance-choice-field {
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,53%)!important;
+ align-items:center!important;column-gap:8px!important;margin:7px 0!important;
+}
+.properties > .appearance-choice-field > select {width:100%!important;min-width:0!important;}

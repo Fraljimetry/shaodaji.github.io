@@ -1,3 +1,8 @@
+## Round 266 — Unified single-selection and 2D plotting slider parameters
+- A selected slider and selected geometric object must never appear selected simultaneously. Direct creation of a new geometry object clears slider selection, and switching between object rows and sliders refreshes both sets of selection highlights. Existing explicit multi-geometry selection shortcuts remain separate.
+- All five 2D Construction plot modes must accept references to existing named sliders (Function, Parametric, Implicit, Vector field and Domain coloring), retain formulas, update actual rendered output and plot caches during slider changes/playback, support reference renaming, preserve Properties edits and JSON round-trip, and reject missing identifiers atomically.
+- Parameter symbols x/y/t/z take precedence as coordinate/plot variables. Structural numeric construction options and 3D plotting are outside this cut. Preserve historical implicit multiplication / legacy parameter conversion, consistent undo/redo, lock/delete semantics and freehand exception.
+
 
 ## Round 254 — Algebra integration compatibility and tutorial
 - Keep editable semantic Properties expressions synchronized with live names/IDs, while preserving validation, stable object IDs, and freehand exclusion.
@@ -2256,3 +2261,29 @@ Concurrent 2D slider playback: multiple sliders can play simultaneously, each wi
 - Support slider symbols in `Point(a, 2*a)` and legacy `(a,2*a)` with persistent `xyExpr`; update geometry on slider playback.
 - Support `Rotate`/`Dilate` semantic `amount=a*2` through existing `measureExpr`, including Properties round-trip.
 - Reject nonexistent/nonfinite references atomically. Do not claim generic parameterization of every construction option; structural options remain fixed.
+
+### Round 265 — Slider parameters in 2D Function plots
+- `sin(b*x)` in Construction input and named `f(x) = sin(b*x)` must recognize an existing slider `b`. Keep identifiers case-sensitive and let `x` retain its graph-coordinate meaning.
+- Recompute affected 2D function paths when slider values change, preserve name-based dependencies through rename, locking, deletion, undo/redo and JSON, and reject missing parameters atomically.
+- Scope is 2D explicit functions; do not imply all 3D plotting modes have dynamic slider references.
+
+## Round 267 — Expression widths, styles and Algebra tutorial (2026-11-21)
+- Make all semantic Expression and plotting-formula editors full-width rows, not 53%-width inline textboxes. Preserve ordinary compact Label, numeric and color rows.
+- Place Line style (Solid / Dashed / Dotted) for all applicable 2D geometric lines and curves before Stroke, using an inline label/dropdown row matching Label format. Existing specialized freehand and morphism controls are retained.
+- Place Point style (Solid / Empty / Cross) before Stroke for 2D point-role objects, using the same alignment.
+- Preserve styles across edit, history, JSON, SVG, and supported TikZ exports; validate unsupported values and maintain legacy solid defaults.
+- Partition long tutorial §4 into distinct formula, real-function, complex-function, Algebra constructor, and parameter-reference sections; fully explain `rootIndex` and related constructor arguments in English and Chinese.
+- Audit plotting/Algebra interactions with browser tests, preserve all five slider-enabled 2D construction modes and avoid 3D renderer changes.
+
+### Round 268 — Closed shape fill and style parity
+- Extend existing polygon Fill / Opacity / Line width layout to circular, elliptical, and other closed curves, including closed splines and free-curve shapes, while open curves remain stroke-only.
+- Preserve existing polygon and ellipse defaults; new circle/closed-curve fill must be opt-in to avoid changing old artwork.
+- Solid / Dashed / Dotted line style remains above Stroke with consistent label/dropdown alignment; freehand retains richer existing line-style options.
+- Persist options in JSON and reproduce them in SVG and supported TikZ exports; update bilingual tutorial and verify in real Chromium.
+
+
+## Round 269 — post-slider stabilization
+- When multiple 2D sliders are playing, editing one slider's appearance or playback settings must not stop any other slider.
+- Direct manipulation or rename of one slider may pause that slider, but must preserve unrelated slider playback.
+- Preserve independent undo histories across slider edits and simultaneous animation; do not overwrite concurrent collaborator changes.
+- Maintain targeted real-Chromium cross-feature regressions alongside Node coverage, and report historical timeouts and unavailable native/hosted verification honestly.

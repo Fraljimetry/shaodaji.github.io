@@ -1,22 +1,22 @@
-import {constructionExpression,applyConstructionExpression,createSemanticConstruction} from './construction_expression.mjs?cut=round264';
-import {attachInputAssistant} from './input_assist.mjs?cut=round258';
+import {constructionExpression,applyConstructionExpression,createSemanticConstruction} from './construction_expression.mjs?cut=mi266';
+import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round69';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=mi266';
 import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
 import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes} from './model.mjs?cut=round227';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=mi268';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=round69';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=mi266';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round263';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round268';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -252,7 +252,7 @@ function setSelection(ids,primary=null){
  for(const id of ids)if(available.has(id))selectedIds.add(id);
  selected=primary&&selectedIds.has(primary)?primary:[...selectedIds].at(-1)||null;
  syncDiagramSnapFocus(true);
- renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();
+ renderAlgebra();renderList();renderProperties();localizeUI($('properties'),uiPrefs.language);scheduleRender();
 }
 function selectToggle(id){
  if(!id)return;
@@ -394,18 +394,18 @@ function update(mutator,{refreshList=true,renderCanvas=true,preservePlayback=fal
  const playbackBoundary=splitPlayback?playbackBefore:null;
  if(playingSliders.size&&!splitPlayback)stopAllSliderPlayback();
  if(drag)cancelDrag(); // A document mutation must not leave an old gesture able to commit later.
- const old=JSON.stringify(doc),previousSelected=selected,previousIds=new Set(selectedIds),beforeDoc=doc;
+ const old=JSON.stringify(doc),previousSelected=selected,previousSlider=selectedSlider,previousIds=new Set(selectedIds),beforeDoc=doc;
  // A rejected edit rolls back JSON but does not replace the *logical* project.
  // The still-focused controls must be able to resolve their live object by ID
  // until the deferred property-pane refresh. A genuinely new/imported project
  // instead increments documentGeneration, invalidating all old controls.
- try{mutator();recalculateAlgebra(doc);if(in3D()&&doc.scene3d)enforce3DVisibility(doc.scene3d,selected3d);validateDoc(doc);}catch(e){doc=JSON.parse(old);selected=previousSelected;selectedIds.clear();for(const id of previousIds)selectedIds.add(id);notice(e.message);if(renderCanvas)refreshAfterMutation(true);else syncSettings();return false;}
+ try{mutator();recalculateAlgebra(doc);if(in3D()&&doc.scene3d)enforce3DVisibility(doc.scene3d,selected3d);validateDoc(doc);}catch(e){doc=JSON.parse(old);selected=previousSelected;selectedSlider=previousSlider;selectedIds.clear();for(const id of previousIds)selectedIds.add(id);notice(e.message);if(renderCanvas)refreshAfterMutation(true);else syncSettings();return false;}
  const replaced=doc!==beforeDoc;
- if(replaced){lastMoveCanvasTap=null;documentGeneration++;selectedIds.clear();selected=null;clearDraft();}
+ if(replaced){lastMoveCanvasTap=null;documentGeneration++;selectedIds.clear();selected=null;selectedSlider=null;clearDraft();}
  else {
   for(const id of selectedIds)if(!get(doc,id))selectedIds.delete(id);
   if(selected!==previousSelected&&selected&&get(doc,selected)){
-   selectedIds.clear();selectedIds.add(selected); // A newly made or explicitly switched primary object.
+   selectedSlider=null;selectedIds.clear();selectedIds.add(selected); // A newly made or explicitly switched primary object.
   }
   activeSelection();
  }
@@ -540,9 +540,9 @@ function geometryLabelAnchor(o,resolver){
   return image.length?project(image[Math.floor((image.length-1)/2)]):null;
  }
  if(o.type==='function'){
-  try{const y=parseExpression(o.expr)(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
+  try{const y=parseExpression(o.expr,functionSliderParameters(doc))(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
  }
- if(o.type==='parametric'){try{return project(parseParametric(o.xExpr,o.yExpr,o.parameter)((o.tMin+o.tMax)/2));}catch{return null;}}
+ if(o.type==='parametric'){try{return project(parseParametric(o.xExpr,o.yExpr,o.parameter,functionSliderParameters(doc))((o.tMin+o.tMax)/2));}catch{return null;}}
  if(o.type==='implicit')return null;
  if(['vectorField','domainColoring'].includes(o.type))return project([(o.region.xMin+o.region.xMax)/2,(o.region.yMin+o.region.yMax)/2]);
  if(o.type==='freehand')return o.path?.length?project(o.path[Math.floor(o.path.length/2)]):null;
@@ -648,6 +648,26 @@ function decoratedHeads(group,path,mode,stroke,width,latex=false,lineStyle='soli
  }
 }
 
+// A fill is an opt-in for newly supported closed curves. Existing polygon
+// projects keep their historical fill, and legacy ellipses keep ellipseFilled.
+function fillableClosedShape(o,resolver=null){
+ if(['circle','circleThrough3','ellipse','polygon','regularPolygon','rectangle','parallelogram'].includes(o.type))return true;
+ if(o.type==='spline')return o.closed===true;
+ if(o.type==='freehand')return o.closed===true||['ellipse','polygon'].includes(o.curveShape);
+ if(o.type==='bezier')return o.closed===true;
+ if(o.type==='transformCopy'&&resolver){
+  let source=resolver.object(o.refs?.[0]);const seen=new Set([o.id]);
+  while(source?.type==='transformCopy'&&!seen.has(source.id)){seen.add(source.id);source=resolver.object(source.refs?.[0]);}
+  return !!source&&!seen.has(source.id)&&fillableClosedShape(source,resolver);
+ }
+ return false;
+}
+function shapeFillEnabled(o){
+ if(o.style.fillEnabled!==undefined)return o.style.fillEnabled;
+ if(o.type==='ellipse')return o.ellipseFilled!==false;
+ return ['polygon','regularPolygon','rectangle','parallelogram'].includes(o.type);
+}
+function shapeFillAttributes(o){return {fill:shapeFillEnabled(o)?o.style.fill:'none','fill-opacity':o.type==='ellipse'?.20:.24};}
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
  if(!isObjectVisible(doc,o,resolver.object))return;
  const pointObject=geometricPoint(o,resolver);
@@ -669,7 +689,13 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const reach=doc.settings.showLabels?Math.max(50,displayedLabel.length*14+18):0;
   // Offscreen point culling preserves visible labels that reach into the frame.
   if(x < -radius-reach || x > size.w+radius || y < -radius-22 || y > size.h+radius+22)return;
-  item=el('circle',{cx:x,cy:y,r:radius,stroke:o.style.stroke,fill:o.style.stroke,'stroke-width':1,opacity:sty.opacity});
+  const pointShape=o.style.pointShape||'solid';
+  if(pointShape==='cross'){
+   // Keep a transparent circular hit target even though the visible glyph is a cross.
+   item=el('g');
+   item.append(el('circle',{cx:x,cy:y,r:Math.max(6,radius),fill:'transparent',stroke:'none'}));
+   item.append(el('path',{d:`M${x-radius} ${y-radius}L${x+radius} ${y+radius}M${x-radius} ${y+radius}L${x+radius} ${y-radius}`,stroke:o.style.stroke,'stroke-width':Math.max(1.5,radius*.34),'stroke-linecap':'round',fill:'none',opacity:sty.opacity,'pointer-events':'none'}));
+  }else item=el('circle',{cx:x,cy:y,r:radius,stroke:o.style.stroke,fill:pointShape==='empty'?'transparent':o.style.stroke,'stroke-width':pointShape==='empty'?Math.max(1.5,radius*.30):1,opacity:sty.opacity});
   if(doc.settings.showLabels){const label=labelPositions?.get(o.id),lx=label?.x??x+8,ly=label?.y??y-9;
    if(o.pointLabel&&o.pointLabelMode==='latex')svg.append(latexDisplay({ ...o,text:displayedLabel,textMode:'latex' },lx,ly,12,{anchor:label?.anchor||'start',exporting}));
    else svg.append(el('text',{'xml:space':'preserve',x:lx,y:ly,'text-anchor':label?.anchor||'start','font-size':12,'font-family':'Arial, sans-serif',fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'},displayedLabel));}
@@ -694,7 +720,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   // A similarity image of a circle remains exactly circular, even at high zoom.
   const c=resolver.circle(o),[cx,cy]=project(c.center),radius=c.radius*view.scale;
   if(circleOutsideViewport([cx,cy],radius,size.w,size.h,cullMargin))return;
-  item=mk('circle',{cx,cy,r:radius,fill:'none'});
+  item=mk('circle',{cx,cy,r:radius,...shapeFillAttributes(o)});
  }else if(['circularArc','parabola','hyperbola','transformCopy','fixedAngle','locus'].includes(o.type)){
   const path=o.type==='locus'?r50Locus(o):r50Shape(o,resolver,Math.min(160,Math.max(80,Math.ceil(size.w/7))));
   if(path.length===1&&Array.isArray(path[0])){const [x,y]=project(path[0]);item=mk('circle',{cx:x,cy:y,r:4,fill:o.style.stroke});}
@@ -707,7 +733,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    }
    if(current.length>1)pieces.push(current);
    if(pieces.length){
-    if(pieces.length===1)item=mk('polyline',{points:pieces[0].map(pt=>pt.join(',')).join(' '),fill:'none'});
+    if(pieces.length===1){const closed=fillableClosedShape(o,resolver)&&o.type==='transformCopy';item=mk(closed?'polygon':'polyline',{points:pieces[0].map(pt=>pt.join(',')).join(' '),...(closed?shapeFillAttributes(o):{fill:'none'})});}
     else {item=mk('g',{});for(const part of pieces)item.append(el('polyline',{points:part.map(pt=>pt.join(',')).join(' '),fill:'none'}));}
    }
   }
@@ -731,12 +757,12 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    const foot=feet[feet.length===1?0:o.branch===1?1:0];
    if(foot){const [x,y]=project(foot);item.append(el('circle',{cx:x,cy:y,r:Math.max(3,Number(o.style.pointSize??doc.settings.pointSize)||5),fill:o.style.stroke,opacity:sty.opacity,'pointer-events':'none'}));}
   }else item=mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'});
- }else if(o.type==='circle'&&coords?.length===2){item=mk('circle',{cx:coords[0][0],cy:coords[0][1],r:Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),fill:'none'});
+ }else if(o.type==='circle'&&coords?.length===2){item=mk('circle',{cx:coords[0][0],cy:coords[0][1],r:Math.hypot(coords[1][0]-coords[0][0],coords[1][1]-coords[0][1]),...shapeFillAttributes(o)});
   }else if(o.type==='circleThrough3'&&p.length===3&&p.every(Boolean)){
   const circ=circumcircle(p);if(!circ)return;
   const [cx,cy]=project(circ.center),radius=circ.radius*view.scale;
   if(circleOutsideViewport([cx,cy],radius,size.w,size.h,cullMargin))return;
-  item=mk('circle',{cx,cy,r:radius,fill:'none'});
+  item=mk('circle',{cx,cy,r:radius,...shapeFillAttributes(o)});
  }else if(o.type==='ellipse'&&p.length===3&&p.every(Boolean)){
   const f=focalEllipse(p);if(!f)return;
   const outerX=Math.hypot(f.rx*Math.cos(f.angle),f.ry*Math.sin(f.angle))*view.scale;
@@ -744,24 +770,24 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const [cx,cy]=project([f.cx,f.cy]);
   if(bboxOutsideViewport([[cx-outerX,cy-outerY],[cx+outerX,cy+outerY]],size.w,size.h,cullMargin))return;
   item=mk('ellipse',{cx,cy,rx:f.rx*view.scale,ry:f.ry*view.scale,
-   transform:`rotate(${-f.angle*180/Math.PI} ${cx} ${cy})`,'fill-opacity':.20,fill:o.ellipseFilled===false?'none':sty.fill});
+   transform:`rotate(${-f.angle*180/Math.PI} ${cx} ${cy})`,...shapeFillAttributes(o)});
  }else if(o.type==='ellipse'&&coords?.length===2){
   const a=coords[0],b=coords[1],rx=Math.abs(a[0]-b[0])/2,ry=Math.abs(a[1]-b[1])/2;
   // Render historical v1 flattened ellipses as their limiting line, not invisible SVG ellipses.
   item=rx<1e-7||ry<1e-7 ?mk('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],fill:'none'})
-   :mk('ellipse',{cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2,rx,ry,'fill-opacity':.20,fill:o.ellipseFilled===false?'none':sty.fill});
+   :mk('ellipse',{cx:(a[0]+b[0])/2,cy:(a[1]+b[1])/2,rx,ry,...shapeFillAttributes(o)});
  }else if(['rectangle','parallelogram'].includes(o.type)&&p.every(Boolean)){
   const vertices=shapeVerticesFromPoints(o.type,p).map(project);
   if(vertices.length&&bboxOutsideViewport(vertices,size.w,size.h,cullMargin))return;
-  if(vertices.length)item=mk('polygon',{points:vertices.map(q=>q.join(',')).join(' '),'fill-opacity':.24});
- }else if(['polygon','polyline'].includes(o.type)&&coords?.length>=2){item=mk(o.type==='polygon'?'polygon':'polyline',{points:coords.map(q=>q.join(',')).join(' '),fill:o.type==='polygon'?sty.fill:'none','fill-opacity':.24});
- }else if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean)){const vertices=regularPolygonVertices(p[0],p[1],o.sides).map(project);if(bboxOutsideViewport(vertices,size.w,size.h,cullMargin))return;if(vertices.length)item=mk('polygon',{points:vertices.map(q=>q.join(',')).join(' '),'fill-opacity':.24});
- }else if(o.type==='spline'&&coords?.length>=3){item=mk('path',{d:smoothCurveSvg(coords,!!o.closed),fill:'none'});
- }else if(o.type==='bezier'&&coords?.length===4){item=mk('path',{d:`M${coords[0].join(' ')} C${coords[1].join(' ')},${coords[2].join(' ')},${coords[3].join(' ')}`,fill:'none'});
+  if(vertices.length)item=mk('polygon',{points:vertices.map(q=>q.join(',')).join(' '),...shapeFillAttributes(o)});
+ }else if(['polygon','polyline'].includes(o.type)&&coords?.length>=2){item=mk(o.type==='polygon'?'polygon':'polyline',{points:coords.map(q=>q.join(',')).join(' '),...(o.type==='polygon'?shapeFillAttributes(o):{fill:'none'})});
+ }else if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean)){const vertices=regularPolygonVertices(p[0],p[1],o.sides).map(project);if(bboxOutsideViewport(vertices,size.w,size.h,cullMargin))return;if(vertices.length)item=mk('polygon',{points:vertices.map(q=>q.join(',')).join(' '),...shapeFillAttributes(o)});
+ }else if(o.type==='spline'&&coords?.length>=3){item=mk('path',{d:smoothCurveSvg(coords,!!o.closed),...(o.closed?shapeFillAttributes(o):{fill:'none'})});
+ }else if(o.type==='bezier'&&coords?.length===4){item=mk('path',{d:`M${coords[0].join(' ')} C${coords[1].join(' ')},${coords[2].join(' ')},${coords[3].join(' ')}${o.closed?' Z':''}`,...(o.closed?shapeFillAttributes(o):{fill:'none'})});
  }else if(o.type==='angle'&&coords?.length===3){const [a,b,c]=coords,r=26,theta1=Math.atan2(a[1]-b[1],a[0]-b[0]),theta2=Math.atan2(c[1]-b[1],c[0]-b[0]);let delta=(theta2-theta1+Math.PI*2)%(Math.PI*2);if(delta>Math.PI)delta-=2*Math.PI;const start=[b[0]+r*Math.cos(theta1),b[1]+r*Math.sin(theta1)],end=[b[0]+r*Math.cos(theta1+delta),b[1]+r*Math.sin(theta1+delta)];item=mk('path',{d:`M${start.join(' ')} A${r} ${r} 0 0 ${delta>0?1:0} ${end.join(' ')}`,fill:'none'});
  }else if(o.type==='freehand'&&o.path?.length>1){
   const pathCoords=o.path.map(project);if(bboxOutsideViewport(pathCoords,size.w,size.h,cullMargin))return;
-  const path=mk('path',{d:o.curveShape&&o.curveShape!=='free'?`M${pathCoords.map(p=>p.join(' ')).join(' L')} Z`:freehandCurveSvg(pathCoords,!!o.closed),fill:'none','stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
+  const path=mk('path',{d:o.curveShape&&o.curveShape!=='free'?`M${pathCoords.map(p=>p.join(' ')).join(' L')} Z`:freehandCurveSvg(pathCoords,!!o.closed),...(fillableClosedShape(o)?shapeFillAttributes(o):{fill:'none'}),'stroke-linejoin':'round','stroke-miterlimit':3,'stroke-linecap':'round'});
   const shapeMode=o.curveShape||'free',pattern=shapeMode==='free'?(o.curveLine||'solid'):SHAPE_LINE_CHOICES.some(([v])=>v===o.curveLine)?o.curveLine:'solid',heads=shapeMode==='free'?(o.curveHeads||(o.curveArrows||'none')):'none';
   if(pattern==='solid'&&heads==='none'){item=path;}
   else{item=el('g');item.append(path);styleDecoratedPath(item,path,pattern,mk,visibleArrowheads(pattern,heads));
@@ -828,12 +854,12 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
    }
   }
  }else if(['function','parametric','implicit'].includes(o.type)){
-  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
+  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,functionSliderParameters(doc),doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
   const path=plotCache.get(key,()=>{
    const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
-   const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
-    o.type==='parametric'?sampleParametricPlot(o.polar?polarParametric(o):parseParametric(o.xExpr,o.yExpr,o.parameter),o.tMin,o.tMax,project,options):
-    sampleImplicitPlot(parseImplicit(o.expr),px=>unproject(px,0)[0],py=>unproject(0,py)[1],size.w,size.h,{...options,cellPx:doc.settings.implicitGrid??12});
+   const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr,functionSliderParameters(doc)),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
+    o.type==='parametric'?sampleParametricPlot(o.polar?polarParametric(o):parseParametric(o.xExpr,o.yExpr,o.parameter,functionSliderParameters(doc)),o.tMin,o.tMax,project,options):
+    sampleImplicitPlot(parseImplicit(o.expr,functionSliderParameters(doc)),px=>unproject(px,0)[0],py=>unproject(0,py)[1],size.w,size.h,{...options,cellPx:doc.settings.implicitGrid??12});
    if(plot.limited){limitedPlotKeys.add(key);while(limitedPlotKeys.size>32)limitedPlotKeys.delete(limitedPlotKeys.values().next().value);}
    else limitedPlotKeys.delete(key);
    return plotPath(plot.segments);
@@ -843,7 +869,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
 
  }else if(o.type==='vectorField'){
   const region=o.region,condition=compileRegionCondition(o.regionCondition,2),options={density:o.density,normalized:o.normalized,maxEvaluations:doc.settings.plotBudget};
-  const result=sampleVectorField(parseVectorField(o.xExpr,o.yExpr),region,options);
+  const result=sampleVectorField(parseVectorField(o.xExpr,o.yExpr,functionSliderParameters(doc)),region,options);
   if(result.limited)plotLimitedInScene=true;
   const parts=[],colored=o.colorRange===true;
   const magnitudes=colored?result.arrows.map(arrow=>arrow.magnitude):[];
@@ -860,9 +886,9 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   }
   if(!colored)item=mk('path',{d:parts.join(''),fill:'none'});
  }else if(o.type==='domainColoring'){
-  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,o.regionCondition||'',MAX_DOMAIN_PIXELS]);
+  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,o.regionCondition||'',functionSliderParameters(doc),MAX_DOMAIN_PIXELS]);
   const uri=plotCache.get(key,()=>{
-   const result=sampleDomainColors(parseComplexExpression(o.expr),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:MAX_DOMAIN_PIXELS});
+   const result=sampleDomainColors(parseComplexExpression(o.expr,functionSliderParameters(doc)),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:MAX_DOMAIN_PIXELS});
    if(result.limited){limitedPlotKeys.add(key);return '';}
    limitedPlotKeys.delete(key);
    const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
@@ -879,6 +905,13 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   const a=project([region.xMin,region.yMax]),b=project([region.xMax,region.yMin]);
   item=el('image',{x:a[0],y:a[1],width:b[0]-a[0],height:b[1]-a[1],href:uri,opacity:o.style.opacity,preserveAspectRatio:'none'});
   // Domain coloring is raster content; do not apply the normal stroke/fill style.
+ }
+ // Apply patterns to all geometric/plot strokes, including exported SVG. Do not
+ // alter freehand/morphism paths: those already use richer dedicated pattern logic.
+ if(item&&o.style.linePattern&&o.style.linePattern!=='solid'&&!pointObject&&!['freehand','morphism','text','node','domainColoring'].includes(o.type)){
+  const dash=o.style.linePattern==='dashed'?'7 5':'2 5';
+  const targets=['line','path','polyline','polygon','circle','ellipse'].includes(item.tagName.toLowerCase())?[item]:[...item.querySelectorAll('line,path,polyline,polygon,circle,ellipse')];
+  for(const target of targets)if(target.getAttribute('stroke')!=='none')target.setAttribute('stroke-dasharray',dash);
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');if(uiPrefs.selectionPreview!==false&&o.id===hoverPickId)item.classList.add('pick-preview');svg.append(item);
  if(!exporting&&sty.opacity>0&&(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)||o.type==='transformCopy'&&geometricLine(o,resolver))){
@@ -1481,7 +1514,7 @@ function numericOptions(input){
 function field(parent,label,value,type,onChange,opts={}){
  const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');
  // Formula editors have their own inline layout; names and arbitrary text keep their existing layout.
- if(type==='text'&&parent.classList.contains('properties')&&/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[XYZ]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label))wrap.classList.add('formula-expression-field');
+ if(type==='text'&&parent.classList.contains('properties')&&(/^(?:Expression|.* expression|Transformation amount)$/i.test(label)||/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[XYZ]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label)))wrap.classList.add('formula-expression-field');
  wrap.textContent=label;
  const input=document.createElement(type==='multiline'?'textarea':'input');
  if(type!=='multiline')input.type=type==='number'?'text':type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
@@ -1669,13 +1702,13 @@ function renderNewFreehandControls(root){
 // when their parent is unlocked. Algebra expressions can depend on named sliders.
 function algebraUses(expression,name){return typeof expression==='string'&&new RegExp('(?:^|[^A-Za-z0-9_])'+name+'(?:$|[^A-Za-z0-9_])').test(expression);}
 function sliderAffected(name){
- const ids=new Set();for(const o of doc.objects){const formulas=[...(o.xyExpr||[]),...Object.values(o.measureExpr||{})];if(formulas.some(f=>algebraUses(f,name)))for(const id of affected(doc,o.id))ids.add(id);}
+ const ids=new Set();for(const o of doc.objects){const formulas=[...(o.xyExpr||[]),...Object.values(o.measureExpr||{}),...(['function','implicit','domainColoring'].includes(o.type)?[o.expr]:[]),...(['parametric','vectorField'].includes(o.type)?[o.xExpr,o.yExpr,o.rExpr]:[])];if(formulas.some(f=>algebraUses(f,name)))for(const id of affected(doc,o.id))ids.add(id);}
  return ids;
 }
 function objectEffectivelyLocked(id,seen=new Set()){
  if(seen.has(id))return false;seen.add(id);const o=get(doc,id);if(!o)return false;
  if(o.locked)return true;
- if((doc.algebra?.sliders||[]).some(s=>s.locked&&[...(o.xyExpr||[]),...Object.values(o.measureExpr||{})].some(f=>algebraUses(f,s.name))))return true;
+ if((doc.algebra?.sliders||[]).some(s=>s.locked&&[...(o.xyExpr||[]),...Object.values(o.measureExpr||{}),...(['function','implicit','domainColoring'].includes(o.type)?[o.expr]:[]),...(['parametric','vectorField'].includes(o.type)?[o.xExpr,o.yExpr,o.rExpr]:[])].some(f=>algebraUses(f,s.name))))return true;
  return [...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])].some(dep=>objectEffectivelyLocked(dep,seen));
 }
 function selectSlider(name){selected=null;selectedIds.clear();selectedSlider=name;renderList();renderAlgebra();renderProperties();scheduleRender();}
@@ -1696,37 +1729,52 @@ function parseSliderExpression(source){
 }
 function renderSliderProperties(root,item){
  const generation=documentGeneration;
- const edit=fn=>update(()=>{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(generation!==documentGeneration||!live||selectedSlider!==item.name||live.locked)throw Error('Slider changed or locked.');fn(live);});
+ const edit=(fn,{rebase=false}={})=>{
+  // Editing one slider must not terminate the independent playback of its peers.
+  // Split the shared animation undo boundary at this ordinary document edit.
+  const ok=update(()=>{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(generation!==documentGeneration||!live||selectedSlider!==item.name||live.locked)throw Error('Slider changed or locked.');fn(live);},{preservePlayback:true});
+  if(ok!==false&&rebase){const live=doc.algebra?.sliders.find(s=>s.name===selectedSlider);const state=playingSliders.get(live?.name);if(state){state.startValue=live.value;state.elapsed=0;}}
+  return ok;
+ };
  if(item.locked){const name=field(root,'Name',item.name,'text',()=>false);name.disabled=true;const expression=field(root,'Expression',sliderExpression(item),'text',()=>false);expression.readOnly=true;const message=document.createElement('p');message.className='subtle';message.textContent='Locked — unlock in the three-dot menu.';root.append(message);return;}
  field(root,'Name',item.name,'text',v=>{
   const previous=selectedSlider;
+  if(playingSliders.has(item.name))stopSliderPlayback(item.name,{refresh:false});
   const ok=edit(live=>{
    if(!validSliderName(v)||doc.objects.some(o=>o.name===v)||doc.algebra.sliders.some(x=>x!==live&&x.name===v))throw Error('Invalid or duplicate slider name.');
-   const old=live.name;for(const o of doc.objects){if(o.xyExpr)o.xyExpr=o.xyExpr.map(f=>f.replace(new RegExp('\\b'+old+'\\b','g'),v));if(o.measureExpr)for(const k of Object.keys(o.measureExpr))o.measureExpr[k]=o.measureExpr[k].replace(new RegExp('\\b'+old+'\\b','g'),v);}live.name=v;selectedSlider=v;
+   const old=live.name;for(const o of doc.objects){if(o.xyExpr)o.xyExpr=o.xyExpr.map(f=>f.replace(new RegExp('\\b'+old+'\\b','g'),v));if(o.measureExpr)for(const k of Object.keys(o.measureExpr))o.measureExpr[k]=o.measureExpr[k].replace(new RegExp('\\b'+old+'\\b','g'),v);if(['function','implicit','domainColoring'].includes(o.type)&&o.expr)o.expr=o.expr.replace(new RegExp('\\b'+old+'\\b','g'),v);
+    if(['parametric','vectorField'].includes(o.type))for(const key of ['xExpr','yExpr','rExpr'])if(o[key])o[key]=o[key].replace(new RegExp('\\b'+old+'\\b','g'),v);}live.name=v;selectedSlider=v;
   });
   if(ok===false)selectedSlider=previous;
   return ok;
  });
  const expressionInput=field(root,'Expression',sliderExpression(item),'text',value=>edit(live=>{
   Object.assign(live,parseSliderExpression(value));
- }));
+ },{rebase:true}));
  expressionInput.classList.add('construction-expression-editor','slider-expression-editor');
  const range=document.createElement('div');range.className='slider-range-grid';root.append(range);
- for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));}));
+ for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));},{rebase:true}));
  const playback=document.createElement('div');playback.className='slider-playback-grid';root.append(playback);
- const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;});modeLabel.append(mode);playback.append(modeLabel);
- field(playback,'Speed (cycles/s)',item.playSpeed??1,'number',v=>edit(live=>{if(v<.05||v>10)throw Error('Speed must be between 0.05 and 10 cycles/s.');live.playSpeed=v;}),{min:.05,max:10});localizeUI(playback,uiPrefs.language);
+ const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;},{rebase:true});modeLabel.append(mode);playback.append(modeLabel);
+ field(playback,'Speed (cycles/s)',item.playSpeed??1,'number',v=>edit(live=>{if(v<.05||v>10)throw Error('Speed must be between 0.05 and 10 cycles/s.');live.playSpeed=v;},{rebase:true}),{min:.05,max:10});localizeUI(playback,uiPrefs.language);
  const valueTrack=document.createElement('div');valueTrack.className='slider-property-track';root.append(valueTrack);
  const valueInput=document.createElement('input');valueInput.className='slider-property-value-range';valueInput.type='range';valueInput.min=String(item.min);valueInput.max=String(item.max);valueInput.step=String(item.step);valueInput.value=String(item.value);valueInput.setAttribute('aria-label','Slider value '+item.name);valueTrack.append(valueInput);
  let sliderBefore=null;
- const startTrackEdit=()=>{if(playingSliders.size)stopAllSliderPlayback();sliderBefore??=JSON.stringify(doc);};
+ const startTrackEdit=()=>{
+  if(sliderBefore!==null)return;
+  // Direct manipulation pauses only the slider being dragged. Other independent
+  // sliders continue; split their shared undo session before this gesture.
+  if(playingSliders.has(item.name))stopSliderPlayback(item.name,{refresh:false});
+  if(playingSliders.size){const boundary=JSON.stringify(doc);if(playbackBefore!==null&&playbackBefore!==boundary)recordUndo(playbackBefore);playbackBefore=boundary;}
+  sliderBefore=JSON.stringify(doc);
+ };
  valueInput.onpointerdown=startTrackEdit;valueInput.onkeydown=startTrackEdit;
  valueInput.oninput=()=>{
   startTrackEdit();const before=JSON.stringify(doc);
   try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);expressionInput.value=sliderExpression(live);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(8));renderList();scheduleRender();}
   catch(error){doc=JSON.parse(before);valueInput.value=String(doc.algebra?.sliders.find(s=>s.name===item.name)?.value??item.value);notice(error.message);renderList();scheduleRender();}
  };
- valueInput.onchange=()=>{if(sliderBefore&&sliderBefore!==JSON.stringify(doc)){recordUndo(sliderBefore);documentRevision++;enqueueSave();}sliderBefore=null;renderAlgebra();renderProperties();};
+ valueInput.onchange=()=>{if(sliderBefore&&sliderBefore!==JSON.stringify(doc)){recordUndo(sliderBefore);documentRevision++;enqueueSave();}sliderBefore=null;if(playingSliders.size)playbackBefore=JSON.stringify(doc);renderAlgebra();renderProperties();};
 
  const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
@@ -1889,16 +1937,16 @@ function renderProperties(){
   field(numericGrid,'Label shift X (px)',o.labelDx??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDx=v;}),{min:-300,max:300,step:1});
   field(numericGrid,'Label shift Y (px)',o.labelDy??0,'number',v=>edit(live=>{if(!finite(v)||Math.abs(v)>300)throw Error('Label shift must be between −300 and 300 px.');live.labelDy=v;}),{min:-300,max:300,step:1});
  }
- if(o.type==='function')field(root,'f(x)',o.expr,'text',v=>edit(live=>{parseExpression(v);live.expr=v;}));
+ if(o.type==='function')field(root,'f(x)',o.expr,'text',v=>edit(live=>{parseExpression(v,functionSliderParameters(doc));live.expr=v;}));
  if(o.type==='parametric'){
   // Legacy documents may use u, v or the historical split u/v scheme.
   // Present t consistently, converting both expressions only when edited.
-  const toT=(expr,axis,parameter)=>parameter?renameCurveParameter(expr,parameter,'t'):renameCurveParameter(expr,axis==='x'?'u':'v','t');
+  const toT=(expr,axis,parameter)=>parameter?renameCurveParameter(expr,parameter,'t',Object.keys(functionSliderParameters(doc))):renameCurveParameter(expr,axis==='x'?'u':'v','t',Object.keys(functionSliderParameters(doc)));
   const xText=toT(o.xExpr,'x',o.parameter),yText=toT(o.yExpr,'y',o.parameter);
   const change=(axis,value)=>edit(live=>{
    const x=axis==='x'?value:toT(live.xExpr,'x',live.parameter);
    const y=axis==='y'?value:toT(live.yExpr,'y',live.parameter);
-   parseParametric(x,y,'t');live.xExpr=x;live.yExpr=y;live.parameter='t';
+   parseParametric(x,y,'t',functionSliderParameters(doc));live.xExpr=x;live.yExpr=y;live.parameter='t';
   });
   const polarLabel=document.createElement('label');polarLabel.className='check compact-property-check';
   const polarToggle=document.createElement('input');polarToggle.type='checkbox';polarToggle.checked=o.polar===true;
@@ -1906,7 +1954,7 @@ function renderProperties(){
   polarToggle.onchange=()=>{if(edit(live=>{live.polar=polarToggle.checked;if(live.polar){live.rExpr??='1';}})!==false)renderProperties();};
   polarLabel.append(polarToggle,document.createTextNode(' '+translated('Use polar coordinates',uiPrefs.language)));root.append(polarLabel);
   if(o.polar){
-   field(root,'r(t)',o.rExpr??'1','text',v=>edit(live=>{r50ParseExpr(v,['t']);live.rExpr=v;}));
+   field(root,'r(t)',o.rExpr??'1','text',v=>edit(live=>{r50ParseExpr(v,['t',...Object.keys(functionSliderParameters(doc)).filter(name=>name!=='t')]);live.rExpr=v;}));
 
   }else{
   field(root,'x(t)',xText,'text',v=>change('x',v));
@@ -1916,16 +1964,16 @@ function renderProperties(){
   field(range,'t min',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
   field(range,'t max',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
  }
- if(o.type==='implicit')field(root,'F(x, y)',o.expr,'text',v=>edit(live=>{parseImplicit(v);live.expr=v;}));
+ if(o.type==='implicit')field(root,'F(x, y)',o.expr,'text',v=>edit(live=>{parseImplicit(v,functionSliderParameters(doc));live.expr=v;}));
  if(o.type==='vectorField'){
-  field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr);live.xExpr=v;}));
-  field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v);live.yExpr=v;}));
+  field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr,functionSliderParameters(doc));live.xExpr=v;}));
+  field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v,functionSliderParameters(doc));live.yExpr=v;}));
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
   const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
   field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
  }
  if(o.type==='domainColoring'){
-  field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v);live.expr=v;}));
+  field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
   const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
   const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
@@ -1951,8 +1999,26 @@ function renderProperties(){
   output.setAttribute('aria-label',translated(label,uiPrefs.language));output.setAttribute('aria-readonly','true');
   measure.append(output);root.append(measure);
  }
+ if(o.type==='bezier'){const row=document.createElement('label');row.className='check compact-property-check';const check=document.createElement('input');check.type='checkbox';check.checked=o.closed===true;check.setAttribute('aria-label','Closed curve');check.onchange=()=>{if(edit(live=>{live.closed=check.checked;})!==false)renderProperties();};row.append(check,document.createTextNode(' Closed curve'));root.append(row);}
  // Compact appearance controls reuse the existing transaction handlers. Keep
  // fill absent for ineligible types and preserve the existing field order.
+ // Keep pattern/point shape on the same horizontal grid as Label format.
+ // Freehand and morphisms retain their existing specialized Line style selectors.
+ if(pointRole(o,id=>get(doc,id))){
+  const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Point style';
+  const select=document.createElement('select');select.setAttribute('aria-label','Point style');
+  for(const [value,title] of [['solid','Solid'],['empty','Empty'],['cross','Cross']]){
+   const option=document.createElement('option');option.value=value;option.textContent=title;select.append(option);
+  }
+  select.value=o.style.pointShape||'solid';select.onchange=()=>edit(live=>{live.style.pointShape=select.value;});row.append(select);root.append(row);
+ }else if(!['freehand','morphism','text','node','domainColoring'].includes(o.type)){
+  const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Line style';
+  const select=document.createElement('select');select.setAttribute('aria-label','Line style');
+  for(const [value,title] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted']]){
+   const option=document.createElement('option');option.value=value;option.textContent=title;select.append(option);
+  }
+  select.value=o.style.linePattern||'solid';select.onchange=()=>edit(live=>{live.style.linePattern=select.value;});row.append(select);root.append(row);
+ }
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';
  styleGrid.setAttribute('role','group');styleGrid.setAttribute('aria-label','Object appearance');
  function styleSlot(name){const slot=document.createElement('div');slot.className='style-slot style-'+name;styleGrid.append(slot);return slot;}
@@ -1967,10 +2033,11 @@ function renderProperties(){
   const check=document.createElement('input');check.type='checkbox';check.checked=o.colorRange===true;
   check.onchange=()=>{if(edit(live=>{live.colorRange=check.checked;})===false){check.checked=!check.checked;return;}picker.disabled=check.checked;for(const button of swatches.querySelectorAll('button'))button.disabled=check.checked;};label.append(check,' '+translated('Color range',uiPrefs.language));mode.append(label);
  }
- if(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node'].includes(o.type)){
+ if(fillableClosedShape(o,{object:id=>get(doc,id)})||o.type==='node'){
   const fillSlot=styleSlot('fill');
-  field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>{live.style.fill=v;if(live.type==='ellipse')live.ellipseFilled=true;}));
-  appendColorSwatches(fillSlot,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;if(live.type==='ellipse')live.ellipseFilled=true;})});
+  field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;}));
+  appendColorSwatches(fillSlot,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;})});
+  if(o.type!=='node'){const label=document.createElement('label');label.className='check compact-property-check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=shapeFillEnabled(o);checkbox.setAttribute('aria-label','Enable fill');checkbox.onchange=()=>edit(live=>{live.style.fillEnabled=checkbox.checked;if(live.type==='ellipse')live.ellipseFilled=checkbox.checked;});label.append(checkbox,document.createTextNode(' Enable fill'));fillSlot.append(label);}
  }
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
@@ -2133,8 +2200,9 @@ function syncGeometryVisibility(){
  for(const button of document.querySelectorAll('[data-advanced-geometry]'))button.hidden=false;
 }
 function polarParametric(o){
- const r=r50ParseExpr(o.rExpr,['t']);
- return t=>{const radius=r({t});return Number.isFinite(radius)
+ const params=functionSliderParameters(doc);
+ const r=r50ParseExpr(o.rExpr,['t',...Object.keys(params).filter(name=>name!=='t')]);
+ return t=>{const radius=r({...params,t});return Number.isFinite(radius)
   ?[radius*Math.cos(t),radius*Math.sin(t)]:[NaN,NaN];};
 }
 function syncPlotModeControl(){
@@ -3142,33 +3210,41 @@ function asTikz(){
  const lines=['\\begin{tikzpicture}[x=1cm,y=1cm,line cap=round,line join=round]'],resolver=createResolver(doc);
  const rgb=color=>`{rgb,255:red,${parseInt(color.slice(1,3),16)};green,${parseInt(color.slice(3,5),16)};blue,${parseInt(color.slice(5,7),16)}}`;
  for(const o of doc.objects){if(o.hidden||o.style?.opacity===0)continue;
-  const style=`draw=${rgb(o.style.stroke)},line width=${(o.style.width*.75).toFixed(4)}pt,opacity=${o.style.opacity}`;
+  const style=`draw=${rgb(o.style.stroke)},line width=${(o.style.width*.75).toFixed(4)}pt,opacity=${o.style.opacity}${o.style.linePattern==='dashed'?',dashed':o.style.linePattern==='dotted'?',dotted':''}`;
+  const fillOpts=shapeFillEnabled(o)?`,fill=${rgb(o.style.fill)},fill opacity=${((o.type==='ellipse'?.20:.24)*o.style.opacity).toFixed(3)}`:',fill=none';
   const p=resolver.points(o);if(['point','midpoint','intersection','circleIntersection','circleCircleIntersection','perpendicularFoot','pointOnObject','generalIntersection','triangleCenter'].includes(o.type)){
-   const xy=resolver.at(o.id);if(!xy)continue;lines.push(`\\fill[fill=${rgb(o.style.stroke)},opacity=${o.style.opacity}] ${texPoint(xy)} circle (${((o.style.pointSize??doc.settings.pointSize)*.75).toFixed(3)}pt);`);
+   const xy=resolver.at(o.id);if(!xy)continue;
+   const radiusPt=(o.style.pointSize??doc.settings.pointSize)*.75;
+   if(o.style.pointShape==='empty')lines.push(`\\draw[${style}] ${texPoint(xy)} circle (${radiusPt.toFixed(3)}pt);`);
+   else if(o.style.pointShape==='cross'){
+    const r=radiusPt/28.45274;
+    lines.push(`\\draw[${style}] ${texPoint([xy[0]-r,xy[1]-r])} -- ${texPoint([xy[0]+r,xy[1]+r])};`);
+    lines.push(`\\draw[${style}] ${texPoint([xy[0]-r,xy[1]+r])} -- ${texPoint([xy[0]+r,xy[1]-r])};`);
+   }else lines.push(`\\fill[fill=${rgb(o.style.stroke)},opacity=${o.style.opacity}] ${texPoint(xy)} circle (${radiusPt.toFixed(3)}pt);`);
    if(doc.settings.showLabels)lines.push(`\\node[above right,opacity=${o.style.opacity}] at ${texPoint(xy)} {${latexEscape(o.pointLabel||o.name)}};`);
   }else if(['segment','arrow','line'].includes(o.type)&&p.length===2&&p.every(Boolean)){
    let [a,b]=p;if(o.type==='line'){const d=[b[0]-a[0],b[1]-a[1]],len=Math.hypot(...d);if(!len)continue;const k=100/len;a=[a[0]-d[0]*k,a[1]-d[1]*k];b=[b[0]+d[0]*k,b[1]+d[1]*k];}
    lines.push(`\\draw[${style}${o.type==='arrow'?',->':''}] ${texPoint(a)} -- ${texPoint(b)};`);
   }else if(o.type==='circle'&&p.length===2&&p.every(Boolean)){
-   lines.push(`\\draw[${style}] ${texPoint(p[0])} circle (${Math.hypot(p[1][0]-p[0][0],p[1][1]-p[0][1]).toFixed(5)}cm);`);
+   lines.push(`\\draw[${style}${fillOpts}] ${texPoint(p[0])} circle (${Math.hypot(p[1][0]-p[0][0],p[1][1]-p[0][1]).toFixed(5)}cm);`);
    }else if(o.type==='ellipse'&&p.length===3&&p.every(Boolean)){
    const f=focalEllipse(p);if(!f)continue;
    const angle=(f.angle*180/Math.PI).toFixed(5);
    lines.push(`\\begin{scope}[shift={${texPoint([f.cx,f.cy])}},rotate=${angle}]`);
-   lines.push(`\\draw[${style},${o.ellipseFilled===false?'fill=none':`fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}`}] (0,0) ellipse (${f.rx.toFixed(5)}cm and ${f.ry.toFixed(5)}cm);`);
+   lines.push(`\\draw[${style},${fillOpts.slice(1)}] (0,0) ellipse (${f.rx.toFixed(5)}cm and ${f.ry.toFixed(5)}cm);`);
    lines.push('\\end{scope}');
   }else if(o.type==='ellipse'&&p.length===2&&p.every(Boolean)){
    const cx=(p[0][0]+p[1][0])/2,cy=(p[0][1]+p[1][1])/2,rx=Math.abs(p[1][0]-p[0][0])/2,ry=Math.abs(p[1][1]-p[0][1])/2;
    if(rx<1e-9||ry<1e-9)lines.push(`\\draw[${style}] ${texPoint(p[0])} -- ${texPoint(p[1])};`);
-   else lines.push(`\\draw[${style},${o.ellipseFilled===false?'fill=none':`fill=${rgb(o.style.fill)},fill opacity=${(.2*o.style.opacity).toFixed(3)}`}] ${texPoint([cx,cy])} ellipse (${rx.toFixed(5)}cm and ${ry.toFixed(5)}cm);`);
+   else lines.push(`\\draw[${style},${fillOpts.slice(1)}] ${texPoint([cx,cy])} ellipse (${rx.toFixed(5)}cm and ${ry.toFixed(5)}cm);`);
   }else if(['rectangle','parallelogram'].includes(o.type)&&p.every(Boolean)){
-   const vertices=shapeVerticesFromPoints(o.type,p);if(vertices.length)lines.push(`\\draw[${style},fill=${rgb(o.style.fill)},fill opacity=${(.24*o.style.opacity).toFixed(3)}] ${vertices.map(texPoint).join(' -- ')} -- cycle;`);
+   const vertices=shapeVerticesFromPoints(o.type,p);if(vertices.length)lines.push(`\\draw[${style},${fillOpts.slice(1)}] ${vertices.map(texPoint).join(' -- ')} -- cycle;`);
   }else if(['polygon','polyline'].includes(o.type)&&p.every(Boolean)){
-   lines.push(`\\draw[${style}${o.type==='polygon'?`,fill=${rgb(o.style.fill)},fill opacity=${(.24*o.style.opacity).toFixed(3)}`:''}] ${p.map(texPoint).join(' -- ')}${o.type==='polygon'?' -- cycle':''};`);
+   lines.push(`\\draw[${style}${o.type==='polygon'?fillOpts:''}] ${p.map(texPoint).join(' -- ')}${o.type==='polygon'?' -- cycle':''};`);
   }else if(o.type==='regularPolygon'&&p.length===2&&p.every(Boolean)){
-   const vertices=regularPolygonVertices(p[0],p[1],o.sides);if(vertices.length)lines.push(`\\draw[${style},fill=${rgb(o.style.fill)},fill opacity=${(.24*o.style.opacity).toFixed(3)}] ${vertices.map(texPoint).join(' -- ')} -- cycle;`);
+   const vertices=regularPolygonVertices(p[0],p[1],o.sides);if(vertices.length)lines.push(`\\draw[${style},${fillOpts.slice(1)}] ${vertices.map(texPoint).join(' -- ')} -- cycle;`);
   }else if(o.type==='bezier'&&p.length===4&&p.every(Boolean)){
-   lines.push(`\\draw[${style}] ${texPoint(p[0])} .. controls ${texPoint(p[1])} and ${texPoint(p[2])} .. ${texPoint(p[3])};`);
+   lines.push(`\\draw[${style}${o.closed?fillOpts:''}] ${texPoint(p[0])} .. controls ${texPoint(p[1])} and ${texPoint(p[2])} .. ${texPoint(p[3])}${o.closed?' -- cycle':''};`);
   }else if(o.type==='angle'&&p.length===3&&p.every(Boolean)){
    // TikZ pic angle annotation: 3-point geometry is preserved but physical screen radius is approximated.
    const [a,b,c]=p,r=26/48,one=Math.atan2(a[1]-b[1],a[0]-b[0]),two=Math.atan2(c[1]-b[1],c[0]-b[0]);let d=(two-one+Math.PI*2)%(Math.PI*2);if(d>Math.PI)d-=2*Math.PI;
@@ -3177,7 +3253,7 @@ function asTikz(){
    const chosen=o.path;
    const pattern={dashed:',dashed',dotted:',dotted'}[o.curveLine]||'';
    const arrows=o.curveShape&&o.curveShape!=='free'?'':{end:',->',both:',<->'}[o.curveHeads||o.curveArrows]||'';
-   lines.push(`\\draw[${style}${pattern}${arrows}] ${chosen.map(texPoint).join(' -- ')}${o.closed?' -- cycle':''};`);
+   lines.push(`\\draw[${style}${pattern}${arrows}${fillableClosedShape(o)?fillOpts:''}] ${chosen.map(texPoint).join(' -- ')}${o.closed?' -- cycle':''};`);
   }else if(o.type==='text')lines.push(`\\node[anchor=west,text=${rgb(o.style.stroke)},opacity=${o.style.opacity}] at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='node')lines.push(`\\node[${o.nodeBorder?`draw=${rgb(o.style.stroke)},rounded corners,`:''}inner sep=5pt,opacity=${o.style.opacity}] (mi${o.id}) at ${texPoint(o.xy)} {${latexEscape(o.text)}};`);
   else if(o.type==='morphism')continue;
@@ -3684,17 +3760,17 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  // Context-sensitive, non-destructive assistance for Algebra and all 2D/3D plot inputs.
  for(const input of [algebraEntry,plotInput,plotY,$('command-z')]){
   attachInputAssistant(input,()=>({kind:input===algebraEntry?'algebra':'plot',dimension:in3D()?'3d':'2d',mode:plotMode.value,
-   symbols:input===algebraEntry?[...doc.objects.map(o=>o.name),...(doc.algebra?.sliders??[]).map(s=>s.name)].filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name)):[]}));
+   symbols:(input===algebraEntry?[...doc.objects.map(o=>o.name),...(doc.algebra?.sliders??[]).map(s=>s.name)]:in3D()?[]:(doc.algebra?.sliders??[]).map(s=>s.name)).filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(name))}));
  }
  $('command-form').onsubmit=e=>{e.preventDefault();const mode=plotMode.value,value=plotInput.value.trim(),y=plotY.value.trim();
   let raisedDomainBudget=false;
   const success=update(()=>{
    let curve;
    if(in3D()){const c=$('command-z').value.trim();if(!doc.scene3d)doc.scene3d=newScene3D();const plot=add3DPlot(doc.scene3d,mode,[value,y,c]);selected3d=plot.id;}
-   else if(mode==='parametric'){parseParametric(value,y,'t');curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:'t',tMin:0,tMax:2*Math.PI});}
-   else if(mode==='implicit'){parseImplicit(value);curve=append(doc,{type:'implicit',expr:value});}
+   else if(mode==='parametric'){parseParametric(value,y,'t',functionSliderParameters(doc));curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:'t',tMin:0,tMax:2*Math.PI});}
+   else if(mode==='implicit'){parseImplicit(value,functionSliderParameters(doc));curve=append(doc,{type:'implicit',expr:value});}
    else if(mode==='vectorField'||mode==='domainColoring'){
-    if(mode==='vectorField')parseVectorField(value,y);else parseComplexExpression(value);
+    if(mode==='vectorField')parseVectorField(value,y,functionSliderParameters(doc));else parseComplexExpression(value,functionSliderParameters(doc));
     // The first region is a snapshot of the visible canvas, not a moving viewport.
     const a=unproject(0,size.h),b=unproject(size.w,0);
     const region={xMin:a[0],xMax:b[0],yMin:a[1],yMax:b[1]};validatePlotRegion(region);
@@ -3705,7 +3781,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    }else{
     const construction=/^(?:[A-Za-z][A-Za-z0-9_]*\s*=\s*\(|[A-Za-z][A-Za-z0-9_]*\s*\(x\)\s*=|(?:Segment|Arrow|Line|Circle|Ellipse|Rectangle|Parallelogram|Polygon|Polyline|Bezier|Angle|AngleBisector|Midpoint|Parallel|Perpendicular|Intersect|RegularPolygon|Morphism)\s*\()/i;
     if(construction.test(value))curve=command(doc,value);
-    else {const expr=value.replace(/^y\s*=\s*/i,'');parseExpression(expr);curve=append(doc,{type:'function',expr});}
+    else {const expr=value.replace(/^y\s*=\s*/i,'');parseExpression(expr,functionSliderParameters(doc));curve=append(doc,{type:'function',expr});}
    }
    if(!in3D())selected=curve.id;
   });

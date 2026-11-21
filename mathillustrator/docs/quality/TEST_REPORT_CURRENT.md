@@ -1,3 +1,21 @@
+## Round 267 — Mathematical expression layout, unified strokes and point styles, tutorial partition (2026-11-21)
+- Baseline: authoritative uploaded project + ordered Round 249–266 overlays. No unrelated service or Git changes.
+- UI correction: removed inherited 53%-width treatment for semantic Expression and 2D/3D formula fields; formulas occupy a full row. New point/line selectors are horizontal and aligned with Label format, above Stroke.
+- Semantic styling: new validated `style.pointShape` (`solid`, `empty`, `cross`) for point-role objects; new validated `style.linePattern` (`solid`, `dashed`, `dotted`) on nonpoint geometry and 2D plot strokes. Freehand and morphisms retain existing specialized pattern controls. Old JSON omitting these keys defaults to solid.
+- Renderer and export: live SVG and SVG export preserve new shapes/stroke dash arrays. TikZ export applies compatible patterns and point shape instructions where TikZ is already supported; unsupported geometries remain unsupported rather than silently approximated. JSON round trips preserve the new styling.
+- Tutorial: §4 split into formula syntax, real function inventory, complex function inventory, Algebra construction reference, and an option glossary explaining `rootIndex`, `branch`, `centerKind`, `parameter`, `distance`, `amount`, and construction limitations in both languages.
+- Tests: full Node, all source syntax, new Node schema/persistence checks, new headless Chromium style/expression/tutorial/export, plot-mode style parity, and selected historical Chromium regressions (see current run records). Isolated Chromium fixture, not hosted deployment. Do not infer the full historical inventory passed.
+- Remaining unverified: complete historical Chromium inventory, physical GPU/touch, hosted deployment. Broad plotting/Algebra behavior outside tested examples is not exhaustively certified.
+
+## Round 266 — 2D slider plot parity and exclusive slider/object selection (2026-11-21)
+- Baseline: uploaded project ZIP plus the complete ordered Round 249–265 overlays.
+- Confirmed: slider selection highlight persisted when switching to geometric rows; construction edits from a selected slider could leave both highlighted. Repaired both selection update paths.
+- Confirmed: Parametric, Implicit, Vector Field and Domain Coloring did not accept live sliders despite Function support. Updated parser environments, semantic validation/Properties, all live renderers, plot cache keys, slider rename/delete/lock dependencies, autocomplete and parameter conversion.
+- Browser: real headless Chromium isolated module-fixture test covers five mode creation, all five rendered outputs changing after b changes, slider rename across all five, single selection and creation-from-slider in light/dark themes. Source fixtures updated for module query cache busting.
+- Final regressions (current source): full Node suite 755/755 PASS; 36/36 source `.mjs` syntax PASS; focused real Chromium R266, R265, R264, R261, R260, R253 PASS. One older all-history Chromium inventory remains unexecuted.
+- Extra: built-in complex imaginary unit `i` remains reserved even when a slider is named `i`; parametric renaming preserves historical juxtaposition (`tpi`) while handling named sliders.
+- Caveat: this is an isolated Chromium module fixture, not hosted-site validation; the complete historical browser inventory is not certified. Physical touch/GPU and deployment are not tested.
+
 ## Round 254 — Algebra integration and semantic parsing (local, 2026-11-21)
 - Baseline: Round 252 assembled source + Round 253 overlay (following previously supplied cumulative overlays).
 - Reproduced: shared construction argument splitter separated commas inside quoted labels; Text/Node/Morphism semantic expressions could fail when saved unchanged.
@@ -2826,3 +2844,30 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - Verification results are recorded in the delivery response; Node and Chromium are checked against the reconstructed baseline (original source + R249–R263 overlays).
 - Executed: full Node `node --test tests/*.test.mjs` 747/747 passing; 36/36 source `node --check`; Chromium Round 264 (light/dark) passing; Chromium Round 258 programmatic geometry passing; Python test syntax passing. The first browser attempt failed due to a stale inliner module specifier (`round264` rewritten to `round244`); corrected in the shipped browser test harness before rerun.
 - Not executed: complete historical Chromium test inventory, hosted deployment, physical GPU, native touch hardware.
+
+### Round 265 — Explicit Function slider binding
+- Root cause: 2D Function parsing previously allowed only `x`, not existing slider names; parser, rendering cache, validation, and slider dependency bookkeeping were out of sync.
+- Executed: Node 751/751 passing; real Chromium light/dark creation and live path redraw passing; source syntax, ZIP integrity and targeted compatibility checks recorded separately.
+- Scope: 2D explicit Function only; historical Chromium inventory, hosted rollout and physical GPU are not certified.
+
+### Round 268 — Closed curve fill and 3-style parity (local verification)
+- Base: original uploaded MathIllustrator source + applied overlays through Round 267; Round 268 changed-files overlay only.
+- Implemented: opt-in fill for circles, three-point circles, closed splines/Béziers and closed free curves, including existing supported closed transformations. Polygon and legacy ellipse fill defaults are preserved. Open curves remain unfilled. Existing Solid/Dashed/Dotted line style dropdown remains above Stroke; the existing richer freehand line-style control is preserved. Bézier Properties supports explicit closure.
+- JSON: `style.fillEnabled` optional boolean; absent means old behavior. Existing `ellipseFilled` honored. Extended `closed` validation to Bézier. No project format bump.
+- SVG rendering/export updated; supported TikZ closed-shape exports apply fill options. TikZ still does not support all advanced geometry and splines.
+- Full Node regression: **760/760 PASS** (includes two Round 268 validation/round-trip tests). JavaScript syntax: **36/36 PASS**.
+- Real Chromium: Round 268 closed-fill controls, circle/three-point circle/ellipse/polygon/spline/Bézier, defaults, line patterns and SVG export **PASS** in light/dark themes. Round 267 appearance/tutorial Chromium **PASS**. Round 267 four plot-styles Chromium **PASS**.
+- Responsive check: Properties at 768px retains non-overlapping Fill, Stroke, Opacity, Width controls. At 390px the mobile Properties panel is collapsed; full interaction was not independently tested.
+- Not executed: entire archived Chromium suite, native touch, hosted deployment, physical GPU, every TikZ compilation and every advanced transformed curve. No certification claimed for those areas.
+
+
+## Round 269 — slider-origin regression sweep (2026-11-21)
+
+- Baseline: user-provided authoritative ZIP with cumulative changed-file overlays through Round 268. No hosted-service changes.
+- Confirmed Chromium defect: with two sliders playing, editing one slider's Color (and related Properties controls) stopped both. The same happened when manipulating its Value track.
+- Repair: slider Properties transactions use `preservePlayback` and split undo boundaries, motion-setting changes rebase the edited slider's playback epoch, slider renames stop only that slider, and direct Value track interactions stop only that slider while leaving peers running. No geometry model or renderer changes.
+- New browser regression: `tests/browser_round269_slider_edit_playback.py`, real Chromium, light and dark themes, appearance edit, speed edit, mode change, Value track and rename — **PASS**.
+- Full Node suite: 760/760 PASS. All 36 source JavaScript `.mjs` syntax checks PASS.
+- Re-ran Chromium regression files: Round 253 rename, Round 258 programmable geometry, Round 259 field synchronization, Round 261 concurrent sliders, Round 266 five-mode slider plot redraw, Round 267 appearance/plot styles, Round 268 closed-fill — PASS. Focused Round 257, 260, 262, 263, 264 and 265 browser tests previously passed on this baseline; some broad sequential historical runs exceeded tool budget and were not certified.
+- Historical Round 226 test expects deleted `#algebra-toggle`, so its failure is an obsolete test contract rather than confirmation of a product defect. One concurrent Chromium batch crashed during `Page.set_content` and a later run of the Round 253 test passed in isolation.
+- Not verified: every archived browser scenario, high-duration GPU/memory workloads, native touch, hosted deployment, all plot/geometry mathematical edge cases. No mathematical guarantee of zero latent bugs is possible.

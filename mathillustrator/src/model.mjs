@@ -4,7 +4,7 @@ import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
 import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round130';
-import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round69';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=mi266';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -624,7 +624,12 @@ export function roundSnap(v,s){
 }
 export function snapPoint(p,s){return p.map(v=>roundSnap(v,s));}
 /** Explicit functions share the same strict implicit-multiplication parser. */
-export function parseExpression(source){const fn=parseCurveExpression(source,['x']);return x=>fn({x});}
+export function parseExpression(source,parameters={}){
+ const names=Object.keys(parameters).filter(name=>name!=='x');
+ const fn=parseCurveExpression(source,['x',...names]);
+ return x=>fn({...parameters,x});
+}
+export function functionSliderParameters(doc){return Object.fromEntries((doc.algebra?.sliders??[]).map(s=>[s.name,s.value]));}
 /** Reject invisible *new* geometry without invalidating legacy v1 projects on import. */
 export function checkNewGeometry(type,p){
  if(['segment','arrow','line','ray','perpBisector','midpoint','fixedLength'].includes(type)&&Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])<1e-9)throw Error('Construction requires distinct points.');
@@ -684,7 +689,7 @@ export function command(doc,source){
   if(byName(doc,m[1])||(doc.algebra?.sliders??[]).some(item=>item.name===m[1]))throw Error('Name already in use.');const point=addPoint(doc,xy,m[1]);if(dynamic)point.xyExpr=parts.map(v=>v.trim());return point;
  }
  m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(x\)\s*=\s*(.+)$/);
- if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2]);return append(doc,{type:'function',name:m[1],expr:m[2]});}
+ if(m){if(byName(doc,m[1]))throw Error('Name already in use.');parseExpression(m[2],functionSliderParameters(doc));return append(doc,{type:'function',name:m[1],expr:m[2]});}
  // A single named-point constructor path is shared by GUI and Algebra.
  // Tool aliases are explicitly mapped to persisted model types.
  m=s.match(/^(Segment|Vector|Arrow|Line|Ray|PerpBisector|PerpendicularBisector|Circle|CircleThrough3|Ellipse|Rectangle|Parallelogram|Polygon|Triangle|Quadrilateral|Polyline|Bezier|Angle|AngleBisector|Midpoint|Spline|ClosedSpline|CircularArc|Hyperbola)\s*\(([^()]*)\)$/i);
@@ -779,6 +784,10 @@ export function validateDoc(raw){
    if(o.type==='transformCopy'&&o.transform==='translate'&&o.refs?.length!==3)throw Error('Translation requires source and two points.');
   }
   if(o.style.pointSize!==undefined&&(!pointRole(o,id=>roleObjects.get(id))||!finite(o.style.pointSize)||o.style.pointSize<1||o.style.pointSize>100))throw Error('Object point size must be 1–100 on points or midpoints.');
+  if(o.style.pointShape!==undefined&&(!pointRole(o,id=>roleObjects.get(id))||!['solid','empty','cross'].includes(o.style.pointShape)))throw Error('Invalid point style.');
+  if(o.style.linePattern!==undefined&&(pointRole(o,id=>roleObjects.get(id))||!['solid','dashed','dotted'].includes(o.style.linePattern)))throw Error('Invalid line style.');
+  if(o.style.fillEnabled!==undefined&&typeof o.style.fillEnabled!=='boolean')throw Error('Invalid fill enabled flag.');
+  if(o.closed!==undefined&&o.type==='bezier'&&typeof o.closed!=='boolean')throw Error('Invalid Bézier closure flag.');
   const len=o.type==='transformCopy'&&o.transform==='translate'?3:o.type==='segment'&&o.edgeIndex!==undefined&&o.refs?.length===3?3:(o.type==='ellipse'||o.type==='rectangle')&&o.refs?.length===2?2:o.type==='ellipse'&&o.refs?.length===3?3:REF_LENGTHS[o.type];
   if(len!==undefined){if(!Array.isArray(o.refs)||o.refs.length!==len||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid reference count for '+o.type);}
   else if(o.type==='polygon'||o.type==='polyline'||o.type==='spline'){if(!Array.isArray(o.refs)||o.refs.length<(o.type==='polyline'?2:3)||o.refs.length>2000||o.refs.some(x=>typeof x!=='string'))throw Error('Invalid vertex references.');}
@@ -798,30 +807,30 @@ export function validateDoc(raw){
   if(o.edgeOf!==undefined&&(o.type!=='segment'||typeof o.edgeOf!=='string'||!/^o[1-9]\d*$/.test(o.edgeOf)))throw Error('Invalid polygon edge owner.');
   if(o.edgeIndex!==undefined&&(o.type!=='segment'||!o.edgeOf||!Number.isInteger(o.edgeIndex)||o.edgeIndex<0||o.edgeIndex>99))throw Error('Invalid derived edge index.');
   if(o.type==='regularPolygon'&&(!Number.isInteger(o.sides)||o.sides<3||o.sides>100))throw Error('Regular polygon sides must be 3–100.');
-  if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr);}
+  if(o.type==='function'){if(typeof o.expr!=='string')throw Error('Invalid function expression.');parseExpression(o.expr,functionSliderParameters(d));}
  if(o.type==='parametric'){
   if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Parametric curve requires x(u) and y(v).');
-  parseParametric(o.xExpr,o.yExpr,o.parameter);
+  parseParametric(o.xExpr,o.yExpr,o.parameter,functionSliderParameters(d));
   if(o.parameter!==undefined&&!['t','u','v'].includes(o.parameter))throw Error('Invalid parametric symbol.');
   if(!finite(o.tMin)||!finite(o.tMax)||o.tMin>=o.tMax||Math.abs(o.tMin)>1e6||Math.abs(o.tMax)>1e6)throw Error('Parameter range must be finite, ascending and within ±1,000,000.');
   if(o.polar!==undefined&&typeof o.polar!=='boolean')throw Error('Invalid polar flag.');
-  if(o.polar){if(typeof o.rExpr!=='string')throw Error('Missing polar radius expression.');parseCurveExpression(o.rExpr,['t']);}
+  if(o.polar){if(typeof o.rExpr!=='string')throw Error('Missing polar radius expression.');parseCurveExpression(o.rExpr,['t',...Object.keys(functionSliderParameters(d))]);}
   if(o.rExpr!==undefined&&(typeof o.rExpr!=='string'||o.rExpr.length>800))throw Error('Invalid radius expression.');
   // Legacy rMin/rMax fields are retained for JSON compatibility, but no longer clip polar plots.
   if((o.rMin!==undefined&&!finite(o.rMin))||(o.rMax!==undefined&&!finite(o.rMax)))throw Error('Invalid legacy radial bounds.');
  }
- if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr);}
+ if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr,functionSliderParameters(d));}
  if(['vectorField','domainColoring'].includes(o.type)){
   validatePlotRegion(o.region);
   compileRegionCondition(o.regionCondition,2);
   if(o.type==='vectorField'){
    if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Vector field requires two components.');
-   parseVectorField(o.xExpr,o.yExpr);
+   parseVectorField(o.xExpr,o.yExpr,functionSliderParameters(d));
    if(!Number.isInteger(o.density)||o.density<3||o.density>40||typeof o.normalized!=='boolean')throw Error('Invalid vector field settings.');
    if(o.colorRange!==undefined&&typeof o.colorRange!=='boolean')throw Error('Invalid vector color range.');
   }else{
    if(typeof o.expr!=='string'||!['phase-modulus','phase','contours'].includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
-   parseComplexExpression(o.expr);
+   parseComplexExpression(o.expr,functionSliderParameters(d));
    if(!Number.isInteger(o.resolution??128)||(o.resolution??768)<32||(o.resolution??768)>1536)throw Error('Invalid domain resolution.');
   }
  }
@@ -837,7 +846,7 @@ export function validateDoc(raw){
   if(o.morphismLine!==undefined&&(o.type!=='morphism'||!['solid','dashed','dotted','double','wavy'].includes(o.morphismLine)))throw Error('Invalid morphism line style.');
   if(o.morphismHeads!==undefined&&(o.type!=='morphism'||!['none','end','start','both','double-end','hook','tail','harpoon'].includes(o.morphismHeads)))throw Error('Invalid morphism arrowheads.');
   if(o.nodeBorder!==undefined&&(o.type!=='node'||typeof o.nodeBorder!=='boolean'))throw Error('Invalid node border.');
-  if(o.closed!==undefined&&(!['freehand','spline'].includes(o.type)||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
+  if(o.closed!==undefined&&(!['freehand','spline','bezier'].includes(o.type)||typeof o.closed!=='boolean'))throw Error('Invalid free curve closure flag.');
   if(o.joinStyle!==undefined&&(o.type!=='freehand'||o.closed!==true||!['smooth','corner'].includes(o.joinStyle)))throw Error('Invalid free curve join style.');
   if(o.curveShape!==undefined&&(o.type!=='freehand'||!['free','ellipse','polygon'].includes(o.curveShape)))throw Error('Invalid free curve shape.');
   if(o.curveRegular!==undefined&&(o.type!=='freehand'||typeof o.curveRegular!=='boolean'))throw Error('Invalid free curve regularity.');

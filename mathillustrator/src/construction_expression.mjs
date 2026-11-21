@@ -1,7 +1,7 @@
-import {clone,command,parseExpression,validateDoc,append,appendDerivedShapeEdges,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint} from './model.mjs?cut=round227';
+import {clone,command,parseExpression,validateDoc,append,appendDerivedShapeEdges,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint,functionSliderParameters} from './model.mjs?cut=mi266';
 import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round254';
 import {r50SourceShape,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=round69';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=mi266';
 
 // Every reference is printed from its persistent ID, never a stored name.
 // Syntax for non-command tools is an editable semantic constructor; it does
@@ -112,7 +112,7 @@ export function applyConstructionExpression(doc,objectId,source){
  if(current.type==='function'){
   const m=value.match(/^([^()]+)\(x\)\s*=\s*([\s\S]+)$/);
   const expression=m&&m[1].trim()===current.name?m[2]:value;
-  parseExpression(expression);commit(doc,objectId,{expr:expression});return;
+  parseExpression(expression,functionSliderParameters(doc));commit(doc,objectId,{expr:expression});return;
  }
  const rhs=parseNamed(value,current.name);
  if(current.type==='point'){
@@ -132,14 +132,14 @@ export function applyConstructionExpression(doc,objectId,source){
   if(kind!==allowed||Object.keys(options).some(k=>k!=='polar'))throw Error('Incorrect plot expression syntax.');
   let patch;
   const stringArg=(index)=>{const text=JSON.parse(args[index]);if(typeof text!=='string')throw Error('Expected an expression string.');return text;};
-  if(current.type==='implicit'){if(args.length!==1)throw Error('Expected one equation.');patch={expr:stringArg(0)};parseImplicit(patch.expr);}
-  if(current.type==='domainColoring'){if(args.length!==1)throw Error('Expected one complex expression.');patch={expr:stringArg(0)};parseComplexExpression(patch.expr);}
-  if(current.type==='vectorField'){if(args.length!==2)throw Error('Expected two vector components.');patch={xExpr:stringArg(0),yExpr:stringArg(1)};parseVectorField(patch.xExpr,patch.yExpr);}
+  if(current.type==='implicit'){if(args.length!==1)throw Error('Expected one equation.');patch={expr:stringArg(0)};parseImplicit(patch.expr,functionSliderParameters(doc));}
+  if(current.type==='domainColoring'){if(args.length!==1)throw Error('Expected one complex expression.');patch={expr:stringArg(0)};parseComplexExpression(patch.expr,functionSliderParameters(doc));}
+  if(current.type==='vectorField'){if(args.length!==2)throw Error('Expected two vector components.');patch={xExpr:stringArg(0),yExpr:stringArg(1)};parseVectorField(patch.xExpr,patch.yExpr,functionSliderParameters(doc));}
   if(current.type==='parametric'){
    if(args.length!==3)throw Error('Expected x, y and parameter.');
    patch={xExpr:stringArg(0),yExpr:stringArg(1),parameter:stringArg(2)};
    if(patch.parameter==='legacy')delete patch.parameter;
-   parseParametric(patch.xExpr,patch.yExpr,patch.parameter);
+   parseParametric(patch.xExpr,patch.yExpr,patch.parameter,functionSliderParameters(doc));
    if(Object.hasOwn(options,'polar')){if(typeof options.polar!=='string')throw Error('Polar radius must be a string.');patch.rExpr=options.polar;patch.polar=true;}
    else patch.polar=false;
   }

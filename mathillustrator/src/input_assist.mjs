@@ -34,7 +34,7 @@ export function completionCandidates(input,{kind='algebra',dimension='2d',mode='
  const tail=prefix.match(/[A-Za-z][A-Za-z0-9_]*$/)?.[0]||'';
  const isAlgebra=kind==='algebra';
  const functions=isAlgebra?ALGEBRA_FUNCTIONS:COMPLEX_MODES.has(mode)?PLOT_COMPLEX_FUNCTIONS:PLOT_REAL_FUNCTIONS;
- const names=isAlgebra?[...symbols.slice(0,300),...CONSTRUCTORS,...functions,...CONSTANTS]:[...functions,...CONSTANTS,...(MODE_VARIABLES[mode]||[])];
+ const names=isAlgebra?[...symbols.slice(0,300),...CONSTRUCTORS,...functions,...CONSTANTS]:[...symbols.slice(0,300),...functions,...CONSTANTS,...(MODE_VARIABLES[mode]||[])];
  const options=[];
  if(tail.length>=1){
   for(const name of new Set(names)){
