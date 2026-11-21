@@ -2317,3 +2317,9 @@ When Properties focus protects an in-progress edit, all other visible fields rep
 - Fix reproducible missing triangles in the supplied `sin(x)+sin(y)+sin(z)=0` 3D scene at Mesh detail 16 without changing the saved formula, bounds or appearance. Preserve all earlier 3D regressions and high-detail renderer fidelity.
 - For bounded, finite, unclipped coarse-grid level sets, retain the existing mesh if it is already manifold in the interior; apply consistent near-zero lattice sign resolution only if a separately constructed candidate reduces interior cracks. Record extra evaluations, honor cooperative cancellation, and do not fill intentional domain/region openings.
 - Keep numerical sampling limitations explicit; no universal watertightness or WebGL/Z-buffer claim.
+
+### Round 281 — Complex plotting stress and implicit topology preservation (2026-11-21)
+- Extend the existing near-zero marching-tetrahedra seam repair to bounded mid-detail grids (up to 32 cells per axis) without new rendering engines or UI controls.
+- Require a strict reduction of unmatched interior edges and reject alternative meshes with substantial face-count changes (candidate must remain within 98%–120% of original); retain original mesh on ties. This is a heuristic topology guard, not a proof of continuity.
+- Preserve original rendering behavior for rational poles, tangent discontinuities, explicit region clipping and genuine mathematical singularities; do not indiscriminately fill every visible opening.
+- Exercise periodic Schwarz-D/Neovius minimal surfaces, oscillatory high-frequency fields, thin shells, saddle/cone/sphere/torus, high-order and rational surfaces, plus 2D slider-dependent plotting regressions.

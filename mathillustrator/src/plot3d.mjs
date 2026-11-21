@@ -403,10 +403,11 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
  // For coarse, continuous implicit samples, zero-valued lattice vertices can
  // leave nondegenerate triangular cracks. Compare the original mesh with a
  // consistently signed near-zero lattice, and keep the candidate ONLY if its
- // interior seam count improves. The unchanged mesh wins ties; intentional
- // region clipping and poles never enter this topology-repair path.
+ // interior seam count improves. Preserve previous discontinuity behavior by
+ // rejecting candidates that alter face count substantially; unchanged mesh
+ // wins ties. Region clipping/nonfinite lattice samples remain excluded.
  if(plot.kind==='implicit3d'&&!zeroTieBreak&&!limited&&!condition&&allFiniteSamples&&
-    roundoffVertices>0&&implicitGridCells(detail)<=21){
+    roundoffVertices>0&&implicitGridCells(detail)<=32){
   const initialSeams=countInteriorSeams(faces,b);
   if(initialSeams>0){
    const alternative=sample3DPlotSteps(plot,detail,true);
@@ -414,7 +415,7 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
    do{next=alternative.next();if(!next.done)yield;}while(!next.done);
    const result=next.value;
    evaluations+=result.evaluations;
-   if(!result.limited&&countInteriorSeams(result.faces,b)<initialSeams)
+   if(!result.limited&&result.faces.length>=faces.length*.98&&result.faces.length<=faces.length*1.2&&countInteriorSeams(result.faces,b)<initialSeams)
     return {...result,evaluations};
   }
  }
