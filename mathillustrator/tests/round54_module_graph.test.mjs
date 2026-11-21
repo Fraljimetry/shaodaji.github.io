@@ -6,7 +6,7 @@ import {resolve,dirname} from 'node:path';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 test('Round 55 geometry contract has versioned dependency',()=>{
  const html=readFileSync(resolve(root,'index.html'),'utf8');
- assert.match(html,/src="\.\/src\/app\.mjs\?cut=(?:mi271|mi274|mi275|round(?:6[3-9]|[7-9]\d|[1-9]\d{2,}))"/);
+ assert.match(html,/src="\.\/src\/app\.mjs\?cut=(?:mi271|mi274|mi275|mi279|round(?:6[3-9]|[7-9]\d|[1-9]\d{2,}))"/);
  const src=resolve(root,'src');
  let imports=0;
  for(const name of readdirSync(src).filter(n=>n.endsWith('.mjs'))){

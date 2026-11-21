@@ -293,31 +293,77 @@ function synchronizeSliderExpression(){
 // values into idle controls, never into the focused draft or its undo buffer.
 function synchronizeRelatedPropertyFields(){
  const root=$('properties');if(!root||in3D())return;
+ // A focused control owns its draft. All other controls show the *live* model,
+ // including derived measurements, while their retained rollback baselines
+ // track the synchronized value rather than an obsolete render snapshot.
  const setIdle=(input,value)=>{
   if(!input||input===document.activeElement||value===undefined||value===null)return;
   const next=String(value);if(input.value!==next){input.value=next;
-   // field() retains its own accepted value. Updating a retained control
-   // must also update that baseline, or a later rejected edit rolls back
-   // to the pre-sync value.
    input.dispatchEvent(new CustomEvent('properties-synced',{detail:{value:next}}));
   }
  };
- const findField=(caption)=>[...root.querySelectorAll('label.field')].find(label=>label.firstChild?.nodeType===Node.TEXT_NODE&&label.firstChild.textContent.trim()===caption)?.querySelector('input,select');
+ const setCheck=(input,value)=>{if(input&&input!==document.activeElement)input.checked=!!value;};
+ const findField=(caption)=>[...root.querySelectorAll('label.field')].find(label=>
+  label.dataset.propertyLabel===caption||
+  (label.firstChild?.nodeType===Node.TEXT_NODE&&label.firstChild.textContent.trim()===caption)
+ )?.querySelector('input,select,textarea');
+ const syncFields=values=>{for(const [caption,value] of Object.entries(values))setIdle(findField(caption),value);};
  if(selectedSlider){
   const slider=doc.algebra?.sliders.find(s=>s.name===selectedSlider);if(!slider)return;
-  setIdle(findField('Name'),slider.name);
-  for(const [label,key] of [['Minimum','min'],['Maximum','max'],['Step','step'],['Value','value'],['Speed (cycles/s)','playSpeed']])setIdle(findField(label),slider[key]??(key==='playSpeed'?1:undefined));
-  setIdle(findField('Play mode'),slider.playMode??'periodic');
-  const range=root.querySelector('.slider-property-value-range');if(range){range.min=String(slider.min);range.max=String(slider.max);range.step=String(slider.step);setIdle(range,slider.value);}
+  syncFields({Name:slider.name,Minimum:slider.min,Maximum:slider.max,Step:slider.step,
+   Value:slider.value,'Speed (cycles/s)':slider.playSpeed??1,'Play mode':slider.playMode??'periodic',
+   Color:slider.color??'#2563eb',Opacity:slider.opacity??1});
+  setCheck(root.querySelector('.slider-border-control input'),slider.border!==false);
+  const range=root.querySelector('.slider-property-value-range');if(range){
+   range.min=String(slider.min);range.max=String(slider.max);range.step=String(slider.step);setIdle(range,slider.value);
+  }
   return;
  }
+ // Bulk Properties represents multiple objects; never replace aggregate controls
+ // with the primary selected object's individual values.
+ if(activeSelection().length!==1)return;
  const live=get(doc,selected);if(!live)return;
- setIdle(findField('Name'),live.name);
+ const name=live.name;
+ const values={Name:name,'Label format':live.pointLabelMode||live.displayLabelMode||live.textMode||'plain',
+  Label:pointRole(live,id=>get(doc,id))?(live.pointLabel||''):(live.displayLabel||''),
+  'Stroke':live.style?.stroke,'Vector color':live.style?.stroke,'Fill':live.style?.fill,
+  'Opacity':live.style?.opacity,'Width':live.style?.width,'Line width':live.style?.width,
+  'Size':live.style?.pointSize??doc.settings.pointSize,
+  'Point style':live.style?.pointShape||'solid','Line style':live.style?.linePattern||'solid',
+  'Number of sides':live.sides,
+  'Font':live.fontFamily|| (live.type==='text'?'Arial, sans-serif':'Georgia, serif'),
+  'Font size':live.fontSize||18,'Text / label':live.text,'Arrow label':live.text,
+  'Bend':live.bend??0,'Label position':live.labelT??.5,'Label distance (px)':live.labelDistance??17,
+  'Label shift X (px)':live.labelDx??0,'Label shift Y (px)':live.labelDy??0,
+  'Density':live.density,'Transformation amount':live.measureExpr?.amount,
+  'Length expression':live.measureExpr?.length,'Angle (radians) expression':live.measureExpr?.angle};
+ if(live.type==='function'||live.type==='implicit'||live.type==='domainColoring'){
+  values[live.type==='function'?'f(x)':live.type==='implicit'?'F(x, y)':'F(z)']=live.expr;
+ }
+ if(live.type==='parametric'){
+  if(live.polar)values['r(t)']=live.rExpr??'1';
+  else{const sliders=Object.keys(functionSliderParameters(doc));
+   values['x(t)']=renameCurveParameter(live.xExpr,live.parameter||'u','t',sliders);
+   values['y(t)']=renameCurveParameter(live.yExpr,live.parameter||'v','t',sliders);}
+  values['t min']=live.tMin;values['t max']=live.tMax;
+ }
+ if(live.type==='vectorField'){values['X(x, y)']=live.xExpr;values['Y(x, y)']=live.yExpr;}
+ syncFields(values);
  if(['point','node','text'].includes(live.type)){
   const coords=root.querySelectorAll('.point-coordinate-grid input');
   for(let i=0;i<2;i++)setIdle(coords[i],displayCoordinate(live.xyExpr?.[i]??live.xy?.[i]));
  }
+ // Derived measurements must follow slider motion, dragging, and dependent
+ // geometry even when an unrelated Properties textbox retains focus.
+ const measured=root.querySelector('.measurement-value');
+ if(measured){const result=measureGeometry(live,createResolver(doc));
+  setIdle(measured,result?.value==null?'—':String(Number(result.value.toPrecision(7))));
+ }
+ setCheck(root.querySelector('.node-font-row .compact-property-check input'),live.nodeBorder);
+ setCheck(root.querySelector('.freehand-regular-check input'),live.curveRegular!==false);
+ setCheck(root.querySelector('[aria-label="Closed curve"]'),live.closed===true);
 }
+
 function refreshAfterMutation(forceProperties=false){
  syncDiagramSnapFocus(true);renderAlgebra();renderList();syncSettings();render();synchronizeConstructionExpression();synchronizeSliderExpression();synchronizeRelatedPropertyFields();
  // Editing controls must not be replaced after the next animation frame while
@@ -366,7 +412,7 @@ function playbackTick(timestamp){
  }
  if(changed){
   for(const [name] of playingSliders){const item=doc.algebra.sliders.find(s=>s.name===name);const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===name);
-   if(item&&row){const label=row.querySelector('.algebra-entry-label');if(label)label.textContent=item.name+' = '+Number(item.value.toPrecision(8));}
+   if(item&&row){const label=row.querySelector('.algebra-entry-label');if(label)label.textContent=item.name+' = '+Number(item.value.toPrecision(7));}
   }
   const selected=doc.algebra?.sliders.find(s=>s.name===selectedSlider);
   const propertySlider=$('properties')?.querySelector('.slider-property-value-range');
@@ -1515,7 +1561,7 @@ function field(parent,label,value,type,onChange,opts={}){
  const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');
  // Formula editors have their own inline layout; names and arbitrary text keep their existing layout.
  if(type==='text'&&parent.classList.contains('properties')&&(/^(?:Expression|.* expression|Transformation amount)$/i.test(label)||/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[XYZ]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label)))wrap.classList.add('formula-expression-field');
- wrap.textContent=label;
+ wrap.textContent=label;wrap.dataset.propertyLabel=label;
  const input=document.createElement(type==='multiline'?'textarea':'input');
  if(type!=='multiline')input.type=type==='number'?'text':type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
  input.value=String(value??'');if(type==='number'){input.inputMode='decimal';input.dataset.numericExpression='true';}else if(opts.step)input.step=opts.step;
@@ -1755,7 +1801,7 @@ function renderSliderProperties(root,item){
  const range=document.createElement('div');range.className='slider-range-grid';root.append(range);
  for(const [key,label] of [['min','Minimum'],['max','Maximum'],['step','Step'],['value','Value']])field(range,label,item[key],'number',v=>edit(live=>{live[key]=v;if(key!=='value')live.value=Math.max(live.min,Math.min(live.max,live.value));},{rebase:true}));
  const playback=document.createElement('div');playback.className='slider-playback-grid';root.append(playback);
- const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;},{rebase:true});modeLabel.append(mode);playback.append(modeLabel);
+ const modeLabel=document.createElement('label');modeLabel.className='field';modeLabel.textContent='Play mode';modeLabel.dataset.propertyLabel='Play mode';const mode=document.createElement('select');mode.setAttribute('aria-label','Play mode');for(const value of SLIDER_PLAY_MODES){const option=document.createElement('option');option.value=value;option.textContent=value==='periodic'?'Periodic':value==='oscillatory'?'Oscillatory':'Once';mode.append(option);}mode.value=item.playMode??'periodic';mode.onchange=()=>edit(live=>{live.playMode=mode.value;},{rebase:true});modeLabel.append(mode);playback.append(modeLabel);
  field(playback,'Speed (cycles/s)',item.playSpeed??1,'number',v=>edit(live=>{if(v<.05||v>10)throw Error('Speed must be between 0.05 and 10 cycles/s.');live.playSpeed=v;},{rebase:true}),{min:.05,max:10});localizeUI(playback,uiPrefs.language);
  const valueTrack=document.createElement('div');valueTrack.className='slider-property-track';root.append(valueTrack);
  const valueInput=document.createElement('input');valueInput.className='slider-property-value-range';valueInput.type='range';valueInput.min=String(item.min);valueInput.max=String(item.max);valueInput.step=String(item.step);valueInput.value=String(item.value);valueInput.setAttribute('aria-label','Slider value '+item.name);valueTrack.append(valueInput);
@@ -1771,7 +1817,7 @@ function renderSliderProperties(root,item){
  valueInput.onpointerdown=startTrackEdit;valueInput.onkeydown=startTrackEdit;
  valueInput.oninput=()=>{
   startTrackEdit();const before=JSON.stringify(doc);
-  try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);expressionInput.value=sliderExpression(live);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(8));renderList();scheduleRender();}
+  try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);expressionInput.value=sliderExpression(live);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(7));renderList();scheduleRender();}
   catch(error){doc=JSON.parse(before);valueInput.value=String(doc.algebra?.sliders.find(s=>s.name===item.name)?.value??item.value);notice(error.message);renderList();scheduleRender();}
  };
  valueInput.onchange=()=>{if(sliderBefore&&sliderBefore!==JSON.stringify(doc)){recordUndo(sliderBefore);documentRevision++;enqueueSave();}sliderBefore=null;if(playingSliders.size)playbackBefore=JSON.stringify(doc);renderAlgebra();renderProperties();};
@@ -1827,7 +1873,7 @@ function renderProperties(){
  renderConstructionExpression();
  if(o.measureExpr){for(const [key,expression] of Object.entries(o.measureExpr))field(root,key==='amount'?'Transformation amount':key==='length'?'Length expression':'Angle (radians) expression',expression,'text',value=>edit(live=>bindMeasurement(doc,live,key,value)));}
  if(pointRole(o,id=>get(doc,id))){
-  const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
+  const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';mode.dataset.propertyLabel='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.pointLabelMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex'&&live.pointLabel)validateLatexInput(live.pointLabel);live.pointLabelMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
   field(root,'Label',o.pointLabel||'','text',v=>edit(live=>{if(live.pointLabelMode==='latex'&&v)validateLatexInput(v);live.pointLabel=v;})).closest('label').classList.add('short-label-field');
@@ -1891,12 +1937,12 @@ function renderProperties(){
   }root.append(coords);
  }
  if(['text','node','morphism'].includes(o.type)){
-  const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';const modeSelect=document.createElement('select');
+  const mode=document.createElement('label');mode.className='field';mode.textContent='Label format';mode.dataset.propertyLabel='Label format';const modeSelect=document.createElement('select');
   for(const [value,label] of [['plain','Plain text'],['latex','LaTeX math']]){const option=document.createElement('option');option.value=value;option.textContent=label;modeSelect.append(option);}
   modeSelect.value=o.textMode||'plain';modeSelect.onchange=()=>edit(live=>{if(modeSelect.value==='latex')validateLatexInput(live.text);live.textMode=modeSelect.value;});mode.append(modeSelect);root.append(mode);
   field(root,o.type==='morphism'?'Arrow label':'Text / label',o.text,'multiline',v=>edit(live=>{if(live.textMode==='latex')validateLatexInput(v);live.text=v;}));}
  if(['text','node','morphism'].includes(o.type)&&o.textMode!=='latex'){
-  const family=document.createElement('label');family.className='field';family.textContent='Font';const pick=document.createElement('select');
+  const family=document.createElement('label');family.className='field';family.textContent='Font';family.dataset.propertyLabel='Font';const pick=document.createElement('select');
   for(const [value,label] of [['Georgia, serif','Serif'],['Arial, sans-serif','Sans-serif'],['Consolas, monospace','Monospace'],['Verdana, sans-serif','Verdana'],['Trebuchet MS, sans-serif','Trebuchet'],['Palatino Linotype, serif','Palatino'],['Times New Roman, serif','Times']]){const option=document.createElement('option');option.value=value;option.textContent=label;pick.append(option);}
   pick.value=o.fontFamily||(['text'].includes(o.type)?'Arial, sans-serif':'Georgia, serif');pick.onchange=()=>edit(live=>live.fontFamily=pick.value);family.append(pick);root.append(family);
  }
@@ -2020,7 +2066,7 @@ function renderProperties(){
   const measure=document.createElement('label');measure.className='field measurement-field';measure.textContent=translated(label,uiPrefs.language);
   // Use the same textbox width as other Properties fields, but not an editable input.
   const output=document.createElement('input');output.type='text';output.readOnly=true;
-  output.className='measurement-value';output.value=measurement.value===null?'—':String(Number(measurement.value.toPrecision(8)));
+  output.className='measurement-value';output.value=measurement.value===null?'—':String(Number(measurement.value.toPrecision(7)));
   output.setAttribute('aria-label',translated(label,uiPrefs.language));output.setAttribute('aria-readonly','true');
   measure.append(output);root.append(measure);
  }
@@ -2030,14 +2076,14 @@ function renderProperties(){
  // Keep pattern/point shape on the same horizontal grid as Label format.
  // Freehand and morphisms retain their existing specialized Line style selectors.
  if(pointRole(o,id=>get(doc,id))){
-  const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Point style';
+  const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Point style';row.dataset.propertyLabel='Point style';
   const select=document.createElement('select');select.setAttribute('aria-label','Point style');
   for(const [value,title] of [['solid','Solid'],['empty','Empty'],['cross','Cross']]){
    const option=document.createElement('option');option.value=value;option.textContent=title;select.append(option);
   }
   select.value=o.style.pointShape||'solid';select.onchange=()=>edit(live=>{live.style.pointShape=select.value;});row.append(select);root.append(row);
  }else if(!['freehand','morphism','text','node','domainColoring'].includes(o.type)){
-  const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Line style';
+  const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Line style';row.dataset.propertyLabel='Line style';
   const select=document.createElement('select');select.setAttribute('aria-label','Line style');
   for(const [value,title] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted']]){
    const option=document.createElement('option');option.value=value;option.textContent=title;select.append(option);
@@ -2134,7 +2180,7 @@ function renderAlgebra(){
   const row=document.createElement('div');row.className='object algebra-object-row'+(selectedSlider===item.name?' selected':'')+(!item.visible?' hidden':'');row.dataset.slider=item.name;row.dataset.locked=item.locked?'true':'false';row.tabIndex=0;row.setAttribute('role','listitem');
   row.append(algebraSliderGrip(row,item.name));
   const icon=document.createElement('span');icon.className='glyph slider-algebra-glyph';icon.innerHTML=`<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true">${glyph.slider}</svg>`;row.append(icon);
-  const info=document.createElement('span');info.className='object-label';const name=document.createElement('strong');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(8));name.title=name.textContent;info.append(name);row.append(info);
+  const info=document.createElement('span');info.className='object-label';const name=document.createElement('strong');name.className='algebra-entry-label';name.textContent=item.name+' = '+Number(item.value.toPrecision(7));name.title=name.textContent;info.append(name);row.append(info);
   const play=document.createElement('button');play.type='button';play.className='slider-play-toggle';play.textContent=playingSliders.has(item.name)?'⏸':'▶';play.title=playingSliders.has(item.name)?'Pause slider':'Play slider';play.setAttribute('aria-label',play.title+' '+item.name);play.disabled=item.locked||!item.visible;play.onclick=e=>{e.stopPropagation();toggleSliderPlayback(item.name);};row.append(play);
   algebraMore(row,item.name,btn=>openAlgebraActions(item.name,btn));
   row.onclick=e=>{if(e.target.closest('button'))return;selectSlider(item.name);};row.onkeydown=e=>{if(e.target===row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();selectSlider(item.name);}};wrapper.append(row);

@@ -1250,3 +1250,36 @@ html.three-d #object-search{display:block!important}
   appearance:auto;flex:none;margin:0;padding:0;width:16px;height:16px;
   min-width:16px;min-height:16px;
 }
+
+/* Round 276: one compact control rhythm across Settings and Properties.
+   Preserve full-width formula editors, palette squares, and the established
+   two-column groups. Avoid sizing hidden controls or generic toolbar buttons. */
+.rightpanel .settings-sections input[type=checkbox],
+.properties input[type=checkbox] {
+  box-sizing:border-box;width:13px;height:13px;min-width:13px;min-height:13px;
+  max-width:13px;max-height:13px;flex:0 0 13px;margin:0;padding:0;
+  vertical-align:middle;accent-color:var(--accent);
+}
+/* Override the former per-object 16px rule and old slider-only 14px rule. */
+.rightpanel .settings-sections .style-controls-grid .selected-fill-toggle > input[type=checkbox],
+.properties .slider-appearance-grid .slider-border-control > input[type=checkbox],
+.properties .style-controls-grid.stroke-only-grid.slider-appearance-grid .style-opacity > .slider-border-control > input[type=checkbox] {
+  width:13px!important;height:13px!important;min-width:13px!important;min-height:13px!important;
+  max-width:13px!important;max-height:13px!important;flex:0 0 13px!important;
+  margin:0!important;padding:0!important;
+}
+.rightpanel .settings-sections .style-controls-grid .selected-fill-toggle {
+  display:inline-flex;align-items:center;align-self:stretch;
+  justify-content:flex-start;gap:5px;min-height:30px;margin:0;
+  font-size:11px;line-height:1.3;
+}
+/* All short numeric style inputs use the same height as neighboring selects.
+   Do not change their responsive widths or modify text/Expression editors. */
+.rightpanel .settings-sections .style-controls-grid :is(.style-opacity,.style-width,.style-pointsize) input[data-numeric-expression="true"] {
+  box-sizing:border-box;height:30px;min-height:30px;
+}
+.properties .slider-playback-grid > .field > :is(input,select),
+.properties .slider-range-grid > .field > input,
+.properties .slider-appearance-grid .style-opacity .field > input {
+  box-sizing:border-box;height:30px;min-height:30px;
+}

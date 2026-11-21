@@ -2899,3 +2899,23 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - New Node tests validate semantic formatting, exact numeric storage and JSON; Chromium regression verifies focus, no-op blur and edited precision in both themes.
 - Historical Round 259 browser fixture adjusted for new display contract, without relaxing model precision.
 - Current test results are recorded in delivery; historical inventory/hosted browser/hardware GPU not universally certified.
+
+## Round 276 — UI controls alignment sweep (isolated Chromium, 2026-11-21)
+- Baseline: uploaded authoritative source + ordered overlays through Round 275. Scope: right settings panels and selected-object Properties, 2D/3D, English-theme-independent dimensions.
+- Reproduced: Enable fill 16×16 px while Transparent 13×13 px; slider Show border separately used 14×14 px. Numeric style input controls were 28 px tall while neighboring selects were 30 px.
+- Fixed via narrowly scoped CSS: common 13×13 px checkbox geometry; same row/vertical center for selected Enable fill and Point size; short numeric style/playback inputs 30 px. No application logic, document model, color palette or full-width Expression layout changed.
+- Local regression: Node 766/766 passed, all 36 source MJS syntax checks passed; Chromium alignment (2D/3D, light/dark, 768/980/1440 widths) passed; historical Chromium R274 selected fill, R270 defaults, R267 style/tutorial, R260 3D Properties, and R275 display precision passed.
+- Not tested: whole historical Chromium inventory, hosted deployment, native physical touch and GPU devices. Visual checks are from isolated local Chromium, not hosted website.
+
+## Round 278 — Seven-significant-digit measurement parity
+- Display-only: Properties length, area and angle readouts now use seven significant digits, matching point coordinates; slider values in Objects and the canvas also use seven significant digits.
+- Slider input fields retain their full editable numeric state, and geometry/JSON arithmetic are unchanged. Rendering/export geometry precision is not modified.
+- Node regression checks measurement and slider display paths. Browser verification and hosted deployment are not assumed.
+- Verified: Node 767/767 PASS (0 skipped); source JS syntax 36/36 PASS; Chromium new length/slider precision round-trip passed in light/dark, historical R275 Chromium precision PASS. Not run: full historical Chromium inventory, hosted deployment or physical-device tests.
+
+
+### Round 279 — retained Properties synchronization (local verification)
+- Fixed an incomplete synchronization map in `src/app.mjs`: when one Properties editor was focused, only Name, coordinates and core slider parameters were refreshed. Added synchronization for supported appearance, plot formula, text/label, measurement and related controls from the committed model without replacing the focused draft.
+- `field()` now retains the untranslated field key for language-independent synchronization, including Chinese UI. Updated read-only length/angle/area output while dependent slider geometry animates.
+- Targeted real Chromium `browser_round279_field_sync.py` passed in light/dark themes: selected segment length during slider animation with Name focused, and semantic Function Expression → f(x) field. `browser_round259_field_synchronization.py` and `browser_round275_precision.py` passed.
+- Full Node and JavaScript syntax regression results should be interpreted from the final Round 279 run; production hosted, full historic browser inventory and native-device checks were not run.

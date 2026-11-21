@@ -2302,3 +2302,12 @@ Concurrent 2D slider playback: multiple sliders can play simultaneously, each wi
 - Round 274: Enable fill is a compact checkbox immediately to the right of Point size, applying to the currently selected fillable object; no Object type dropdown.
 
 - Round 275: Show roughly seven significant digits in point coordinates and Properties semantic numeric expressions while preserving exact model numbers; full precision reappears on focus. No unintended rounding of JSON, dependencies, or unchanged field blur.
+
+- Round 276: All settings/Properties checkbox squares must have consistent 13px dimensions, including selected-object Enable fill, Transparent, Interface toggles, 3D toggles and slider Show border. Enable fill remains on the right of Point size, vertically centered; numeric style editors and adjacent select fields use 30px control height without changing full-row Expression inputs, palette squares, responsive two-column layouts or tool glyphs.
+
+### Round 278 — Numeric display consistency
+- Display coordinate, geometric length/area/angle measurement and slider value labels with seven significant digits, trimming unnecessary trailing zeroes. Retain full stored precision and avoid rounding numeric controls, dependency formulas, serialized JSON, or export coordinates.
+
+
+### Round 279 — Properties synchronization consistency
+When Properties focus protects an in-progress edit, all other visible fields representing the committed model should still update. This includes derived measurement values during slider playback and duplicated semantic/function-specific formula fields. Keep the focused draft unchanged; never round stored geometric values or create undo entries merely by refreshing the UI.
