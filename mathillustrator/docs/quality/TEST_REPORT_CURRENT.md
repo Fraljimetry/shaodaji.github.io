@@ -2820,3 +2820,9 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - Updated bilingual Expression tutorial examples to omit assignment prefixes as required since Round 255.
 - Executed full Node suite: 743/743 passed; JavaScript syntax: 36/36 passed; Chromium translation regression: light/dark passed. Historical browser translation checks R201 (1440/768/390), R177 (1440/768), R200 (1440/768) passed.
 - No hosted deployment, native mobile/touch, or exhaustive historical browser inventory executed.
+
+### Round 264 — Slider-aware Construction input
+- Added regression for dynamic semantic Point coordinates, live slider values, transformation-amount bindings, and atomic rejected inputs.
+- Verification results are recorded in the delivery response; Node and Chromium are checked against the reconstructed baseline (original source + R249–R263 overlays).
+- Executed: full Node `node --test tests/*.test.mjs` 747/747 passing; 36/36 source `node --check`; Chromium Round 264 (light/dark) passing; Chromium Round 258 programmatic geometry passing; Python test syntax passing. The first browser attempt failed due to a stale inliner module specifier (`round264` rewritten to `round244`); corrected in the shipped browser test harness before rerun.
+- Not executed: complete historical Chromium test inventory, hosted deployment, physical GPU, native touch hardware.

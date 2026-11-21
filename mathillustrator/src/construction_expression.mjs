@@ -53,7 +53,12 @@ function parseConstructor(rhs){
  for(const part of parts){
   const match=part.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*(.+)$/s);
   if(match){inOptions=true;if(Object.hasOwn(options,match[1]))throw Error('Duplicate option.');
-   try{options[match[1]]=JSON.parse(match[2]);}catch{throw Error('Options must be JSON numbers or strings.');}
+   try{options[match[1]]=JSON.parse(match[2]);}catch{
+    // Only quantity formulas backed by the document's measurement dependency
+    // engine accept unquoted arithmetic. Structural options remain literals.
+    if(match[1]!=='amount'||!match[2].trim())throw Error('Options must be JSON numbers or strings.');
+    options[match[1]]=match[2].trim();
+   }
   }else{if(inOptions)throw Error('Positional references must precede options.');args.push(part.trim());}
  }
  return {kind:m[1],args,options};
@@ -227,13 +232,18 @@ export function createSemanticConstruction(doc,source){
   if(Object.keys(options).length)throw Error('Coordinate constructors do not accept options.');
   const needsLabel=kind!=='Point';
   if(args.length!==(needsLabel?3:2))throw Error(`${kind} needs ${needsLabel?'two coordinates and quoted text':'two coordinates'}.`);
-  const xy=args.slice(0,2).map(v=>evaluateAlgebra(v));
+  const sliderValues=Object.fromEntries((temp.algebra?.sliders??[]).map(s=>[s.name,s.value]));
+  const xy=args.slice(0,2).map(v=>evaluateAlgebra(v,sliderValues));
   if(!xy.every(v=>Number.isFinite(v)&&Math.abs(v)<=1e6))throw Error('Invalid geometric coordinates.');
   let created;
   if(needsLabel){let label;try{label=JSON.parse(args[2]);}catch{throw Error('Text must be a JSON quoted string.');}
    if(typeof label!=='string')throw Error('Text must be a string.');
    created=append(temp,{type:kind.toLowerCase(),xy,text:label,...(name?{name}:{})});
-  }else created=addPoint(temp,xy,name);
+  }else {
+   created=addPoint(temp,xy,name);
+   const sliderNames=Object.keys(sliderValues);
+   if(args.slice(0,2).some(expr=>sliderNames.some(slider=>new RegExp('\\b'+slider+'\\b').test(expr))))created.xyExpr=args.slice(0,2).map(expr=>expr.trim());
+  }
   validateCandidate(temp);doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;
   return doc.objects.find(o=>o.id===created.id);
  }
@@ -293,6 +303,7 @@ export function createSemanticConstruction(doc,source){
  }
  if(type==='transformCopy'&&base.transform==='translate'&&refs.length!==3)throw Error('Translate requires three references.');
  const created=append(temp,{...base,...(name?{name}:{})});
+ if(type==='transformCopy'&&typeof options.amount==='string')bindMeasurement(temp,created,'amount',options.amount);
  validateCandidate(temp);
  // Assignment is atomic: no failed submission can alter the live scene.
  doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;

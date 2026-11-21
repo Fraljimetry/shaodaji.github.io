@@ -2251,3 +2251,8 @@ Concurrent 2D slider playback: multiple sliders can play simultaneously, each wi
 ### Round 263 — Translation completeness
 - Keep all current 2D Properties controls, slider fields, locking notices, semantic Expression labels and tool hints localized in English/Chinese. Preserve mathematical formulas, authored names and identifiers verbatim.
 - Validate Chinese → English → Chinese reversibility with real Chromium and maintain source-backed regression keys as features evolve.
+
+### Round 264 — Existing-slider parameters in Construction input
+- Support slider symbols in `Point(a, 2*a)` and legacy `(a,2*a)` with persistent `xyExpr`; update geometry on slider playback.
+- Support `Rotate`/`Dilate` semantic `amount=a*2` through existing `measureExpr`, including Properties round-trip.
+- Reject nonexistent/nonfinite references atomically. Do not claim generic parameterization of every construction option; structural options remain fixed.

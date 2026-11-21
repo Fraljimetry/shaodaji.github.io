@@ -64,7 +64,7 @@ def inline_html(*,legacy_search_expanded=True,expose_state=False):
     app=app.replace("from './input_assist.mjs?cut=round258'",f"from '{js((ROOT/'src/input_assist.mjs').read_text())}'")
     # Round 251: inline the live construction-expression module and its shared model.
     construction=js((ROOT/'src/construction_expression.mjs').read_text().replace("from './model.mjs?cut=round227'",f"from '{model}'").replace("from './algebra.mjs?cut=round254'",f"from '{algebra}'").replace("from './plot_modes.mjs?cut=round69'",f"from '{plot_modes}'").replace("from './geometry_round50.mjs?cut=round147'",f"from '{r50}'"))
-    app=app.replace("from './construction_expression.mjs?cut=round258'",f"from '{construction}'")
+    app=app.replace("from './construction_expression.mjs?cut=round244'",f"from '{construction}'")
     app=app.replace("from './geometry_pick.mjs?cut=round172'",f"from '{js((ROOT/'src/geometry_pick.mjs').read_text())}'")
     app=app.replace("from './panel_sizes.mjs'",f"from '{panel_sizes}'")
     app=app.replace("from './properties_layout.mjs?cut=round24'",f"from '{properties_layout}'").replace("from './properties_layout.mjs'",f"from '{properties_layout}'")
