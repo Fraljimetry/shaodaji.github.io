@@ -2919,3 +2919,10 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - `field()` now retains the untranslated field key for language-independent synchronization, including Chinese UI. Updated read-only length/angle/area output while dependent slider geometry animates.
 - Targeted real Chromium `browser_round279_field_sync.py` passed in light/dark themes: selected segment length during slider animation with Name focused, and semantic Function Expression → f(x) field. `browser_round259_field_synchronization.py` and `browser_round275_precision.py` passed.
 - Full Node and JavaScript syntax regression results should be interpreted from the final Round 279 run; production hosted, full historic browser inventory and native-device checks were not run.
+
+
+### Post-R279 slider-era audit (local)
+- Reconstructed initial source plus Round 249–279 overlays; 767/767 Node tests passed without skips or failures, and all 36 source JS syntax checks passed.
+- Real Chromium PASS: R261 concurrent sliders, R262 lock/sync, R264 slider construction, R266 five-mode selection/plot slider parameterization, R269 slider editing/playback, R270 fill defaults, R274 selected-object fill, R275 coordinate precision, R278 numeric parity, R279 retained-field synchronization (rerun with stable snapshot), R263 localization, R268 closed-curve fills, R267 plot styles, R258 programmatic geometry.
+- R279 measurement regression originally used separate DOM and model reads during live animation; one mismatch occurred because time advanced between reads. Updated regression to pause playback before comparing committed model and rendered measurement; rerun PASS. This is a test timing correction, not a confirmed application defect.
+- Complete historical Chromium inventory, prolonged 3D/GPU and memory stress, native-device touch, hosted deployment and production environment remain unverified. No universally bug-free guarantee is claimed.

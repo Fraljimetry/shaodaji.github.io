@@ -29,11 +29,14 @@ with sync_playwright() as pw:
    initial=float(measured.input_value())
    page.wait_for_timeout(250)
    after=float(measured.input_value())
+   assert abs(after-initial)>0.01,(theme,'measurement did not follow animated endpoint')
+   # Pause before comparing DOM with model: separate Playwright reads during
+   # active animation otherwise sample different animation frames.
+   page.locator('#objects [data-slider="a"] .slider-play-toggle').click()
    snap=json.loads(page.evaluate('window.__round36Snapshot()'))
    value=next(sl['value'] for sl in snap['algebra']['sliders'] if sl['name']=='a')
-   assert abs(after-value)<1e-5,(theme,'stale measurement',initial,after,value)
-   assert abs(after-initial)>0.01,(theme,'measurement did not follow animated endpoint')
-   page.locator('#objects [data-slider="a"] .slider-play-toggle').click()
+   final_display=float(measured.input_value())
+   assert abs(final_display-value)<1e-5,(theme,'stale measurement after pause',final_display,value)
    enter('f(x) = sin(x)')
    plot=page.locator('#objects .object').filter(has=page.locator('.object-label strong',has_text='f'))
    plot.click()
