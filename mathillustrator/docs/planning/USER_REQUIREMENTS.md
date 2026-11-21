@@ -2119,3 +2119,13 @@ Do not claim full programmable geometry yet. Variable polygon side counts, arbit
 - The compact entry directly above the Objects list defaults to Algebra on opening the 2D workspace. Its `</>` icon is a button: single-click switches to Find (magnifier), and another click switches back. Hover and accessibility labels must describe the *action* (`Switch to Find` / `Switch to Algebra input`). Preserve each input's current draft when switching.
 - Maintain the existing expression parser, saved Slider data, geometry dependency model and historical project JSON schema. No 3D Algebra or changes to unrelated glyphs.
 - Preserve the existing virtualized large-geometry list; sliders display using the same row treatment, and 3D keeps its Find field.
+
+### Round 238 — Enter-only Algebra, matching Slider inspector glyph, extended reference
+- Unified Objects Algebra entry submits on Enter only; remove the visible add button while retaining the hidden compatibility form and current project schema.
+- Reuse the hollow-circle slider glyph in Slider Properties, without altering point or other historical glyphs.
+- Extend safe 2D numeric expressions with clamp, modulo, angle conversion, hyperbolic functions, cube root, binary log, sign, and truncation, with explicit validation.
+- Permit finite, constant arithmetic coordinates in named Node constructors and constant integer arithmetic for RegularPolygon side counts. Do not claim live slider-reactive side counts or Node coordinates.
+- Maintain English/Chinese tutorial command reference with exact limitations, syntax, modes and examples.
+
+### Round 239 — Slider checkbox alignment
+- Keep the 2D Slider Properties **Show border** checkbox and its caption vertically aligned in the compact right-column appearance layout, without affecting other controls.

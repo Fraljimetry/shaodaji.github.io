@@ -16,7 +16,7 @@ def run():
    snap=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
    def enter(line):
     page.locator('#unified-algebra-input').fill(line)
-    page.locator('#unified-algebra-form button').click()
+    page.locator('#unified-algebra-input').press('Enter')
    for line in ['a = Slider(0, 10, 0.5, 2)','A = (a, 0)','B = (0, 0)','s = Segment(A,B)']:enter(line)
    assert snap()['objects'][-1]['name']=='s'
    assert page.locator('#objects [data-slider="a"]').count()==1

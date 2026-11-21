@@ -723,10 +723,17 @@ export function command(doc,source){
   const result=append(doc,{type:'transformCopy',refs:[first.id,second.id],transform:kind==='rotate'?'rotate':'dilate',amount:1});
   return bindMeasurement(doc,result,'amount',m[4].trim());
  }
- m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*"([^"\\]{1,180})"\s*\)$/i);
- if(m){if(byName(doc,m[1]))throw Error('Name already in use.');return append(doc,{type:'node',name:m[1],xy:[Number(m[2]),Number(m[3])],text:m[4],fontSize:17});}
- m=s.match(/^RegularPolygon\(\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*(\d+)\s*\)$/i);
- if(m){const sides=Number(m[3]);if(!Number.isInteger(sides)||sides<3||sides>100)throw Error('Regular polygon sides must be 3–100.');const a=pointName(doc,m[1]),b=pointName(doc,m[2]),u=position(doc,a),v=position(doc,b);if(!u||!v||Math.hypot(u[0]-v[0],u[1]-v[1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');const polygon=append(doc,{type:'regularPolygon',refs:[a,b],sides});appendDerivedShapeEdges(doc,polygon.id);return polygon;}
+ m=s.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Node\((.*)\)$/i);
+ if(m){
+  if(byName(doc,m[1])||(doc.algebra?.sliders??[]).some(slider=>slider.name===m[1]))throw Error('Name already in use.');
+  const args=splitAlgebraArguments(m[2]);
+  if(args.length!==3||!/^"[^"\\]{1,180}"$/.test(args[2]))throw Error('Use Name = Node(x, y, "label").');
+  const xy=args.slice(0,2).map(expr=>evaluateAlgebra(expr));
+  if(xy.some(value=>Math.abs(value)>1e6))throw Error('Node coordinates outside range.');
+  return append(doc,{type:'node',name:m[1],xy,text:args[2].slice(1,-1),fontSize:17});
+ }
+ m=s.match(/^RegularPolygon\(\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*(.+)\)$/i);
+ if(m){const sides=evaluateAlgebra(m[3].trim());if(!Number.isInteger(sides)||sides<3||sides>100)throw Error('Regular polygon sides must be 3–100.');const a=pointName(doc,m[1]),b=pointName(doc,m[2]),u=position(doc,a),v=position(doc,b);if(!u||!v||Math.hypot(u[0]-v[0],u[1]-v[1])<1e-9)throw Error('Regular polygon needs distinct center and vertex.');const polygon=append(doc,{type:'regularPolygon',refs:[a,b],sides});appendDerivedShapeEdges(doc,polygon.id);return polygon;}
  m=s.match(/^Morphism\(\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*([A-Za-z][A-Za-z0-9_]*)\s*,\s*"([^"\\]{0,180})"\s*\)$/i);
  if(m){const refs=m.slice(1,3).map(name=>{const o=byName(doc,name);if(o?.type!=='node')throw Error('Unknown diagram node: '+name);return o.id;});if(refs[0]===refs[1])throw Error('Self-morphism is not yet supported.');return append(doc,{type:'morphism',refs,text:m[3],bend:0});}
  throw Error('Unsupported command. See Tutorial for exact syntax.');

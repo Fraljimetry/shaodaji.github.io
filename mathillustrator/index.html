@@ -39,7 +39,7 @@
       </section>
       <div class="object-tools" id="object-entry-tools">
         <button id="object-input-toggle" type="button" aria-label="Switch to Find" title="Switch to Find" aria-pressed="true"><svg id="object-algebra-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 6-6 6 6 6M16 6l6 6-6 6M14 4l-4 16"/></svg><svg id="object-find-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" hidden><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
-        <form id="unified-algebra-form" class="unified-entry-form"><input id="unified-algebra-input" autocomplete="off" spellcheck="false" aria-label="Algebra definition" placeholder="Enter algebra expression…"/><button type="submit" aria-label="Add algebra definition" title="Add algebra definition">↵</button></form>
+        <form id="unified-algebra-form" class="unified-entry-form"><input id="unified-algebra-input" autocomplete="off" spellcheck="false" aria-label="Algebra definition" placeholder="Enter algebra expression…"/></form>
         <input id="object-search" type="search" placeholder="Find…" aria-label="Search objects" hidden>
         <label><input type="checkbox" id="show-hidden" checked> Hidden</label>
       </div>
@@ -47,7 +47,7 @@
       <section id="properties-dock" class="properties-dock" aria-label="Properties panel">
         <div id="properties-splitter" class="properties-splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-controls="properties" aria-label="Resize Properties height" title="Resize panel"></div>
         <div id="properties-head" class="properties-head" tabindex="-1" aria-label="Move Properties panel">
-          <strong>Properties</strong><div class="properties-head-actions"><button id="properties-toggle" type="button" aria-controls="properties" aria-expanded="true" title="Collapse Properties">−</button></div>
+          <strong id="properties-heading-label">Properties</strong><span id="properties-selected-glyph" class="glyph properties-selected-glyph" aria-hidden="true" hidden></span><div class="properties-head-actions"><button id="properties-toggle" type="button" aria-controls="properties" aria-expanded="true" title="Collapse Properties">−</button></div>
         </div>
         <div id="properties" class="properties"></div>
       </section>

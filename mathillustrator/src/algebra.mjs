@@ -3,7 +3,12 @@
 const FUNCTIONS={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,
  sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp,ln:Math.log,log:Math.log,log10:Math.log10,
  floor:Math.floor,ceil:Math.ceil,round:Math.round,min:Math.min,max:Math.max,
- pow:Math.pow,atan2:Math.atan2,hypot:Math.hypot};
+ pow:Math.pow,atan2:Math.atan2,hypot:Math.hypot,
+ sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,asinh:Math.asinh,acosh:Math.acosh,atanh:Math.atanh,
+ cbrt:Math.cbrt,log2:Math.log2,trunc:Math.trunc,sign:Math.sign,
+ clamp:(value,min,max)=>{if(min>max)throw Error('Clamp lower bound exceeds upper bound.');return Math.min(max,Math.max(min,value));},
+ mod:(a,b)=>{if(b===0)throw Error('Modulo divisor cannot be zero.');return ((a%b)+Math.abs(b))%Math.abs(b);},
+ rad:degrees=>degrees*Math.PI/180,deg:radians=>radians*180/Math.PI};
 const CONSTANTS={pi:Math.PI,e:Math.E,phi:(1+Math.sqrt(5))/2};
 const NAME=/^[A-Za-z][A-Za-z0-9_]*$/;
 export const SLIDER_PLAY_MODES=Object.freeze(['periodic','oscillatory','once']);
@@ -54,7 +59,7 @@ export function evaluateAlgebra(source,values={}){
    if(peek()==='('){if(!Object.hasOwn(FUNCTIONS,lower))throw Error('Unknown function: '+name);cursor++;const args=[];
     if(peek()!==')'){args.push(expression(0));while(peek()===','){cursor++;if(args.length>=16)throw Error('Too many arguments.');args.push(expression(0));}}
     if(tokens[cursor++]?.type!==')')throw Error('Missing function parenthesis.');
-    if((['min','max','hypot'].includes(lower)&&args.length<2)||(['atan2','pow'].includes(lower)&&args.length!==2)||(!['min','max','hypot','atan2','pow'].includes(lower)&&args.length!==1))throw Error('Incorrect function argument count.');
+    if((['min','max','hypot'].includes(lower)&&args.length<2)||(['atan2','pow','mod'].includes(lower)&&args.length!==2)||(lower==='clamp'&&args.length!==3)||(!['min','max','hypot','atan2','pow','mod','clamp'].includes(lower)&&args.length!==1))throw Error('Incorrect function argument count.');
     return FUNCTIONS[lower](...args);
    }
    if(Object.hasOwn(values,name))return values[name];

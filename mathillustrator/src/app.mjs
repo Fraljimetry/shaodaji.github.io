@@ -1644,9 +1644,18 @@ function renderSliderProperties(root,item){
  const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
  const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);field(opacitySlot,'Opacity',item.opacity??1,'number',v=>edit(live=>{if(!Number.isFinite(v)||v<0||v>1)throw Error('Opacity must be between 0 and 1.');live.opacity=v;}),{min:0,max:1,step:.1});
- const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});border.append(borderInput,' Show border');border.classList.add('slider-border-control');opacitySlot.append(border);
+ const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});const borderText=document.createElement('span');borderText.textContent='Show border';border.append(borderInput,borderText);border.classList.add('slider-border-control');opacitySlot.append(border);
+}
+const SLIDER_HOLLOW_GLYPH='<svg viewBox="-1.5 -1.5 27 27" aria-hidden="true"><path d="M3 12H21"/><circle cx="11" cy="12" r="3.3"/></svg>';
+function syncPropertiesSelectedGlyph(){
+ const icon=$('properties-selected-glyph');if(!icon)return;
+ const slider=!!selectedSlider&&!in3D()&&(doc.algebra?.sliders||[]).some(s=>s.name===selectedSlider);
+ icon.hidden=!slider;
+ if(slider&&icon.innerHTML!==SLIDER_HOLLOW_GLYPH)icon.innerHTML=SLIDER_HOLLOW_GLYPH;
+ else if(!slider)icon.replaceChildren();
 }
 function renderProperties(){
+ syncPropertiesSelectedGlyph();
  if(in3D()){const root=$('properties');root.replaceChildren();renderProperties3D(root);return;}
 
  const root=$('properties');root.classList.remove('properties-3d');root.replaceChildren();if(selectedSlider){const item=doc.algebra?.sliders.find(s=>s.name===selectedSlider);if(item){renderSliderProperties(root,item);localizeUI(root,uiPrefs.language);return;}selectedSlider=null;}const objects=activeSelection();

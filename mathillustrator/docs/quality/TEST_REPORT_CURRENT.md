@@ -2612,3 +2612,18 @@ Round 234 executed results (container, headless Chromium, 2026-11-20): full Node
 - Replaced visible Objects/Algebra tabs with an icon-switched Find/Algebra entry above the single Objects list. Algebra is the 2D default; the tooltip states the next action; list items share Properties, glyph styling, and Recently Deleted. Preserved the algebra parser and JSON schema.
 - Tests performed in this environment: **703/703 Node tests PASS**, JavaScript syntax checks PASS; new Chromium end-to-end integration PASS (expression creation, named dependencies, sliders/playback, input toggle, search, shared Properties fold, and >60-object virtual scrolling). Chromium cross-mode regression for all ten 2D/3D plotting modes PASS.
 - The legacy tab-specific browser tests require adaptation to the intentional interface removal; they are not represented as passing in this round. Hosted deployment and physical GPU testing not performed.
+
+### Round 238 — Final evidence
+- Unified Algebra Enter-only and inspector slider glyph verified in Chromium (browser_round238_unified_algebra.py).
+- Safe numeric helpers and constant constructor overloads covered in round238_algebra_extensibility.test.mjs.
+- No 3D Algebra or changes to the 3D renderer, other glyphs or saved document schema.
+- See this round's execution logs and delivery summary for full regression evidence and any unexecuted checks.
+
+- Final Round 238: 705/705 Node tests pass; syntax checked for all src JavaScript modules.
+- Chromium: Round 238 Enter-only Algebra/Slider glyph and updated Round 237 unified Objects pass.
+- Historical Round 234 playback test is obsolete: it tries to click removed `#algebra-toggle`; it was not counted as passing. The broader historical Chromium inventory and physical GPU/hosted deployment remain unverified.
+
+### Round 239 — Slider checkbox alignment
+- Chromium browser_round239_slider_checkbox_alignment.py passed at 1280px and 960px, with checkbox/caption centers within 1.5px and functional toggling.
+- Chromium browser_round237_unified_objects.py passed. All 705 Node tests passed, and syntax checks passed for all src `.mjs` modules.
+- Historical Chromium inventory, hosted deployment, and physical devices not tested in this round.
