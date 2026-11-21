@@ -2287,3 +2287,10 @@ Concurrent 2D slider playback: multiple sliders can play simultaneously, each wi
 - Direct manipulation or rename of one slider may pause that slider, but must preserve unrelated slider playback.
 - Preserve independent undo histories across slider edits and simultaneous animation; do not overwrite concurrent collaborator changes.
 - Maintain targeted real-Chromium cross-feature regressions alongside Node coverage, and report historical timeouts and unavailable native/hosted verification honestly.
+
+
+## Round 270 — Fill defaults and tutorial navigation
+- The bilingual user guide navigation displays only the current language, not joined English/Chinese titles.
+- The compact **Enable fill** control appears under **New object style**, immediately after **Point size**. Its object-type selector remembers separate defaults for each fillable closed shape.
+- Changing a default only affects subsequent constructions; existing styles and old JSON must remain unchanged.
+- Object Properties retain per-object Fill color; selecting it can enable the fill.

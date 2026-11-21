@@ -2871,3 +2871,9 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - Re-ran Chromium regression files: Round 253 rename, Round 258 programmable geometry, Round 259 field synchronization, Round 261 concurrent sliders, Round 266 five-mode slider plot redraw, Round 267 appearance/plot styles, Round 268 closed-fill — PASS. Focused Round 257, 260, 262, 263, 264 and 265 browser tests previously passed on this baseline; some broad sequential historical runs exceeded tool budget and were not certified.
 - Historical Round 226 test expects deleted `#algebra-toggle`, so its failure is an obsolete test contract rather than confirmation of a product defect. One concurrent Chromium batch crashed during `Page.set_content` and a later run of the Round 253 test passed in isolation.
 - Not verified: every archived browser scenario, high-duration GPU/memory workloads, native touch, hosted deployment, all plot/geometry mathematical edge cases. No mathematical guarantee of zero latent bugs is possible.
+
+
+## Round 270 — Fill defaults and navigation localization
+- Added model regressions for type-specific future-only fill defaults and JSON validation.
+- Added real Chromium coverage for dark/light preference switching, new circle creation, legacy object preservation, and bilingual navigation.
+- Full Node, all source syntax checks, and historical regression outcomes are recorded in the current delivery. Hosted deployment and hardware GPU runs are not performed.

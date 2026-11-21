@@ -1239,3 +1239,10 @@ html.three-d #object-search{display:block!important}
  align-items:center!important;column-gap:8px!important;margin:7px 0!important;
 }
 .properties > .appearance-choice-field > select {width:100%!important;min-width:0!important;}
+
+/* Round 270: compact per-shape new-object fill defaults, below Point size. */
+.new-fill-default-row{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:3px}
+.new-fill-default-row .field{min-width:0}.new-fill-default-row select{width:100%;min-width:0}
+.new-fill-default-row .new-fill-toggle{display:inline-flex;align-items:center;white-space:nowrap;gap:5px;font-size:12px;margin:0 0 5px 0;line-height:1.2}
+.new-fill-default-row .new-fill-toggle input{width:15px;height:15px;margin:0}
+@media(max-width:390px){.new-fill-default-row{grid-template-columns:1fr}.new-fill-default-row .new-fill-toggle{margin:0}}

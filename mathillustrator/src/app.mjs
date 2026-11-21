@@ -8,7 +8,7 @@ import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selecti
 import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=mi268';
+import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,FILLABLE_DEFAULT_TYPES,DEFAULT_FILL_TYPES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=mi270';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
 import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
@@ -16,7 +16,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=mi266';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round268';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=mi270';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
 import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -2037,7 +2037,7 @@ function renderProperties(){
   const fillSlot=styleSlot('fill');
   field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;}));
   appendColorSwatches(fillSlot,{scope:'object',property:'fill',apply:v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;})});
-  if(o.type!=='node'){const label=document.createElement('label');label.className='check compact-property-check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=shapeFillEnabled(o);checkbox.setAttribute('aria-label','Enable fill');checkbox.onchange=()=>edit(live=>{live.style.fillEnabled=checkbox.checked;if(live.type==='ellipse')live.ellipseFilled=checkbox.checked;});label.append(checkbox,document.createTextNode(' Enable fill'));fillSlot.append(label);}
+  // Fill enable defaults are configured by shape type under New object style.
  }
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
@@ -2243,6 +2243,7 @@ function sync3DInterface(){
  $('mode-label').textContent=enabled?'3D':'Select · drag points to edit';
 }
 function syncSettings(){
+ syncNewObjectFillControls();
  for(const [id,k]of [['naming-convention','namingConvention'],['snap-objects','snapObjects'],['freehand-close','freehandClose'],['correction','correction'],['plot-quality','plotQuality'],['plot-budget','plotBudget'],['implicit-grid','implicitGrid'],['polygon-sides','polygonSides'],['snap-step','snapStep'],['snap','snap'],['snap-anchors','snapAnchors'],['grid','grid'],['axes','showAxes'],['labels','showLabels'],['label-placement','labelPlacement'],['default-stroke','stroke'],['default-fill','fill'],['default-width','width'],['point-size','pointSize'],['default-opacity','opacity'],['page','page'],['export-region','exportRegion'],['export-scale','exportScale'],['export-transparent','exportTransparent'],['background','background']]){
   const input=$(id);if(!input)continue;if(input.type==='checkbox')input.checked=!!doc.settings[k];else input.value=doc.settings[k];
  }
@@ -2260,7 +2261,18 @@ function syncSettings(){
  syncColorSwatches();
  $('preset').value=matching?.[0]||'Custom';
 }
+// A compact per-type default. Changing the selected type does not mutate geometry;
+// toggling records only a preference for subsequently created objects.
+function syncNewObjectFillControls(){
+ const type=$('new-fill-type'),checkbox=$('new-fill-enabled');
+ if(!type||!checkbox)return;
+ if(!FILLABLE_DEFAULT_TYPES.includes(type.value))type.value='circle';
+ checkbox.checked=defaultFillForType(doc.settings,type.value);
+}
 function setupSettings(){
+ const fillType=$('new-fill-type'),fillEnabled=$('new-fill-enabled');
+ if(fillType&&fillEnabled){fillType.onchange=syncNewObjectFillControls;fillEnabled.onchange=()=>update(()=>{doc.settings.fillByType={...DEFAULT_FILL_TYPES,...doc.settings.fillByType,[fillType.value]:fillEnabled.checked};});}
+
  for(const property of ['stroke','fill']){
   const picker=$(property==='stroke'?'default-stroke':'default-fill');
   const target=$('default-color-swatches-'+property);
@@ -2822,7 +2834,7 @@ function performConstructionTap(e,pt){
   if(draftPoints.length===2&&!focalEllipse([...draftPoints,vertex])&&focalEllipse([...draftPoints,raw]))vertex=raw;
   if(draftPoints.length===1&&Math.hypot(vertex[0]-draftPoints[0][0],vertex[1]-draftPoints[0][1])*view.scale<1){notice('Choose a second focus away from the first.');return;}
   draftPoints.push(vertex);
-  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeFocalEllipseRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs,ellipseFilled:false}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
+  if(draftPoints.length===3){const pts=clone(draftPoints);const ok=update(()=>{checkNewGeometry('ellipse',pts);const refs=makeFocalEllipseRefs(pts);checkNewRefs('ellipse',refs);selected=append(doc,{type:'ellipse',refs,ellipseFilled:defaultFillForType(doc.settings,'ellipse')}).id;});if(ok){draftPoints=[];afterOneConstruction();}else draftPoints.pop();}
   scheduleRender();
  }else if(['segment','arrow','line','ray','perpBisector','midpoint','circle','circleDiameter','regularPolygon','fixedLength','fixedAngle'].includes(tool)){
   if(!draftStart){
@@ -3820,7 +3832,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
  $('export-open').onclick=()=>{if(drag)cancelDrag();setupExport();$('export-menu').hidden=!$('export-menu').hidden;$('export-backdrop').hidden=$('export-menu').hidden;if($('export-menu').hidden)exportAbortToken++;else $('export-close').focus();};$('export-close').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
  $('export-backdrop').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
- $('help').onclick=()=>window.open('tutorial.html','_blank','noopener');$('show-hidden').onchange=()=>renderList({resetScroll:true});
+ $('help').onclick=()=>window.open('tutorial.html?v=270','_blank','noopener');$('show-hidden').onchange=()=>renderList({resetScroll:true});
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!localizedConfirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};

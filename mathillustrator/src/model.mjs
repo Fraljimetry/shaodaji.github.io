@@ -60,6 +60,13 @@ export const PRESETS = {
   'Free illustration': {grid:false,snap:false,snapStep:0.5,correction:'off',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:2,pointSize:5},
   'Commutative diagrams': {grid:false,snap:true,snapStep:1,correction:'off',plotQuality:'balanced',plotBudget:80000,implicitGrid:12,showAxes:false,stroke:'#000000',fill:'#000000',opacity:1,width:1.6,pointSize:5},
 };
+// New-object defaults are per geometric type, not a retroactive document-wide switch.
+// Missing entries in older JSON use these historical defaults.
+export const FILLABLE_DEFAULT_TYPES = Object.freeze(['circle','circleThrough3','ellipse','rectangle','parallelogram','polygon','regularPolygon','spline','bezier','freehand']);
+export const DEFAULT_FILL_TYPES = Object.freeze({circle:false,circleThrough3:false,ellipse:false,rectangle:true,parallelogram:true,polygon:true,regularPolygon:true,spline:false,bezier:false,freehand:false});
+export function defaultFillForType(settings,type){
+ return typeof settings?.fillByType?.[type]==='boolean'?settings.fillByType[type]:!!DEFAULT_FILL_TYPES[type];
+}
 export const PRESET_MODULES = {
  General:{basic:true,construction:true,illustration:true,diagram:true},
  'Olympiad geometry':{basic:true,construction:true,illustration:true,diagram:false},
@@ -196,7 +203,7 @@ export function upgradeRecoveredLegacyPalette(project){
  return project;
 }
 export function clone(x){return JSON.parse(JSON.stringify(x));}
-export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'avoid',snapAnchors:true,snapObjects:true,polygonSides:6,plot3dEnabled:false,modules:{...PRESET_MODULES.General}},scene3d:newScene3D(),objects:[],nextId:1};}
+export function newDoc(){return {format:'mathillustrator-project',version:VERSION,meta:{title:'Untitled illustration'},settings:{...PRESETS.General,namingConvention:'pascal',page:'infinite',background:'#ffffff',exportRegion:'viewport',exportGuides:true,exportScale:2,exportTransparent:false,showLabels:true,freehandClose:'near',labelPlacement:'avoid',snapAnchors:true,snapObjects:true,polygonSides:6,plot3dEnabled:false,fillByType:{},modules:{...PRESET_MODULES.General}},scene3d:newScene3D(),objects:[],nextId:1};}
 export function finite(v){return typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e9;}
 export function safeCoord(p){return Array.isArray(p)&&p.length===2&&p.every(finite);}
 export function get(doc,id){return AXIS_OBJECTS[id]||doc.objects.find(o=>o.id===id);}
@@ -230,7 +237,10 @@ export function append(doc,obj){
  if(doc.objects.some(o=>o.name===name||(!obj.name&&o.name.toLowerCase()===name.toLowerCase())))throw Error('Name already in use: '+name);
  doc.nextId++;
  const style={stroke:doc.settings.stroke,fill:doc.settings.fill,width:obj.type==='morphism'?1:doc.settings.width,opacity:doc.settings.opacity};
+ if(FILLABLE_DEFAULT_TYPES.includes(obj.type)&&typeof doc.settings.fillByType?.[obj.type]==='boolean')style.fillEnabled=doc.settings.fillByType[obj.type];
  if(POINT_LIKE.has(obj.type)||obj.type==='transformCopy'&&pointRole(obj,id=>get(doc,id)))style.pointSize=doc.settings.pointSize;
+ // Explicit incoming style (e.g. a restored construction) wins over defaults.
+ if(obj.style?.fillEnabled!==undefined)style.fillEnabled=obj.style.fillEnabled;
  const o={id,hidden:false,locked:false,style,...obj,name};
  if(pointRole(o,id=>get(doc,id))&&o.pointLabelMode===undefined)o.pointLabelMode='latex';
  else if(!pointRole(o,id=>get(doc,id))&&!['text','node','morphism'].includes(obj.type)&&o.displayLabelMode===undefined)o.displayLabelMode='latex';
@@ -897,6 +907,7 @@ export function validateDoc(raw){
  if(d.settings.modules===undefined)d.settings.modules={...PRESET_MODULES.General};
  if(!d.settings.modules||typeof d.settings.modules!=='object'||Object.keys(PRESET_MODULES.General).some(k=>typeof d.settings.modules[k]!=='boolean'))throw Error('Invalid tool visibility settings.');
  if(d.settings.page==='infinite'&&d.settings.exportRegion==='page')throw Error('Page-only export requires a finite page frame.');
+ if(d.settings.fillByType!==undefined&&(!d.settings.fillByType||typeof d.settings.fillByType!=='object'||Array.isArray(d.settings.fillByType)||Object.keys(d.settings.fillByType).some(k=>!FILLABLE_DEFAULT_TYPES.includes(k)||typeof d.settings.fillByType[k]!=='boolean')))throw Error('Invalid new-object fill types.');
  if(!['viewport','page'].includes(d.settings.exportRegion)||typeof d.settings.showLabels!=='boolean'||typeof d.settings.snapAnchors!=='boolean')throw Error('Invalid extended settings.');
  const objects=new Map([...Object.values(AXIS_OBJECTS).map(o=>[o.id,o]),...d.objects.map(o=>[o.id,o])]);
  for(const o of d.objects)if(o.edgeOf!==undefined){

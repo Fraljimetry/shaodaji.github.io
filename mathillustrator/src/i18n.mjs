@@ -1,6 +1,6 @@
 /** Scoped editor UI translation, never modifies mathematical object text or exported project data. */
 const zh={
- 'Enable fill':'启用填充','Closed curve':'闭合曲线',
+ 'Fill object type':'填充对象类型','Object type':'对象类型','Closed Bézier':'闭合贝塞尔','Closed free curve':'闭合自由曲线','3-point circle':'三点圆','Enable fill':'启用填充','Closed curve':'闭合曲线',
  'Use polar coordinates':'使用极坐标',
  'Points & measurements':'点与测量','Lines & constructions':'直线与构造','Polygons & centers':'多边形与中心','Intersections':'交点','Transformations':'几何变换','Curves & loci':'曲线与轨迹',
  'Point on object':'对象上的点','Fixed length':'定长线段','Fixed angle':'固定角度','General intersection':'通用交点','Tangents to circle':'圆的切线','Circular arc':'圆弧','Parabola':'抛物线','Hyperbola':'双曲线','Triangle centers':'三角形中心','Reflection':'轴对称','Circle inversion':'圆反演','Rotation':'旋转','Translation':'平移变换','Dilation':'位似变换','Locus / trace':'轨迹','Center':'中心','Centroid':'重心','Circumcenter':'外心','Incenter':'内心','Orthocenter':'垂心',
