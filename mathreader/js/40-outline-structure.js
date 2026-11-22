@@ -1376,6 +1376,12 @@ function compactStructureNavigationText(value) {
 
 function structureHeadingMatchQuality(candidate, wanted, wantedCompact) {
   const actual = comparableStructureNavigationText(candidate);
+  // PDF bookmark titles often omit the printed section number, e.g.
+  // "Norms and three basic inequalities" vs "2.1 Norms and three basic
+  // inequalities". Strip only a LEADING hierarchical section identifier,
+  // never arbitrary words or trailing TOC page numbers.
+  const numbered = actual.match(/^(?:\d+(?: \d+)*[a-z]?|[ivxlcdm]+) (.+)$/u);
+  if (numbered && numbered[2] === wanted) return 98;
   if (!actual) return 0;
   if (actual === wanted) return 100;
   // An optional parenthetical subtitle or a small PDF extraction omission
@@ -1488,11 +1494,13 @@ async function navigateToStructureEntry(entry) {
     && pdfDoc === sourceDoc && currentFileKey === sourceKey;
   const page = Number(entry.page) || 1;
   let ratio = Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0;
-  // A page-top PDF destination can be only a coarse bookmark (including
-  // explicit XYZ/FitH top=page-top). Prefer a unique measured heading in that
-  // special case; retain all non-top author destinations and manual Reselects.
+  // Many PDF generators give EVERY bookmark on a page an identical XYZ
+  // destination at the upper text margin (e.g. 36 pt), not y=0. Treat such
+  // near-top locations as coarse candidates rather than authoritative heading
+  // positions. Only replace them with an independently matched, unique title;
+  // retain manual selections and precise destinations farther down the page.
   const needsRecovery = entry.userEdited !== true
-    && (entry.positionKnown !== true || ratio <= 0.001);
+    && (entry.positionKnown !== true || ratio <= 0.12 || entry.coarseDestination === true);
   let headingRecovered = false;
   if (needsRecovery) {
     try {

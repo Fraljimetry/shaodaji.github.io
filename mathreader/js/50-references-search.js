@@ -928,6 +928,18 @@ async function renderOutline() {
         };
       }));
       embeddedOutlineEntries = resolved.filter(Boolean);
+      // A generator may give several different bookmarks on the same page
+      // exactly the same nonzero XYZ coordinate. This is a coarse page anchor,
+      // not evidence that all printed titles occupy the same baseline.
+      const destinations = new Map();
+      for (const entry of embeddedOutlineEntries) {
+        const key = `${entry.page}:${Math.round(entry.ratio * 1000)}`;
+        destinations.set(key, (destinations.get(key) || 0) + 1);
+      }
+      for (const entry of embeddedOutlineEntries) {
+        const key = `${entry.page}:${Math.round(entry.ratio * 1000)}`;
+        entry.coarseDestination = (destinations.get(key) || 0) > 1;
+      }
       renderEmbeddedOutline(embeddedOutlineEntries);
       if (hasDocumentText) scheduleDetectedOutlineAugmentation();
       return;

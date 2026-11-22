@@ -201,6 +201,23 @@ with sync_playwright() as p:
               return {scrollTop:wrap.scrollTop,offset:r.top+r.height*at-w.top,page:currentPage};
             }''',{'pg':pg,'at':at})
             assert physical['page']==pg and abs(physical['offset'])<3,physical
+        # Real Calderon-Zygmund PDF: all bookmarks use the 36pt top margin.
+        import json
+        real = json.loads((root / 'regression/fixtures/structure_real_cz_v450.json').read_text('utf8'))
+        page.evaluate('(lines) => { linesByPage[3]=lines; }', real['rows']['3'])
+        for name in ['What are we trying to prove?', 'Preliminaries and the proof roadmap',
+                     'Norms and three basic inequalities', 'Foundational facts we use']:
+            target=click_entry([{'num':2},{'name':'XYZ'},72,764,0],title=name)
+            assert target and target['page']==3 and target['ratio']>.065, (name,target)
+            expected=page.evaluate('(name) => uniqueStructureHeadingRatio(linesByPage[3], name)',name)
+            assert abs(target['ratio']-expected)<.001,(name,target,expected)
+            physical=page.evaluate('''({at})=>{
+              const wrap=document.getElementById('reader');
+              const r=window._readerNodes.get(3).surface.getBoundingClientRect();
+              return {offset:r.top+r.height*at-wrap.getBoundingClientRect().top,page:currentPage};
+            }''',{'at':expected})
+            assert physical['page']==3 and abs(physical['offset'])<3,(name,physical)
+        print('PASS: original PDF near-top XYZ bookmarks land on four distinct heading positions in Chromium')
         print('PASS: two-column Structure 2.1/2.5 clicks reach the true Y in Chromium')
         print('PASS: real Chromium scroll reaches the Structure heading, not the page top')
         print('PASS: Chromium Structure click placement (page-only, explicit, null, unknown, manual and inferred)')
