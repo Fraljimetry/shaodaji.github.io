@@ -182,8 +182,20 @@ function clipTriangle(points,b){
  const triangles=[];for(let i=1;i+1<polygon.length;i++)triangles.push([polygon[0],polygon[i],polygon[i+1]]);
  return triangles;
 }
-function validTriangle(a,b,c){
- const n=cross(minus(b,a),minus(c,a));return Number.isFinite(n[0])&&Math.hypot(...n)>1e-11;
+function validTriangle(a,b,c,adaptive=false){
+ const ab=minus(b,a),ac=minus(c,a);
+ const n=cross(ab,ac),area=Math.hypot(...n);
+ if(!Number.isFinite(area))return false;
+ if(area>1e-11)return true;
+ if(!adaptive||area===0)return false;
+ // Fixed world-space area pruning incorrectly erases tiny, valid facets
+ // where smooth implicit levels pass very near a lattice vertex. Scale the
+ // cutoff only for genuinely small triangles whose edges are nonzero.
+ const bc=minus(c,b);
+ const ab2=ab[0]**2+ab[1]**2+ab[2]**2;
+ const ac2=ac[0]**2+ac[1]**2+ac[2]**2;
+ const bc2=bc[0]**2+bc[1]**2+bc[2]**2;
+ return Math.min(ab2,ac2,bc2)>1e-16&&area>Math.min(1e-11,Math.max(ab2,ac2,bc2)*1e-9);
 }
 // Count only nondegenerate free edges wholly inside the sample box, never
 // the legitimate open contour where a level surface meets a plotting bound.
@@ -224,7 +236,7 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
   // rectangular bounds. Their triangles need no six-plane clipping pass.
   const clipped=plot.kind==='implicit3d'?[[a,c,d]]:clipTriangle([a,c,d],b);
   for(const vertices of (condition?clipped.flatMap(t=>clipConditionTriangle(t,condition)):clipped)){
-   if(!validTriangle(...vertices))continue;
+   if(!validTriangle(...vertices,plot.kind==='implicit3d'))continue;
    if(faces.length>=cap){limited=true;return;}
    if(faceColor)vertices.color=faceColor;
    faces.push(vertices);
@@ -344,12 +356,12 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
        // the bracket in world coordinates: a continuous zero contracts
        // its residual, whereas a pole/jump does not. Nonfinite probes fail
        // closed. This is a numerical safeguard, not a topology guarantee.
-       // Three probes suffice for ordinary smooth crossings. If the
-       // bracket has not contracted enough, refine up to three more times:
-       // rejecting it early can punch real holes into an otherwise smooth
-       // implicit surface. A pole retains its large jump and is still rejected.
+       // Three probes suffice for ordinary smooth crossings. Allow up to
+       // ten for steep but continuous oscillatory crossings: rejecting
+       // after six can punch holes in high-frequency implicit surfaces.
+       // A true pole retains its jump and is still rejected.
        let lx=lo[0],ly=lo[1],lz=lo[2],hx=hi[0],hy=hi[1],hz=hi[2];
-       for(let probe=0;probe<6&&!limited;probe++){
+       for(let probe=0;probe<10&&!limited;probe++){
         if(probe>=3&&Math.abs(fl-fh)<initialJump*.72)break;
         // The bracket lives in scalar registers: only accepted roots
         // allocate a position vector, never the intermediate probes.
@@ -407,7 +419,7 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
  // rejecting candidates that alter face count substantially; unchanged mesh
  // wins ties. Region clipping/nonfinite lattice samples remain excluded.
  if(plot.kind==='implicit3d'&&!zeroTieBreak&&!limited&&!condition&&allFiniteSamples&&
-    roundoffVertices>0&&implicitGridCells(detail)<=32){
+    roundoffVertices>0&&implicitGridCells(detail)<=96){
   const initialSeams=countInteriorSeams(faces,b);
   if(initialSeams>0){
    const alternative=sample3DPlotSteps(plot,detail,true);

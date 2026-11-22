@@ -2323,3 +2323,19 @@ When Properties focus protects an in-progress edit, all other visible fields rep
 - Require a strict reduction of unmatched interior edges and reject alternative meshes with substantial face-count changes (candidate must remain within 98%–120% of original); retain original mesh on ties. This is a heuristic topology guard, not a proof of continuity.
 - Preserve original rendering behavior for rational poles, tangent discontinuities, explicit region clipping and genuine mathematical singularities; do not indiscriminately fill every visible opening.
 - Exercise periodic Schwarz-D/Neovius minimal surfaces, oscillatory high-frequency fields, thin shells, saddle/cone/sphere/torus, high-order and rational surfaces, plus 2D slider-dependent plotting regressions.
+
+
+### Round 282 — Implicit plotting numerical stability
+- Retain existing 3D implicit plot math and expression syntax while preventing missing triangles from prematurely rejected valid crossings in steep smooth level sets. Preserve bounded face/evaluation safeguards, nonfinite/pole rejection, existing drawing modes, and backwards-compatible JSON. Verification includes high-frequency periodic fields and the existing low-detail mesh repairs; no new UI controls requested.
+
+### Round 283 — Moderate/high-detail implicit seam closure
+- Extend the existing near-zero lattice tie-break retry beyond coarse meshes so that smooth periodic implicit surfaces such as `cos(x)+cos(y)+cos(z)=0` do not leave interior missing triangles at moderate or high non-limited mesh details.
+- Keep the retry bounded and conditional: only for finite, unclipped implicit scenes with roundoff-level zero lattice samples, and only when the alternative mesh strictly reduces interior seams without a large face-count jump.
+- Preserve existing pole/discontinuity behavior, explicit region openings, bounded evaluation/face limits, JSON compatibility, and current UI.
+
+
+
+### Round 284 — Broad implicit mesh stress and scale-aware facet preservation
+- Audit diverse smooth periodic, high-frequency, algebraic, thin-shell, singular, transcendental and discontinuous 3D implicit fields across multiple mesh resolutions. Classify edges on the drawing bounds, singularities/poles and face-limited incomplete renders separately from unintended interior mesh gaps.
+- Preserve genuinely small nondegenerate implicit triangles when a level set approaches a sample vertex; a world-space absolute area cutoff must not silently delete them. Apply the adaptive threshold only to implicit surfaces with nonzero edges, preserving ordinary triangles and non-implicit plotting paths.
+- Keep finite evaluations, pole rejection, region constraints, cooperative cancellation and face budgets unchanged. Test in real Chromium, retain backwards-compatible formulas/JSON, update the bilingual guide and quality report.

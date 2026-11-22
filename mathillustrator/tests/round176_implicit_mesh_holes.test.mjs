@@ -38,3 +38,33 @@ test('Round176 implicit sampler preserves discontinuity rejection and bounded sc
  assert.equal(result.limited,false);
  assert.ok(result.faces.length>45000);
 });
+
+function interiorOpenEdgesForBound(faces,bound){
+ const edges=new Map();
+ const encode=point=>point.map(x=>Math.round(x*1e5)).join(',');
+ for(const face of faces){
+  const pts=face.map(encode);
+  for(let i=0;i<3;i++){
+   const a=pts[i],b=pts[(i+1)%3],key=a<b?`${a}|${b}`:`${b}|${a}`;
+   edges.set(key,(edges.get(key)||0)+1);
+  }
+ }
+ let count=0;
+ for(const [edge,multiplicity] of edges){
+  if(multiplicity!==1)continue;
+  const points=edge.split('|').map(p=>p.split(',').map(Number).map(v=>v/1e5));
+  if(points.every(p=>p.every(x=>Math.abs(x)<bound-0.12)))count++;
+ }
+ return count;
+}
+
+test('Round176 tie-break retry closes moderate and high-detail cos-sum seams',()=>{
+ const box=Math.PI;
+ const plot=add3DPlot(newScene3D(),'implicit3d',['cos(x)+cos(y)+cos(z)'],{xMin:-box,xMax:box,yMin:-box,yMax:box,zMin:-box,zMax:box});
+ for(const detail of [48,96]){
+  const sampled=sample3DPlot(plot,detail);
+  assert.equal(sampled.limited,false);
+  assert.ok(sampled.faces.length>30000);
+  assert.equal(interiorOpenEdgesForBound(sampled.faces,box),0,`detail ${detail} should not leave interior seams`);
+ }
+});

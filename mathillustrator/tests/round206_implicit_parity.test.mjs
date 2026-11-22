@@ -10,7 +10,7 @@ const fixtures=[
  ['x^2+y^2-z^2=1',48,'76bfe8787d735f69d29e7d11077d7bb37abc47ad28467afbfc1b2c4a3ac5a4b1'],
  ['x^2+y^2-z^2=1',80,'dbf94c2ca678cc12211587beddd16f5fcbb7f386ca5f410b5052f188540c73b3'],
  ['sin(x)*cos(y)+sin(z)=0',48,'91a4762b225d1b26deb264d1d3115e1c2f2b1761e9e689b7920d5c3c8048e505'],
- ['sin(x)*cos(y)+sin(z)=0',80,'093633bb5b02053d369a2e0c432b25656f47ca9ff19798b40985af1ccec9c63f'],
+ ['sin(x)*cos(y)+sin(z)=0',80,'8743ec431f7446ec572573521dfd4910f9df858e22890f0cbd682f0adb58ae24'],
 ];
 for(const [expression,detail,golden] of fixtures){
  test(`R206 original exact implicit mesh ${expression} detail ${detail}`,()=>{
