@@ -1481,6 +1481,65 @@ function uniqueDetectedStructureHeadingRatio(entry) {
   return matches.length === 1 ? Number(matches[0].ratio) : null;
 }
 
+// A heading's final on-screen geometry is the authoritative navigation target.
+// PDF bookmarks, cached OCR coordinates and PDF.js line reconstruction are
+// useful candidates, but they can disagree with the *rendered* text layer.
+// Re-measure its visible text spans after the destination page finishes painting.
+function renderedStructureHeadingRatio(page, title) {
+  const surface = readingFlow === 'continuous'
+    ? continuousPageNodes.get(Number(page))?.surface
+    : (Number(page) === Number(currentPage) ? primaryPageSurface : null);
+  const layer = readingFlow === 'continuous'
+    ? continuousPageNodes.get(Number(page))?.textLayer
+    : (Number(page) === Number(currentPage) ? primaryTextLayer : null);
+  if (!surface || !layer) return null;
+  const bounds = surface.getBoundingClientRect();
+  if (!(bounds.height > 0) || !(bounds.width > 0)) return null;
+  const rows = new Map();
+  for (const span of layer.querySelectorAll('span')) {
+    const value = String(span.textContent || '').trim();
+    if (!value) continue;
+    const rect = span.getBoundingClientRect();
+    if (!(rect.width > 0) || !(rect.height > 0)) continue;
+    const ratio = (rect.top - bounds.top) / bounds.height;
+    const x = (rect.left - bounds.left) / bounds.width;
+    if (![ratio, x].every(Number.isFinite) || ratio < -0.02 || ratio > 1.02) continue;
+    const key = Math.round(ratio * bounds.height / 3);
+    if (!rows.has(key)) rows.set(key, []);
+    rows.get(key).push({ text: value, ratio: Math.max(0, Math.min(1, ratio)), x });
+  }
+  const lines = [...rows.values()].map((items) => {
+    items.sort((a, b) => a.x - b.x);
+    const last = items[items.length - 1];
+    return { text: items.map((item) => item.text).join(' '), ratio: items[0].ratio,
+      xStartRatio: items[0].x, xEndRatio: (last.x + 0.002) };
+  });
+  return uniqueStructureHeadingRatio(lines, title);
+}
+
+async function alignStructureToRenderedHeading(page, title, stillCurrent) {
+  if (!stillCurrent()) return false;
+  // The page's native PDF text layer is asynchronously painted, and a
+  // continuous-page lazy renderer may complete on a later frame.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await nextFrame();
+    if (!stillCurrent()) return false;
+    const ratio = renderedStructureHeadingRatio(page, title);
+    if (ratio === null) continue;
+    const lead = navigationTargetLeadPx();
+    ensureReaderPositionScrollRange(page, ratio, lead);
+    alignReaderNavigationToSurface(page, ratio, lead);
+    await nextFrame();
+    if (!stillCurrent()) return false;
+    alignReaderNavigationToSurface(page, ratio, lead);
+    if (readingFlow === 'continuous') continuousSavedAnchor = { page, ratio };
+    scrollByPage[String(page)] = { top: primaryCanvasWrap.scrollTop, left: primaryCanvasWrap.scrollLeft };
+    persistDocumentState();
+    return true;
+  }
+  return false;
+}
+
 let structureNavigationSerial = 0;
 
 async function navigateToStructureEntry(entry) {
@@ -1491,6 +1550,9 @@ async function navigateToStructureEntry(entry) {
   const sourceKey = currentFileKey;
   const stillCurrent = () => requestSerial === structureNavigationSerial
     && readerSerial === readerNavigationSerial
+    && pdfDoc === sourceDoc && currentFileKey === sourceKey;
+  const stillLanding = () => requestSerial === structureNavigationSerial
+    && readerNavigationSerial === readerSerial + 1
     && pdfDoc === sourceDoc && currentFileKey === sourceKey;
   const page = Number(entry.page) || 1;
   let ratio = Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0;
@@ -1524,6 +1586,14 @@ async function navigateToStructureEntry(entry) {
     if (detected !== null) ratio = detected;
   }
   await goToMatchedLocation(page, ratio, '', { positionOnly: true });
+  if (!stillLanding()) return;
+  // A rendered title beats a generic bookmark destination. The older
+  // navigation path could calculate the right ratio, yet still leave users
+  // at the page top when PDF.js painted/adjusted the layout afterwards.
+  // Preserve author-selected coordinates; never guess at an unmatched title.
+  if (needsRecovery) {
+    await alignStructureToRenderedHeading(page, entry.matchText || entry.title, stillLanding);
+  }
 }
 
 function renderActiveOutline() {
