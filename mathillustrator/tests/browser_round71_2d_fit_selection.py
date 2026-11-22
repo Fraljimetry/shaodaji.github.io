@@ -48,7 +48,7 @@ def run():
    svg.click(position={'x':cx,'y':cy},force=True)
    name=page.locator('#properties .field input').first
    assert name.input_value()=='Q',name.input_value()
-   size_field=page.locator('#properties .field').filter(has_text='Point size').locator('input')
+   size_field=page.locator('#properties .field').filter(has_text='Size').locator('input')
    assert size_field.count()==1
    size_field.fill('12');size_field.dispatch_event('change')
    assert state()['objects'][2]['style']['pointSize']==12

@@ -1,0 +1,3078 @@
+{
+  "format": "mathillustrator-project",
+  "version": 1,
+  "meta": {
+    "title": "Grand Euclidean Geometry Atlas — dynamic construction laboratory"
+  },
+  "settings": {
+    "grid": false,
+    "snap": false,
+    "snapStep": 0.5,
+    "correction": "ultra",
+    "plotQuality": "balanced",
+    "plotBudget": 1000000,
+    "implicitGrid": 12,
+    "showAxes": false,
+    "stroke": "#000000",
+    "fill": "#000000",
+    "opacity": 1,
+    "width": 2,
+    "pointSize": 5,
+    "namingConvention": "pascal",
+    "page": "infinite",
+    "background": "#fffdf8",
+    "exportRegion": "viewport",
+    "exportGuides": true,
+    "exportScale": 2,
+    "exportTransparent": false,
+    "showLabels": false,
+    "freehandClose": "near",
+    "labelPlacement": "avoid",
+    "snapAnchors": true,
+    "snapObjects": true,
+    "polygonSides": 6,
+    "plot3dEnabled": false,
+    "fillByType": {},
+    "modules": {
+      "basic": true,
+      "construction": true,
+      "illustration": true,
+      "diagram": true
+    }
+  },
+  "scene3d": {
+    "plots": [],
+    "nextId": 1,
+    "options": {
+      "yaw": -38,
+      "pitch": 26,
+      "projection": "perspective",
+      "cube": true,
+      "lighting": true,
+      "opacity": 0.86,
+      "detail": 22,
+      "zoom": 1,
+      "grid": false,
+      "axes": false
+    }
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "A",
+      "xy": [
+        -1.3,
+        -1.7
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o2",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "B",
+      "xy": [
+        5.8,
+        -1.5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o3",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "C",
+      "xy": [
+        1.35,
+        4.7
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o4",
+      "hidden": false,
+      "locked": false,
+      "type": "polygon",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "name": "TriABC",
+      "style": {
+        "stroke": "#234a89",
+        "fill": "#c9dfff",
+        "width": 2.7,
+        "opacity": 0.32,
+        "linePattern": "solid",
+        "fillEnabled": true
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o5",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "edgeOf": "o4",
+      "name": "Segment 5",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o6",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "edgeOf": "o4",
+      "name": "Segment 6",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o7",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o3",
+        "o1"
+      ],
+      "edgeOf": "o4",
+      "name": "Segment 7",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o8",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "SideAB",
+      "style": {
+        "stroke": "#224d90",
+        "fill": "#000000",
+        "width": 2.3,
+        "opacity": 1,
+        "linePattern": "solid"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o9",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "name": "SideBC",
+      "style": {
+        "stroke": "#224d90",
+        "fill": "#000000",
+        "width": 2.3,
+        "opacity": 1,
+        "linePattern": "solid"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o10",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o3",
+        "o1"
+      ],
+      "name": "SideCA",
+      "style": {
+        "stroke": "#224d90",
+        "fill": "#000000",
+        "width": 2.3,
+        "opacity": 1,
+        "linePattern": "solid"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o11",
+      "hidden": false,
+      "locked": false,
+      "type": "midpoint",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "MedianBase",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "empty"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o12",
+      "hidden": false,
+      "locked": false,
+      "type": "midpoint",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "name": "MedianBC",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "empty"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o13",
+      "hidden": false,
+      "locked": false,
+      "type": "midpoint",
+      "refs": [
+        "o3",
+        "o1"
+      ],
+      "name": "MedianCA",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "empty"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o14",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o3",
+        "o11"
+      ],
+      "name": "MedianC",
+      "style": {
+        "stroke": "#229b93",
+        "fill": "#000000",
+        "width": 1.3,
+        "opacity": 1,
+        "linePattern": "dashed"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o15",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o1",
+        "o12"
+      ],
+      "name": "MedianA",
+      "style": {
+        "stroke": "#229b93",
+        "fill": "#000000",
+        "width": 1.3,
+        "opacity": 1,
+        "linePattern": "dashed"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o16",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o2",
+        "o13"
+      ],
+      "name": "MedianB",
+      "style": {
+        "stroke": "#229b93",
+        "fill": "#000000",
+        "width": 1.3,
+        "opacity": 1,
+        "linePattern": "dashed"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o17",
+      "hidden": false,
+      "locked": false,
+      "type": "perpendicularFoot",
+      "refs": [
+        "o3",
+        "o8"
+      ],
+      "name": "AltitudeC",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o18",
+      "hidden": false,
+      "locked": false,
+      "type": "perpendicularFoot",
+      "refs": [
+        "o1",
+        "o9"
+      ],
+      "name": "AltitudeA",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o19",
+      "hidden": false,
+      "locked": false,
+      "type": "perpendicularFoot",
+      "refs": [
+        "o2",
+        "o10"
+      ],
+      "name": "AltitudeB",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o20",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o3",
+        "o17"
+      ],
+      "name": "AltC",
+      "style": {
+        "stroke": "#cc6f31",
+        "fill": "#000000",
+        "width": 1.35,
+        "opacity": 1,
+        "linePattern": "dotted"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o21",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o1",
+        "o18"
+      ],
+      "name": "AltA",
+      "style": {
+        "stroke": "#cc6f31",
+        "fill": "#000000",
+        "width": 1.35,
+        "opacity": 1,
+        "linePattern": "dotted"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o22",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o2",
+        "o19"
+      ],
+      "name": "AltB",
+      "style": {
+        "stroke": "#cc6f31",
+        "fill": "#000000",
+        "width": 1.35,
+        "opacity": 1,
+        "linePattern": "dotted"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o23",
+      "hidden": false,
+      "locked": false,
+      "type": "angleBisector",
+      "refs": [
+        "o2",
+        "o1",
+        "o3"
+      ],
+      "name": "BisectorA",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o24",
+      "hidden": false,
+      "locked": false,
+      "type": "angleBisector",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "name": "BisectorB",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o25",
+      "hidden": false,
+      "locked": false,
+      "type": "perpBisector",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "PerpAB",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o26",
+      "hidden": false,
+      "locked": false,
+      "type": "perpBisector",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "name": "PerpBC",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o27",
+      "hidden": false,
+      "locked": false,
+      "type": "line",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "ABline",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o28",
+      "hidden": false,
+      "locked": false,
+      "type": "line",
+      "refs": [
+        "o2",
+        "o3"
+      ],
+      "name": "BCline",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o29",
+      "hidden": false,
+      "locked": false,
+      "type": "perpendicularThrough",
+      "refs": [
+        "o3",
+        "o27"
+      ],
+      "name": "PerpFromC",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o30",
+      "hidden": false,
+      "locked": false,
+      "type": "parallelThrough",
+      "refs": [
+        "o1",
+        "o28"
+      ],
+      "name": "ParallelFromA",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o31",
+      "hidden": false,
+      "locked": false,
+      "type": "intersection",
+      "refs": [
+        "o29",
+        "o21"
+      ],
+      "name": "OrthocenterLines",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o32",
+      "hidden": false,
+      "locked": false,
+      "type": "triangleCenter",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "centroid",
+      "name": "Centroid",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "cross"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o33",
+      "hidden": false,
+      "locked": false,
+      "type": "triangleCenter",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "circumcenter",
+      "name": "Circumcenter",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "cross"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o34",
+      "hidden": false,
+      "locked": false,
+      "type": "triangleCenter",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "incenter",
+      "name": "Incenter",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "cross"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o35",
+      "hidden": false,
+      "locked": false,
+      "type": "triangleCenter",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "orthocenter",
+      "name": "Orthocenter",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "cross"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o36",
+      "hidden": false,
+      "locked": false,
+      "type": "triangleCenter",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "centerKind": "excenterA",
+      "name": "ExcenterA",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "cross"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o37",
+      "hidden": false,
+      "locked": false,
+      "type": "circleThrough3",
+      "refs": [
+        "o1",
+        "o2",
+        "o3"
+      ],
+      "name": "ThreePointCircle",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "linePattern": "solid"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o38",
+      "hidden": false,
+      "locked": false,
+      "type": "circle",
+      "refs": [
+        "o34",
+        "o17"
+      ],
+      "name": "InTouch",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o39",
+      "hidden": false,
+      "locked": false,
+      "type": "midpoint",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "Midpoint 39",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "empty"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o40",
+      "hidden": false,
+      "locked": false,
+      "type": "circle",
+      "refs": [
+        "o39",
+        "o1"
+      ],
+      "name": "DiameterCircle",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o41",
+      "hidden": false,
+      "locked": false,
+      "type": "ray",
+      "refs": [
+        "o1",
+        "o2"
+      ],
+      "name": "RadialAB",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o42",
+      "hidden": false,
+      "locked": false,
+      "type": "arrow",
+      "refs": [
+        "o1",
+        "o3"
+      ],
+      "name": "VectorAC",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o43",
+      "hidden": false,
+      "locked": false,
+      "type": "angle",
+      "refs": [
+        "o2",
+        "o1",
+        "o3"
+      ],
+      "name": "AngleBAC",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o44",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "MovingProbe",
+      "xy": [
+        2.1500000000000004,
+        0.07268722893065921
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex",
+      "xyExpr": [
+        "1.6+t",
+        "-0.45+sin(t)"
+      ]
+    },
+    {
+      "id": "o45",
+      "hidden": false,
+      "locked": false,
+      "type": "ray",
+      "refs": [
+        "o3",
+        "o44"
+      ],
+      "name": "ProbeRay",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o46",
+      "hidden": false,
+      "locked": false,
+      "type": "pointOnObject",
+      "refs": [
+        "o8"
+      ],
+      "parameter": 0.36,
+      "name": "FollowOnAB",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o47",
+      "hidden": false,
+      "locked": false,
+      "type": "circleIntersection",
+      "refs": [
+        "o27",
+        "o37"
+      ],
+      "branch": 1,
+      "name": "CircleContact",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o48",
+      "hidden": false,
+      "locked": false,
+      "type": "circleIntersection",
+      "refs": [
+        "o27",
+        "o37"
+      ],
+      "branch": -1,
+      "name": "CircleContact2",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o49",
+      "hidden": false,
+      "locked": false,
+      "type": "circleCircleIntersection",
+      "refs": [
+        "o37",
+        "o40"
+      ],
+      "branch": 1,
+      "name": "CircleCross",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o50",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "ExternalTangencyPoint",
+      "xy": [
+        8.5,
+        4.8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o51",
+      "hidden": false,
+      "locked": false,
+      "type": "tangentCircle",
+      "refs": [
+        "o50",
+        "o37"
+      ],
+      "branch": 1,
+      "name": "TangentFromExternal",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o52",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "E1",
+      "xy": [
+        13,
+        0
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o53",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "E2",
+      "xy": [
+        18,
+        0
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o54",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "E3",
+      "xy": [
+        17,
+        3.7
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o55",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "E4",
+      "xy": [
+        14,
+        -3.2
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o56",
+      "hidden": false,
+      "locked": false,
+      "type": "ellipse",
+      "refs": [
+        "o52",
+        "o53",
+        "o54"
+      ],
+      "name": "EllFoci",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o57",
+      "hidden": false,
+      "locked": false,
+      "type": "hyperbola",
+      "refs": [
+        "o52",
+        "o53",
+        "o55"
+      ],
+      "name": "HyperbolaGH",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o58",
+      "hidden": false,
+      "locked": false,
+      "type": "line",
+      "refs": [
+        "o52",
+        "o55"
+      ],
+      "name": "Directrix",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o59",
+      "hidden": false,
+      "locked": false,
+      "type": "parabola",
+      "refs": [
+        "o54",
+        "o58"
+      ],
+      "name": "ParabolaP",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o60",
+      "hidden": false,
+      "locked": false,
+      "type": "circularArc",
+      "refs": [
+        "o52",
+        "o54",
+        "o53"
+      ],
+      "name": "ArcDE",
+      "style": {
+        "stroke": "#9053ab",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o61",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "K1",
+      "xy": [
+        11,
+        -4
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o62",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "K2",
+      "xy": [
+        15,
+        -5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o63",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "K3",
+      "xy": [
+        17,
+        -2
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o64",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "K4",
+      "xy": [
+        13,
+        -1
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o65",
+      "hidden": false,
+      "locked": false,
+      "type": "bezier",
+      "refs": [
+        "o61",
+        "o62",
+        "o63",
+        "o64"
+      ],
+      "name": "CubicBezier",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o66",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S1",
+      "xy": [
+        12,
+        6
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o67",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S2",
+      "xy": [
+        14,
+        7.5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o68",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S3",
+      "xy": [
+        17,
+        6.7
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o69",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S4",
+      "xy": [
+        19,
+        7.5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o70",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S5",
+      "xy": [
+        21,
+        5.8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o71",
+      "hidden": false,
+      "locked": false,
+      "type": "spline",
+      "refs": [
+        "o66",
+        "o67",
+        "o68",
+        "o69",
+        "o70"
+      ],
+      "name": "SmoothSpline",
+      "style": {
+        "stroke": "#cc5989",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o72",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S6",
+      "xy": [
+        15,
+        4.9
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o73",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "S7",
+      "xy": [
+        18,
+        5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o74",
+      "hidden": false,
+      "locked": false,
+      "type": "spline",
+      "refs": [
+        "o67",
+        "o68",
+        "o73",
+        "o72"
+      ],
+      "closed": true,
+      "name": "ClosedSplinePlate",
+      "style": {
+        "stroke": "#cc5989",
+        "fill": "#fbd1e3",
+        "width": 2,
+        "opacity": 0.42,
+        "fillEnabled": true
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o75",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "O",
+      "xy": [
+        -7,
+        -8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o76",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "P",
+      "xy": [
+        -4.5,
+        -7.3
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o77",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "Q",
+      "xy": [
+        -5.1,
+        -4.8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o78",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "R",
+      "xy": [
+        -8.1,
+        -5.2
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o79",
+      "hidden": false,
+      "locked": false,
+      "type": "polygon",
+      "refs": [
+        "o75",
+        "o76",
+        "o77"
+      ],
+      "name": "TransformTriangle",
+      "style": {
+        "stroke": "#265fa6",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "linePattern": "solid"
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o80",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o75",
+        "o76"
+      ],
+      "edgeOf": "o79",
+      "name": "Segment 80",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o81",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o76",
+        "o77"
+      ],
+      "edgeOf": "o79",
+      "name": "Segment 81",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o82",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o77",
+        "o75"
+      ],
+      "edgeOf": "o79",
+      "name": "Segment 82",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o83",
+      "hidden": false,
+      "locked": false,
+      "type": "line",
+      "refs": [
+        "o75",
+        "o78"
+      ],
+      "name": "MirrorLine",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o84",
+      "hidden": false,
+      "locked": false,
+      "type": "transformCopy",
+      "refs": [
+        "o76",
+        "o83"
+      ],
+      "amount": 0,
+      "transform": "reflect",
+      "name": "MirroredP",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o85",
+      "hidden": false,
+      "locked": false,
+      "type": "transformCopy",
+      "refs": [
+        "o76",
+        "o75"
+      ],
+      "amount": 1.0471975511965976,
+      "transform": "rotate",
+      "name": "RotatedP",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o86",
+      "hidden": false,
+      "locked": false,
+      "type": "transformCopy",
+      "refs": [
+        "o76",
+        "o75"
+      ],
+      "amount": 1.5,
+      "transform": "dilate",
+      "name": "DilatedP",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o87",
+      "hidden": false,
+      "locked": false,
+      "type": "transformCopy",
+      "refs": [
+        "o76",
+        "o75",
+        "o77"
+      ],
+      "amount": 0,
+      "transform": "translate",
+      "name": "TranslatedP",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o88",
+      "hidden": false,
+      "locked": false,
+      "type": "fixedLength",
+      "refs": [
+        "o75",
+        "o76"
+      ],
+      "length": 3.5,
+      "name": "FixedLen",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex",
+      "measureExpr": {
+        "length": "3.5"
+      }
+    },
+    {
+      "id": "o89",
+      "hidden": false,
+      "locked": false,
+      "type": "fixedAngle",
+      "refs": [
+        "o75",
+        "o76"
+      ],
+      "angle": 0.7853981633974483,
+      "name": "FixedAng",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex",
+      "measureExpr": {
+        "angle": "0.7853981633974483"
+      }
+    },
+    {
+      "id": "o90",
+      "hidden": false,
+      "locked": false,
+      "type": "pointOnObject",
+      "refs": [
+        "o83"
+      ],
+      "parameter": 0.4,
+      "name": "ConstrainedMirror",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o91",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o87",
+        "o77"
+      ],
+      "name": "TQ",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o92",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o75",
+        "o84"
+      ],
+      "name": "RM",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o93",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o75",
+        "o85"
+      ],
+      "name": "RP",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o94",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "RC",
+      "xy": [
+        2,
+        -8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o95",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "RV",
+      "xy": [
+        4,
+        -8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o96",
+      "hidden": false,
+      "locked": false,
+      "type": "regularPolygon",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "sides": 6,
+      "name": "Hexagon",
+      "style": {
+        "stroke": "#177f83",
+        "fill": "#b8f1e4",
+        "width": 2,
+        "opacity": 0.6,
+        "fillEnabled": true
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o97",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "edgeOf": "o96",
+      "edgeIndex": 0,
+      "name": "Segment 97",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o98",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "edgeOf": "o96",
+      "edgeIndex": 1,
+      "name": "Segment 98",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o99",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "edgeOf": "o96",
+      "edgeIndex": 2,
+      "name": "Segment 99",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o100",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "edgeOf": "o96",
+      "edgeIndex": 3,
+      "name": "Segment 100",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o101",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "edgeOf": "o96",
+      "edgeIndex": 4,
+      "name": "Segment 101",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o102",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o94",
+        "o95"
+      ],
+      "edgeOf": "o96",
+      "edgeIndex": 5,
+      "name": "Segment 102",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o103",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "U",
+      "xy": [
+        7,
+        -8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o104",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "V",
+      "xy": [
+        10,
+        -7
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o105",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "W",
+      "xy": [
+        10.6,
+        -4.8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o106",
+      "hidden": false,
+      "locked": false,
+      "type": "parallelogram",
+      "refs": [
+        "o103",
+        "o104",
+        "o105"
+      ],
+      "name": "ParallelogramP",
+      "style": {
+        "stroke": "#177f83",
+        "fill": "#b8f1e4",
+        "width": 2,
+        "opacity": 0.6,
+        "fillEnabled": true
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o107",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o103",
+        "o104",
+        "o105"
+      ],
+      "edgeOf": "o106",
+      "edgeIndex": 0,
+      "name": "Segment 107",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o108",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o103",
+        "o104",
+        "o105"
+      ],
+      "edgeOf": "o106",
+      "edgeIndex": 1,
+      "name": "Segment 108",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o109",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o103",
+        "o104",
+        "o105"
+      ],
+      "edgeOf": "o106",
+      "edgeIndex": 2,
+      "name": "Segment 109",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o110",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o103",
+        "o104",
+        "o105"
+      ],
+      "edgeOf": "o106",
+      "edgeIndex": 3,
+      "name": "Segment 110",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o111",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "RR1",
+      "xy": [
+        14,
+        -8
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o112",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "RR2",
+      "xy": [
+        18,
+        -7.5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o113",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "RR3",
+      "xy": [
+        18,
+        -4.7
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o114",
+      "hidden": false,
+      "locked": false,
+      "type": "rectangle",
+      "refs": [
+        "o111",
+        "o112",
+        "o113"
+      ],
+      "name": "SkewRectangle",
+      "style": {
+        "stroke": "#177f83",
+        "fill": "#b8f1e4",
+        "width": 2,
+        "opacity": 0.6,
+        "fillEnabled": true
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o115",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o111",
+        "o112",
+        "o113"
+      ],
+      "edgeOf": "o114",
+      "edgeIndex": 0,
+      "name": "Segment 115",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o116",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o111",
+        "o112",
+        "o113"
+      ],
+      "edgeOf": "o114",
+      "edgeIndex": 1,
+      "name": "Segment 116",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o117",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o111",
+        "o112",
+        "o113"
+      ],
+      "edgeOf": "o114",
+      "edgeIndex": 2,
+      "name": "Segment 117",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o118",
+      "hidden": false,
+      "locked": false,
+      "type": "segment",
+      "refs": [
+        "o111",
+        "o112",
+        "o113"
+      ],
+      "edgeOf": "o114",
+      "edgeIndex": 3,
+      "name": "Segment 118",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o119",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "PL1",
+      "xy": [
+        9,
+        2
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o120",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "PL2",
+      "xy": [
+        11,
+        3
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o121",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "PL3",
+      "xy": [
+        12,
+        1
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o122",
+      "hidden": false,
+      "locked": false,
+      "type": "point",
+      "name": "PL4",
+      "xy": [
+        13,
+        2.5
+      ],
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1,
+        "pointSize": 5,
+        "pointShape": "solid"
+      },
+      "pointLabelMode": "latex"
+    },
+    {
+      "id": "o123",
+      "hidden": false,
+      "locked": false,
+      "type": "polyline",
+      "refs": [
+        "o119",
+        "o120",
+        "o121",
+        "o122"
+      ],
+      "name": "PolylinePath",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o124",
+      "hidden": false,
+      "locked": false,
+      "type": "function",
+      "name": "wave",
+      "expr": "sin(x)+0.25*cos(3*x)",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    },
+    {
+      "id": "o125",
+      "hidden": false,
+      "locked": false,
+      "type": "node",
+      "name": "NodeSource",
+      "xy": [
+        -9,
+        2.5
+      ],
+      "text": "V",
+      "fontSize": 17,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "textMode": "latex"
+    },
+    {
+      "id": "o126",
+      "hidden": false,
+      "locked": false,
+      "type": "node",
+      "name": "NodeTarget",
+      "xy": [
+        -6,
+        2.5
+      ],
+      "text": "W",
+      "fontSize": 17,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "textMode": "latex"
+    },
+    {
+      "id": "o127",
+      "hidden": false,
+      "locked": false,
+      "type": "node",
+      "name": "NodeLower",
+      "xy": [
+        -7.5,
+        0.7
+      ],
+      "text": "X",
+      "fontSize": 17,
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "textMode": "latex"
+    },
+    {
+      "id": "o128",
+      "hidden": false,
+      "locked": false,
+      "type": "morphism",
+      "refs": [
+        "o125",
+        "o126"
+      ],
+      "text": "f",
+      "bend": 0,
+      "name": "Morphism 128",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 1,
+        "opacity": 1
+      },
+      "textMode": "latex",
+      "labelAvoid": true,
+      "routing": "direct",
+      "labelDistance": 10
+    },
+    {
+      "id": "o129",
+      "hidden": false,
+      "locked": false,
+      "type": "morphism",
+      "refs": [
+        "o125",
+        "o127"
+      ],
+      "text": "g",
+      "bend": 0,
+      "name": "Morphism 129",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 1,
+        "opacity": 1
+      },
+      "textMode": "latex",
+      "labelAvoid": true,
+      "routing": "direct",
+      "labelDistance": 10
+    },
+    {
+      "id": "o130",
+      "hidden": false,
+      "locked": false,
+      "type": "morphism",
+      "refs": [
+        "o127",
+        "o126"
+      ],
+      "text": "h",
+      "bend": 0,
+      "name": "Morphism 130",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 1,
+        "opacity": 1
+      },
+      "textMode": "latex",
+      "labelAvoid": true,
+      "routing": "direct",
+      "labelDistance": 10
+    },
+    {
+      "id": "o131",
+      "hidden": false,
+      "locked": false,
+      "type": "text",
+      "name": "Title_1",
+      "xy": [
+        -10.2,
+        8
+      ],
+      "text": "I. Dynamic triangle geometry",
+      "fontSize": 21,
+      "style": {
+        "stroke": "#172946",
+        "fill": "#172946",
+        "width": 1.5,
+        "opacity": 1
+      },
+      "textMode": "plain"
+    },
+    {
+      "id": "o132",
+      "hidden": false,
+      "locked": false,
+      "type": "text",
+      "name": "Title_2",
+      "xy": [
+        10.7,
+        8
+      ],
+      "text": "II. Conics, splines and arcs",
+      "fontSize": 21,
+      "style": {
+        "stroke": "#172946",
+        "fill": "#172946",
+        "width": 1.5,
+        "opacity": 1
+      },
+      "textMode": "plain"
+    },
+    {
+      "id": "o133",
+      "hidden": false,
+      "locked": false,
+      "type": "text",
+      "name": "Title_3",
+      "xy": [
+        -9.8,
+        -10.6
+      ],
+      "text": "III. Affine transformations",
+      "fontSize": 21,
+      "style": {
+        "stroke": "#172946",
+        "fill": "#172946",
+        "width": 1.5,
+        "opacity": 1
+      },
+      "textMode": "plain"
+    },
+    {
+      "id": "o134",
+      "hidden": false,
+      "locked": false,
+      "type": "text",
+      "name": "Title_4",
+      "xy": [
+        1,
+        -10.6
+      ],
+      "text": "IV. Derived regular polygons",
+      "fontSize": 21,
+      "style": {
+        "stroke": "#172946",
+        "fill": "#172946",
+        "width": 1.5,
+        "opacity": 1
+      },
+      "textMode": "plain"
+    },
+    {
+      "id": "o135",
+      "hidden": false,
+      "locked": false,
+      "type": "text",
+      "name": "Title_5",
+      "xy": [
+        -9.5,
+        4.5
+      ],
+      "text": "V. Commutative diagram",
+      "fontSize": 21,
+      "style": {
+        "stroke": "#172946",
+        "fill": "#172946",
+        "width": 1.5,
+        "opacity": 1
+      },
+      "textMode": "plain"
+    },
+    {
+      "id": "o136",
+      "hidden": false,
+      "locked": false,
+      "type": "freehand",
+      "name": "FreehandWave",
+      "path": [
+        [
+          18,
+          -8.23499399400439
+        ],
+        [
+          18.04054054054054,
+          -8.34194503109657
+        ],
+        [
+          18.08108108108108,
+          -8.435899384713629
+        ],
+        [
+          18.12162162162162,
+          -8.506709283998081
+        ],
+        [
+          18.16216216216216,
+          -8.548663697455991
+        ],
+        [
+          18.2027027027027,
+          -8.561391817797018
+        ],
+        [
+          18.243243243243242,
+          -8.549730001337334
+        ],
+        [
+          18.283783783783782,
+          -8.522583582228501
+        ],
+        [
+          18.324324324324323,
+          -8.491011227425501
+        ],
+        [
+          18.364864864864863,
+          -8.465911081560082
+        ],
+        [
+          18.405405405405407,
+          -8.455765235661422
+        ],
+        [
+          18.445945945945947,
+          -8.46488693935141
+        ],
+        [
+          18.486486486486488,
+          -8.492515850760245
+        ],
+        [
+          18.527027027027028,
+          -8.532939891053102
+        ],
+        [
+          18.56756756756757,
+          -8.576620574446627
+        ],
+        [
+          18.60810810810811,
+          -8.612101494001207
+        ],
+        [
+          18.64864864864865,
+          -8.628325551629016
+        ],
+        [
+          18.68918918918919,
+          -8.616905690991686
+        ],
+        [
+          18.72972972972973,
+          -8.573902157220683
+        ],
+        [
+          18.77027027027027,
+          -8.500755072804205
+        ],
+        [
+          18.81081081081081,
+          -8.404185673228517
+        ],
+        [
+          18.85135135135135,
+          -8.295080720576928
+        ],
+        [
+          18.89189189189189,
+          -8.18657307416738
+        ],
+        [
+          18.93243243243243,
+          -8.091688337827716
+        ],
+        [
+          18.972972972972972,
+          -8.02101223447537
+        ],
+        [
+          19.013513513513512,
+          -7.98082931112617
+        ],
+        [
+          19.054054054054053,
+          -7.972091542807128
+        ],
+        [
+          19.094594594594593,
+          -7.99041337944333
+        ],
+        [
+          19.135135135135137,
+          -8.027089448769697
+        ],
+        [
+          19.175675675675677,
+          -8.070931662788835
+        ],
+        [
+          19.216216216216218,
+          -8.110562874803064
+        ],
+        [
+          19.256756756756758,
+          -8.1367156978921
+        ],
+        [
+          19.2972972972973,
+          -8.144084921014242
+        ],
+        [
+          19.33783783783784,
+          -8.132370157940699
+        ],
+        [
+          19.37837837837838,
+          -8.10630466256783
+        ],
+        [
+          19.41891891891892,
+          -8.074665460062425
+        ],
+        [
+          19.45945945945946,
+          -8.048460087330016
+        ],
+        [
+          19.5,
+          -8.0386471380107
+        ],
+        [
+          19.54054054054054,
+          -8.053839777276337
+        ],
+        [
+          19.58108108108108,
+          -8.098445420746248
+        ],
+        [
+          19.62162162162162,
+          -8.171610053484121
+        ],
+        [
+          19.66216216216216,
+          -8.267178754124895
+        ],
+        [
+          19.7027027027027,
+          -8.374685564140156
+        ],
+        [
+          19.743243243243242,
+          -8.481184704922098
+        ],
+        [
+          19.783783783783782,
+          -8.573570631826028
+        ],
+        [
+          19.824324324324323,
+          -8.640938701113328
+        ],
+        [
+          19.864864864864863,
+          -8.676530036410384
+        ],
+        [
+          19.905405405405407,
+          -8.678885124072767
+        ],
+        [
+          19.945945945945947,
+          -8.651984919917203
+        ],
+        [
+          19.986486486486488,
+          -8.604355655707822
+        ],
+        [
+          20.027027027027028,
+          -8.547315497719621
+        ],
+        [
+          20.06756756756757,
+          -8.492708247900149
+        ],
+        [
+          20.10810810810811,
+          -8.450568740225926
+        ],
+        [
+          20.14864864864865,
+          -8.427177039439812
+        ],
+        [
+          20.18918918918919,
+          -8.423881584175295
+        ],
+        [
+          20.22972972972973,
+          -8.436920109522635
+        ],
+        [
+          20.27027027027027,
+          -8.458271153856884
+        ],
+        [
+          20.31081081081081,
+          -8.477366566384465
+        ],
+        [
+          20.35135135135135,
+          -8.483326292611384
+        ],
+        [
+          20.39189189189189,
+          -8.46727392661859
+        ],
+        [
+          20.43243243243243,
+          -8.424275203046799
+        ],
+        [
+          20.472972972972972,
+          -8.354514962955008
+        ],
+        [
+          20.513513513513512,
+          -8.263476827429571
+        ],
+        [
+          20.554054054054053,
+          -8.161084772796833
+        ],
+        [
+          20.594594594594597,
+          -8.059968891293813
+        ],
+        [
+          20.635135135135137,
+          -7.973189116758835
+        ],
+        [
+          20.675675675675677,
+          -7.911857047778119
+        ],
+        [
+          20.716216216216218,
+          -7.883116400029463
+        ],
+        [
+          20.756756756756758,
+          -7.888873063045617
+        ],
+        [
+          20.7972972972973,
+          -7.925519813648103
+        ],
+        [
+          20.83783783783784,
+          -7.984706972275778
+        ],
+        [
+          20.87837837837838,
+          -8.055006558258578
+        ],
+        [
+          20.91891891891892,
+          -8.124143631837155
+        ],
+        [
+          20.95945945945946,
+          -8.181358488490433
+        ],
+        [
+          21,
+          -8.219438690544148
+        ]
+      ],
+      "closed": false,
+      "curveShape": "free",
+      "curveRegular": true,
+      "curveLine": "dotted",
+      "curveHeads": "end",
+      "style": {
+        "stroke": "#000000",
+        "fill": "#000000",
+        "width": 2,
+        "opacity": 1
+      },
+      "displayLabelMode": "latex"
+    }
+  ],
+  "nextId": 137,
+  "algebra": {
+    "sliders": [
+      {
+        "name": "t",
+        "min": -1.4,
+        "max": 1.4,
+        "step": 0.05,
+        "value": 0.55,
+        "xy": [
+          -10,
+          6.8
+        ],
+        "visible": true,
+        "playSpeed": 0.35,
+        "playMode": "oscillatory"
+      }
+    ]
+  }
+}
