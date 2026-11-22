@@ -44,3 +44,11 @@ test('Tutorial navigation includes every published chapter and quick-path target
  for(const id of quickIds)assert.ok(sectionIds.includes(id),`Broken quick path ${id}`);
  assert.doesNotMatch(html,/User guide · Round \d+|使用指南 · 第 \d+ 轮/);
 });
+test('Public tutorial uses current user guidance rather than release-history language',()=>{
+ const guide=html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/)?.[1];
+ assert.ok(guide,'Public tutorial main content exists');
+ const visible=guide.replace(/<[^>]*>/g,' ').replace(/&[^;]+;/g,' ');
+ for(const pattern of [/\bround\s*\d+\b/i,/\bpreviously saved legacy\b/i,/\b(?:now|recently) (?:refines?|preserves?|uses?|supports?|fixes?)\b/i,/\b(?:regression|release notes|changelog)\b/i,/不再有添加按钮|不再显示副标题|不再需要“对象”类型下拉框|程序现在会|修复部分由近零采样引起的裂缝/]){
+  assert.doesNotMatch(visible,pattern,`Release-history wording found: ${pattern}`);
+ }
+});
