@@ -958,6 +958,28 @@ function alignReaderNavigationToSurface(page, ratio, targetLead) {
   return true;
 }
 
+// Page-local positions cannot be brought near the viewport top if the browser
+// has no room to scroll beyond the end of a short/zoomed-out PDF page. This is
+// especially visible in single-page mode, where scrollTop may be clamped to 0
+// despite a valid heading ratio. Reserve only the required trailing scroll
+// space for a position jump; normal page-top navigation clears it. The margin
+// belongs to the page surface (not the canvas/text overlay) so all coordinate
+// systems remain unchanged. In continuous mode only the final page needs a
+// trailing reserve; preceding pages already have later pages to scroll into.
+function ensureReaderPositionScrollRange(page, ratio, lead) {
+  const targetRatio = Number(ratio);
+  const needTail = Number.isFinite(targetRatio) && targetRatio > 0.025;
+  const reserve = needTail ? Math.max(0, primaryCanvasWrap.clientHeight - Math.max(0, Number(lead) || 0) - 24) : 0;
+  if (readingFlow === 'continuous') {
+    if (typeof continuousStack !== 'undefined' && continuousStack?.style) continuousStack.style.paddingBottom =
+      needTail && Number(page) === pdfDoc?.numPages ? `${reserve}px` : '';
+    if (primaryPageSurface?.style) primaryPageSurface.style.marginBottom = '';
+  } else {
+    if (primaryPageSurface?.style) primaryPageSurface.style.marginBottom = needTail ? `${reserve}px` : '';
+    if (typeof continuousStack !== 'undefined' && continuousStack?.style) continuousStack.style.paddingBottom = '';
+  }
+}
+
 // A newer navigation or document switch must never be pulled backwards by
 // an older request's post-render frame correction.
 let readerNavigationSerial = 0;
@@ -984,6 +1006,7 @@ async function goToLocation(page, ratio = 0, { contextLead = true, recordHistory
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
   const targetLead = contextLead ? navigationTargetLeadPx() : 0;
+  ensureReaderPositionScrollRange(next, localRatio, targetLead);
   const changed = next !== currentPage;
   currentPage = next;
   hideSelectionToolbar();

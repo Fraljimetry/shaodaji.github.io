@@ -144,6 +144,7 @@ with sync_playwright() as p:
           let readingFlow='continuous',currentPage=1,continuousGeneration=1,continuousSavedAnchor=null;
           let primaryPageSurface=null,canvas=null,suppressReadingHistory=true;
           const continuousPageNodes=window._readerNodes,scrollByPage={},generalPrefs={recordReadingTrail:false};
+          const continuousStack=document.getElementById('reader');
           function hideSelectionToolbar(){} function updateNavigationState(){}
           function persistDocumentState(){} function nextFrame(){return new Promise(r=>requestAnimationFrame(r));}
           async function renderContinuousPage(){return true;}
