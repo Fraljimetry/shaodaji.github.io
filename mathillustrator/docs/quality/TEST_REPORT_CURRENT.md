@@ -1,3 +1,85 @@
+## Round 299 — Archived-browser inventory and verification evidence hardening (2026-11-22)
+
+**Source provenance:** user-supplied complete Round 284 ZIP, then cumulative website-root overlays Round 285 through Round 298 applied in order. This round changes verification files only; no production application modules.
+
+**New fail-closed safeguards:**
+1. The frozen inventory now includes **all 318 Python test and verification files** (including 295 archived `browser_*.py` scripts). Removal of a previously accepted browser script/helper is now a gate failure, rather than silently reducing historical coverage.
+2. A new Python source syntax check parses **every** test/verification `.py` file via `ast.parse` without writing bytecode. Syntax failures fail the release gate before browser execution. This is syntax certification, not a claim that every archived script was executed.
+3. Coverage evidence must identify the **exact test file** resolved from the repository root, not a filename that merely ends with the catalogued test path. A deliberately forged suffix-path evidence record is rejected.
+4. Four additional high-value historical Chromium suites are integrated into local/release gates: 2D interaction/contour sweep, inversion geometry glyph invariant, dependent geometry/undo/JSON, and TikZ-cd export fidelity. Selected Chromium checks increase from 27 to **31**.
+
+**Verification:** release-gate unit tests **22/22 PASS** (including deleted-browser, broken-Python and forged-path negative cases); production JavaScript syntax **37/37 PASS**; Python syntax **318/318 PASS**. **Final fresh local-gate rerun:** **40/40 PASS**, 0 FAIL/INCOMPLETE; **855/855 Node tests**, **37/37 JavaScript source syntax**, **318/318 Python test/helper syntax**, **310,000/310,000 mathematical-property trials**, **31/31 real local Chromium suites**, and **28/28 scoped catalog operations verified from same-run evidence**. Baseline inventory and performance/cache suites passed. Gate JSON evidence recorded at `/mnt/data/mi299_final_v2.json` in this execution environment.
+
+**Scope discipline:** The 295 archived browser scripts are inventoried and statically parsed. The local gate executes 31 selected Chromium suites, **not all 295 archived scripts**. The 28-operation mathematical catalog is similarly scoped and does not imply exhaustive UI/geometry coverage. Hosted deployment and physical GPU execution are separate environments. No production defect was established by this verification-infrastructure work.
+
+---
+
+## Round 298 — Verification completeness hardening (2026-11-22)
+
+**Source provenance:** complete user-supplied Round 284 project ZIP with cumulative Round 285–297 website-root overlays applied in order and Round 297 files hash-checked. Verification-only changes; application source and user interface unchanged.
+
+**Confirmed verification-system weaknesses repaired:**
+1. An exit-zero Chromium script could be recorded as PASS without any positive execution evidence (e.g., no output). The gate now requires an affirmative pass report (or the export-fidelity script's structured completion evidence); empty/irrelevant output is INCOMPLETE.
+2. The coverage reporter previously trusted the textual `PASS` status in JSON evidence without requiring `returnCode=0`. Operation and mathematical-property evidence now require both.
+3. Discovery-only source syntax and Node runs could remain green if previously covered source/test modules were deleted. A frozen Round 297 baseline inventory (37 source modules and 187 Node test modules) now fails closed on missing files, while allowing additions.
+4. Release-gate self-tests now exercise missing modules, fabricated nonzero-exit coverage evidence, empty/false browser reports, and the presence of executable assertions in each selected browser script. Historical top-level-run scripts are explicitly recognized as valid entrypoints.
+5. The local/release verification profiles now include nine additional high-risk real-Chromium suites for programmatic constructions, Property/Expression synchronization, concurrent sliders, translation, recent field synchronization, two implicit-mesh regressions, 400-cycle atlas soak, and unnamed point compatibility. Selection increases from 18 to **27** browser suites.
+
+**Fresh acceptance (final integrated local-gate rerun):**
+- Node regression suite: **855/855 PASS**, 187/187 modules, zero failed/skipped/todo.
+- All production JavaScript module syntax: **37/37 PASS**.
+- Python browser/test file static parsing: **317/317 PASS**.
+- Mathematical property families: **310,000/310,000 trials PASS** at 10,000 cases per family.
+- Real local Chromium: **27/27 selected suites PASS**, including the 400-cycle atlas soak.
+- Coverage catalog: **28/28 scoped operations verified from same-run execution evidence**.
+- Harness integrity self-tests: **19/19 PASS**; negative cases rejected as intended.
+- Frozen baseline inventory: **37 source + 187 Node modules present**.
+- Integrated local gate: **35/35 PASS**, 0 FAIL, 0 INCOMPLETE.
+
+**Scope:** 295 historical `browser_*.py` files exist, including helpers and archived regressions. The local gate intentionally selects 27 current/high-risk Chromium workflows; 295/295 execution is not claimed. Similarly, inline local Chromium is not a test of hosted deployment or physical devices. Hosted URL DNS resolution was unavailable in this execution environment. These outside-profile cases are not silently labeled PASS. No confirmed application regression was found.
+
+**Result:** LOCAL VERIFICATION GATE PASS; HARNESS SELF-TEST PASS; no production-code changes. Only verification infrastructure, frozen inventory, and this report are delivered.
+
+---
+
+## Round 297 — Verification-of-verification audit (2026-11-22)
+
+**Baseline:** the supplied complete Round 284 source archive with changed-files overlays Round 285–296 applied in order. Audit changes are confined to the verification runner, its browser smoke test, new harness self-tests, and this report. No production application code changes.
+
+**Inventory and interpretation:** 37 production `.mjs` modules, 187 `*.test.mjs` Node test modules, 295 `browser_*.py` scripts including the smoke helper, and nine `*.pending.*` historical experiment fixtures. The original coverage catalog contains **28 scoped operation families**, rather than an exhaustive map of current mathematical tools, UI workflows, supported platforms, or object types. Round 296's 31 selected Chromium suites must not be described as execution of every archived browser script. Merely being present, parseable, or catalogued is not PASS evidence.
+
+**Confirmed harness issues and corrections:**
+1. The quick gate called a **catalog-only** validation `coverage-evidence`, although it proved **0 executed operations**. It now calls it `coverage-catalog` and explicitly records `coverageEvidenceExecuted=false`. Local/release use actual execution evidence.
+2. Browser scripts use Python `assert`, which optimization can disable. The gate now returns **INCOMPLETE** rather than running a potentially vacuous test under `PYTHONOPTIMIZE`/optimized Python.
+3. A Node command could exit 0 without executing tests, or with skipped/todo cases. The gate now checks its TAP summary for a positive test count, all passing, and no skipped/todo/failed cases; missing or skipped assertions cannot count as PASS.
+4. Missing application modules could be misclassified as missing verification prerequisites. Only explicitly recognized missing browser/tooling prerequisites yield INCOMPLETE; code errors yield FAIL. Timeouts remain FAIL.
+5. The old whole-suite 180-second Node deadline was prone to resource-contention false failures. The gate now uses bounded `--test-concurrency=2` and a 900-second full-suite deadline, without excluding any discovered Node test modules.
+6. The built-in browser smoke assumed Find was always visible; the current UI defaults to Algebra. The smoke now switches to Find, verifies search, then switches back; its complete real-Chromium workflow passes.
+7. The local/release gate previously omitted recent Algebra, transformations, clipboard/history, geometry atlas, export fidelity and implicit-mesh browser regressions. Eight current-generation Chromium suites are now included. The report inventories the larger browser archive so that selected coverage is never mistaken for exhaustive coverage.
+
+**Fresh independent acceptance:**
+- Verification harness self-tests: **11/11 PASS**, including intentionally empty/skipped Node summaries, module missing, timeout, disabled Python assertions, missing prerequisites, hosted-URL refusal, and catalog-only scope semantics.
+- Python parsing across all test directories: **317/317 files PASS** (syntax evidence only, not browser execution).
+- Quick profile: **7/7 checks PASS**, including the full **855/855 Node tests**, 37/37 production JavaScript syntax, **37,200 property trials**, and three Chromium browser checks. Catalog validity is PASS, **not** operation-execution certification.
+- Local profile: **25/25 checks PASS**, **855/855 Node tests**, **37/37 JavaScript syntax**, **310,000 property trials**, **18/18 selected Chromium checks**, performance/cache checks, and **28/28 scoped operations** supported by executed evidence.
+- Browser smoke after UI correction: PASS independently in Chromium (startup, construction, Find, SVG/PNG/JSON, TikZ-cd, undo/redo, property editing).
+
+**Final certification boundary:** This audit establishes that the **quick and local verification profiles now correctly represent their own scoped execution**. The remaining historical browser archive was inventoried, not executed as an exhaustive 295-script battery. The inline Chromium fixture rewrites module URLs for isolation and is not equivalent to a public hosted deployment; hosted-site, physical-device/GPU certification, and exhaustive per-constructor independent mathematical oracles are not inferred from these local tests. The existing release profile requires an explicit HTTPS hosted URL and must report INCOMPLETE without it. This is a finding about verification coverage, **not** a confirmed production defect or a reason to relabel unrun checks PASS.
+
+**Result:** QUICK PASS; LOCAL PASS; HARNESS SELF-TEST PASS; no production-code defect reproduced. Full application/platform certification is not claimed.
+
+---
+
+## Round 293 — 2D object shortcut compatibility (2026-11-22)
+
+- **Baseline:** authoritative Round 284 source with verified cumulative overlays through Round 292. No MathReader or unrelated files changed.
+- **Existing behavior:** Delete/Backspace, Ctrl/Cmd+Z and Ctrl/Cmd+Y already existed for selected objects (single-object delete before this change).
+- **Added:** Ctrl/Cmd+C copy, Ctrl/Cmd+V paste, Ctrl/Cmd+X cut, Ctrl/Cmd+D duplicate, Ctrl/Cmd+A select all when drawing/Objects list has focus. Delete now handles all selected 2D objects in one atomic undo step and retains lock/dependent protections.
+- **Semantics:** in-editor clipboard is tab-local and does not modify OS clipboard; copy snapshots selected objects and their transitive defining geometry (fresh IDs and unique automatic names); cut also retains dependent descendants; paste shifts free-positioned anchors and freehand paths by 0.5 units per successive paste; computed geometry updates through its duplicated references. Text controls, composition, dialogs and 3D remain unaffected.
+- **Fresh verification:** 5/5 new pure-model clipboard cases PASS, module-graph versioning PASS; 1/1 real Chromium shortcut suite PASS (copy, paste, cut, duplicate, select all, delete, textbox focus and undo/redo); Round 290 Algebra browser matrix PASS, Round 292 transformation browser matrix PASS, Round 286 atlas interactions/120-cycle stress PASS. 37/37 source .mjs syntax PASS.
+- **Full Node regression:** 186 modules / 849 tests accounted for. In the first sweep, 848 passed and a module-graph cache-version assertion failed; after fixing the module URL, the failing test reran PASS. All 28 tests in the final batch passed separately. Therefore 849/849 green across the completed and targeted reruns; this was not one uninterrupted full-suite exit-zero invocation.
+- **Other constraints:** browser and headless Chromium checks run locally (not on hosted site). git diff --check cannot run in this source snapshot because no .git metadata is present. No Git commit or hosted-service action performed.
+
 ## Final bounded stabilization and verification closure (2026-11-21)
 
 - **Source provenance**: user-uploaded `mathillustrator(20261121-223927).zip` (727 archive entries), followed by the cumulative post-R279 gap-closure overlay (9 files). Only changed test and quality files are included in the final cumulative patch. Production source, assets, tutorial and requirements are unchanged.
@@ -3066,3 +3148,110 @@ Round 261 executed locally: Node 741/741 PASS; source JavaScript syntax 36/36 PA
 - **Numerics:** Round 287 two analytic-oracle Node tests PASS on fresh rerun. Previously reported 788/788 full Node tests and 36/36 syntax checks are Round 287 historical results, **not rerun in full** during Round 288 because no source file was modified. Round 288 Python browser test passes Python compilation and execution.
 - **Defects:** none newly reproduced. No MathIllustrator production source, MathReader, settings, or services changed. No Git commit. This round is verification-only.
 - **Explicit unverified scope:** exhaustive independent analytic oracle for all 39 object types, multi-hour/device-browser memory longevity, external SVG rendering engines, native touchscreen/physical hardware GPU, complete historical Chromium inventory, and live hosted deployment. These require distinct environments or significantly larger test scope; they are not reported as passed or as confirmed defects. Targeted stabilization is closed unless future user evidence reproduces a specific malfunction.
+
+
+## Round 289 — optional names for 2D Algebra constructors (independent verification)
+
+Baseline: Round 284 source with Round 285–288 test/documentation overlays. No production code modified.
+
+- Confirmed `segment(a,b)` (lowercase, no assignment) creates a segment and assigns an automatic name; repeated commands receive distinct IDs/names.
+- Node: 4 new cases PASS across Pascal/camel/snake naming conventions and existing named/semantic construction coexistence; focused 21/21 tests PASS.
+- Real Chromium: new `browser_round289_unnamed_2d_constructor.py` PASS; existing Round 240 and 251 browser regressions PASS.
+- Browser verified dependent references, invalid-input rollback, editable Expression, point-coordinate changes, undo/redo; page errors zero.
+- Syntax: `node --check` on app.mjs, model.mjs, construction_expression.mjs PASS.
+- Existing behavior was already implemented, so no speculative change to the parser, object model, UI, or exports.
+
+- Final complete Node sweep: 183 test modules, 792/792 PASS, 0 failed, 0 skipped. The final three modules were run separately after the 15-batch combined command reached its execution limit; all three returned exit 0 (4 + 6 + 6 tests).
+- Final JavaScript syntax: all 36 source `.mjs` files PASS. Real Chromium: 3/3 targeted scripts PASS.
+
+
+### Round 290 — 2D Algebra unnamed-creation compatibility audit
+- Baseline: authoritative Round 284 source plus cumulative Round 285–289 overlays. Production changes limited to unified 2D Algebra input dispatch, semantic morphism creation, and atomic slider creation.
+- Audited all listed 2D Algebra construction families for named/unnamed parity, including straight objects, conics, dependent points, polygons, curves, diagrams, transforms, constrained constructions, and slider-driven objects.
+- Confirmed gaps: unnamed coordinate tuples and sliders had no input route; named Morphism was rejected although unnamed Morphism succeeded; direct invalid slider creation mutated the document before failing validation.
+- Added one shared submit path for old and new Algebra syntax; named commands unchanged. Added automatic slider identifier allocation and name-free coordinate points. Unified named/unnamed Morphism via its existing diagram command implementation; rejected sliders roll back.
+- Fresh Node suite: **842/842 PASS**, **184** test modules, **0 failed**, **0 skipped**, executed in 11 bounded batches. 36/36 production JavaScript syntax checks PASS.
+- Real Chromium: 12 targeted 2D Algebra regressions PASS (Round 228, 236, 238, 240, 251, 253, 256, 257, 259, 264, 289, 290), with zero observed page exceptions in the new Round 290 test.
+- Round 290 constructor matrix: 47 named/unnamed structural cases plus slider/point/legacy syntax checks, 50/50 Node assertions PASS. Serialization and dependent-slider recomputation validated.
+- Hosted deployment was not changed or tested. No existing application services were started or stopped.
+
+
+### Round 291 — independent full Round 290 acceptance verification
+
+- **Authoritative baseline:** the supplied complete MathIllustrator source ZIP with Round 285–290 overlays present in the local verified working tree. No production JavaScript changes in this round.
+- **Complete Node sweep:** reran each of the 184 `tests/*.test.mjs` modules independently using Node v22.16.0. **842/842 test assertions PASS, 0 failed**. Per-file results checked by subprocess exit code and TAP failure count. All 184 files completed.
+- **Syntax:** directly ran `node --check` for all 36 production source `.mjs` modules: **36/36 PASS**.
+- **Real headless Chromium:** 19/19 selected scripts PASS: Round 228, 236, 238, 240, 251, 253, 256, 257, 259, 264, 280, 281, 284, 285, 286, 287, 288, 289 and 290. Includes old Algebra input and expression synchronization, named/unnamed constructors, automatic coordinates/sliders, dependency and rollback, persistence, atlas interactions, 3D implicit surfaces, SVG/PNG pixel fidelity and a 400-iteration atlas soak. All returned exit code zero.
+- **Geometry atlas:** imported 136 objects in the Round 285 browser check. Round 287 pixel agreement passed in both themes at 1970×1804. Round 288 400-iteration soak passed, 0 page errors, max 200 SVG nodes, ~18.07 seconds, sampled GC heap ~68.7–69.95 MB.
+- **Defects:** no newly reproduced defects or test failures in these acceptance checks; therefore no speculative application changes. This independently closes the Round 290 change set against the defined regression suite.
+- **Environment boundary:** Chromium tests used the existing isolated `inline_html` browser fixture; this is real headless Chromium execution but not a fresh deployment of the public website or an exhaustive all-browser hardware certification. Such environment claims are not part of this source-level acceptance result.
+- **Scope of overlay:** this documentation file only. No MathReader, services, environment, secrets or Git commits touched.
+
+
+### Round 292 — non-point transformation compatibility audit
+- **Baseline:** uploaded complete Round 284 ZIP plus applied cumulative 285–291 overlays, using Round 290's source files. Changed production module: `src/geometry_round50.mjs` only.
+- **Reproduced red/green:** ordinary free strokes were omitted (`r50SourceShape` returned `[]`), and spline transforms followed control chords rather than the renderer's Catmull–Rom curve. The new matrix failed on the original Round 291 source and passed after the fix.
+- **Compatibility catch:** first broad sweep exposed a previous exact tiny two-point spline incidence requirement (Round 83); preserved the two-point path and reran. No existing regression tests weakened.
+- **Full Node sweep:** 185/185 test modules completed in bounded batches, **844/844 assertions passed**, 0 failed, 0 skipped, no unfinished modules.
+- **Syntax:** 36/36 source JavaScript modules passed `node --check`.
+- **Mathematics:** 14 visual geometric source families × three affine transformations, plus reflection and inversion checks, with sampling parity, analytic roles, references, dependent recalculation, schema validation and JSON round-trip. The new tests add 2 assertions groups.
+- **Real headless Chromium:** new 7-object transform Algebra/DOM test passed; Round 290 Algebra compatibility, Round 286 atlas interactions, Round 51H derived geometry, and Round 51T geometry checks passed.
+- **Historical browser test classified stale (not PASS):** `browser_round50_geometry.py` hard-codes tool icon circle radii of 2px while current tool icons use 2.8px. It fails before its geometry construction assertions and is not used to claim a production transform defect or a passing suite.
+- **Scope:** user-defined geometric objects, not generic transformation of text, diagram nodes/morphisms or plotting layers. No SVG exact raster equivalence claimed in this round; source/mesh code and saved-project schema unchanged beyond the targeted curve source evaluator.
+
+## Round 294 — 2D clipboard usability and compatibility (2026-11-22)
+
+**Changes:** Ctrl/Cmd+Shift+V paste-in-place; conventional paste retains progressive 0.5-unit offsets; duplicate retains its usual initial offset. Copy/cut/paste feedback now includes selected and dependency counts; editing fields and unrelated focused controls retain browser shortcuts; Escape clears selection using existing behavior. Clipboard validation rejects missing/external or out-of-order dependencies, unknown roots and malformed identities before committing changes. Constant Algebra coordinate expressions translate correctly with paste offsets while nonconstant expressions remain unchanged.
+
+**Independent verification on cumulative Round 284–293 source and Round 294 patch:**
+- Full Node suite: 187 test modules, 855 test cases; initial run had one invalid newly authored fixture (inconsistent expression-derived point coordinates). Fixed the fixture and reran the complete affected six-module batch: 28/28 PASS. All other batches were passing, yielding 855/855 after rerun, 0 skipped. Not one uninterrupted green sweep.
+- JavaScript syntax: 37/37 `src/*.mjs` PASS.
+- Chromium: Round 293 clipboard compatibility PASS; Round 294 clipboard focus, repeated/in-place paste, Algebra-point coordinates, selection, undo/redo PASS; Round 290 Algebra matrix PASS; Round 292 transformation matrix PASS. No page exceptions in new clipboard suite.
+- Tests cover copy-closure validation, malformed snapshots and transactional rollback, paste in place, increasing offsets, automatic naming, expression compatibility, and toolbar/text-field focus.
+
+**Compatibility:** no project JSON schema changes; no system clipboard writes; no modification to 3D, geometry rendering, MathReader, or hosted services.
+
+
+## Round 295 — editing shortcut and trash/history consistency
+
+**Baseline:** Complete Round 284 ZIP plus cumulative overlays through Round 294, including latest modified app.mjs.
+
+**Production correction:** Duplicate uses a transient dependency-closed snapshot and does not mutate `copied2DObjects` or `paste2DCount`. Undo/Redo now carries matched Recently Deleted snapshots alongside the existing bounded JSON document history; deletion, cut and Restore transactions are reversed coherently. History eviction and external-tab history reset also clear matching trash-history states. Existing localStorage trash format remains unchanged.
+
+**Fresh checks:** All 37 source `.mjs` syntax checks PASS. Full Node suite: 187 modules / **855 assertions PASS** (29 initial batches: 778 passed, then 13 remaining modules individually: 77 passed; no failed modules, 0 skipped). Real Chromium: Round 295 editing-consistency, Round 293 object clipboard, Round 294 clipboard polish, Round 290 Algebra matrix, Round 292 transformation matrix, Round 45 3D trash storage, and Round 91/92 undo-history compatibility all PASS. One early Round 295 browser attempt timed out because the test clicked a hidden trash button; the corrected test invokes that button's existing handler and passes. No production fault was attributable to that browser-test issue.
+
+**Policy compatibility:** Select All retains existing selection of all 2D objects including hidden. Clipboard remains ephemeral in-tab and does not persist after reload. Both choices avoid introducing behavior changes or new storage/sync requirements. No MathReader, 3D renderer, project JSON schema, environment or services modified.
+
+## Round 296 — fresh comprehensive source-level verification (2026-11-22)
+
+**Authoritative input:** uploaded complete Round 284 ZIP and cumulative Round 285–295 changed-file overlays. The working source exactly matches the final Round 295 overlay for each of its five files. No application source or project schema was changed in this verification.
+
+**Fresh independent checks:**
+- Node: **187/187 test modules, 855/855 tests PASS**, 0 failures, 0 skipped, 0 unfinished. All 32 bounded process batches completed successfully (see execution evidence).
+- JavaScript: **37/37 production `.mjs` modules PASS** `node --check`.
+- Real Chromium: **31/31 selected suites PASS** after correcting four demonstrably obsolete legacy test assumptions, then rerunning the affected scripts. Scope spans clipboard/undo/history (Rounds 293–295), named/unnamed Algebra and coordinate/slider expressions (Rounds 228–290), 136-object atlas import/interaction/export and 400-cycle soak (Rounds 285–288), transformations and derived geometry, 3D export/sweep/trash, TikZ-cd and IMO diagrams, pixel export fidelity, glyph and inversion geometry.
+- The two older R51I/R51J glyph tests initially failed against old three-marker/radius-9 expectations. Current source and R57/R131 tests establish the intentional radius-8 inversion glyph with two inverse points, whose distance product is exactly R². The updated tests preserve that strict geometric invariant and passed in Chromium. R57 also had an obsolete inter-marker distance >11 requirement, corrected to the current >8 contract; it passed. R51B expected a removed palette shortcut for circle-circle intersections and obsolete glyph markers/radius; updated against the current 42 visible geometry tools and verified actual inversion, undo/redo, persistence and singularity interaction in Chromium. All four were test-only changes.
+- No new production defects were reproducible in this acceptance matrix. Tests were executed against local headless Chromium, not claimed as validation of a separately deployed hosted build or all possible browsers/hardware. The selected suites represent comprehensive risk-based source-level regression coverage, not execution of every historical browser test file.
+
+**Delivery:** four revised legacy Chromium tests and this report only. No MathReader, production JS, secrets, services, project persistence format, or Git commit changes.
+
+
+## Round 300 — verification self-test gate integration (2026-11-22)
+
+**Verified gap:** Round 299's 22 verification-harness self-tests were executed manually, but omitted from all integrated acceptance profiles. A future harness regression could therefore leave the gate green while its fail-closed protections had silently broken.
+
+**Correction:** Quick, Local and Release profiles now require the `verification-self-tests` check. This check explicitly rejects empty/missing `unittest` execution summaries, zero discovered tests, and missing success reports even when the child process exits zero. Three self-tests verify registration in all profiles, fail-closed empty discovery, and success/failure classification. The existing source/test inventory, coverage-evidence path validation, Node skip detection, and 31 selected Chromium workflows are preserved.
+
+**Fresh independent integrated Local run:** 41/41 PASS, 0 FAIL, 0 INCOMPLETE. Results include 25/25 verification-harness self-tests, 855/855 Node tests (0 skipped), 37/37 source JavaScript syntax checks, 318/318 Python syntax checks, 310,000 mathematical property trials, 31/31 selected real headless Chromium suites (including 400-cycle atlas stress), baseline-inventory check, cache/performance tests, and the scoped 28/28 execution-evidence coverage catalog. Results recorded in local run output `/mnt/data/mi300_final_gate_v2.json`, with child exit code zero.
+
+**Scope:** This patch changes only the verification runner, its self-tests, and this report. All 295 archived browser scripts remain inventoried and syntax checked; 31 were executed in this gate. This is not a claim of having run all 295 archival scripts or certified the hosted public deployment. No application source or persistence schema was changed.
+
+## Tutorial navigation and structure update (2026-11-22)
+
+**Confirmed usability issue:** the published guide contained 18 named sections, but its sidebar did not link to five important workflow/reference sections (editable constructions, semantic expressions, input completion, sliders in Construction input, and closed-curve fills). The introductory text did not provide task-oriented shortcuts, and the displayed footer retained an obsolete round number.
+
+**Correction:** the canonical `tutorial.html` now groups all 18 chapter links under four bilingual topic headings and adds four task-oriented entry paths. The original section IDs, content, function/Algebra reference, restrictions and English/Chinese text are preserved. Link focus styles and narrow-screen layout are improved, without changing the editor, math engine, persisted JSON or export code.
+
+**Targeted checks:** updated existing Node regression verifies every section anchor exactly once in sidebar navigation, bilingual labels and valid quick links. Independently executed real headless Chromium checks at 1440, 768 and 390 pixels verified visible English/Chinese navigation, internal links, hash navigation, lack of JavaScript errors and no page-level horizontal overflow. Full Local gate evidence is recorded separately in this update's accompanying validation output; do not treat archived browser inventory as executed coverage.
+
+**Fresh integrated Local result:** 41/41 checks PASS, 0 FAIL, 0 INCOMPLETE, exit code 0; Node 856/856 (one additional tutorial structure regression), JavaScript syntax 37/37, Python syntax 318/318, 310,000 mathematical property trials, selected real Chromium 31/31, and coverage-evidence validation PASS. Independent tutorial-specific real Chromium: 3 viewports × 2 languages PASS. No production editor changes. This is local-source acceptance, not a hosted deployment check.

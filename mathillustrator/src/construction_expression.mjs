@@ -1,5 +1,5 @@
 import {clone,command,parseExpression,validateDoc,append,appendDerivedShapeEdges,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint,functionSliderParameters} from './model.mjs?cut=mi266';
-import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement} from './algebra.mjs?cut=round254';
+import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement,createSlider,algebraPoint,SLIDER_PLAY_MODES} from './algebra.mjs?cut=round254';
 import {r50SourceShape,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=mi266';
 
@@ -221,7 +221,7 @@ const CREATE_SEMANTIC={
  CircleIntersection:'circleIntersection',CircleCircleIntersection:'circleCircleIntersection',
  Reflect:'transformCopy',Rotate:'transformCopy',Translate:'transformCopy',
  Dilate:'transformCopy',Invert:'transformCopy',Transform:'transformCopy',
- Text:'text',Node:'node',Point:'point',CircleDiameter:'circleDiameter',
+ Text:'text',Node:'node',Morphism:'morphism',Point:'point',CircleDiameter:'circleDiameter',
 };
 const CREATE_TRANSFORM={Reflect:'reflect',Rotate:'rotate',Translate:'translate',Dilate:'dilate',Invert:'invert'};
 const CREATE_DEFAULTS={
@@ -238,6 +238,13 @@ export function createSemanticConstruction(doc,source){
  if(!type)throw Error('Unsupported semantic constructor.');
  if(name&&(byName(doc,name)||doc.algebra?.sliders?.some(s=>s.name===name)))throw Error('Name already in use.');
  const temp=clone(doc),resolver=createResolver(temp);
+ if(kind==='Morphism'){
+  // Reuse the original strict diagram constructor for both named and unnamed
+  // submissions. It validates node roles, distinct endpoints, and label syntax.
+  const created=command(temp,rhs);if(name)created.name=name;
+  validateCandidate(temp);doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;
+  return doc.objects.find(o=>o.id===created.id);
+ }
  if(['Point','Text','Node'].includes(kind)){
   if(Object.keys(options).length)throw Error('Coordinate constructors do not accept options.');
   const needsLabel=kind!=='Point';
@@ -318,4 +325,48 @@ export function createSemanticConstruction(doc,source){
  // Assignment is atomic: no failed submission can alter the live scene.
  doc.objects.push(...temp.objects.slice(doc.objects.length));doc.nextId=temp.nextId;
  return doc.objects.find(o=>o.id===created.id);
+}
+
+/** The 2D Algebra input's single creation route. All existing named syntax is
+ * retained; unnamed coordinate tuples and sliders follow the same object and
+ * slider creation paths rather than maintaining a second model. The caller
+ * owns the usual undo transaction. */
+export function submit2DAlgebra(doc,source){
+ const text=String(source).trim();
+ if(!text)throw Error('Enter an Algebra construction.');
+ let match=text.match(/^(?:([A-Za-z][A-Za-z0-9_]*)\s*=\s*)?Slider\((.*)\)$/i);
+ if(match){
+  const raw=splitAlgebraArguments(match[2]);
+  if(raw.length<2||raw.length>6)throw Error('Use Slider(min, max[, step, value, speed, mode]).');
+  const last=raw.at(-1)?.trim().replace(/^['"]|['"]$/g,'').toLowerCase();
+  const hasMode=raw.length>=5&&SLIDER_PLAY_MODES.includes(last);
+  const mode=hasMode?last:'periodic';
+  if(raw.length===6&&!hasMode)throw Error('Slider mode must be periodic, oscillatory, or once.');
+  const args=(hasMode?raw.slice(0,-1):raw).map(x=>evaluateAlgebra(x));
+  let name=match[1];
+  if(!name){
+   // Slider names are valid Algebra identifiers, unlike display names such as
+   // "Segment 3"; never collide with existing object or slider names.
+   const occupied=new Set([...doc.objects.map(o=>o.name),...(doc.algebra?.sliders??[]).map(s=>s.name)]);
+   for(let i=1;i<=100000;i++){const candidate=`Slider${i}`;if(!occupied.has(candidate)){name=candidate;break;}}
+   if(!name)throw Error('Automatic slider names exhausted.');
+  }
+  return createSlider(doc,name,{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0],playSpeed:args[4]??1,playMode:mode});
+ }
+ match=text.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.*)\)$/);
+ if(match){
+  const xy=splitAlgebraArguments(match[2]);
+  if(xy.length!==2)throw Error('A point needs two coordinate expressions.');
+  return algebraPoint(doc,match[1],xy[0].trim(),xy[1].trim(),(d,p,name)=>append(d,{type:'point',xy:p,name}));
+ }
+ if(/^\([\s\S]*\)$/.test(text)){
+  // Name-free coordinate entry: identical semantics to Point(x,y), including
+  // slider-driven formulas and the ordinary automatic point name.
+  return createSemanticConstruction(doc,`Point${text}`);
+ }
+ if(/\b(?:Rotate|Dilate)\s*\([^)]*\bamount\s*=/.test(text))return createSemanticConstruction(doc,text);
+ try{return command(doc,text);}catch(error){
+  if(!/Unsupported command/.test(error.message))throw error;
+  return createSemanticConstruction(doc,text);
+ }
 }

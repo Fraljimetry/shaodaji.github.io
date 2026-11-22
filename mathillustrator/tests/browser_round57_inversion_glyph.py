@@ -22,7 +22,7 @@ with sync_playwright() as p:
    cx,cy,r=g['rings'][0];(x,y,rad),(xx,yy,rad2)=g['dots']
    near=math.hypot(x-cx,y-cy);far=math.hypot(xx-cx,yy-cy)
    assert near<r<far and abs(near*far-r*r)<1e-8,g
-   assert math.hypot(xx-x,yy-y)>11,g
+   assert math.hypot(xx-x,yy-y)>8,g
    assert all(2.8<=v<=21.2 for v in (xx,yy)),g
    assert g['paths'][0]==f'M{x} {y}L{xx} {yy}',g
   assert not errors,errors

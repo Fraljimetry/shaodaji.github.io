@@ -473,3 +473,9 @@ Object.assign(zh, {
  'Slider changed. Reopen its menu.':'滑块已更改，请重新打开其菜单。',
  'Unlock slider and dependent objects before deleting.':'删除前请解锁滑块及其依赖对象。',
 });
+
+Object.assign(zh,{
+ 'Copied selected objects with dependencies.':'已复制选中对象及其定义依赖。',
+ 'Pasted selected objects.':'已粘贴选中对象。',
+ 'Cut selected objects with dependents.':'已剪切选中对象及其依赖构造。',
+});

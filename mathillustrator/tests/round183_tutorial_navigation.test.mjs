@@ -25,3 +25,22 @@ test('Round 183: remove redundant tools-page tutorial entry, retain app Help',()
  const editor=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  assert.match(editor,/id="help"/);
 });
+test('Tutorial navigation includes every published chapter and quick-path target in both languages',()=>{
+ const sectionIds=[...html.matchAll(/<section\b[^>]*\bid="([^"]+)"/g)].map(m=>m[1]);
+ const nav=html.match(/<nav aria-label="Guide chapters" class="nav">([\s\S]*?)<\/nav>/)?.[1];
+ assert.ok(nav,'Guide navigation must exist');
+ const navIds=[...nav.matchAll(/href="#([^"]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(new Set(navIds),new Set(sectionIds),'Every chapter must have a navigation link');
+ assert.equal(navIds.length,new Set(navIds).size,'No duplicate chapter links');
+ assert.equal((nav.match(/class="nav-group-title"/g)||[]).length,4);
+ for(const link of nav.matchAll(/<a href="#[^"]+">([\s\S]*?)<\/a>/g)){
+  assert.match(link[1],/class="lang en"/);
+  assert.match(link[1],/class="lang zh"/);
+ }
+ const quick=html.match(/<div class="quick-paths"[^>]*>([\s\S]*?)<\/div>/)?.[1];
+ assert.ok(quick,'Task-oriented quick paths must exist');
+ const quickIds=[...quick.matchAll(/href="#([^"]+)"/g)].map(m=>m[1]);
+ assert.equal(quickIds.length,4);
+ for(const id of quickIds)assert.ok(sectionIds.includes(id),`Broken quick path ${id}`);
+ assert.doesNotMatch(html,/User guide · Round \d+|使用指南 · 第 \d+ 轮/);
+});

@@ -10,7 +10,7 @@ CATEGORIES={
  'lines-constructions':['segment','ray','arrow','line','perpBisector','parallelThrough','perpendicularThrough','perpendicularFoot','angleBisector'],
  'circles-conics':['circle','circleDiameter','circleThrough3','circularArc','ellipse','tangentCircle','parabola','hyperbola'],
  'polygons-centers':['triangle','rectangle','parallelogram','polygon','regularPolygon','triangleCenter'],
- 'intersections':['circleIntersection','circleCircleIntersection','generalIntersection'],
+ 'intersections':['circleIntersection','generalIntersection'],
  'transformations':['translation','reflection','rotation','dilation','circleInversion'],
  'curves':['polyline','bezier','spline','closedSpline','freehand','locus'],
 }
@@ -18,7 +18,7 @@ MARKERS={
  'pointOnObject':1,'tangentCircle':3,'circularArc':3,'parabola':1,
  'hyperbola':2,'generalIntersection':1,'reflection':2,'rotation':3,
  'translation':4,'dilation':3,'locus':1,'fixedLength':2,
- 'fixedAngle':3,'triangleCenter':3,'circleInversion':3,
+ 'fixedAngle':3,'triangleCenter':3,'circleInversion':2,
 }
 
 def main():
@@ -36,7 +36,7 @@ def main():
    assert set(category_ids)==set(CATEGORIES),category_ids
    assert len(category_ids)==7
    all_tools=[t for group in CATEGORIES.values() for t in group]
-   assert len(all_tools)==len(set(all_tools))==43,(len(all_tools),len(set(all_tools)))
+   assert len(all_tools)==len(set(all_tools))==42,(len(all_tools),len(set(all_tools)))
    assert page.locator('[data-tool-choice="quadrilateral"]').count()==0
    assert page.locator('[data-tool-choice="intersection"]').count()==0
    assert page.locator('[data-tool-choice="generalIntersection"]').count()==1
@@ -47,7 +47,7 @@ def main():
     page.locator(f'[data-tool-choice="{tool}"]').click()
     assert page.locator('#drawing').get_attribute('data-tool')==tool,tool
    assert not errors,errors
-   print('stage: all 43 Geometry tools across 7 categories, exact simple-to-advanced ordering, interactive selection PASS',flush=True)
+   print('stage: all 42 Geometry tools across 7 categories, exact simple-to-advanced ordering, interactive selection PASS',flush=True)
    for tool,clicks in MARKERS.items():
     image=page.locator(f'[data-tool-choice="{tool}"] svg')
     circles=image.locator('circle[fill="currentColor"]')
@@ -61,7 +61,7 @@ def main():
    inversion=page.locator('[data-tool-choice="circleInversion"] svg')
    circles=inversion.locator('circle')
    radii=circles.evaluate_all('(arr)=>arr.map(e=>e.getAttribute("r"))')
-   assert '9' in radii,radii
+   assert '8' in radii,radii
    # Check displayed marker locations against the path geometry for tools in which
    # the clicked control points are supposed to lie on their depicted lines.
    geometry=page.evaluate('''() => {

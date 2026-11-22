@@ -67,6 +67,10 @@ def inline_html(*,legacy_search_expanded=True,expose_state=False):
     app=app.replace("from './input_assist.mjs?cut=mi266'",f"from '{js((ROOT/'src/input_assist.mjs').read_text())}'").replace("from './input_assist.mjs?cut=round258'",f"from '{js((ROOT/'src/input_assist.mjs').read_text())}'")
     # Round 251: inline the live construction-expression module and its shared model.
     construction=js((ROOT/'src/construction_expression.mjs').read_text().replace("from './model.mjs?cut=mi266'",f"from '{model}'").replace("from './model.mjs?cut=round227'",f"from '{model}'").replace("from './algebra.mjs?cut=round254'",f"from '{algebra}'").replace("from './plot_modes.mjs?cut=mi266'",f"from '{plot_modes}'").replace("from './plot_modes.mjs?cut=round69'",f"from '{plot_modes}'").replace("from './geometry_round50.mjs?cut=round147'",f"from '{r50}'"))
+    clipboard=js((ROOT/'src/object_clipboard.mjs').read_text().replace("from './model.mjs?cut=mi271'",f"from '{model}'"))
+    app=app.replace("from './object_clipboard.mjs?cut=round243'",f"from '{clipboard}'")
+    import re
+    app=re.sub(r"from [\'\"]\./object_clipboard\.mjs\?cut=[^\'\"]+[\'\"]",lambda _:f"from '{clipboard}'",app).replace("from './object_clipboard.mjs?cut=round293'",f"from '{clipboard}'").replace("from './object_clipboard.mjs?cut=round294'",f"from '{clipboard}'")
     app=app.replace("from './construction_expression.mjs?cut=mi266'",f"from '{construction}'").replace("from './construction_expression.mjs?cut=round244'",f"from '{construction}'")
     app=app.replace("from './geometry_pick.mjs?cut=round172'",f"from '{js((ROOT/'src/geometry_pick.mjs').read_text())}'")
     app=app.replace("from './panel_sizes.mjs'",f"from '{panel_sizes}'")
@@ -143,6 +147,7 @@ def run():
         chrome=os.environ.get('MATHILLUSTRATOR_CHROMIUM') or ('/usr/bin/chromium' if os.path.isfile('/usr/bin/chromium') else None)
         browser=p.chromium.launch(headless=True,args=['--no-sandbox'],**({'executable_path':chrome} if chrome else {}))
         page=browser.new_page(viewport={'width':1440,'height':900},accept_downloads=True)
+        page.set_default_timeout(8000)
         errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('dialog',lambda d:d.accept())
         page.set_content(inline_html(),wait_until='load');page.wait_for_timeout(150)
@@ -153,9 +158,13 @@ def run():
             cmd(page,text)
         assert page.locator('#object-count').inner_text()=='8'
         assert page.locator('#drawing [data-id]').count()>=8
+        page.locator('#object-input-toggle').click()
+        assert page.locator('#object-search').is_visible()
         page.locator('#object-search').fill('Bezier')
         assert page.locator('#objects .object').count()==1
         page.locator('#object-search').fill('')
+        page.locator('#object-input-toggle').click()
+        assert page.locator('#unified-algebra-input').is_visible()
         palette=page.locator('[data-tool-module="construction"] > h3 > .section-toggle')
         palette.click()
         assert page.locator('#construction-tools').is_hidden()

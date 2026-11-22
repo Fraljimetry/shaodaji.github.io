@@ -445,7 +445,10 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
   // path, but is not assigned a circle/straight role.
   if(!Array.isArray(o.path)||!o.path.every(coord))return [];
   if(o.curveShape==='polygon'||o.curveShape==='ellipse')return o.path;
-  return []; // Preserve legacy unshaped Free stroke interaction semantics.
+  // The ordinary free stroke is a drawable geometric path as well. Use its
+  // persisted smooth samples as the bounded transformation source; this does
+  // not change the original stroke's renderer or saved data.
+  return o.path;
  }
  if(o.type==='polygon'){const pts=resolver.points(o).filter(coord);return pts.length>2?[...pts,pts[0]]:[];}
  if(o.type==='regularPolygon'){
@@ -471,7 +474,33 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
   const p=resolver.points(o);if(p.length!==4||!p.every(coord))return [];
   return Array.from({length:count+1},(_,i)=>{const t=i/count,s=1-t;return add(add(mul(p[0],s*s*s),mul(p[1],3*s*s*t)),add(mul(p[2],3*s*t*t),mul(p[3],t*t*t)));});
  }
- if(o.type==='polyline'||o.type==='spline')return resolver.points(o).filter(coord);
+ // Match the renderer's Catmull–Rom spline, not its control polygon.
+ // A transformed spline must follow the visible cubic curves (including the
+ // closing segment); otherwise the image changes shape when transformed.
+ if(o.type==='spline'){
+  const points=resolver.points(o);
+  if(!points.every(coord))return [];
+  // Legacy two-point splines remain valid straight paths (including at
+  // extremely small scales); preserve existing intersection semantics.
+  if(points.length===2)return points;
+  if(points.length<2)return [];
+  const p=[...points];const closed=o.closed===true;
+  if(closed&&p.length>3&&norm(sub(p[0],p.at(-1)))<1e-8)p.pop();
+  const n=p.length,steps=closed?n:n-1,segments=Math.max(4,Math.min(32,Math.ceil(count/Math.max(steps,1))));
+  const path=[p[0]];
+  for(let i=0;i<steps;i++){
+   const a=p[(i+n-1)%n],b=p[i],c=p[(i+1)%n],e=p[(i+2)%n];
+   const prev=!closed&&i===0?b:a,next=!closed&&i===n-2?c:e;
+   const h1=add(b,mul(sub(c,prev),1/6)),h2=sub(c,mul(sub(next,b),1/6));
+   for(let j=1;j<=segments;j++){
+    const t=j/segments,u=1-t;
+    path.push(add(add(mul(b,u*u*u),mul(h1,3*u*u*t)),add(mul(h2,3*u*t*t),mul(c,t*t*t))));
+   }
+  }
+  return path;
+ }
+ if(o.type==='polyline')return resolver.points(o).filter(coord);
+
 
  if(o.type==='transformCopy'){
   // Point-image chains have already been resolved iteratively. Never recurse

@@ -2339,3 +2339,51 @@ When Properties focus protects an in-progress edit, all other visible fields rep
 - Audit diverse smooth periodic, high-frequency, algebraic, thin-shell, singular, transcendental and discontinuous 3D implicit fields across multiple mesh resolutions. Classify edges on the drawing bounds, singularities/poles and face-limited incomplete renders separately from unintended interior mesh gaps.
 - Preserve genuinely small nondegenerate implicit triangles when a level set approaches a sample vertex; a world-space absolute area cutoff must not silently delete them. Apply the adaptive threshold only to implicit surfaces with nonzero edges, preserving ordinary triangles and non-implicit plotting paths.
 - Keep finite evaluations, pole rejection, region constraints, cooperative cancellation and face budgets unchanged. Test in real Chromium, retain backwards-compatible formulas/JSON, update the bilingual guide and quality report.
+
+
+### Round 289 — unnamed 2D Algebra constructors (verified existing capability)
+
+- Confirmed the existing 2D Algebra input accepts `segment(a,b)` and other supported case-insensitive constructors without an assignment prefix; the model supplies the configured automatic name.
+- Existing explicit `s = Segment(a,b)` syntax remains unchanged. No parser or production-model modification was required.
+- Added browser and Node compatibility regressions covering naming conventions, live dependencies, rollback, JSON, and undo/redo. This records an already implemented capability, **not a new outstanding requirement**.
+
+
+### Round 290 — 2D Algebra unnamed-creation audit
+- Audit the complete 2D Algebra input creation registry (not only `Segment` or constructor case handling). Named and unnamed forms must converge on the same object model, references and undo/history.
+- Add automatic, referenceable slider identifiers for `Slider(...)` and automatic point names for `(x,y)`; retain `Name = Slider(...)` and `Name = (x,y)` unchanged.
+- Ensure diagram morphisms accept `Name = Morphism(...)` as well as unnamed `Morphism(...)` without creating a second diagram system.
+- A rejected slider must not leave partial document state; retain stable object identities and JSON compatibility.
+- Named function definitions `f(x) = expr` and the separate plot-entry workflow retain their existing syntax and semantics; this change does not redesign plotting.
+
+
+### Round 292 — transformation support for non-point geometry (verified)
+- Preserve the existing five 2D transformation constructors for point operands and extend reliable shape fidelity across segments/vectors/lines/rays, circles, polygonal outlines, conics, Bézier curves, splines (open/closed), and freehand strokes.
+- Image of an ordinary free stroke must no longer silently disappear. An image of a spline must track the visible smooth curve rather than its control polygon. Retain two-point legacy spline incidence at tiny scales.
+- Keep analytic line/circle roles for affine transformations, existing names and references, dynamic dependencies, JSON compatibility, and inversion discontinuity guards. Do not imply generic 2D plot, text or diagram transformation support.
+
+
+### Round 293 — 2D object editing shortcuts
+- Add Ctrl/Cmd+C, V, X, D and A for 2D object copy, paste, cut, duplicate and select all, plus existing Delete/Backspace and Undo/Redo. Preserve textbox and modal keyboard semantics.
+- Copy dependent constructions with their defining geometry; paste must assign fresh IDs/names, preserve internal references, remain independently editable, and be atomic on errors. Cut includes descendants to avoid silently losing dependent constructions.
+- Keep clipboard ephemeral in the editor tab, without changing JSON schema or taking over OS clipboard.
+
+
+### Round 294 — Object clipboard usability and compatibility
+- Keep current 2D in-tab clipboard, selection, cut, duplicate, undo/redo, and geometry dependencies.
+- Support Ctrl/Cmd+Shift+V paste in place; successive regular pastes get increasing offsets without in-place pastes advancing the counter.
+- Provide selected/dependency counts in copy, cut and paste feedback.
+- Preserve conventional editable-field and toolbar focus shortcut handling. Escape clears 2D selection.
+- Validate complete clipboard reference closure and reject malformed/external/forward references atomically.
+- Correct constant-coordinate Algebra point offsets without modifying symbolic coordinate expressions.
+
+
+### Round 295 — object editing consistency (verified)
+- `Ctrl/Cmd+D` duplicates the active 2D selection without overwriting the independent in-tab Copy/Cut clipboard or advancing its paste-offset counter.
+- Document Undo/Redo must reconcile Recently Deleted entries for 2D, slider and 3D deletion/restoration so stale Restore actions do not remain after Undo.
+- Preserve existing Select All semantics (all 2D objects including hidden) and ephemeral in-tab clipboard (not persisted on reload); no OS clipboard or JSON-schema changes.
+
+### Tutorial information architecture — bilingual task paths (2026-11-22)
+- Keep the canonical end-user guide at `mathillustrator/tutorial.html` and retain its existing section IDs and full technical reference material.
+- Organize the sidebar into understandable task groups, with a direct chapter link for every published section (including construction expressions, semantic expressions, completion, sliders and fills).
+- Provide four prominent, bilingual entry paths for geometry, Algebra, plotting and saving/export; preserve the existing no-example-gallery decision.
+- Keep navigation accessible, with visible keyboard focus and responsive layouts; do not change editor code, mathematical semantics or persistence.

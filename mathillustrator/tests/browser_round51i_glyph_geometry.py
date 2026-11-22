@@ -22,7 +22,7 @@ def run():
      const distanceToPath=(path,[fx,fy])=>{let d=Infinity;const n=600;const len=path.getTotalLength();for(let i=0;i<=n;i++){const v=path.getPointAtLength(len*i/n);d=Math.min(d,Math.hypot(fx-v.x,fy-v.y));}return d;};
      const hyperDistances=foci.map(f=>Math.min(...[...hyper.querySelectorAll('path')].map(p=>distanceToPath(p,f))));
      const inversion=icon('circleInversion'),ring=inversion.querySelector('circle:not([fill])'),invPoints=points(inversion),center=invPoints[0];
-     const d1=Math.hypot(invPoints[1][0]-center[0],invPoints[1][1]-center[1]),d2=Math.hypot(invPoints[2][0]-center[0],invPoints[2][1]-center[1]);
+     const d1=Math.hypot(invPoints[0][0]- (+ring.getAttribute('cx')),invPoints[0][1]- (+ring.getAttribute('cy'))),d2=Math.hypot(invPoints[1][0]- (+ring.getAttribute('cx')),invPoints[1][1]- (+ring.getAttribute('cy')));
      const fills=[...document.querySelectorAll('[data-geometry-group] [data-tool-choice] svg circle[fill="currentColor"]')];
      const radiusCounts=[...new Set(fills.map(e=>e.getAttribute('r')))];
      const xs=['translation','reflection','rotation','dilation','circleInversion'].map(t=>({t,svg:icon(t),points:points(icon(t))}));
@@ -31,7 +31,7 @@ def run():
    }''')
    assert all(abs(x['dot'])<1e-7 and x['onCircle']<1e-7 for x in result['orthogonality']),result['orthogonality']
    assert all(x>3.2 for x in result['hyperDistances']),result['hyperDistances']
-   v=result['inversion'];assert abs(v['d1']*v['d2']-v['r']**2)<1e-7,v
+   v=result['inversion'];assert len(v['markers'])==2 and v['d1']<v['r']<v['d2'] and abs(v['d1']*v['d2']-v['r']**2)<1e-7,v
    assert result['radiusCounts']==['2.8'],result['radiusCounts']
    assert all(not x['crosses'] and not x['hollow'] and not x['dashes'] for x in result['transformations']),result['transformations']
    # Both plotting modes show distinct, non-equivalent mathematical diagrams.

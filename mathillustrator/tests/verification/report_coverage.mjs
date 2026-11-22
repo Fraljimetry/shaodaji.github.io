@@ -31,8 +31,11 @@ if(evidenceArg){
  evidence=JSON.parse(readFileSync(resolve(root,evidenceArg.slice('--evidence-file='.length)),'utf8'));
  if(evidence.schemaVersion!==1||!Array.isArray(evidence.checks))throw Error('Invalid execution evidence');
 }
-const pathExecuted=(path)=>evidence?.checks.some(c=>c.status==='PASS' && Array.isArray(c.command) && c.command.some(s=>s.replaceAll('\\','/').endsWith(path)));
-const propertiesExecuted=Boolean(evidence?.checks.some(c=>c.name==='math-properties'&&c.status==='PASS'));
+// Require the exact executed file, not an arbitrary pathname ending in the
+// declared suffix (e.g. /unrelated/tests/browser_smoke.py).
+const pathExecuted=(path)=>evidence?.checks.some(c=>c.status==='PASS' && c.returnCode===0 &&
+ Array.isArray(c.command) && c.command.some(arg=>typeof arg==='string' && resolve(root,arg)===resolve(root,path)));
+const propertiesExecuted=Boolean(evidence?.checks.some(c=>c.name==='math-properties'&&c.status==='PASS'&&c.returnCode===0));
 let propertyReport=null;
 if(!catalogOnly&&!evidence){
  const checks=runProperties();

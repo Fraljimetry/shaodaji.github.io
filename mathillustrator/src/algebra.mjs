@@ -133,7 +133,15 @@ export function recalculateAlgebra(doc){const values=Object.fromEntries((doc.alg
 }
 export function createSlider(doc,name,{min=0,max=10,step=.1,value=5,xy=[0,0],visible=true,playSpeed=1,playMode='periodic'}={}){
  if(!validSliderName(name)||doc.objects.some(o=>o.name===name)||(doc.algebra?.sliders??[]).some(s=>s.name===name))throw Error('Slider name is invalid or already in use.');
- const s={name,min,max,step,value,xy,visible,playSpeed,playMode};doc.algebra??={sliders:[]};doc.algebra.sliders.push(s);validateAlgebra(doc);return s;
+ const s={name,min,max,step,value,xy,visible,playSpeed,playMode};
+ const hadAlgebra=doc.algebra!==undefined;
+ doc.algebra??={sliders:[]};doc.algebra.sliders.push(s);
+ try{validateAlgebra(doc);}catch(error){
+  doc.algebra.sliders.pop();
+  if(!hadAlgebra)delete doc.algebra;
+  throw error;
+ }
+ return s;
 }
 export function algebraPoint(doc,name,xExpr,yExpr,appendPoint){
  if(doc.objects.some(o=>o.name===name)||(doc.algebra?.sliders??[]).some(s=>s.name===name))throw Error('Name already in use.');

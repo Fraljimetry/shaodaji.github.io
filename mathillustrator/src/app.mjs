@@ -1,4 +1,5 @@
-import {constructionExpression,displayCoordinate,applyConstructionExpression,createSemanticConstruction} from './construction_expression.mjs?cut=mi266';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,createSemanticConstruction,submit2DAlgebra} from './construction_expression.mjs?cut=mi266';
+import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round294';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
@@ -183,7 +184,7 @@ let currentMorphismLabels=new Map();
 const selectedIds=new Set();
 const constructionEmphasis=new Set(); // transient reference highlighting, never persisted
 let gridSnapOverride=null; // transient tool-context preference, never written into project JSON
-let draftMeasure=null,draftReference=null,trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
+let draftMeasure=null,draftReference=null,trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],historyTrash=[],futureTrash=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
 const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1',TRASH='mathillustrator-trash-v1';
 /** Existing editor choice wins; otherwise follow the site theme key when present. */
 function initialSiteTheme(){
@@ -260,16 +261,29 @@ function selectToggle(id){
  setSelection(next,next.has(id)?id:(selected!==id?selected:null));
 }
 function recordUndo(before){
- history.push(before);let evicted=false;
+ history.push(before);historyTrash.push(clone(trash));let evicted=false;
  const bytes=()=>history.reduce((sum,s)=>sum+s.length*2,0);
- while(history.length>80||(history.length>1&&bytes()>30*1024*1024)){history.shift();evicted=true;}
+ while(history.length>80||(history.length>1&&bytes()>30*1024*1024)){history.shift();historyTrash.shift();evicted=true;}
  if(evicted)notice('Older undo states were evicted to limit memory use.');
- future=[];syncHistory();
+ future=[];futureTrash=[];syncHistory();
 }
 function syncHistory(){$('undo').disabled=!history.length;$('redo').disabled=!future.length;}
 function restore(s){stopAllSliderPlayback();constructionEmphasis.clear();lastMoveCanvasTap=null;doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();renderAll();}
-function undo(){if(drag){cancelDrag();return;}if(!history.length)return;future.push(JSON.stringify(doc));restore(history.pop());syncHistory();}
-function redo(){if(drag){cancelDrag();return;}if(!future.length)return;history.push(JSON.stringify(doc));restore(future.pop());syncHistory();}
+// Keep Recently Deleted in the same undo/redo transaction as the document.
+// Deletions add trash entries after update() records its pre-edit snapshot;
+// undo must remove those entries and redo must restore them.
+function undo(){
+ if(drag){cancelDrag();return;}if(!history.length)return;
+ future.push(JSON.stringify(doc));futureTrash.push(clone(trash));
+ const prior=history.pop(),priorTrash=historyTrash.pop();
+ restore(prior);trash=priorTrash??trash;persistTrash();syncHistory();
+}
+function redo(){
+ if(drag){cancelDrag();return;}if(!future.length)return;
+ history.push(JSON.stringify(doc));historyTrash.push(clone(trash));
+ const next=future.pop(),nextTrash=futureTrash.pop();
+ restore(next);trash=nextTrash??trash;persistTrash();syncHistory();
+}
 let pendingPropertiesFrame=0;
 // Keep the displayed definition in sync even when a focused Name input means
 // the Properties tree cannot safely be replaced. Never overwrite an in-progress
@@ -3178,7 +3192,56 @@ function deleteObject(id){
  const ok=update(()=>{remove(doc,id);if(selected&&targets.has(selected))selected=null;});
  if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
 }
-function deleteSelected(){if(selected)deleteObject(selected);}
+function deleteSelected(){
+ const targets=activeSelection();if(!targets.length)return;
+ const union=new Set();for(const o of targets)for(const id of affected(doc,o.id))union.add(id);
+ if([...union].some(id=>objectEffectivelyLocked(id))){notice('Unlock dependents before deleting.');return;}
+ const removed=clone(doc.objects.filter(o=>union.has(o.id)));
+ const ok=update(()=>{doc.objects=doc.objects.filter(o=>!union.has(o.id));selected=null;selectedIds.clear();});
+ if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
+}
+let copied2DObjects=null,paste2DCount=0;
+function copySelectedObjects(){
+ if(in3D())return false;
+ const selection=activeSelection();if(!selection.length)return false;
+ copied2DObjects=captureObjectSelection(doc,selection.map(o=>o.id));paste2DCount=0;
+ notice(`Copied ${selection.length} selected object(s) and ${copied2DObjects.objects.length-selection.length} defining dependency object(s).`);return true;
+}
+function cutSelectedObjects(){
+ if(in3D())return false;
+ const roots=activeSelection();if(!roots.length)return false;
+ const toRemove=new Set();for(const o of roots)for(const id of affected(doc,o.id))toRemove.add(id);
+ if([...toRemove].some(id=>objectEffectivelyLocked(id))){notice('Unlock dependents before deleting.');return false;}
+ // Include all descendants because deleting a parent also deletes dependent
+ // constructions. Cutting must never silently lose those constructions.
+ const snapshot=captureObjectSelection(doc,doc.objects.filter(o=>toRemove.has(o.id)).map(o=>o.id));
+ const removed=clone(doc.objects.filter(o=>toRemove.has(o.id)));
+ const ok=update(()=>{doc.objects=doc.objects.filter(o=>!toRemove.has(o.id));selected=null;selectedIds.clear();});
+ if(!ok)return false;
+ copied2DObjects=snapshot;paste2DCount=0;
+ trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();
+ notice(`Cut ${roots.length} selected object(s) and ${removed.length-roots.length} dependent object(s).`);return true;
+}
+function duplicateSelectedObjects(){
+ if(in3D())return false;
+ const roots=activeSelection();if(!roots.length)return false;
+ // Duplicate uses a temporary snapshot; it must not replace an earlier Copy
+ // selection, or increment that clipboard's repeated-paste offset.
+ let snapshot,pasted=[];
+ try{snapshot=captureObjectSelection(doc,roots.map(o=>o.id));}
+ catch(error){notice(error.message);return false;}
+ const ok=update(()=>{pasted=pasteObjectSelection(doc,snapshot,{offset:0.5});});
+ if(ok){setSelection(pasted,pasted.at(-1));notice(`Duplicated ${pasted.length} selected object(s) with ${snapshot.objects.length-pasted.length} defining dependency object(s).`);}
+ return ok;
+}
+function pasteSelectedObjects({inPlace=false}={}){
+ if(in3D()||!copied2DObjects)return false;
+ let pasted=[];
+ const next=paste2DCount+1;
+ const ok=update(()=>{pasted=pasteObjectSelection(doc,copied2DObjects,{offset:inPlace?0:0.5*next});});
+ if(ok){if(!inPlace)paste2DCount=next;setSelection(pasted,pasted.at(-1));notice(`Pasted ${pasted.length} selected object(s) with ${copied2DObjects.objects.length-pasted.length} defining dependency object(s)${inPlace?' in place':''}.`);}
+ return ok;
+}
 function persistTrash(){
  try{localStorage.setItem(TRASH,JSON.stringify(trash));}catch(e){notice('Recently Deleted could not be saved. Export a JSON backup.');}
  renderTrash();
@@ -3793,7 +3856,13 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
   }
   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
   const mod=e.ctrlKey||e.metaKey;
-  if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
+  const drawingFocus=document.activeElement===document.body||document.activeElement===$('drawing')||document.activeElement?.classList?.contains('object');
+  if(mod&&!e.altKey&&e.key.toLowerCase()==='a'&&!in3D()&&drawingFocus){e.preventDefault();setSelection(doc.objects.map(o=>o.id));}
+  else if(mod&&!e.altKey&&e.key.toLowerCase()==='x'&&!in3D()&&drawingFocus&&activeSelection().length){e.preventDefault();cutSelectedObjects();}
+  else if(mod&&!e.altKey&&e.key.toLowerCase()==='d'&&!in3D()&&drawingFocus&&activeSelection().length){e.preventDefault();duplicateSelectedObjects();}
+  else if(mod&&!e.altKey&&e.key.toLowerCase()==='c'&&!in3D()&&drawingFocus&&activeSelection().length){e.preventDefault();copySelectedObjects();}
+  else if(mod&&!e.altKey&&e.key.toLowerCase()==='v'&&!in3D()&&drawingFocus&&copied2DObjects){e.preventDefault();pasteSelectedObjects({inPlace:e.shiftKey});}
+  else if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
   else if(mod&&e.key.toLowerCase()==='y'){e.preventDefault();redo();}
   else if(e.key==='Delete'||e.key==='Backspace'){
    // Text fields were already excluded. Buttons, links and other controls
@@ -3815,24 +3884,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});
  syncPlotMode();
  const algebraForm=$('algebra-form');if(algebraForm)algebraForm.onsubmit=e=>{e.preventDefault();const source=$('algebra-input').value.trim();if(!source)return;
-  const ok=update(()=>{let match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*Slider\((.*)\)$/i);
-   if(match){const raw=splitAlgebraArguments(match[2]);if(raw.length<2||raw.length>6)throw Error('Use Slider(min, max[, step, value, speed, mode]).');
-    const last=raw.at(-1)?.trim().replace(/^['"]|['"]$/g,'').toLowerCase();
-    const hasMode=raw.length>=5&&SLIDER_PLAY_MODES.includes(last);const mode=hasMode?last:'periodic';
-    if(raw.length===6&&!hasMode)throw Error('Slider mode must be periodic, oscillatory, or once.');
-    const args=((hasMode)?raw.slice(0,-1):raw).map(x=>evaluateAlgebra(x));
-    createSlider(doc,match[1],{min:args[0],max:args[1],step:args[2]??0.1,value:args[3]??args[0],playSpeed:args[4]??1,playMode:mode});return;}
-   match=source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*=\s*\((.*)\)$/);
-   if(match){const xy=splitAlgebraArguments(match[2]);if(xy.length!==2)throw Error('A point needs two coordinate expressions.');algebraPoint(doc,match[1],xy[0].trim(),xy[1].trim(),(d,p,name)=>append(d,{type:'point',xy:p,name}));return;}
-   // Semantic option syntax is distinct from the older positional commands.
-   // Prefer the semantic parser only for keyword options; retain existing
-   // positional numeric commands and their compatibility contract unchanged.
-   if(/\b(?:Rotate|Dilate)\s*\([^)]*\bamount\s*=/.test(source))createSemanticConstruction(doc,source);
-   else try{command(doc,source);}catch(error){
-    if(!/Unsupported command/.test(error.message))throw error;
-    createSemanticConstruction(doc,source);
-   }
-  });if(ok)$('algebra-input').value='';
+  const ok=update(()=>{submit2DAlgebra(doc,source);});if(ok)$('algebra-input').value='';
  };
  const algebraEntry=$('unified-algebra-input'),algebraSearch=$('object-search');
  const searchIcon=$('object-find-icon'),algebraIcon=$('object-algebra-icon'),inputToggle=$('object-input-toggle');
@@ -3923,7 +3975,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!localizedConfirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};
- $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
+ $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];historyTrash=[];futureTrash=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!localizedConfirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&playingSliders.size){stopAllSliderPlayback();renderAlgebra();renderProperties();}

@@ -19,16 +19,18 @@ def run():
     const rotation=svg('rotation').querySelector('path');
     const inv=svg('circleInversion');const ring=inv.querySelector('circle:not([fill])');const ip=dots(inv);
     const radii=[...new Set([...document.querySelectorAll('[data-geometry-group] svg circle[fill="currentColor"]')].map(c=>+c.getAttribute('r')))];
-    const res={trans,translationDots:dots(svg('translation')),rotationArc:rotation.getTotalLength(),invRadius:+ring.getAttribute('r'),invMarkers:ip,radii};
+    const res={trans,translationDots:dots(svg('translation')),rotationArc:rotation.getTotalLength(),invRadius:+ring.getAttribute('r'),invCenter:[+ring.getAttribute('cx'),+ring.getAttribute('cy')],invMarkers:ip,radii};
     return res;
    }''')
    assert len(result['trans'])==1 and result['trans'][0]>=28.5,result
    assert len(result['translationDots'])==4,result
    assert result['rotationArc']>14.9,result
-   assert result['invRadius']>=9,result
+   assert result['invRadius']==8,result
    assert result['radii']==[2.8],result
-   p0,p1,p2=result['invMarkers']
-   assert abs((p1[0]-p0[0])*(p2[0]-p0[0])-result['invRadius']**2)<1e-7,result
+   assert len(result['invMarkers'])==2,result
+   p1,p2=result['invMarkers'];cx,cy=result['invCenter']
+   d1=math.hypot(p1[0]-cx,p1[1]-cy);d2=math.hypot(p2[0]-cx,p2[1]-cy)
+   assert d1<result['invRadius']<d2 and abs(d1*d2-result['invRadius']**2)<1e-7,result
    for t in ['parametric','implicit']:
     page.locator('#plot-mode').select_option(t)
     icon=page.locator('#plot-mode-preview svg')
@@ -44,6 +46,6 @@ def run():
     box=icon.locator('path').evaluate('(p)=>{const b=p.getBBox();return {x:b.x,y:b.y,w:b.width,h:b.height,len:p.getTotalLength()}}')
     assert box['len']>15 and box['x']>=-1.5 and box['y']>=-1.5 and box['x']+box['w']<=25.5 and box['y']+box['h']<=25.5,(t,box)
    assert not errors,errors
-   print('ROUND51J_CHROMIUM_PASS: longer paired translation segments, radius-10 rotation, radius-9 exact inversion, uniform 2.8-point markers, smooth point-free spiral, separate elliptic-cubic branches')
+   print('ROUND51J_CHROMIUM_PASS: longer paired translation segments, radius-10 rotation, radius-8 exact inversion, uniform 2.8-point markers, smooth point-free spiral, separate elliptic-cubic branches')
   finally:browser.close()
 if __name__=='__main__':run()
