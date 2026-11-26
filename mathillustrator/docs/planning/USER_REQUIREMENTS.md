@@ -2387,3 +2387,7 @@ When Properties focus protects an in-progress edit, all other visible fields rep
 - Organize the sidebar into understandable task groups, with a direct chapter link for every published section (including construction expressions, semantic expressions, completion, sliders and fills).
 - Provide four prominent, bilingual entry paths for geometry, Algebra, plotting and saving/export; preserve the existing no-example-gallery decision.
 - Keep navigation accessible, with visible keyboard focus and responsive layouts; do not change editor code, mathematical semantics or persistence.
+
+
+### Current 3D mesh-detail limit
+The supported Mesh detail range is **8–96**. Older project JSON with integer detail 97–128 remains importable; on validation its detail is normalized to 96. Out-of-range and malformed settings remain invalid. This supersedes the historical 8–128 development entry above; it does not change the existing surface budgets or rendering modes.

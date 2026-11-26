@@ -28,11 +28,11 @@ for(const [kind,expr,detail,hashes] of cases){
  });
 }
 test('R205 short-lived tasks do not publish cancelled partial projection or mutate scene',()=>{
- const scene=newScene3D();add3DPlot(scene,'surface3d',['sin(x)*cos(y)']);scene.options.detail=128;
+ const scene=newScene3D();add3DPlot(scene,'surface3d',['sin(x)*cos(y)']);scene.options.detail=96;
  const original=JSON.stringify(scene);
  for(let i=0;i<12;i++){scene.options.yaw=-120+i*18;const task=create3DProjectionTask(scene,1000,700);
   task.step(0);task.cancel();assert.equal(task.result,null);assert.equal(task.step().cancelled,true);}
  const task=create3DProjectionTask(scene,1000,700);let result;
  for(let i=0;i<100000;i++){const state=task.step(1);if(state.done){result=state.result;break;}}
- assert.equal(result.faces.length,32768);assert.equal(JSON.stringify(scene),original.replace('"yaw":-38',`"yaw":${scene.options.yaw}`));
+ assert.equal(result.faces.length,18432);assert.equal(JSON.stringify(scene),original.replace('"yaw":-38',`"yaw":${scene.options.yaw}`));
 });

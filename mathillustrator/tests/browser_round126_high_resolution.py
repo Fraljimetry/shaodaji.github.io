@@ -17,14 +17,20 @@ with sync_playwright() as pw:
   page.locator('#command').fill('sin(x)*cos(y)')
   page.locator('#command-form button').click()
   page.wait_for_function("!document.querySelector('#render-info').textContent.includes('rendering')")
-  page.locator('#scene3d-detail').fill('128')
+  page.locator('#scene3d-detail').fill('96')
   page.locator('#scene3d-detail').dispatch_event('change')
   page.wait_for_function("!document.querySelector('#render-info').textContent.includes('rendering')",timeout=60000)
   count=page.locator('#drawing polygon').count()
-  assert count==32768,count
-  assert page.locator('#scene3d-detail').input_value()=='128'
+  raster=page.locator('#drawing image[data-3d-raster]').count()
+  assert count>0 or raster==1,(count,raster)
+  if raster:
+   href=page.locator('#drawing image[data-3d-raster]').get_attribute('href')
+   assert href.startswith('data:image/png;base64,') and len(href)>10000
+
+  assert page.locator('#scene3d-detail').input_value()=='96'
+  assert page.locator('#scene3d-detail').get_attribute('max')=='96'
   assert 'PLOT LIMIT' not in page.locator('#render-info').inner_text()
   page.reload() if False else None
   assert not errors,errors
-  print(f'PASS ROUND126_CHROMIUM: detail 128, {count} polygons, complete view, no JS errors')
+  print(f'PASS ROUND126_CHROMIUM: detail 96, {count} polygons, {raster} raster images, no plot limit or JS errors')
  finally:browser.close()

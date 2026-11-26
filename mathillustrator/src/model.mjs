@@ -766,7 +766,7 @@ export function command(doc,source){
 }
 export function validateDoc(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.format!=='mathillustrator-project'||raw.version!==VERSION||!Array.isArray(raw.objects)||raw.objects.length>10000)throw Error('Not a supported MathIllustrator v1 project.');
- const d=clone(raw);if(d.settings?.plot3dEnabled!==undefined&&typeof d.settings.plot3dEnabled!=='boolean')throw Error('3D toggle must be boolean.');if(d.settings?.plot3dEnabled&&!d.scene3d)throw Error('3D scene is missing.');if(d.scene3d!==undefined)validate3D(d.scene3d);if(!d.settings||typeof d.settings!=='object'||!d.meta||typeof d.meta.title!=='string'||d.meta.title.length>240||!Number.isSafeInteger(d.nextId)||d.nextId<1)throw Error('Project structure is invalid.');
+ const d=clone(raw);if(d.settings?.plot3dEnabled!==undefined&&typeof d.settings.plot3dEnabled!=='boolean')throw Error('3D toggle must be boolean.');if(d.settings?.plot3dEnabled&&!d.scene3d)throw Error('3D scene is missing.');if(d.scene3d?.options&&Number.isInteger(d.scene3d.options.detail)&&d.scene3d.options.detail>96&&d.scene3d.options.detail<=128)d.scene3d.options.detail=96;if(d.scene3d!==undefined)validate3D(d.scene3d);if(!d.settings||typeof d.settings!=='object'||!d.meta||typeof d.meta.title!=='string'||d.meta.title.length>240||!Number.isSafeInteger(d.nextId)||d.nextId<1)throw Error('Project structure is invalid.');
  validateAlgebra(d);
  const ids=new Set(),names=new Set(),roleObjects=new Map(d.objects.map(o=>[o?.id,o]));let max=0;
  for(const o of d.objects){

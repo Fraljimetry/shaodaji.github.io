@@ -85,7 +85,7 @@ export function parse3D(plot){
 }
 export function validate3D(scene){
  if(!scene||typeof scene!=='object'||Array.isArray(scene)||!Array.isArray(scene.plots)||scene.plots.length>80||!Number.isSafeInteger(scene.nextId)||scene.nextId<1)throw Error('Invalid 3D scene.');
- const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>128||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
+ const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>96||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
  if(o.fixRegion!==undefined&&typeof o.fixRegion!=='boolean')throw Error('Invalid 3D fixed-region flag.');
  if(o.fixedBounds!==undefined){
   const r=o.fixedBounds;
@@ -243,7 +243,7 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
   }
  };
  if(['surface3d','parametric3d','domain3d'].includes(plot.kind)){
-  const n=Math.max(8,Math.min(128,detail));
+  const n=Math.max(8,Math.min(96,detail));
   // Only adjacent rows are needed to triangulate a structured surface.
   // Keep a two-row sliding window instead of retaining the full (n+1)^2
   // lattice, reducing live references to O(n) without changing triangle order.
@@ -485,7 +485,7 @@ function storeMesh(key,mesh){const bytes=meshBytes(mesh);if(bytes>MAX_MESH_CACHE
  * estimated triangle count, making high settings visually identical.
  * Scene-level budgets can still reduce density *explicitly* for 3 plots.
  */
-export function implicitGridCells(detail){return Math.min(114,Math.max(10,Math.round(detail*.83+8)));}
+export function implicitGridCells(detail){return Math.min(114,Math.max(10,Math.round(Math.min(96,detail)*.83+8)));}
 function estimatedEvaluations(plot,detail,pilot=null){
  if(plot.kind==='vector3d')return plot.density**3;
  if(plot.kind==='implicit3d'){
@@ -498,7 +498,7 @@ function estimatedEvaluations(plot,detail,pilot=null){
   const rootCost=Math.max(0,pilot.evaluations-pilotVertices);
   return vertices+Math.ceil(rootCost*(cells/pilotCells)**2*1.08);
  }
- return (Math.max(8,Math.min(128,detail))+1)**2;
+ return (Math.max(8,Math.min(96,detail))+1)**2;
 }
 /** Synchronous exports and cooperative screen rendering share EXACT geometry,
  * clipping, sorting, and work limits. SVG is not a Z-buffer; crossing translucent

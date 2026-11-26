@@ -1362,7 +1362,7 @@
             "detail": {
               "type": "integer",
               "minimum": 8,
-              "maximum": 128
+              "maximum": 96
             },
             "zoom": {
               "type": "number",

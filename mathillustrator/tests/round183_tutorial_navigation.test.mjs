@@ -65,3 +65,10 @@ test('Tutorial header follows MathReader controls and shared site preferences',(
  assert.match(css,/\.header-actions \.header-language-control/);
  assert.match(css,/\.header-language-control #ui-language/);
 });
+
+test('Editor language control stays compact in both languages',()=>{
+ const editor=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.match(editor,/<option value="en">EN<\/option><option value="zh">中文<\/option>/);
+ assert.match(css,/\.header-language-control #ui-language\{[^}]*min-width:0;[^}]*width:28px/);
+});
