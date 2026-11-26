@@ -52,3 +52,16 @@ test('Public tutorial uses current user guidance rather than release-history lan
   assert.doesNotMatch(visible,pattern,`Release-history wording found: ${pattern}`);
  }
 });
+test('Tutorial header follows MathReader controls and shared site preferences',()=>{
+ const editor=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ for(const marker of ['shaoda-language','shaoda-theme','mathillustrator-layout-v1','mathillustrator-ui-v1','theme-switch-icon','🌐'])assert.ok(html.includes(marker),marker);
+ assert.match(html,/id="theme-switch"/);
+ assert.match(html,/id="lang-switch"/);
+ assert.match(html,/localStorage\.setItem\('shaoda-language',lang\)/);
+ assert.match(html,/localStorage\.setItem\('shaoda-theme',theme\)/);
+ assert.match(editor,/class="header-language-control"/);
+ assert.match(editor,/class="header-globe" aria-hidden="true">🌐/);
+ assert.match(css,/\.header-actions \.header-language-control/);
+ assert.match(css,/\.header-language-control #ui-language/);
+});
