@@ -47,3 +47,12 @@ test('collapsed rails do not steal custom widths or cause overflow',()=>{
  assert.equal(rightHidden.right,COLLAPSED_RAIL);
  assert.ok(leftHidden.right>=PANEL_MIN&&rightHidden.left>=PANEL_MIN);
 });
+
+test('active resize preserves priority after the viewport narrows below both requested panel widths',()=>{
+ const left=fitPanels(700,620,620,false,false,'left');
+ assert.equal(left.left,270);
+ assert.equal(left.right,190);
+ const right=fitPanels(700,620,620,false,false,'right');
+ assert.equal(right.left,190);
+ assert.equal(right.right,270);
+});

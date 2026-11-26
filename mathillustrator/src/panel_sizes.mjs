@@ -24,10 +24,10 @@ export function fitPanels(total, requestedLeft, requestedRight, leftCollapsed = 
  let right = rightCollapsed ? COLLAPSED_RAIL : rightIdeal;
  if (!leftCollapsed && !rightCollapsed) {
   if (priority === 'left') {
-   right = clamp(right, PANEL_MIN, Math.max(PANEL_MIN, available - PANEL_MIN));
+   right = right > available - PANEL_MIN ? PANEL_MIN : right;
    left = clamp(left, PANEL_MIN, Math.max(PANEL_MIN, available - right));
   } else if (priority === 'right') {
-   left = clamp(left, PANEL_MIN, Math.max(PANEL_MIN, available - PANEL_MIN));
+   left = left > available - PANEL_MIN ? PANEL_MIN : left;
    right = clamp(right, PANEL_MIN, Math.max(PANEL_MIN, available - left));
   } else if (left + right > available) {
    const extra = Math.max(0, available - 2 * PANEL_MIN);
