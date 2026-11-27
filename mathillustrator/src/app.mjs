@@ -1704,7 +1704,7 @@ function parameterRanges(root,keys,object,parseBound,edit){
  for(const input of Object.values(inputs))input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();commit();}});
 }
 function drawingRegion(root,bounds,{dimension,parseBound,commit,conditionValue,conditionCommit,disabled=false}){
- const block=document.createElement('div');block.className='plot-region-editor';block.setAttribute('role','group');block.setAttribute('aria-label','Drawing region');const heading=document.createElement('h4');heading.textContent='Drawing region';block.append(heading);
+ const block=document.createElement('div');block.className='plot-region-editor';block.setAttribute('role','group');block.setAttribute('aria-label','Drawing region');
  const keys=(dimension===3?['x','y','z']:['x','y']).flatMap(axis=>[axis+'Min',axis+'Max']);const inputs=boundsFields(block,keys,bounds);
  installPlotRegionKeys(block,inputs,()=>commitBounds(inputs,parseBound,commit),{dimension,parseBound,conditionValue,conditionCommit});
  if(disabled)for(const input of block.querySelectorAll('input'))input.disabled=true;root.append(block);

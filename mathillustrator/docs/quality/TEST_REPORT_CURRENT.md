@@ -3395,3 +3395,7 @@ Fresh verification: standard Node 893/893; final focused tests 18/18; source JS 
 
 ## Shared plot Properties architecture
 - Final standard Node suite: 893/893; JS syntax 38/38; Python syntax 320/320. Chromium: 34-case plot control matrix (including shared region headings and arithmetic atomic parameter ranges), implicit scalar range, and Round36 plotting passed. Older Round46 and Round51R browser assertions expect native numeric inputs and the removed Apply ± control respectively; these expectations are already obsolete in the input baseline. The combined self-test/property command timed out before results were obtained; Quick, Local and Release were not certified.
+
+## Shared heading-free plot layout
+- Removed the visible region heading in the shared builder, retaining the translated accessible group name. Both dimensions use 12 px top margins for the region and appearance groups. No mathematical or validation behavior changed.
+- Fresh standard Node 893/893, source JS syntax 38/38, Python syntax 320/320, real Chromium control matrix 34/34 at 1440×900 (including heading absence, group labels, spacing and no region overflow). Quick/Local/Release and other viewport sizes not rerun. Scheduled D001–D003 already integrated; no newer scheduled findings.

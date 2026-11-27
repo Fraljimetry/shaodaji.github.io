@@ -81,7 +81,9 @@ def run():
                 has_region=three or vector or implicit or complex2
                 if has_region:
                     assert props.locator('.plot-region-editor').get_attribute('aria-label')==('绘制区域' if lang=='zh' else 'Drawing region')
-                    expect(props.locator('.plot-region-editor > h4')).to_have_text('绘制区域' if lang=='zh' else 'Drawing region')
+                    expect(props.locator('.plot-region-editor :is(h1,h2,h3,h4,h5,h6)')).to_have_count(0)
+                    layout = props.locator('.plot-region-editor').evaluate('''e=>{const a=e.parentElement.querySelector(':scope > .style-controls-grid, :scope > .plot-color-grid');return {regionMargin:parseFloat(getComputedStyle(e).marginTop),appearanceMargin:parseFloat(getComputedStyle(a).marginTop),columns:getComputedStyle(e).gridTemplateColumns.split(' ').length,overflow:e.scrollWidth>e.clientWidth+1}}''')
+                    assert layout=={'regionMargin':12,'appearanceMargin':12,'columns':2,'overflow':False}, (mode,lang,layout)
                     if vector: order(['Normalize lengths','Density','x min','x max'])
                 for range_on in ([False,True] if has_range else [False]):
                     if has_range:
