@@ -95,6 +95,8 @@ const zhExtra={
  "3D plots": "三维图形",
  "3D drawing region": "三维绘制区域",
  "Surface parameter ranges": "曲面参数范围",
+ "Parameter ranges": "参数范围",
+ "Object names must be unique and nonempty.": "对象名称必须唯一且非空。",
  "Enter a positive half-range to set ±R along every axis.": "输入正半宽 R，把每个坐标轴设为 ±R。",
  "Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.": "例如 x^2+y^2<4；按 Enter 应用，留空则无限制。",
  "Double-click this label to fill symmetric ranges for all axes; Enter to redraw.": "双击标签设置所有坐标轴的对称范围；按 Enter 重绘。",

@@ -81,6 +81,8 @@ def run():
                 has_region=three or vector or implicit or complex2
                 if has_region:
                     assert props.locator('.plot-region-editor').get_attribute('aria-label')==('绘制区域' if lang=='zh' else 'Drawing region')
+                    expect(props.locator('.plot-region-editor > h4')).to_have_text('绘制区域' if lang=='zh' else 'Drawing region')
+                    if vector: order(['Normalize lengths','Density','x min','x max'])
                 for range_on in ([False,True] if has_range else [False]):
                     if has_range:
                         field('Color range').set_checked(range_on)
@@ -105,6 +107,10 @@ def run():
                 lock(mode,True,lang);lock(mode,False,lang)
             for mode, values, formulas in MODES_2D:
                 add(mode, values)
+                if mode=='parametric':
+                    old=obj(mode).copy();field('t min').fill('3*pi');field('t max').fill('4*pi');assert obj(mode)==old
+                    field('t max').press('Enter');assert obj(mode)['tMin']==3*3.141592653589793 and obj(mode)['tMax']==4*3.141592653589793
+                    field('t max').fill('0');field('t max').press('Enter');assert obj(mode)['tMax']==4*3.141592653589793
                 if mode=='domainColoring': set_num('Resolution',32)
                 if mode=='implicit':
                     field('Color range').check();set_num('Resolution',32);field('Color range').uncheck()
@@ -130,6 +136,10 @@ def run():
             p.locator('#scene3d-enable').check()
             for mode,values,formulas in MODES_3D:
                 add(mode,values)
+                if mode=='parametric3d':
+                    old=obj(mode).copy();field('u min').fill('3*pi');field('u max').fill('4*pi');field('v min').fill('-pi');field('v max').fill('pi');assert obj(mode)==old
+                    field('v max').press('Enter');assert obj(mode)['uMin']==3*3.141592653589793 and obj(mode)['vMin']==-3.141592653589793
+                    field('u max').fill('0');field('u max').press('Enter');assert obj(mode)['uMax']==4*3.141592653589793
                 if mode=='domain3d': assert obj(mode)['name']=='domain_coloring '+str(ids[mode])
                 matrix(mode,formulas,'en')
             p.locator('#ui-language').select_option('zh')

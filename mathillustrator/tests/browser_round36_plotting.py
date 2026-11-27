@@ -35,7 +35,7 @@ def run():
    p.locator(f'#objects [data-id="{para["id"]}"]').click()
    assert p.locator('#properties').get_by_text('t min').count()==1
    p.locator('#properties').get_by_label('t min').fill('-2')
-   p.locator('#properties').get_by_label('t min').press('Tab')
+   p.locator('#properties').get_by_label('t min').press('Enter')
    assert exported(p)['objects'][-1]['tMin']==-2
    p.locator('#undo').click();assert exported(p)['objects'][-1]['tMin']==0
    p.locator('#redo').click();assert exported(p)['objects'][-1]['tMin']==-2

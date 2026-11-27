@@ -1,4 +1,4 @@
-import {MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
+import {MAX_OBJECT_NAME_LENGTH,xmlTextSafe} from './object_naming.mjs?cut=round303';
 import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round303';
 import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round303';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
@@ -18,7 +18,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round303';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round303';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round303';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round304';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round303';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -313,7 +313,7 @@ function synchronizeRelatedPropertyFields(){
  // track the synchronized value rather than an obsolete render snapshot.
  const setIdle=(input,value)=>{
   if(!input||input===document.activeElement||value===undefined||value===null)return;
-  const next=String(value);if(input.value!==next){input.value=next;
+  const next=String(value);if(input.dataset.acceptedBound!==undefined){if(input.dataset.acceptedBound===next)return;input.dataset.acceptedBound=next;}if(input.value!==next){input.value=next;
    input.dispatchEvent(new CustomEvent('properties-synced',{detail:{value:next}}));
   }
  };
@@ -1562,7 +1562,7 @@ function field(parent,label,value,type,onChange,opts={}){
  wrap.textContent=label;wrap.dataset.propertyLabel=label;
  const input=document.createElement(type==='multiline'?'textarea':'input');
  if(type!=='multiline')input.type=type==='number'?'text':type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
- input.value=String(value??'');if(type==='number'){input.inputMode='decimal';input.dataset.numericExpression='true';}else if(opts.step)input.step=opts.step;
+ input.value=String(value??'');if(type==='number'){input.inputMode='decimal';input.dataset.numericExpression='true';}if(opts.step)input.step=opts.step;
  if(opts.min!==undefined)input.min=opts.min;
  if(opts.max!==undefined)input.max=opts.max;
  const hint=rangeHint(opts);if(hint){wrap.title=translated(hint,uiPrefs.language);input.title=translated(hint,uiPrefs.language);}
@@ -1613,7 +1613,7 @@ function renderBulkProperties(root,objects){
   if(value===null){control.placeholder=translated('Mixed',uiPrefs.language);control.dataset.mixed='true';}
  }
  addColor('stroke','Stroke');addColor('fill','Fill');
- addNumber('opacity','Opacity',0,1,.1);addNumber('width','Width',.1,100,.5);
+ addNumber('opacity','Opacity',0,1,.05);addNumber('width','Width',.1,100,.5);
  addNumber('pointSize','Size',1,100,1);
  if(!grid.querySelector('.style-fill'))grid.classList.add('stroke-only-grid');
  root.append(grid);
@@ -1670,27 +1670,64 @@ function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeE
  }
  installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension);
 }
+// Shared Properties controls; callers supply only scene-specific storage and limits.
+function propertyChoice(root,label,choices,value,change,disabled=false){
+ const row=document.createElement('label');row.className='field';row.dataset.propertyLabel=label;row.textContent=label;
+ const select=document.createElement('select');select.setAttribute('aria-label',label);
+ for(const [key,name] of choices){const option=document.createElement('option');option.value=key;option.textContent=name;select.append(option);}
+ select.value=value;select.disabled=disabled;select.onchange=()=>{if(change(select.value)===false)select.value=value;};row.append(select);root.append(row);return select;
+}
+function propertyCheck(root,label,value,change){
+ const row=document.createElement('label');row.className='check';row.dataset.propertyLabel=label;const input=document.createElement('input');input.type='checkbox';input.checked=!!value;input.setAttribute('aria-label',label);input.onchange=()=>{if(change(input.checked)===false)input.checked=!!value;};row.append(input,document.createTextNode(' '+label));root.append(row);return input;
+}
+function propertyName(root,object,objects,edit){
+ return field(root,'Name',object.name,'text',v=>edit(live=>{const name=v.trim();if(!name||name.length>MAX_OBJECT_NAME_LENGTH||!xmlTextSafe(name)||objects().some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+}
+function lockedProperties(root,object,dependent=false){
+ field(root,'Name',object.name,'text',()=>false).disabled=true;const note=document.createElement('p');note.className='subtle';note.textContent=dependent?'Locked (including dependencies)':'Locked';root.append(note);localizeUI(root,uiPrefs.language);
+}
+function vectorOptions(root,object,edit,max){
+ const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
+ propertyCheck(pair,'Normalize lengths',object.normalized,v=>edit(live=>{live.normalized=v;}));
+ field(pair,'Density',object.density,'number',v=>edit(live=>{live.density=v;}),{min:3,max,step:1});
+}
+function boundsFields(container,keys,bounds){
+ const inputs={};for(const key of keys){const label=key.replace(/Min$/,' min').replace(/Max$/,' max');const input=field(container,label,bounds[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});input.onchange=()=>{};input.inputMode='text';input.dataset.acceptedBound=String(bounds[key]);inputs[key]=input;}return inputs;
+}
+function commitBounds(inputs,parseBound,commit){
+ try{const values=Object.fromEntries(Object.entries(inputs).map(([key,input])=>[key,parseBound(input.value)]));for(const key of Object.keys(values).filter(k=>k.endsWith('Min')))if(!(values[key]<values[key.replace(/Min$/,'Max')]))throw Error('Finite arithmetic expression; min must be less than max.');if(commit(values)===false){for(const input of Object.values(inputs))input.value=input.dataset.acceptedBound;return;}for(const [key,input] of Object.entries(inputs)){input.value=String(values[key]);input.dataset.acceptedBound=input.value;}}
+ catch(error){notice(error.message);for(const input of Object.values(inputs))input.value=input.dataset.acceptedBound;}
+}
+function parameterRanges(root,keys,object,parseBound,edit){
+ const grid=document.createElement('div');grid.className='parametric-range-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','Parameter ranges');root.append(grid);
+ const inputs=boundsFields(grid,keys,object);const commit=()=>commitBounds(inputs,parseBound,values=>edit(live=>Object.assign(live,values)));
+ for(const input of Object.values(inputs))input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();commit();}});
+}
+function drawingRegion(root,bounds,{dimension,parseBound,commit,conditionValue,conditionCommit,disabled=false}){
+ const block=document.createElement('div');block.className='plot-region-editor';block.setAttribute('role','group');block.setAttribute('aria-label','Drawing region');const heading=document.createElement('h4');heading.textContent='Drawing region';block.append(heading);
+ const keys=(dimension===3?['x','y','z']:['x','y']).flatMap(axis=>[axis+'Min',axis+'Max']);const inputs=boundsFields(block,keys,bounds);
+ installPlotRegionKeys(block,inputs,()=>commitBounds(inputs,parseBound,commit),{dimension,parseBound,conditionValue,conditionCommit});
+ if(disabled)for(const input of block.querySelectorAll('input'))input.disabled=true;root.append(block);
+}
+function colorControls(slot,{label,value,scope,property,disabled,apply}){
+ const picker=field(slot,label,value,'color',apply);picker.disabled=disabled;
+ const swatches=appendColorSwatches(slot,{scope,property,caption:label+' colors',apply});for(const button of swatches.querySelectorAll('button'))button.disabled=disabled;
+ return {picker,swatches};
+}
+function opacityControl(slot,value,apply){return field(slot,'Opacity',value,'number',apply,{min:0,max:1,step:.05});}
+function widthControl(slot,value,apply,max){return field(slot,'Width',value,'number',apply,{min:.1,max,step:.5});}
 function renderProperties3D(root){
  root.classList.add('properties-3d');
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
- if(selectedPlot.locked){field(root,'Name',selectedPlot.name,'text',()=>false).disabled=true;const note=document.createElement('p');note.className='subtle';note.textContent='Locked';root.append(note);localizeUI(root,uiPrefs.language);return;}
- const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
- field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.trim().length>MAX_OBJECT_NAME_LENGTH)throw Error('Invalid plot name.');p.name=v.trim();}));
+ if(selectedPlot.locked){lockedProperties(root,selectedPlot);return;}
+ const generation=documentGeneration;
+ const edit=fn=>update(()=>{const live=doc.scene3d?.plots.find(p=>p.id===selectedPlot.id);if(generation!==documentGeneration||!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
+ propertyName(root,selectedPlot,()=>doc.scene3d.plots,edit);
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['x(u, v)','y(u, v)','z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
- const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
- if(fields.length){const rangeGrid=document.createElement('div');rangeGrid.className='parametric-range-grid';rangeGrid.setAttribute('role','group');rangeGrid.setAttribute('aria-label','Surface parameter ranges');root.append(rangeGrid);
-  for(const key of fields)field(rangeGrid,key.replace(/Min$/,' min').replace(/Max$/,' max'),selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}),{hint:'Finite expression; min must be less than max.'});}
- const block=document.createElement('div');block.className='plot-region-editor';block.setAttribute('role','group');block.setAttribute('aria-label','Drawing region');const subtitle=document.createElement('h4');subtitle.textContent='Drawing region';block.append(subtitle);
- const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
-  const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
- }
- installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));
-  if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...p.bounds};}),{parseBound:parse3DRangeExpression,conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;}),dimension:3});
+ if(selectedPlot.kind==='parametric3d')parameterRanges(root,['uMin','uMax','vMin','vMax'],selectedPlot,parse3DRangeExpression,edit);
  if(selectedPlot.kind==='domain3d'){
-  const height=document.createElement('label');height.className='field';height.dataset.propertyLabel='Height represents';height.textContent='Height represents';const heightSelect=document.createElement('select');
-  for(const [key,label] of [['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;heightSelect.append(opt);}
-  heightSelect.value=selectedPlot.heightMode;heightSelect.onchange=()=>edit(p=>{const was=p.heightMode,next=heightSelect.value;p.heightMode=next;
+  propertyChoice(root,'Height represents',[['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']],selectedPlot.heightMode,next=>{const ok=edit(p=>{const was=p.heightMode;p.heightMode=next;
    if(was==='modulus'&&next==='argument'&&p.bounds.zMin===0){p.bounds.zMin=-Math.PI;p.bounds.zMax=Math.PI;}
    else if(was==='argument'&&next==='modulus'&&Math.abs(p.bounds.zMin+Math.PI)<1e-9&&Math.abs(p.bounds.zMax-Math.PI)<1e-9){
     const f=parseComplexExpression(p.a);let max=0;for(let j=0;j<=6;j++)for(let i=0;i<=6;i++){
@@ -1698,29 +1735,20 @@ function renderProperties3D(root){
      try{const h=Math.hypot(...f(x,y));if(Number.isFinite(h)&&h<=1e4)max=Math.max(max,h);}catch{}
     }p.bounds.zMin=0;p.bounds.zMax=Math.max(4,Math.min(1e4,Math.ceil(max*1.05)));
    }
-  });height.append(heightSelect);root.append(height);
-  const colors=document.createElement('label');colors.className='field';colors.dataset.propertyLabel='Color scheme';colors.textContent='Color scheme';const select=document.createElement('select');
-  for(const [key,label] of [...DOMAIN_COLOR_SCHEMES,['solid','Single color']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
-  select.value=selectedPlot.colorMode;select.disabled=selectedPlot.colorRange===true;select.onchange=()=>{if(edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=select.value;})!==false)renderProperties();};colors.append(select);root.append(colors);
+  });if(ok!==false)renderProperties();return ok;});
+  propertyChoice(root,'Color scheme',[...DOMAIN_COLOR_SCHEMES,['solid','Single color']],selectedPlot.colorMode,value=>{const ok=edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=value;});if(ok!==false)renderProperties();return ok;},selectedPlot.colorRange===true);
  }
- root.append(block);
- if(selectedPlot.kind==='vector3d'){
-  const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  const label=document.createElement('label');label.className='check';label.dataset.propertyLabel='Normalize lengths';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
-  field(pair,'Density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
- }
+ if(selectedPlot.kind==='vector3d')vectorOptions(root,selectedPlot,edit,12);
+ drawingRegion(root,selectedPlot.bounds,{dimension:3,parseBound:parse3DRangeExpression,commit:bounds=>edit(p=>{p.bounds=bounds;if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...bounds};}),conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;})});
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
  const solidAllowed=selectedPlot.kind!=='domain3d'||selectedPlot.colorMode==='solid';
- const solidPicker=field(colorSlot,selectedPlot.kind==='vector3d'?'Stroke':'Fill',selectedPlot.color,'color',v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('This color scheme uses automatic colors.');p.color=v;}));
- solidPicker.disabled=selectedPlot.colorRange===true||!solidAllowed;
- const swatches=appendColorSwatches(colorSlot,{scope:'plot3d',property:'color',caption:selectedPlot.kind==='vector3d'?'Stroke colors':'Fill colors',apply:v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('Select Single color and disable Color range first.');p.color=v;})});
- for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;
+ const apply=v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('This color scheme uses automatic colors.');p.color=v;});
+ colorControls(colorSlot,{label:selectedPlot.kind==='vector3d'?'Stroke':'Fill',value:selectedPlot.color,scope:'plot3d',property:'color',disabled:selectedPlot.colorRange===true||!solidAllowed,apply});
  const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
- const rangeLabel=document.createElement('label');rangeLabel.className='check';rangeLabel.dataset.propertyLabel='Color range';const range=document.createElement('input');range.type='checkbox';range.setAttribute('aria-label','Color range');range.checked=selectedPlot.colorRange===true;
- range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}renderProperties();};rangeLabel.append(range,document.createTextNode(' Color range'));right.append(rangeLabel);
- field(right,'Opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:0,max:1,step:.05});
- if(selectedPlot.kind==='vector3d')field(right,'Width',selectedPlot.lineWidth??1.5,'number',v=>edit(p=>{p.lineWidth=v;}),{min:.1,max:12,step:.5});
+ propertyCheck(right,'Color range',selectedPlot.colorRange,checked=>{const ok=edit(p=>{p.colorRange=checked;});if(ok!==false)renderProperties();return ok;});
+ opacityControl(right,selectedPlot.opacity,v=>edit(p=>{p.opacity=v;}));
+ if(selectedPlot.kind==='vector3d')widthControl(right,selectedPlot.lineWidth??1.5,v=>edit(p=>{p.lineWidth=v;}),12);
  localizeUI(root,uiPrefs.language);
 }
 function renderNewFreehandControls(root){
@@ -1822,7 +1850,7 @@ function renderSliderProperties(root,item){
 
  const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
- const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);field(opacitySlot,'Opacity',item.opacity??1,'number',v=>edit(live=>{if(!Number.isFinite(v)||v<0||v>1)throw Error('Opacity must be between 0 and 1.');live.opacity=v;}),{min:0,max:1,step:.1});
+ const opacitySlot=document.createElement('div');opacitySlot.className='style-slot style-opacity';appearance.append(opacitySlot);opacityControl(opacitySlot,item.opacity??1,v=>edit(live=>{live.opacity=v;}));
  const border=document.createElement('label');border.className='check';const borderInput=document.createElement('input');borderInput.type='checkbox';borderInput.checked=item.border!==false;borderInput.onchange=()=>edit(live=>{live.border=borderInput.checked;});const borderText=document.createElement('span');borderText.textContent='Show border';border.append(borderInput,borderText);border.classList.add('slider-border-control');opacitySlot.append(border);
 }
 function renderProperties(){
@@ -1833,7 +1861,7 @@ function renderProperties(){
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
  if(!o){if(tool==='freehand'){renderNewFreehandControls(root);localizeUI(root,uiPrefs.language);}return;}
- if(objectEffectivelyLocked(o.id)){const name=field(root,'Name',o.name,'text',()=>false);name.disabled=true;const p=document.createElement('p');p.className='subtle';p.textContent='Locked (including dependencies)';root.append(p);localizeUI(root,uiPrefs.language);return;}
+ if(objectEffectivelyLocked(o.id)){lockedProperties(root,o,!o.locked);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
  // replace the document and make the old object reference stale. Resolve by ID in
  // every transaction, preventing false-success edits that silently do nothing.
@@ -1843,7 +1871,7 @@ function renderProperties(){
   fn(live);
  });
  // Name is the first editable property for every selected geometry object.
- field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+ propertyName(root,o,()=>doc.objects,edit);
  // Place the name-free semantic expression immediately after Name for every
  // supported construction, before any Label controls or other properties.
  const renderConstructionExpression=()=>{
@@ -2029,43 +2057,27 @@ function renderProperties(){
   field(root,'x(t)',xText,'text',v=>change('x',v));
   field(root,'y(t)',yText,'text',v=>change('y',v));
   }
-  const range=document.createElement('div');range.className='parametric-range-grid';root.append(range);
-  field(range,'t min',o.tMin,'number',v=>edit(live=>{if(!finite(v)||v>=live.tMax||Math.abs(v)>1e6)throw Error('Start must precede end.');live.tMin=v;}),{step:0.1});
-  field(range,'t max',o.tMax,'number',v=>edit(live=>{if(!finite(v)||v<=live.tMin||Math.abs(v)>1e6)throw Error('End must follow start.');live.tMax=v;}),{step:0.1});
+  parameterRanges(root,['tMin','tMax'],o,parse2DRegionBound,edit);
  }
  if(o.type==='implicit')field(root,'F(x, y)',o.expr,'text',v=>edit(live=>{parseImplicit(v,functionSliderParameters(doc));live.expr=v;}));
  if(o.type==='vectorField'){
   field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr,functionSliderParameters(doc));live.xExpr=v;}));
   field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v,functionSliderParameters(doc));live.yExpr=v;}));
-  const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  const check=document.createElement('label');check.className='check';check.dataset.propertyLabel='Normalize lengths';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
-  field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
+  vectorOptions(root,o,edit,40);
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
-  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent='Color scheme';
-  const select=document.createElement('select');for(const [value,name] of DOMAIN_COLOR_SCHEMES){const opt=document.createElement('option');opt.value=value;opt.textContent=name;select.append(opt);}
-  select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
-  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
+  propertyChoice(root,'Color scheme',DOMAIN_COLOR_SCHEMES,o.colorMode||'phase-modulus',v=>edit(live=>{live.colorMode=v;}));
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1});
  }
  if(o.type==='implicit'){
-  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent='Color scheme';
-  const select=document.createElement('select');for(const [value,name] of [...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])]){const opt=document.createElement('option');opt.value=value;opt.textContent=name;select.append(opt);}
-  select.value=o.colorMode||'range';select.disabled=o.colorRange!==true;select.onchange=()=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.colorMode=select.value;});modes.append(select);root.append(modes);
-  const resolution=field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
-  resolution.disabled=o.colorRange!==true;
+  propertyChoice(root,'Color scheme',[...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])],o.colorMode||'range',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.colorMode=v;}),!o.colorRange);
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1}).disabled=!o.colorRange;
  }
  if(['vectorField','domainColoring','implicit'].includes(o.type)){
-  const bounds=o.region??visiblePlotRegion();
-  const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label','Drawing region');
-  const entries={};for(const [key,label] of [['xMin','x min'],['xMax','x max'],['yMin','y min'],['yMax','y max']]){
-   entries[key]=field(form,label,bounds[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
-   entries[key].onchange=()=>{};
-  }
-  installPlotRegionKeys(form,entries,()=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound,conditionValue:o.regionCondition,conditionCommit:value=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.regionCondition=value;}),dimension:2});
-  if(o.type==='implicit'&&!o.colorRange)for(const input of form.querySelectorAll('input'))input.disabled=true;
-  root.append(form);
+  drawingRegion(root,o.region??visiblePlotRegion(),{dimension:2,parseBound:parse2DRegionBound,disabled:o.type==='implicit'&&!o.colorRange,conditionValue:o.regionCondition,commit:region=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.region=validatePlotRegion(region);}),conditionCommit:value=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.regionCondition=value;})});
  }
+
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  const measurement=measureGeometry(o,createResolver(doc));
  if(measurement){
@@ -2103,19 +2115,9 @@ function renderProperties(){
  const supportsRange=['vectorField','implicit'].includes(o.type),rasterFill=isRasterPlot(o);
  if(supportsRange)styleGrid.classList.add('vector-style-grid');
  const colorProperty=rasterFill?'fill':'stroke',strokeSlot=styleSlot('stroke');
- const picker=field(strokeSlot,rasterFill?'Fill':'Stroke',o.style[colorProperty],'color',v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;}));
- picker.disabled=rasterFill||supportsRange&&o.colorRange===true;
- const swatches=appendColorSwatches(strokeSlot,{scope:'object',property:colorProperty,apply:v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
- for(const button of swatches.querySelectorAll('button'))button.disabled=picker.disabled;
+ const {picker,swatches}=colorControls(strokeSlot,{label:rasterFill?'Fill':'Stroke',value:o.style[colorProperty],scope:'object',property:colorProperty,disabled:rasterFill||supportsRange&&o.colorRange===true,apply:v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
  if(supportsRange){
-  const mode=styleSlot('color-range'),label=document.createElement('label');label.className='check';label.dataset.propertyLabel='Color range';
-  const check=document.createElement('input');check.type='checkbox';check.setAttribute('aria-label','Color range');check.checked=o.colorRange===true;
-  check.onchange=()=>{
-   const checked=check.checked;
-   if(edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;})===false){check.checked=!checked;return;}
-   if(o.type==='implicit'){renderProperties();return;}
-   picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;
-  };label.append(check,' Color range');mode.append(label);
+  propertyCheck(styleSlot('color-range'),'Color range',o.colorRange,checked=>{const ok=edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;});if(ok!==false){if(o.type==='implicit')renderProperties();else{picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;}}return ok;});
  }
  if(fillableClosedShape(o,{object:id=>get(doc,id)})){
   const fillSlot=styleSlot('fill');
@@ -2124,8 +2126,8 @@ function renderProperties(){
   // Fill enable defaults are configured by shape type under New object style.
  }
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
- field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
- if(!rasterFill&&!pointRole(o,id=>get(doc,id)))field(styleSlot('width'),'Width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
+ opacityControl(styleSlot('opacity'),o.style.opacity,v=>edit(live=>{live.style.opacity=v;}));
+ if(!rasterFill&&!pointRole(o,id=>get(doc,id)))widthControl(styleSlot('width'),o.style.width,v=>edit(live=>{live.style.width=v;}),100);
  if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  localizeUI(root,uiPrefs.language);
