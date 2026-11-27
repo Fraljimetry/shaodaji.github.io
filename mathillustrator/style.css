@@ -1317,3 +1317,8 @@ html.three-d #object-search{display:block!important}
 .properties>.field[data-property-label="Height represents"]+.field[data-property-label="Color scheme"]{margin-top:0;}
 .properties>.plot-region-editor~.property-check-number-pair~:is(.style-controls-grid,.plot-color-grid){margin-top:0;}
 .properties>.field[data-property-label="Color scheme"]~:is(.style-controls-grid,.plot-color-grid){margin-top:0;}
+
+/* Canvas auto-rotation uses the existing view-control button styling. */
+#auto-orbit:not([hidden]){display:inline-flex;align-items:center;justify-content:center;min-width:35px}
+#auto-orbit[aria-pressed="true"]{color:var(--accent);background:var(--hover)}
+#auto-orbit[aria-pressed="false"] .orbit-pause,#auto-orbit[aria-pressed="true"] .orbit-play{display:none}

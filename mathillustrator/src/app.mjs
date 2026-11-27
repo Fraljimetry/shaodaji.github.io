@@ -1,7 +1,7 @@
 import {createDependencyGraph,objectDependencies,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
 import {createDocumentHistory,commitDocumentChange} from './document_history.mjs?cut=round315';
 import {plotCapability,plotState,MIN_RASTER_RESOLUTION} from './plot_capabilities.mjs?cut=round308';
-import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round334';
+import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round339';
 import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round334';
 import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round334';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
@@ -21,7 +21,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round334';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round327';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round335';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round339';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round334';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -199,6 +199,7 @@ function initialSiteTheme(){
  return 'dark'; // The site's default navy appearance; the user's explicit choice remains authoritative.
 }
 let selected3d=null, selectedSlider=null, cameraDrag=null;
+let autoOrbit=null,autoOrbitFrame=0;
 const in3D=()=>doc.settings.plot3dEnabled===true;
 let uiPrefs={language:'en',font:'system',autoPan:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 const {field, propertyChoice, propertyCheck, propertyName, lockedProperties, vectorOptions, parameterRanges, drawingRegion, colorControls, opacityControl, widthControl}=createPropertyControls({document,language:()=>uiPrefs.language,notice,appendColorSwatches});
@@ -212,6 +213,7 @@ function saveStatus(message,canRetry=false){
 }
 function setStorageConflict(state,reason='other'){
  storageConflict=state;
+ if(state)stopAutoOrbit();
  const banner=$('conflict-banner');banner.hidden=!state;
  // A corrupted startup snapshot and a later cross-tab disagreement are
  // different incidents. Never retain the stale 'invalid' heading after recovery.
@@ -226,7 +228,8 @@ function commitLatest(){
  try{
   // Construct the snapshot only inside the critical section. A queued save
   // must never apply a stale captured document after Undo, Open or Load other.
-  const payload=JSON.stringify(doc),result=compareAndWrite(localStorage,STORAGE,lastStored,payload);
+  // During orbit, persist the committed pre-orbit state until the camera edit ends.
+  const payload=autoOrbit?.before??JSON.stringify(doc),result=compareAndWrite(localStorage,STORAGE,lastStored,payload);
   if(!result.ok){setStorageConflict(true);return false;}
   lastStored=payload;dirty=false;
   saveStatus(navigator.locks?.request?'Saved locally':'Saved locally · cross-tab lock unavailable');return true;
@@ -275,6 +278,7 @@ function commitEdit(before){return commitDocumentChange(before,JSON.stringify(do
 function prepareHistoryDocument(s){const next=validateDoc(JSON.parse(s));if(next.scene3d)enforce3DVisibility(next.scene3d);return next;}
 function restoreHistory(entry){constructionEmphasis.clear();lastMoveCanvasTap=null;doc=entry.document;trash=entry.trash;documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();persistTrash();syncHistory();renderAll();}
 function navigateHistory(direction){
+ stopAutoOrbit();
  if(drag){cancelDrag();return;}
  // Close an active playback transaction before choosing the next history entry.
  stopAllSliderPlayback();
@@ -445,6 +449,7 @@ function toggleSliderPlayback(name){
  renderAlgebra();renderProperties();
 }
 function update(mutator,{refreshList=true,renderCanvas=true,preservePlayback=false}={}){
+ stopAutoOrbit();
  // Pure lock toggles must not stop independent animations. Split undo history
  // at the toggle, leaving the current RAF session running from a new baseline.
  const splitPlayback=preservePlayback&&playingSliders.size>0;
@@ -1205,7 +1210,7 @@ function render(){
  // A camera move, a new document, or a mode switch invalidates every pending
  // sample and DOM batch. Exports always use the independent synchronous path.
  const epoch=sceneRenderEpoch;
- const snapshot=JSON.parse(JSON.stringify(doc.scene3d)),interactive=!!cameraDrag&&uiPrefs.fast3DOrbit!==false;
+ const snapshot=JSON.parse(JSON.stringify(doc.scene3d)),interactive=!!(cameraDrag||autoOrbit)&&uiPrefs.fast3DOrbit!==false;
  sceneRenderTask=create3DProjectionTask(snapshot,size.w,size.h,{interactive});
  sceneRenderPending=true;
  setRenderInfo(`${snapshot.plots.length} 3D plots · rendering…`);
@@ -1247,8 +1252,8 @@ function render(){
     // One atomic replacement: no half-lit or partly missing 3D scene.
     svg.replaceChildren(staged);sceneRenderPending=false;
     if(!$('export-menu').hidden)setupExport();lastRender=performance.now()-start;
-    setRenderInfo(`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?' · drag preview':''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`);
-    if(cameraDrag&&orbitRenderQueued){orbitRenderQueued=false;scheduleRender();}
+    setRenderInfo(`${snapshot.plots.length} 3D plots · ${Math.round(lastRender)} ms${interactive?(autoOrbit?' · orbit preview':' · drag preview'):''}${plotLimitedInScene?' · PLOT LIMIT: reduce detail/plots':''}`);
+    if((cameraDrag||autoOrbit)&&orbitRenderQueued){orbitRenderQueued=false;scheduleRender();}
    }
   };
   paint();
@@ -1273,7 +1278,7 @@ function render(){
 function scheduleRender(){
  // Do not repeatedly discard expensive implicit-surface work while orbiting.
  // Finish a small, complete preview, then take the most recent camera pose.
- if(in3D()&&cameraDrag&&sceneRenderPending){orbitRenderQueued=true;return;}
+ if(in3D()&&(cameraDrag||autoOrbit)&&sceneRenderPending){orbitRenderQueued=true;return;}
  if(!frame)frame=requestAnimationFrame(render);
 }
 function currentObject(o){return get(doc,o.id)===o;}
@@ -2152,8 +2157,43 @@ function syncPlotModeControl(){
  plotInput.setAttribute('aria-label',translated(mode==='vectorField'?'X(x, y) =':['domainColoring','domain3d'].includes(mode)?'F(z) =':mode==='parametric'?`x(${symbol.value}) =`:three?'3D first component':'Function or construction command',uiPrefs.language));
  plotY.setAttribute('aria-label',translated(mode==='vectorField'?'Y(x, y) =':mode==='parametric'?`y(${symbol.value}) =`:three?'3D second component':'Second component',uiPrefs.language));
 }
+// Auto orbit is a single camera edit, never a stream of history entries.
+function syncAutoOrbitButton(){
+ const button=$('auto-orbit'),active=!!autoOrbit;
+ button.hidden=!in3D();button.setAttribute('aria-pressed',String(active));
+ const label='Automatic rotation';
+ button.title=label;button.setAttribute('aria-label',label);
+ localizeUI(button.parentElement,uiPrefs.language);
+}
+function stopAutoOrbit(){
+ if(!autoOrbit)return;
+ const session=autoOrbit;autoOrbit=null;
+ cancelAnimationFrame(autoOrbitFrame);autoOrbitFrame=0;orbitRenderQueued=false;
+ if(doc===session.document){commitEdit(session.before);$('scene3d-yaw').value=String(Number(doc.scene3d.options.yaw.toFixed(2)));}
+ syncAutoOrbitButton();render();
+}
+function autoOrbitTick(now){
+ if(!autoOrbit)return;
+ if(!in3D()||doc!==autoOrbit.document||document.hidden){stopAutoOrbit();return;}
+ const elapsed=now-autoOrbit.started;
+ // Do not cancel a pending scene repeatedly. Advance only when a complete
+ // frame can be scheduled, so dense plots remain responsive.
+ if(!sceneRenderPending&&!frame&&elapsed>0){
+  const options=doc.scene3d.options;
+  options.yaw=((autoOrbit.yaw+elapsed*.024+180)%360+360)%360-180;
+  $('scene3d-yaw').value=String(Number(options.yaw.toFixed(2)));
+  scheduleRender();
+ }
+ autoOrbitFrame=requestAnimationFrame(autoOrbitTick);
+}
+function toggleAutoOrbit(){
+ if(autoOrbit){stopAutoOrbit();return;}
+ if(!in3D()||cameraDrag||document.hidden)return;
+ autoOrbit={document:doc,before:JSON.stringify(doc),yaw:doc.scene3d.options.yaw,started:performance.now()};
+ syncAutoOrbitButton();autoOrbitFrame=requestAnimationFrame(autoOrbitTick);
+}
 function sync3DInterface(){
- const enabled=in3D();document.documentElement.classList.toggle('three-d',enabled);$('scene3d-enable').checked=enabled;
+ const enabled=in3D();syncAutoOrbitButton();document.documentElement.classList.toggle('three-d',enabled);$('scene3d-enable').checked=enabled;
  $('objects').hidden=enabled;$('objects-3d').hidden=!enabled;
  $('scene3d-fix-region').checked=doc.scene3d?.options.fixRegion===true;
  $('scene3d-background').value=doc.settings.background;
@@ -2496,7 +2536,7 @@ function pointerDown(e){
    e.preventDefault();return;
   }
  }
- if(in3D()){if(e.button!==0||cameraDrag)return;const [x,y]=xyEvent(e);cameraDrag={pointerId:e.pointerId,x,y,yaw:doc.scene3d.options.yaw,pitch:doc.scene3d.options.pitch};orbitRenderQueued=false;if(sceneRenderPending)cancelSceneRender();try{$('drawing').setPointerCapture(e.pointerId);}catch{}return;}
+ if(in3D()){if(e.button!==0||cameraDrag)return;stopAutoOrbit();const [x,y]=xyEvent(e);cameraDrag={pointerId:e.pointerId,x,y,yaw:doc.scene3d.options.yaw,pitch:doc.scene3d.options.pitch};orbitRenderQueued=false;if(sceneRenderPending)cancelSceneRender();try{$('drawing').setPointerCapture(e.pointerId);}catch{}return;}
 
  if(!$('tikzcd-dialog').hidden||!$('export-menu').hidden)return;
  // Touch drawing must wait for release; otherwise the first finger of a pinch
@@ -3835,24 +3875,24 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    }
   }).catch(error=>notice('Open failed: '+error.message));
  }
- $('save').onclick=()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());
- $('export-open').onclick=()=>{if(drag)cancelDrag();setupExport();$('export-menu').hidden=!$('export-menu').hidden;$('export-backdrop').hidden=$('export-menu').hidden;if($('export-menu').hidden)exportAbortToken++;else $('export-close').focus();};$('export-close').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
+ $('save').onclick=()=>{stopAutoOrbit();download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),datedProjectName());};
+ $('export-open').onclick=()=>{stopAutoOrbit();if(drag)cancelDrag();setupExport();$('export-menu').hidden=!$('export-menu').hidden;$('export-backdrop').hidden=$('export-menu').hidden;if($('export-menu').hidden)exportAbortToken++;else $('export-close').focus();};$('export-close').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
  $('export-backdrop').onclick=()=>{exportAbortToken++;$('export-menu').hidden=true;$('export-backdrop').hidden=true;$('export-open').focus();};
- $('help').onclick=()=>window.open('tutorial.html?v=270','_blank','noopener');$('show-hidden').onchange=()=>renderList({resetScroll:true});
+ $('help').onclick=()=>window.open('tutorial.html?v=339','_blank','noopener');$('show-hidden').onchange=()=>renderList({resetScroll:true});
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!localizedConfirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};
- $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');documentHistory.clear();detachTrashDependencies();selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
+ $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');stopAutoOrbit();if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');documentHistory.clear();detachTrashDependencies();selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!localizedConfirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&playingSliders.size){stopAllSliderPlayback();renderAlgebra();renderProperties();}
   // A gesture in progress has not committed an undoable transaction. Do not
   // allow autosave or tab switching to preserve its temporary coordinates.
-  if(document.visibilityState==='hidden'){pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}if(dirty&&!storageConflict)persistNow();}
+  if(document.visibilityState==='hidden'){stopAutoOrbit();pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}if(dirty&&!storageConflict)persistNow();}
  });
  // Browser teardown may not wait for an asynchronous lock; use the original
  // compare-and-write as a last-chance, explicitly non-atomic backup attempt.
- window.addEventListener('pagehide',()=>{if(dirty&&!storageConflict)commitLatest();});
+ window.addEventListener('pagehide',()=>{stopAutoOrbit();if(dirty&&!storageConflict)commitLatest();});
  window.addEventListener('storage',e=>{
   // StorageEvents are queued asynchronously; their newValue may describe an
   // obsolete intermediate write. Read the latest storage value rather than
@@ -3865,6 +3905,8 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    lastStored=latest;clearTimeout(saveTimer);dirty=false;setStorageConflict(false);saveStatus('Same project synchronized');
   }else setStorageConflict(true);
  });
+ $('auto-orbit').onclick=toggleAutoOrbit;
+ $('scene3d-yaw').addEventListener('focus',stopAutoOrbit);
  $('zoom-out').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.max(.25,doc.scene3d.options.zoom/1.3);});else{if(drag)cancelDrag();view.scale=Math.max(1e-12,view.scale/1.3);render();}};$('zoom-in').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.min(5,doc.scene3d.options.zoom*1.3);});else{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();}};$('zoom-reset').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=1;doc.scene3d.options.yaw=-38;doc.scene3d.options.pitch=26;});else{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();}};$('fit').onclick=fit;
  const mobile=window.matchMedia('(max-width:700px)');
  const refreshPanelWidths=setupPanelResizing(mobile);

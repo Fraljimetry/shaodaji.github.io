@@ -436,6 +436,7 @@ const zh=Object.freeze({
  "Vector color": "向量颜色",
  "Color range": "色彩渐变",
  "Object opacity": "对象不透明度",
+ "Automatic rotation": "自动旋转",
  "Fast 3D orbit": "快速三维旋转",
  "Surface parameter ranges": "曲面参数范围",
  "Arrow label positioning": "箭头标签布局",
@@ -719,6 +720,7 @@ const zh=Object.freeze({
  "No unsaved local changes": "没有未保存的本地更改",
  "Save coordination failed · download JSON": "保存协调失败 · 请下载 JSON",
  "drag preview": "拖动预览",
+ "orbit preview": "旋转预览",
  "rendering…": "正在渲染…",
  "PLOT LIMIT: zoom/adjust detail": "绘图限制：请缩放或调整精度",
  "PLOT LIMIT: reduce detail/plots": "绘图限制：请降低精度或减少图形",
@@ -829,7 +831,7 @@ export function translated(s,language='en'){
  if(objectCount)return `${objectCount[1]} 个对象`;
  const status2d=/^(\d+) objects · ([\d.]+) ms(?: · (PLOT LIMIT: zoom\/adjust detail))?$/.exec(s);
  if(status2d)return `${status2d[1]} 个对象 · ${status2d[2]} 毫秒${status2d[3]?' · '+translated(status2d[3],language):''}`;
- const status3d=/^(\d+) 3D plots · (rendering…|[\d.]+ ms)(?: · (drag preview))?(?: · (PLOT LIMIT: reduce detail\/plots))?$/.exec(s);
+ const status3d=/^(\d+) 3D plots · (rendering…|[\d.]+ ms)(?: · (drag preview|orbit preview))?(?: · (PLOT LIMIT: reduce detail\/plots))?$/.exec(s);
  if(status3d)return `${status3d[1]} 个三维图形 · ${status3d[2]==='rendering…'?translated(status3d[2],language):status3d[2].replace(' ms',' 毫秒')}${status3d[3]?' · '+translated(status3d[3],language):''}${status3d[4]?' · '+translated(status3d[4],language):''}`;
  if(s.startsWith('Animation stopped: '))return '动画已停止：'+translated(s.slice('Animation stopped: '.length),language);
  const prefixed=/^(Local save unavailable|Autosave unavailable|Save coordination failed|3D rendering failed|Label move rejected|Move rejected|Open failed|Import failed|Cannot load other tab|LaTeX renderer failed): (.*)$/.exec(s);

@@ -64,6 +64,7 @@ class GateContractTests(unittest.TestCase):
             'browser-tikzcd-layout': 'tests/browser_round196_layout_aware_tikz.py',
             'browser-runtime-localization': 'tests/browser_round174_i18n_runtime.py',
             'browser-trash-dependencies': 'tests/browser_round335_trash_dependencies.py',
+            'browser-auto-orbit': 'tests/browser_round339_auto_orbit.py',
             'browser-camera-clipping': 'tests/browser_round334_camera_clipping.py',
             'browser-supported-exports': 'tests/browser_round51f_exports_plotglyphs.py',
         }
