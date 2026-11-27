@@ -1319,14 +1319,15 @@ html.three-d #object-search{display:block!important}
 .properties>.field[data-property-label="Color scheme"]~:is(.style-controls-grid,.plot-color-grid){margin-top:0;}
 
 /* Canvas auto-rotation uses the existing view-control button styling. */
-#auto-orbit-controls:not([hidden]){position:absolute;top:54px;right:13px;z-index:1;display:flex;align-items:center;gap:6px;padding:4px 7px;background:var(--surface);border:1px solid var(--border);border-radius:7px;box-shadow:var(--shadow);pointer-events:auto;max-width:calc(100% - 24px);font-size:11px;color:var(--ink)}
-#auto-orbit{display:inline-flex;align-items:center;justify-content:center;min-width:35px;padding:7px;order:1}
-/* Keep the speed extension collapsed until the control is hovered or keyboard-focused. */
-#auto-orbit-controls > :is(label,input,output){display:none}
-#auto-orbit-controls:where(:hover,[data-keyboard-focus]) > :is(label,input,output){display:revert}
-@media(hover:none){#auto-orbit-controls:where(:focus-within) > :is(label,input,output){display:revert}}
+#auto-orbit-controls[hidden]{display:none}
+#auto-orbit-controls:not([hidden]){position:relative;display:flex;align-items:stretch;flex:none;font-size:11px;color:var(--ink)}
+#auto-orbit{display:inline-flex;align-items:center;justify-content:center;min-width:35px}
+#auto-orbit svg{width:14px;height:14px}
+#auto-orbit-extension{position:absolute;right:100%;top:0;bottom:0;display:none;align-items:center;gap:5px;padding:0 6px;background:var(--surface);border:1px solid var(--border);border-radius:7px;box-shadow:var(--shadow);white-space:nowrap}
+#auto-orbit-controls:where(:hover,[data-keyboard-focus]) > #auto-orbit-extension{display:flex}
+@media(hover:none){#auto-orbit-controls:where(:focus-within) > #auto-orbit-extension{display:flex}}
 #auto-orbit-speed{width:86px;min-width:32px;padding:0;accent-color:var(--accent)}
 #auto-orbit-rate{white-space:nowrap;font-variant-numeric:tabular-nums}
-@media(max-width:420px){#auto-orbit-controls label{display:none}#auto-orbit-controls{right:6px;top:48px;max-width:calc(100% - 12px)}}
+@media(max-width:700px){#auto-orbit-extension label{display:none}#auto-orbit-speed{width:48px}#auto-orbit-extension{gap:3px;padding:0 3px}}
 #auto-orbit[aria-pressed="true"]{color:var(--accent);background:var(--hover)}
 #auto-orbit[aria-pressed="false"] .orbit-pause,#auto-orbit[aria-pressed="true"] .orbit-play{display:none}

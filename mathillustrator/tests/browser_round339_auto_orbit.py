@@ -42,18 +42,22 @@ with sync_playwright() as pw:
         controls = page.locator("#auto-orbit-controls")
         stage = page.locator(".stage").bounding_box()
         box = controls.bounding_box()
-        assert stage["x"] + stage["width"] - box["x"] - box["width"] < 20 and box["y"] - stage["y"] < 80
+        zoom = page.locator('#zoom-out').bounding_box()
+        assert abs(box['y'] + box['height']/2 - zoom['y'] - zoom['height']/2) <= 1
+        assert 0 <= zoom['x'] - box['x'] - box['width'] <= 5
         page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)
         assert speed.is_hidden()
         button.hover()
         assert speed.is_visible()
         assert speed.bounding_box()["x"] < button.bounding_box()["x"]
+        assert page.locator('#zoom-out').bounding_box() == zoom
+        assert button.bounding_box() == box
         speed.hover()
         assert speed.is_visible()
         page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)
         assert speed.is_hidden()
         # Keyboard focus must reveal the extension and allow reaching the slider.
-        page.locator('#drawing').focus()
+        page.locator('#mode-label').evaluate('(el)=>{el.tabIndex=-1;el.focus()}')
         page.keyboard.press('Tab')
         assert button.evaluate('(el)=>el===document.activeElement')
         page.keyboard.press('Tab')
@@ -117,7 +121,7 @@ with sync_playwright() as pw:
         button.hover()
         assert speed.is_visible()
         page.wait_for_function('''() => {
-            const box = document.querySelector('#auto-orbit-controls').getBoundingClientRect();
+            const box = document.querySelector('#auto-orbit-extension').getBoundingClientRect();
             const stage = document.querySelector('.stage').getBoundingClientRect();
             return box.left >= stage.left && box.right <= stage.right && box.bottom <= stage.bottom;
         }''')
