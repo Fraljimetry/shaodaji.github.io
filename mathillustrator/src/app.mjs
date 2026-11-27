@@ -1600,9 +1600,9 @@ function renderProperties3D(root){
  const apply=v=>edit(p=>{if(!plotState(p).solidEnabled)throw Error('This color scheme uses automatic colors.');p.color=v;});
  colorControls(colorSlot,{label:selectedPlot.kind==='vector3d'?'Stroke':'Fill',value:selectedPlot.color,scope:'plot3d',property:'color',disabled:!plotState(selectedPlot).solidEnabled,apply});
  const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
- propertyCheck(right,'Color range',selectedPlot.colorRange,checked=>{const ok=edit(p=>{p.colorRange=checked;});if(ok!==false)renderProperties();return ok;});
  opacityControl(right,selectedPlot.opacity,v=>edit(p=>{p.opacity=v;}));
  if(selectedPlot.kind==='vector3d')widthControl(right,selectedPlot.lineWidth??1.5,v=>edit(p=>{p.lineWidth=v;}),plotCapability(selectedPlot).widthMax);
+ propertyCheck(right,'Color range',selectedPlot.colorRange,checked=>{const ok=edit(p=>{p.colorRange=checked;});if(ok!==false)renderProperties();return ok;});
  localizeUI(root,uiPrefs.language);
 }
 function renderNewFreehandControls(root){
@@ -1965,9 +1965,6 @@ function renderProperties(){
  if(supportsRange)styleGrid.classList.add('vector-style-grid');
  const colorProperty=rasterFill?'fill':'stroke',strokeSlot=styleSlot('stroke');
  const {picker,swatches}=colorControls(strokeSlot,{label:rasterFill?'Fill':'Stroke',value:o.style[colorProperty],scope:'object',property:colorProperty,disabled:!plotState(o).solidEnabled,apply:v=>edit(live=>{if(!plotState(live).solidEnabled)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
- if(supportsRange){
-  propertyCheck(styleSlot('color-range'),'Color range',o.colorRange,checked=>{const ok=edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;});if(ok!==false){if(o.type==='implicit')renderProperties();else{picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;}}return ok;});
- }
  if(fillableClosedShape(o,{object:id=>get(doc,id)})){
   const fillSlot=styleSlot('fill');
   field(fillSlot,'Fill',o.style.fill,'color',v=>edit(live=>{live.style.fill=v;live.style.fillEnabled=true;if(live.type==='ellipse')live.ellipseFilled=true;}));
@@ -1977,6 +1974,9 @@ function renderProperties(){
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  opacityControl(styleSlot('opacity'),o.style.opacity,v=>edit(live=>{live.style.opacity=v;}));
  if(!rasterFill&&!pointRole(o,id=>get(doc,id)))widthControl(styleSlot('width'),o.style.width,v=>edit(live=>{live.style.width=v;}),100);
+ if(supportsRange){
+  propertyCheck(styleSlot('color-range'),'Color range',o.colorRange,checked=>{const ok=edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;});if(ok!==false){if(o.type==='implicit')renderProperties();else{picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;}}return ok;});
+ }
  if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  localizeUI(root,uiPrefs.language);

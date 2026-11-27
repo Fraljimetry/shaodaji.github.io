@@ -98,6 +98,11 @@ def run():
                     auto=complex2 or range_on or (complex3 and obj(mode)['colorMode']!='solid')
                     assert_state(color,'disabled' if auto else 'enabled'); assert_swatches(auto)
                     assert_state('Width','enabled' if vector or (not three and not complex2 and not (implicit and range_on)) else 'absent')
+                    if has_range:
+                        names=['Opacity']+(['Width'] if field('Width').count() else [])+['Color range']
+                        order(names)
+                        boxes=[field(name).locator('xpath=..').bounding_box() for name in names]
+                        assert all(a['y']+a['height']<=b['y']+1 for a,b in zip(boxes,boxes[1:])), (mode,lang,range_on,boxes)
                     assert_state('Density','enabled' if vector else 'absent')
                     assert_state('Normalize lengths','enabled' if vector else 'absent')
                     assert_state('Color scheme',('disabled' if (implicit and not range_on) or (complex3 and range_on) else 'enabled') if has_scheme else 'absent')

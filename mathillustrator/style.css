@@ -588,9 +588,9 @@ html.three-d .settings-2d-only{display:none!important}
 .properties-3d .plot-color-options>.field>input{width:100%!important;max-width:100%!important;min-width:0;box-sizing:border-box}
 .properties .vector-style-grid{grid-template-rows:auto auto auto}
 .properties .vector-style-grid .style-stroke{grid-area:1/1/4/2}
-.properties .vector-style-grid .style-color-range{grid-area:1/2/2/3}
-.properties .vector-style-grid .style-opacity{grid-area:2/2/3/3}
-.properties .vector-style-grid .style-width{grid-area:3/2/4/3}
+.properties .vector-style-grid .style-color-range{grid-area:3/2/4/3}
+.properties .vector-style-grid .style-opacity{grid-area:1/2/2/3}
+.properties .vector-style-grid .style-width{grid-area:2/2/3/3}
 .properties .vector-style-grid .style-opacity>.field,.properties .vector-style-grid .style-width>.field{display:flex;flex-direction:column;gap:4px;align-items:stretch}
 .properties .vector-style-grid .style-opacity input,.properties .vector-style-grid .style-width input{box-sizing:border-box;width:100%;max-width:100%}
 .properties-3d>.parametric-range-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:8px 0 11px;min-width:0}
@@ -654,11 +654,12 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
  grid-template-rows:repeat(3,minmax(0,auto));gap:7px 10px;align-items:start;min-width:0;
 }
 .properties .style-controls-grid.stroke-only-grid>.style-stroke {grid-area:1/1/4/2;min-width:0;}
-.properties .style-controls-grid.stroke-only-grid>.style-color-range {grid-area:1/2/2/3;min-width:0;}
-.properties .style-controls-grid.stroke-only-grid>.style-opacity {grid-area:2/2/3/3;min-width:0;}
-.properties .style-controls-grid.stroke-only-grid>.style-width {grid-area:3/2/4/3;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-color-range {grid-area:3/2/4/3;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-opacity {grid-area:1/2/2/3;min-width:0;}
+.properties .style-controls-grid.stroke-only-grid>.style-width {grid-area:2/2/3/3;min-width:0;}
 .properties .style-controls-grid.stroke-only-grid>.style-pointsize {grid-area:4/1/5/3;min-width:0;}
-/* For non-vector strokes no mode checkbox, opacity moves into the first row. */
+.properties .style-controls-grid.stroke-only-grid:not(:has(>.style-width))>.style-color-range {grid-area:2/2/3/3;}
+/* Keep non-range strokes on the same numeric rows. */
 .properties .style-controls-grid.stroke-only-grid:not(:has(.style-color-range))>.style-opacity {grid-area:1/2/2/3;}
 .properties .style-controls-grid.stroke-only-grid:not(:has(.style-color-range))>.style-width {grid-area:2/2/3/3;}
 .properties .style-controls-grid.stroke-only-grid>.style-stroke>.field {display:flex;flex-direction:column;gap:5px;min-width:0;}
