@@ -10,13 +10,27 @@ function openStroke(raw){
 }
 function simplify(points,tolerance){
  if(points.length<=2)return points.slice();
- let best=0,index=-1;const a=points[0],b=points.at(-1),dx=b[0]-a[0],dy=b[1]-a[1],den=dx*dx+dy*dy;
- for(let i=1;i<points.length-1;i++){
-  const p=points[i],t=den?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/den)):0;
-  const d=distance(p,[a[0]+t*dx,a[1]+t*dy]);if(d>best){best=d;index=i;}
+ // Iterative Ramer-Douglas-Peucker: the recursive formulation overflows the
+ // JavaScript call stack on long, highly oscillating yet valid freehand paths.
+ // Preserve the original strict max-distance tie-breaking and output order.
+ const kept=new Uint8Array(points.length);
+ kept[0]=1;kept[points.length-1]=1;
+ const stack=[[0,points.length-1]];
+ while(stack.length){
+  const [start,end]=stack.pop();
+  const a=points[start],b=points[end],dx=b[0]-a[0],dy=b[1]-a[1],den=dx*dx+dy*dy;
+  let best=0,index=-1;
+  for(let i=start+1;i<end;i++){
+   const p=points[i],t=den?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/den)):0;
+   const d=distance(p,[a[0]+t*dx,a[1]+t*dy]);
+   if(d>best){best=d;index=i;}
+  }
+  if(best>tolerance){
+   kept[index]=1;
+   stack.push([index,end],[start,index]);
+  }
  }
- if(best<=tolerance)return [a,b];
- return [...simplify(points.slice(0,index+1),tolerance).slice(0,-1),...simplify(points.slice(index),tolerance)];
+ return points.filter((_,i)=>kept[i]);
 }
 function polygonVertices(raw){
  const pts=openStroke(raw);if(pts.length<3)return [];
@@ -32,7 +46,12 @@ function polygonVertices(raw){
  // Suppress adjacent redundant corners while retaining curved gestures as
  // polygons with bounded vertex count; never create a degenerate shape.
  vertices=vertices.filter((p,i)=>i===0||distance(p,vertices[i-1])>diameter*.025);
- if(vertices.length>24){const stride=Math.ceil(vertices.length/24);vertices=vertices.filter((_,i)=>i%stride===0);}
+ if(vertices.length>24){
+  // Retain the full vertex budget and distribute omissions across the outline.
+  // A stride of ceil(n/24) discarded nearly half of a 25-corner stroke.
+  const count=vertices.length;
+  vertices=Array.from({length:24},(_,i)=>vertices[Math.floor(i*count/24)]);
+ }
  return vertices.length>=3?vertices:[];
 }
 export function shapeFromStroke(raw,shape='free',regular=true){

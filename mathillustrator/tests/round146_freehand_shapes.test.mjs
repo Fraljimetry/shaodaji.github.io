@@ -36,3 +36,19 @@ test('Roundtrip shaped strokes in v1 JSON without changing old Free curves',()=>
   const bad=structuredClone(d);modify(bad.objects[1]);assert.throws(()=>validateDoc(bad));
  }
 });
+
+test('polygon vertex cap retains 24 representative corners instead of dropping half at 25',()=>{
+ const zigzag=n=>Array.from({length:n},(_,i)=>{
+  const t=i*2*Math.PI/n,r=i%2?5:10;
+  return [r*Math.cos(t),r*Math.sin(t)];
+ });
+ const within=shapeFromStroke(zigzag(24),'polygon',false);
+ const justOver=shapeFromStroke(zigzag(25),'polygon',false);
+ assert.equal(within.path.length-1,24);
+ assert.equal(justOver.path.length-1,24,'25-corner stroke should not lose 12 extra corners');
+ assert.deepEqual(justOver.path[0],justOver.path.at(-1));
+ for(const n of [26,30,40,50,72]){
+  const shape=shapeFromStroke(zigzag(n),'polygon',false);
+  assert.equal(shape.path.length-1,24,`retain the full 24-vertex capacity for ${n} corners`);
+ }
+});

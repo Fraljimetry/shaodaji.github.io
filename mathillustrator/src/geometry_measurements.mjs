@@ -23,11 +23,19 @@ function intersects(a,b,c,d){
 export function polygonArea(vertices){
  if(!Array.isArray(vertices)||vertices.length<3||vertices.length>10000||!vertices.every(valid))return null;
  const n=vertices.length,anchor=vertices[0];
+ // Cheap axis-aligned edge bounds exclude disjoint edge pairs before the
+ // orientation tests. This matters for large, otherwise simple polygons.
+ const bounds=vertices.map((a,i)=>{
+  const b=vertices[(i+1)%n];
+  return [Math.min(a[0],b[0]),Math.max(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[1],b[1])];
+ });
  for(let i=0;i<n;i++){
   const a=vertices[i],b=vertices[(i+1)%n];
   if(a[0]===b[0]&&a[1]===b[1])return null;
   for(let j=i+1;j<n;j++){
    if(j===i+1||(i===0&&j===n-1))continue;
+   const u=bounds[i],v=bounds[j];
+   if(u[1]<v[0]||v[1]<u[0]||u[3]<v[2]||v[3]<u[2])continue;
    if(intersects(a,b,vertices[j],vertices[(j+1)%n]))return null;
   }
  }
@@ -71,7 +79,7 @@ export function measureGeometry(o,resolver){
   let area=null;
   if(p.length===3){const ellipse=focalEllipse(p);if(ellipse)area=Math.PI*ellipse.rx*ellipse.ry;}
   else if(p.length===2&&p.every(valid))area=Math.PI*Math.abs((p[1][0]-p[0][0])*(p[1][1]-p[0][1]))/4;
-  return {kind:'area',value:Number.isFinite(area)&&area>1e-12?area:null};
+  return {kind:'area',value:Number.isFinite(area)&&area>0?area:null};
  }
  return null;
 }

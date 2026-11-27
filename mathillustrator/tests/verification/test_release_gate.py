@@ -29,6 +29,41 @@ class GateContractTests(unittest.TestCase):
             self.assertEqual(len(tests), 1)
             self.assertIn('tests/verification/test_release_gate.py', tests[0])
 
+    def test_recent_bug_browser_workflows_are_selected_by_profile(self):
+        expected_common = {
+            'browser-recent-input-assist': 'tests/browser_round246_input_assist.py',
+        }
+        expected_full = {
+            'browser-recent-freehand': 'tests/browser_round146_freehand_shapes.py',
+            'browser-recent-panel-resize': 'tests/browser_panel_resize_current.py',
+        }
+        for profile in ('quick', 'local', 'release'):
+            specs = gate.command_specs(profile, 10000)
+            selected = {name: (argv, timeout, kind) for name, argv, timeout, kind in specs}
+            for name, path in expected_common.items():
+                self.assertIn(name, selected, profile)
+                argv, timeout, kind = selected[name]
+                self.assertEqual(argv[-1], path)
+                self.assertEqual(kind, 'browser')
+                self.assertGreaterEqual(timeout, 90)
+                self.assertTrue((gate.ROOT / path).is_file(), path)
+            for name, path in expected_full.items():
+                if profile == 'quick':
+                    self.assertNotIn(name, selected)
+                    continue
+                self.assertIn(name, selected, profile)
+                argv, timeout, kind = selected[name]
+                self.assertEqual(argv[-1], path)
+                self.assertEqual(kind, 'browser')
+                self.assertGreaterEqual(timeout, 90)
+                self.assertTrue((gate.ROOT / path).is_file(), path)
+            self.assertEqual(len(selected), len(specs), 'Duplicate verification check name')
+
+    def test_recent_bug_browser_workflows_fail_closed_without_execution(self):
+        for name in ('browser-recent-input-assist', 'browser-recent-freehand', 'browser-recent-panel-resize'):
+            self.assertEqual(self.run_fake(name, '', kind='browser')['status'], 'INCOMPLETE')
+            self.assertEqual(self.run_fake(name, 'PASS', returncode=1, kind='browser')['status'], 'FAIL')
+
     def test_self_tests_cannot_pass_with_empty_discovery(self):
         result = self.run_fake('verification-self-tests', '', kind='python')
         self.assertEqual(result['status'], 'INCOMPLETE')

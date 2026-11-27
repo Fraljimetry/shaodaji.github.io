@@ -1,3 +1,13 @@
+## Targeted debugging — micro-scale ellipse measurement (2026-11-26)
+
+**Confirmed defect:** A valid two-reference ellipse with positive area below `1e-12` displayed no area measurement, even though the geometry model accepted it and the area was finite. The cutoff was absolute and not geometry-relative.
+
+**Correction:** `geometry_measurements.mjs` now accepts any finite positive ellipse area, consistent with the existing circle and polygon measurement behavior. Collapsed/invalid ellipses still yield unavailable area. No geometry, export, persistence, or rendering code changed.
+
+**Evidence:** `ellipse_micro_area.test.mjs` fails against the unmodified baseline and passes afterward, including dependent-point resizing and collapse. Full Node tests **865/865 PASS** (0 failed/skipped/todo); selected real Chromium derived-geometry suite **PASS**; targeted existing measurement suite **PASS**. Integrated Quick gate completed baseline inventory, JS/Python syntax, harness self-tests, Node regressions and mathematical properties successfully, but **did not finish** (timed out during browser startup). Integrated Local and Release gates were not executed. The selected Chromium suite is not a complete browser acceptance gate.
+
+---
+
 ## Round 299 — Archived-browser inventory and verification evidence hardening (2026-11-22)
 
 **Source provenance:** user-supplied complete Round 284 ZIP, then cumulative website-root overlays Round 285 through Round 298 applied in order. This round changes verification files only; no production application modules.
@@ -3271,3 +3281,64 @@ Removed an exposed historical round label and rewrote release-note-like explanat
 
 ### Mesh detail maximum 96 (current change)
 The Mesh detail input, runtime scene validator, structured/implicit sampling bounds, evaluation estimator, and project JSON schema now use maximum 96. Legacy project detail values 97–128 normalize to 96 during document validation, without mutating caller data. Existing historical Round 126 evidence for 128 remains historical, not current acceptance. Fresh Node full suite: 860/860 passed (exit 0). Targeted Chromium high-detail regression passed using the actual raster-rendered scene at 96, no plot-limit or JS errors. The integrated Local and Quick runners did not finish in the current execution (tool timeouts); no complete integrated gate PASS is claimed.
+
+## Polygon area measurement performance investigation (2026-11-26)
+
+**Confirmed issue:** the self-intersection validity check in `geometry_measurements.mjs` performed expensive orientation tests for every nonadjacent edge pair, even when their bounding boxes were far apart. A valid 2,000-vertex regular polygon took approximately 135 ms in a single Node baseline benchmark, creating avoidable interactive Properties-panel latency.
+
+**Minimal optimization:** precompute the axis-aligned bounding rectangle of each edge and skip orientation testing for disjoint pairs. The authoritative tolerance-based segment intersection predicate and area computation are unchanged. Edges whose bounding boxes touch still use the original intersection test, including microscopic cases.
+
+**Fresh measurements (single-process Node, not browser frame timings):** 2,000-vertex valid polygon ~135 ms before / ~11 ms after; 4,000-vertex valid polygon ~509 ms before / ~39 ms after. These are indicative, not guaranteed timings; worst-case overlapping bounding boxes still incur quadratic work.
+
+**Fresh executed checks:** 864/864 Node regressions passed, including three new large-polygon/degeneracy cases. Real headless Chromium `browser_round51h_derived_geometry.py` passed. Integrated Quick runner passed inventory, 37-module JavaScript syntax, Python test syntax, verification-harness self-tests, and Node regressions before the external execution window expired while mathematical properties were running. The Quick gate **did not complete**; full Local and hosted checks were not executed. No persistence, export format, geometry model, or MathReader files were changed.
+
+---
+
+## Targeted debugging — deep freehand-to-polygon conversion (2026-11-26)
+
+**Confirmed defect:** A 6,000–20,000-point valid zigzag stroke could overflow the JavaScript call stack when converting Freehand to Polygon. The recursive Ramer–Douglas–Peucker simplifier reached one nested call per retained corner. A 20,000-point stroke is within the project's documented `rawPath`/`path` capacity.
+
+**Correction:** `freehand_shapes.mjs` uses an iterative segment stack and a retained-vertex bitmap. It preserves the previous maximum-distance test, tie-breaking, original ordering, polygon corner cap, closure, and public project format; no geometry object or export schema changed.
+
+**Evidence:** The new `freehand_deep_stroke_debug.test.mjs` failed against the baseline with `RangeError: Maximum call stack size exceeded` and passes after the correction. Existing freehand-shape Node tests pass, and 200 deterministic moderate-size stroke cases produce identical vertices to the original recursive algorithm. Full direct Node test discovery: **867/867 PASS**, no failures/skips. Real Chromium freehand Properties workflow: **1440/390/320 px PASS**. JavaScript/Python syntax and verification self-tests passed in the integrated Quick preflight, but the **Quick gate was INCOMPLETE** (runner exceeded the external time limit while executing the Node-regression step); Local/Release were not executed. The pathological 20,000-point input still takes several seconds to simplify on this host; responsiveness under repeated long gestures remains a performance limitation, not a claimed fix.
+
+## Deep clipboard dependency capture — targeted debugging (2026-11-26)
+
+**Confirmed defect:** Copying a geometrical object with approximately 9,000 transitive parent dependencies throws `RangeError: Maximum call stack size exceeded` in `captureObjectSelection`, even though 9,000 objects is below the established project capacity of 10,000. The recursive DFS used one JavaScript call-stack frame per predecessor. A new 9,500-parent regression failed against the unmodified implementation.
+
+**Correction:** `src/object_clipboard.mjs` uses explicit DFS frames to collect dependencies. It retains the same parent-first order, snapshot semantics, one-clone-per-shared-parent behavior, missing-parent refusal, and cycle detection. No clipboard schema, app event handlers, project persistence, or export code changed.
+
+**Fresh executed verification:** targeted clipboard Node tests 14/14 PASS; full direct Node discovery **870/870 PASS**, zero failures/skips; real headless Chromium `browser_round293_object_clipboard.py` and `browser_round294_clipboard_polish.py` PASS; JavaScript syntax **37/37**, Python syntax **318/318**, verification harness self-tests **25/25** PASS; 93,000 mathematical property trials PASS with seed 1511506142 (reduced run, 3,000 cases option). A separate attempted 310,000-trial property run exceeded the execution time budget and is **incomplete**. Integrated Quick/Local/Release gates and hosted deployment were not completed in this round; none is claimed PASS. Source and tests are restricted to clipboard capture, with no changes to MathReader.
+
+
+## Quoted-label input assistance — targeted debugging (2026-11-26)
+
+**Confirmed defect:** Typing `(` or `[` with the caret inside a quoted Algebra label (e.g. `Node(0,0,"hello")`) inserted an unwanted matching closing delimiter. The completion helper correctly suppressed suggestions inside quotes, but the auto-pair helper did not share that lexical condition. The defect was reproduced before the change with targeted failing Node tests, and independently with the real Chromium input element.
+
+**Correction:** `autoPair` consults the already existing `delimiterScan` quote state before inserting paired delimiters. The change does not alter unquoted expression editing, ordinary completion, project objects, persistence, or exports. Regression cases include single-quoted labels, double-quoted labels, escaped quotes, and normal expression pairing.
+
+**Fresh executed checks:** focused Node input regression suites **15/15 PASS**; complete Node discovery **873/873 PASS** (0 failures/skips); JavaScript syntax **37/37 PASS**; Python syntax **318/318 PASS**; verification harness self-tests **25/25 PASS**; existing real Chromium `browser_round246_input_assist.py` PASS, plus direct Chromium typing of both quoted delimiters PASS. Full integrated Quick/Local/Release acceptance gates, full mathematical-property trials, and hosted deployment were **not executed** for this small input-only correction.
+
+## Quoted-label literal closing delimiters — targeted debugging (2026-11-26)
+
+**Confirmed defect:** After the quoted-label opening auto-pair correction, the input assistant still intercepted typing `)` / `]` and Backspace whenever an identical closing delimiter followed the caret. Within a quoted Node/Text/Morphism label, those characters are literal data, so typing `)` could unexpectedly advance the caret instead of inserting a character, and Backspace could delete an adjacent `()` / `[]` pair instead of the preceding literal character.
+
+**Reproduction and correction:** The existing real Chromium input workflow, extended with a quoted `)` typing assertion, failed on the previous source (received `Node(0,0,"a)b")` instead of `Node(0,0,"a))b")`). `input_assist.mjs` now gates existing closing-delimiter skip and paired-Backspace behavior on the shared quote scanner, leaving unquoted mathematical expression editing unchanged. The browser regression also checks Backspace in literal quoted `()`; Node tests cover `]`, both pair types, ordinary expression pairs and escaped quotations.
+
+**Fresh verification:** full Node discovery **875/875 PASS** (0 failures/skips); real Chromium `browser_round246_input_assist.py` PASS with the new interactions; JavaScript syntax **238/238** source/test `.mjs` modules, Python syntax **315/315** files discovered under `tests/`, both zero errors. This syntax inventory is a direct file scan, not an integrated gate result. Full integrated Quick/Local/Release gates, property trials and hosted deployment were **not executed** for this correction. No mathematical engine, project schema, exports or MathReader files changed.
+
+## Freehand polygon vertex-cap discontinuity — targeted debugging (2026-11-26)
+
+**Confirmed defect:** Shape conversion retained all 24 significant corners of a zigzag stroke, but the same kind of 25-corner stroke retained only 13. This happened because `ceil(vertexCount / 24)` stride decimation discarded every second vertex as soon as the count exceeded 24. The 24-vertex polygon cap is appropriate, but dropping nearly half the geometry at the boundary unnecessarily degrades fidelity.
+
+**Minimal correction:** When the simplified polygon exceeds the 24-vertex limit, choose exactly 24 evenly distributed vertices in original cyclic order using integer index mapping. Strokes with 24 or fewer simplified vertices are unchanged. The model schema, closure, winding order, and 24-vertex limit are preserved.
+
+**Fresh evidence:** Added a regression to existing `round146_freehand_shapes.test.mjs`; it failed on the preceding implementation (13 instead of 24) and passed after the change. Targeted shape/freehand/interoperability Node tests **11/11 PASS**; full direct Node test discovery **877/877 PASS** (0 failures/skips); actual headless Chromium `browser_round146_freehand_shapes.py` **PASS** at 1440/390/320 px. Full integrated Quick/Local/Release gates and hosted deployment were not executed. No project import/export schema or MathReader files were modified.
+
+## Recent-defect verification selection (2026-11-26)
+
+**Verification-only change:** The integrated runner now selects `browser_round246_input_assist.py` in Quick, Local and Release, and `browser_round146_freehand_shapes.py` plus `browser_panel_resize_current.py` in Local and Release. This closes a concrete browser-selection gap after recent quoted-label editing, freehand conversion, and responsive sidebar defects. These are existing application-level scripts; there is no new verification framework or duplicate test engine. The self-test suite now asserts exact script selections, profile scope, existing script files, unique check names, and fail-closed handling of empty/failed browser results.
+
+**Precise coverage boundary:** The whole Node suite (all profiles) exercises the recent numerical and graph/algorithm regressions: microscopic ellipse area, polygon edge rejection, freehand deep simplification and the 24-vertex boundary, deep clipboard dependency graphs, diagram zero segments and quadratic endpoints, quoted-label editor state, and panel allocation priority. The selected Chromium scripts additionally verify existing real UI workflows; they do **not** independently reproduce every numerical boundary or 9,000-object chain. The selected browser test count increases by one in Quick and three in Local/Release. A file merely present in the source inventory is not execution evidence.
+
+**Fresh evidence:** direct full Node discovery **877/877 PASS** (0 skipped); integrated runner self-tests **27/27 PASS**; source JS checker **37/37 PASS**; Python syntax checker **318/318 PASS**; direct real Chromium runs of all three selected scripts **PASS** (freehand at desktop and two mobile widths). The integrated Quick run did **not finish** in the available execution window; its final gate status is **incomplete**, with no Local/Release gate result or hosted-deployment claim. No production source, user tutorial, persistence format or export logic was changed.

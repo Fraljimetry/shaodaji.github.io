@@ -35,3 +35,18 @@ test('R29 old/new diagram JSON retains labels, routing, styles and independent s
   assert.deepEqual(actual.refs,[a.id,b.id]);
  }
 });
+
+test('diagram label survives zero-length segments at arc-length endpoints',()=>{
+ assert.deepEqual(labelOnPolyline([[0,0],[0,0],[10,0]],0,17),[0,17]);
+ assert.deepEqual(labelOnPolyline([[0,0],[0,0],[10,0]],.5,17),[5,17]);
+ assert.deepEqual(labelOnPolyline([[0,0],[10,0],[10,0]],1,17),[10,17]);
+ assert.deepEqual(labelOnPolyline([[0,0],[0,0],[0,0]],.5,17),null);
+});
+
+test('quadratic arrow labels at endpoints survive a coincident control point',()=>{
+ assert.deepEqual(labelOnQuadratic([0,0],[0,0],[10,0],0,17),[0,17]);
+ assert.deepEqual(labelOnQuadratic([0,0],[10,0],[10,0],1,17),[10,17]);
+ assert.deepEqual(labelOnQuadratic([0,0],[0,0],[10,0],0,17,true),[0,-17]);
+ // An entirely collapsed curve has no defined label normal.
+ assert.equal(labelOnQuadratic([2,3],[2,3],[2,3],0,17),null);
+});

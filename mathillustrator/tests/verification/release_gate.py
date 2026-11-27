@@ -69,9 +69,16 @@ def command_specs(profile, cases):
         ('browser-startup', [py, 'tests/browser_smoke.py'], 90, 'browser'),
         ('browser-point-lines', [py, 'tests/browser_round76_remaining_points_lines.py'], 120, 'browser'),
         ('browser-seeded', [py, 'tests/browser_round102_seeded_interactions.py'], 120, 'browser'),
+        # Regression of quoted-label bracket typing, closing-skip and Backspace fixes.
+        ('browser-recent-input-assist', [py, 'tests/browser_round246_input_assist.py'], 120, 'browser'),
     ]
     if profile in ('local', 'release'):
         checks += [
+            # Recent production bugs: freehand conversion and responsive panel resizing.
+            # Browser scripts cover interactive workflows; precise numerical boundaries
+            # remain in automatically discovered Node regressions.
+            ('browser-recent-freehand', [py, 'tests/browser_round146_freehand_shapes.py'], 120, 'browser'),
+            ('browser-recent-panel-resize', [py, 'tests/browser_panel_resize_current.py'], 120, 'browser'),
             ('browser-history', [py, 'tests/browser_round92_history.py'], 120, 'browser'),
             ('browser-export-three-formats', [py, 'tests/browser_round107_3d_export.py'], 150, 'browser'),
             ('browser-export-fidelity', [py, 'tests/browser_round108_export_fidelity.py'], 150, 'browser'),

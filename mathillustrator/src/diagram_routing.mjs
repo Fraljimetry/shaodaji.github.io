@@ -169,14 +169,21 @@ export function labelOnPolyline(points,t=.5,distance=17,swap=false,dx=0,dy=0){
  const lengths=[],total=points.slice(1).reduce((n,p,i)=>{const len=Math.hypot(p[0]-points[i][0],p[1]-points[i][1]);lengths.push(len);return n+len;},0);
  if(total<1e-8)return null;
  let remaining=Math.min(1,Math.max(0,t))*total,idx=0;
- while(idx<lengths.length-1&&remaining>lengths[idx]){remaining-=lengths[idx];idx++;}
+ while(idx<lengths.length-1&&(remaining>lengths[idx]||lengths[idx]===0)){remaining-=lengths[idx];idx++;}
  const a=points[idx],b=points[idx+1],len=lengths[idx],f=len?remaining/len:0;
  const tangent=[(b[0]-a[0])/len,(b[1]-a[1])/len],side=swap?-1:1;
  return [a[0]+(b[0]-a[0])*f-tangent[1]*distance*side+dx,a[1]+(b[1]-a[1])*f+tangent[0]*distance*side+dy];
 }
 export function labelOnQuadratic(a,c,b,t=.5,distance=17,swap=false,dx=0,dy=0){
  const u=1-t,point=[u*u*a[0]+2*u*t*c[0]+t*t*b[0],u*u*a[1]+2*u*t*c[1]+t*t*b[1]];
- const tx=2*u*(c[0]-a[0])+2*t*(b[0]-c[0]),ty=2*u*(c[1]-a[1])+2*t*(b[1]-c[1]),len=Math.hypot(tx,ty);
+ let tx=2*u*(c[0]-a[0])+2*t*(b[0]-c[0]),ty=2*u*(c[1]-a[1])+2*t*(b[1]-c[1]);
+ let len=Math.hypot(tx,ty);
+ // A quadratic with a repeated endpoint/control point still has a definite
+ // one-sided direction at the endpoint, even though its first derivative is 0.
+ // Do not invent a direction for an interior cusp or a collapsed curve.
+ if(len<1e-8&&(t===0||t===1)){
+  tx=b[0]-a[0];ty=b[1]-a[1];len=Math.hypot(tx,ty);
+ }
  if(len<1e-8)return null;
  const side=swap?-1:1;
  return [point[0]-ty/len*distance*side+dx,point[1]+tx/len*distance*side+dy];

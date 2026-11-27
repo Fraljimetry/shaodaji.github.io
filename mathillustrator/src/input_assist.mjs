@@ -67,8 +67,27 @@ export function applyCompletion(text,start,end,candidate){
 export function autoPair(text,start,end,key){
  if(key!=='('&&key!=='[')return null;
  if(start!==end)return null;
+ // Parentheses and brackets in quoted labels are literal text. The same
+ // lexical scanner already protects completion suggestions in this context.
+ if(delimiterScan(text,start).quote)return null;
  const close=key==='('?')':']';
  return {text:text.slice(0,start)+key+close+text.slice(end),cursor:start+1};
+}
+
+/** Only consume an existing closing bracket when it is expression syntax.
+ * A bracket inside a quoted label belongs to its literal text.
+ */
+export function skipClosingBracket(text,caret,key){
+ if(key!==')'&&key!==']')return false;
+ if(!Number.isInteger(caret)||caret<0||caret>text.length||text[caret]!==key)return false;
+ return !delimiterScan(text,caret).quote;
+}
+/** Delete a generated adjacent delimiter pair, never literal label text. */
+export function deleteBracketPair(text,caret){
+ if(!Number.isInteger(caret)||caret<=0||caret>=text.length||delimiterScan(text,caret).quote)return null;
+ const a=text[caret-1],b=text[caret];
+ if(!((a==='('&&b===')')||(a==='['&&b===']')))return null;
+ return {text:text.slice(0,caret-1)+text.slice(caret+1),cursor:caret-1};
 }
 
 /** Lexically inspect the active call, ignoring commas in nested expressions.
@@ -198,11 +217,12 @@ export function attachInputAssistant(input,context){
   // including after a rejected expression, so rows below remain clickable.
   if(e.key==='Enter'){close();assist.hidden=true;return;}
   if((e.key==='('||e.key==='[')&&!e.ctrlKey&&!e.altKey&&!e.metaKey){const pair=autoPair(input.value,input.selectionStart,input.selectionEnd,e.key);if(pair){e.preventDefault();input.value=pair.text;input.setSelectionRange(pair.cursor,pair.cursor);input.dispatchEvent(new Event('input',{bubbles:true}));}}
-  if((e.key===')'||e.key===']')&&input.selectionStart===input.selectionEnd&&input.value[input.selectionStart]===e.key){e.preventDefault();const next=input.selectionStart+1;input.setSelectionRange(next,next);show();}
+  if(input.selectionStart===input.selectionEnd&&skipClosingBracket(input.value,input.selectionStart,e.key)){e.preventDefault();const next=input.selectionStart+1;input.setSelectionRange(next,next);show();}
   if(e.key==='Backspace'&&input.selectionStart===input.selectionEnd&&input.selectionStart>0){
    const at=input.selectionStart,s=input.value;
-   if((s[at-1]==='('&&s[at]===')')||(s[at-1]==='['&&s[at]===']')){
-    e.preventDefault();input.value=s.slice(0,at-1)+s.slice(at+1);input.setSelectionRange(at-1,at-1);input.dispatchEvent(new Event('input',{bubbles:true}));
+   const pair=deleteBracketPair(s,at);
+   if(pair){
+    e.preventDefault();input.value=pair.text;input.setSelectionRange(pair.cursor,pair.cursor);input.dispatchEvent(new Event('input',{bubbles:true}));
    }
   }
  });

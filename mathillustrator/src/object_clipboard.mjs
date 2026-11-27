@@ -8,16 +8,33 @@ export function captureObjectSelection(doc,selectedIds){
  const roots=[...new Set(selectedIds)].filter(id=>map.has(id));
  if(!roots.length)return null;
  const included=new Set(),ordered=[],visiting=new Set();
- function visit(id){
-  if(included.has(id))return;
-  if(!map.has(id))throw Error('Missing clipboard dependency.');
-  if(visiting.has(id))throw Error('Cyclic clipboard dependency.');
-  visiting.add(id);
-  const o=map.get(id);
-  for(const ref of [...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])])visit(ref);
-  visiting.delete(id);included.add(id);ordered.push(clone(o));
+ // Explicit DFS frames preserve dependency-first clipboard ordering without
+ // exhausting the call stack on long, valid construction chains.
+ for(const root of roots){
+  if(included.has(root))continue;
+  const stack=[{id:root,entered:false,deps:null,index:0}];
+  while(stack.length){
+   const frame=stack[stack.length-1];
+   if(included.has(frame.id)){stack.pop();continue;}
+   if(!frame.entered){
+    if(!map.has(frame.id))throw Error('Missing clipboard dependency.');
+    if(visiting.has(frame.id))throw Error('Cyclic clipboard dependency.');
+    visiting.add(frame.id);frame.entered=true;
+    const o=map.get(frame.id);
+    frame.deps=[...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])];
+   }
+   if(frame.index<frame.deps.length){
+    const ref=frame.deps[frame.index++];
+    if(included.has(ref))continue;
+    if(visiting.has(ref))throw Error('Cyclic clipboard dependency.');
+    stack.push({id:ref,entered:false,deps:null,index:0});
+   }else{
+    visiting.delete(frame.id);included.add(frame.id);
+    ordered.push(clone(map.get(frame.id)));
+    stack.pop();
+   }
+  }
  }
- for(const id of roots)visit(id);
  return {version:1,roots,objects:ordered};
 }
 

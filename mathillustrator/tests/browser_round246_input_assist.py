@@ -19,6 +19,16 @@ def run():
    algebra.press('Tab')
    assert algebra.input_value()=='sqrt()',algebra.input_value()
    assert algebra.evaluate('e=>e.selectionStart')==5
+   # Literal closing delimiters in quoted node labels must be typed, not skipped.
+   algebra.fill('Node(0,0,"a)b")')
+   algebra.evaluate("e=>e.setSelectionRange(e.value.indexOf(')'),e.value.indexOf(')'))")
+   algebra.press(')')
+   assert algebra.input_value()=='Node(0,0,"a))b")',algebra.input_value()
+   # A literal bracket pair is not a generated pair to delete together.
+   algebra.fill('Node(0,0,"a()b")')
+   algebra.evaluate("e=>e.setSelectionRange(e.value.indexOf('()')+1,e.value.indexOf('()')+1)")
+   algebra.press('Backspace')
+   assert algebra.input_value()=='Node(0,0,"a)b")',algebra.input_value()
    algebra.fill('a = Slider(0, 10, 0.1, 2)')
    algebra.press('Enter')
    assert p.locator('[data-slider="a"]').count()==1
