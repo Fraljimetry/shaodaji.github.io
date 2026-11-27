@@ -199,7 +199,7 @@ function initialSiteTheme(){
  return 'dark'; // The site's default navy appearance; the user's explicit choice remains authoritative.
 }
 let selected3d=null, selectedSlider=null, cameraDrag=null;
-let autoOrbit=null,autoOrbitFrame=0,autoOrbitSpeed=24;
+let autoOrbit=null,autoOrbitFrame=0,autoOrbitSpeed=6;
 const in3D=()=>doc.settings.plot3dEnabled===true;
 let uiPrefs={language:'en',font:'system',autoPan:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 const {field, propertyChoice, propertyCheck, propertyName, lockedProperties, vectorOptions, parameterRanges, drawingRegion, colorControls, opacityControl, widthControl}=createPropertyControls({document,language:()=>uiPrefs.language,notice,appendColorSwatches});
@@ -3905,6 +3905,14 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    lastStored=latest;clearTimeout(saveTimer);dirty=false;setStorageConflict(false);saveStatus('Same project synchronized');
   }else setStorageConflict(true);
  });
+ const orbitControls=$('auto-orbit-controls');
+ orbitControls.addEventListener('focusin',event=>{
+  if(event.target.matches(':focus-visible'))orbitControls.setAttribute('data-keyboard-focus','');
+ });
+ orbitControls.addEventListener('focusout',event=>{
+  if(!orbitControls.contains(event.relatedTarget))orbitControls.removeAttribute('data-keyboard-focus');
+ });
+ orbitControls.addEventListener('pointerdown',()=>orbitControls.removeAttribute('data-keyboard-focus'));
  $('auto-orbit').onclick=toggleAutoOrbit;
  $('auto-orbit-speed').oninput=()=>{
   const speed=Number($('auto-orbit-speed').value);

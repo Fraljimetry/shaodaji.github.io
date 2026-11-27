@@ -1321,6 +1321,10 @@ html.three-d #object-search{display:block!important}
 /* Canvas auto-rotation uses the existing view-control button styling. */
 #auto-orbit-controls:not([hidden]){position:absolute;bottom:calc(100% + 8px);left:12px;display:flex;align-items:center;gap:6px;padding:4px 7px;background:var(--surface);border:1px solid var(--border);border-radius:7px;box-shadow:var(--shadow);pointer-events:auto;max-width:calc(100% - 24px);font-size:11px;color:var(--ink)}
 #auto-orbit{display:inline-flex;align-items:center;justify-content:center;min-width:35px;padding:7px}
+/* Keep the speed extension collapsed until the control is hovered or keyboard-focused. */
+#auto-orbit-controls > :is(label,input,output){display:none}
+#auto-orbit-controls:where(:hover,[data-keyboard-focus]) > :is(label,input,output){display:revert}
+@media(hover:none){#auto-orbit-controls:where(:focus-within) > :is(label,input,output){display:revert}}
 #auto-orbit-speed{width:86px;min-width:32px;padding:0;accent-color:var(--accent)}
 #auto-orbit-rate{white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:420px){#auto-orbit-controls label{display:none}#auto-orbit-controls{left:6px;max-width:calc(100% - 12px)}}

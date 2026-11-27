@@ -10,7 +10,7 @@
  const value=localStorage.getItem(key)?.replace(/^"|"$/g,'').toLowerCase();if(['light','dark'].includes(value)){own=value;break;}
  }}if(['light','dark'].includes(own))document.documentElement.dataset.theme=own;
  }catch{}})();</script>
-  <link rel="stylesheet" href="./style.css?cut=round340">
+  <link rel="stylesheet" href="./style.css?cut=round341">
 </head>
 <body>
   <header class="appbar">
@@ -55,7 +55,7 @@
     <section class="stage" aria-label="Illustration canvas">
       <div class="stage-actions"><span id="mode-label">Select · drag points to edit</span><div><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-reset" title="Reset view">100%</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit objects to canvas">Fit</button></div></div>
       <svg id="drawing" xmlns="http://www.w3.org/2000/svg" tabindex="0" role="img" aria-label="Interactive mathematical drawing canvas"></svg>
-      <div class="canvas-footer"><div id="auto-orbit-controls" hidden><button id="auto-orbit" type="button" title="Automatic rotation" aria-label="Automatic rotation" aria-pressed="false"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path class="orbit-play" d="M5 3l9 5-9 5z"/><path class="orbit-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button><label for="auto-orbit-speed">Rotation speed</label><input id="auto-orbit-speed" type="range" min="6" max="90" step="6" value="24" aria-label="Rotation speed"><output id="auto-orbit-rate" for="auto-orbit-speed">24°/s</output></div><span id="coords">x 0.00 · y 0.00</span><span class="save-feedback"><span id="autosave-info" role="status" aria-live="polite">Local backup ready</span><button id="retry-autosave" title="Retry saving the current project in this browser" hidden>Retry local save</button></span><span id="render-info">Ready</span></div>
+      <div class="canvas-footer"><div id="auto-orbit-controls" hidden><button id="auto-orbit" type="button" title="Automatic rotation" aria-label="Automatic rotation" aria-pressed="false"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path class="orbit-play" d="M5 3l9 5-9 5z"/><path class="orbit-pause" d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button><label for="auto-orbit-speed">Rotation speed</label><input id="auto-orbit-speed" type="range" min="6" max="90" step="6" value="6" aria-label="Rotation speed"><output id="auto-orbit-rate" for="auto-orbit-speed">6°/s</output></div><span id="coords">x 0.00 · y 0.00</span><span class="save-feedback"><span id="autosave-info" role="status" aria-live="polite">Local backup ready</span><button id="retry-autosave" title="Retry saving the current project in this browser" hidden>Retry local save</button></span><span id="render-info">Ready</span></div>
     </section>
     <aside class="rightpanel" aria-label="Drawing tools and settings">
       <div class="panelhead"><h2>Tools</h2><button id="right-collapse" aria-label="Toggle tools panel" aria-controls="construction-tools" aria-expanded="true" title="Toggle tools panel">›</button></div>
@@ -146,6 +146,6 @@
     },4000));
   })();
   </script>
-  <script type="module" src="./src/app.mjs?cut=round340"></script>
+  <script type="module" src="./src/app.mjs?cut=round341"></script>
 </body>
 </html>

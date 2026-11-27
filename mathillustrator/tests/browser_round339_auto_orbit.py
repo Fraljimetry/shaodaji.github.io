@@ -43,7 +43,24 @@ with sync_playwright() as pw:
         stage = page.locator(".stage").bounding_box()
         box = controls.bounding_box()
         assert box["x"] - stage["x"] < 20 and box["y"] > stage["y"] + stage["height"] - 100
-        assert speed.input_value() == "24"
+        page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)
+        assert speed.is_hidden()
+        button.hover()
+        assert speed.is_visible()
+        speed.hover()
+        assert speed.is_visible()
+        page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)
+        assert speed.is_hidden()
+        # Keyboard focus must reveal the extension and allow reaching the slider.
+        page.locator('#drawing').focus()
+        page.keyboard.press('Tab')
+        assert button.evaluate('(el)=>el===document.activeElement')
+        page.keyboard.press('Tab')
+        assert speed.evaluate('(el)=>el===document.activeElement') and speed.is_visible()
+        page.keyboard.press('Tab')
+        assert speed.is_hidden()
+        assert speed.input_value() == "6"
+        assert page.locator("#auto-orbit-rate").text_content() == "6°/s"
         original_geometry = page.locator('#drawing').inner_html()
         before = start()
         page.wait_for_function('(html)=>document.querySelector("#drawing").innerHTML!==html', arg=original_geometry)
@@ -60,6 +77,7 @@ with sync_playwright() as pw:
         assert speed.get_attribute('aria-label') == '旋转速度'
         page.locator('#ui-language').select_option('en')
         assert button.get_attribute('aria-label') == 'Automatic rotation'
+        button.hover()
         speed.fill('6')
         start()
         speed.fill('90')
@@ -69,6 +87,7 @@ with sync_playwright() as pw:
         page.wait_for_function('(yaw)=>Math.abs((JSON.parse(window.__round36Snapshot()).scene3d.options.yaw-yaw+540)%360-180)>15', arg=yaw)
         button.click()
         stopped()
+        button.hover()
         speed.fill('24')
         start()
         page.locator('#zoom-in').click()
@@ -93,7 +112,9 @@ with sync_playwright() as pw:
         page.wait_for_function("JSON.parse(window.__round36Snapshot()).scene3d.options.yaw===42")
         assert stopped()['yaw'] == 42
         page.set_viewport_size({'width':390,'height':844})
-        assert button.is_visible() and speed.is_visible()
+        assert button.is_visible()
+        button.hover()
+        assert speed.is_visible()
         page.wait_for_function('''() => {
             const box = document.querySelector('#auto-orbit-controls').getBoundingClientRect();
             const stage = document.querySelector('.stage').getBoundingClientRect();
@@ -102,6 +123,17 @@ with sync_playwright() as pw:
         start()
         button.click()
         stopped()
+        touch = browser.new_page(viewport={'width':390,'height':844}, has_touch=True, is_mobile=True)
+        touch.set_content(inline_html(legacy_search_expanded=False, expose_state=True), wait_until='load')
+        touch.locator('#scene3d-enable').check()
+        touch_button = touch.locator('#auto-orbit')
+        touch_speed = touch.locator('#auto-orbit-speed')
+        assert touch_speed.is_hidden()
+        touch_button.tap()
+        assert touch_speed.is_visible()
+        touch.locator('#zoom-in').tap()
+        assert touch_speed.is_hidden()
+        touch.close()
         assert not errors, errors
         print('ROUND339_CHROMIUM_PASS: rotation, pause, undo/redo, zoom, 2D mode, import, localization and mobile')
     finally:
