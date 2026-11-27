@@ -56,25 +56,21 @@ def run():
    p.locator('#open-file').set_input_files({'name':'r35.json','mimeType':'application/json','buffer':json.dumps(clean).encode()})
    p.wait_for_timeout(80)
    assert saved(p)['objects']==clean['objects']
-   # The established TikZ safety gate rejects screen-space label avoidance.
-   # Standard placement is representable and should export real oblique polygons.
+   # General-purpose TikZ was retired; semantic diagrams reject geometric shapes.
    p.locator('#export-open').click()
-   assert p.get_by_role('button',name='TikZ / PGF',exact=True).is_disabled()
-   if p.locator('#export-close').is_visible():p.locator('#export-close').click()
-   p.locator('#label-placement').select_option('standard')
-   p.locator('#export-open').click()
-   tikz=download(p,'TikZ / PGF').read_text()
-   assert tikz.count(' -- cycle;')>=2,tikz[:300]
-   if p.locator('#export-close').is_visible():p.locator('#export-close').click()
+   assert p.get_by_role('button',name='TikZ / PGF',exact=True).count()==0
+   assert p.get_by_role('button',name='tikz-cd (semantic)',exact=True).is_disabled()
+   svg=download(p,'SVG').read_text()
+   assert svg.count('<polygon')>=2,svg[:300]
    # Segment and angle live measurements respond to dependencies.
    cmd(p,'A=(0,0)');cmd(p,'B=(3,4)');cmd(p,'C=(0,4)');cmd(p,'Segment(A,B)');cmd(p,'Angle(A,B,C)')
    d=saved(p);seg=next(x for x in d['objects'] if x['type']=='segment' and not x.get('edgeOf')); ang=geometric(d,'angle')[-1]
    p.locator(f'#objects [data-id="{seg["id"]}"]').click()
    assert 'Length (units)' in p.locator('#properties').inner_text()
-   assert abs(float(p.locator('#properties .measurement-value').inner_text())-5)<1e-7
+   assert abs(float(p.locator('#properties .measurement-value').input_value())-5)<1e-7
    p.locator(f'#objects [data-id="{ang["id"]}"]').click()
    assert 'Angle (degrees)' in p.locator('#properties').inner_text()
-   value=float(p.locator('#properties .measurement-value').inner_text());assert 0<value<180,value
+   value=float(p.locator('#properties .measurement-value').input_value());assert 0<value<180,value
    # Move mode drag on empty canvas pans; click without drag still clears selection.
    p.locator('[data-tool-choice="select"]').click()
    box=p.locator('#drawing').bounding_box();x=box['x']+box['width']*.88;y=box['y']+box['height']*.90

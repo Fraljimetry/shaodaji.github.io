@@ -144,12 +144,19 @@ with sync_playwright() as pw:
         stopped()
         touch = browser.new_page(viewport={'width':390,'height':844}, has_touch=True, is_mobile=True)
         touch.set_content(inline_html(legacy_search_expanded=False, expose_state=True), wait_until='load')
+        touch.locator('#right-collapse').tap()
         touch.locator('#scene3d-enable').check()
+        touch.locator('#right-collapse').tap()
         touch_button = touch.locator('#auto-orbit')
         touch_speed = touch.locator('#auto-orbit-speed')
         assert touch_speed.is_hidden()
         touch_button.tap()
         assert touch_speed.is_visible()
+        assert touch.evaluate('''() => {
+            const e = document.querySelector('#auto-orbit-extension').getBoundingClientRect();
+            const s = document.querySelector('.stage').getBoundingClientRect();
+            return e.left >= s.left && e.right <= s.right;
+        }''')
         touch.locator('#zoom-in').tap()
         assert touch_speed.is_hidden()
         touch.close()

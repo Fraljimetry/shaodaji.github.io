@@ -88,6 +88,7 @@ body.properties-floating #properties-toggle:disabled{opacity:.45;cursor:not-allo
 }
 @media(max-width:700px){html,body{overflow-x:clip}}
 @media(max-width:420px){.stage-actions #mode-label{display:none}}
+.stage-actions>div{margin-left:auto}
 
 /* Cut 16: an explicitly actionable recovery path after localStorage denial. */
 .canvas-footer .save-feedback{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;flex-wrap:wrap}

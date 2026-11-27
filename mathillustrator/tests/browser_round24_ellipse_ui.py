@@ -15,7 +15,7 @@ def run():
    page.set_content(inline_html(legacy_search_expanded=False).replace('<head>','<head>'+shim,1),wait_until='load')
    page.wait_for_selector('[data-tool-choice="ellipse"]')
    assert not page.locator('#snap').is_checked(),'Grid snapping should be opt-in in new projects'
-   assert page.locator('#export-guides').is_checked()
+   assert page.locator('#export-guides').count()==0
    assert not page.locator('#export-transparent').is_checked()
    assert not errors,errors
    for color in ('stroke','fill'):
@@ -25,7 +25,7 @@ def run():
     assert 'Teal' not in palette.all_text_contents()
     rect1=palette.first.bounding_box();rect5=palette.nth(4).bounding_box()
     root=page.locator('#default-color-swatches-'+color).bounding_box()
-    assert abs((rect5['x']+rect5['width'])-(root['x']+root['width']))<2.1,(root,rect5)
+    assert rect1['y']==rect5['y'] and abs((rect1['x']+rect5['x']+rect5['width'])/2-(root['x']+root['width']/2))<2.1,(root,rect1,rect5)
    # Direct mouse ellipse: oblique foci and off-grid third click.
    page.locator('#auto-pan').uncheck()
    canvas=page.locator('#drawing').bounding_box();cx=canvas['x']+canvas['width']/2;cy=canvas['y']+canvas['height']/2
@@ -55,7 +55,7 @@ def run():
    assert abs(result['onEllipse']-1)<1e-7,result
    # A shape label is persisted separately from its stable name and refs.
    page.locator('#objects .object[data-id="'+obj['id']+'"]').click()
-   display=page.locator('#properties label.field').filter(has_text='Displayed label').locator('input')
+   display=page.locator('#properties .short-label-field input')
    assert display.count()==1
    display.fill('E_1');display.press('Tab')
    assert page.locator('#drawing .geometry-display-label').count()==1
@@ -64,7 +64,8 @@ def run():
    page.locator('#undo').click();assert page.locator('#drawing .geometry-display-label').count()==0
    page.locator('#redo').click();assert page.locator('#drawing .geometry-display-label').count()==1
    page.locator('#export-open').click()
-   assert page.get_by_role('button',name='TikZ / PGF').is_disabled()
+   assert page.get_by_role('button',name='TikZ / PGF').count()==0
+   assert page.get_by_role('button',name='tikz-cd (semantic)',exact=True).is_disabled()
    svg=download(page,'SVG').read_text();assert 'E_1' in svg
    # Additional page frames and fonts, no change to object identifiers.
    for paper in ['a3','a5','legal','tabloid','square','widescreen']:
@@ -75,7 +76,7 @@ def run():
     assert page.locator('#ui-font').input_value()==font
    for lang in ['zh','en']:
     page.locator('#ui-language').select_option(lang)
-    assert page.locator('#properties label.field').filter(has_text=('显示标签' if lang=='zh' else 'Displayed label')).count()==1
+    assert page.locator('#properties .short-label-field').inner_text().strip()==('标签' if lang=='zh' else 'Label')
    # Layout at desktop and mobile widths; Number spinners use RTL native input mode.
    assert page.locator('#default-width').evaluate('e=>getComputedStyle(e).direction')=='ltr'
    page.set_viewport_size({'width':390,'height':780});page.locator('#right-collapse').click()
@@ -84,6 +85,6 @@ def run():
     swatches=page.locator('#default-color-swatches-'+color)
     assert swatches.evaluate('e=>e.scrollWidth<=e.clientWidth+1')
    assert not errors,errors
-   print('ROUND24_CHROMIUM_PASS: SVG focal-ellipse invariant, off-grid defaults, displayed labels, JSON/undo/redo/SVG/TikZ fail closed, paper/font controls, purple palette, EN/ZH, 390px')
+   print('ROUND24_CHROMIUM_PASS: SVG focal-ellipse invariant, off-grid defaults, displayed labels, JSON/undo/redo/SVG/semantic tikz-cd fail closed, paper/font controls, purple palette, EN/ZH, 390px')
   finally:browser.close()
 if __name__=='__main__':run()
