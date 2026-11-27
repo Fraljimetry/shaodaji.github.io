@@ -803,12 +803,12 @@ html:not(.three-d) .interface-check-grid .settings-3d{display:none!important}
 /* Region-extra captions remain left-aligned in both languages. */
 .plot-region-editor .region-extras > .field {text-align:left;align-items:stretch;justify-content:flex-start;}
 
-/* Stable canvas-footer columns: cursor movement cannot shift the save indicator. */
-.canvas-footer #coords{font-variant-numeric:tabular-nums;flex:0 0 124px;white-space:nowrap;overflow:hidden}
-.canvas-footer .save-feedback{flex:1 1 auto;text-align:center}
-.canvas-footer #render-info{flex:0 0 124px;text-align:right;white-space:nowrap}
-@media(max-width:950px){.canvas-footer #render-info{flex-basis:80px}}
-@media(max-width:700px){.canvas-footer #coords{display:none}.canvas-footer #render-info{flex-basis:auto}}
+/* Equal side tracks keep save feedback at the canvas midpoint, even on mobile. */
+.canvas-footer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);column-gap:5px;align-items:center}
+.canvas-footer #coords{grid-column:1;grid-row:1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.canvas-footer .save-feedback{grid-column:2;grid-row:1;text-align:center;overflow-wrap:anywhere}
+.canvas-footer #render-info{grid-column:3;grid-row:1;min-width:0;text-align:right;overflow-wrap:anywhere}
+@media(max-width:700px){.canvas-footer #coords{display:none}}
 /* Free curve properties: two aligned, compact rows of equal-width controls. */
 .properties .freehand-shape-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 8px;align-items:end;margin:7px 0 10px;min-width:0}
 .properties .freehand-shape-grid>.field{display:flex;flex-direction:column;align-items:stretch;justify-content:end;min-width:0;margin:0;gap:4px;font-size:11px;text-align:left}
