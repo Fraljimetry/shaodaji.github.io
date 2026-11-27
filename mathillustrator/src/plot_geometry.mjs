@@ -1,6 +1,5 @@
 /** Exact, deliberately limited polynomial recognition. Never infer geometry from sampled pixels.
  * Unsupported syntax returns null; plotted paths remain ordinary curves. */
-const vars=['x','y'];
 const z=()=>[0,0,0,0,0,0]; // 1,x,y,x²,xy,y²
 function add(a,b,s=1){return a.map((v,i)=>v+s*b[i]);}
 function mult(a,b){

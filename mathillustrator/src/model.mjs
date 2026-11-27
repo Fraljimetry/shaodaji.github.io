@@ -2,7 +2,7 @@ import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} f
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
 import {compileRegionCondition} from './region_condition.mjs?cut=round130';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,polylineCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
 import {newScene3D,validate3D} from './plot3d.mjs?cut=round130';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=mi266';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
@@ -24,7 +24,6 @@ export function shapeVerticesFromPoints(type,p){
  if(!Array.isArray(p)||!p.every(safeCoord))return [];
  if(type==='parallelogram'&&p.length===3){
   const [a,b,c]=p,d=[a[0]+c[0]-b[0],a[1]+c[1]-b[1]];
-  const cross=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);
   return safeCoord(d)&&independentEdges(a,b,c)?[a,b,c,d]:[];
  }
  if(type!=='rectangle')return [];
@@ -472,9 +471,6 @@ export function createResolver(doc){
     // Do not classify a transformed curve as a point just because its sampled
     // path happened to contain a single valid vertex.
     if(obj.type==='transformCopy'&&pointRole(obj,ref=>objects.get(ref))){
-     const r={at:ref=>cache.get(ref)||null,line:ref=>lines.get(typeof ref==='string'?ref:ref?.id)||null,
-      circle:ref=>circles.get(typeof ref==='string'?ref:ref?.id)||null,
-      points:ref=>(ref.refs||[]).map(id=>cache.get(id)||null),object:ref=>objects.get(ref)};
      // Resolve transformed points from the already-cached parent point.
      // r50Shape() recursively expanded ancestors and overflowed at 4,000.
      const source=cache.get(obj.refs[0]),anchor=cache.get(obj.refs[1]);

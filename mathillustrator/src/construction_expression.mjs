@@ -1,4 +1,4 @@
-import {clone,command,parseExpression,validateDoc,append,appendDerivedShapeEdges,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint,functionSliderParameters} from './model.mjs?cut=mi266';
+import {clone,command,parseExpression,validateDoc,append,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint,functionSliderParameters} from './model.mjs?cut=mi266';
 import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement,createSlider,algebraPoint,SLIDER_PLAY_MODES} from './algebra.mjs?cut=round254';
 import {r50SourceShape,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=mi266';

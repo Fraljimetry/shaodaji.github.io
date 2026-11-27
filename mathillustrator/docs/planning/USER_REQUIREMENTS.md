@@ -2397,3 +2397,9 @@ The supported Mesh detail range is **8–96**. Older project JSON with integer d
 - Measure angles from finite nonzero rays independently of their lengths, including existing constructions whose parent coordinates become microscopic. Retain small nonzero angles when the available floating-point coordinates resolve them; an actual zero-length ray remains undefined. The initial construction-admission limit is unchanged.
 - Complex division must preserve representable finite quotients in the tested extreme-magnitude cases without treating division by zero as defined. Preserve ordinary arithmetic, syntax and project schema.
 - Strict-region clipping must interpolate finite opposite-sign condition values without overflow in their difference. Preserve strict inequality semantics and the existing mesh limits.
+
+
+### Conservative source cleanup and verification maintenance
+- Remove provably unused private implementation details and duplicate translation entries without changing public module exports, construction semantics, project schema, rendering/export behavior or numerical budgets.
+- Retired automatic morphism routing remains readable in saved projects but must render exactly as Direct; verify the behavior instead of requiring disabled source branches to remain.
+- Isolated Chromium fixtures must load the current source dependency graph, preserve distinct module URL identities, reject missing dependencies, and inspect raw exports without historical text substitutions. Preserve the existing verification profiles and frozen inventory; distinguish isolated browser results from actual HTTP/hosted verification.

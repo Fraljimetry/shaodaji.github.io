@@ -1,32 +1,32 @@
-import {constructionExpression,displayCoordinate,applyConstructionExpression,createSemanticConstruction,submit2DAlgebra} from './construction_expression.mjs?cut=mi266';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=mi266';
 import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round294';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
-import {createSlider,algebraPoint,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
+import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=mi266';
-import {r50Shape,r50SourceShape,projectToCurve,polylineCrossings,generalCrossings,circleTangents,TRANSFORM_MODES} from './geometry_round50.mjs?cut=round147';
+import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
 import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
 import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,POINT_LIKE,STRAIGHT_TYPES,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,FILLABLE_DEFAULT_TYPES,DEFAULT_FILL_TYPES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,points,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,circleGeometry,addPoint,createAnchored,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=mi271';
+import {TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=mi271';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,worldBounds,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
 import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,validate3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,PLOT3D_MODES,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
+import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=mi266';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
 import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=mi270';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
-import {nodeBox,layoutNodeLabel,edgeBetweenBoxes,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
-import {boxRect,routeDiagramEdge,pathData,smoothRoutePath,labelOnPolyline,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
+import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
+import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
 import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round71';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round172';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotCache} from './plot_cache.mjs?cut=round54';
-import {PANEL_MIN, PANEL_MAX, CANVAS_MIN, COLLAPSED_RAIL, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
+import {PANEL_MIN, PANEL_MAX, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
 import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round54';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 // Large raster PNGs must remain cacheable: otherwise every redraw recomputes millions of samples.
@@ -480,7 +480,6 @@ function el(tag,attrs={},content){const e=document.createElementNS(NS,tag);for(c
 function project(p){return [(p[0]-view.cx)*view.scale+size.w/2,(view.cy-p[1])*view.scale+size.h/2];}
 function unproject(x,y){return [(x-size.w/2)/view.scale+view.cx,(size.h/2-y)/view.scale+view.cy];}
 function xyEvent(e){const b=$('drawing').getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top];}
-function screenPoints(o){const p=points(doc,o);return p.every(Boolean)?p.map(project):null;}
 function desc(o,nameById=null){
  // Hover/search may show dependencies, but never invent '?' for unavailable names.
  const referenceNames=()=>Array.isArray(o.refs)?o.refs.map(id=>nameById?.get(id)||get(doc,id)?.name).filter(Boolean):[];
@@ -510,7 +509,6 @@ function desc(o,nameById=null){
  if(o.path)return `${o.path.length} path points`;
  return o.type;
 }
-function simple(a,b){return Math.round(a*100)/100===Math.round(b*100)/100;}
 function drawBackground(svg,includeGrid=true,exporting=false,guidesOnly=false){if(!guidesOnly&&!(exporting&&doc.settings.exportTransparent))svg.append(el('rect',{x:0,y:0,width:size.w,height:size.h,fill:doc.settings.background||'#fff'}));
  const settings=doc.settings;if(!guidesOnly&&settings.page!=='infinite'&&!exporting){
   const r=pageRect(size,settings.page);svg.append(el('rect',{x:r.x,y:r.y,width:r.width,height:r.height,fill:'none',stroke:'#94a3b8','stroke-width':1.5,'stroke-dasharray':'5 4',opacity:.8}));
@@ -728,7 +726,7 @@ function shapeFillEnabled(o){
  return ['polygon','regularPolygon','rectangle','parallelogram'].includes(o.type);
 }
 function shapeFillAttributes(o){return {fill:shapeFillEnabled(o)?o.style.fill:'none','fill-opacity':o.type==='ellipse'?.20:.24};}
-function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagramBoxes=null,morphismLabels=null,morphismRoutes=null){
+function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphismLabels=null,morphismRoutes=null){
  if(!isObjectVisible(doc,o,resolver.object))return;
  const pointObject=geometricPoint(o,resolver);
  const isSel=(selectedIds.has(o.id)||selected===o.id||constructionEmphasis.has(o.id)||draftReference===o.id)&&!exporting,sty=attr(o,isSel),p=resolver.points(o);
@@ -869,16 +867,12 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
  }else if(o.type==='morphism'&&coords?.length===2){
   const fromNode=resolver.object(o.refs[0]),toNode=resolver.object(o.refs[1]);
   if(!fromNode||!toNode||fromNode.hidden||toNode.hidden||fromNode.style.opacity===0||toNode.style.opacity===0)return;
-  const fromBox=arrowTargetBox(fromNode),toBox=arrowTargetBox(toNode);
-  const auto=false; // Round 56: legacy routing codes are rendered as Direct.
   const route=morphismRoutes?.get(o.id);
   if(!route)return; // Route was validated and frozen for this render in document order.
   if(!route.points.length)return; // Historical overlapping boxes retain semantic edge but have no drawable path.
-  const a=route.points[0],b=route.points.at(-1),curve=auto?null:arrowCurve(a,b,o.bend||0);
-  if(!auto&&!curve)return;
-  const routed=route.status==='routed';
+  const a=route.points[0],b=route.points.at(-1),curve=arrowCurve(a,b,o.bend||0);
+  if(!curve)return;
   const appearance=inheritedMorphismAppearance(o);
-  const pathStart=a;
   const hook=visibleArrowheads(appearance.line,appearance.heads)==='hook'?hookTailGeometry(a,b,!!o.swap):null;
   const start=hook?.shaftStart||a;
   const d=`M${start[0].toFixed(2)} ${start[1].toFixed(2)} Q${curve.control[0].toFixed(2)} ${curve.control[1].toFixed(2)} ${b[0].toFixed(2)} ${b[1].toFixed(2)}`;
@@ -888,7 +882,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,diagram
   decoratedHeads(item,path,visibleArrowheads(appearance.line,appearance.heads),o.style.stroke,o.style.width,true,appearance.line,!!o.swap);
   if(hook)item.append(el('path',{d:hook.d,stroke:o.style.stroke,'stroke-width':o.style.width,fill:'none','stroke-linecap':'round','pointer-events':'none',class:'latex-morphism-hook'}));
   if(o.text){const t=o.labelT??.5,distance=o.labelDistance??17,dx=o.labelDx??0,dy=o.labelDy??0;
-   const pos=auto?labelOnPolyline(route.points,t,distance,!!o.swap,dx,dy):labelOnQuadratic(a,curve.control,b,t,distance,!!o.swap,dx,dy);
+   const pos=labelOnQuadratic(a,curve.control,b,t,distance,!!o.swap,dx,dy);
    if(pos){const placed=morphismLabels?.get(o.id),[lx,ly]=placed?[placed.x,placed.y]:pos;
     if(placed?.status==='crowded'){item.setAttribute('data-label-collision','unresolved');
      item.append(el('title',{},'Label collision remains: no clear location among the supported candidates. Adjust the label manually.'));}
@@ -1038,20 +1032,6 @@ function draw(svg,{exporting=false}={}){
  // Complex-plane rasters are a backdrop: grid/axes and all foreground objects must remain legible.
  drawBackground(svg,false,exporting);
  const resolver=createResolver(doc);
- // Build obstacle rectangles once per drawing, and only when the author enables
- // obstacle-aware routing. Standard diagrams pay none of this extra work.
- let diagramBoxes=null;
- if(false){ // No obstacle routing in Round 56; retained only for legacy source compatibility.
-  diagramBoxes=new Map();for(const node of doc.objects){
-   if(node.type!=='node'||node.hidden||node.style?.opacity===0)continue;
-   const center=resolver.at(node.id);if(!center)continue;
-   diagramBoxes.set(node.id,boxRect(project(center),arrowTargetBox(node)));
-  }
- }
- // Cut24: calculate routes ONCE in stable document order. Crossing reduction
- // considers only earlier visible arrows; it never moves nodes or rewrites refs.
- // Reusing this map for rendering, label placement, and exported figures avoids
- // discrepancies between the UI and the serialized SVG/raster output.
  // All visible morphisms use direct routes; never retain unused legacy
  // crossing/rerouting state. The routes also feed labels and exports.
  const morphismRoutes=new Map();
@@ -1097,9 +1077,9 @@ function draw(svg,{exporting=false}={}){
  // Exports may run while an editing gesture is active. Never overwrite the
  // on-screen drag handle's automatic-placement state with export-only layout.
  if(!exporting)currentMorphismLabels=computedMorphismLabels;
- for(const o of doc.objects)if(o.type==='domainColoring')renderObject(svg,o,resolver,exporting,labels,diagramBoxes,computedMorphismLabels,morphismRoutes);
+ for(const o of doc.objects)if(o.type==='domainColoring')renderObject(svg,o,resolver,exporting,labels,computedMorphismLabels,morphismRoutes);
  drawBackground(svg,!exporting,exporting,true);
- for(const o of doc.objects)if(o.type!=='domainColoring')renderObject(svg,o,resolver,exporting,labels,diagramBoxes,computedMorphismLabels,morphismRoutes);
+ for(const o of doc.objects)if(o.type!=='domainColoring')renderObject(svg,o,resolver,exporting,labels,computedMorphismLabels,morphismRoutes);
  // Keep labels legible above subsequently painted diagram nodes and routes;
  // preserve the relative order of all authored labels. SVG export uses this
  // same painted order. Only the transparent handles are editor-only.
@@ -1441,24 +1421,6 @@ function renderList({resetScroll=false}={}){
  // Programmatic scroll position restoration may change the visible range.
  renderListWindow();
 }
-/** Compact one-line summaries retain complete source text on hover. */
-function compactSubtitle(value){
- const full=String(value??'').replace(/\s+/g,' ').trim();
- return full.length>34?full.slice(0,31)+'…':full;
-}
-function shortObjectSubtitle(o){
- // A second line is useful only for user content, equations or numeric values.
- // Repeating the object's type ("Vector field", "Parametric curve", etc.)
- // adds noise without describing this particular object.
- if(o.type==='point')return Array.isArray(o.xy)?o.xy.map(formatCoordinate).join(', '):'';
- if(['text','node','morphism'].includes(o.type))return compactSubtitle(o.text||'');
- if(['function','implicit','domainColoring'].includes(o.type))return compactSubtitle(o.expr||'');
- if(o.type==='parametric')return compactSubtitle(o.polar?`r(t) = ${o.rExpr||''}`:`x(t) = ${o.xExpr||''}; y(t) = ${o.yExpr||''}`);
- if(o.type==='vectorField')return compactSubtitle([o.xExpr,o.yExpr].filter(Boolean).join(', '));
- if(o.type==='regularPolygon')return Number.isInteger(o.sides)?`${o.sides} sides`:'';
- return '';
-}
-
 // Use one authoritative SVG for Geometry/Diagram tools and their Objects-list
 // rows. Plotting modes have a separate set of five semantic SVG glyphs.
 // Five shared 2D/3D plot pictograms; not used by Geometry tools.
@@ -1667,7 +1629,7 @@ function installCenteredRegionEditor(container,inputs,commit,parseBound,conditio
 }
 function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeExpression,conditionValue="",conditionCommit=()=>{},dimension=3}={}){
  const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
- for(const [key,input] of Object.entries(inputs)){
+ for(const input of Object.values(inputs)){
   const caption=input.closest('label');
   caption.title=translated('Double-click this label to fill symmetric ranges for all axes; Enter to redraw.',uiPrefs.language);
   caption.addEventListener('dblclick',event=>{
@@ -1859,7 +1821,7 @@ function renderProperties(){
   fn(live);
  });
  // Name is the first editable property for every selected geometry object.
- const nameInput=field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
+ field(root,'Name',o.name,'text',v=>edit(live=>{const name=v.trim();if(!name||doc.objects.some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
  // Place the name-free semantic expression immediately after Name for every
  // supported construction, before any Label controls or other properties.
  const renderConstructionExpression=()=>{
@@ -1992,7 +1954,7 @@ function renderProperties(){
   };
   regularLabel.append(regularCheckbox,document.createTextNode(' Regular'));grid.append(regularLabel);
   const isShape=shape!=='free',line=o.curveLine||'solid';
-  const lineSelect=buildChoice('Line style',isShape&&!SHAPE_LINE_CHOICES.some(([v])=>v===line)?'solid':line,isShape?SHAPE_LINE_CHOICES:LINE_CHOICES,next=>{freehandLine=next;
+  buildChoice('Line style',isShape&&!SHAPE_LINE_CHOICES.some(([v])=>v===line)?'solid':line,isShape?SHAPE_LINE_CHOICES:LINE_CHOICES,next=>{freehandLine=next;
    if(edit(live=>{live.curveLine=next;})!==false)renderProperties();
   });
   const heads=o.curveHeads||o.curveArrows||'none';
@@ -2185,7 +2147,6 @@ function algebraSliderGrip(row,name){
  row.ondrop=e=>{row.classList.remove('object-drop-target');const source=activeAlgebraSliderDrag;activeAlgebraSliderDrag=null;if(!source||source===name)return;e.preventDefault();e.stopPropagation();const b=row.getBoundingClientRect();update(()=>{const list=doc.algebra.sliders,from=list.findIndex(x=>x.name===source);if(from<0)return;const [moving]=list.splice(from,1),target=list.findIndex(x=>x.name===name);list.splice(target+(e.clientY<b.top+b.height/2?1:0),0,moving);});};
  return grip;
 }
-function algebraGlyph(o){const element=document.createElement('span');element.className='glyph';const tool=objectGlyphTool(o);if(tool)element.innerHTML=toolGlyphSvg(tool);else if(Object.hasOwn(PLOTTING_GLYPHS,o.type))element.innerHTML=plotGlyphSvg(o.type);else throw Error('Missing matching Objects-list icon for '+o.type);return element;}
 function algebraMore(row,label,callback){const button=document.createElement('button');button.type='button';button.className='object-menu-toggle';button.textContent='⋯';button.title=translated('Object actions',uiPrefs.language);button.setAttribute('aria-label',translated('Object actions',uiPrefs.language)+': '+label);button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-controls','object-action-menu');button.onclick=e=>{e.stopPropagation();callback(button);};row.append(button);return button;}
 function renderAlgebra(){
  const wrapper=$('algebra-list');if(!wrapper)return;
@@ -2375,7 +2336,6 @@ function setupSettings(){
  };
 
  for(const property of ['stroke','fill']){
-  const picker=$(property==='stroke'?'default-stroke':'default-fill');
   const target=$('default-color-swatches-'+property);
   appendColorSwatches(target,{scope:'default',property,apply:hex=>update(()=>{doc.settings[property]=hex;})});
  }
@@ -3620,7 +3580,7 @@ function setupPanelResizing(mobile){
    handle.setAttribute('aria-valuetext',`${displayed[side]} ${translated('pixels',uiPrefs.language)}`);
   }
  }
- function saveApplied(side,previous){
+ function saveApplied(previous){
   // Do not replace an unseen, collapsed sidebar's preferred width with 52px.
   uiPrefs.sidebarWidths={
    left:collapsed('left')?previous.left:displayed.left,
@@ -3632,7 +3592,7 @@ function setupPanelResizing(mobile){
   if(!active)return;
   const {side,id,before}=active;
   active=null;document.body.classList.remove('panels-resizing');
-  if(commit)saveApplied(side,before);
+  if(commit)saveApplied(before);
   else applyWidths(before);
   const h=handles[side];
   if(h.hasPointerCapture?.(id))h.releasePointerCapture(id);
@@ -3680,7 +3640,7 @@ function setupPanelResizing(mobile){
    const step=event.shiftKey?24:8;
    const target=key==='Home'?PANEL_MIN:key==='End'?max:displayed[side]+(key==='ArrowRight'?1:-1)*(side==='left'?step:-step);
    setWidth(side,target,starting);
-   saveApplied(side,desired());
+   saveApplied(desired());
   });
   handle.addEventListener('dblclick',event=>{
    if(mobile.matches||collapsed(side)||active)return;
@@ -3689,7 +3649,7 @@ function setupPanelResizing(mobile){
    const starting=desired();
    starting[side==='left'?'right':'left']=displayed[side==='left'?'right':'left'];
    setWidth(side,defaults()[side],starting);
-   saveApplied(side,desired());
+   saveApplied(desired());
   });
  }
  window.addEventListener('keydown',event=>{
@@ -3879,7 +3839,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  $('retry-autosave').onclick=()=>{if(storageConflict){saveStatus('Autosave paused · resolve conflict first');return;}
   if(!dirty){saveStatus('No unsaved local changes');return;}clearTimeout(saveTimer);persistNow();};
  $('object-search').oninput=()=>renderList({resetScroll:true});
- const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode'),symbol=$('parameter-symbol');
+ const plotInput=$('command'),plotY=$('command-y'),plotMode=$('plot-mode');
  function syncPlotMode(){syncPlotModeControl();}
  plotMode.addEventListener('change',()=>{plotInput.value='';plotY.value='';syncPlotMode();plotInput.focus();});
  syncPlotMode();

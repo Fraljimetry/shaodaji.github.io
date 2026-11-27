@@ -91,7 +91,7 @@ export function projectToCurve(world,path,closed=false){if(!coord(world)||!Array
   const t=dot(sub(world,a),v)/(length*length),parameter=path.domain==='ray'?Math.max(0,t):t;
   return {parameter,position:add(a,mul(v,parameter))};
  }
- let best=null,position=0,total=0;const segments=[];
+ let best=null,total=0;const segments=[];
  for(let i=1;i<path.length+(closed?1:0);i++){
   const a=path[i-1],b=path[i%path.length];if(!coord(a)||!coord(b))continue;
   const d=sub(b,a),length=norm(d);if(!(length>0))continue;

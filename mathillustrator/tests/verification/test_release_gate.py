@@ -22,6 +22,29 @@ class GateContractTests(unittest.TestCase):
                 gate.subprocess, 'run', return_value=self.fake_completed(output, returncode, stderr)):
             return gate.run_check(name, ['node'], 2, kind, {} if env is None else env)
 
+    def test_inline_browser_graph_preserves_module_identity_and_content(self):
+        import base64
+        fixture_spec = importlib.util.spec_from_file_location('browser_fixture', gate.ROOT / 'tests/browser_smoke.py')
+        fixture = importlib.util.module_from_spec(fixture_spec)
+        fixture_spec.loader.exec_module(fixture)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'src').mkdir()
+            entry = root / 'src/app.mjs'
+            entry.write_text("import {a} from './a.mjs?cut=new';\nimport {b} from './a.mjs?cut=old';\nimport {a as c} from './a.mjs?cut=new';\n", encoding='utf8')
+            (root / 'src/a.mjs').write_text("export {x} from './leaf.mjs?cut=next';\nexport const a='cut=round28', b=2;\n", encoding='utf8')
+            (root / 'src/leaf.mjs').write_text('export const x=1;', encoding='utf8')
+            app, imports = fixture.inline_module_graph(root)
+            self.assertEqual(set(imports), {'mi/a.mjs?cut=new', 'mi/a.mjs?cut=old', 'mi/leaf.mjs?cut=next'})
+            self.assertEqual(app.count("'mi/a.mjs?cut=new'"), 2)
+            self.assertNotEqual(imports['mi/a.mjs?cut=new'], imports['mi/a.mjs?cut=old'])
+            decoded = base64.b64decode(imports['mi/a.mjs?cut=new'].split(',', 1)[1]).decode()
+            self.assertIn("from 'mi/leaf.mjs?cut=next'", decoded)
+            self.assertIn("a='cut=round28'", decoded)
+            (root / 'src/leaf.mjs').unlink()
+            with self.assertRaises(FileNotFoundError):
+                fixture.inline_module_graph(root)
+
     def test_self_tests_are_required_in_each_profile(self):
         for profile in ('quick', 'local', 'release'):
             specs = gate.command_specs(profile, 10000)

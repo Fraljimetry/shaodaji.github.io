@@ -57,7 +57,7 @@ function ultraSmoothPath(raw,scale){
  const sigma=Math.min(14,Math.max(2.5,length/10));
  const radius=Math.min(count-1,Math.ceil(3*sigma/step));
  const weights=Array.from({length:radius+1},(_,k)=>Math.exp(-.5*(k*step/sigma)**2));
- const result=sampled.map((p,i)=>{
+ const result=sampled.map((_,i)=>{
   if(i===0)return [...raw[0]];
   if(i===count-1)return [...raw.at(-1)];
   let x=0,y=0,total=0;

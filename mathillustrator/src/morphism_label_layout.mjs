@@ -94,7 +94,7 @@ export function layoutMorphismLabels(entries,rectangles,width,height){
   const box=textBounds(e,e.x,e.y);index.add(box);positions.set(e.id,{x:e.x,y:e.y,dx:0,dy:0,status:'manual'});
  }
  for(const e of valid.filter(e=>e.auto)){
-  let best=null,score=Infinity,overlap=Infinity;
+  let best=null,score=Infinity;
   // When a side normal is supplied, search along the selected side only.
   // Plain screen-space offsets could leap back across a morphism after Swap.
   const side=Array.isArray(e.sideNormal)&&e.sideNormal.length===2&&e.sideNormal.every(good)&&Math.abs(Math.hypot(...e.sideNormal)-1)<.01?e.sideNormal:null;
@@ -114,7 +114,7 @@ export function layoutMorphismLabels(entries,rectangles,width,height){
    // of eliminating every collision in a dense diagram.
    const distance=Math.hypot(dx,dy);
    const s=area*1.5+outside*24+distance*.8+i*.001;
-   if(s<score){score=s;overlap=area;best={x,y,dx,dy,status:area>0||outside>0?'crowded':'clear',box:b};}
+   if(s<score){score=s;best={x,y,dx,dy,status:area>0||outside>0?'crowded':'clear',box:b};}
   }
   if(best){positions.set(e.id,{x:best.x,y:best.y,dx:best.dx,dy:best.dy,status:best.status});index.add(best.box);}
  }
