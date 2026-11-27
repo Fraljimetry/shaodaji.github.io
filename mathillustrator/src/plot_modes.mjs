@@ -45,7 +45,20 @@ const R={
 const C={
  num:x=>[x,0],add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],
  mul:(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],
- div:(a,b)=>{const d=b[0]**2+b[1]**2;return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];},
+ div:(a,b)=>{
+  const d=b[0]**2+b[1]**2,re=a[0]*b[0]+a[1]*b[1],im=a[1]*b[0]-a[0]*b[1];
+  // Preserve ordinary arithmetic; rescale when products overflow or the
+  // squared denominator approaches the subnormal range.
+  if(d>=1e-300&&Number.isFinite(d)&&Math.max(Math.abs(a[0]),Math.abs(a[1]))>=1e-150&&Number.isFinite(re)&&Number.isFinite(im))return [re/d,im/d];
+  const scale=Math.max(Math.abs(b[0]),Math.abs(b[1]));
+  if(!(scale>0)||!Number.isFinite(scale))return [NaN,NaN];
+  const x=b[0]/scale,y=b[1]/scale,n=x*x+y*y;
+  const u=a[0]/scale,v=a[1]/scale;
+  if(Number.isFinite(u)&&Number.isFinite(v))return [u*(x/n)+v*(y/n),v*(x/n)-u*(y/n)];
+  // If dividing the numerator by scale alone overflows, apply the bounded
+  // denominator coefficients first; each final component may still fit.
+  return [(a[0]*(x/n)+a[1]*(y/n))/scale,(a[1]*(x/n)-a[0]*(y/n))/scale];
+ },
  neg:a=>[-a[0],-a[1]],fromVar:(name,vars)=>name==='z'?vars.z:[vars[name],0],fromConst:name=>name==='i'?[0,1]:[CONSTANTS[name],0],
  fun(name,args){const z=args[0], [x,y]=z,r=Math.hypot(x,y),a=Math.atan2(y,x);
   if(name==='pow')return C.pow(z,args[1]);

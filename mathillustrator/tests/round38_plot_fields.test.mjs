@@ -71,3 +71,23 @@ test('Round38 native v1 model and schema agree; malformed fields never persist',
  const legacy=clone(d);delete legacy.objects[0].parameter;legacy.objects[0].xExpr='u';legacy.objects[0].yExpr='v';assert.equal(validateDoc(legacy).objects.length,3);
  assert.notEqual(p.id,vf.id);assert.notEqual(c.id,vf.id);
 });
+
+test('complex division preserves finite quotients across extreme scales',()=>{
+ const quotient=parseComplexExpression('z/z');
+ for(const scale of [1e-200,1e-160,1e160,1e200,1e308]){
+  const [re,im]=quotient(scale,-scale);
+  assert.ok(Math.abs(re-1)<1e-14&&Math.abs(im)<1e-14,`${scale}: ${re}, ${im}`);
+ }
+ const reciprocal=parseComplexExpression('1/z');
+ for(const scale of [1e-200,1e200]){
+  const [re,im]=reciprocal(scale,scale),expected=0.5/scale;
+  assert.ok(Math.abs(re/expected-1)<1e-14&&Math.abs(im/expected+1)<1e-14,`${scale}: ${re}, ${im}`);
+ }
+ const f=parseComplexExpression('(exp(400)+i*exp(400))/(exp(400)-i*exp(400))');
+ const [re,im]=f(0,0);assert.ok(Math.abs(re)<1e-14&&Math.abs(im-1)<1e-14);
+ const small=parseComplexExpression('1e-200/z')(1e-140,0);
+ assert.ok(Math.abs(small[0]/1e-60-1)<1e-14&&small[1]===0);
+ const large=parseComplexExpression('exp(249)/z')(6e-201,6e-201),expected=Math.exp(249)/1.2e-200;
+ assert.ok(Math.abs(large[0]/expected-1)<1e-14&&Math.abs(large[1]/expected+1)<1e-14);
+ assert.ok(quotient(0,0).some(v=>!Number.isFinite(v)));
+});

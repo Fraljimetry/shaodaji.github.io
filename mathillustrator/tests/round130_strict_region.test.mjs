@@ -57,3 +57,16 @@ test('implicit surface world triangles are cut by the spatial condition and unfi
  assert.ok(other.faces.length>50);
  for(const triangle of other.faces)for(const v of triangle)assert.ok(v[0]<=1e-9);
 });
+
+test('finite opposite-sign region values cannot overflow edge interpolation',()=>{
+ const triangle=[[-1,0,0],[1,-1,0],[1,1,0]];
+ const condition=compileRegionCondition('x*exp(709.5)>0');
+ assert.ok(Number.isFinite(condition(1,0,0))&&condition(1,0,0)>1e308);
+ const pieces=clipConditionTriangle(triangle,condition);
+ assert.equal(pieces.length,2);
+ for(const point of pieces.flat())assert.ok(point[0]>=0,JSON.stringify(point));
+ const boundary=pieces.flat().filter(p=>p[0]===0);
+ assert.ok(boundary.some(p=>p[1]===-0.5)&&boundary.some(p=>p[1]===0.5));
+ const reversed=clipConditionTriangle([...triangle].reverse(),condition);
+ assert.ok(reversed.flat().every(p=>p[0]>=0));
+});

@@ -29,7 +29,11 @@ export function clipConditionTriangle(triangle,condition){
  const next=[];for(let i=0;i<polygon.length;i++){
   const a=polygon[i],b=polygon[(i+1)%polygon.length],insideA=a.value>0,insideB=b.value>0;
   if(insideA!==insideB&&Number.isFinite(a.value)&&Number.isFinite(b.value)){
-   const t=Math.max(0,Math.min(1,a.value/(a.value-b.value)));
+   const difference=a.value-b.value;
+   // Opposite finite values can have an infinite difference. Normalize only
+   // in that case, preserving ordinary interpolation and mesh ordering.
+   const scale=Number.isFinite(difference)?1:Math.max(Math.abs(a.value),Math.abs(b.value));
+   const t=Math.max(0,Math.min(1,scale===1?a.value/difference:(a.value/scale)/(a.value/scale-b.value/scale)));
    next.push({point:a.point.map((value,j)=>value+(b.point[j]-value)*t),value:0});
   }
   if(insideB)next.push(b);

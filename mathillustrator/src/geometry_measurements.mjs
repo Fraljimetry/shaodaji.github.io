@@ -61,11 +61,13 @@ export function measureGeometry(o,resolver){
  }
  if(o.type==='angle'){
   if(p.length!==3||!p.every(valid))return {kind:'angle',value:null};
-  const a=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]),b=Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1]);
-  if(a<1e-10||b<1e-10)return {kind:'angle',value:null};
-  const one=Math.atan2(p[0][1]-p[1][1],p[0][0]-p[1][0]),two=Math.atan2(p[2][1]-p[1][1],p[2][0]-p[1][0]);
-  let sweep=(two-one+2*Math.PI)%(2*Math.PI);if(sweep>Math.PI)sweep-=2*Math.PI;
-  return {kind:'angle',value:Math.abs(sweep*180/Math.PI)};
+  const ux=p[0][0]-p[1][0],uy=p[0][1]-p[1][1],vx=p[2][0]-p[1][0],vy=p[2][1]-p[1][1];
+  const a=Math.max(Math.abs(ux),Math.abs(uy)),b=Math.max(Math.abs(vx),Math.abs(vy));
+  if(!(a>0&&b>0)||!Number.isFinite(a)||!Number.isFinite(b))return {kind:'angle',value:null};
+  // Independent arm scaling avoids underflow and overflow. atan2 of the
+  // cross and dot products also avoids cancellation from adding 2*pi.
+  const x=ux/a,y=uy/a,z=vx/b,w=vy/b;
+  return {kind:'angle',value:Math.atan2(Math.abs(x*w-y*z),x*z+y*w)*180/Math.PI};
  }
  if(['polygon','rectangle','parallelogram','regularPolygon'].includes(o.type)){
   const vertices=o.type==='polygon'?p:derivedShapeVertices(o,resolver.at);

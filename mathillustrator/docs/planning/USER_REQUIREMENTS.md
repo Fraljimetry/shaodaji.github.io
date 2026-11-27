@@ -2391,3 +2391,9 @@ When Properties focus protects an in-progress edit, all other visible fields rep
 
 ### Current 3D mesh-detail limit
 The supported Mesh detail range is **8–96**. Older project JSON with integer detail 97–128 remains importable; on validation its detail is normalized to 96. Out-of-range and malformed settings remain invalid. This supersedes the historical 8–128 development entry above; it does not change the existing surface budgets or rendering modes.
+
+
+### Numerical stability — angle measurement, complex division, and strict-region clipping
+- Measure angles from finite nonzero rays independently of their lengths, including existing constructions whose parent coordinates become microscopic. Retain small nonzero angles when the available floating-point coordinates resolve them; an actual zero-length ray remains undefined. The initial construction-admission limit is unchanged.
+- Complex division must preserve representable finite quotients in the tested extreme-magnitude cases without treating division by zero as defined. Preserve ordinary arithmetic, syntax and project schema.
+- Strict-region clipping must interpolate finite opposite-sign condition values without overflow in their difference. Preserve strict inequality semantics and the existing mesh limits.

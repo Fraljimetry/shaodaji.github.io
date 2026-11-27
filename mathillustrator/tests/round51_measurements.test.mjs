@@ -37,3 +37,15 @@ test('Round51: reject self-crossing, repeated, collapsed and nonfinite outlines'
  const {d,a,b,c}=scene(),ellipse=append(d,{type:'ellipse',refs:[a.id,b.id,c.id]});
  c.xy=[2,0];assert.equal(measureGeometry(ellipse,createResolver(d)).value,null);
 });
+
+test('angle measurement is scale invariant and retains small nonzero angles',()=>{
+ for(const scale of [1,1e-12,1e-100]){
+  const d=newDoc(),a=addPoint(d,[scale,0]),b=addPoint(d,[0,0]),c=addPoint(d,[0,scale]);
+  const angle=append(d,{type:'angle',refs:[a.id,b.id,c.id]});
+  assert.equal(measureGeometry(angle,createResolver(d)).value,90);
+  c.xy=[scale,scale*1e-16];
+  const tiny=measureGeometry(angle,createResolver(d)).value;
+  assert.ok(Math.abs(tiny/(1e-16*180/Math.PI)-1)<1e-12,`small angle: ${tiny}`);
+  c.xy=[0,0];assert.equal(measureGeometry(angle,createResolver(d)).value,null);
+ }
+});
