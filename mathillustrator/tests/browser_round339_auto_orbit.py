@@ -52,6 +52,20 @@ with sync_playwright() as pw:
         assert speed.bounding_box()["x"] < button.bounding_box()["x"]
         assert page.locator('#zoom-out').bounding_box() == zoom
         assert button.bounding_box() == box
+        # Expanded controls must read as one continuous surface, without a seam.
+        assert page.evaluate("""() => {
+            const b = document.querySelector('#auto-orbit');
+            const e = document.querySelector('#auto-orbit-extension');
+            const bs = getComputedStyle(b), es = getComputedStyle(e);
+            const br = b.getBoundingClientRect(), er = e.getBoundingClientRect();
+            return Math.abs(er.right - br.left - 1) < 1 &&
+                er.top === br.top && er.bottom === br.bottom &&
+                bs.borderLeftColor === 'rgba(0, 0, 0, 0)' &&
+                bs.borderTopLeftRadius === '0px' && bs.borderBottomLeftRadius === '0px' &&
+                es.borderRightWidth === '0px' && es.borderTopRightRadius === '0px' &&
+                es.borderBottomRightRadius === '0px' && bs.backgroundColor === es.backgroundColor &&
+                bs.boxShadow === 'none' && es.boxShadow === 'none';
+        }""")
         speed.hover()
         assert speed.is_visible()
         page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)

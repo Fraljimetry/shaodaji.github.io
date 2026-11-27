@@ -1320,12 +1320,14 @@ html.three-d #object-search{display:block!important}
 
 /* Canvas auto-rotation uses the existing view-control button styling. */
 #auto-orbit-controls[hidden]{display:none}
-#auto-orbit-controls:not([hidden]){position:relative;display:flex;align-items:stretch;flex:none;font-size:11px;color:var(--ink)}
-#auto-orbit{display:inline-flex;align-items:center;justify-content:center;min-width:35px}
+#auto-orbit-controls:not([hidden]){position:relative;display:flex;align-items:stretch;flex:none;font-size:11px;color:var(--ink);filter:drop-shadow(var(--shadow));--orbit-join-color:var(--border);--orbit-left-radius:7px;--orbit-button-bg:var(--surface)}
+#auto-orbit{display:inline-flex;align-items:center;justify-content:center;min-width:35px;box-shadow:none;border-left-color:var(--orbit-join-color);border-top-left-radius:var(--orbit-left-radius);border-bottom-left-radius:var(--orbit-left-radius)}
 #auto-orbit svg{width:14px;height:14px}
-#auto-orbit-extension{position:absolute;right:100%;top:0;bottom:0;display:none;align-items:center;gap:5px;padding:0 6px;background:var(--surface);border:1px solid var(--border);border-radius:7px;box-shadow:var(--shadow);white-space:nowrap}
+#auto-orbit-extension{position:absolute;right:calc(100% - 1px);top:0;bottom:0;display:none;align-items:center;gap:5px;padding:0 6px;background:var(--orbit-button-bg);border:1px solid var(--border);border-right:0;border-radius:7px 0 0 7px;white-space:nowrap}
+#auto-orbit-controls:not([hidden]):where(:hover,[data-keyboard-focus]){--orbit-join-color:transparent;--orbit-left-radius:0px;--orbit-button-bg:var(--hover)}
 #auto-orbit-controls:where(:hover,[data-keyboard-focus]) > #auto-orbit-extension{display:flex}
-@media(hover:none){#auto-orbit-controls:where(:focus-within) > #auto-orbit-extension{display:flex}}
+#auto-orbit-controls:where(:hover,[data-keyboard-focus]) > #auto-orbit{background:var(--orbit-button-bg)}
+@media(hover:none){#auto-orbit-controls:not([hidden]):where(:focus-within){--orbit-join-color:transparent;--orbit-left-radius:0px;--orbit-button-bg:var(--hover)}#auto-orbit-controls:where(:focus-within) > #auto-orbit-extension{display:flex}#auto-orbit-controls:where(:focus-within) > #auto-orbit{background:var(--orbit-button-bg)}}
 #auto-orbit-speed{width:86px;min-width:32px;padding:0;accent-color:var(--accent)}
 #auto-orbit-rate{white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:700px){#auto-orbit-extension label{display:none}#auto-orbit-speed{width:48px}#auto-orbit-extension{gap:3px;padding:0 3px}}
