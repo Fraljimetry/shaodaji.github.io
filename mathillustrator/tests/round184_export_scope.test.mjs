@@ -31,3 +31,13 @@ test('projected vector arrow geometry is shared and preserves width and cutoff',
  assert.deepEqual(projectedArrow({start:[0,0],end:[10,0]}),{a:[0,0],b:[10,0],width:1.5,left:[4,-2.4000000000000004],right:[4,2.4000000000000004]});
  const arrow=projectedArrow({start:[0,0],end:[0,10],width:6});assert.equal(arrow.width,6);assert.equal(arrow.left[1],-2);assert.equal(arrow.right[1],-2);
 });
+
+test('3D projected arrow vertices exclude painter depth from SVG polygon coordinates',()=>{
+ const arrow=projectedArrow({start:[400,300,-.8],end:[410,300,.9]});
+ assert.deepEqual(arrow.a,[400,300]);
+ assert.deepEqual(arrow.b,[410,300]);
+ const vertices=[arrow.b,arrow.left,arrow.right];
+ assert.ok(vertices.every(p=>p.length===2&&p.every(Number.isFinite)));
+ assert.equal(vertices.map(p=>p.join(',')).join(' ').split(/[ ,]+/).length,6);
+ assert.deepEqual(arrow,projectedArrow({start:[400,300],end:[410,300]}));
+});

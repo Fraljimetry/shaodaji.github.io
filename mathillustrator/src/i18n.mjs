@@ -657,6 +657,7 @@ const zh=Object.freeze({
  "Replace the current illustration with this JSON project?": "用此 JSON 项目替换当前绘图？",
  "Replace this tab with the newer local project? Download your current version first if needed.": "用较新的本地项目替换当前标签页？如有需要，请先下载当前版本。",
  "Resolve the other-tab conflict before restoring.": "恢复前请先解决其他标签页冲突。",
+ "Restore blocked: defining objects belong to another project.": "恢复失败：定义对象属于另一个项目。",
  "Restore blocked: an object ID or name is already used.": "恢复失败：对象 ID 或名称已被使用。",
  "Some fixed-size labels cannot fit this viewport. Enlarge the canvas or reduce font size.": "部分固定字号标签无法在当前视图中显示；请扩大画布或缩小字号。",
  "Start a new illustration? Download the current project first if needed.": "新建绘图？如有需要，请先下载当前项目。",

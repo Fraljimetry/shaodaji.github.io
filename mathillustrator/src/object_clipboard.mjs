@@ -1,5 +1,5 @@
 import {createDependencyGraph,objectDependencies} from './dependency_graph.mjs?cut=round311';
-import {append,clone,validateDoc} from './model.mjs?cut=round331';
+import {append,clone,validateDoc} from './model.mjs?cut=round334';
 
 /** In-editor 2D clipboard. Snapshot the transitive parents of each selected
  * object so copies can be moved independently of the originals. Nothing is

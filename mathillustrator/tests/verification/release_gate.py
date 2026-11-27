@@ -82,6 +82,8 @@ def command_specs(profile, cases):
             ('browser-recent-freehand', [py, 'tests/browser_round146_freehand_shapes.py'], 120, 'browser'),
             ('browser-recent-panel-resize', [py, 'tests/browser_panel_resize_current.py'], 120, 'browser'),
             ('browser-history', [py, 'tests/browser_round92_history.py'], 120, 'browser'),
+            ('browser-trash-dependencies', [py, 'tests/browser_round335_trash_dependencies.py'], 120, 'browser'),
+            ('browser-camera-clipping', [py, 'tests/browser_round334_camera_clipping.py'], 150, 'browser'),
             ('browser-export-three-formats', [py, 'tests/browser_round107_3d_export.py'], 150, 'browser'),
             ('browser-supported-exports', [py, 'tests/browser_round51f_exports_plotglyphs.py'], 150, 'browser'),
             ('browser-history-trash', [py, 'tests/browser_round45_3d_trash_storage.py'], 150, 'browser'),

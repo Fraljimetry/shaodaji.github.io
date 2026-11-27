@@ -1,19 +1,43 @@
+"""Verify actual bilingual tutorial table alignment at desktop and mobile widths."""
+import os
+import re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
-root=Path(__file__).resolve().parents[1]
-updated=root/'tutorial.html'
-assert updated.read_text().count('.guide table th{text-align:left}')==1
-with sync_playwright() as pw:
- browser=pw.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])
- for width in [1440,768,390]:
-  page=browser.new_page(viewport={'width':width,'height':900})
-  page.set_content(updated.read_text().replace('<link rel="stylesheet" href="./style.css?cut=round51">', '<style>'+(root/'style.css').read_text()+'</style>'),wait_until='domcontentloaded')
-  for sec in ['#en-guide','#zh-guide']:
-   headers=page.locator(sec+' table th')
-   assert headers.count()>=2, (width,sec)
-   for i in range(headers.count()):
-    actual=headers.nth(i).evaluate('(e)=>getComputedStyle(e).textAlign')
-    assert actual=='left',(width,sec,i,actual)
-  print(f'PASS {width}px EN/CN table headers')
-  page.close()
- browser.close()
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run():
+    html = (ROOT / 'tutorial.html').read_text(encoding='utf-8')
+    css = (ROOT / 'style.css').read_text(encoding='utf-8')
+    html = re.sub(r'<link[^>]*stylesheet[^>]*>',
+                  lambda m: '<style>' + css + '</style>' if 'style.css' in m[0] else m[0], html)
+    exe = os.environ.get('MATHILLUSTRATOR_CHROMIUM')
+    if not exe and Path('/usr/bin/chromium').is_file():
+        exe = '/usr/bin/chromium'
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True, args=['--no-sandbox'],
+                                     **({'executable_path': exe} if exe else {}))
+        try:
+            for width in (1440, 768, 390):
+                page = browser.new_page(viewport={'width': width, 'height': 900})
+                try:
+                    page.set_content(html, wait_until='domcontentloaded')
+                    for lang in ('en', 'zh'):
+                        if page.locator('html').get_attribute('data-lang') != lang:
+                            page.locator('#lang-switch').click()
+                        assert page.locator('html').get_attribute('data-lang') == lang
+                        headers = page.locator('#guide th:visible')
+                        count = headers.count()
+                        alignment = headers.evaluate_all('ns => ns.map(e => getComputedStyle(e).textAlign)')
+                        assert count >= 2 and all(a == 'left' for a in alignment), (width, lang, count, alignment)
+                        print(f'PASS {width}px {lang}: {count} visible table headers')
+                finally:
+                    page.close()
+        finally:
+            browser.close()
+    print('ROUND180_CHROMIUM_PASS')
+
+
+if __name__ == '__main__':
+    run()

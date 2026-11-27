@@ -161,13 +161,47 @@ function makeCamera(bounds,options,width,height){
   const x=px*cos-py*sin,depth=px*sin+py*cos;
   return [x,depth*sp-pz*cp,depth*cp+pz*sp];
  }
- function project(point){
-  const cached=projectedVertices.get(point);if(cached)return cached;
-  const [x,y,depth]=turn(point),perspective=options.projection==='perspective'?3.5/(3.5-depth):1,scale=Math.min(width,height)*.32*options.zoom;
+ // Leave a finite gap to the perspective eye (depth 3.5). Clip in
+ // camera space, not by clamping the denominator or mirroring hidden geometry.
+ const nearDepth=3;
+ function projectTurn([x,y,depth]){
+  const perspective=options.projection==='perspective'?3.5/(3.5-depth):1,scale=Math.min(width,height)*.32*options.zoom;
   const value=[width/2+x*scale*perspective,height/2+y*scale*perspective,depth];
+  return value.every(ok)?value:null;
+ }
+ function project(point){
+  if(projectedVertices.has(point))return projectedVertices.get(point);
+  const turned=turn(point);
+  const value=options.projection==='perspective'&&turned[2]>nearDepth?null:projectTurn(turned);
   projectedVertices.set(point,value);return value;
  }
- return {project,turn};
+ function projectPrimitive(points){
+  const projected=points.map(project);
+  if(projected.every(Boolean))return projected;
+  if(options.projection!=='perspective')return [];
+  const turned=points.map(turn);
+  if(!turned.every(p=>p.every(ok)))return [];
+  const inside=p=>p[2]<=nearDepth;
+  const intersect=(a,b)=>{
+   const t=(nearDepth-a[2])/(b[2]-a[2]);
+   return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,nearDepth];
+  };
+  let clipped=[];
+  if(turned.length===2){
+   const [a,b]=turned;
+   if(!inside(a)&&!inside(b))return [];
+   clipped=[inside(a)?a:intersect(a,b),inside(b)?b:intersect(a,b)];
+  }else{
+   for(let i=0;i<turned.length;i++){
+    const a=turned[i],b=turned[(i+1)%turned.length];
+    if(inside(a))clipped.push(a);
+    if(inside(a)!==inside(b))clipped.push(intersect(a,b));
+   }
+  }
+  const result=clipped.map(projectTurn);
+  return result.every(Boolean)?result:[];
+ }
+ return {project,turn,projectPrimitive};
 }
 function inBounds(p,b){return p.every((value,i)=>value>=b[['xMin','yMin','zMin'][i]]&&value<=b[['xMax','yMax','zMax'][i]]);}
 // Clipping instead of dropping entire cells at a finite plot region boundary.
@@ -608,21 +642,23 @@ function* project3DSceneSteps(scene,width,height,{interactive=false}={}){
   let plotFaceCount=0;
   for(const triangle of mesh.faces){
    if(plotFaceCount>=perPlotFaces){limited=true;break;}
-   plotFaceCount++;
-   // Explicit vertex projection avoids short-lived callback/reduction arrays for
-   // each triangle, while preserving the original sum order and output shape.
-   const p0=camera.project(triangle[0]),p1=camera.project(triangle[1]),p2=camera.project(triangle[2]);
-   const projected=[p0,p1,p2];
-   // Stable world-anchored illumination: orbit changes view, NOT surface luminance.
-   // No order-, orientation- or camera-dependent brightness jumps on two-sided faces.
-   faces.push({points:projected,depth:((0+p0[2])+p1[2]+p2[2])/3,shade:opt.lighting?worldFaceShade(triangle):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
+   const projected=camera.projectPrimitive(triangle);
+   // A clipped triangle can become a quadrilateral. Keep the existing
+   // triangular renderer contract and the original world-space shading.
+   for(let i=1;i+1<projected.length;i++){
+    const p0=projected[0],p1=projected[i],p2=projected[i+1];
+    if(faces.length>=totalFaceBudget||plotFaceCount>=perPlotFaces){limited=true;break;}
+    faces.push({points:[p0,p1,p2],depth:((0+p0[2])+p1[2]+p2[2])/3,shade:opt.lighting?worldFaceShade(triangle):1,color:plot.colorRange?rampColor((triangle[0][2]+triangle[1][2]+triangle[2][2])/3,plot.bounds.zMin,plot.bounds.zMax):(plot.kind==='domain3d'&&plot.colorMode==='solid'?plot.color:(triangle.color||plot.color)),rangeColor:plot.colorRange===true,domainColoring:plot.kind==='domain3d'&&!plot.colorRange&&plot.colorMode!=='solid',opacity:opt.opacity*plot.opacity});
+    plotFaceCount++;
+   }
    if((++count&63)===0)yield;
   }
   const magnitudes=plot.colorRange?mesh.lines.map(entry=>entry.magnitude).filter(Number.isFinite):[];
   const minimum=magnitudes.length?Math.min(...magnitudes):0,maximum=magnitudes.length?Math.max(...magnitudes):1;
   for(const segment of mesh.lines){
    if(lines.length>=MAX_3D_LINES){limited=true;break;}
-   const endpoints=segment.endpoints||segment, p=endpoints.map(camera.project);
+   const endpoints=segment.endpoints||segment, p=camera.projectPrimitive(endpoints);
+   if(p.length!==2)continue;
    const fieldColor=plot.colorRange?rampColor(segment.magnitude,minimum,maximum):plot.color;
    lines.push({start:p[0],end:p[1],depth:(p[0][2]+p[1][2])/2,color:fieldColor,opacity:opt.opacity*plot.opacity,width:plot.lineWidth??1.5});
    if((++count&63)===0)yield;

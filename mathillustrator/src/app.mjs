@@ -1,32 +1,32 @@
-import {createDependencyGraph,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
+import {createDependencyGraph,objectDependencies,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
 import {createDocumentHistory,commitDocumentChange} from './document_history.mjs?cut=round315';
 import {plotCapability,plotState,MIN_RASTER_RESOLUTION} from './plot_capabilities.mjs?cut=round308';
-import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round332';
-import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round331';
-import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round331';
+import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round334';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round334';
+import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round334';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round329';
 import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round327';
 import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round327';
 import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round325';
-import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round331';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round331';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round334';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round334';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {AXIS_OBJECTS,TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round331';
+import {AXIS_OBJECTS,TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round334';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round331';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round331';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round334';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round334';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round331';
+import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round334';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round327';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round332';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round335';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
-import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round331';
+import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round334';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
 import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round315';
-import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round331';
+import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round334';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round301';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotArtifactCache,plotArtifactKey} from './plot_cache.mjs?cut=round331';
@@ -469,6 +469,7 @@ function update(mutator,{refreshList=true,renderCanvas=true,preservePlayback=fal
  if(JSON.stringify(doc)!==old){
   if(splitPlayback&&playbackBoundary!==null&&playbackBoundary!==old)recordUndo(playbackBoundary);
   commitEdit(old);
+  if(replaced)detachTrashDependencies();
  }
  if(splitPlayback)playbackBefore=JSON.stringify(doc);
  if(refreshList)refreshAfterMutation(replaced||selected!==previousSelected);else{syncSettings();if(renderCanvas)render();}return true;
@@ -3089,6 +3090,16 @@ function pasteSelectedObjects({inPlace=false}={}){
  if(ok){if(!inPlace)paste2DCount=next;setSelection(pasted,pasted.at(-1));notice(`Pasted ${pasted.length} selected object(s) with ${copied2DObjects.objects.length-pasted.length} defining dependency object(s)${inPlace?' in place':''}.`);}
  return ok;
 }
+// Structural references in a deletion snapshot must not bind to reused IDs
+// after replacing the project. Keep the entry, and let undo restore its context.
+function detachTrashDependencies(){
+ trash=trash.map(entry=>{
+  const ids=new Set(entry.objects.map(o=>o.id));
+  return entry.objects.some(o=> (o.refs!==undefined&&!Array.isArray(o.refs)) || objectDependencies(o).some(id=>!ids.has(id)&&!Object.hasOwn(AXIS_OBJECTS,id)))
+   ?{...entry,detachedDependencies:true}:entry;
+ });
+ persistTrash();
+}
 function persistTrash(){
  try{localStorage.setItem(TRASH,JSON.stringify(trash));}catch(e){notice('Recently Deleted could not be saved. Export a JSON backup.');}
  renderTrash();
@@ -3109,6 +3120,7 @@ function renderTrash(rootId='trash-items'){
   button.onclick=()=>{
    if(storageConflict){notice('Resolve the other-tab conflict before restoring.');return;}
    const source=trash[index];if(!source)return;
+   if(source.detachedDependencies){notice('Restore blocked: defining objects belong to another project.');return;}
    const restored3d=Array.isArray(source.plots3d)?source.plots3d:[];
    if(source.objects.some(o=>get(doc,o.id)||doc.objects.some(existing=>existing.name===o.name))
       ||restored3d.some(o=>doc.scene3d?.plots.some(p=>p.id===o.id||p.name===o.name))
@@ -3830,7 +3842,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!localizedConfirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};
- $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');documentHistory.clear();selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
+ $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');documentHistory.clear();detachTrashDependencies();selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!localizedConfirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&playingSliders.size){stopAllSliderPlayback();renderAlgebra();renderProperties();}

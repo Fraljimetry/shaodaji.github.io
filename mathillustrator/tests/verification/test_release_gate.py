@@ -63,6 +63,8 @@ class GateContractTests(unittest.TestCase):
             'browser-recent-panel-resize': 'tests/browser_panel_resize_current.py',
             'browser-tikzcd-layout': 'tests/browser_round196_layout_aware_tikz.py',
             'browser-runtime-localization': 'tests/browser_round174_i18n_runtime.py',
+            'browser-trash-dependencies': 'tests/browser_round335_trash_dependencies.py',
+            'browser-camera-clipping': 'tests/browser_round334_camera_clipping.py',
             'browser-supported-exports': 'tests/browser_round51f_exports_plotglyphs.py',
         }
         for profile in ('quick', 'local', 'release'):

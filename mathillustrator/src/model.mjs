@@ -7,7 +7,7 @@ import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round325';
 import {compileRegionCondition} from './region_condition.mjs?cut=round327';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero,focalEllipseParameters} from './numeric_geometry.mjs?cut=round325';
 import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round325';
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round331';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round334';
 import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round327';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments

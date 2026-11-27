@@ -3,8 +3,8 @@
  * Do not silently flatten geometry after quantization or exceed TeX's bounded
  * dimensions. This check is deliberately conservative; JSON/SVG stay available.
  */
-import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round331';
-import {regularPolygonVertices} from './geometry.mjs?cut=round331';
+import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round334';
+import {regularPolygonVertices} from './geometry.mjs?cut=round334';
 
 export const TIKZ_DECIMALS = 5;
 export const TIKZ_COORD_LIMIT = 300; // cm; allow 100cm extension for infinite lines
@@ -74,7 +74,8 @@ export function isolatedRenderStatus(getStatus,setStatus,render){
 }
 /** Identical projected arrow geometry for SVG and dense canvas painting. */
 export function projectedArrow(field){
- const a=field.start,b=field.end,width=field.width??1.5,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+ // Projected points also carry depth; SVG polygon vertices must be 2D.
+ const a=field.start.slice(0,2),b=field.end.slice(0,2),width=field.width??1.5,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
  if(len<.5)return null;
  const head=6*Math.max(.7,Math.min(2,Math.sqrt(width/1.5))),ux=dx/len,uy=dy/len;
  return {a,b,width,left:[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],right:[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]};
