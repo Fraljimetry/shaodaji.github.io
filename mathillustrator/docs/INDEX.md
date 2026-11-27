@@ -1,12 +1,12 @@
 # MathIllustrator documentation index
 
-This directory is the source of truth for what MathIllustrator **actually** implements and has verified. Browser-first 2D geometry and mathematical diagrams include offline SVG LaTeX labels and partial bilingual UI. True 3D, live sliders, full symbolic geometry and PDE-driven visualization remain ambitions, not implemented tools.
+This directory is the source of truth for what MathIllustrator **actually** implements and has verified. MathIllustrator supports interactive 2D geometry, mathematical diagrams, 2D and 3D plots, live sliders, offline SVG LaTeX labels and bilingual controls. It is not a general symbolic algebra or PDE solver.
 
 ## Read in this order
 
 1. [manifest.json](manifest.json): release, stable source entry points and delivery contract.
 2. [planning/features.json](planning/features.json): structured feature-by-feature implementation/partial/unsupported truth (living catalog; see current count in JSON).
-3. [architecture/OBJECT_MODEL.md](architecture/OBJECT_MODEL.md) and [schemas/project-v1.schema.json](schemas/project-v1.schema.json): source-of-truth editable objects, dependencies, v1 JSON import rules.
+3. [architecture/CURRENT_ARCHITECTURE.md](architecture/CURRENT_ARCHITECTURE.md): current module responsibilities and invariants. [schemas/project-v1.schema.json](schemas/project-v1.schema.json): v1 structural import contract. [architecture/OBJECT_MODEL.md](architecture/OBJECT_MODEL.md): historical object-model evolution.
 4. [../tutorial.html](../tutorial.html): user-facing instructions and honest limitations; must match shipped UI.
 5. [quality/KNOWN_ISSUES.md](quality/KNOWN_ISSUES.md) and [planning/ROADMAP.md](planning/ROADMAP.md): outstanding issues, measured limits and planned work.
 6. [quality/REGRESSION_POLICY.md](quality/REGRESSION_POLICY.md), [quality/regression-cases.json](quality/regression-cases.json), [quality/performance.json](quality/performance.json): adversarial test policy and current accumulative quality evidence.
@@ -15,7 +15,7 @@ This directory is the source of truth for what MathIllustrator **actually** impl
 
 ## Executable architecture
 
-`src/model.mjs` owns validation, commands, dependencies and v1 JSON semantics. `src/geometry.mjs` and `src/plot.mjs` own supported geometry/plot computation; `src/diagram*.mjs` and `src/morphism_label_layout.mjs` own semantic diagrams, label placement and bounded routing. `src/anchor_index.mjs`, `src/label_layout.mjs`, `src/plot_cache.mjs` and `src/storage.mjs` support interactive behavior. `src/math_labels.mjs` renders offline MathJax SVG mathematics; `src/i18n.mjs` localizes fixed UI strings while retaining the user's document data. `src/app.mjs` coordinates view, state, gesture and rendering. Both runtime code and schema have been updated additively; older text-mode-less JSON remains plain.
+The [current architecture map](architecture/CURRENT_ARCHITECTURE.md) describes the authoritative contracts for capabilities, control construction, history, dependency analysis, render caching, exports and localization. `src/app.mjs` orchestrates application state, gestures and rendering. The 2D and 3D mathematical engines retain their specialized computations. The native project remains schema version 1.
 
 No module may silently invent unsupported mathematical semantics; preserve document identity, abort/undo invariants, import/export disabled states, long-scene work limits, malicious input handling and recoverable storage. No MathReader application files should ever be changed as a side-effect.
 

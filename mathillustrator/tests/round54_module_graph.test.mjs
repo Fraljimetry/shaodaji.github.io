@@ -22,3 +22,16 @@ test('Round 55 geometry contract has versioned dependency',()=>{
  assert.match(readFileSync(resolve(src,'app.mjs'),'utf8'),/from '\.\/plot3d\.mjs\?cut=round(?:6[2-9]|[7-9]\d|[1-9]\d{2,})'/);
  assert.match(html,/mathillustrator-startup-error/);
 });
+
+test('every internal module has one canonical versioned URL across all importers',()=>{
+ const src=resolve(root,'src'), versions=new Map();
+ for(const name of readdirSync(src).filter(n=>n.endsWith('.mjs'))){
+  const content=readFileSync(resolve(src,name),'utf8');
+  for(const match of content.matchAll(/\b(?:from\s*|import\s*\(\s*)['"](\.[^'"]+\.mjs)\?([^'"]+)['"]/g)){
+   const [_,path,version]=match;
+   if(versions.has(path))assert.equal(version,versions.get(path),`${name}: ${path} has multiple browser module identities`);
+   else versions.set(path,version);
+  }
+ }
+ assert.ok(versions.size>=30);
+});

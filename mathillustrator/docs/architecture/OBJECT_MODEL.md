@@ -1,4 +1,6 @@
-# MathIllustrator · current v1 semantic object model and rendering contract
+# MathIllustrator · historical evolution of the v1 semantic object model
+
+**Historical reference:** The original Cut 06 description and subsequent chronological additions below are retained for provenance. They are not the latest feature or export specification. See [Current architecture](CURRENT_ARCHITECTURE.md), the current [project schema](../schemas/project-v1.schema.json), and the user tutorial for the active contracts.
 
 **Observed implementation: v0.7.0 Cut 06, native data schema v1.** Full multidomain 3D mathematical visualization is a future direction, not a released feature.
 

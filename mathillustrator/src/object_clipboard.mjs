@@ -1,40 +1,14 @@
-import {append,clone,validateDoc} from './model.mjs?cut=round303';
+import {createDependencyGraph,objectDependencies} from './dependency_graph.mjs?cut=round311';
+import {append,clone,validateDoc} from './model.mjs?cut=round315';
 
 /** In-editor 2D clipboard. Snapshot the transitive parents of each selected
  * object so copies can be moved independently of the originals. Nothing is
  * written to the operating-system clipboard or the project JSON schema. */
 export function captureObjectSelection(doc,selectedIds){
- const map=new Map(doc.objects.map(o=>[o.id,o]));
- const roots=[...new Set(selectedIds)].filter(id=>map.has(id));
+ const graph=createDependencyGraph(doc.objects);
+ const roots=[...new Set(selectedIds)].filter(id=>graph.byId.has(id));
  if(!roots.length)return null;
- const included=new Set(),ordered=[],visiting=new Set();
- // Explicit DFS frames preserve dependency-first clipboard ordering without
- // exhausting the call stack on long, valid construction chains.
- for(const root of roots){
-  if(included.has(root))continue;
-  const stack=[{id:root,entered:false,deps:null,index:0}];
-  while(stack.length){
-   const frame=stack[stack.length-1];
-   if(included.has(frame.id)){stack.pop();continue;}
-   if(!frame.entered){
-    if(!map.has(frame.id))throw Error('Missing clipboard dependency.');
-    if(visiting.has(frame.id))throw Error('Cyclic clipboard dependency.');
-    visiting.add(frame.id);frame.entered=true;
-    const o=map.get(frame.id);
-    frame.deps=[...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])];
-   }
-   if(frame.index<frame.deps.length){
-    const ref=frame.deps[frame.index++];
-    if(included.has(ref))continue;
-    if(visiting.has(ref))throw Error('Cyclic clipboard dependency.');
-    stack.push({id:ref,entered:false,deps:null,index:0});
-   }else{
-    visiting.delete(frame.id);included.add(frame.id);
-    ordered.push(clone(map.get(frame.id)));
-    stack.pop();
-   }
-  }
- }
+ const ordered=graph.dependencyOrder(roots,{missing:'Missing clipboard dependency.',cyclic:'Cyclic clipboard dependency.'}).map(id=>clone(graph.byId.get(id)));
  return {version:1,roots,objects:ordered};
 }
 
@@ -51,7 +25,7 @@ export function pasteObjectSelection(doc,clip,{offset=0.5}={}){
  }
  if(clip.roots.some(id=>!clipboardIds.has(id)))throw Error('Missing clipboard root.');
  for(const original of clip.objects){
-  for(const ref of [...(original.refs||[]),...(original.edgeOf?[original.edgeOf]:[])]){
+  for(const ref of objectDependencies(original)){
    if(!clipboardIds.has(ref))throw Error('Clipboard contains external dependency.');
   }
  }

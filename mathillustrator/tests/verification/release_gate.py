@@ -83,6 +83,11 @@ def command_specs(profile, cases):
             ('browser-recent-panel-resize', [py, 'tests/browser_panel_resize_current.py'], 120, 'browser'),
             ('browser-history', [py, 'tests/browser_round92_history.py'], 120, 'browser'),
             ('browser-export-three-formats', [py, 'tests/browser_round107_3d_export.py'], 150, 'browser'),
+            ('browser-supported-exports', [py, 'tests/browser_round51f_exports_plotglyphs.py'], 150, 'browser'),
+            ('browser-history-trash', [py, 'tests/browser_round45_3d_trash_storage.py'], 150, 'browser'),
+            ('browser-dependency-locks', [py, 'tests/browser_round262_lock_sync.py'], 120, 'browser'),
+            ('browser-orbit-detail', [py, 'tests/browser_round45_3d_interaction.py'], 180, 'browser'),
+            ('browser-dense-preview-export', [py, 'tests/browser_round205_3d_performance.py'], 150, 'browser'),
             ('browser-export-fidelity', [py, 'tests/browser_round108_export_fidelity.py'], 150, 'browser'),
             ('browser-export-cancellation', [py, 'tests/browser_round109_export_interruptions.py'], 120, 'browser'),
             ('browser-scene-lifecycle', [py, 'tests/browser_round106_3d_lifecycle.py'], 150, 'browser'),
@@ -157,10 +162,10 @@ def run_check(name, argv, timeout, kind, env, *, cwd=ROOT):
                 status = 'INCOMPLETE'
         # Node's exit zero alone is not evidence of executed, non-skipped tests.
         if status == 'PASS' and name == 'node-regressions':
-            counts = {key: re.findall(rf'^# {key} (\d+)\s*$', p.stdout, re.M) for key in ('tests', 'pass', 'fail', 'skipped', 'todo')}
-            if not counts['tests'] or not counts['pass'] or int(counts['tests'][-1]) == 0:
+            counts = {key: re.findall(rf'^# {key} (\d+)\s*$', p.stdout, re.M) for key in ('tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo')}
+            if any(len(values) != 1 for values in counts.values()) or int(counts['tests'][0]) == 0:
                 status = 'INCOMPLETE'
-            elif any(counts[key] and int(counts[key][-1]) != 0 for key in ('fail', 'skipped', 'todo')) or int(counts['tests'][-1]) != int(counts['pass'][-1]):
+            elif any(counts[key] and int(counts[key][-1]) != 0 for key in ('fail', 'cancelled', 'skipped', 'todo')) or int(counts['tests'][-1]) != int(counts['pass'][-1]):
                 status = 'INCOMPLETE'
         # An exit-zero browser subprocess with no affirmative execution report must
         # never certify coverage. Selected scripts print PASS or structured JSON
@@ -182,8 +187,13 @@ def run_check(name, argv, timeout, kind, env, *, cwd=ROOT):
         return dict(name=name, status=status, command=argv, returnCode=p.returncode,
                     elapsedSeconds=elapsed, stdoutTail=p.stdout[-5000:], stderrTail=p.stderr[-3000:])
     except subprocess.TimeoutExpired as exc:
+        def captured_tail(value, limit):
+            if isinstance(value, bytes):
+                value = value.decode('utf-8', errors='replace')
+            return (value or '')[-limit:]
         return dict(name=name, status='FAIL', command=argv, reason=f'timeout after {timeout}s',
-                    elapsedSeconds=round(time.monotonic()-begin,3))
+                    elapsedSeconds=round(time.monotonic()-begin,3),
+                    stdoutTail=captured_tail(exc.stdout, 5000), stderrTail=captured_tail(exc.stderr, 3000))
     except OSError as exc:
         return dict(name=name, status='INCOMPLETE', command=argv, reason=str(exc),
                     elapsedSeconds=round(time.monotonic()-begin,3))

@@ -1,5 +1,5 @@
 """Round 51F: actual 2D plot glyphs in selector/Objects rows, unified geometry
-marker and diagonal contracts, timestamped export names, no 3D preview leakage.
+marker and diagonal contracts, timestamped export names, matching 2D/3D preview glyphs.
 Only local inlined source fixture, not hosted HTTP proof.
 """
 import json, os, re
@@ -23,10 +23,14 @@ def main():
    page.wait_for_selector('#plot-mode-preview svg')
    snapshot=lambda:json.loads(page.evaluate('window.__round36Snapshot()'))
    old_count=len(snapshot()['objects'])
+   page.locator('#object-input-toggle').click()
+   assert page.locator('#object-search').is_visible()
+   glyphs={}
    for mode,(expression,second) in TYPES.items():
     page.locator('#plot-mode').select_option(mode)
     preview=page.locator('#plot-mode-preview svg')
     assert preview.count()==1,(mode,'missing mode preview')
+    glyphs[mode]=preview.inner_html()
     assert preview.get_attribute('viewBox')=='-1.5 -1.5 27 27'
     assert preview.locator('path,circle').count()>=1
     if mode=='domainColoring':
@@ -52,22 +56,26 @@ def main():
    for tool,d in [('segment','M4 20L20 4'),('midpoint','M4 20L20 4'),('line','M2 22L22 2'),('ray','M4 20L22 2'),('arrow','M4 20L20 4'),('fixedLength','M4 20L20 4')]:
     assert d in page.locator(f'[data-tool-choice="{tool}"] svg').inner_html(),tool
    print('All displayed Geometry filled point radii are uniform and related diagonals aligned PASS',flush=True)
-   # Preserve the 3D-mode behavior; only 2D modes have these glyphs.
+   # 3D intentionally shares the corresponding semantic glyphs with 2D.
    page.locator('#scene3d-enable').check(force=True)
    assert page.locator('#plot-mode').input_value()=='surface3d'
-   assert page.locator('#plot-mode-preview').is_hidden()
+   for mode,source in zip(('surface3d','parametric3d','implicit3d','vector3d','domain3d'),TYPES):
+    page.locator('#plot-mode').select_option(mode)
+    assert page.locator('#plot-mode-preview').is_visible()
+    assert page.locator('#plot-mode-preview svg').inner_html()==glyphs[source],mode
    page.locator('#scene3d-enable').uncheck(force=True)
    assert page.locator('#plot-mode-preview svg').count()==1
-   print('2D/3D mode toggles do not leak a 2D icon into the 3D selector PASS',flush=True)
+   print('All five 3D preview glyphs match their 2D counterparts PASS',flush=True)
    assert not errors,errors
-   # A fresh empty document allows raster formats and a faithful empty TikZ export.
+   # A fresh empty document allows image and JSON exports.
    fresh=browser.new_page(viewport={'width':1300,'height':830},accept_downloads=True)
    fresh.set_default_timeout(30000)
    failures=[];fresh.on('pageerror',lambda e:failures.append(str(e)))
    fresh.on('dialog',lambda d:d.accept())
    fresh.set_content(inline_html(expose_state=True,legacy_search_expanded=False),wait_until='load')
-   for label,extension in [('SVG','svg'),('PNG','png'),('JPEG','jpg'),('WebP','webp'),('JSON project','json'),('TikZ / PGF','tex')]:
+   for label,extension in [('SVG','svg'),('PNG','png'),('JPEG','jpg'),('WebP','webp'),('JSON project','json')]:
     fresh.locator('#export-open').click()
+    assert set(fresh.locator('#export-options button').all_text_contents())=={'SVG','PNG','JPEG','WebP','JSON project','tikz-cd (semantic)'}
     btn=fresh.locator('#export-options button').get_by_text(label,exact=True)
     assert btn.count()==1 and btn.is_enabled(),(label,'unexpectedly disabled')
     with fresh.expect_download(timeout=30000) as ev:btn.click()
@@ -85,7 +93,6 @@ def main():
     if extension=='jpg':assert data.startswith(b'\xff\xd8')
     if extension=='webp':assert data[:4]==b'RIFF' and data[8:12]==b'WEBP'
     if extension=='svg':assert b'<svg' in data
-    if extension=='tex':assert b'\\begin{tikzpicture}' in data
    with fresh.expect_download(timeout=15000) as save_ev:fresh.locator('#save').click()
    assert STAMP.fullmatch(save_ev.value.suggested_filename) and save_ev.value.suggested_filename.endswith('.json')
    assert not failures,failures
@@ -102,7 +109,7 @@ def main():
    assert STAMP.fullmatch(cd_name) and cd_name.startswith('mathillustrator-tikzcd_') and cd_name.endswith('.tex'),cd_name
    assert b'\\begin{tikzcd}' in open(cd_ev.value.path(),'rb').read()
    assert not failures,failures
-   print('Timestamped real SVG/PNG/JPEG/WebP/TikZ/tikz-cd/JSON exports and Save, valid payloads PASS',flush=True)
+   print('Timestamped real SVG/PNG/JPEG/WebP/tikz-cd/JSON exports and Save, valid payloads PASS',flush=True)
    print('ROUND51F_CHROMIUM_PASS',flush=True)
   finally:browser.close()
 if __name__=='__main__':main()

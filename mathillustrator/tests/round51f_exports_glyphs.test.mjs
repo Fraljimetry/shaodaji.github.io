@@ -11,14 +11,14 @@ test('R51F: all downloadable formats include a valid, local wall-clock timestamp
  assert.ok(def,'download name helper must remain testable');
  const context={Date:class{getFullYear(){return 2026;}getMonth(){return 10;}getDate(){return 14;}getHours(){return 7;}getMinutes(){return 8;}getSeconds(){return 9;}}};
  vm.createContext(context);
- const result=vm.runInContext(`${def}\n({save:datedProjectName(),svg:datedExportName('svg'),png:datedExportName('png'),jpg:datedExportName('jpg'),webp:datedExportName('webp'),tex:datedExportName('tex'),tikzcd:datedExportName('tex','tikzcd')})`,context);
+ const result=vm.runInContext(`${def}\n({save:datedProjectName(),svg:datedExportName('svg'),png:datedExportName('png'),jpg:datedExportName('jpg'),webp:datedExportName('webp'),tikzcd:datedExportName('tex','tikzcd')})`,context);
  assert.equal(JSON.stringify(result),JSON.stringify({
   save:'mathillustrator_20261114_070809.json',svg:'mathillustrator_20261114_070809.svg',
   png:'mathillustrator_20261114_070809.png',jpg:'mathillustrator_20261114_070809.jpg',
-  webp:'mathillustrator_20261114_070809.webp',tex:'mathillustrator_20261114_070809.tex',
+  webp:'mathillustrator_20261114_070809.webp',
   tikzcd:'mathillustrator-tikzcd_20261114_070809.tex'
  }));
- for(const source of ["datedExportName('svg')","datedExportName(type==='jpeg'?'jpg':type)","datedExportName('tex')","datedExportName('tex','tikzcd')",'datedProjectName()'])assert.ok(app.includes(source),source);
+ for(const source of ["datedExportName('svg')","datedExportName(type==='jpeg'?'jpg':type)","datedExportName('tex','tikzcd')",'datedProjectName()'])assert.ok(app.includes(source),source);
  assert.doesNotMatch(app,/download\([^\n]*['"]mathillustrator(?:-tikzcd)?\.(?:svg|png|jpg|jpeg|webp|tex|json)['"]/);
 });
 

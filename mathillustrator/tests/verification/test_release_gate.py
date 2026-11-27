@@ -61,6 +61,7 @@ class GateContractTests(unittest.TestCase):
         expected_full = {
             'browser-recent-freehand': 'tests/browser_round146_freehand_shapes.py',
             'browser-recent-panel-resize': 'tests/browser_panel_resize_current.py',
+            'browser-supported-exports': 'tests/browser_round51f_exports_plotglyphs.py',
         }
         for profile in ('quick', 'local', 'release'):
             specs = gate.command_specs(profile, 10000)
@@ -102,19 +103,24 @@ class GateContractTests(unittest.TestCase):
         self.assertEqual(result['status'], 'INCOMPLETE')
 
     def test_empty_node_suite_cannot_pass(self):
-        output = '# tests 0\n# pass 0\n# fail 0\n# skipped 0\n# todo 0\n'
+        output = '# tests 0\n# pass 0\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n'
         self.assertEqual(self.run_fake('node-regressions', output)['status'], 'INCOMPLETE')
 
     def test_missing_node_summary_cannot_pass(self):
         self.assertEqual(self.run_fake('node-regressions', 'success')['status'], 'INCOMPLETE')
 
     def test_skipped_node_tests_cannot_pass(self):
-        output = '# tests 4\n# pass 3\n# fail 0\n# skipped 1\n# todo 0\n'
+        output = '# tests 4\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 1\n# todo 0\n'
         self.assertEqual(self.run_fake('node-regressions', output)['status'], 'INCOMPLETE')
 
     def test_valid_node_summary_passes(self):
-        output = '# tests 4\n# pass 4\n# fail 0\n# skipped 0\n# todo 0\n'
+        output = '# tests 4\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n'
         self.assertEqual(self.run_fake('node-regressions', output)['status'], 'PASS')
+
+    def test_incomplete_or_cancelled_node_summary_cannot_pass(self):
+        valid = '# tests 4\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n'
+        for output in (valid.replace('# cancelled 0\n', ''), valid.replace('# cancelled 0', '# cancelled 1'), valid + '# pass 4\n'):
+            self.assertEqual(self.run_fake('node-regressions', output)['status'], 'INCOMPLETE')
 
     def test_missing_code_module_is_a_failure_not_missing_tooling(self):
         result = self.run_fake('node-regressions', '', 1, stderr="Error: Cannot find module './broken.mjs'")
@@ -143,9 +149,11 @@ class GateContractTests(unittest.TestCase):
     def test_real_timeout_is_failure(self):
         import subprocess
         with mock.patch.object(gate, 'check_prerequisites', return_value=None), mock.patch.object(
-                gate.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['node'], 2)):
+                gate.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['node'], 2, output=b'partial stdout', stderr=b'actual error')):
             result = gate.run_check('node-regressions', ['node'], 2, 'node', {})
         self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['stdoutTail'], 'partial stdout')
+        self.assertEqual(result['stderrTail'], 'actual error')
 
     def test_missing_required_runtime_is_incomplete(self):
         with mock.patch.object(gate, 'check_prerequisites', return_value='Node.js not available'):
@@ -222,7 +230,8 @@ class GateContractTests(unittest.TestCase):
                      'browser-shortcuts', 'browser-paste', 'browser-editing-history',
                      'browser-atlas', 'browser-atlas-fidelity', 'browser-implicit-topology',
                      'browser-legacy-2d-sweep', 'browser-inversion-glyph',
-                     'browser-derived-geometry', 'browser-tikzcd-export'):
+                     'browser-derived-geometry', 'browser-tikzcd-export', 'browser-history-trash',
+                     'browser-dependency-locks', 'browser-orbit-detail', 'browser-dense-preview-export'):
             self.assertIn(name, names)
         node = next(argv for name, argv, *_ in specs if name == 'node-regressions')
         self.assertIn('--test-concurrency=2', node)

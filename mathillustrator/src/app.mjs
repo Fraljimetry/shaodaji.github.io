@@ -1,39 +1,42 @@
-import {MAX_OBJECT_NAME_LENGTH,xmlTextSafe} from './object_naming.mjs?cut=round303';
-import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round303';
-import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round303';
+import {createDependencyGraph,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
+import {createDocumentHistory,commitDocumentChange} from './document_history.mjs?cut=round315';
+import {plotCapability,plotState,MIN_RASTER_RESOLUTION} from './plot_capabilities.mjs?cut=round308';
+import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round315';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round315';
+import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round315';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
-import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round303';
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round303';
+import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round308';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round308';
 import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
-import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round303';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round303';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round315';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round315';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round303';
+import {AXIS_OBJECTS,TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round315';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round303';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round303';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round315';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round315';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round303';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round303';
+import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round315';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round308';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round304';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round315';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round303';
+import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round315';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
-import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
-import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round303';
+import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round315';
+import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round315';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round301';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
-import {createPlotCache} from './plot_cache.mjs?cut=round54';
+import {createPlotArtifactCache,plotArtifactKey} from './plot_cache.mjs?cut=round312';
 import {PANEL_MIN, PANEL_MAX, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
 import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round54';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 // Large raster PNGs must remain cacheable: otherwise every redraw recomputes millions of samples.
-const plotCache=createPlotCache({maxCharacters:12_000_000});
+const plotCache=createPlotArtifactCache({maxCharacters:12_000_000});
 const labelCache=createLabelLayoutCache();
-const limitedPlotKeys=new Set();let plotLimitedInScene=false;
+let plotLimitedInScene=false;
 const glyph={select:'<path d="M5 3L5 22L10 16L14 23L17 21L13 14L21 13Z"/>',pan:'<path d="M12 2V22M2 12H22M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/>',point:'<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>',segment:'<path d="M4 20L20 4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/>',arrow:'<path d="M3 20L21 4M13 4h8v8"/>',circle:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="currentColor"/>',rectangle:'<path d="M4 6H20V18H4Z"/><circle cx="4" cy="6" r="2" fill="currentColor"/><circle cx="20" cy="6" r="2" fill="currentColor"/><circle cx="20" cy="18" r="2" fill="currentColor"/><circle cx="4" cy="18" r="2" fill="currentColor"/>',polygon:'<path d="M6 3L18 3L22 12L18 21L6 21L2 12Z"/><circle cx="6" cy="3" r="2" fill="currentColor"/><circle cx="18" cy="3" r="2" fill="currentColor"/><circle cx="22" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="21" r="2" fill="currentColor"/><circle cx="6" cy="21" r="2" fill="currentColor"/><circle cx="2" cy="12" r="2" fill="currentColor"/>',polyline:'<path d="M3 17L8 5L14 13L21 4"/><circle cx="3" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="5" r="2" fill="currentColor"/><circle cx="14" cy="13" r="2" fill="currentColor"/><circle cx="21" cy="4" r="2" fill="currentColor"/>',freehand:'<path d="M2 20C8-6 12 30 22 3"/>',text:'<path d="M3 6V3h18v3M12 3v18M8 21h8"/>'};
 glyph.slider='<path d="M3 12H21"/><circle cx="11" cy="12" r="3.3" fill="none"/>';
 glyph.parallelogram='<path d="M3 18L16 18L21 6L8 6Z"/><circle cx="3" cy="18" r="2" fill="currentColor"/><circle cx="16" cy="18" r="2" fill="currentColor"/><circle cx="21" cy="6" r="2" fill="currentColor"/><circle cx="8" cy="6" r="2" fill="currentColor"/>';
@@ -185,7 +188,7 @@ let currentMorphismLabels=new Map();
 const selectedIds=new Set();
 const constructionEmphasis=new Set(); // transient reference highlighting, never persisted
 let gridSnapOverride=null; // transient tool-context preference, never written into project JSON
-let draftMeasure=null,draftReference=null,trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},history=[],future=[],historyTrash=[],futureTrash=[],saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
+let draftMeasure=null,draftReference=null,trash=[],doc=newDoc(),selected=null,tool='select',drag=null,draftStart=null,draftPoints=[],hover=null,view={cx:0,cy:0,scale:48},size={w:900,h:600},saveTimer=null,dirty=false,lastRender=0,frame=0,draftNode=null,lastStored=null,storageConflict=false,documentRevision=0,documentGeneration=0;
 const STORAGE='mathillustrator-project-v1',SETTINGS='mathillustrator-ui-v1',TRASH='mathillustrator-trash-v1';
 /** Existing editor choice wins; otherwise follow the site theme key when present. */
 function initialSiteTheme(){
@@ -198,6 +201,7 @@ function initialSiteTheme(){
 let selected3d=null, selectedSlider=null, cameraDrag=null;
 const in3D=()=>doc.settings.plot3dEnabled===true;
 let uiPrefs={language:'en',font:'system',autoPan:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
+const {field, propertyChoice, propertyCheck, propertyName, lockedProperties, vectorOptions, parameterRanges, drawingRegion, colorControls, opacityControl, widthControl}=createPropertyControls({document,language:()=>uiPrefs.language,notice,appendColorSwatches});
 function localizedConfirm(message){return window.confirm(translated(message,uiPrefs.language));}
 function localizedPrompt(message,initial){return window.prompt(translated(message,uiPrefs.language),initial);}
 function notice(msg){const e=$('toast');e.textContent=translated(msg,uiPrefs.language);e.classList.add('visible');clearTimeout(notice.timer);notice.timer=setTimeout(()=>e.classList.remove('visible'),3400);}
@@ -261,30 +265,24 @@ function selectToggle(id){
  const next=toggleIds(selectedIds,id);
  setSelection(next,next.has(id)?id:(selected!==id?selected:null));
 }
+const documentHistory=createDocumentHistory();
 function recordUndo(before){
- history.push(before);historyTrash.push(clone(trash));let evicted=false;
- const bytes=()=>history.reduce((sum,s)=>sum+s.length*2,0);
- while(history.length>80||(history.length>1&&bytes()>30*1024*1024)){history.shift();historyTrash.shift();evicted=true;}
- if(evicted)notice('Older undo states were evicted to limit memory use.');
- future=[];futureTrash=[];syncHistory();
+ if(documentHistory.record(before,trash))notice('Older undo states were evicted to limit memory use.');
+ syncHistory();
 }
-function syncHistory(){$('undo').disabled=!history.length;$('redo').disabled=!future.length;}
-function restore(s){stopAllSliderPlayback();constructionEmphasis.clear();lastMoveCanvasTap=null;doc=validateDoc(JSON.parse(s));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();renderAll();}
-// Keep Recently Deleted in the same undo/redo transaction as the document.
-// Deletions add trash entries after update() records its pre-edit snapshot;
-// undo must remove those entries and redo must restore them.
-function undo(){
- if(drag){cancelDrag();return;}if(!history.length)return;
- future.push(JSON.stringify(doc));futureTrash.push(clone(trash));
- const prior=history.pop(),priorTrash=historyTrash.pop();
- restore(prior);trash=priorTrash??trash;persistTrash();syncHistory();
+function syncHistory(){$('undo').disabled=!documentHistory.canUndo;$('redo').disabled=!documentHistory.canRedo;}
+function commitEdit(before){return commitDocumentChange(before,JSON.stringify(doc),prior=>{recordUndo(prior);documentRevision++;enqueueSave();});}
+function prepareHistoryDocument(s){const next=validateDoc(JSON.parse(s));if(next.scene3d)enforce3DVisibility(next.scene3d);return next;}
+function restoreHistory(entry){constructionEmphasis.clear();lastMoveCanvasTap=null;doc=entry.document;trash=entry.trash;documentRevision++;documentGeneration++;selected=null;selectedSlider=null;activeSelection();clearDraft();enqueueSave();persistTrash();syncHistory();renderAll();}
+function navigateHistory(direction){
+ if(drag){cancelDrag();return;}
+ // Close an active playback transaction before choosing the next history entry.
+ stopAllSliderPlayback();
+ try{const entry=documentHistory[direction](JSON.stringify(doc),trash,prepareHistoryDocument);if(entry)restoreHistory(entry);}
+ catch(error){notice(error.message);}
 }
-function redo(){
- if(drag){cancelDrag();return;}if(!future.length)return;
- history.push(JSON.stringify(doc));historyTrash.push(clone(trash));
- const next=future.pop(),nextTrash=futureTrash.pop();
- restore(next);trash=nextTrash??trash;persistTrash();syncHistory();
-}
+function undo(){navigateHistory('undo');}
+function redo(){navigateHistory('redo');}
 let pendingPropertiesFrame=0;
 // Keep the displayed definition in sync even when a focused Name input means
 // the Properties tree cannot safely be replaced. Never overwrite an in-progress
@@ -399,9 +397,7 @@ function stopSliderPlayback(name,{commit=true,refresh=true}={}){
  const state=playingSliders.get(name);if(!state)return;
  playingSliders.delete(name);
  if(!playingSliders.size){
-  if(commit&&playbackBefore!==null&&playbackBefore!==JSON.stringify(doc)){
-   recordUndo(playbackBefore);documentRevision++;enqueueSave();
-  }
+  if(commit)commitEdit(playbackBefore);
   playbackBefore=null;
   if(playbackFrame){cancelAnimationFrame(playbackFrame);playbackFrame=0;}
   playbackLast=0;
@@ -472,7 +468,7 @@ function update(mutator,{refreshList=true,renderCanvas=true,preservePlayback=fal
  }
  if(JSON.stringify(doc)!==old){
   if(splitPlayback&&playbackBoundary!==null&&playbackBoundary!==old)recordUndo(playbackBoundary);
-  recordUndo(old);documentRevision++;enqueueSave();
+  commitEdit(old);
  }
  if(splitPlayback)playbackBefore=JSON.stringify(doc);
  if(refreshList)refreshAfterMutation(replaced||selected!==previousSelected);else{syncSettings();if(renderCanvas)render();}return true;
@@ -727,7 +723,7 @@ function shapeFillEnabled(o){
  return ['polygon','regularPolygon','rectangle','parallelogram'].includes(o.type);
 }
 function shapeFillAttributes(o){return {fill:shapeFillEnabled(o)?o.style.fill:'none','fill-opacity':o.type==='ellipse'?.20:.24};}
-function isRasterPlot(o){return o.type==='domainColoring'||o.type==='implicit'&&o.colorRange===true;}
+function isRasterPlot(o){return plotState(o).raster;}
 function rasterPlotUri(result){
  const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
  const ctx=canvas.getContext('2d');if(!ctx)throw Error('Browser canvas is unavailable for plot coloring.');
@@ -925,27 +921,24 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphis
   }
  }else if(o.type==='implicit'&&o.colorRange===true){
   const region=o.region,parameters=functionSliderParameters(doc),condition=compileRegionCondition(o.regionCondition,2);
-  const key=JSON.stringify(['implicit-color-range',o.expr,region,o.resolution??768,o.colorMode??'range',o.regionCondition||'',parameters,MAX_DOMAIN_PIXELS]);
-  const uri=plotCache.get(key,()=>{
+  const key=plotArtifactKey(o,parameters,doc.settings,view,size,MAX_DOMAIN_PIXELS);
+  const {content:uri,limited}=plotCache.get(key,()=>{
    const result=sampleImplicitColors(parseImplicit(o.expr,parameters),region,{resolution:o.resolution??768,mode:o.colorMode??'range',maxEvaluations:MAX_DOMAIN_PIXELS,includes:(x,y)=>inRegion(condition,x,y)});
-   if(result.limited){limitedPlotKeys.add(key);return '';}
-   limitedPlotKeys.delete(key);
-   return rasterPlotUri(result);
+   if(result.limited)return {content:'',limited:true};
+   return {content:rasterPlotUri(result),limited:false};
   });
-  if(limitedPlotKeys.has(key))plotLimitedInScene=true;
+  if(limited)plotLimitedInScene=true;
   item=rasterRegionImage(region,uri,o.style.opacity);
  }else if(['function','parametric','implicit'].includes(o.type)){
-  const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,functionSliderParameters(doc),doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
-  const path=plotCache.get(key,()=>{
+  const key=plotArtifactKey(o,functionSliderParameters(doc),doc.settings,view,size,MAX_DOMAIN_PIXELS);
+  const {content:path,limited}=plotCache.get(key,()=>{
    const options={quality:doc.settings.plotQuality,maxEvaluations:doc.settings.plotBudget??80000};
    const plot=o.type==='function'?sampleExplicitPlot(parseExpression(o.expr,functionSliderParameters(doc)),px=>unproject(px,0)[0],y=>project([0,y])[1],size.w,size.h,options):
     o.type==='parametric'?sampleParametricPlot(o.polar?polarParametric(o):parseParametric(o.xExpr,o.yExpr,o.parameter,functionSliderParameters(doc)),o.tMin,o.tMax,project,options):
     sampleImplicitPlot(parseImplicit(o.expr,functionSliderParameters(doc)),px=>unproject(px,0)[0],py=>unproject(0,py)[1],size.w,size.h,{...options,cellPx:doc.settings.implicitGrid??12});
-   if(plot.limited){limitedPlotKeys.add(key);while(limitedPlotKeys.size>32)limitedPlotKeys.delete(limitedPlotKeys.values().next().value);}
-   else limitedPlotKeys.delete(key);
-   return plotPath(plot.segments);
+   return {content:plotPath(plot.segments),limited:plot.limited};
   });
-  if(limitedPlotKeys.has(key))plotLimitedInScene=true;
+  if(limited)plotLimitedInScene=true;
   item=mk('path',{d:path,fill:'none'});
 
  }else if(o.type==='vectorField'){
@@ -967,18 +960,17 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphis
   }
   if(!colored)item=mk('path',{d:parts.join(''),fill:'none'});
  }else if(o.type==='domainColoring'){
-  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=JSON.stringify(['domainColoring',o.expr,region,o.resolution,o.colorMode,o.regionCondition||'',functionSliderParameters(doc),MAX_DOMAIN_PIXELS]);
-  const uri=plotCache.get(key,()=>{
+  const region=o.region,condition=compileRegionCondition(o.regionCondition,2),key=plotArtifactKey(o,functionSliderParameters(doc),doc.settings,view,size,MAX_DOMAIN_PIXELS);
+  const {content:uri,limited}=plotCache.get(key,()=>{
    const result=sampleDomainColors(parseComplexExpression(o.expr,functionSliderParameters(doc)),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:MAX_DOMAIN_PIXELS});
-   if(result.limited){limitedPlotKeys.add(key);return '';}
-   limitedPlotKeys.delete(key);
+   if(result.limited)return {content:'',limited:true};
    if(condition)for(let j=0;j<result.height;j++)for(let i=0;i<result.width;i++){
     const x=region.xMin+(i+.5)*(region.xMax-region.xMin)/result.width,y=region.yMax-(j+.5)*(region.yMax-region.yMin)/result.height;
     if(!inRegion(condition,x,y))result.rgba[(j*result.width+i)*4+3]=0;
    }
-   return rasterPlotUri(result);
+   return {content:rasterPlotUri(result),limited:false};
   });
-  if(limitedPlotKeys.has(key))plotLimitedInScene=true;
+  if(limited)plotLimitedInScene=true;
   item=rasterRegionImage(region,uri,o.style.opacity);
   // Domain coloring is raster content; do not apply the normal stroke/fill style.
  }
@@ -1031,11 +1023,10 @@ function face3DElement(face){
  return el('polygon',{points,fill:face3DFill(face),opacity:face.opacity,stroke:'none','pointer-events':'none'});
 }
 function line3DElements(field){
- const [a,b]=[field.start,field.end],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
- if(len<.5)return [];
- const shaft=el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:field.color,'stroke-width':field.width??1.5,opacity:field.opacity,'pointer-events':'none'});
- const head=6*Math.max(.7,Math.min(2,Math.sqrt((field.width??1.5)/1.5))),ux=dx/len,uy=dy/len,points=[[b[0],b[1]],[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]];
- return [shaft,el('polygon',{points:points.map(p=>p.join(',')).join(' '),fill:field.color,opacity:field.opacity,'pointer-events':'none'})];
+ const arrow=projectedArrow(field);if(!arrow)return [];
+ const {a,b,width,left,right}=arrow;
+ const shaft=el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:field.color,'stroke-width':width,opacity:field.opacity,'pointer-events':'none'});
+ return [shaft,el('polygon',{points:[b,left,right].map(p=>p.join(',')).join(' '),fill:field.color,opacity:field.opacity,'pointer-events':'none'})];
 }
 function append3DPrimitive(target,primitive){
  if(primitive.kind==='face')target.append(face3DElement(primitive.value));
@@ -1164,13 +1155,11 @@ function paint3DCanvasPrimitive(ctx,primitive,paintState){
   // Canvas fill() implicitly closes this triangle; omit a redundant API call.
   ctx.fillStyle=face3DFill(f);if(paintState.alpha!==f.opacity){ctx.globalAlpha=f.opacity;paintState.alpha=f.opacity;}ctx.fill();
  }else{
-  const f=primitive.value,a=f.start,b=f.end,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
-  if(len<.5)return;
-  if(paintState.alpha!==f.opacity){ctx.globalAlpha=f.opacity;paintState.alpha=f.opacity;}ctx.strokeStyle=f.color;ctx.fillStyle=f.color;ctx.lineWidth=f.width??1.5;
+  const f=primitive.value,arrow=projectedArrow(f);if(!arrow)return;
+  const {a,b,width,left,right}=arrow;
+  if(paintState.alpha!==f.opacity){ctx.globalAlpha=f.opacity;paintState.alpha=f.opacity;}ctx.strokeStyle=f.color;ctx.fillStyle=f.color;ctx.lineWidth=width;
   ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
-  const head=6*Math.max(.7,Math.min(2,Math.sqrt((f.width??1.5)/1.5))),ux=dx/len,uy=dy/len;
-  ctx.beginPath();ctx.moveTo(b[0],b[1]);ctx.lineTo(b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux);
-  ctx.lineTo(b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(b[0],b[1]);ctx.lineTo(left[0],left[1]);ctx.lineTo(right[0],right[1]);ctx.closePath();ctx.fill();
  }
 }
 let renderInfoSource='Ready';
@@ -1310,7 +1299,7 @@ function openObjectMenu(o,trigger){
   Lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   Unlock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
   Delete:'<path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v7M14 10v7"/>'};
- const blocked=[...affected(doc,o.id)].some(id=>objectEffectivelyLocked(id));
+ const blocked=anyObjectLocked(affected(doc,o.id));
  for(const [action,label] of actions){const button=document.createElement('button');button.type='button';button.dataset.action=action;
   const blockedDelete=action==='delete'&&blocked;
   const description=translated(blockedDelete?'Unlock dependents before deleting.':label,uiPrefs.language);
@@ -1484,14 +1473,14 @@ function navigateToObject(id){
 function renderListWindow(){
  if(in3D())return;
  const wrapper=$('objects'),count=listedObjects.length,sliderRows=unifiedSliderRows.filter(row=>{const slider=doc.algebra?.sliders?.find(item=>item.name===row.dataset.slider);return slider&&( $('show-hidden').checked||slider.visible )&&(objectInputMode!=='find'||`${slider.name} ${slider.value}`.toLowerCase().includes(($('object-search').value||'').toLowerCase().trim()));}),sliderHeight=sliderRows.length*LIST_ROW_HEIGHT,scroll=Math.max(0,wrapper.scrollTop-sliderHeight),height=Math.max(90,wrapper.clientHeight);
- const visibilityIndex=new Map(doc.objects.map(o=>[o.id,o]));
+ const visibilityIndex=new Map(doc.objects.map(o=>[o.id,o])),lockedIds=lockedObjectIds(doc,lockedAxisIds);
  const first=Math.min(count,Math.max(0,Math.floor(scroll/LIST_ROW_HEIGHT)-LIST_OVERSCAN));
  const last=Math.min(count,Math.ceil((scroll+height)/LIST_ROW_HEIGHT)+LIST_OVERSCAN);
  const fragment=document.createDocumentFragment();
  function spacer(px){const e=document.createElement('div');e.className='list-spacer';e.style.height=px+'px';e.setAttribute('aria-hidden','true');return e;}
  if(first)fragment.append(spacer(first*LIST_ROW_HEIGHT));
  for(let i=first;i<last;i++){
-  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=objectEffectivelyLocked(o.id)?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
+  const o=listedObjects[i],row=document.createElement('div');row.tabIndex=0;row.className='object'+(selectedIds.has(o.id)||o.id===selected?' selected':'')+(!isObjectVisible(doc,o,id=>visibilityIndex.get(id))?' hidden':'');row.dataset.id=o.id;row.dataset.locked=lockedIds.has(o.id)?'true':'false';row.setAttribute('role','listitem');row.setAttribute('aria-posinset',String(i+1));row.setAttribute('aria-setsize',String(count));
   const objectIcon=document.createElement('span');objectIcon.className='glyph';
   const toolGlyph=objectGlyphTool(o);
   if(toolGlyph)objectIcon.innerHTML=toolGlyphSvg(toolGlyph);
@@ -1527,24 +1516,6 @@ function focusListIndex(index){
  const target=[...wrapper.querySelectorAll('.object')].find(row=>row.dataset.id===o.id);
  target?.focus();
 }
-function rangeHint(opts={}){
- if(opts.hint)return opts.hint;
- const {min,max}=opts;
- if(min!==undefined&&max!==undefined)return `Range: ${min}–${max}`;
- if(min!==undefined)return `Minimum: ${min}`;
- if(max!==undefined)return `Maximum: ${max}`;
- return '';
-}
-// Numeric editors share the sandboxed plotting expression grammar; no eval.
-// Persist only evaluated numbers so old JSON projects remain compatible.
-function numericExpression(raw,{min=-Infinity,max=Infinity,integer=false}={}){
- if(!String(raw).trim())throw Error('Numeric value is required.');
- const value=r50ParseExpr(String(raw),[])({});
- if(!Number.isFinite(value))throw Error('Numeric value must be finite.');
- if(value<min||value>max)throw Error(`Value must be within ${min}–${max}.`);
- if(integer&&!Number.isInteger(value))throw Error('A whole number is required.');
- return value;
-}
 function numericEditor(input){
  if(input.type!=='number')return input;
  input.type='text';input.inputMode='decimal';input.dataset.numericExpression='true';
@@ -1554,33 +1525,6 @@ function numericOptions(input){
  return {min:input.hasAttribute('min')?Number(input.min):-Infinity,
  max:input.hasAttribute('max')?Number(input.max):Infinity,
  integer:input.getAttribute('step')==='1'&&!['scene3d-yaw','scene3d-pitch'].includes(input.id)};
-}
-function field(parent,label,value,type,onChange,opts={}){
- const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');
- // Formula editors have their own inline layout; names and arbitrary text keep their existing layout.
- if(type==='text'&&parent.classList.contains('properties')&&(/^(?:Expression|.* expression|Transformation amount)$/i.test(label)||/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[xyz]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label)))wrap.classList.add('formula-expression-field');
- wrap.textContent=label;wrap.dataset.propertyLabel=label;
- const input=document.createElement(type==='multiline'?'textarea':'input');
- if(type!=='multiline')input.type=type==='number'?'text':type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
- input.value=String(value??'');if(type==='number'){input.inputMode='decimal';input.dataset.numericExpression='true';}if(opts.step)input.step=opts.step;
- if(opts.min!==undefined)input.min=opts.min;
- if(opts.max!==undefined)input.max=opts.max;
- const hint=rangeHint(opts);if(hint){wrap.title=translated(hint,uiPrefs.language);input.title=translated(hint,uiPrefs.language);}
- let accepted=input.value;
- input.addEventListener('properties-synced',event=>{accepted=event.detail.value;});
- input.onchange=()=>{
-  if(type==='number'&&!input.value.trim()){notice('Numeric value is required.');input.value=accepted;return;}
-  const next=input.value;
-  // A blur after an already committed change must not rebuild Properties or
-  // detach the list-row/button receiving that same pointer gesture.
-  if(next===accepted)return;
-  let parsed=next;
-  try{if(type==='number')parsed=numericExpression(next,{min:opts.min??-Infinity,max:opts.max??Infinity,integer:opts.step===1});}
-  catch(error){notice(error.message);input.value=accepted;return;}
-  if(onChange(parsed)===false)input.value=accepted;
-  else{accepted=type==='number'?String(parsed):next;input.value=accepted;}
- };
- wrap.append(input);parent.append(wrap);return input;
 }
 function renderBulkProperties(root,objects){
  const editable=objects.filter(o=>!o.locked),locked=objects.length-editable.length;
@@ -1626,96 +1570,6 @@ function parse2DRegionBound(source){
  if(!Number.isFinite(value)||Math.abs(value)>1e6)throw Error('2D region value must be finite and within ±1,000,000.');
  return value;
 }
-// Bound editors accept the same strict arithmetic grammar as plot formulas.
-// A centered region is defined by one positive half-width and never stored as
-// an additional mutable setting: imported/exported files keep numeric bounds.
-function installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension){
- const row=document.createElement('div');row.className='region-extras';
- const label=document.createElement('label');label.className='field';label.dataset.propertyLabel='Centered half-range';label.textContent='Centered half-range';
- const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Enter a positive half-range to set ±R along every axis.';
- const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.dataset.propertyLabel='Region inequality';conditionLabel.textContent='Region inequality';
- const region=document.createElement('input');region.type='text';region.value=conditionValue||'';region.placeholder=dimension===3?'x^2+y^2+z^2<16':'x^2+y^2<16';
- region.setAttribute('aria-label','Region inequality');region.title='Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.';
- function useRadius(){
-  let value;try{value=parseBound(radius.value);}catch(err){notice(err.message);return;}
-  if(!(value>0)){notice('Centered half-range must be positive.');return;}
-  for(const axis of new Set(Object.keys(inputs).map(k=>k[0]))){inputs[axis+'Min'].value=String(-value);inputs[axis+'Max'].value=String(value);}
-  commit();
- }
- radius.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();useRadius();}});
- region.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();
-  try{compileRegionCondition(region.value,dimension);}catch(err){notice(err.message);return;}
-  conditionCommit(region.value);
- }});
- label.append(radius);conditionLabel.append(region);row.append(label,conditionLabel);container.append(row);
-}
-function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeExpression,conditionValue="",conditionCommit=()=>{},dimension=3}={}){
- const axes=[...new Set(Object.keys(inputs).map(k=>k[0]))];
- for(const input of Object.values(inputs)){
-  const caption=input.closest('label');
-  caption.title=translated('Double-click this label to fill symmetric ranges for all axes; Enter to redraw.',uiPrefs.language);
-  caption.addEventListener('dblclick',event=>{
-   if(input.disabled||event.target!==caption)return;
-   const raw=input.value.trim();let numeric;
-   try{numeric=raw?parseBound(raw):NaN;}catch{numeric=NaN;}
-   if(!Number.isFinite(numeric)){notice('Enter a finite bound first.');return;}
-   const radius=Math.abs(numeric);
-   if(!radius){notice('Symmetric range must have nonzero width.');return;}
-   for(const axis of axes){inputs[axis+'Min'].value=String(-radius);inputs[axis+'Max'].value=String(radius);}
-  });
-  input.addEventListener('keydown',event=>{
-   if(event.key!=='Enter'||event.isComposing)return;
-   event.preventDefault();event.stopPropagation();commit();
-  });
- }
- installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension);
-}
-// Shared Properties controls; callers supply only scene-specific storage and limits.
-function propertyChoice(root,label,choices,value,change,disabled=false){
- const row=document.createElement('label');row.className='field';row.dataset.propertyLabel=label;row.textContent=label;
- const select=document.createElement('select');select.setAttribute('aria-label',label);
- for(const [key,name] of choices){const option=document.createElement('option');option.value=key;option.textContent=name;select.append(option);}
- select.value=value;select.disabled=disabled;select.onchange=()=>{if(change(select.value)===false)select.value=value;};row.append(select);root.append(row);return select;
-}
-function propertyCheck(root,label,value,change){
- const row=document.createElement('label');row.className='check';row.dataset.propertyLabel=label;const input=document.createElement('input');input.type='checkbox';input.checked=!!value;input.setAttribute('aria-label',label);input.onchange=()=>{if(change(input.checked)===false)input.checked=!!value;};row.append(input,document.createTextNode(' '+label));root.append(row);return input;
-}
-function propertyName(root,object,objects,edit){
- return field(root,'Name',object.name,'text',v=>edit(live=>{const name=v.trim();if(!name||name.length>MAX_OBJECT_NAME_LENGTH||!xmlTextSafe(name)||objects().some(a=>a.id!==live.id&&a.name===name))throw Error('Object names must be unique and nonempty.');live.name=name;}));
-}
-function lockedProperties(root,object,dependent=false){
- field(root,'Name',object.name,'text',()=>false).disabled=true;const note=document.createElement('p');note.className='subtle';note.textContent=dependent?'Locked (including dependencies)':'Locked';root.append(note);localizeUI(root,uiPrefs.language);
-}
-function vectorOptions(root,object,edit,max){
- const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
- propertyCheck(pair,'Normalize lengths',object.normalized,v=>edit(live=>{live.normalized=v;}));
- field(pair,'Density',object.density,'number',v=>edit(live=>{live.density=v;}),{min:3,max,step:1});
-}
-function boundsFields(container,keys,bounds){
- const inputs={};for(const key of keys){const label=key.replace(/Min$/,' min').replace(/Max$/,' max');const input=field(container,label,bounds[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});input.onchange=()=>{};input.inputMode='text';input.dataset.acceptedBound=String(bounds[key]);inputs[key]=input;}return inputs;
-}
-function commitBounds(inputs,parseBound,commit){
- try{const values=Object.fromEntries(Object.entries(inputs).map(([key,input])=>[key,parseBound(input.value)]));for(const key of Object.keys(values).filter(k=>k.endsWith('Min')))if(!(values[key]<values[key.replace(/Min$/,'Max')]))throw Error('Finite arithmetic expression; min must be less than max.');if(commit(values)===false){for(const input of Object.values(inputs))input.value=input.dataset.acceptedBound;return;}for(const [key,input] of Object.entries(inputs)){input.value=String(values[key]);input.dataset.acceptedBound=input.value;}}
- catch(error){notice(error.message);for(const input of Object.values(inputs))input.value=input.dataset.acceptedBound;}
-}
-function parameterRanges(root,keys,object,parseBound,edit){
- const grid=document.createElement('div');grid.className='parametric-range-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','Parameter ranges');root.append(grid);
- const inputs=boundsFields(grid,keys,object);const commit=()=>commitBounds(inputs,parseBound,values=>edit(live=>Object.assign(live,values)));
- for(const input of Object.values(inputs))input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();event.stopPropagation();commit();}});
-}
-function drawingRegion(root,bounds,{dimension,parseBound,commit,conditionValue,conditionCommit,disabled=false}){
- const block=document.createElement('div');block.className='plot-region-editor';block.setAttribute('role','group');block.setAttribute('aria-label','Drawing region');
- const keys=(dimension===3?['x','y','z']:['x','y']).flatMap(axis=>[axis+'Min',axis+'Max']);const inputs=boundsFields(block,keys,bounds);
- installPlotRegionKeys(block,inputs,()=>commitBounds(inputs,parseBound,commit),{dimension,parseBound,conditionValue,conditionCommit});
- if(disabled)for(const input of block.querySelectorAll('input'))input.disabled=true;root.append(block);
-}
-function colorControls(slot,{label,value,scope,property,disabled,apply}){
- const picker=field(slot,label,value,'color',apply);picker.disabled=disabled;
- const swatches=appendColorSwatches(slot,{scope,property,caption:label+' colors',apply});for(const button of swatches.querySelectorAll('button'))button.disabled=disabled;
- return {picker,swatches};
-}
-function opacityControl(slot,value,apply){return field(slot,'Opacity',value,'number',apply,{min:0,max:1,step:.05});}
-function widthControl(slot,value,apply,max){return field(slot,'Width',value,'number',apply,{min:.1,max,step:.5});}
 function renderProperties3D(root){
  root.classList.add('properties-3d');
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
@@ -1727,7 +1581,7 @@ function renderProperties3D(root){
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  if(selectedPlot.kind==='parametric3d')parameterRanges(root,['uMin','uMax','vMin','vMax'],selectedPlot,parse3DRangeExpression,edit);
  drawingRegion(root,selectedPlot.bounds,{dimension:3,parseBound:parse3DRangeExpression,commit:bounds=>edit(p=>{p.bounds=bounds;if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...bounds};}),conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;})});
- if(selectedPlot.kind==='vector3d')vectorOptions(root,selectedPlot,edit,12);
+ if(selectedPlot.kind==='vector3d')vectorOptions(root,selectedPlot,edit,plotCapability(selectedPlot).densityMax);
  if(selectedPlot.kind==='domain3d'){
   propertyChoice(root,'Height represents',[['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']],selectedPlot.heightMode,next=>{const ok=edit(p=>{const was=p.heightMode;p.heightMode=next;
    if(was==='modulus'&&next==='argument'&&p.bounds.zMin===0){p.bounds.zMin=-Math.PI;p.bounds.zMax=Math.PI;}
@@ -1739,16 +1593,15 @@ function renderProperties3D(root){
    }
   });if(ok!==false)renderProperties();return ok;});
  }
- if(selectedPlot.kind==='domain3d')propertyChoice(root,'Color scheme',[...DOMAIN_COLOR_SCHEMES,['solid','Single color']],selectedPlot.colorMode,value=>{const ok=edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=value;});if(ok!==false)renderProperties();return ok;},selectedPlot.colorRange===true);
+ if(selectedPlot.kind==='domain3d')propertyChoice(root,'Color scheme',[...DOMAIN_COLOR_SCHEMES,['solid','Single color']],selectedPlot.colorMode,value=>{const ok=edit(p=>{if(!plotState(p).paletteEnabled)throw Error('Disable Color range first.');p.colorMode=value;});if(ok!==false)renderProperties();return ok;},!plotState(selectedPlot).paletteEnabled);
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
- const solidAllowed=selectedPlot.kind!=='domain3d'||selectedPlot.colorMode==='solid';
- const apply=v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('This color scheme uses automatic colors.');p.color=v;});
- colorControls(colorSlot,{label:selectedPlot.kind==='vector3d'?'Stroke':'Fill',value:selectedPlot.color,scope:'plot3d',property:'color',disabled:selectedPlot.colorRange===true||!solidAllowed,apply});
+ const apply=v=>edit(p=>{if(!plotState(p).solidEnabled)throw Error('This color scheme uses automatic colors.');p.color=v;});
+ colorControls(colorSlot,{label:selectedPlot.kind==='vector3d'?'Stroke':'Fill',value:selectedPlot.color,scope:'plot3d',property:'color',disabled:!plotState(selectedPlot).solidEnabled,apply});
  const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
  propertyCheck(right,'Color range',selectedPlot.colorRange,checked=>{const ok=edit(p=>{p.colorRange=checked;});if(ok!==false)renderProperties();return ok;});
  opacityControl(right,selectedPlot.opacity,v=>edit(p=>{p.opacity=v;}));
- if(selectedPlot.kind==='vector3d')widthControl(right,selectedPlot.lineWidth??1.5,v=>edit(p=>{p.lineWidth=v;}),12);
+ if(selectedPlot.kind==='vector3d')widthControl(right,selectedPlot.lineWidth??1.5,v=>edit(p=>{p.lineWidth=v;}),plotCapability(selectedPlot).widthMax);
  localizeUI(root,uiPrefs.language);
 }
 function renderNewFreehandControls(root){
@@ -1772,17 +1625,10 @@ function renderNewFreehandControls(root){
 // A lock propagates through every transitive geometric dependency without
 // modifying descendants' own lock flags. Independently locked children stay locked
 // when their parent is unlocked. Algebra expressions can depend on named sliders.
-function algebraUses(expression,name){return typeof expression==='string'&&new RegExp('(?:^|[^A-Za-z0-9_])'+name+'(?:$|[^A-Za-z0-9_])').test(expression);}
-function sliderAffected(name){
- const ids=new Set();for(const o of doc.objects){const formulas=[...(o.xyExpr||[]),...Object.values(o.measureExpr||{}),...(['function','implicit','domainColoring'].includes(o.type)?[o.expr]:[]),...(['parametric','vectorField'].includes(o.type)?[o.xExpr,o.yExpr,o.rExpr]:[])];if(formulas.some(f=>algebraUses(f,name)))for(const id of affected(doc,o.id))ids.add(id);}
- return ids;
-}
-function objectEffectivelyLocked(id,seen=new Set()){
- if(seen.has(id))return false;seen.add(id);const o=get(doc,id);if(!o)return false;
- if(o.locked)return true;
- if((doc.algebra?.sliders||[]).some(s=>s.locked&&[...(o.xyExpr||[]),...Object.values(o.measureExpr||{}),...(['function','implicit','domainColoring'].includes(o.type)?[o.expr]:[]),...(['parametric','vectorField'].includes(o.type)?[o.xExpr,o.yExpr,o.rExpr]:[])].some(f=>algebraUses(f,s.name))))return true;
- return [...(o.refs||[]),...(o.edgeOf?[o.edgeOf]:[])].some(dep=>objectEffectivelyLocked(dep,seen));
-}
+function sliderAffected(name){return sliderDependents(doc,name);}
+const lockedAxisIds=Object.values(AXIS_OBJECTS).filter(o=>o.locked).map(o=>o.id);
+function objectEffectivelyLocked(id){return effectivelyLocked(doc,id,lockedAxisIds);}
+function anyObjectLocked(ids){const locked=lockedObjectIds(doc,lockedAxisIds);return [...ids].some(id=>locked.has(id));}
 function selectSlider(name){selected=null;selectedIds.clear();selectedSlider=name;renderList();renderAlgebra();renderProperties();scheduleRender();}
 // A slider's semantic definition is independent of its Name, like every other
 // Properties Expression. Do not store a second formula that could go stale.
@@ -1846,7 +1692,7 @@ function renderSliderProperties(root,item){
   try{const live=doc.algebra?.sliders.find(s=>s.name===item.name);if(!live||live.locked||documentGeneration!==generation)throw Error('Slider changed or locked.');live.value=Number(valueInput.value);recalculateAlgebra(doc);validateDoc(doc);expressionInput.value=sliderExpression(live);documentRevision++;const row=[...document.querySelectorAll('#objects [data-slider], #algebra-list [data-slider]')].find(el=>el.dataset.slider===live.name);const label=row?.querySelector('.algebra-entry-label');if(label)label.textContent=live.name+' = '+Number(live.value.toPrecision(7));renderList();scheduleRender();}
   catch(error){doc=JSON.parse(before);valueInput.value=String(doc.algebra?.sliders.find(s=>s.name===item.name)?.value??item.value);notice(error.message);renderList();scheduleRender();}
  };
- valueInput.onchange=()=>{if(sliderBefore&&sliderBefore!==JSON.stringify(doc)){recordUndo(sliderBefore);documentRevision++;enqueueSave();}sliderBefore=null;if(playingSliders.size)playbackBefore=JSON.stringify(doc);renderAlgebra();renderProperties();};
+ valueInput.onchange=()=>{commitEdit(sliderBefore);sliderBefore=null;if(playingSliders.size)playbackBefore=JSON.stringify(doc);renderAlgebra();renderProperties();};
 
  const appearance=document.createElement('div');appearance.className='style-controls-grid stroke-only-grid slider-appearance-grid';appearance.setAttribute('role','group');appearance.setAttribute('aria-label','Slider appearance');root.append(appearance);
  const colorSlot=document.createElement('div');colorSlot.className='style-slot style-stroke';appearance.append(colorSlot);field(colorSlot,'Color',item.color??'#2563eb','color',v=>edit(live=>{live.color=v;}));appendColorSwatches(colorSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{live.color=v;})});
@@ -2067,11 +1913,11 @@ function renderProperties(){
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
  }
- if(['vectorField','domainColoring','implicit'].includes(o.type)){
-  drawingRegion(root,o.region??visiblePlotRegion(),{dimension:2,parseBound:parse2DRegionBound,disabled:o.type==='implicit'&&!o.colorRange,conditionValue:o.regionCondition,commit:region=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.region=validatePlotRegion(region);}),conditionCommit:value=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.regionCondition=value;})});
+ if(plotCapability(o).region){
+  drawingRegion(root,o.region??visiblePlotRegion(),{dimension:2,parseBound:parse2DRegionBound,disabled:!plotState(o).regionEnabled,conditionValue:o.regionCondition,commit:region=>edit(live=>{if(!plotState(live).regionEnabled)throw Error('Enable Color range first.');live.region=validatePlotRegion(region);}),conditionCommit:value=>edit(live=>{if(!plotState(live).regionEnabled)throw Error('Enable Color range first.');live.regionCondition=value;})});
  }
 
- if(o.type==='vectorField')vectorOptions(root,o,edit,40);
+ if(o.type==='vectorField')vectorOptions(root,o,edit,plotCapability(o).densityMax);
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  const measurement=measureGeometry(o,createResolver(doc));
  if(measurement){
@@ -2105,19 +1951,19 @@ function renderProperties(){
  }
  if(o.type==='domainColoring'){
   propertyChoice(root,'Color scheme',DOMAIN_COLOR_SCHEMES,o.colorMode||'phase-modulus',v=>edit(live=>{live.colorMode=v;}));
-  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1});
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{live.resolution=v;}),{min:MIN_RASTER_RESOLUTION,max:MAX_DOMAIN_RESOLUTION,step:1});
  }
  if(o.type==='implicit'){
-  propertyChoice(root,'Color scheme',[...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])],o.colorMode||'range',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.colorMode=v;}),!o.colorRange);
-  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1}).disabled=!o.colorRange;
+  propertyChoice(root,'Color scheme',[...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])],o.colorMode||'range',v=>edit(live=>{if(!plotState(live).paletteEnabled)throw Error('Enable Color range first.');live.colorMode=v;}),!plotState(o).paletteEnabled);
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!plotState(live).paletteEnabled)throw Error('Enable Color range first.');live.resolution=v;}),{min:MIN_RASTER_RESOLUTION,max:MAX_DOMAIN_RESOLUTION,step:1}).disabled=!plotState(o).paletteEnabled;
  }
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';
  styleGrid.setAttribute('role','group');styleGrid.setAttribute('aria-label','Object appearance');
  function styleSlot(name){const slot=document.createElement('div');slot.className='style-slot style-'+name;styleGrid.append(slot);return slot;}
- const supportsRange=['vectorField','implicit'].includes(o.type),rasterFill=isRasterPlot(o);
+ const supportsRange=!!plotCapability(o).range,rasterFill=isRasterPlot(o);
  if(supportsRange)styleGrid.classList.add('vector-style-grid');
  const colorProperty=rasterFill?'fill':'stroke',strokeSlot=styleSlot('stroke');
- const {picker,swatches}=colorControls(strokeSlot,{label:rasterFill?'Fill':'Stroke',value:o.style[colorProperty],scope:'object',property:colorProperty,disabled:rasterFill||supportsRange&&o.colorRange===true,apply:v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
+ const {picker,swatches}=colorControls(strokeSlot,{label:rasterFill?'Fill':'Stroke',value:o.style[colorProperty],scope:'object',property:colorProperty,disabled:!plotState(o).solidEnabled,apply:v=>edit(live=>{if(!plotState(live).solidEnabled)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
  if(supportsRange){
   propertyCheck(styleSlot('color-range'),'Color range',o.colorRange,checked=>{const ok=edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;});if(ok!==false){if(o.type==='implicit')renderProperties();else{picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;}}return ok;});
  }
@@ -2167,7 +2013,7 @@ function openAlgebraActions(name,trigger){
  menu.style.top=`${Math.max(6,Math.min(innerHeight-h-6,r.bottom+h+3<innerHeight?r.bottom+3:r.top-h-3))}px`;
 }
 function deleteSlider(name){const slider=doc.algebra?.sliders.find(s=>s.name===name);if(!slider)return;
- const ids=sliderAffected(name);if(slider.locked||[...ids].some(id=>objectEffectivelyLocked(id))){notice('Unlock slider and dependent objects before deleting.');return;}
+ const ids=sliderAffected(name);if(slider.locked||anyObjectLocked(ids)){notice('Unlock slider and dependent objects before deleting.');return;}
  const objects=clone(doc.objects.filter(o=>ids.has(o.id))),saved=clone(slider);
  if(update(()=>{doc.algebra.sliders=doc.algebra.sliders.filter(s=>s.name!==name);doc.objects=doc.objects.filter(o=>!ids.has(o.id));if(selectedSlider===name)selectedSlider=null;})){
   trash.unshift({at:Date.now(),objects,sliders:[saved]});trash=trash.slice(0,20);persistTrash();
@@ -3107,7 +2953,7 @@ function pointerUp(e){
  if(!drag||e?.pointerId!==undefined&&e.pointerId!==drag.pointerId)return;
  if(e?.type==='pointercancel'||e?.type==='lostpointercapture'){cancelDrag();return;}
  const completed=drag;drag=null;
- if(completed.kind==='slider'||completed.kind==='slider-position'){try{if(completed.kind==='slider-position'){const moved=doc.algebra?.sliders.find(s=>s.name===completed.name);if(moved){const [endX,endY]=xyEvent(e);moved.xy=snapPoint([completed.xy[0]+(endX-completed.sx)/view.scale,completed.xy[1]-(endY-completed.sy)/view.scale],effectiveSnapSettings());}}recalculateAlgebra(doc);validateDoc(doc);if(JSON.stringify(doc)!==completed.before){recordUndo(completed.before);documentRevision++;enqueueSave();}renderAlgebra();renderList();renderProperties();scheduleRender();}catch(err){doc=JSON.parse(completed.before);notice(err.message);renderAll();}return;}
+ if(completed.kind==='slider'||completed.kind==='slider-position'){try{if(completed.kind==='slider-position'){const moved=doc.algebra?.sliders.find(s=>s.name===completed.name);if(moved){const [endX,endY]=xyEvent(e);moved.xy=snapPoint([completed.xy[0]+(endX-completed.sx)/view.scale,completed.xy[1]-(endY-completed.sy)/view.scale],effectiveSnapSettings());}}recalculateAlgebra(doc);validateDoc(doc);commitEdit(completed.before);renderAlgebra();renderList();renderProperties();scheduleRender();}catch(err){doc=JSON.parse(completed.before);notice(err.message);renderAll();}return;}
  if(lastMoveCanvasTap&&['point','label','pan','marquee'].includes(completed.kind)&&Math.hypot(xyEvent(e)[0]-completed.sx,xyEvent(e)[1]-completed.sy)>9)lastMoveCanvasTap=null;
  // Browser pointerup is authoritative: the last position is not guaranteed to
  // have been preceded by a pointermove (pen hardware, coalesced pointer events).
@@ -3141,7 +2987,7 @@ function pointerUp(e){
    [o.labelDx,o.labelDy]=offset;if(completed.wasAuto)o.labelAvoid=false;
   }
   try{validateDoc(doc);}catch(err){doc=JSON.parse(before);documentGeneration++;notice('Label move rejected: '+err.message);renderAll();return;}
-  if(JSON.stringify(doc)!==before){recordUndo(before);documentRevision++;enqueueSave();}
+  commitEdit(before);
   renderList();renderProperties();
  }
  if(completed.kind==='point'){
@@ -3150,7 +2996,7 @@ function pointerUp(e){
   if(moved&&released.every(finite)&&(completed.moved||Math.hypot(endX-completed.sx,endY-completed.sy)>3)){if(moved.type==='pointOnObject')r50MoveConstrained(moved,released);else moved.xy=moved.type==='point'?constructionPoint(released,completed.id):snapPoint(released,effectiveSnapSettings());}
   const before=completed.before;
   try{validateDoc(doc);guardAnchorMove(JSON.parse(before),doc,completed.id);}catch(err){doc=JSON.parse(before);documentGeneration++;notice('Move rejected: '+err.message);renderAll();return;}
-  if(JSON.stringify(doc)!==before){recordUndo(before);documentRevision++;enqueueSave();}
+  commitEdit(before);
   renderList();renderProperties();
  }
  if(completed.kind==='freehand-move'){
@@ -3160,7 +3006,7 @@ function pointerUp(e){
    if(completed.rawPath)obj.rawPath=completed.rawPath.map(p=>[p[0]+dx,p[1]+dy]);
   }
   try{validateDoc(doc);}catch(err){doc=JSON.parse(before);documentGeneration++;notice('Move rejected: '+err.message);renderAll();return;}
-  if(JSON.stringify(doc)!==before){recordUndo(before);documentRevision++;enqueueSave();}
+  commitEdit(before);
   renderList();renderProperties();
  }
  if(completed.kind==='freehand'){
@@ -3188,15 +3034,15 @@ function fit(){if(in3D()){update(()=>{doc.scene3d.options.zoom=1;});return;}
 function deleteObject(id){
  if(!get(doc,id))return;
  const targets=affected(doc,id);
- if([...targets].some(key=>objectEffectivelyLocked(key))){notice('Unlock dependents before deleting.');return;}
+ if(anyObjectLocked(targets)){notice('Unlock dependents before deleting.');return;}
  const removed=clone(doc.objects.filter(o=>targets.has(o.id)));
  const ok=update(()=>{remove(doc,id);if(selected&&targets.has(selected))selected=null;});
  if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
 }
 function deleteSelected(){
  const targets=activeSelection();if(!targets.length)return;
- const union=new Set();for(const o of targets)for(const id of affected(doc,o.id))union.add(id);
- if([...union].some(id=>objectEffectivelyLocked(id))){notice('Unlock dependents before deleting.');return;}
+ const union=createDependencyGraph(doc.objects).descendants(targets.map(o=>o.id));
+ if(anyObjectLocked(union)){notice('Unlock dependents before deleting.');return;}
  const removed=clone(doc.objects.filter(o=>union.has(o.id)));
  const ok=update(()=>{doc.objects=doc.objects.filter(o=>!union.has(o.id));selected=null;selectedIds.clear();});
  if(ok&&removed.length){trash.unshift({at:Date.now(),objects:removed});trash=trash.slice(0,20);persistTrash();notice(`Deleted ${removed.length} objects. Restore them under Recently Deleted.`);}
@@ -3211,8 +3057,8 @@ function copySelectedObjects(){
 function cutSelectedObjects(){
  if(in3D())return false;
  const roots=activeSelection();if(!roots.length)return false;
- const toRemove=new Set();for(const o of roots)for(const id of affected(doc,o.id))toRemove.add(id);
- if([...toRemove].some(id=>objectEffectivelyLocked(id))){notice('Unlock dependents before deleting.');return false;}
+ const toRemove=createDependencyGraph(doc.objects).descendants(roots.map(o=>o.id));
+ if(anyObjectLocked(toRemove)){notice('Unlock dependents before deleting.');return false;}
  // Include all descendants because deleting a parent also deletes dependent
  // constructions. Cutting must never silently lose those constructions.
  const snapshot=captureObjectSelection(doc,doc.objects.filter(o=>toRemove.has(o.id)).map(o=>o.id));
@@ -3302,8 +3148,9 @@ function datedExportName(extension,kind=''){
 function datedProjectName(){return datedExportName('json');}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);}
 function svgString(){
- const svg=el('svg',{xmlns:NS,width:size.w,height:size.h,viewBox:`0 0 ${size.w} ${size.h}`});plotLimitedInScene=false;draw(svg,{exporting:true});
- if(plotLimitedInScene)throw Error('Plot evaluation budget exceeded. Image export is disabled for this incomplete view; narrow the viewport, lower plot detail, or simplify the expression.');
+ const svg=el('svg',{xmlns:NS,width:size.w,height:size.h,viewBox:`0 0 ${size.w} ${size.h}`});
+ const {limited}=isolatedRenderStatus(()=>plotLimitedInScene,value=>{plotLimitedInScene=value;},()=>draw(svg,{exporting:true}));
+ if(limited)throw Error('Plot evaluation budget exceeded. Image export is disabled for this incomplete view; narrow the viewport, lower plot detail, or simplify the expression.');
  if(doc.settings.exportRegion==='page'&&doc.settings.page!=='infinite'){
   const r=pageRect(size,doc.settings.page);svg.setAttribute('viewBox',`${r.x} ${r.y} ${r.width} ${r.height}`);
   svg.setAttribute('width',r.width);svg.setAttribute('height',r.height);
@@ -3315,7 +3162,8 @@ function svgString(){
  * decode or toBlob must not emit an unrelated image after a later user action.
  */
 let exportAbortToken=0;
-function exportSignature(){return JSON.stringify([documentRevision,documentGeneration,view.cx,view.cy,view.scale,size.w,size.h,exportAbortToken]);}
+function captureImageExportState(){return imageExportState(doc,view,size,documentRevision,documentGeneration,exportAbortToken);}
+function exportSignature(){return captureImageExportState().signature;}
 function assertExportFresh(signature){
  if(exportSignature()!==signature)throw Error('Image export canceled: the illustration, viewport or export dialog changed during rendering. Export again.');
 }
@@ -3328,9 +3176,9 @@ function awaitExportStage(register,label,timeoutMs=15000){
  });
 }
 async function exportImage(type){
- const signature=exportSignature(),result=svgString(),background=doc.settings.background,factor=doc.settings.exportScale;
+ const {signature,background,factor,transparent}=captureImageExportState(),result=svgString();
  if(type==='svg'){download(new Blob([result.text],{type:'image/svg+xml;charset=utf-8'}),datedExportName('svg'));return;}
- if(type==='jpeg'&&doc.settings.exportTransparent)throw Error('JPEG cannot represent transparency. Turn off transparent export or choose PNG/WebP/SVG.');
+ if(type==='jpeg'&&transparent)throw Error('JPEG cannot represent transparency. Turn off transparent export or choose PNG/WebP/SVG.');
  const width=Math.max(1,Math.round(result.width*factor)),height=Math.max(1,Math.round(result.height*factor));
  if(width>16384||height>16384||width*height>36e6)throw Error('Raster output exceeds the 36-megapixel / 16384-pixel limit. Lower export resolution or resize the viewport.');
  const src=URL.createObjectURL(new Blob([result.text],{type:'image/svg+xml;charset=utf-8'}));
@@ -3343,7 +3191,7 @@ async function exportImage(type){
   // Match exact rounded output dimensions, including fractional A4/Letter crop
   // lengths; multiplying by `factor` can leave an unintended edge pixel.
   ctx.setTransform(width/result.width,0,0,height/result.height,0,0);
-  if(!doc.settings.exportTransparent){ctx.fillStyle=background;ctx.fillRect(0,0,result.width,result.height);}
+  if(!transparent){ctx.fillStyle=background;ctx.fillRect(0,0,result.width,result.height);}
   ctx.drawImage(img,0,0,result.width,result.height);
   const mime={png:'image/png',jpeg:'image/jpeg',webp:'image/webp'}[type];
   const blob=await awaitExportStage((resolve,reject)=>can.toBlob(v=>v?resolve(v):reject(Error(type.toUpperCase()+' encoding failed.')),mime,.94),'Raster encoding');
@@ -3975,7 +3823,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  $('tikzcd-open').onclick=()=>{if(drag)cancelDrag();$('tikzcd-dialog').hidden=false;$('tikzcd-input').focus();};
  $('tikzcd-close').onclick=()=>{$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();};
  $('tikzcd-apply').onclick=()=>{try{const d=validateDoc(importTikzCd($('tikzcd-input').value));if(!localizedConfirm('Replace the current illustration with the imported diagram?'))return;const ok=update(()=>{doc=d;selected=null;});if(ok){$('tikzcd-dialog').hidden=true;$('tikzcd-open').focus();notice('Imported a semantic tikz-cd diagram.');}}catch(e){notice('Import failed: '+e.message);}};
- $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');history=[];future=[];historyTrash=[];futureTrash=[];selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
+ $('conflict-load').onclick=()=>{if(!localizedConfirm('Replace this tab with the newer local project? Download your current version first if needed.'))return;try{const latest=localStorage.getItem(STORAGE);if(!latest)throw Error('No saved project found.');if(drag)cancelDrag();doc=validateDoc(JSON.parse(latest));if(doc.scene3d)enforce3DVisibility(doc.scene3d);documentRevision++;documentGeneration++;clearDraft();clearTimeout(saveTimer);dirty=false;lastStored=latest;setStorageConflict(false);saveStatus('Loaded newer local project');documentHistory.clear();selected=null;selectedIds.clear();syncHistory();renderAll();}catch(e){notice('Cannot load other tab: '+e.message);}};
  $('conflict-overwrite').onclick=()=>{if(!localizedConfirm('Overwrite the other tab’s local project with this tab’s version? This may discard its changes.'))return;try{lastStored=localStorage.getItem(STORAGE);setStorageConflict(false);enqueueSave();}catch(e){notice(e.message);}};
  window.addEventListener('blur',()=>{pendingTouchTap=null;touchContacts.clear();touchBlocked=false;if(drag)cancelDrag();if(draftStart||draftPoints.length||draftNode||draftReference){clearDraft();scheduleRender();}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&playingSliders.size){stopAllSliderPlayback();renderAlgebra();renderProperties();}

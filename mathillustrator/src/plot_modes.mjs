@@ -1,3 +1,5 @@
+import {MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,IMPLICIT_COLOR_SCHEMES,IMPLICIT_COLOR_MODES,DOMAIN_COLOR_SCHEMES,DOMAIN_COLOR_MODES,validRasterResolution} from './plot_capabilities.mjs?cut=round308';
+export {MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,IMPLICIT_COLOR_SCHEMES,IMPLICIT_COLOR_MODES,DOMAIN_COLOR_SCHEMES,DOMAIN_COLOR_MODES};
 /** Strict locally interpreted arithmetic; no eval, arbitrary calls or property access.
  * Implicit multiplication supports 2pi, 3x, (x+1)(x-1), xy and 2sin(x).
  * Complex evaluation uses two real components, with bounded sampling later.
@@ -207,14 +209,10 @@ export function sampleVectorField(fn,region,{density=12,normalized=false,maxEval
  return {arrows,limited:false,evaluations:nx*ny};
 }
 // Both scalar and complex rasters use the same bounded resolution contract.
-export const MAX_DOMAIN_RESOLUTION=1536;
-export const MAX_DOMAIN_PIXELS=MAX_DOMAIN_RESOLUTION*MAX_DOMAIN_RESOLUTION;
 function rasterDimensions(region,resolution){
  const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin);
  return {width:resolution,height:Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION))};
 }
-export const IMPLICIT_COLOR_SCHEMES=Object.freeze([['range','Red–purple–blue'],['diverging','Blue–white–red'],['viridis','Viridis'],['inferno','Inferno'],['grayscale','Grayscale'],['rainbow','Rainbow'],['sign','Sign coloring'],['bands','Contour bands']].map(Object.freeze));
-export const IMPLICIT_COLOR_MODES=Object.freeze([...IMPLICIT_COLOR_SCHEMES.map(([key])=>key),'heat']);
 function interpolateStops(stops,t){
  const scaled=clamp(t,0,1)*(stops.length-1),segment=Math.min(stops.length-2,Math.floor(scaled)),mix=scaled-segment;
  return stops[segment].map((start,index)=>Math.round(start+(stops[segment+1][index]-start)*mix));
@@ -258,7 +256,7 @@ export function rangeColorRGB(value,min,max){return scalarColorRGB(value,min,max
 export function sampleImplicitColors(fn,region,{quality='balanced',resolution=null,mode='range',maxEvaluations=80000,includes=()=>true}={}){
  validatePlotRegion(region);
  if(typeof fn!=='function'||typeof includes!=='function'||!['fast','balanced','detailed'].includes(quality)||!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>MAX_DOMAIN_PIXELS||!IMPLICIT_COLOR_MODES.includes(mode))throw Error('Invalid implicit color settings.');
- if(resolution!==null&&(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION))throw Error('Invalid implicit color settings.');
+ if(resolution!==null&&(!validRasterResolution(resolution)))throw Error('Invalid implicit color settings.');
  const dx=region.xMax-region.xMin,dy=region.yMax-region.yMin;
  let width,height,limited=false;
  if(Number.isInteger(resolution)){
@@ -282,8 +280,6 @@ export function sampleImplicitColors(fn,region,{quality='balanced',resolution=nu
  for(let k=0;k<values.length;k++)if(valid(values[k])){const rgb=scalarColorRGB(values[k],min,max,mode);rgba.set(rgb,k*4);rgba[k*4+3]=255;}
  return {rgba,width,height,min:valid(min)?min:null,max:valid(max)?max:null,limited,evaluations};
 }
-export const DOMAIN_COLOR_SCHEMES=Object.freeze([['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['phase-contours','Phase + contour lines'],['phase-checker','Phase + checkerboard'],['phase-sectors','Phase sectors']].map(Object.freeze));
-export const DOMAIN_COLOR_MODES=Object.freeze(DOMAIN_COLOR_SCHEMES.map(([key])=>key));
 export function domainColor(re,im,mode='phase-modulus'){
  if(!valid(re)||!valid(im))return null;
  let hue=((Math.atan2(im,re)*180/Math.PI)%360+360)%360;
@@ -312,7 +308,7 @@ export function domainColor(re,im,mode='phase-modulus'){
 }
 export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
  validatePlotRegion(region);
- if(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION||!DOMAIN_COLOR_MODES.includes(mode))throw Error('Invalid domain coloring settings.');
+ if(!validRasterResolution(resolution)||!DOMAIN_COLOR_MODES.includes(mode))throw Error('Invalid domain coloring settings.');
  const {width,height}=rasterDimensions(region,resolution);if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
  const rgba=new Uint8ClampedArray(width*height*4);
  for(let j=0;j<height;j++)for(let i=0;i<width;i++){

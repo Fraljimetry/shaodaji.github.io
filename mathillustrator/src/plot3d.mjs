@@ -1,9 +1,11 @@
+import {createWeightedCache} from './plot_cache.mjs?cut=round312';
+import {validVectorDensity,validPlotPalette,unexpectedPlotProperties} from './plot_capabilities.mjs?cut=round308';
 import {formatAutomaticName,xmlTextSafe,MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
-import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round303';
+import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round308';
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
-import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB,DOMAIN_COLOR_MODES} from './plot_modes.mjs?cut=round303';
+import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB} from './plot_modes.mjs?cut=round308';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
 export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
 export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1,grid:false,axes:false};
@@ -99,9 +101,9 @@ export function validate3D(scene){
   if(plot.kind==='parametric3d'&&(!ok(plot.uMin)||!ok(plot.uMax)||!ok(plot.vMin)||!ok(plot.vMax)||plot.uMin>=plot.uMax||plot.vMin>=plot.vMax||[plot.uMin,plot.uMax,plot.vMin,plot.vMax].some(v=>Math.abs(v)>1e4)))throw Error('Invalid surface parameter ranges.');
   if(plot.locked!==undefined&&typeof plot.locked!=='boolean')throw Error('Invalid 3D lock state.');
   if(plot.colorRange!==undefined&&typeof plot.colorRange!=='boolean')throw Error('Invalid 3D color range flag.');
-  if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!DOMAIN_COLOR_MODES.includes(plot.colorMode)&&plot.colorMode!=='solid'))throw Error('Invalid 3D complex coloring options.');
-  if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'||(plot.lineWidth!==undefined&&(!ok(plot.lineWidth)||plot.lineWidth<.1||plot.lineWidth>12))))throw Error('3D vector density must be 3–12 and line width 0.1–12.');
-  if(plot.kind!=='domain3d'&&(plot.colorMode!==undefined||plot.heightMode!==undefined)||plot.kind!=='vector3d'&&['density','normalized','lineWidth'].some(k=>plot[k]!==undefined)||plot.kind!=='parametric3d'&&['uMin','uMax','vMin','vMax'].some(k=>plot[k]!==undefined))throw Error('Unexpected 3D plot properties.');
+  if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!validPlotPalette(plot)))throw Error('Invalid 3D complex coloring options.');
+  if(plot.kind==='vector3d'&&(!validVectorDensity(plot)||typeof plot.normalized!=='boolean'||(plot.lineWidth!==undefined&&(!ok(plot.lineWidth)||plot.lineWidth<.1||plot.lineWidth>12))))throw Error('3D vector density must be 3–12 and line width 0.1–12.');
+  if(unexpectedPlotProperties(plot))throw Error('Unexpected 3D plot properties.');
   compileRegionCondition(plot.regionCondition,3);
   parse3D(plot);
  }
@@ -440,7 +442,7 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
 export function sample3DPlot(plot,detail){const generator=sample3DPlotSteps(plot,detail);let next;do{next=generator.next();}while(!next.done);return next.value;}
 
 /** World mesh LRU is reusable during orbit and bounded independently of scene size. */
-const meshCache=new Map();let meshCacheBytes=0;
+const meshCache=createWeightedCache({maxEntries:256,maxWeight:MAX_MESH_CACHE_BYTES,weight:meshBytes});
 // World-space face lighting is invariant under camera orbit, pan, zoom, theme,
 // opacity and export size. Weak keys follow the existing bounded mesh LRU and
 // do not retain evicted meshes. Do not mutate face arrays: native JSON and
@@ -464,7 +466,7 @@ function worldFaceShade(triangle){
  faceShadeCache.set(triangle,shade);
  return shade;
 }
-export function meshCacheStats(){return {entries:meshCache.size,estimatedBytes:meshCacheBytes,limitBytes:MAX_MESH_CACHE_BYTES};}
+export function meshCacheStats(){return {entries:meshCache.stats().entries,estimatedBytes:meshCache.stats().weight,limitBytes:MAX_MESH_CACHE_BYTES};}
 function meshBytes(mesh){return mesh.faces.length*3*3*8+mesh.lines.length*2*3*8+mesh.faces.length*48+mesh.lines.length*32;}
 // Cache only the inputs that affect sampled geometry (and phase colors).
 // Name, opacity, visibility, solid color and the edit Lock must NOT trigger
@@ -475,15 +477,8 @@ export const meshKey=(plot,detail)=>JSON.stringify([
  plot.kind==='vector3d'?[plot.density,plot.normalized]:null,
  plot.kind==='domain3d'?[plot.heightMode,plot.colorMode]:null,detail
 ]);
-function getCachedMesh(key){
- if(!meshCache.has(key))return null;
- const mesh=meshCache.get(key);meshCache.delete(key);meshCache.set(key,mesh);return mesh;
-}
-function storeMesh(key,mesh){const bytes=meshBytes(mesh);if(bytes>MAX_MESH_CACHE_BYTES)return;
- if(meshCache.has(key))meshCacheBytes-=meshBytes(meshCache.get(key));
- meshCache.set(key,mesh);meshCacheBytes+=bytes;
- while(meshCacheBytes>MAX_MESH_CACHE_BYTES){const oldest=meshCache.keys().next().value;meshCacheBytes-=meshBytes(meshCache.get(oldest));meshCache.delete(oldest);}
-}
+function getCachedMesh(key){return meshCache.lookup(key)??null;}
+function storeMesh(key,mesh){meshCache.store(key,mesh);}
 /** Increasing Mesh detail must increase actual implicit sampling density.
  * Earlier rounds capped the grid at 52 and then pre-clamped it by an
  * estimated triangle count, making high settings visually identical.

@@ -10,8 +10,7 @@ const src=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../src')
 const temporary=await mkdtemp(path.join(tmpdir(),'mi-cache-evict-'));
 const budget=1024*1024; // 1024 KiB test-only budget; production uses 224 MiB.
 try {
- await cp(path.join(src,'plot_modes.mjs'),path.join(temporary,'plot_modes.mjs'));
- await cp(path.join(src,'region_condition.mjs'),path.join(temporary,'region_condition.mjs'));
+ await cp(src,temporary,{recursive:true});
  let code=await readFile(path.join(src,'plot3d.mjs'),'utf8');
  assert(code.includes('const MAX_MESH_CACHE_BYTES=224*1024*1024;'),'production cache budget changed; revisit the test');
  code=code.replace('const MAX_MESH_CACHE_BYTES=224*1024*1024;',`const MAX_MESH_CACHE_BYTES=${budget};`);

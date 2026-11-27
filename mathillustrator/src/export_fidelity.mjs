@@ -3,8 +3,8 @@
  * Do not silently flatten geometry after quantization or exceed TeX's bounded
  * dimensions. This check is deliberately conservative; JSON/SVG stay available.
  */
-import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round303';
-import {regularPolygonVertices} from './geometry.mjs?cut=round303';
+import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round315';
+import {regularPolygonVertices} from './geometry.mjs?cut=round315';
 
 export const TIKZ_DECIMALS = 5;
 export const TIKZ_COORD_LIMIT = 300; // cm; allow 100cm extension for infinite lines
@@ -55,4 +55,27 @@ export function tikzGeometryIssue(doc){
   }
  }
  return null;
+}
+
+/** Capture only the state consumed by an asynchronous image export. SVG drawing
+ * is synchronous; the serialized image and its settings must travel together. */
+export function imageExportState(document,view,size,revision,generation,abortToken){
+ const s=document.settings;
+ const camera=document.scene3d?.options;
+ return Object.freeze({signature:JSON.stringify([revision,generation,view.cx,view.cy,view.scale,size.w,size.h,abortToken,
+  camera?.yaw,camera?.pitch,camera?.zoom,s.background,s.exportScale,s.exportTransparent,s.exportRegion,s.page]),
+  background:s.background,factor:s.exportScale,transparent:!!s.exportTransparent});
+}
+/** Rendering an export must not overwrite the editor's last budget status. */
+export function isolatedRenderStatus(getStatus,setStatus,render){
+ const previous=getStatus();setStatus(false);
+ try{const value=render();return {value,limited:getStatus()};}
+ finally{setStatus(previous);}
+}
+/** Identical projected arrow geometry for SVG and dense canvas painting. */
+export function projectedArrow(field){
+ const a=field.start,b=field.end,width=field.width??1.5,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+ if(len<.5)return null;
+ const head=6*Math.max(.7,Math.min(2,Math.sqrt(width/1.5))),ux=dx/len,uy=dy/len;
+ return {a,b,width,left:[b[0]-head*ux+head*.4*uy,b[1]-head*uy-head*.4*ux],right:[b[0]-head*ux-head*.4*uy,b[1]-head*uy+head*.4*ux]};
 }

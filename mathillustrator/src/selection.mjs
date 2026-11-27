@@ -1,4 +1,5 @@
-import {POINT_LIKE,pointRole} from './model.mjs?cut=round303';
+import {plotState} from './plot_capabilities.mjs?cut=round308';
+import {POINT_LIKE,pointRole} from './model.mjs?cut=round315';
 /** Transient editor selection helpers. Never serialize selection into project JSON. */
 export const FILL_TYPES=new Set(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node']);
 export const POINT_TYPES=new Set(POINT_LIKE);
@@ -33,8 +34,8 @@ export function commonValue(objects,property){
 export function compatibleObjects(objects,property,lookup=()=>null){
  return objects.filter(o=>{
   if(o.locked)return false;
-  const raster=o.type==='domainColoring'||o.type==='implicit'&&o.colorRange===true;
-  if(property==='stroke'&&(raster||o.type==='vectorField'&&o.colorRange===true)||property==='width'&&raster)return false;
+  const state=plotState(o);
+  if(property==='stroke'&&!state.solidEnabled||property==='width'&&!state.widthEnabled)return false;
   return property==='fill'?FILL_TYPES.has(o.type):property==='pointSize'?pointRole(o,lookup):['stroke','width','opacity'].includes(property);
  });
 }

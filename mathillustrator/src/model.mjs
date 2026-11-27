@@ -1,12 +1,14 @@
+import {createDependencyGraph} from './dependency_graph.mjs?cut=round311';
+import {validRasterResolution,validVectorDensity,validPlotPalette,unexpectedPlotProperties} from './plot_capabilities.mjs?cut=round308';
 import {formatAutomaticName,xmlTextSafe,MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
 export {xmlTextSafe} from './object_naming.mjs?cut=round303';
 import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round254';
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round301';
-import {compileRegionCondition} from './region_condition.mjs?cut=round303';
+import {compileRegionCondition} from './region_condition.mjs?cut=round308';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
 import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round303';
-import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion,DOMAIN_COLOR_MODES,IMPLICIT_COLOR_MODES,MAX_DOMAIN_RESOLUTION} from './plot_modes.mjs?cut=round303';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round315';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round308';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -569,13 +571,7 @@ export function createResolver(doc){
 export function position(doc,id){return createResolver(doc).at(id);}
 export function points(doc,o){return createResolver(doc).points(o);}
 export function affected(doc,id){
- // Build a reverse adjacency index once. Repeated full-scene passes become quadratic
- // for deep midpoint chains and can stall deletion of a single root vertex.
- const reverse=new Map();for(const o of doc.objects)for(const ref of o.refs||[]){if(!reverse.has(ref))reverse.set(ref,[]);reverse.get(ref).push(o.id);}
- // Owned edges also depend on their polygon for deletion, not for position.
- for(const o of doc.objects)if(o.edgeOf){if(!reverse.has(o.edgeOf))reverse.set(o.edgeOf,[]);reverse.get(o.edgeOf).push(o.id);}
- const ids=new Set([id]),queue=[id];for(let i=0;i<queue.length;i++)for(const child of reverse.get(queue[i])||[])if(!ids.has(child)){ids.add(child);queue.push(child);}
- return ids;
+ return createDependencyGraph(doc.objects).descendants([id]);
 }
 export function remove(doc,id){const ids=affected(doc,id);doc.objects=doc.objects.filter(o=>!ids.has(o.id));return ids.size;}
 /** Prevent a previously valid live construction from silently collapsing when
@@ -815,8 +811,8 @@ export function validateDoc(raw){
  if(o.type==='implicit'){
   if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr,functionSliderParameters(d));
   if(o.colorRange!==undefined&&typeof o.colorRange!=='boolean')throw Error('Invalid implicit color range.');
-  if(o.colorMode!==undefined&&!IMPLICIT_COLOR_MODES.includes(o.colorMode))throw Error('Invalid implicit color scheme.');
-  if(o.resolution!==undefined&&(!Number.isInteger(o.resolution)||o.resolution<32||o.resolution>MAX_DOMAIN_RESOLUTION))throw Error('Invalid implicit resolution.');
+  if(o.colorMode!==undefined&&!validPlotPalette(o))throw Error('Invalid implicit color scheme.');
+  if(o.resolution!==undefined&&!validRasterResolution(o.resolution))throw Error('Invalid implicit resolution.');
   if(o.colorRange===true||o.region!==undefined)validatePlotRegion(o.region);
   compileRegionCondition(o.regionCondition,2);
  }
@@ -826,15 +822,15 @@ export function validateDoc(raw){
   if(o.type==='vectorField'){
    if(typeof o.xExpr!=='string'||typeof o.yExpr!=='string')throw Error('Vector field requires two components.');
    parseVectorField(o.xExpr,o.yExpr,functionSliderParameters(d));
-   if(!Number.isInteger(o.density)||o.density<3||o.density>40||typeof o.normalized!=='boolean')throw Error('Invalid vector field settings.');
+   if(!validVectorDensity(o)||typeof o.normalized!=='boolean')throw Error('Invalid vector field settings.');
    if(o.colorRange!==undefined&&typeof o.colorRange!=='boolean')throw Error('Invalid vector color range.');
   }else{
-   if(typeof o.expr!=='string'||!DOMAIN_COLOR_MODES.includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
+   if(typeof o.expr!=='string'||!validPlotPalette(o))throw Error('Invalid domain coloring definition.');
    parseComplexExpression(o.expr,functionSliderParameters(d));
-   if(!Number.isInteger(o.resolution??128)||(o.resolution??768)<32||(o.resolution??768)>1536)throw Error('Invalid domain resolution.');
+   if(!validRasterResolution(o.resolution??768))throw Error('Invalid domain resolution.');
   }
  }
- if(!['vectorField','implicit'].includes(o.type)&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||!['domainColoring','implicit'].includes(o.type)&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring','implicit'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
+ if(unexpectedPlotProperties(o))throw Error('Unexpected plot properties.');
  if(o.type!=='parametric'&&(o.polar!==undefined||o.rExpr!==undefined||o.rMin!==undefined||o.rMax!==undefined))throw Error('Unexpected polar properties.');
  if(!['parametric','pointOnObject'].includes(o.type)&&o.parameter!==undefined)throw Error('Unexpected parametric symbol.');
  if(o.type!=='pointOnObject'&&o.distance!==undefined)throw Error('Unexpected constrained-point distance.');
@@ -951,6 +947,6 @@ export function validateDoc(raw){
   // new constructions, not legacy project imports.
   if(o.type!=='regularPolygon'&&o.type!=='hyperbola')checkNewGeometry(o.type,p);
  }
- const state=new Map();for(const id of ids){if(state.get(id)===2)continue;const stack=[[id,false]];while(stack.length){const [current,done]=stack.pop();if(done){state.set(current,2);continue;}const old=state.get(current);if(old===2)continue;if(old===1)throw Error('Cyclic object dependency.');state.set(current,1);stack.push([current,true]);for(const ref of objects.get(current).refs||[])if(!AXIS_OBJECTS[ref]&&state.get(ref)!==2)stack.push([ref,false]);}}
+ createDependencyGraph(d.objects,{ownership:false}).dependencyOrder(ids,{external:id=>Boolean(AXIS_OBJECTS[id])});
  return d;
 }

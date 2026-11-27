@@ -47,6 +47,14 @@ def run():
     assert play('a').get_attribute('aria-label')=='Pause slider a'
     assert play('b').get_attribute('aria-label')=='Pause slider b'
     play('b').click();play('a').click()
+    # Undo during an active session must select the session boundary, not an
+    # older unrelated edit, and must stop the RAF before restoring history.
+    boundary=sliders();play('a').click();page.wait_for_timeout(180)
+    assert sliders()['a']['value']!=boundary['a']['value']
+    page.locator('#undo').click();assert sliders()==boundary,(sliders(),boundary)
+    assert play('a').get_attribute('aria-label')=='Play slider a'
+    page.wait_for_timeout(140);assert sliders()==boundary
+    page.locator('#redo').click();assert sliders()['a']['value']!=boundary['a']['value']
     assert not errors,(theme,errors)
     page.close()
    print('ROUND261_CONCURRENT_SLIDERS_CHROMIUM_PASS')

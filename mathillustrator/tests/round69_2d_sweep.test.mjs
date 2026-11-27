@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {plotArtifactKey} from '../src/plot_cache.mjs';
 import {parseImplicit, sampleImplicitPlot, sampleParametricPlot, parseParametric, sampleVectorField} from '../src/plot_modes.mjs';
 import {sampleExplicitPlot, plotPath} from '../src/plot.mjs';
 import {polygonArea} from '../src/geometry_measurements.mjs';
@@ -35,7 +36,9 @@ test('Round69: 2D sampling retains budgets, finite SVG, and a real crossing near
 test('Round69: renderer groups hit-target visibility/export guards for transformed lines',()=>{
   const app=readFileSync(new URL('../src/app.mjs',import.meta.url),'utf8');
   assert.match(app,/if\(!exporting&&sty\.opacity>0&&\(\[[^\n]+\.includes\(o\.type\)\|\|o\.type==='transformCopy'&&geometricLine\(o,resolver\)\)\)/);
-  assert.match(app,/o\.type,o\.expr,o\.xExpr,o\.yExpr,o\.parameter,o\.tMin/,'Parametric plot cache must include the selected parameter');
+  const plot={type:'parametric',xExpr:'cos(t)',yExpr:'sin(t)',parameter:'t',tMin:0,tMax:6};
+  const key=o=>plotArtifactKey(o,{}, {},{cx:0,cy:0,scale:48},{w:800,h:600},10000);
+  assert.notEqual(key(plot),key({...plot,parameter:'u'}),'Parametric plot cache must include the selected parameter');
 });
 
 test('Round69: polygon area rejects self-touching polygons but preserves concave outlines',()=>{
