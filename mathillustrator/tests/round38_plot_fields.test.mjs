@@ -91,3 +91,23 @@ test('complex division preserves finite quotients across extreme scales',()=>{
  assert.ok(Math.abs(large[0]/expected-1)<1e-14&&Math.abs(large[1]/expected+1)<1e-14);
  assert.ok(quotient(0,0).some(v=>!Number.isFinite(v)));
 });
+
+test('complex palettes: periodic modulus lines, checker parity, sectors, finite extremes and persistence',()=>{
+ const polar=(r,a,m)=>domainColor(r*Math.cos(a),r*Math.sin(a),m);
+ const modes=['phase-contours','phase-checker','phase-sectors'];
+ assert.deepEqual(domainColor(1,0,modes[0]),domainColor(2,0,modes[0]));
+ assert.notDeepEqual(domainColor(1,0,modes[0]),domainColor(Math.SQRT2,0,modes[0]));
+ assert.notDeepEqual(polar(1.1,.1,modes[1]),polar(1.6,.1,modes[1]));
+ assert.deepEqual(polar(1,.1,modes[2]),polar(9,.4,modes[2]));
+ assert.notDeepEqual(polar(1,.1,modes[2]),polar(1,.7,modes[2]));
+ const d=newDoc();
+ for(const mode of modes){
+  assert.deepEqual(domainColor(0,0,mode),[0,0,0,255]);
+  assert.equal(domainColor(Infinity,0,mode),null);
+  const result=sampleDomainColors(parseComplexExpression('z^2+1'),region,{resolution:64,mode});
+  assert.equal(result.limited,false);assert.ok(result.rgba.some((v,i)=>i%4===3&&v===255));
+  append(d,{type:'domainColoring',expr:'z',region,resolution:64,colorMode:mode});
+ }
+ assert.deepEqual(validateDoc(JSON.parse(JSON.stringify(d))).objects.map(o=>o.colorMode),modes);
+ for(const mode of [...modes,'phase-modulus','phase','contours'])for(const v of [Number.MIN_VALUE,1e-200,1,1e200,Number.MAX_VALUE])assert.ok(domainColor(v,v,mode).every(c=>Number.isInteger(c)&&c>=0&&c<=255));
+});

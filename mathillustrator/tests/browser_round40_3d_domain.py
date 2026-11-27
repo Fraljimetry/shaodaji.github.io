@@ -27,6 +27,9 @@ def run():
    page.locator('#redo').click();assert snapshot()['scene3d']['plots'][0]['heightMode']=='argument'
    page.locator('#properties select').filter(has=page.locator('option[value="contours"]')).select_option('contours')
    assert snapshot()['scene3d']['plots'][0]['colorMode']=='contours'
+   for mode in ('phase-contours','phase-checker','phase-sectors'):
+    page.locator('#properties select').filter(has=page.locator('option[value="contours"]')).select_option(mode)
+    assert snapshot()['scene3d']['plots'][0]['colorMode']==mode
    with page.expect_download(timeout=10000) as download:page.locator('#save').click()
    saved=json.loads(download.value.path().read_text())
    assert saved['scene3d']['plots'][0]['kind']=='domain3d'

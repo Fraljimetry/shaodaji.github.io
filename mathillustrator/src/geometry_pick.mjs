@@ -6,6 +6,7 @@ export function geometryPickRank(object,pointLike=false){
  if(pointLike)return 0;
  if(!object)return 99;
  const type=object.type;
+ if(type==='implicit'&&object.colorRange===true||type==='domainColoring')return 5;
  if(['point','pointOnObject','midpoint','intersectionPoint','node','text'].includes(type))return 0;
  if(['segment','polyline','spline','closedSpline','freehand','circularArc','arc','vector','arrow','morphism'].includes(type))return 1;
  if(['line','ray','function','parametric','implicit','parallelThrough','perpendicularThrough','perpendicularFoot','perpBisector','locus','vectorField'].includes(type))return 2;

@@ -26,7 +26,7 @@ test('Round40 argument height: phase branch cut avoids spurious vertical walls',
  assert.ok(Math.abs(fn(-1,-0.01)[2]+Math.PI)<0.02);
  const m=sample3DPlot(p,22);assert.ok(m.faces.length>150);
  assert.ok(m.faces.every(triangle=>Math.max(...triangle.map(v=>v[2]))-Math.min(...triangle.map(v=>v[2]))<=Math.PI));
- for(const mode of ['phase','contours','phase-modulus']){p.colorMode=mode;assert.ok(sample3DPlot(p,8).faces.length>0);}
+ for(const mode of ['phase','contours','phase-modulus','phase-contours','phase-checker','phase-sectors']){p.colorMode=mode;assert.ok(sample3DPlot(p,8).faces.length>0);}
 });
 test('Round40 invalid complex expressions and options fail closed; old 3D scenes remain valid',()=>{
  const scene=newScene3D();add3DPlot(scene,'surface3d',['x+y']);validate3D(scene);

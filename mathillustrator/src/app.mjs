@@ -1,29 +1,29 @@
-import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=mi266';
-import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round294';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round302';
+import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round302';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
-import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round130';
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=mi266';
+import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round302';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round302';
 import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
-import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round69';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round76';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round302';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round302';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=mi271';
+import {TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round302';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round147';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round63';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round302';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round302';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round130';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot} from './plot_modes.mjs?cut=mi266';
+import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round302';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors} from './plot_modes.mjs?cut=round302';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=mi270';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round302';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round58';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round302';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
 import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
-import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round71';
-import {rankGeometryHits} from './geometry_pick.mjs?cut=round172';
+import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round302';
+import {rankGeometryHits} from './geometry_pick.mjs?cut=round301';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotCache} from './plot_cache.mjs?cut=round54';
 import {PANEL_MIN, PANEL_MAX, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
@@ -71,10 +71,10 @@ function syncColorSwatches(){
   }
  }
 }
-function appendColorSwatches(parent,{scope,property,apply}){
+function appendColorSwatches(parent,{scope,property,apply,caption=property==='stroke'?'Stroke colors':'Fill colors'}){
  const group=document.createElement('div');group.className='color-swatches';group.dataset.colorSwatches=scope;
  group.dataset.colorProperty=property;group.setAttribute('role','group');
- group.setAttribute('aria-label',translated(scope==='plot3d'?'Surface colors':property==='stroke'?'Stroke colors':'Fill colors',uiPrefs.language));
+ group.setAttribute('aria-label',translated(caption,uiPrefs.language));
  for(const [name,hex] of COMMON_COLORS){
   const button=document.createElement('button');button.type='button';button.className='color-swatch';
   button.dataset.color=hex;button.style.setProperty('--swatch',hex);
@@ -340,8 +340,8 @@ function synchronizeRelatedPropertyFields(){
  const name=live.name;
  const values={Name:name,'Label format':live.pointLabelMode||live.displayLabelMode||live.textMode||'plain',
   Label:pointRole(live,id=>get(doc,id))?(live.pointLabel||''):(live.displayLabel||''),
-  'Stroke':live.style?.stroke,'Vector color':live.style?.stroke,'Fill':live.style?.fill,
-  'Opacity':live.style?.opacity,'Width':live.style?.width,'Line width':live.style?.width,
+  'Stroke':live.style?.stroke,'Fill':live.style?.fill,
+  'Opacity':live.style?.opacity,'Width':live.style?.width,
   'Size':live.style?.pointSize??doc.settings.pointSize,
   'Point style':live.style?.pointShape||'solid','Line style':live.style?.linePattern||'solid',
   'Number of sides':live.sides,
@@ -601,8 +601,8 @@ function geometryLabelAnchor(o,resolver){
   try{const y=parseExpression(o.expr,functionSliderParameters(doc))(view.cx);return Number.isFinite(y)?project([view.cx,y]):null;}catch{return null;}
  }
  if(o.type==='parametric'){try{return project(parseParametric(o.xExpr,o.yExpr,o.parameter,functionSliderParameters(doc))((o.tMin+o.tMax)/2));}catch{return null;}}
- if(o.type==='implicit')return null;
- if(['vectorField','domainColoring'].includes(o.type))return project([(o.region.xMin+o.region.xMax)/2,(o.region.yMin+o.region.yMax)/2]);
+ if(o.type==='implicit'&&!o.colorRange)return null;
+ if(o.type==='vectorField'||isRasterPlot(o))return project([(o.region.xMin+o.region.xMax)/2,(o.region.yMin+o.region.yMax)/2]);
  if(o.type==='freehand')return o.path?.length?project(o.path[Math.floor(o.path.length/2)]):null;
  if(['parallelThrough','perpendicularThrough','tangentCircle','fixedLength'].includes(o.type)){
   const line=resolver.line(o);return line?project(line.a):null;
@@ -726,6 +726,21 @@ function shapeFillEnabled(o){
  return ['polygon','regularPolygon','rectangle','parallelogram'].includes(o.type);
 }
 function shapeFillAttributes(o){return {fill:shapeFillEnabled(o)?o.style.fill:'none','fill-opacity':o.type==='ellipse'?.20:.24};}
+function isRasterPlot(o){return o.type==='domainColoring'||o.type==='implicit'&&o.colorRange===true;}
+function rasterPlotUri(result){
+ const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('Browser canvas is unavailable for plot coloring.');
+ const image=ctx.createImageData(result.width,result.height);image.data.set(result.rgba);ctx.putImageData(image,0,0);
+ return canvas.toDataURL('image/png');
+}
+function rasterRegionImage(region,uri,opacity){
+ const a=project([region.xMin,region.yMax]),b=project([region.xMax,region.yMin]);
+ return el('image',{x:a[0],y:a[1],width:b[0]-a[0],height:b[1]-a[1],href:uri,opacity,preserveAspectRatio:'none'});
+}
+function visiblePlotRegion(){
+ const a=unproject(0,size.h),b=unproject(size.w,0);
+ return {xMin:a[0],xMax:b[0],yMin:a[1],yMax:b[1]};
+}
 function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphismLabels=null,morphismRoutes=null){
  if(!isObjectVisible(doc,o,resolver.object))return;
  const pointObject=geometricPoint(o,resolver);
@@ -907,6 +922,17 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphis
     }
    }
   }
+ }else if(o.type==='implicit'&&o.colorRange===true){
+  const region=o.region,parameters=functionSliderParameters(doc),condition=compileRegionCondition(o.regionCondition,2);
+  const key=JSON.stringify(['implicit-color-range',o.expr,region,o.resolution??768,o.colorMode??'range',o.regionCondition||'',parameters,Math.min(doc.settings.plotBudget??80000,MAX_DOMAIN_PIXELS)]);
+  const uri=plotCache.get(key,()=>{
+   const result=sampleImplicitColors(parseImplicit(o.expr,parameters),region,{resolution:o.resolution??768,mode:o.colorMode??'range',maxEvaluations:Math.min(doc.settings.plotBudget??80000,MAX_DOMAIN_PIXELS),includes:(x,y)=>inRegion(condition,x,y)});
+   if(result.limited){limitedPlotKeys.add(key);return '';}
+   limitedPlotKeys.delete(key);
+   return rasterPlotUri(result);
+  });
+  if(limitedPlotKeys.has(key))plotLimitedInScene=true;
+  item=rasterRegionImage(region,uri,o.style.opacity);
  }else if(['function','parametric','implicit'].includes(o.type)){
   const key=JSON.stringify([o.type,o.expr,o.xExpr,o.yExpr,o.parameter,o.tMin,o.tMax,o.polar,o.rExpr,functionSliderParameters(doc),doc.settings.plotQuality,doc.settings.plotBudget,doc.settings.implicitGrid,view.cx,view.cy,view.scale,size.w,size.h]);
   const path=plotCache.get(key,()=>{
@@ -945,19 +971,14 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphis
    const result=sampleDomainColors(parseComplexExpression(o.expr,functionSliderParameters(doc)),region,{resolution:o.resolution??768,mode:o.colorMode??'phase-modulus',maxEvaluations:MAX_DOMAIN_PIXELS});
    if(result.limited){limitedPlotKeys.add(key);return '';}
    limitedPlotKeys.delete(key);
-   const canvas=document.createElement('canvas');canvas.width=result.width;canvas.height=result.height;
-   const ctx=canvas.getContext('2d',{willReadFrequently:false});if(!ctx)throw Error('Browser canvas is unavailable for domain coloring.');
-   const image=ctx.createImageData(result.width,result.height);image.data.set(result.rgba);
    if(condition)for(let j=0;j<result.height;j++)for(let i=0;i<result.width;i++){
     const x=region.xMin+(i+.5)*(region.xMax-region.xMin)/result.width,y=region.yMax-(j+.5)*(region.yMax-region.yMin)/result.height;
-    if(!inRegion(condition,x,y))image.data[(j*result.width+i)*4+3]=0;
+    if(!inRegion(condition,x,y))result.rgba[(j*result.width+i)*4+3]=0;
    }
-   ctx.putImageData(image,0,0);
-   return canvas.toDataURL('image/png');
+   return rasterPlotUri(result);
   });
   if(limitedPlotKeys.has(key))plotLimitedInScene=true;
-  const a=project([region.xMin,region.yMax]),b=project([region.xMax,region.yMin]);
-  item=el('image',{x:a[0],y:a[1],width:b[0]-a[0],height:b[1]-a[1],href:uri,opacity:o.style.opacity,preserveAspectRatio:'none'});
+  item=rasterRegionImage(region,uri,o.style.opacity);
   // Domain coloring is raster content; do not apply the normal stroke/fill style.
  }
  // Apply patterns to all geometric/plot strokes, including exported SVG. Do not
@@ -969,7 +990,7 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphis
  }
  if(!item)return;if(sty.opacity===0)item.setAttribute('pointer-events','none');item.dataset.id=o.id;item.classList.add('clickable');if(isSel)item.classList.add('selected-shape');if(uiPrefs.selectionPreview!==false&&o.id===hoverPickId)item.classList.add('pick-preview');svg.append(item);
  if(!exporting&&sty.opacity>0&&(['segment','arrow','line','ray','perpBisector','angleBisector','parallelThrough','perpendicularThrough','freehand','polyline','spline','function','parametric','implicit','vectorField','bezier','angle','morphism'].includes(o.type)||o.type==='transformCopy'&&geometricLine(o,resolver))){
-  const paths=o.type==='vectorField'&&o.colorRange===true?[...item.querySelectorAll('path')]:[item.tagName.toLowerCase()==='g'?item.querySelector('path'):item];
+  const paths=isRasterPlot(o)?[]:o.type==='vectorField'&&o.colorRange===true?[...item.querySelectorAll('path')]:[item.tagName.toLowerCase()==='g'?item.querySelector('path'):item];
   for(const path of paths){if(!path)continue;const hit=path.cloneNode(false);hit.removeAttribute('marker-end');hit.removeAttribute('class');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(12,Number(o.style.width)+8));hit.setAttribute('opacity','1');hit.setAttribute('fill','none');hit.dataset.id=o.id;svg.append(hit);}
  }
  // Optional geometric labels follow the referenced world anchors on every redraw.
@@ -1077,9 +1098,9 @@ function draw(svg,{exporting=false}={}){
  // Exports may run while an editing gesture is active. Never overwrite the
  // on-screen drag handle's automatic-placement state with export-only layout.
  if(!exporting)currentMorphismLabels=computedMorphismLabels;
- for(const o of doc.objects)if(o.type==='domainColoring')renderObject(svg,o,resolver,exporting,labels,computedMorphismLabels,morphismRoutes);
+ for(const o of doc.objects)if(isRasterPlot(o))renderObject(svg,o,resolver,exporting,labels,computedMorphismLabels,morphismRoutes);
  drawBackground(svg,!exporting,exporting,true);
- for(const o of doc.objects)if(o.type!=='domainColoring')renderObject(svg,o,resolver,exporting,labels,computedMorphismLabels,morphismRoutes);
+ for(const o of doc.objects)if(!isRasterPlot(o))renderObject(svg,o,resolver,exporting,labels,computedMorphismLabels,morphismRoutes);
  // Keep labels legible above subsequently painted diagram nodes and routes;
  // preserve the relative order of all authored labels. SVG export uses this
  // same painted order. Only the transparent handles are editor-only.
@@ -1591,7 +1612,7 @@ function renderBulkProperties(root,objects){
   if(value===null){control.placeholder=translated('Mixed',uiPrefs.language);control.dataset.mixed='true';}
  }
  addColor('stroke','Stroke');addColor('fill','Fill');
- addNumber('opacity','Opacity',0,1,.1);addNumber('width','Line width',.1,100,.5);
+ addNumber('opacity','Opacity',0,1,.1);addNumber('width','Width',.1,100,.5);
  addNumber('pointSize','Size',1,100,1);
  if(!grid.querySelector('.style-fill'))grid.classList.add('stroke-only-grid');
  root.append(grid);
@@ -1633,7 +1654,7 @@ function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeE
   const caption=input.closest('label');
   caption.title=translated('Double-click this label to fill symmetric ranges for all axes; Enter to redraw.',uiPrefs.language);
   caption.addEventListener('dblclick',event=>{
-   if(event.target!==caption)return;
+   if(input.disabled||event.target!==caption)return;
    const raw=input.value.trim();let numeric;
    try{numeric=raw?parseBound(raw):NaN;}catch{numeric=NaN;}
    if(!Number.isFinite(numeric)){notice('Enter a finite bound first.');return;}
@@ -1679,7 +1700,7 @@ function renderProperties3D(root){
    }
   });height.append(heightSelect);root.append(height);
   const colors=document.createElement('label');colors.className='field';colors.textContent='Color scheme';const select=document.createElement('select');
-  for(const [key,label] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['solid','Single color']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
+  for(const [key,label] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['phase-contours','Phase + contour lines'],['phase-checker','Phase + checkerboard'],['phase-sectors','Phase sectors'],['solid','Single color']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
   select.value=selectedPlot.colorMode;select.onchange=()=>{if(edit(p=>{p.colorMode=select.value;})!==false)renderProperties();};colors.append(select);root.append(colors);
  }
  if(selectedPlot.kind==='vector3d'){
@@ -1690,13 +1711,13 @@ function renderProperties3D(root){
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
  const solidAllowed=selectedPlot.kind!=='domain3d'||selectedPlot.colorMode==='solid';
- const solidPicker=field(colorSlot,selectedPlot.kind==='vector3d'?'Vector color':'Surface color',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
+ const solidPicker=field(colorSlot,selectedPlot.kind==='vector3d'?'Stroke':'Fill',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
  solidPicker.disabled=selectedPlot.colorRange===true||!solidAllowed;
- const swatches=appendColorSwatches(colorSlot,{scope:'plot3d',property:'color',apply:v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('Select Single color and disable Multi-color first.');p.color=v;})});
+ const swatches=appendColorSwatches(colorSlot,{scope:'plot3d',property:'color',caption:selectedPlot.kind==='vector3d'?'Stroke colors':'Fill colors',apply:v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('Select Single color and disable Color range first.');p.color=v;})});
  for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;
  const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
  const rangeLabel=document.createElement('label');rangeLabel.className='check';const range=document.createElement('input');range.type='checkbox';range.checked=selectedPlot.colorRange===true;
- range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}solidPicker.disabled=range.checked||!solidAllowed;for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;};rangeLabel.append(range,document.createTextNode(' '+(selectedPlot.kind==='vector3d'?'Color range':'Multi-color')));right.append(rangeLabel);
+ range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}solidPicker.disabled=range.checked||!solidAllowed;for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;};rangeLabel.append(range,document.createTextNode(' Color range'));right.append(rangeLabel);
  field(right,'Opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
  if(selectedPlot.kind==='vector3d')field(right,'Width',selectedPlot.lineWidth??1.5,'number',v=>edit(p=>{p.lineWidth=v;}),{min:.1,max:12,step:.5});
  localizeUI(root,uiPrefs.language);
@@ -2021,18 +2042,27 @@ function renderProperties(){
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
-  const modes=document.createElement('label');modes.className='field';modes.textContent=translated('Color scheme',uiPrefs.language);
-  const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
+  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent=translated('Color scheme',uiPrefs.language);
+  const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['phase-contours','Phase + contour lines'],['phase-checker','Phase + checkerboard'],['phase-sectors','Phase sectors']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
   field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
  }
- if(['vectorField','domainColoring'].includes(o.type)){
+ if(o.type==='implicit'){
+  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent=translated('Color scheme',uiPrefs.language);
+  const select=document.createElement('select');for(const [value,name] of [['range','Contour ramp'],['diverging','Blue–white–red'],['grayscale','Grayscale'],['heat','Heat map'],['viridis','Viridis'],['sign','Sign coloring'],['bands','Contour bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
+  select.value=o.colorMode||'range';select.disabled=o.colorRange!==true;select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
+  const resolution=field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
+  resolution.disabled=o.colorRange!==true;
+ }
+ if(['vectorField','domainColoring','implicit'].includes(o.type)){
+  const bounds=o.region??visiblePlotRegion();
   const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
   const entries={};for(const [key,label] of [['xMin','x min'],['xMax','x max'],['yMin','y min'],['yMax','y max']]){
-   entries[key]=field(form,translated(label,uiPrefs.language),o.region[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
+   entries[key]=field(form,translated(label,uiPrefs.language),bounds[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
    entries[key].onchange=()=>{};
   }
   installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound,conditionValue:o.regionCondition,conditionCommit:value=>edit(live=>{live.regionCondition=value;}),dimension:2});
+  if(o.type==='implicit'&&!o.colorRange)for(const input of form.querySelectorAll('input'))input.disabled=true;
   root.append(form);
  }
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
@@ -2058,7 +2088,7 @@ function renderProperties(){
    const option=document.createElement('option');option.value=value;option.textContent=title;select.append(option);
   }
   select.value=o.style.pointShape||'solid';select.onchange=()=>edit(live=>{live.style.pointShape=select.value;});row.append(select);root.append(row);
- }else if(!['freehand','morphism','text','node','domainColoring'].includes(o.type)){
+ }else if(!isRasterPlot(o)&&!['freehand','morphism','text','node'].includes(o.type)){
   const row=document.createElement('label');row.className='field appearance-choice-field';row.textContent='Line style';row.dataset.propertyLabel='Line style';
   const select=document.createElement('select');select.setAttribute('aria-label','Line style');
   for(const [value,title] of [['solid','Solid'],['dashed','Dashed'],['dotted','Dotted']]){
@@ -2069,16 +2099,22 @@ function renderProperties(){
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';
  styleGrid.setAttribute('role','group');styleGrid.setAttribute('aria-label','Object appearance');
  function styleSlot(name){const slot=document.createElement('div');slot.className='style-slot style-'+name;styleGrid.append(slot);return slot;}
- if(o.type==='vectorField')styleGrid.classList.add('vector-style-grid');
- const strokeSlot=styleSlot('stroke');
- const picker=field(strokeSlot,o.type==='vectorField'?'Vector color':'Stroke',o.style.stroke,'color',v=>edit(live=>live.style.stroke=v));
- picker.disabled=o.type==='vectorField'&&o.colorRange===true;
- const swatches=appendColorSwatches(strokeSlot,{scope:'object',property:'stroke',apply:v=>edit(live=>{if(live.type==='vectorField'&&live.colorRange)throw Error('Disable Color range to select a single color.');live.style.stroke=v;})});
- if(o.type==='vectorField'){
-  for(const button of swatches.querySelectorAll('button'))button.disabled=o.colorRange===true;
+ const supportsRange=['vectorField','implicit'].includes(o.type),rasterFill=isRasterPlot(o);
+ if(supportsRange)styleGrid.classList.add('vector-style-grid');
+ const colorProperty=rasterFill?'fill':'stroke',strokeSlot=styleSlot('stroke');
+ const picker=field(strokeSlot,rasterFill?'Fill':'Stroke',o.style[colorProperty],'color',v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;}));
+ picker.disabled=rasterFill||supportsRange&&o.colorRange===true;
+ const swatches=appendColorSwatches(strokeSlot,{scope:'object',property:colorProperty,apply:v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
+ for(const button of swatches.querySelectorAll('button'))button.disabled=picker.disabled;
+ if(supportsRange){
   const mode=styleSlot('color-range'),label=document.createElement('label');label.className='check';
   const check=document.createElement('input');check.type='checkbox';check.checked=o.colorRange===true;
-  check.onchange=()=>{if(edit(live=>{live.colorRange=check.checked;})===false){check.checked=!check.checked;return;}picker.disabled=check.checked;for(const button of swatches.querySelectorAll('button'))button.disabled=check.checked;};label.append(check,' '+translated('Color range',uiPrefs.language));mode.append(label);
+  check.onchange=()=>{
+   const checked=check.checked;
+   if(edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;})===false){check.checked=!checked;return;}
+   if(o.type==='implicit'){renderProperties();return;}
+   picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;
+  };label.append(check,' '+translated('Color range',uiPrefs.language));mode.append(label);
  }
  if(fillableClosedShape(o,{object:id=>get(doc,id)})){
   const fillSlot=styleSlot('fill');
@@ -2088,7 +2124,7 @@ function renderProperties(){
  }
  if(!styleGrid.querySelector('.style-fill'))styleGrid.classList.add('stroke-only-grid');
  field(styleSlot('opacity'),'Opacity',o.style.opacity,'number',v=>edit(live=>{if(!finite(v)||v<0||v>1)throw Error('Opacity must be in [0,1].');live.style.opacity=v;}),{step:.1,min:0,max:1});
- if(!pointRole(o,id=>get(doc,id)))field(styleSlot('width'),styleGrid.classList.contains('stroke-only-grid')?'Width':'Line width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
+ if(!rasterFill&&!pointRole(o,id=>get(doc,id)))field(styleSlot('width'),'Width',o.style.width,'number',v=>edit(live=>{if(!finite(v)||v<.1||v>100)throw Error('Width must be 0.1–100.');live.style.width=v;}),{step:.5,min:.1,max:100});
  if(pointRole(o,id=>get(doc,id)))field(styleSlot('pointsize'),'Size',o.style.pointSize??doc.settings.pointSize,'number',v=>edit(live=>{if(!finite(v)||v<1||v>100)throw Error('Point size must be 1–100.');live.style.pointSize=v;}),{step:1,min:1,max:100});
  root.append(styleGrid);
  localizeUI(root,uiPrefs.language);
@@ -3883,8 +3919,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
    else if(mode==='vectorField'||mode==='domainColoring'){
     if(mode==='vectorField')parseVectorField(value,y,functionSliderParameters(doc));else parseComplexExpression(value,functionSliderParameters(doc));
     // The first region is a snapshot of the visible canvas, not a moving viewport.
-    const a=unproject(0,size.h),b=unproject(size.w,0);
-    const region={xMin:a[0],xMax:b[0],yMin:a[1],yMax:b[1]};validatePlotRegion(region);
+    const region=validatePlotRegion(visiblePlotRegion());
     if(mode==='domainColoring'&&doc.settings.plotBudget<1000000){doc.settings.plotBudget=1000000;raisedDomainBudget=true;}
     const aspect=(region.yMax-region.yMin)/(region.xMax-region.xMin);
     const resolution=mode==='domainColoring'?Math.min(768,Math.max(32,Math.floor(Math.sqrt(900000/aspect)/16)*16)):0;

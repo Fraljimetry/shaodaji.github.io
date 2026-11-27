@@ -206,13 +206,100 @@ export function sampleVectorField(fn,region,{density=12,normalized=false,maxEval
  }
  return {arrows,limited:false,evaluations:nx*ny};
 }
+export const IMPLICIT_COLOR_MODES=Object.freeze(['range','diverging','grayscale','heat','viridis','sign','bands']);
+function interpolateStops(stops,t){
+ const scaled=clamp(t,0,1)*(stops.length-1),segment=Math.min(stops.length-2,Math.floor(scaled)),mix=scaled-segment;
+ return stops[segment].map((start,index)=>Math.round(start+(stops[segment+1][index]-start)*mix));
+}
+function normalizedScalar(value,min,max){
+ if(!(valid(value)&&valid(min)&&valid(max))||!(max>min))return .5;
+ if(value<=min)return 0;if(value>=max)return 1;
+ const span=max-min;return valid(span)?(value-min)/span:(value/2-min/2)/(max/2-min/2);
+}
+function divergingScalar(value,min,max){
+ const blue=[59,130,246],white=[255,255,255],red=[239,68,68];
+ if(!(valid(value)&&valid(min)&&valid(max)))return white;
+ if(min<0&&max>0){
+  if(value<0){const t=clamp(Math.abs(value/min),0,1);return white.map((start,index)=>Math.round(start+(blue[index]-start)*t));}
+  if(value>0){const t=clamp(Math.abs(value/max),0,1);return white.map((start,index)=>Math.round(start+(red[index]-start)*t));}
+  return white;
+ }
+ const t=normalizedScalar(value,min,max);
+ return t<=.5?white.map((start,index)=>Math.round(start+(blue[index]-start)*(1-t*2))):white.map((start,index)=>Math.round(start+(red[index]-start)*((t-.5)*2)));
+}
+function signScalar(value,min,max){
+ if(!(valid(value)&&valid(min)&&valid(max)))return [255,255,255];
+ const scale=Math.max(Math.abs(min),Math.abs(max),1),epsilon=scale*1e-12;
+ if(Math.abs(value)<=epsilon)return [255,255,255];
+ return value<0?[59,130,246]:[239,68,68];
+}
+/** Shared low/middle/high color ramp for real fields and 3D heights.
+ * Normalize opposite extreme values before subtracting to avoid overflow. */
+export function scalarColorRGB(value,min,max,mode='range'){
+ const t=normalizedScalar(value,min,max);
+ if(mode==='diverging')return divergingScalar(value,min,max);
+ if(mode==='grayscale'){const shade=Math.round(255*t);return [shade,shade,shade];}
+ if(mode==='heat')return interpolateStops([[30,9,97],[180,34,86],[239,68,68],[249,115,22],[250,204,21],[255,255,191]],t);
+ if(mode==='viridis')return interpolateStops([[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]],t);
+ if(mode==='sign')return signScalar(value,min,max);
+ if(mode==='bands'){const steps=10;return interpolateStops([[239,68,68],[168,85,247],[59,130,246]],Math.round(t*(steps-1))/(steps-1));}
+ return interpolateStops([[239,68,68],[168,85,247],[59,130,246]],t);
+}
+export function rangeColorRGB(value,min,max){return scalarColorRGB(value,min,max,'range');}
+/** Sample a real scalar field in its fixed world-space rectangle. Undefined
+ * and masked samples are transparent and never influence the color range.
+ * Detail chooses the long side unless an explicit raster resolution is supplied. */
+export function sampleImplicitColors(fn,region,{quality='balanced',resolution=null,mode='range',maxEvaluations=80000,includes=()=>true}={}){
+ validatePlotRegion(region);
+ if(typeof fn!=='function'||typeof includes!=='function'||!['fast','balanced','detailed'].includes(quality)||!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>1000000||!IMPLICIT_COLOR_MODES.includes(mode))throw Error('Invalid implicit color settings.');
+ if(resolution!==null&&(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION))throw Error('Invalid implicit color settings.');
+ const dx=region.xMax-region.xMin,dy=region.yMax-region.yMin;
+ let width,height,limited=false;
+ if(Number.isInteger(resolution)){
+  const ratio=dy/dx;height=Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION));
+  width=resolution;
+  if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,min:null,max:null,limited:true,evaluations:0};
+ }else{
+  const long=Math.max(dx,dy),detail={fast:128,balanced:256,detailed:512}[quality];
+  width=Math.max(1,Math.round(detail*(dx/long)));height=Math.max(1,Math.round(detail*(dy/long)));
+  limited=width*height>maxEvaluations;
+  if(limited){const scale=Math.sqrt(maxEvaluations/(width*height));width=Math.max(1,Math.floor(width*scale));height=Math.max(1,Math.floor(height*scale));width=Math.min(width,maxEvaluations);height=Math.min(height,Math.floor(maxEvaluations/width));}
+ }
+ const values=new Float64Array(width*height).fill(NaN),rgba=new Uint8ClampedArray(width*height*4);
+ let min=Infinity,max=-Infinity,evaluations=0;
+ for(let j=0;j<height;j++)for(let i=0;i<width;i++){
+  const x=region.xMin+((i+.5)/width)*dx,y=region.yMax-((j+.5)/height)*dy;
+  if(!includes(x,y))continue;
+  let value;try{evaluations++;value=fn(x,y);}catch{continue;}
+  if(!valid(value))continue;
+  values[j*width+i]=value;min=Math.min(min,value);max=Math.max(max,value);
+ }
+ for(let k=0;k<values.length;k++)if(valid(values[k])){const rgb=scalarColorRGB(values[k],min,max,mode);rgba.set(rgb,k*4);rgba[k*4+3]=255;}
+ return {rgba,width,height,min:valid(min)?min:null,max:valid(max)?max:null,limited,evaluations};
+}
+export const DOMAIN_COLOR_MODES=Object.freeze(['phase-modulus','phase','contours','phase-contours','phase-checker','phase-sectors']);
 export function domainColor(re,im,mode='phase-modulus'){
  if(!valid(re)||!valid(im))return null;
- const hue=((Math.atan2(im,re)*180/Math.PI)%360+360)%360;
+ let hue=((Math.atan2(im,re)*180/Math.PI)%360+360)%360;
  const radius=Math.hypot(re,im);
- // Keep hue continuous and use log-modulus bands to distinguish zeros/poles.
- const band=Math.log2(Math.max(1e-12,radius)),fract=((band%1)+1)%1;
- const light=mode==='phase'?0.52:mode==='contours'?0.36+0.38*fract:0.42+0.28*Math.tanh(band/3);
+ // Scaled logarithm handles finite components whose modulus overflows,
+ // and avoids loss of relative magnitude for subnormal components.
+ const scaledLog=()=>{const scale=Math.max(Math.abs(re),Math.abs(im));return Math.log2(scale)+Math.log2(Math.hypot(re/scale,im/scale));};
+ let light;
+ if(mode==='phase-contours'||mode==='phase-checker'||mode==='phase-sectors'){
+  if(radius===0)return [0,0,0,255];
+  const angular=hue/30;
+  if(mode==='phase-sectors'){hue=Math.floor(angular)*30+15;light=.52;}
+  else{
+   const logRadius=scaledLog(),radial=logRadius-Math.floor(logRadius);
+   if(mode==='phase-contours')light=.52-.32*Math.max(0,1-Math.min(radial,1-radial)/.06);
+   else light=(Math.floor(logRadius*2)+Math.floor(angular))%2===0?.64:.36;
+  }
+ }else{
+  // Preserve the established three palettes for ordinary finite moduli.
+  const band=Number.isFinite(radius)?Math.log2(Math.max(1e-12,radius)):scaledLog(),fract=((band%1)+1)%1;
+  light=mode==='phase'?0.52:mode==='contours'?0.36+0.38*fract:0.42+0.28*Math.tanh(band/3);
+ }
  const saturation=.82;
  const f=n=>{const k=(n+hue/30)%12,a=saturation*Math.min(light,1-light);return Math.round(255*(light-a*Math.max(-1,Math.min(k-3,9-k,1))));};
  return [f(0),f(8),f(4),255];
@@ -221,7 +308,7 @@ export const MAX_DOMAIN_RESOLUTION=1536;
 export const MAX_DOMAIN_PIXELS=MAX_DOMAIN_RESOLUTION*MAX_DOMAIN_RESOLUTION;
 export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
  validatePlotRegion(region);
- if(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION||!['phase-modulus','phase','contours'].includes(mode))throw Error('Invalid domain coloring settings.');
+ if(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION||!DOMAIN_COLOR_MODES.includes(mode))throw Error('Invalid domain coloring settings.');
  const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin);
  const height=Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION));
  const width=resolution;if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};

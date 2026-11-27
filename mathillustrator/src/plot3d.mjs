@@ -1,8 +1,8 @@
-import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round130';
+import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round302';
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
-import {parseCurveExpression,parseComplexExpression,domainColor} from './plot_modes.mjs?cut=round54';
+import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB,DOMAIN_COLOR_MODES} from './plot_modes.mjs?cut=round302';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
 export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
 export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1,grid:false,axes:false};
@@ -10,11 +10,7 @@ export const MAX_VISIBLE_3D_PLOTS=3;
 /** One stable warm-to-cool magnitude/height ramp, independent of camera angle.
  * A constant scalar field maps to purple; invalid input never yields malformed SVG. */
 export function rampColor(value,min,max){
- const stops=[[239,68,68],[168,85,247],[59,130,246]];
- const t=Number.isFinite(value)&&Number.isFinite(min)&&Number.isFinite(max)&&max>min
-  ?Math.max(0,Math.min(1,(value-min)/(max-min))):.5;
- const scaled=t*2,segment=Math.min(1,Math.floor(scaled)),mix=scaled-segment;
- return '#'+stops[segment].map((start,index)=>Math.round(start+(stops[segment+1][index]-start)*mix).toString(16).padStart(2,'0')).join('');
+ return '#'+rangeColorRGB(value,min,max).map(channel=>channel.toString(16).padStart(2,'0')).join('');
 }
 /** Safe, strict math-only bounds: π/e and arithmetic, no eval or variables. */
 export function parse3DRangeExpression(source){
@@ -101,7 +97,7 @@ export function validate3D(scene){
   if(plot.kind==='parametric3d'&&(!ok(plot.uMin)||!ok(plot.uMax)||!ok(plot.vMin)||!ok(plot.vMax)||plot.uMin>=plot.uMax||plot.vMin>=plot.vMax||[plot.uMin,plot.uMax,plot.vMin,plot.vMax].some(v=>Math.abs(v)>1e4)))throw Error('Invalid surface parameter ranges.');
   if(plot.locked!==undefined&&typeof plot.locked!=='boolean')throw Error('Invalid 3D lock state.');
   if(plot.colorRange!==undefined&&typeof plot.colorRange!=='boolean')throw Error('Invalid 3D color range flag.');
-  if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!['phase-modulus','phase','contours','solid'].includes(plot.colorMode)))throw Error('Invalid 3D complex coloring options.');
+  if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!DOMAIN_COLOR_MODES.includes(plot.colorMode)&&plot.colorMode!=='solid'))throw Error('Invalid 3D complex coloring options.');
   if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'||(plot.lineWidth!==undefined&&(!ok(plot.lineWidth)||plot.lineWidth<.1||plot.lineWidth>12))))throw Error('3D vector density must be 3–12 and line width 0.1–12.');
   compileRegionCondition(plot.regionCondition,3);
   parse3D(plot);

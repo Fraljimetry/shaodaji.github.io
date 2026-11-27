@@ -1,3 +1,8 @@
+## Implicit scalar coloring and consistent plot appearance (2026-11-27)
+- Implicit curves support Color range, using the existing 3D scalar palette for F=L-R. With coloring enabled, show Fill, opacity and validated x/y bounds, centered half-range and region inequality; disable manual colors and hide ineffective line styling. With coloring disabled, restore Stroke and the zero-level curve; retain region settings. Preserve slider updates, undo/redo, selection priority, old projects and exports.
+- Use Stroke for vector fields, Fill for surfaces and raster coloring, Color range for gradient toggles, and Width for line width, consistently in both languages. Preserve dimensional sampling limits.
+- Future interactive deliveries start from the latest delivered overlay and incorporate reproduced, relevant pending scheduled debugging findings; scheduled runs remain findings-only unless an overlay is explicitly requested.
+
 ## Round 271 — Keep prior fixes stable
 - Every new object constructed with a partial appearance override must retain required defaults (stroke, fill, line width, opacity and inherited point size). Explicit overrides and per-type fill defaults must coexist; JSON save/reload cannot silently create malformed styles.
 - Preserve cross-feature regressions from R249–270: single slider/object selection, independent concurrent playback, lock semantics, synchronized Properties and semantic Expressions, 2D slider parameters in all five plotting modes, closed-curve fill, per-type fill defaults, bilingual headings, and export fidelity. Do not reintroduce previous UI or mathematical-engine behavior.
@@ -2403,3 +2408,7 @@ The supported Mesh detail range is **8–96**. Older project JSON with integer d
 - Remove provably unused private implementation details and duplicate translation entries without changing public module exports, construction semantics, project schema, rendering/export behavior or numerical budgets.
 - Retired automatic morphism routing remains readable in saved projects but must render exactly as Direct; verify the behavior instead of requiring disabled source branches to remain.
 - Isolated Chromium fixtures must load the current source dependency graph, preserve distinct module URL identities, reject missing dependencies, and inspect raw exports without historical text substitutions. Preserve the existing verification profiles and frozen inventory; distinguish isolated browser results from actual HTTP/hosted verification.
+
+- Implicit scalar coloring now includes per-object Color scheme and Resolution controls placed above the drawing-region bounds, using the latest incremental overlay as the required future baseline.
+
+- 2D and 3D complex domain coloring share Phase + contour lines (dyadic modulus levels), Phase + checkerboard (logarithmic modulus and argument sectors), and Phase sectors (12 equal sectors), while retaining all prior palettes, defaults, and JSON compatibility. Finite complex components must produce finite RGB channels even when their modulus overflows.

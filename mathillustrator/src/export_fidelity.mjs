@@ -3,8 +3,8 @@
  * Do not silently flatten geometry after quantization or exceed TeX's bounded
  * dimensions. This check is deliberately conservative; JSON/SVG stay available.
  */
-import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round147';
-import {regularPolygonVertices} from './geometry.mjs?cut=round58';
+import {createResolver,focalEllipse,shapeVerticesFromPoints} from './model.mjs?cut=round302';
+import {regularPolygonVertices} from './geometry.mjs?cut=round302';
 
 export const TIKZ_DECIMALS = 5;
 export const TIKZ_COORD_LIMIT = 300; // cm; allow 100cm extension for infinite lines

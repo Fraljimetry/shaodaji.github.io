@@ -500,7 +500,17 @@
           "enum": [
             "phase-modulus",
             "phase",
-            "contours"
+            "contours",
+            "phase-contours",
+            "phase-checker",
+            "phase-sectors",
+            "range",
+            "diverging",
+            "grayscale",
+            "heat",
+            "viridis",
+            "sign",
+            "bands"
           ]
         },
         "tMin": {
@@ -639,7 +649,7 @@
         },
         "colorRange": {
           "type": "boolean",
-          "description": "Optional 2D vector-field magnitude color ramp; omitted means legacy solid stroke."
+          "description": "Optional vector-field magnitude ramp or implicit scalar coloring; omitted means legacy solid stroke."
         }
       },
       "allOf": [
@@ -1106,6 +1116,14 @@
           }
         },
         {
+          "if": {"properties": {"type": {"const": "implicit"}}},
+          "then": {"properties": {"colorMode": {"enum": ["range", "diverging", "grayscale", "heat", "viridis", "sign", "bands"]}}}
+        },
+        {
+          "if": {"properties": {"type": {"const": "domainColoring"}}},
+          "then": {"properties": {"colorMode": {"enum": ["phase-modulus", "phase", "contours", "phase-contours", "phase-checker", "phase-sectors"]}}}
+        },
+        {
           "if": {
             "properties": {
               "type": {
@@ -1480,6 +1498,9 @@
                   "phase-modulus",
                   "phase",
                   "contours",
+                  "phase-contours",
+                  "phase-checker",
+                  "phase-sectors",
                   "solid"
                 ]
               },

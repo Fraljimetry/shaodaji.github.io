@@ -1,10 +1,10 @@
 import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round254';
-import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round147';
-import {compileRegionCondition} from './region_condition.mjs?cut=round130';
+import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round301';
+import {compileRegionCondition} from './region_condition.mjs?cut=round302';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
 import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round130';
-import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=mi266';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round302';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion,DOMAIN_COLOR_MODES,IMPLICIT_COLOR_MODES,MAX_DOMAIN_RESOLUTION} from './plot_modes.mjs?cut=round302';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -825,7 +825,14 @@ export function validateDoc(raw){
   // Legacy rMin/rMax fields are retained for JSON compatibility, but no longer clip polar plots.
   if((o.rMin!==undefined&&!finite(o.rMin))||(o.rMax!==undefined&&!finite(o.rMax)))throw Error('Invalid legacy radial bounds.');
  }
- if(o.type==='implicit'){if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr,functionSliderParameters(d));}
+ if(o.type==='implicit'){
+  if(typeof o.expr!=='string')throw Error('Invalid implicit equation.');parseImplicit(o.expr,functionSliderParameters(d));
+  if(o.colorRange!==undefined&&typeof o.colorRange!=='boolean')throw Error('Invalid implicit color range.');
+  if(o.colorMode!==undefined&&!IMPLICIT_COLOR_MODES.includes(o.colorMode))throw Error('Invalid implicit color scheme.');
+  if(o.resolution!==undefined&&(!Number.isInteger(o.resolution)||o.resolution<32||o.resolution>MAX_DOMAIN_RESOLUTION))throw Error('Invalid implicit resolution.');
+  if(o.colorRange===true||o.region!==undefined)validatePlotRegion(o.region);
+  compileRegionCondition(o.regionCondition,2);
+ }
  if(['vectorField','domainColoring'].includes(o.type)){
   validatePlotRegion(o.region);
   compileRegionCondition(o.regionCondition,2);
@@ -835,12 +842,12 @@ export function validateDoc(raw){
    if(!Number.isInteger(o.density)||o.density<3||o.density>40||typeof o.normalized!=='boolean')throw Error('Invalid vector field settings.');
    if(o.colorRange!==undefined&&typeof o.colorRange!=='boolean')throw Error('Invalid vector color range.');
   }else{
-   if(typeof o.expr!=='string'||!['phase-modulus','phase','contours'].includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
+   if(typeof o.expr!=='string'||!DOMAIN_COLOR_MODES.includes(o.colorMode??'phase-modulus'))throw Error('Invalid domain coloring definition.');
    parseComplexExpression(o.expr,functionSliderParameters(d));
    if(!Number.isInteger(o.resolution??128)||(o.resolution??768)<32||(o.resolution??768)>1536)throw Error('Invalid domain resolution.');
   }
  }
- if(o.type!=='vectorField'&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||o.type!=='domainColoring'&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
+ if(!['vectorField','implicit'].includes(o.type)&&o.colorRange!==undefined||o.type!=='vectorField'&&o.density!==undefined||o.type!=='vectorField'&&o.normalized!==undefined||!['domainColoring','implicit'].includes(o.type)&&(o.resolution!==undefined||o.colorMode!==undefined)||!['vectorField','domainColoring','implicit'].includes(o.type)&&o.region!==undefined)throw Error('Unexpected plot properties.');
  if(o.type!=='parametric'&&(o.polar!==undefined||o.rExpr!==undefined||o.rMin!==undefined||o.rMax!==undefined))throw Error('Unexpected polar properties.');
  if(!['parametric','pointOnObject'].includes(o.type)&&o.parameter!==undefined)throw Error('Unexpected parametric symbol.');
  if(o.type!=='pointOnObject'&&o.distance!==undefined)throw Error('Unexpected constrained-point distance.');

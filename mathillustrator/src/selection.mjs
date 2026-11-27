@@ -1,4 +1,4 @@
-import {POINT_LIKE,pointRole} from './model.mjs?cut=round147';
+import {POINT_LIKE,pointRole} from './model.mjs?cut=round302';
 /** Transient editor selection helpers. Never serialize selection into project JSON. */
 export const FILL_TYPES=new Set(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node']);
 export const POINT_TYPES=new Set(POINT_LIKE);
@@ -31,5 +31,10 @@ export function commonValue(objects,property){
 /** Resolve transformed-point styling through the semantic source chain.
  * The optional lookup is deliberately absent for legacy standalone callers. */
 export function compatibleObjects(objects,property,lookup=()=>null){
- return objects.filter(o=>!o.locked&&(property==='fill'?FILL_TYPES.has(o.type):property==='pointSize'?pointRole(o,lookup):['stroke','width','opacity'].includes(property)));
+ return objects.filter(o=>{
+  if(o.locked)return false;
+  const raster=o.type==='domainColoring'||o.type==='implicit'&&o.colorRange===true;
+  if(property==='stroke'&&(raster||o.type==='vectorField'&&o.colorRange===true)||property==='width'&&raster)return false;
+  return property==='fill'?FILL_TYPES.has(o.type):property==='pointSize'?pointRole(o,lookup):['stroke','width','opacity'].includes(property);
+ });
 }

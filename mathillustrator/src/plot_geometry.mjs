@@ -50,8 +50,12 @@ function circleFromCoefficients(p){const [c,x,y,xx,xy,yy]=p,scale=Math.max(...p.
 }
 function lineFromCoefficients(p){const [c,x,y,xx,xy,yy]=p,scale=Math.max(...p.map(Math.abs),1);
  if(![xx,xy,yy].every(v=>zero(v,scale)))return null;
- const norm=Math.hypot(x,y);if(norm===0)return null;
- return {kind:'line',a:[-c*x/(norm*norm),-c*y/(norm*norm)],d:[-y/norm,x/norm],domain:'infinite',length:1};
+ const magnitude=Math.max(Math.abs(x),Math.abs(y));if(!(magnitude>0)||!p.every(Number.isFinite))return null;
+ const sx=x/magnitude,sy=y/magnitude,norm=Math.hypot(sx,sy),square=norm*norm;
+ const scaledC=-c/magnitude;
+ const coordinate=component=>Number.isFinite(scaledC)?scaledC*(component/square):(-c*(component/square))/magnitude;
+ const a=[coordinate(sx),coordinate(sy)],d=[-sy/norm,sx/norm];
+ return a.every(Number.isFinite)?{kind:'line',a,d,domain:'infinite',length:1}:null;
 }
 function fullTurn(o){return Math.abs((o.tMax-o.tMin)-2*Math.PI)<=32*Number.EPSILON*Math.max(1,Math.abs(o.tMin),Math.abs(o.tMax),2*Math.PI);}
 /** The returned shape is valid only for the specifically recognized syntax, not an approximation. */
