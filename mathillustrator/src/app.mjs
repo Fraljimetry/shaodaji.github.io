@@ -1,7 +1,7 @@
 import {createDependencyGraph,objectDependencies,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
 import {createDocumentHistory,commitDocumentChange} from './document_history.mjs?cut=round315';
 import {plotCapability,plotState,MIN_RASTER_RESOLUTION} from './plot_capabilities.mjs?cut=round308';
-import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round340';
+import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round342';
 import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round334';
 import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round334';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
@@ -21,7 +21,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round334';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round327';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round340';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round342';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round334';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';

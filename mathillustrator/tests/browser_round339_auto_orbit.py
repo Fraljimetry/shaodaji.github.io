@@ -42,11 +42,12 @@ with sync_playwright() as pw:
         controls = page.locator("#auto-orbit-controls")
         stage = page.locator(".stage").bounding_box()
         box = controls.bounding_box()
-        assert box["x"] - stage["x"] < 20 and box["y"] > stage["y"] + stage["height"] - 100
+        assert stage["x"] + stage["width"] - box["x"] - box["width"] < 20 and box["y"] - stage["y"] < 80
         page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)
         assert speed.is_hidden()
         button.hover()
         assert speed.is_visible()
+        assert speed.bounding_box()["x"] < button.bounding_box()["x"]
         speed.hover()
         assert speed.is_visible()
         page.mouse.move(stage['x'] + stage['width']/2, stage['y'] + stage['height']/2)
@@ -74,7 +75,7 @@ with sync_playwright() as pw:
         assert pose() == after
         page.locator('#ui-language').select_option('zh')
         assert button.get_attribute('aria-label') == '自动旋转'
-        assert speed.get_attribute('aria-label') == '旋转速度'
+        assert speed.get_attribute('aria-label') == '速度'
         page.locator('#ui-language').select_option('en')
         assert button.get_attribute('aria-label') == 'Automatic rotation'
         button.hover()
