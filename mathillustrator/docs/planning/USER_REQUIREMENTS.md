@@ -2409,7 +2409,7 @@ The supported Mesh detail range is **8–96**. Older project JSON with integer d
 - Retired automatic morphism routing remains readable in saved projects but must render exactly as Direct; verify the behavior instead of requiring disabled source branches to remain.
 - Isolated Chromium fixtures must load the current source dependency graph, preserve distinct module URL identities, reject missing dependencies, and inspect raw exports without historical text substitutions. Preserve the existing verification profiles and frozen inventory; distinguish isolated browser results from actual HTTP/hosted verification.
 
-- Implicit scalar coloring now includes per-object Color scheme and Resolution controls placed above the drawing-region bounds, using the latest incremental overlay as the required future baseline.
+- Implicit scalar coloring now includes per-object Color scheme and Resolution controls placed below the drawing-region controls and immediately above the appearance grid, using the latest incremental overlay as the required future baseline.
 
 - 2D and 3D complex domain coloring share Phase + contour lines (dyadic modulus levels), Phase + checkerboard (logarithmic modulus and argument sectors), and Phase sectors (12 equal sectors), while retaining all prior palettes, defaults, and JSON compatibility. Finite complex components must produce finite RGB channels even when their modulus overflows.
 
@@ -2420,3 +2420,5 @@ The supported Mesh detail range is **8–96**. Older project JSON with integer d
 - Maintain table-driven browser checks of plot modes, range state, localization, locking, validation, history and import; validate applicable fields and schema compatibility.
 
 - 2D and 3D plot Properties share region, parameter-range, vector-option, palette, color/opacity/width, name and lock control builders. Both omit the visible Drawing region heading, retain its accessible group name, and separate region and appearance controls with shared whitespace; complete parameter ranges commit atomically with Enter. Retain semantic construction expressions (distinct from component editing) and dimension-specific numerical limits.
+
+- Rendering controls follow region bounds in implicit and complex plots: Color scheme, then Resolution where applicable, then color selection and appearance; retain the heading-free presentation and existing applicability rules.

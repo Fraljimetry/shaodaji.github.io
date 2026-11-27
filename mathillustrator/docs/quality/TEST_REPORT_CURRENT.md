@@ -3399,3 +3399,7 @@ Fresh verification: standard Node 893/893; final focused tests 18/18; source JS 
 ## Shared heading-free plot layout
 - Removed the visible region heading in the shared builder, retaining the translated accessible group name. Both dimensions use 12 px top margins for the region and appearance groups. No mathematical or validation behavior changed.
 - Fresh standard Node 893/893, source JS syntax 38/38, Python syntax 320/320, real Chromium control matrix 34/34 at 1440×900 (including heading absence, group labels, spacing and no region overflow). Quick/Local/Release and other viewport sizes not rerun. Scheduled D001–D003 already integrated; no newer scheduled findings.
+
+### Rendering-control order
+- Color scheme and Resolution (where applicable) now follow the region controls and immediately precede the color grid. Shared CSS places the section margin at the first palette control instead of the grid. No mathematical or persistence changes.
+- Fresh standard Node 893/893; JS syntax 38/38; Python syntax 320/320; Chromium plot control matrix 34/34 and implicit scalar color-range workflow passed. Full Quick/Local/Release and hosted checks not executed. Latest scheduled findings D001–D003 already integrated.

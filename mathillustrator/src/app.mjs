@@ -1736,10 +1736,10 @@ function renderProperties3D(root){
     }p.bounds.zMin=0;p.bounds.zMax=Math.max(4,Math.min(1e4,Math.ceil(max*1.05)));
    }
   });if(ok!==false)renderProperties();return ok;});
-  propertyChoice(root,'Color scheme',[...DOMAIN_COLOR_SCHEMES,['solid','Single color']],selectedPlot.colorMode,value=>{const ok=edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=value;});if(ok!==false)renderProperties();return ok;},selectedPlot.colorRange===true);
  }
  if(selectedPlot.kind==='vector3d')vectorOptions(root,selectedPlot,edit,12);
  drawingRegion(root,selectedPlot.bounds,{dimension:3,parseBound:parse3DRangeExpression,commit:bounds=>edit(p=>{p.bounds=bounds;if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...bounds};}),conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;})});
+ if(selectedPlot.kind==='domain3d')propertyChoice(root,'Color scheme',[...DOMAIN_COLOR_SCHEMES,['solid','Single color']],selectedPlot.colorMode,value=>{const ok=edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=value;});if(ok!==false)renderProperties();return ok;},selectedPlot.colorRange===true);
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
  const solidAllowed=selectedPlot.kind!=='domain3d'||selectedPlot.colorMode==='solid';
@@ -2067,12 +2067,6 @@ function renderProperties(){
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
-  propertyChoice(root,'Color scheme',DOMAIN_COLOR_SCHEMES,o.colorMode||'phase-modulus',v=>edit(live=>{live.colorMode=v;}));
-  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1});
- }
- if(o.type==='implicit'){
-  propertyChoice(root,'Color scheme',[...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])],o.colorMode||'range',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.colorMode=v;}),!o.colorRange);
-  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1}).disabled=!o.colorRange;
  }
  if(['vectorField','domainColoring','implicit'].includes(o.type)){
   drawingRegion(root,o.region??visiblePlotRegion(),{dimension:2,parseBound:parse2DRegionBound,disabled:o.type==='implicit'&&!o.colorRange,conditionValue:o.regionCondition,commit:region=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.region=validatePlotRegion(region);}),conditionCommit:value=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.regionCondition=value;})});
@@ -2108,6 +2102,14 @@ function renderProperties(){
    const option=document.createElement('option');option.value=value;option.textContent=title;select.append(option);
   }
   select.value=o.style.linePattern||'solid';select.onchange=()=>edit(live=>{live.style.linePattern=select.value;});row.append(select);root.append(row);
+ }
+ if(o.type==='domainColoring'){
+  propertyChoice(root,'Color scheme',DOMAIN_COLOR_SCHEMES,o.colorMode||'phase-modulus',v=>edit(live=>{live.colorMode=v;}));
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1});
+ }
+ if(o.type==='implicit'){
+  propertyChoice(root,'Color scheme',[...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])],o.colorMode||'range',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.colorMode=v;}),!o.colorRange);
+  field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:1}).disabled=!o.colorRange;
  }
  const styleGrid=document.createElement('div');styleGrid.className='style-controls-grid';
  styleGrid.setAttribute('role','group');styleGrid.setAttribute('aria-label','Object appearance');

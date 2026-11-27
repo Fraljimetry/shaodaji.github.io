@@ -1308,3 +1308,7 @@ html.three-d #object-search{display:block!important}
 /* Shared heading-free plot groups: whitespace separates bounds and appearance. */
 .properties>.plot-region-editor{margin-top:12px;margin-bottom:0;}
 .properties>.plot-region-editor~:is(.style-controls-grid,.plot-color-grid){margin-top:12px;}
+
+/* Start the appearance group at its palette selector when present. */
+.properties>.plot-region-editor~.field[data-property-label="Color scheme"]{margin-top:12px;}
+.properties>.field[data-property-label="Color scheme"]~:is(.style-controls-grid,.plot-color-grid){margin-top:0;}

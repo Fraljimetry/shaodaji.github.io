@@ -43,7 +43,7 @@ def run():
             assert item()['colorRange'] is True and picture().count()==1
             assert select_field('Color scheme').is_enabled() and field('Resolution').is_enabled()
             order=p.evaluate("""() => Array.from(document.querySelectorAll('#properties label.field')).map(el => el.dataset.propertyLabel || '').filter(Boolean)""")
-            assert order.index('Color scheme') < order.index('Resolution') < order.index('x min')
+            assert order.index('x min') < order.index('Color scheme') < order.index('Resolution') < order.index('Fill')
             assert p.locator('#drawing [data-id="'+oid+'"]').count()==1, 'raster must not acquire a stroke hit target'
             assert field('Fill').is_disabled() and field('Stroke').count()==0 and field('Width').count()==0
             assert all(node.is_enabled() for node in bounds.all())
