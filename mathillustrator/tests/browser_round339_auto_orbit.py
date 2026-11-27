@@ -38,6 +38,12 @@ with sync_playwright() as pw:
         page.locator('#command').press('Enter')
         complete()
         assert button.is_visible()
+        speed = page.locator("#auto-orbit-speed")
+        controls = page.locator("#auto-orbit-controls")
+        stage = page.locator(".stage").bounding_box()
+        box = controls.bounding_box()
+        assert box["x"] - stage["x"] < 20 and box["y"] > stage["y"] + stage["height"] - 100
+        assert speed.input_value() == "24"
         original_geometry = page.locator('#drawing').inner_html()
         before = start()
         page.wait_for_function('(html)=>document.querySelector("#drawing").innerHTML!==html', arg=original_geometry)
@@ -51,8 +57,19 @@ with sync_playwright() as pw:
         assert pose() == after
         page.locator('#ui-language').select_option('zh')
         assert button.get_attribute('aria-label') == '自动旋转'
+        assert speed.get_attribute('aria-label') == '旋转速度'
         page.locator('#ui-language').select_option('en')
         assert button.get_attribute('aria-label') == 'Automatic rotation'
+        speed.fill('6')
+        start()
+        speed.fill('90')
+        assert button.get_attribute('aria-pressed') == 'true'
+        assert page.locator('#auto-orbit-rate').inner_text() == '90°/s'
+        yaw = pose()['yaw']
+        page.wait_for_function('(yaw)=>Math.abs((JSON.parse(window.__round36Snapshot()).scene3d.options.yaw-yaw+540)%360-180)>15', arg=yaw)
+        button.click()
+        stopped()
+        speed.fill('24')
         start()
         page.locator('#zoom-in').click()
         stopped()
@@ -76,7 +93,12 @@ with sync_playwright() as pw:
         page.wait_for_function("JSON.parse(window.__round36Snapshot()).scene3d.options.yaw===42")
         assert stopped()['yaw'] == 42
         page.set_viewport_size({'width':390,'height':844})
-        assert button.is_visible()
+        assert button.is_visible() and speed.is_visible()
+        page.wait_for_function('''() => {
+            const box = document.querySelector('#auto-orbit-controls').getBoundingClientRect();
+            const stage = document.querySelector('.stage').getBoundingClientRect();
+            return box.left >= stage.left && box.right <= stage.right && box.bottom <= stage.bottom;
+        }''')
         start()
         button.click()
         stopped()

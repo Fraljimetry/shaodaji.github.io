@@ -1,7 +1,7 @@
 import {createDependencyGraph,objectDependencies,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
 import {createDocumentHistory,commitDocumentChange} from './document_history.mjs?cut=round315';
 import {plotCapability,plotState,MIN_RASTER_RESOLUTION} from './plot_capabilities.mjs?cut=round308';
-import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round339';
+import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round340';
 import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round334';
 import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round334';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
@@ -21,7 +21,7 @@ import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
 import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round334';
 import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round327';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round339';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round340';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
 import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round334';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
@@ -199,7 +199,7 @@ function initialSiteTheme(){
  return 'dark'; // The site's default navy appearance; the user's explicit choice remains authoritative.
 }
 let selected3d=null, selectedSlider=null, cameraDrag=null;
-let autoOrbit=null,autoOrbitFrame=0;
+let autoOrbit=null,autoOrbitFrame=0,autoOrbitSpeed=24;
 const in3D=()=>doc.settings.plot3dEnabled===true;
 let uiPrefs={language:'en',font:'system',autoPan:true,selectionPreview:true,fast3DOrbit:true,sections:[],geometryGroups:[],collapsed:{}};
 const {field, propertyChoice, propertyCheck, propertyName, lockedProperties, vectorOptions, parameterRanges, drawingRegion, colorControls, opacityControl, widthControl}=createPropertyControls({document,language:()=>uiPrefs.language,notice,appendColorSwatches});
@@ -2160,7 +2160,7 @@ function syncPlotModeControl(){
 // Auto orbit is a single camera edit, never a stream of history entries.
 function syncAutoOrbitButton(){
  const button=$('auto-orbit'),active=!!autoOrbit;
- button.hidden=!in3D();button.setAttribute('aria-pressed',String(active));
+ $('auto-orbit-controls').hidden=!in3D();button.setAttribute('aria-pressed',String(active));
  const label='Automatic rotation';
  button.title=label;button.setAttribute('aria-label',label);
  localizeUI(button.parentElement,uiPrefs.language);
@@ -2180,7 +2180,7 @@ function autoOrbitTick(now){
  // frame can be scheduled, so dense plots remain responsive.
  if(!sceneRenderPending&&!frame&&elapsed>0){
   const options=doc.scene3d.options;
-  options.yaw=((autoOrbit.yaw+elapsed*.024+180)%360+360)%360-180;
+  options.yaw=((autoOrbit.yaw+elapsed*autoOrbitSpeed/1000+180)%360+360)%360-180;
   $('scene3d-yaw').value=String(Number(options.yaw.toFixed(2)));
   scheduleRender();
  }
@@ -3906,6 +3906,12 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
   }else setStorageConflict(true);
  });
  $('auto-orbit').onclick=toggleAutoOrbit;
+ $('auto-orbit-speed').oninput=()=>{
+  const speed=Number($('auto-orbit-speed').value);
+  if(!Number.isFinite(speed)||speed<6||speed>90)return;
+  if(autoOrbit){autoOrbit.yaw=doc.scene3d.options.yaw;autoOrbit.started=performance.now();}
+  autoOrbitSpeed=speed;$('auto-orbit-rate').value=`${speed}°/s`;
+ };
  $('scene3d-yaw').addEventListener('focus',stopAutoOrbit);
  $('zoom-out').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.max(.25,doc.scene3d.options.zoom/1.3);});else{if(drag)cancelDrag();view.scale=Math.max(1e-12,view.scale/1.3);render();}};$('zoom-in').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=Math.min(5,doc.scene3d.options.zoom*1.3);});else{if(drag)cancelDrag();view.scale=Math.min(1000,view.scale*1.3);render();}};$('zoom-reset').onclick=()=>{if(in3D())update(()=>{doc.scene3d.options.zoom=1;doc.scene3d.options.yaw=-38;doc.scene3d.options.pitch=26;});else{if(drag)cancelDrag();view={cx:0,cy:0,scale:48};render();}};$('fit').onclick=fit;
  const mobile=window.matchMedia('(max-width:700px)');

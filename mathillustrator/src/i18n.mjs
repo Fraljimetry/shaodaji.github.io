@@ -437,6 +437,7 @@ const zh=Object.freeze({
  "Color range": "色彩渐变",
  "Object opacity": "对象不透明度",
  "Automatic rotation": "自动旋转",
+ "Rotation speed": "旋转速度",
  "Fast 3D orbit": "快速三维旋转",
  "Surface parameter ranges": "曲面参数范围",
  "Arrow label positioning": "箭头标签布局",
