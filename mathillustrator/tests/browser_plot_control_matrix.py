@@ -83,8 +83,11 @@ def run():
                     assert props.locator('.plot-region-editor').get_attribute('aria-label')==('绘制区域' if lang=='zh' else 'Drawing region')
                     expect(props.locator('.plot-region-editor :is(h1,h2,h3,h4,h5,h6)')).to_have_count(0)
                     layout = props.locator('.plot-region-editor').evaluate('''e=>{const a=e.parentElement.querySelector(':scope > .style-controls-grid, :scope > .plot-color-grid');return {regionMargin:parseFloat(getComputedStyle(e).marginTop),appearanceMargin:parseFloat(getComputedStyle(a).marginTop),schemeMargin:e.parentElement.querySelector(':scope > [data-property-label="Color scheme"]') ? parseFloat(getComputedStyle(e.parentElement.querySelector(':scope > [data-property-label="Color scheme"]')).marginTop):null,columns:getComputedStyle(e).gridTemplateColumns.split(' ').length,overflow:e.scrollWidth>e.clientWidth+1}}''')
-                    assert layout=={'regionMargin':12,'appearanceMargin':0 if has_scheme else 12,'schemeMargin':12 if has_scheme else None,'columns':2,'overflow':False}, (mode,lang,layout)
-                    if vector: order(['Normalize lengths','Density','x min','x max'])
+                    assert layout=={'regionMargin':12,'appearanceMargin':0 if has_scheme or vector else 12,'schemeMargin':0 if complex3 else 12 if has_scheme else None,'columns':2,'overflow':False}, (mode,lang,layout)
+                    if vector: order(['x min','x max','Region inequality','Normalize lengths','Density','Stroke'])
+                    if complex3: order(['Region inequality','Height represents','Color scheme','Fill'])
+                    if vector or complex3:
+                        first=props.locator('.plot-region-editor').evaluate('e=>parseFloat(getComputedStyle(e.nextElementSibling).marginTop)');assert first==12,(mode,first)
                 for range_on in ([False,True] if has_range else [False]):
                     if has_range:
                         field('Color range').set_checked(range_on)

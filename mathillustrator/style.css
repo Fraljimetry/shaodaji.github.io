@@ -1310,5 +1310,9 @@ html.three-d #object-search{display:block!important}
 .properties>.plot-region-editor~:is(.style-controls-grid,.plot-color-grid){margin-top:12px;}
 
 /* Start the appearance group at its palette selector when present. */
-.properties>.plot-region-editor~.field[data-property-label="Color scheme"]{margin-top:12px;}
+.properties>.plot-region-editor~.field[data-property-label="Color scheme"],
+.properties>.plot-region-editor+.field[data-property-label="Height represents"],
+.properties>.plot-region-editor+.property-check-number-pair{margin-top:12px;}
+.properties>.field[data-property-label="Height represents"]+.field[data-property-label="Color scheme"]{margin-top:0;}
+.properties>.plot-region-editor~.property-check-number-pair~:is(.style-controls-grid,.plot-color-grid){margin-top:0;}
 .properties>.field[data-property-label="Color scheme"]~:is(.style-controls-grid,.plot-color-grid){margin-top:0;}

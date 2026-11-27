@@ -1726,6 +1726,8 @@ function renderProperties3D(root){
  const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['x(u, v)','y(u, v)','z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  if(selectedPlot.kind==='parametric3d')parameterRanges(root,['uMin','uMax','vMin','vMax'],selectedPlot,parse3DRangeExpression,edit);
+ drawingRegion(root,selectedPlot.bounds,{dimension:3,parseBound:parse3DRangeExpression,commit:bounds=>edit(p=>{p.bounds=bounds;if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...bounds};}),conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;})});
+ if(selectedPlot.kind==='vector3d')vectorOptions(root,selectedPlot,edit,12);
  if(selectedPlot.kind==='domain3d'){
   propertyChoice(root,'Height represents',[['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']],selectedPlot.heightMode,next=>{const ok=edit(p=>{const was=p.heightMode;p.heightMode=next;
    if(was==='modulus'&&next==='argument'&&p.bounds.zMin===0){p.bounds.zMin=-Math.PI;p.bounds.zMax=Math.PI;}
@@ -1737,8 +1739,6 @@ function renderProperties3D(root){
    }
   });if(ok!==false)renderProperties();return ok;});
  }
- if(selectedPlot.kind==='vector3d')vectorOptions(root,selectedPlot,edit,12);
- drawingRegion(root,selectedPlot.bounds,{dimension:3,parseBound:parse3DRangeExpression,commit:bounds=>edit(p=>{p.bounds=bounds;if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...bounds};}),conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;})});
  if(selectedPlot.kind==='domain3d')propertyChoice(root,'Color scheme',[...DOMAIN_COLOR_SCHEMES,['solid','Single color']],selectedPlot.colorMode,value=>{const ok=edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=value;});if(ok!==false)renderProperties();return ok;},selectedPlot.colorRange===true);
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
@@ -2063,7 +2063,6 @@ function renderProperties(){
  if(o.type==='vectorField'){
   field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr,functionSliderParameters(doc));live.xExpr=v;}));
   field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v,functionSliderParameters(doc));live.yExpr=v;}));
-  vectorOptions(root,o,edit,40);
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
@@ -2072,6 +2071,7 @@ function renderProperties(){
   drawingRegion(root,o.region??visiblePlotRegion(),{dimension:2,parseBound:parse2DRegionBound,disabled:o.type==='implicit'&&!o.colorRange,conditionValue:o.regionCondition,commit:region=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.region=validatePlotRegion(region);}),conditionCommit:value=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.regionCondition=value;})});
  }
 
+ if(o.type==='vectorField')vectorOptions(root,o,edit,40);
  if(o.type==='regularPolygon')field(root,'Number of sides',o.sides,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>100)throw Error('Regular polygon sides must be 3–100.');resizeRegularPolygon(doc,live.id,v);}),{step:1,min:3,max:100});
  const measurement=measureGeometry(o,createResolver(doc));
  if(measurement){
