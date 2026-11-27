@@ -7,10 +7,11 @@ export function createWeightedCache({maxEntries,maxWeight,weight}){
   lookup(key){if(!entries.has(key)){misses++;return undefined;}
    const entry=entries.get(key);entries.delete(key);entries.set(key,entry);hits++;return entry.value;},
   store(key,value){const w=weight(value);
-   if(!Number.isSafeInteger(w)||w<0||w>maxWeight||!maxEntries||!maxWeight)return;
    if(entries.has(key)){total-=entries.get(key).weight;entries.delete(key);}
+   if(!Number.isSafeInteger(w)||w<0||w>maxWeight||!maxEntries||!maxWeight)return;
+   // Evict before adding: total + w can exceed the safe integer range.
+   while(entries.size>=maxEntries||total>maxWeight-w){const oldest=entries.keys().next().value;total-=entries.get(oldest).weight;entries.delete(oldest);}
    entries.set(key,{value,weight:w});total+=w;
-   while(entries.size>maxEntries||total>maxWeight){const oldest=entries.keys().next().value;total-=entries.get(oldest).weight;entries.delete(oldest);}
   },
   keys:()=>entries.keys(),
   stats:()=>({entries:entries.size,weight:total,hits,misses}),

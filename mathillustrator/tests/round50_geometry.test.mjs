@@ -70,3 +70,21 @@ test('Round50 pure geometry failure cases fail closed',()=>{
  append(d,{type:'fixedLength',refs:[a.id,b.id],length:-2});
  assert.throws(()=>validateDoc(d),/Invalid fixed length/);
 });
+
+test('Analytic constructions preserve normalized geometry at microscopic scales',()=>{
+ for(const s of [1e-250,1e-200,1e-160,1e-9,1,1e6]){
+  const normalized=p=>p.map(x=>x/s);
+  close(normalized(triangleCenter([[0,0],[4*s,0],[0,3*s]],'incenter')),[1,1]);
+  close(normalized(triangleCenter([[0,0],[4*s,0],[0,3*s]],'excenterA')),[6,6]);
+  const feet=circleTangents([2*s,0],{center:[0,0],radius:s});
+  assert.equal(feet.length,2);close(normalized(feet[0]),[.5,-Math.sqrt(3)/2]);
+  assert.deepEqual(circleTangents([.5*s,0],{center:[0,0],radius:s}),[]);
+  const projection=projectToCurve([s,s],[[0,0],[2*s,0]]);
+  close(normalized(projection.position),[1,0]);assert.equal(projection.parameter,.5);
+  const hyper=hyperbolaPoints([[-3*s,0],[3*s,0],[4*s,s]],8);
+  assert.equal(hyper.length,9);assert.ok(Math.abs(hyper[0][1]/s)>1);
+  const para=parabolaPoints([0,2*s],{a:[0,0],d:[1,0]},8);
+  if(s<.3)close(normalized(para[0]),[10,26]);
+  else assert.ok(para.length===9);
+ }
+});

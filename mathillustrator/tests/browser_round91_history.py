@@ -32,6 +32,22 @@ def main():
    with page.expect_download() as dl:page.locator('#save').click()
    exported=json.loads(dl.value.path().read_text())
    assert exported['objects']==imported['objects']
+   # Reject coercible non-string IDs without replacing the live project.
+   malformed=json.loads(json.dumps(imported))
+   malformed['objects'][0]['id']=['o1']
+   page.locator('#open-file').set_input_files({'name':'bad-id.json','mimeType':'application/json','buffer':json.dumps(malformed).encode()})
+   page.wait_for_function("()=>document.body.textContent.includes('Invalid or repeated object ID/type/name')")
+   assert json.loads(page.evaluate('window.__round36Snapshot()'))==state
+   malformed=json.loads(json.dumps(imported))
+   malformed['objects'][0]['style']['stroke']=['#123456']
+   page.locator('#open-file').set_input_files({'name':'bad-color.json','mimeType':'application/json','buffer':json.dumps(malformed).encode()})
+   page.wait_for_function("()=>document.body.textContent.includes('Invalid object style or color')")
+   assert json.loads(page.evaluate('window.__round36Snapshot()'))==state
+   malformed=json.loads(json.dumps(imported))
+   malformed['algebra']={'sliders':None}
+   page.locator('#open-file').set_input_files({'name':'bad-algebra.json','mimeType':'application/json','buffer':json.dumps(malformed).encode()})
+   page.wait_for_function("()=>document.body.textContent.includes('Invalid algebra section')")
+   assert json.loads(page.evaluate('window.__round36Snapshot()'))==state
    assert not errors,errors
    print('ROUND91_CHROMIUM_PASS: import, undo, redo, export preserve objects; no page errors')
   finally:browser.close()

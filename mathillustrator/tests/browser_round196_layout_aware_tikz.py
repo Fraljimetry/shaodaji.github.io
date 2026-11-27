@@ -19,6 +19,20 @@ with sync_playwright() as pw:
   tex=Path(event.value.path()).read_text()
   assert r'column sep=100.8pt' in tex and r'row sep=69.12pt' in tex,tex[:200]
   assert tex.count(r'\arrow[')==21
+  # A compact diagram must remain exportable with non-default grid spacing.
+  compact=json.loads(fixture.read_text())
+  for obj in compact['objects']:
+   if obj['type']=='node':obj['xy']=[v*.2 for v in obj['xy']]
+  page.once('dialog',lambda d:d.accept())
+  page.locator('#open-file').set_input_files({'name':'compact.json','mimeType':'application/json','buffer':json.dumps(compact).encode()})
+  page.wait_for_function("JSON.parse(window.__round36Snapshot()).objects.filter(o=>o.type==='node').every(o=>Math.abs(o.xy[0])<5 && Math.abs(o.xy[1])<5)")
+  page.locator('#export-open').click()
+  button=page.get_by_role('button',name='tikz-cd (semantic)')
+  assert button.is_enabled(), 'compact diagram export disabled'
+  with page.expect_download(timeout=15000) as compact_event:button.click()
+  compact_tex=Path(compact_event.value.path()).read_text()
+  assert r'column sep=20.16pt' in compact_tex and r'row sep=13.82pt' in compact_tex,compact_tex[:200]
+  assert compact_tex.count(r'\arrow[')==21
   assert not errors,errors
   print('ROUND196_CHROMIUM_PASS: 33 objects, 21 semantic morphisms, geometry spacing, no JS errors')
  finally:browser.close()

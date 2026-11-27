@@ -37,3 +37,25 @@ test('complex functions and principal branches',()=>{
  cnear(complex('log1p(z)'),complex('log(1+z)'));
  for(const s of ['min(z,1)','max(z,2)','floor(z)','atan2(z,z)','pow(z)','sin(z,z)'])assert.throws(()=>parseComplexExpression(s));
 });
+
+test('complex log1p and expm1 preserve small real and imaginary components',()=>{
+ for(const x of [1e-250,-1e-250,1e-100,-1e-100,1e-16,-1e-16]){
+  for(const name of ['log1p','expm1']){
+   const [re,im]=complex(`${name}(z)`,x,0);
+   assert.ok(Math.abs(re/Math[name](x)-1)<1e-14,`${name}(${x}) = ${re}`);
+   assert.equal(Math.abs(im),0);
+   const [u,v]=complex(`${name}(z)`,x,x);
+   assert.ok(Math.abs(u/x-1)<1e-14 && Math.abs(v/x-1)<1e-14);
+  }
+ }
+ for(const y of [1e-100,1e-20,1e-10]){
+  const [a,b]=complex('log1p(z)',0,y),[c,d]=complex('expm1(z)',0,y);
+  assert.ok(Math.abs(a/(y*y/2)-1)<1e-14);
+  assert.ok(Math.abs(c/(-y*y/2)-1)<1e-14);
+  assert.ok(Math.abs(b/y-1)<1e-14 && Math.abs(d/y-1)<1e-14);
+ }
+ for(const [x,y] of [[-.9,.1],[-1,0],[-2,.1],[-2,-.1],[2,3]]){
+  const expected=complex('log(1+z)',x,y),actual=complex('log1p(z)',x,y);
+  if(x===-1&&y===0)assert.equal(actual[0],-Infinity);else cnear(actual,expected);
+ }
+});

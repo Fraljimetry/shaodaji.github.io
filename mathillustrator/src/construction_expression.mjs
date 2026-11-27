@@ -1,7 +1,7 @@
-import {clone,command,parseExpression,validateDoc,append,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint,functionSliderParameters} from './model.mjs?cut=round315';
-import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement,createSlider,algebraPoint,SLIDER_PLAY_MODES} from './algebra.mjs?cut=round254';
-import {r50SourceShape,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=round308';
+import {clone,command,parseExpression,validateDoc,append,byName,createResolver,geometricPoint,geometricLine,geometricCircle,affected,addPoint,functionSliderParameters} from './model.mjs?cut=round331';
+import {splitAlgebraArguments,evaluateAlgebra,bindMeasurement,createSlider,algebraPoint,SLIDER_PLAY_MODES} from './algebra.mjs?cut=round329';
+import {r50SourceShape,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round325';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression} from './plot_modes.mjs?cut=round327';
 
 // Every reference is printed from its persistent ID, never a stored name.
 // Syntax for non-command tools is an editable semantic constructor; it does

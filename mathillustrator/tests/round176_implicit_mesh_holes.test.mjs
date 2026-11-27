@@ -68,3 +68,14 @@ test('Round176 tie-break retry closes moderate and high-detail cos-sum seams',()
   assert.equal(interiorOpenEdgesForBound(sampled.faces,box),0,`detail ${detail} should not leave interior seams`);
  }
 });
+
+test('Implicit mesh root refinement is invariant under finite large field scaling',()=>{
+ const bounds={xMin:-1,xMax:1,yMin:-1,yMax:1,zMin:-1,zMax:1};
+ const mesh=source=>sample3DPlot(add3DPlot(newScene3D(),'implicit3d',[source],bounds),12);
+ const ordinary=mesh('tanh(100*(x-.13))'),large=mesh('exp(709.7)*tanh(100*(x-.13))');
+ assert.ok(ordinary.faces.length>0);
+ assert.equal(large.faces.length,ordinary.faces.length);
+ assert.equal(large.limited,false);
+ for(let i=0;i<ordinary.faces.length;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)
+  assert.ok(Math.abs(ordinary.faces[i][j][k]-large.faces[i][j][k])<1e-12,'field scaling changed mesh coordinates');
+});

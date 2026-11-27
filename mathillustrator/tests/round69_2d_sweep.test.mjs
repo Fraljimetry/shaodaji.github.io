@@ -45,3 +45,14 @@ test('Round69: polygon area rejects self-touching polygons but preserves concave
   assert.equal(polygonArea([[0,0],[4,0],[2,2],[4,4],[0,4]]),12);
   assert.equal(polygonArea([[0,0],[2,2],[0,2],[2,0]]),null);
 });
+
+test('Implicit refinement rejects undefined interior samples even after bracket contraction',()=>{
+ const result=sampleImplicitPlot(x=>x===0.375?NaN:x-0.3,p=>p/12,p=>p/12,12,12);
+ assert.equal(result.segments.length,0);
+ const good=sampleImplicitPlot(x=>x-0.3,p=>p/12,p=>p/12,12,12);
+ assert.equal(good.segments.length,1);
+});
+test('Parametric quality rejects inherited property names',()=>{
+ for(const quality of ['constructor','__proto__','toString'])
+  assert.throws(()=>sampleParametricPlot(t=>[t,t],0,1,p=>p,{quality}),/Invalid plotting detail/);
+});

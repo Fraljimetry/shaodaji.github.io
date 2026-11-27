@@ -24,7 +24,7 @@ test('R77-05: overlapping tiny circles retain two roots and coincident radius is
 });
 
 test('R77-06: valid small circumcircle and source arc remain finite at different scales',()=>{
- for(const scale of [1e-9,1e-10,1e-6,1,1e6]){
+ for(const scale of [1e-200,1e-160,1e-110,1e-9,1e-10,1e-6,1,1e6]){
   const points=[[0,0],[scale,0],[0,scale]];
   const one=circumcircle(points),two=circum(points);
   assert.deepEqual(one,two);assert.ok(one);near(one.center[0],scale/2,scale*1e-12);

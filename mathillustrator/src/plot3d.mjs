@@ -1,11 +1,11 @@
-import {createWeightedCache} from './plot_cache.mjs?cut=round312';
+import {createWeightedCache} from './plot_cache.mjs?cut=round331';
 import {validVectorDensity,validPlotPalette,unexpectedPlotProperties} from './plot_capabilities.mjs?cut=round308';
 import {formatAutomaticName,xmlTextSafe,MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
-import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round308';
+import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round327';
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
-import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB} from './plot_modes.mjs?cut=round308';
+import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB} from './plot_modes.mjs?cut=round327';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
 export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
 export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1,grid:false,axes:false};
@@ -93,7 +93,7 @@ export function validate3D(scene){
  if(o.fixRegion===true&&!o.fixedBounds)throw Error('Fixed 3D region requires valid bounds.');
  const ids=new Set(),names=new Set();let highest=0;
  for(const plot of scene.plots){
-  if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isSafeInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>MAX_OBJECT_NAME_LENGTH||!xmlTextSafe(plot.name)||!color.test(plot.color)||!ok(plot.opacity)||plot.opacity<0||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
+  if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isSafeInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>MAX_OBJECT_NAME_LENGTH||!xmlTextSafe(plot.name)||(typeof plot.color!=='string'||!color.test(plot.color))||!ok(plot.opacity)||plot.opacity<0||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
   if(names.has(plot.name))throw Error('Duplicate 3D plot name.');names.add(plot.name);
   ids.add(plot.id);highest=Math.max(highest,plot.id);
   for(const key of ['a','b','c'])if(typeof plot[key]!=='string'||(key==='a'||['parametric3d','vector3d'].includes(plot.kind))&&!plot[key].trim()||plot[key].length>400)throw Error('Invalid 3D expression.');
@@ -357,7 +357,11 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
       if(fl===0)result=lo;
       else if(fh===0)result=hi;
       else if((fl<0)!==(fh<0)){
-       const initialJump=Math.abs(fl-fh);
+       // Normalize only when subtraction would overflow; preserve ordinary
+       // rounding and the existing refinement policy at normal scales.
+       const scale=Number.isFinite(fl-fh)?1:Math.max(Math.abs(fl),Math.abs(fh));
+       const jump=()=>Math.abs(fl/scale-fh/scale);
+       const initialJump=jump();
        // A sign change at a pole (e.g. 1/x) is NOT a level set. Refine
        // the bracket in world coordinates: a continuous zero contracts
        // its residual, whereas a pole/jump does not. Nonfinite probes fail
@@ -368,18 +372,18 @@ export function* sample3DPlotSteps(plot,detail,zeroTieBreak=false){
        // A true pole retains its jump and is still rejected.
        let lx=lo[0],ly=lo[1],lz=lo[2],hx=hi[0],hy=hi[1],hz=hi[2];
        for(let probe=0;probe<10&&!limited;probe++){
-        if(probe>=3&&Math.abs(fl-fh)<initialJump*.72)break;
+        if(probe>=3&&jump()<initialJump*.72)break;
         // The bracket lives in scalar registers: only accepted roots
         // allocate a position vector, never the intermediate probes.
         const mx=(lx+hx)/2,my=(ly+hy)/2,mz=(lz+hz)/2;let fm;
         try{fm=fn(mx,my,mz);}catch{fm=NaN;}evaluations++;
         if(evaluations>MAX_3D_EVALUATIONS){limited=true;break;}
-        if(!ok(fm))break;
+        if(!ok(fm)){fl=fh=NaN;break;}
         if(fm===0){result=[mx,my,mz];break;}
         if((fl<0)===(fm<0)){lx=mx;ly=my;lz=mz;fl=fm;}else{hx=mx;hy=my;hz=mz;fh=fm;}
        }
-       if(!result&&!limited&&Math.abs(fl-fh)<initialJump*.72){
-        const t=Math.max(0,Math.min(1,fl/(fl-fh)));
+       if(!result&&!limited&&jump()<initialJump*.72){
+        const t=Math.max(0,Math.min(1,(fl/scale)/(fl/scale-fh/scale)));
         result=[lx+(hx-lx)*t,ly+(hy-ly)*t,lz+(hz-lz)*t];
        }
       }

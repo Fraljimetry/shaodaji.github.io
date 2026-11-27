@@ -1,4 +1,4 @@
-import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
+import {distinctPoints,independentEdges,perpendicularHeightNonzero,focalEllipseParameters} from './numeric_geometry.mjs?cut=round325';
 /** Round 55 deployment contract: generalCrossings is a required named export.
  * Round 50 geometry primitives. Pure world-coordinate mathematics; no canvas/DOM.
  * Finite and singularity guards are deliberate: undefined geometry must never
@@ -31,7 +31,7 @@ const finiteLineInside=(line,t)=>{
  const slack=endpointEpsilon(...line.a,line.length,t);
  return t>=-slack&&(line.domain==='ray'||t<=line.length+slack);
 };
-const unit=a=>{const n=norm(a);return n>0&&Number.isFinite(n)?mul(a,1/n):null};
+const unit=a=>{const n=norm(a);return n>0&&Number.isFinite(n)?[a[0]/n,a[1]/n]:null};
 export const R50_TYPES=['pointOnObject','tangentCircle','circularArc','parabola','hyperbola','generalIntersection','transformCopy','locus','fixedLength','fixedAngle','triangleCenter'];
 export const R50_POINT_TYPES=['pointOnObject','generalIntersection','triangleCenter'];
 export const R50_CURVE_TYPES=['circularArc','parabola','hyperbola','transformCopy','locus','fixedAngle'];
@@ -42,10 +42,12 @@ export const CENTER_KINDS=['centroid','circumcenter','incenter','orthocenter','e
  * minimum radius: a small, well-conditioned triangle is still a circle.
  */
 export function circum(p){if(!Array.isArray(p)||p.length!==3||!p.every(coord))return null;
- const [a,b,c]=p,u=sub(b,a),v=sub(c,a),lu=norm(u),lv=norm(v),det=2*cross(u,v);
- if(!(lu>0&&lv>0)||!Number.isFinite(det)||Math.abs(det)<=2e-9*lu*lv)return null;
- const u2=dot(u,u),v2=dot(v,v);
- const x=(u2*v[1]-v2*u[1])/det,y=(v2*u[0]-u2*v[0])/det,center=add(a,[x,y]),radius=Math.hypot(x,y);
+ const [a,b,c]=p,u=sub(b,a),v=sub(c,a),lu=norm(u),lv=norm(v);
+ if(!(lu>0&&lv>0))return null;
+ const un=[u[0]/lu,u[1]/lu],vn=[v[0]/lv,v[1]/lv],det=2*cross(un,vn);
+ if(!Number.isFinite(det)||Math.abs(det)<=2e-9)return null;
+ // Solve the perpendicular bisector equations with unit normals.
+ const x=(lu*vn[1]-lv*un[1])/det,y=(lv*un[0]-lu*vn[0])/det,center=add(a,[x,y]),radius=Math.hypot(x,y);
  return coord(center)&&finite(radius)&&radius>0?{center,radius}:null;
 }
 export function triangleCenter(p,kind){if(!p||p.length!==3||!p.every(coord))return null;
@@ -53,12 +55,12 @@ export function triangleCenter(p,kind){if(!p||p.length!==3||!p.every(coord))retu
  if(kind==='centroid')return mul(add(add(a,b),c),1/3);
  if(kind==='circumcenter')return C?.center||null;
  if(kind==='orthocenter')return C?sub(add(add(a,b),c),mul(C.center,2)):null;
- if(kind==='incenter'&&C&&per>0)return mul(add(add(mul(a,sa),mul(b,sb)),mul(c,sc)),1/per);
+ if(kind==='incenter'&&C&&per>0)return add(add(mul(a,sa/per),mul(b,sb/per)),mul(c,sc/per));
  if(['excenterA','excenterB','excenterC'].includes(kind)&&C){
   const i={excenterA:0,excenterB:1,excenterC:2}[kind],w=[sa,sb,sc].map((v,j)=>j===i?-v:v),den=w[0]+w[1]+w[2];
   // Negative barycentric weight at the chosen opposite vertex.
   // Flipping the numerator and denominator gives the usual excenter.
-  if(Math.abs(den)>1e-12*per)return mul(add(add(mul(a,w[0]),mul(b,w[1])),mul(c,w[2])),1/den);
+  if(Math.abs(den)>1e-12*per)return add(add(mul(a,w[0]/den),mul(b,w[1]/den)),mul(c,w[2]/den));
  }
  return null;
 }
@@ -74,12 +76,12 @@ export function parabolaPoints(focus,line,count=120){if(!coord(focus)||!line||!c
  if(!(distance>0))return [];
  const axis=unit(sep),side=left(axis),vertex=mul(add(focus,foot),.5),p=distance/2;
  const span=distance<0.6?5*distance:Math.min(30,Math.max(3,5*distance));
- return Array.from({length:count+1},(_,i)=>{const s=(2*i/count-1)*span;return add(add(vertex,mul(side,s)),mul(axis,s*s/(4*p)));}).filter(coord);
+ return Array.from({length:count+1},(_,i)=>{const s=(2*i/count-1)*span;return add(add(vertex,mul(side,s)),mul(axis,s*(s/(4*p))));}).filter(coord);
 }
 export function hyperbolaPoints(points,count=128){if(!points?.every(coord)||points.length!==3)return [];
  const [f,g,on]=points,mid=mul(add(f,g),.5),c=norm(sub(g,f))/2;if(!(c>0))return [];
  const a=Math.abs(norm(sub(on,f))-norm(sub(on,g)))/2;if(!(a>0&&a<c)||!(c-a>64*Number.EPSILON*c))return [];
- const b=Math.sqrt(c*c-a*a),axis=unit(sub(g,f)),perp=left(axis);
+ const b=c*Math.sqrt(((c-a)/c)*(1+a/c)),axis=unit(sub(g,f)),perp=left(axis);
  // The selected third point determines the displayed branch.
  const sgn=dot(sub(on,mid),axis)>=0?1:-1;
  return Array.from({length:count+1},(_,i)=>{const t=10*(i/count-.5);return add(add(mid,mul(axis,sgn*a*Math.cosh(t))),mul(perp,b*Math.sinh(t)));}).filter(coord);
@@ -88,14 +90,14 @@ export function projectToCurve(world,path,closed=false){if(!coord(world)||!Array
  // Ray/line supports are unbounded even though rendered samples are finite.
  if(path.domain==='ray'||path.domain==='infinite'){
   const a=path[0],b=path[1],v=sub(b,a),length=norm(v);if(!(length>0))return null;
-  const t=dot(sub(world,a),v)/(length*length),parameter=path.domain==='ray'?Math.max(0,t):t;
+  const t=dot(sub(world,a),unit(v))/length,parameter=path.domain==='ray'?Math.max(0,t):t;
   return {parameter,position:add(a,mul(v,parameter))};
  }
  let best=null,total=0;const segments=[];
  for(let i=1;i<path.length+(closed?1:0);i++){
   const a=path[i-1],b=path[i%path.length];if(!coord(a)||!coord(b))continue;
   const d=sub(b,a),length=norm(d);if(!(length>0))continue;
-  const t=Math.max(0,Math.min(1,dot(sub(world,a),d)/(length*length))),p=add(a,mul(d,t)),dist=norm(sub(world,p));
+  const t=Math.max(0,Math.min(1,dot(sub(world,a),unit(d))/length)),p=add(a,mul(d,t)),dist=norm(sub(world,p));
   segments.push({a,b,length,offset:total});if(!best||dist<best.dist)best={p,dist,length,t,offset:total};total+=length;
  }
  return best&&total>0?{parameter:(best.offset+best.length*best.t)/total,position:best.p}:null;
@@ -133,14 +135,14 @@ export function circleTangents(point,circle){
  if(!coord(point)||!coord(circle?.center)||!finite(circle.radius)||!(circle.radius>0))return [];
  const w=sub(point,circle.center),d=norm(w),r=circle.radius;
  if(!(d>0)||!finite(d))return [];
- const radialTolerance=32*Number.EPSILON*Math.max(d,r,1e-12);
+ const radialTolerance=32*Number.EPSILON*Math.max(d,r);
  if(d<r-radialTolerance)return [];
  // On-circle tangency is a *single* line, with its foot at the source point.
  if(Math.abs(d-r)<=radialTolerance)return [add(circle.center,mul(w,r/d))];
- const d2=d*d,r2=r*r,factor=r2/d2;
+ const direction=unit(w),ratio=r/d;
  // Factor the near-tangency discriminant to avoid catastrophic cancellation.
- const offset=r*Math.sqrt(Math.max(0,(d-r)*(d+r)))/d2;
- return [-1,1].map(sign=>add(circle.center,add(mul(w,factor),mul(left(w),sign*offset))));
+ const offset=r*Math.sqrt(Math.max(0,((d-r)/d)*(1+ratio)));
+ return [-1,1].map(sign=>add(circle.center,add(mul(direction,r*ratio),mul(left(direction),sign*offset))));
 }
 export function transformPoint(p,mode,source,amount,other){if(!coord(p)||!coord(source))return null;
  let result=null;
@@ -435,9 +437,10 @@ export function r50SourceShape(o,resolver,count=120,pathCache=null){if(!o)return
    return Array.from({length:count+1},(_,i)=>[c[0]+rx*Math.cos(tau*i/count),c[1]+ry*Math.sin(tau*i/count)]);
   }
   if(p.length!==3)return [];
-  const [f,g,q]=p;if(![f,g,q].every(coord))return [];const mid=mul(add(f,g),.5),axis=unit(sub(g,f))||[1,0];
-  const c=norm(sub(g,f))/2,a=(norm(sub(q,f))+norm(sub(q,g)))/2,b=Math.sqrt(Math.max(0,a*a-c*c));if(!(b>0))return [];
-  const perp=left(axis);return Array.from({length:count+1},(_,i)=>add(add(mid,mul(axis,a*Math.cos(tau*i/count))),mul(perp,b*Math.sin(tau*i/count))));
+  if(!p.every(coord))return [];
+  const e=focalEllipseParameters(p);if(!e)return [];
+  const mid=[e.cx,e.cy],axis=[Math.cos(e.angle),Math.sin(e.angle)],perp=left(axis);
+  return Array.from({length:count+1},(_,i)=>add(add(mid,mul(axis,e.rx*Math.cos(tau*i/count))),mul(perp,e.ry*Math.sin(tau*i/count))));
  }
  if(o.type==='freehand'){
   // Shaped Free Curves share the same geometric path semantics as native

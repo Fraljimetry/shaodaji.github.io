@@ -1,35 +1,35 @@
 import {createDependencyGraph,sliderDependents,effectivelyLocked,lockedObjectIds} from './dependency_graph.mjs?cut=round311';
 import {createDocumentHistory,commitDocumentChange} from './document_history.mjs?cut=round315';
 import {plotCapability,plotState,MIN_RASTER_RESOLUTION} from './plot_capabilities.mjs?cut=round308';
-import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round315';
-import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round315';
-import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round315';
+import {createPropertyControls,rangeHint,numericExpression} from './property_controls.mjs?cut=round332';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round331';
+import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round331';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
-import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
-import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round308';
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round308';
-import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
-import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round315';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round315';
+import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round329';
+import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round327';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round327';
+import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round325';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round331';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round331';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {AXIS_OBJECTS,TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round315';
+import {AXIS_OBJECTS,TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round331';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round315';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round315';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round331';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round331';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round315';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round308';
+import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round331';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round327';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round315';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round332';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
-import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round315';
+import {tikzGeometryIssue,tikzPoint,imageExportState,isolatedRenderStatus,projectedArrow} from './export_fidelity.mjs?cut=round331';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
 import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round315';
-import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round315';
+import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round331';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round301';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
-import {createPlotArtifactCache,plotArtifactKey} from './plot_cache.mjs?cut=round312';
+import {createPlotArtifactCache,plotArtifactKey} from './plot_cache.mjs?cut=round331';
 import {PANEL_MIN, PANEL_MAX, validPanelWidth, fitPanels} from './panel_sizes.mjs?cut=round54';
 import {PROPERTY_DOCK_DEFAULT, normalizePropertiesLayout, fitDockPropertiesHeight} from './properties_layout.mjs?cut=round54';
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
@@ -3661,7 +3661,14 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
  let old=null;
  try{old=localStorage.getItem(STORAGE);lastStored=old;saveStatus(old?'Recovered local project':'Local backup ready');}catch(e){saveStatus('Not saved locally · download JSON');notice('Browser storage is restricted: use Save to download JSON.');}
  if(old){try{doc=upgradeRecoveredLegacyPalette(validateDoc(JSON.parse(old)));if(doc.scene3d)enforce3DVisibility(doc.scene3d);}catch(e){setStorageConflict(true,'corrupt');notice('Recovered empty editor. Corrupt saved data is preserved until you explicitly choose Keep this tab.');}}
- try{const stored=JSON.parse(localStorage.getItem(TRASH)||'[]');if(Array.isArray(stored))trash=stored.filter(e=>e&&Array.isArray(e.objects)&&Number.isFinite(e.at)).slice(0,20);}catch{}renderTrash();
+ // Reject whole malformed deletion snapshots rather than restoring partial dependency sets.
+ try{const stored=JSON.parse(localStorage.getItem(TRASH)||'[]');if(Array.isArray(stored)){
+  const record=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
+  const records=items=>Array.isArray(items)&&items.every(record);
+  trash=stored.filter(e=>record(e)&&Number.isFinite(e.at)&&records(e.objects)
+   &&(e.plots3d===undefined||records(e.plots3d))&&(e.sliders===undefined||records(e.sliders))
+   &&(e.objects.length>0||e.plots3d?.length>0||e.sliders?.length>0)).slice(0,20);
+ }}catch{}renderTrash();
  const mathjax=window.MathJax;
  if(mathjax?.startup?.promise)mathjax.startup.promise.then(()=>{renderAll();}).catch(e=>notice('LaTeX renderer failed: '+e.message));
  const svg=$('drawing');svg.addEventListener('pointerdown',pointerDown);svg.addEventListener('pointermove',pointerMove);svg.addEventListener('pointerup',pointerUp);svg.addEventListener('pointercancel',pointerUp);svg.addEventListener('lostpointercapture',pointerUp);

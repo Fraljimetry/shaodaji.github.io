@@ -2,13 +2,13 @@ import {createDependencyGraph} from './dependency_graph.mjs?cut=round311';
 import {validRasterResolution,validVectorDensity,validPlotPalette,unexpectedPlotProperties} from './plot_capabilities.mjs?cut=round308';
 import {formatAutomaticName,xmlTextSafe,MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
 export {xmlTextSafe} from './object_naming.mjs?cut=round303';
-import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round254';
-import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round301';
-import {compileRegionCondition} from './region_condition.mjs?cut=round308';
-import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
-import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round315';
-import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round308';
+import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round329';
+import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round325';
+import {compileRegionCondition} from './region_condition.mjs?cut=round327';
+import {distinctPoints,independentEdges,perpendicularHeightNonzero,focalEllipseParameters} from './numeric_geometry.mjs?cut=round325';
+import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round325';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round331';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion} from './plot_modes.mjs?cut=round327';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -163,12 +163,7 @@ const REF_LENGTHS = {midpoint:2,segment:2,arrow:2,line:2,ray:2,perpBisector:2,an
  * Return null rather than producing NaN/Infinity on collapsed input. */
 export function focalEllipse(p){
  if(!Array.isArray(p)||p.length!==3||!p.every(safeCoord))return null;
- const [f1,f2,q]=p,dx=f2[0]-f1[0],dy=f2[1]-f1[1];
- const c=Math.hypot(dx,dy)/2,a=(Math.hypot(q[0]-f1[0],q[1]-f1[1])+Math.hypot(q[0]-f2[0],q[1]-f2[1]))/2;
- if(!Number.isFinite(a)||!Number.isFinite(c)||!(a>c&&a-c>64*Number.EPSILON*a))return null;
- const b=Math.sqrt((a-c)*(a+c)),cx=(f1[0]+f2[0])/2,cy=(f1[1]+f2[1])/2;
- if(!Number.isFinite(b)||b<=0||![cx,cy].every(finite))return null;
- return {cx,cy,rx:a,ry:b,angle:Math.atan2(dy,dx)};
+ return focalEllipseParameters(p);
 }
 /** Unique circle through three noncollinear world points. Translated coordinates
  * avoid cancellation of large absolute positions, and near-collinear clicks
@@ -401,7 +396,9 @@ export function intersectLineCircle(line,circle){
  const perpendicular=Math.abs(qx*dy-qy*dx)/unit;
  if(!Number.isFinite(perpendicular)||perpendicular>circle.radius)return empty;
  const gap=circle.radius-perpendicular;
- const h=Math.sqrt(gap*(circle.radius+perpendicular));
+ const squared=gap*(circle.radius+perpendicular);
+ // Preserve ordinary rounding, but avoid zero/subnormal squared lengths.
+ const h=squared>=2**-1022?Math.sqrt(squared):Math.sqrt(gap)*Math.sqrt(circle.radius+perpendicular);
  const tangent=gap===0;
  const inside=u=>inStraightDomain(line,u);
  const point=u=>{
@@ -423,12 +420,14 @@ export function intersectCircles(a,b){
  const dx=b.center[0]-a.center[0],dy=b.center[1]-a.center[1],distance=Math.hypot(dx,dy),r=a.radius,R=b.radius;
  if(!Number.isFinite(distance)||distance===0||distance>r+R||distance<Math.abs(r-R))return none;
  const ux=dx/distance,uy=dy/distance;
- const along=(r-R)*(r+R)/(2*distance)+distance/2;
+ const along=((r-R)/distance)*((r+R)/2)+distance/2;
  // Factored radical is stable at both internal/external tangencies, including
  // near-concentric equal circles; it avoids subtracting nearly equal squares.
- const outer=(r+R-distance)*(r+R+distance);
- const delta=Math.abs(r-R),inner=(distance-delta)*(distance+delta);
- const height=Math.sqrt(Math.max(0,outer))*Math.sqrt(Math.max(0,inner))/(2*distance);
+ const delta=Math.abs(r-R);
+ // Normalize the inner factors before multiplication and take the outer
+ // square roots separately: squared microscopic lengths can underflow.
+ const height=(Math.sqrt(Math.max(0,r+R-distance))*Math.sqrt(r+R+distance)/2)
+  *Math.sqrt(Math.max(0,(distance-delta)/distance))*Math.sqrt(1+delta/distance);
  if(!Number.isFinite(along)||!Number.isFinite(height))return none;
  const tangent=height===0;
  const middle=[a.center[0]+along*ux,a.center[1]+along*uy];
@@ -749,13 +748,13 @@ export function validateDoc(raw){
  validateAlgebra(d);
  const ids=new Set(),names=new Set(),roleObjects=new Map(d.objects.map(o=>[o?.id,o]));let max=0;
  for(const o of d.objects){
-  if(!o||typeof o!=='object'||!/^o[1-9]\d*$/.test(o.id)||ids.has(o.id)||!SUPPORTED.includes(o.type)||typeof o.name!=='string'||!o.name.trim()||o.name.length>MAX_OBJECT_NAME_LENGTH)throw Error('Invalid or repeated object ID/type/name.');
+  if(!o||typeof o!=='object'||typeof o.id!=='string'||!/^o[1-9]\d*$/.test(o.id)||ids.has(o.id)||!SUPPORTED.includes(o.type)||typeof o.name!=='string'||!o.name.trim()||o.name.length>MAX_OBJECT_NAME_LENGTH)throw Error('Invalid or repeated object ID/type/name.');
   if(!xmlTextSafe(o.name))throw Error('Object name contains characters illegal in SVG XML.');
   if(names.has(o.name))throw Error('Duplicate object name: '+o.name);
   if(typeof o.hidden!=='boolean'||typeof o.locked!=='boolean')throw Error('Invalid visibility or lock flag.');
   const numericId=Number(o.id.slice(1));if(!Number.isSafeInteger(numericId))throw Error('Object ID outside safe integer range.');
   ids.add(o.id);names.add(o.name);max=Math.max(max,numericId);
-  if(!o.style||!HEX.test(o.style.stroke)||!HEX.test(o.style.fill)||!finite(o.style.width)||o.style.width<0.1||o.style.width>100||!finite(o.style.opacity)||o.style.opacity<0||o.style.opacity>1)throw Error('Invalid object style or color.');
+  if(!o.style||(typeof o.style.stroke!=='string'||!HEX.test(o.style.stroke))||(typeof o.style.fill!=='string'||!HEX.test(o.style.fill))||!finite(o.style.width)||o.style.width<0.1||o.style.width>100||!finite(o.style.opacity)||o.style.opacity<0||o.style.opacity>1)throw Error('Invalid object style or color.');
   if(R50_TYPES.includes(o.type)){
    if(o.type==='pointOnObject'&&(!finite(o.parameter)||o.parameter<0||o.parameter>1))throw Error('Invalid constrained point parameter.');
    if(o.type==='pointOnObject'&&o.distance!==undefined&&(!finite(o.distance)||
@@ -860,7 +859,7 @@ export function validateDoc(raw){
 
  }
  if(!Number.isFinite(max)||d.nextId<=max)throw Error('Invalid nextId counter.');
- if(!HEX.test(d.settings.background)||!HEX.test(d.settings.stroke)||!HEX.test(d.settings.fill))throw Error('Invalid scene color.');
+ if((typeof d.settings.background!=='string'||!HEX.test(d.settings.background))||(typeof d.settings.stroke!=='string'||!HEX.test(d.settings.stroke))||(typeof d.settings.fill!=='string'||!HEX.test(d.settings.fill)))throw Error('Invalid scene color.');
  if(!finite(d.settings.snapStep)||d.settings.snapStep<1e-6||d.settings.snapStep>1000)throw Error('Snap interval must be between 0.000001 and 1000.');
  if(!['infinite','a3','a4','a5','letter','legal','tabloid','square','widescreen'].includes(d.settings.page)||!['off','gentle','medium','strong','ultra'].includes(d.settings.correction)||typeof d.settings.grid!=='boolean'||typeof d.settings.snap!=='boolean'||typeof d.settings.showAxes!=='boolean')throw Error('Invalid document settings.');
  if(!finite(d.settings.width)||d.settings.width<0.1||d.settings.width>100||!finite(d.settings.opacity)||d.settings.opacity<0||d.settings.opacity>1||!finite(d.settings.pointSize)||d.settings.pointSize<1||d.settings.pointSize>100)throw Error('Invalid drawing defaults.');

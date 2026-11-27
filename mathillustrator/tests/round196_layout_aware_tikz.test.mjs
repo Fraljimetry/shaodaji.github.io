@@ -34,3 +34,16 @@ test('Round 196: irregular intervals use median and remain semantic round-trip s
  append(d,{type:'morphism',refs:[a.id,c.id],text:'h'});
  const tex=exportTikzCd(d);assert.match(tex,/column sep=115\.2pt/);assert.equal(canExportTikzCd(d),true);
 });
+
+test('semantic round-trip uses exported grid spacing rather than default cell dimensions',()=>{
+ for(const [dx,dy] of [[.5,.5],[1,1],[8,6],[20,20]]){
+  const d=newDoc(),a=append(d,{type:'node',xy:[0,dy],text:'A'}),b=append(d,{type:'node',xy:[dx,dy],text:'B'}),c=append(d,{type:'node',xy:[dx,0],text:'C'});
+  append(d,{type:'morphism',refs:[a.id,b.id],text:'f'});
+  append(d,{type:'morphism',refs:[b.id,c.id],text:'g'});
+  const tex=exportTikzCd(d),back=importTikzCd(tex);
+  const nodes=back.objects.filter(o=>o.type==='node');
+  assert.equal(nodes.length,3);assert.equal(back.objects.filter(o=>o.type==='morphism').length,2);
+  assert.equal(canExportTikzCd(d),true);
+  assert.ok(Math.abs(nodes[1].xy[0]-Math.max(12,Math.min(360,dx*28.8))/28.8)<1e-10);
+ }
+});

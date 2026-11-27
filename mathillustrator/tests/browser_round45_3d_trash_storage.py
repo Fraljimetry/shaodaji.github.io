@@ -49,6 +49,22 @@ def run():
    page.locator('#trash-items button').first.evaluate('e=>e.click()')
    assert page.locator('#trash-count').text_content()=='1'
    assert len(snapshot()['scene3d']['plots'])==1
+   # Corrupt nested records must not abort startup or partially restore a snapshot.
+   malformed=[{'at':1,'objects':[None]}, {'at':2,'objects':[], 'plots3d':[None]},
+              {'at':3,'objects':[], 'sliders':[None]}, {'at':4,'objects':[], 'sliders':{}},
+              {'at':5,'objects':[], 'plots3d':{}}, {'at':6,'objects':[]},
+              {'at':7,'objects':[], 'plots3d':[], 'sliders':[]}]
+   page=browser.new_page(viewport={'width':1350,'height':860})
+   errors=[]
+   page.on('pageerror',lambda err:errors.append(str(err)))
+   seed=malformed+stored
+   page.set_content(html({STORAGE:json.dumps(removedDoc),TRASH:json.dumps(seed)}),wait_until='load')
+   page.wait_for_function("document.querySelector('#trash-count')?.textContent==='1'")
+   assert json.loads(page.evaluate('(key)=>localStorage.getItem(key)',TRASH))==seed
+   page.locator('#trash-items button').first.evaluate('e=>e.click()')
+   assert snapshot()['scene3d']['plots'][0]==original
+   assert not errors, errors
+   assert json.loads(page.evaluate('(key)=>localStorage.getItem(key)',TRASH))==[]
    print('PASS ROUND45_CHROMIUM_STORAGE: deleted implicit persists in saved trash across simulated reload; restore removes entry; collision keeps entry')
   finally:browser.close()
 if __name__=='__main__':run()

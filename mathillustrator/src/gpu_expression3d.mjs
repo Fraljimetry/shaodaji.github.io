@@ -4,7 +4,7 @@
  * Only arithmetic polynomials with small nonnegative integer powers are
  * admitted. No division, functions, implicit names, or GLSL injection.
  */
-import {parseCurveExpression} from './plot_modes.mjs?cut=round308';
+import {parseCurveExpression} from './plot_modes.mjs?cut=round327';
 const N=400;
 const VARS=new Set(['x','y','z']);
 const literal=v=>{

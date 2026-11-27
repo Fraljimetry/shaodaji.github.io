@@ -1,8 +1,8 @@
 import {MAX_OBJECT_NAME_LENGTH,xmlTextSafe} from './object_naming.mjs?cut=round303';
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round308';
-import {compileRegionCondition} from './region_condition.mjs?cut=round308';
-import {parse3DRangeExpression} from './plot3d.mjs?cut=round315';
-import {localizeUI,translated} from './i18n.mjs?cut=round315';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round327';
+import {compileRegionCondition} from './region_condition.mjs?cut=round327';
+import {parse3DRangeExpression} from './plot3d.mjs?cut=round331';
+import {localizeUI,translated} from './i18n.mjs?cut=round332';
 
 export function rangeHint(opts={}){
  if(opts.hint)return opts.hint;

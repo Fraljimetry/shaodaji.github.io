@@ -37,3 +37,10 @@ test('canonical exact translation table has unique keys and preserves common plo
   assert.equal(translated(label,'en'),label);
  }
 });
+
+test('unknown translation keys remain literal, including inherited object keys',()=>{
+ for(const key of ['constructor','__proto__','toString','hasOwnProperty','valueOf']){
+  assert.equal(translated(key,'zh'),key);
+  assert.equal(translated(`Open failed: ${key}`,'zh'),`打开失败：${key}`);
+ }
+});

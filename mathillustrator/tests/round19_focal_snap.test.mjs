@@ -59,3 +59,15 @@ test('Round19 snapping preferences default true, legacy upgrade, and malformed v
  const v=clone(d);delete v.settings.snapObjects;assert.equal(validateDoc(v).settings.snapObjects,true);
  const bad=clone(d);bad.settings.snapObjects='false';assert.throws(()=>validateDoc(bad),/object snapping/);
 });
+
+test('M9 focal ellipse keeps microscopic axes and consistent transformation paths',()=>{
+ for(const s of [1e-200,1e-160,1e-110,1e-9,1,1e6]){
+  const p=[[-2*s,0],[2*s,0],[0,3*s]],e=focalEllipse(p);
+  assert.ok(e,`scale ${s}`);
+  almost(e.rx/s,Math.sqrt(13));almost(e.ry/s,3);
+  const path=r50SourceShape({type:'ellipse'},{line:()=>null,circle:()=>null,points:()=>p},16);
+  assert.equal(path.length,17);almost(path[4][1]/s,3);
+  assert.doesNotThrow(()=>checkNewGeometry('ellipse',p));
+ }
+});
+import {r50SourceShape} from '../src/geometry_round50.mjs';

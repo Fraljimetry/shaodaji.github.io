@@ -67,8 +67,16 @@ const C={
   if(name==='norm')return [r*r,0];
   if(name==='sign')return r===0?[0,0]:[x/r,y/r];
   if(name==='log10'||name==='log2'){const w=C.fun('log',[z]),d=Math.log(name==='log10'?10:2);return [w[0]/d,w[1]/d];}
-  if(name==='log1p')return C.fun('log',[C.add([1,0],z)]);
-  if(name==='expm1')return C.sub(C.fun('exp',[z]),[1,0]);
+  if(name==='log1p'){
+   // Near zero, forming 1+z loses the small real component before log.
+   if(r<.5)return [.5*Math.log1p(2*x+x*x+y*y),Math.atan2(y,1+x)];
+   return C.fun('log',[C.add([1,0],z)]);
+  }
+  if(name==='expm1'){
+   // cos(y)-1 also cancels near zero; use the half-angle identity.
+   if(r<.5)return [Math.expm1(x)*Math.cos(y)-2*Math.sin(y/2)**2,Math.exp(x)*Math.sin(y)];
+   return C.sub(C.fun('exp',[z]),[1,0]);
+  }
   if(name==='cbrt')return C.pow(z,[1/3,0]);
   if(name==='sec'||name==='csc'||name==='cot')return C.div([1,0],C.fun(name==='sec'?'cos':name==='csc'?'sin':'tan',[z]));
   if(name==='asinh')return C.fun('log',[C.add(z,C.fun('sqrt',[C.add(C.mul(z,z),[1,0])]))]);
@@ -321,7 +329,7 @@ export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus
 /** Adaptive screen-space chord-error sampling with conservative pole gaps. */
 export function sampleParametricPlot(fn,start,end,project,{quality='balanced',maxEvaluations=80000}={}){
  if(typeof fn!=='function'||typeof project!=='function'||!valid(start)||!valid(end)||start>=end||Math.abs(start)>1e6||Math.abs(end)>1e6)throw Error('Invalid parameter range.');
- const levels={fast:[180,3],balanced:[420,5],detailed:[850,7]};if(!levels[quality])throw Error('Invalid plotting detail.');
+ const levels={fast:[180,3],balanced:[420,5],detailed:[850,7]};if(!Object.hasOwn(levels,quality))throw Error('Invalid plotting detail.');
  if(!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>1000000)throw Error('Invalid plotting budget.');
  const [steps,depth]=levels[quality],segments=[];let evaluations=0,limited=false,breaks=0,chain=[];
  const flush=()=>{if(chain.length>1)segments.push(chain);chain=[];};
@@ -380,7 +388,7 @@ export function sampleImplicitPlot(fn,xAtPx,yAtPx,width,height,{quality='balance
    let lo=a,hi=b,fl=fa,fh=fb;
    for(let k=0;k<12;k++){
     const mid=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2],fm=at(mid[0],mid[1]);
-    if(!valid(fm))break;
+    if(!valid(fm)){edgeCache.set(key,null);return null;}
     if(fm===0){result=mid;break;}
     if((fl<0)===(fm<0)){lo=mid;fl=fm;}else{hi=mid;fh=fm;}
    }

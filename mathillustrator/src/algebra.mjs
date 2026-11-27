@@ -23,7 +23,7 @@ export function sliderPlaybackValue(slider,elapsedSeconds,startValue=slider.valu
  const value=Math.min(max,Math.max(min,Number((min+index*step).toPrecision(12))));
  return {value,finished:mode==='once'&&travel>=1};
 }
-export function validSliderName(name){return NAME.test(name)&&!Object.hasOwn(FUNCTIONS,name.toLowerCase())&&!Object.hasOwn(CONSTANTS,name.toLowerCase())&&name.length<=40;}
+export function validSliderName(name){return typeof name==='string'&&NAME.test(name)&&!Object.hasOwn(FUNCTIONS,name.toLowerCase())&&!Object.hasOwn(CONSTANTS,name.toLowerCase())&&name.length<=40;}
 /** Split function arguments only at top-level commas, not inside nested calls.
  * Reject unmatched parentheses here rather than accidentally creating a partial object. */
 export function splitAlgebraArguments(source){
@@ -101,10 +101,11 @@ export function bindMeasurement(doc,object,field,expression){
  return object;
 }
 export function validateAlgebra(doc){
+ if(doc.algebra!==undefined&&(!doc.algebra||typeof doc.algebra!=='object'||Array.isArray(doc.algebra)||!Array.isArray(doc.algebra.sliders)))throw Error('Invalid algebra section.');
  const sliders=doc.algebra?.sliders??[];
  if(!Array.isArray(sliders)||sliders.length>64)throw Error('Too many sliders.');
  const seen=new Set();const values={};
- for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||(s.color!==undefined&&(!/^#[0-9a-fA-F]{6}$/.test(s.color)))||(s.opacity!==undefined&&(!Number.isFinite(s.opacity)||s.opacity<0||s.opacity>1))||(s.border!==undefined&&typeof s.border!=='boolean')||(s.playSpeed!==undefined&&(!Number.isFinite(s.playSpeed)||s.playSpeed<0.05||s.playSpeed>10))||(s.playMode!==undefined&&!SLIDER_PLAY_MODES.includes(s.playMode))||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
+ for(const s of sliders){if(!s||!validSliderName(s.name)||seen.has(s.name)||!Number.isFinite(s.min)||!Number.isFinite(s.max)||!Number.isFinite(s.step)||!Number.isFinite(s.value)||s.min>=s.max||s.step<=0||s.step>1e6||s.min< -1e6||s.max>1e6||s.value<s.min-1e-8||s.value>s.max+1e-8||typeof s.visible!=='boolean'||(s.locked!==undefined&&typeof s.locked!=='boolean')||(s.color!==undefined&&(typeof s.color!=='string'||!/^#[0-9a-fA-F]{6}$/.test(s.color)))||(s.opacity!==undefined&&(!Number.isFinite(s.opacity)||s.opacity<0||s.opacity>1))||(s.border!==undefined&&typeof s.border!=='boolean')||(s.playSpeed!==undefined&&(!Number.isFinite(s.playSpeed)||s.playSpeed<0.05||s.playSpeed>10))||(s.playMode!==undefined&&!SLIDER_PLAY_MODES.includes(s.playMode))||!Array.isArray(s.xy)||s.xy.length!==2||s.xy.some(v=>!Number.isFinite(v)||Math.abs(v)>1e6))throw Error('Invalid slider definition.');
   if(doc.objects?.some(o=>o.name===s.name))throw Error('Slider and object names must be distinct.');
   seen.add(s.name);values[s.name]=s.value;
  }

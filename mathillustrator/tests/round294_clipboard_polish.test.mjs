@@ -45,3 +45,25 @@ test('symbolic coordinate expressions remain unchanged when copied',()=>{
  const duplicate=doc.objects.find(o=>o.id===id);
  assert.deepEqual(doc.objects.find(o=>o.id===duplicate.refs[0]).xyExpr,['1+1','2*2']);
 });
+
+test('Paste in Place retains authored numeric expressions exactly through JSON round trip',()=>{
+ const doc=newDoc(),point=append(doc,{type:'point',xy:[1,2],xyExpr:['1.00','2e0']});
+ const [id]=pasteObjectSelection(doc,captureObjectSelection(doc,[point.id]),{offset:0});
+ const copy=validateDoc(JSON.parse(JSON.stringify(doc))).objects.find(o=>o.id===id);
+ assert.deepEqual(copy.xyExpr,point.xyExpr);assert.deepEqual(copy.xy,point.xy);
+ assert.notEqual(copy.id,point.id);
+});
+
+test('clipboard rejects empty, repeated and unrelated roots without changing the document',()=>{
+ const {doc,seg}=fixture(),clip=captureObjectSelection(doc,[seg.id]);
+ const before=JSON.stringify(doc);
+ for(const roots of [[],[seg.id,seg.id]]){
+  assert.throws(()=>pasteObjectSelection(doc,{...clip,roots}),/clipboard root/i);
+  assert.equal(JSON.stringify(doc),before);
+ }
+ const unrelated={...clip,objects:[...clip.objects,{id:'o999',type:'point',name:'Q',xy:[7,8]}]};
+ assert.throws(()=>pasteObjectSelection(doc,unrelated),/unrelated clipboard object/i);
+ assert.equal(JSON.stringify(doc),before);
+ const [id]=pasteObjectSelection(doc,clip,{offset:0});
+ assert.equal(doc.objects.find(o=>o.id===id).type,'segment');
+});

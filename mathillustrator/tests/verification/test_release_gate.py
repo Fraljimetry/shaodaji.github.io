@@ -61,6 +61,8 @@ class GateContractTests(unittest.TestCase):
         expected_full = {
             'browser-recent-freehand': 'tests/browser_round146_freehand_shapes.py',
             'browser-recent-panel-resize': 'tests/browser_panel_resize_current.py',
+            'browser-tikzcd-layout': 'tests/browser_round196_layout_aware_tikz.py',
+            'browser-runtime-localization': 'tests/browser_round174_i18n_runtime.py',
             'browser-supported-exports': 'tests/browser_round51f_exports_plotglyphs.py',
         }
         for profile in ('quick', 'local', 'release'):

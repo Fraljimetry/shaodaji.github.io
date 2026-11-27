@@ -784,6 +784,7 @@ const zh=Object.freeze({
  "Invalid implicit resolution.": "无效的隐式曲线分辨率。"
 });
 
+const lookup=(s)=>Object.hasOwn(zh,s)?zh[s]:s;
 const originalText=new WeakMap(),originalAttrs=new WeakMap();
 const skip='script,style,svg,.objects,#toast,#render-info,#coords,#autosave-info,#object-count,#trash-count,#mode-label,#command,#drawing';
 function translateTextNode(node,language){
@@ -816,7 +817,7 @@ export function localizeUI(root,language='en'){
 export function translated(s,language='en'){
  if(language!=='zh')return s;
  const range=/^(Range|Minimum|Maximum): ([^\n]+)$/.exec(s);
- if(range)return (zh[range[1]]||range[1])+'：'+range[2];
+ if(range)return lookup(range[1])+'：'+range[2];
  const bounds=/^Value must be within ([^\n]+)\.$/.exec(s);
  if(bounds)return '数值必须位于 '+bounds[1]+' 范围内。';
  const labelLimit=/^Label exceeds (\d+) characters\. Nothing was added\.$/.exec(s);
@@ -831,8 +832,8 @@ export function translated(s,language='en'){
  if(status3d)return `${status3d[1]} 个三维图形 · ${status3d[2]==='rendering…'?translated(status3d[2],language):status3d[2].replace(' ms',' 毫秒')}${status3d[3]?' · '+translated(status3d[3],language):''}${status3d[4]?' · '+translated(status3d[4],language):''}`;
  if(s.startsWith('Animation stopped: '))return '动画已停止：'+translated(s.slice('Animation stopped: '.length),language);
  const prefixed=/^(Local save unavailable|Autosave unavailable|Save coordination failed|3D rendering failed|Label move rejected|Move rejected|Open failed|Import failed|Cannot load other tab|LaTeX renderer failed): (.*)$/.exec(s);
- if(prefixed)return (zh[prefixed[1]]||prefixed[1])+'：'+(zh[prefixed[2]]||prefixed[2]);
- return zh[s]||s;
+ if(prefixed)return lookup(prefixed[1])+'：'+lookup(prefixed[2]);
+ return lookup(s);
 }
 export const supportedLanguages=['en','zh'];
 

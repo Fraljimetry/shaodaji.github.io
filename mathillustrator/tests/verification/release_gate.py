@@ -123,6 +123,8 @@ def command_specs(profile, cases):
             ('browser-legacy-2d-sweep', [py, 'tests/browser_round69_2d_sweep.py'], 150, 'browser'),
             ('browser-inversion-glyph', [py, 'tests/browser_round57_inversion_glyph.py'], 120, 'browser'),
             ('browser-derived-geometry', [py, 'tests/browser_round51h_derived_geometry.py'], 150, 'browser'),
+            ('browser-tikzcd-layout', [py, 'tests/browser_round196_layout_aware_tikz.py'], 120, 'browser'),
+            ('browser-runtime-localization', [py, 'tests/browser_round174_i18n_runtime.py'], 120, 'browser'),
             ('browser-tikzcd-export', [py, 'tests/browser_round187_tikzcd_export.py'], 120, 'browser'),
         ]
     return checks

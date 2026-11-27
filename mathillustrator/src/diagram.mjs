@@ -1,5 +1,5 @@
 /** Restricted, deterministic tikz-cd interchange. Never evaluates TeX. */
-import {newDoc, append, PRESETS} from './model.mjs?cut=round315';
+import {newDoc, append, PRESETS} from './model.mjs?cut=round331';
 const CELL_X=3.5,CELL_Y=2.4;
 // Match the 2D canvas's reference scale (48 px per world unit), while
 // keeping a 3x4 diagram within a normal LaTeX page.
@@ -173,8 +173,10 @@ export function exportTikzCd(doc){
  let recovered;
  try{recovered=importTikzCd(result);}catch(e){fail('export is not round-trip safe: '+e.message);}
  const recoveredNodes=new Map(),recoveredIds=new Map();
+ const recoveredX=columnSep?parseFloat(columnSep)/PT_PER_WORLD:CELL_X;
+ const recoveredY=rowSep?parseFloat(rowSep)/PT_PER_WORLD:CELL_Y;
  for(const obj of recovered.objects){if(obj.type!=='node')continue;
-  const r=Math.round(-obj.xy[1]/CELL_Y),c=Math.round(obj.xy[0]/CELL_X),key=`${r}:${c}`;
+  const r=Math.round(-obj.xy[1]/recoveredY),c=Math.round(obj.xy[0]/recoveredX),key=`${r}:${c}`;
   recoveredNodes.set(key,obj.text);recoveredIds.set(obj.id,key);
  }
  if(recoveredNodes.size!==nodes.length)fail('node label is not round-trip safe.');

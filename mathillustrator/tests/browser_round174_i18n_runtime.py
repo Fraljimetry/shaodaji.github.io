@@ -15,7 +15,7 @@ with sync_playwright() as pw:
             dialogs=[]
             page.on('dialog',lambda dialog: (dialogs.append((dialog.type,dialog.message)),dialog.dismiss()))
             page.locator('#new').evaluate('e=>e.click()')
-            assert dialogs and dialogs[-1][0]=='confirm' and '新建插图' in dialogs[-1][1],(width,dialogs)
+            assert dialogs and dialogs[-1][0]=='confirm' and dialogs[-1][1]=='新建绘图？如有需要，请先下载当前项目。',(width,dialogs)
             page.locator('#scene3d-enable').evaluate("e=>{e.checked=true;e.dispatchEvent(new Event('change',{bubbles:true}))}")
             assert page.locator('#scene3d-detail').get_attribute('title').startswith('范围：')
             page.locator('#ui-language').select_option('en')

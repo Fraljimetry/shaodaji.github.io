@@ -1,5 +1,5 @@
 import {createDependencyGraph,objectDependencies} from './dependency_graph.mjs?cut=round311';
-import {append,clone,validateDoc} from './model.mjs?cut=round315';
+import {append,clone,validateDoc} from './model.mjs?cut=round331';
 
 /** In-editor 2D clipboard. Snapshot the transitive parents of each selected
  * object so copies can be moved independently of the originals. Nothing is
@@ -23,12 +23,14 @@ export function pasteObjectSelection(doc,clip,{offset=0.5}={}){
   if(!original||typeof original.id!=='string'||!/^o[1-9]\d*$/.test(original.id)||clipboardIds.has(original.id))throw Error('Invalid clipboard object identity.');
   clipboardIds.add(original.id);
  }
+ if(!clip.roots.length||new Set(clip.roots).size!==clip.roots.length)throw Error('Invalid clipboard root selection.');
  if(clip.roots.some(id=>!clipboardIds.has(id)))throw Error('Missing clipboard root.');
  for(const original of clip.objects){
   for(const ref of objectDependencies(original)){
    if(!clipboardIds.has(ref))throw Error('Clipboard contains external dependency.');
   }
  }
+ if(createDependencyGraph(clip.objects).ancestors(clip.roots).size!==clipboardIds.size)throw Error('Unrelated clipboard object.');
  const before=clone(doc),mapped=new Map();
  try{
   for(const original of clip.objects){
@@ -39,7 +41,7 @@ export function pasteObjectSelection(doc,clip,{offset=0.5}={}){
    delete copy.id;delete copy.name;
    // Only intrinsically positioned geometry may be translated. Driven points
    // retain their expressions and update through their copied parents.
-   if(['point','node','text'].includes(copy.type)&&Array.isArray(copy.xy)){
+   if(offset!==0&&['point','node','text'].includes(copy.type)&&Array.isArray(copy.xy)){
     if(!copy.xyExpr)copy.xy=[copy.xy[0]+offset,copy.xy[1]+offset];
     else if(Array.isArray(copy.xyExpr)&&copy.xyExpr.length===2&&copy.xyExpr.every(v=>typeof v==='string'&&v.trim()!==''&&Number.isFinite(Number(v)))){
      // Algebra-created constant points retain coordinate expressions. Moving
@@ -49,7 +51,7 @@ export function pasteObjectSelection(doc,clip,{offset=0.5}={}){
     }
     // Nonconstant expressions keep their exact formula and dependency semantics.
    }
-   if(copy.type==='freehand'){
+   if(offset!==0&&copy.type==='freehand'){
     for(const field of ['path','rawPath'])if(Array.isArray(copy[field]))copy[field]=copy[field].map(([x,y])=>[x+offset,y+offset]);
    }
    const added=append(doc,copy);mapped.set(oldId,added.id);

@@ -20,7 +20,7 @@ import {regularPolygonVertices,shapeVerticesFromPoints,checkNewGeometry} from '.
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from '../src/numeric_geometry.mjs';
 
 test('R87 numerical predicates are scale-equivariant (no fixed world-unit floor)',()=>{
- for(const scale of [1e-12,1e-9,1,1e6]){
+ for(const scale of [1e-200,1e-160,1e-12,1e-9,1,1e6]){
   const a=[0,0],b=[scale,0],c=[scale,scale/2],flat=[scale*1.4,0];
   assert.equal(distinctPoints(a,b),true);
   assert.equal(independentEdges(a,b,c),true);
@@ -30,7 +30,7 @@ test('R87 numerical predicates are scale-equivariant (no fixed world-unit floor)
  }
 });
 test('R87 valid microscopic regular polygons and quadrilaterals survive model and path resolution',()=>{
- for(const scale of [1e-12,1e-9,1,1e6]){
+ for(const scale of [1e-200,1e-160,1e-12,1e-9,1,1e6]){
   const p=[[0,0],[scale,0],[scale,scale/2]];
   assert.equal(regularPolygonVertices(p[0],p[1],5).length,5);
   assert.equal(shapeVerticesFromPoints('rectangle',p).length,4);
