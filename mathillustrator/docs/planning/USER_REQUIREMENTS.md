@@ -2412,3 +2412,9 @@ The supported Mesh detail range is **8–96**. Older project JSON with integer d
 - Implicit scalar coloring now includes per-object Color scheme and Resolution controls placed above the drawing-region bounds, using the latest incremental overlay as the required future baseline.
 
 - 2D and 3D complex domain coloring share Phase + contour lines (dyadic modulus levels), Phase + checkerboard (logarithmic modulus and argument sectors), and Phase sectors (12 equal sectors), while retaining all prior palettes, defaults, and JSON compatibility. Finite complex components must produce finite RGB channels even when their modulus overflows.
+
+### Plot naming and validation consistency
+- Shared 2D/3D naming conventions and name validation; unique names within each scene, consistent mathematical component notation, Drawing region, palette ordering, lock state and accessibility labels in both languages.
+- All eight approved scalar palettes, with zero-anchored diverging colors and exact sign coloring. Legacy Heat map remains readable without changing its appearance.
+- Both raster plot modes use the same 32–1536 resolution range and 1536² pixel ceiling independently of the curve budget. Overridden/inapplicable controls must not be editable; saved palette choices survive toggles and history. Opacity spans 0–1 in 2D and 3D. Distinct width/density/coordinate limits remain intentional. A solid 2D complex raster would discard all complex information, so no Single color option is added there.
+- Maintain table-driven browser checks of plot modes, range state, localization, locking, validation, history and import; validate applicable fields and schema compatibility.

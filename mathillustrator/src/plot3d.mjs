@@ -1,8 +1,9 @@
-import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round302';
+import {formatAutomaticName,xmlTextSafe,MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
+import {compileRegionCondition,inRegion,clipConditionTriangle} from './region_condition.mjs?cut=round303';
 /** Bounded CPU/SVG 3D plotting. No GPU claims, no arbitrary JavaScript execution.
  * Isolated from the 2D constraint graph; existing 2D objects are retained verbatim.
  */
-import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB,DOMAIN_COLOR_MODES} from './plot_modes.mjs?cut=round302';
+import {parseCurveExpression,parseComplexExpression,domainColor,rangeColorRGB,DOMAIN_COLOR_MODES} from './plot_modes.mjs?cut=round303';
 const ok=x=>typeof x==='number'&&Number.isFinite(x);
 export const PLOT3D_MODES=['surface3d','parametric3d','implicit3d','vector3d','domain3d'];
 export const DEFAULT_3D_OPTIONS={yaw:-38,pitch:26,projection:'perspective',cube:true,lighting:true,opacity:.86,detail:22,zoom:1,grid:false,axes:false};
@@ -81,16 +82,17 @@ export function parse3D(plot){
 }
 export function validate3D(scene){
  if(!scene||typeof scene!=='object'||Array.isArray(scene)||!Array.isArray(scene.plots)||scene.plots.length>80||!Number.isSafeInteger(scene.nextId)||scene.nextId<1)throw Error('Invalid 3D scene.');
- const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<.05||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>96||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
+ const o=scene.options;if(!o||!ok(o.yaw)||Math.abs(o.yaw)>180||!ok(o.pitch)||Math.abs(o.pitch)>89||!['perspective','orthographic'].includes(o.projection)||typeof o.cube!=='boolean'||typeof o.lighting!=='boolean'||!ok(o.opacity)||o.opacity<0||o.opacity>1||!Number.isInteger(o.detail)||o.detail<8||o.detail>96||!ok(o.zoom)||o.zoom<.25||o.zoom>5||['grid','axes'].some(key=>o[key]!==undefined&&typeof o[key]!=='boolean'))throw Error('Invalid 3D camera or rendering options.');
  if(o.fixRegion!==undefined&&typeof o.fixRegion!=='boolean')throw Error('Invalid 3D fixed-region flag.');
  if(o.fixedBounds!==undefined){
   const r=o.fixedBounds;
   if(!r||typeof r!=='object'||!['x','y','z'].every(axis=>ok(r[axis+'Min'])&&ok(r[axis+'Max'])&&Math.abs(r[axis+'Min'])<=1e4&&Math.abs(r[axis+'Max'])<=1e4&&r[axis+'Min']<r[axis+'Max']))throw Error('Invalid fixed 3D region.');
  }
  if(o.fixRegion===true&&!o.fixedBounds)throw Error('Fixed 3D region requires valid bounds.');
- const ids=new Set();let highest=0;
+ const ids=new Set(),names=new Set();let highest=0;
  for(const plot of scene.plots){
-  if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>100||!color.test(plot.color)||!ok(plot.opacity)||plot.opacity<.05||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
+  if(!plot||!PLOT3D_MODES.includes(plot.kind)||!Number.isSafeInteger(plot.id)||plot.id<1||ids.has(plot.id)||typeof plot.name!=='string'||!plot.name.trim()||plot.name.length>MAX_OBJECT_NAME_LENGTH||!xmlTextSafe(plot.name)||!color.test(plot.color)||!ok(plot.opacity)||plot.opacity<0||plot.opacity>1||typeof plot.hidden!=='boolean')throw Error('Invalid 3D plot.');
+  if(names.has(plot.name))throw Error('Duplicate 3D plot name.');names.add(plot.name);
   ids.add(plot.id);highest=Math.max(highest,plot.id);
   for(const key of ['a','b','c'])if(typeof plot[key]!=='string'||(key==='a'||['parametric3d','vector3d'].includes(plot.kind))&&!plot[key].trim()||plot[key].length>400)throw Error('Invalid 3D expression.');
   const r=plot.bounds;if(!r||!['x','y','z'].every(axis=>ok(r[axis+'Min'])&&ok(r[axis+'Max'])&&Math.abs(r[axis+'Min'])<=1e4&&Math.abs(r[axis+'Max'])<=1e4&&r[axis+'Min']<r[axis+'Max']))throw Error('3D bounds must be ascending and within ±10,000.');
@@ -99,16 +101,22 @@ export function validate3D(scene){
   if(plot.colorRange!==undefined&&typeof plot.colorRange!=='boolean')throw Error('Invalid 3D color range flag.');
   if(plot.kind==='domain3d'&&(!['modulus','argument'].includes(plot.heightMode)||!DOMAIN_COLOR_MODES.includes(plot.colorMode)&&plot.colorMode!=='solid'))throw Error('Invalid 3D complex coloring options.');
   if(plot.kind==='vector3d'&&(!Number.isInteger(plot.density)||plot.density<3||plot.density>12||typeof plot.normalized!=='boolean'||(plot.lineWidth!==undefined&&(!ok(plot.lineWidth)||plot.lineWidth<.1||plot.lineWidth>12))))throw Error('3D vector density must be 3–12 and line width 0.1–12.');
+  if(plot.kind!=='domain3d'&&(plot.colorMode!==undefined||plot.heightMode!==undefined)||plot.kind!=='vector3d'&&['density','normalized','lineWidth'].some(k=>plot[k]!==undefined)||plot.kind!=='parametric3d'&&['uMin','uMax','vMin','vMax'].some(k=>plot[k]!==undefined))throw Error('Unexpected 3D plot properties.');
   compileRegionCondition(plot.regionCondition,3);
   parse3D(plot);
  }
  if(scene.nextId<=highest)throw Error('Invalid next 3D ID.');
  return scene;
 }
-export function add3DPlot(scene,kind,inputs,bounds=scene.options.fixRegion===true?scene.options.fixedBounds:defaultBounds3D()){
+export function add3DPlot(scene,kind,inputs,bounds=scene.options.fixRegion===true?scene.options.fixedBounds:defaultBounds3D(),convention='pascal'){
  if(scene.plots.length>=80)throw Error('3D plot limit (80) reached.');
  const id=scene.nextId,[a='',b='',c='']=inputs;
- const plot={id,kind,name:`${{surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind]} ${id}`,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false,locked:false,colorRange:false};
+ const base={surface3d:'surface',parametric3d:'parametricSurface',implicit3d:'implicitSurface',vector3d:'vectorField',domain3d:'domainColoring'}[kind];
+ if(!base)throw Error('Unsupported 3D mode.');
+ if(!Number.isSafeInteger(id)||id<1||id>=Number.MAX_SAFE_INTEGER)throw Error('Object ID capacity exceeded.');
+ const name=formatAutomaticName(base,id,convention);
+ if(scene.plots.some(p=>p.name.toLowerCase()===name.toLowerCase()))throw Error('Name already in use: '+name);
+ const plot={id,kind,name,a,b,c,bounds:{...bounds},color:'#000000',opacity:1,hidden:false,locked:false,colorRange:false};
  if(kind==='parametric3d')Object.assign(plot,{uMin:0,uMax:2*Math.PI,vMin:0,vMax:2*Math.PI});
  if(kind==='vector3d')Object.assign(plot,{density:5,normalized:true,lineWidth:1.5});
  if(kind==='domain3d'){

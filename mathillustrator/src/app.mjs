@@ -1,28 +1,29 @@
-import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round302';
-import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round302';
+import {MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
+import {constructionExpression,displayCoordinate,applyConstructionExpression,submit2DAlgebra} from './construction_expression.mjs?cut=round303';
+import {captureObjectSelection,pasteObjectSelection} from './object_clipboard.mjs?cut=round303';
 import {attachInputAssistant} from './input_assist.mjs?cut=mi266';
 import {createSlider,evaluateAlgebra,recalculateAlgebra,bindMeasurement,validSliderName,splitAlgebraArguments,SLIDER_PLAY_MODES,sliderPlaybackValue} from './algebra.mjs?cut=round254';
-import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round302';
-import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round302';
+import {compileRegionCondition,inRegion} from './region_condition.mjs?cut=round303';
+import {parseCurveExpression as r50ParseExpr} from './plot_modes.mjs?cut=round303';
 import {r50Shape,r50SourceShape,projectToCurve,generalCrossings,circleTangents} from './geometry_round50.mjs?cut=round147';
-import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round302';
-import {measureGeometry} from './geometry_measurements.mjs?cut=round302';
+import {toggleIds,windowSelection,commonValue,compatibleObjects} from './selection.mjs?cut=round303';
+import {measureGeometry} from './geometry_measurements.mjs?cut=round303';
 import {reorderVisible,shiftVisible} from './object_order.mjs?cut=round54';
 import {canvasShortcut,shortcutForTool} from './keyboard_shortcuts.mjs?cut=round54';
-import {TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round302';
+import {TOOLS,pointRole,geometricPoint,geometricLine,geometricCircle,PRESETS,PRESET_MODULES,defaultFillForType,newDoc,upgradeRecoveredLegacyPalette,clone,append,appendPolygonEdges,appendDerivedShapeEdges,resizeRegularPolygon,isObjectVisible,get,position,remove,affected,snapPoint,focalEllipse,circumcircle,intersectStraightLines,intersectLineCircle,intersectCircles,addPoint,createResolver,validateDoc,command,parseExpression,checkNewGeometry,guardAnchorMove,shapeVerticesFromPoints,finite,preserveInheritedPointSizes,functionSliderParameters} from './model.mjs?cut=round303';
 import {shapeFromStroke} from './freehand_shapes.mjs?cut=round146';
-import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round302';
-import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round302';
+import {clipRay,smoothCurveSvg,freehandCurveSvg,smoothPath,closeFreehandStroke,nearestFreehandAttachment,pageRect,arrowCurve,regularPolygonVertices,arrowHeadPoints,clipInfiniteLine,formatCoordinate,fitSceneView,bboxOutsideViewport,circleOutsideViewport} from './geometry.mjs?cut=round303';
+import {importTikzCd,exportTikzCd,canExportTikzCd} from './diagram.mjs?cut=round303';
 import {sampleExplicitPlot,plotPath} from './plot.mjs?cut=round54';
-import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round302';
-import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors} from './plot_modes.mjs?cut=round302';
+import {newScene3D,add3DPlot,parse3D,project3DScene,create3DProjectionTask,enforce3DVisibility,set3DFixRegion,parse3DRangeExpression,rampColor} from './plot3d.mjs?cut=round303';
+import {parseParametric,parseImplicit,parseVectorField,parseComplexExpression,renameCurveParameter,validatePlotRegion,sampleVectorField,sampleDomainColors,MAX_DOMAIN_RESOLUTION,MAX_DOMAIN_PIXELS,sampleParametricPlot,sampleImplicitPlot,sampleImplicitColors,DOMAIN_COLOR_SCHEMES,IMPLICIT_COLOR_SCHEMES} from './plot_modes.mjs?cut=round303';
 import {mathReady,mathMetrics,renderLatexSvg,validateLatexInput} from './math_labels.mjs?cut=round54';
-import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round302';
+import {localizeUI,translated,translatedGeneratedPlotName} from './i18n.mjs?cut=round303';
 import {compareAndWrite,coordinateSave} from './storage.mjs?cut=round54';
-import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round302';
+import {tikzGeometryIssue,tikzPoint} from './export_fidelity.mjs?cut=round303';
 import {nodeBox,layoutNodeLabel,plainNodeInkBox,boxEdgeToward} from './diagram_layout.mjs?cut=round54';
 import {routeDiagramEdge,labelOnQuadratic,labelDragOffset,hookTailGeometry} from './diagram_routing.mjs?cut=round63';
-import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round302';
+import {createAnchorIndex,cycleSelection} from './anchor_index.mjs?cut=round303';
 import {rankGeometryHits} from './geometry_pick.mjs?cut=round301';
 import {layoutPointLabels,createLabelLayoutCache} from './label_layout.mjs?cut=round54';
 import {createPlotCache} from './plot_cache.mjs?cut=round54';
@@ -924,9 +925,9 @@ function renderObject(svg,o,resolver,exporting=false,labelPositions=null,morphis
   }
  }else if(o.type==='implicit'&&o.colorRange===true){
   const region=o.region,parameters=functionSliderParameters(doc),condition=compileRegionCondition(o.regionCondition,2);
-  const key=JSON.stringify(['implicit-color-range',o.expr,region,o.resolution??768,o.colorMode??'range',o.regionCondition||'',parameters,Math.min(doc.settings.plotBudget??80000,MAX_DOMAIN_PIXELS)]);
+  const key=JSON.stringify(['implicit-color-range',o.expr,region,o.resolution??768,o.colorMode??'range',o.regionCondition||'',parameters,MAX_DOMAIN_PIXELS]);
   const uri=plotCache.get(key,()=>{
-   const result=sampleImplicitColors(parseImplicit(o.expr,parameters),region,{resolution:o.resolution??768,mode:o.colorMode??'range',maxEvaluations:Math.min(doc.settings.plotBudget??80000,MAX_DOMAIN_PIXELS),includes:(x,y)=>inRegion(condition,x,y)});
+   const result=sampleImplicitColors(parseImplicit(o.expr,parameters),region,{resolution:o.resolution??768,mode:o.colorMode??'range',maxEvaluations:MAX_DOMAIN_PIXELS,includes:(x,y)=>inRegion(condition,x,y)});
    if(result.limited){limitedPlotKeys.add(key);return '';}
    limitedPlotKeys.delete(key);
    return rasterPlotUri(result);
@@ -1557,7 +1558,7 @@ function numericOptions(input){
 function field(parent,label,value,type,onChange,opts={}){
  const wrap=document.createElement('label');wrap.className='field'+(type==='multiline'?' multiline-field':'');
  // Formula editors have their own inline layout; names and arbitrary text keep their existing layout.
- if(type==='text'&&parent.classList.contains('properties')&&(/^(?:Expression|.* expression|Transformation amount)$/i.test(label)||/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[XYZ]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label)))wrap.classList.add('formula-expression-field');
+ if(type==='text'&&parent.classList.contains('properties')&&(/^(?:Expression|.* expression|Transformation amount)$/i.test(label)||/^(?:f\(x\)|F\(x, y\)|F\(z\)|[rxy]\(t\)|[XY]\(x, y\)|f\(x, y\)|[xyz]\(u, v\)|F\(x, y, z\)|[XYZ]\(x, y, z\))$/.test(label)))wrap.classList.add('formula-expression-field');
  wrap.textContent=label;wrap.dataset.propertyLabel=label;
  const input=document.createElement(type==='multiline'?'textarea':'input');
  if(type!=='multiline')input.type=type==='number'?'text':type;else{input.rows=3;input.spellcheck=false;input.setAttribute('aria-label',label);}
@@ -1630,9 +1631,9 @@ function parse2DRegionBound(source){
 // an additional mutable setting: imported/exported files keep numeric bounds.
 function installCenteredRegionEditor(container,inputs,commit,parseBound,conditionValue,conditionCommit,dimension){
  const row=document.createElement('div');row.className='region-extras';
- const label=document.createElement('label');label.className='field';label.textContent='Centered half-range';
+ const label=document.createElement('label');label.className='field';label.dataset.propertyLabel='Centered half-range';label.textContent='Centered half-range';
  const radius=document.createElement('input');radius.type='text';radius.placeholder='4pi';radius.setAttribute('aria-label','Centered half-range');radius.title='Enter a positive half-range to set ±R along every axis.';
- const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.textContent='Region inequality';
+ const conditionLabel=document.createElement('label');conditionLabel.className='field';conditionLabel.dataset.propertyLabel='Region inequality';conditionLabel.textContent='Region inequality';
  const region=document.createElement('input');region.type='text';region.value=conditionValue||'';region.placeholder=dimension===3?'x^2+y^2+z^2<16':'x^2+y^2<16';
  region.setAttribute('aria-label','Region inequality');region.title='Strict condition, e.g. x^2+y^2<4. Press Enter to apply; empty means unrestricted.';
  function useRadius(){
@@ -1672,23 +1673,22 @@ function installPlotRegionKeys(container,inputs,commit,{parseBound=parse3DRangeE
 function renderProperties3D(root){
  root.classList.add('properties-3d');
  const selectedPlot=doc.scene3d?.plots.find(p=>p.id===selected3d);if(!selectedPlot)return;
- if(selectedPlot.locked){const note=document.createElement('p');note.className='subtle';note.textContent=translated('Locked',uiPrefs.language);root.append(note);return;}
+ if(selectedPlot.locked){field(root,'Name',selectedPlot.name,'text',()=>false).disabled=true;const note=document.createElement('p');note.className='subtle';note.textContent='Locked';root.append(note);localizeUI(root,uiPrefs.language);return;}
  const edit=fn=>update(()=>{const live=doc.scene3d.plots.find(p=>p.id===selectedPlot.id);if(!live||selected3d!==selectedPlot.id||live.locked)throw Error('3D plot changed or locked while editing.');fn(live);});
- field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.length>100)throw Error('Invalid plot name.');p.name=v.trim();}));
- const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['X(u, v)','Y(u, v)','Z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
+ field(root,'Name',selectedPlot.name,'text',v=>edit(p=>{if(!v.trim()||v.trim().length>MAX_OBJECT_NAME_LENGTH)throw Error('Invalid plot name.');p.name=v.trim();}));
+ const componentLabels=selectedPlot.kind==='domain3d'?['F(z)']:selectedPlot.kind==='surface3d'?['f(x, y)']:selectedPlot.kind==='parametric3d'?['x(u, v)','y(u, v)','z(u, v)']:selectedPlot.kind==='implicit3d'?['F(x, y, z)']:['X(x, y, z)','Y(x, y, z)','Z(x, y, z)'];
  for(const [i,label] of componentLabels.entries()){const key=['a','b','c'][i];field(root,label,selectedPlot[key],'text',value=>edit(p=>{p[key]=value;parse3D(p);}));}
  const fields=selectedPlot.kind==='parametric3d'?['uMin','uMax','vMin','vMax']:[];
  if(fields.length){const rangeGrid=document.createElement('div');rangeGrid.className='parametric-range-grid';rangeGrid.setAttribute('role','group');rangeGrid.setAttribute('aria-label','Surface parameter ranges');root.append(rangeGrid);
   for(const key of fields)field(rangeGrid,key.replace(/Min$/,' min').replace(/Max$/,' max'),selectedPlot[key],'text',value=>edit(p=>{p[key]=parse3DRangeExpression(value);}),{hint:'Finite expression; min must be less than max.'});}
- const block=document.createElement('div');block.className='plot-region-editor';const subtitle=document.createElement('h4');subtitle.textContent='3D drawing region';block.append(subtitle);
+ const block=document.createElement('div');block.className='plot-region-editor';block.setAttribute('role','group');block.setAttribute('aria-label','Drawing region');const subtitle=document.createElement('h4');subtitle.textContent='Drawing region';block.append(subtitle);
  const values={};for(const key of ['xMin','xMax','yMin','yMax','zMin','zMax']){
   const label=key.replace(/Min$/,' min').replace(/Max$/,' max');values[key]=field(block,label,selectedPlot.bounds[key],'text',()=>true,{hint:'Finite expression; min must be less than max.'});values[key].onchange=()=>{};values[key].setAttribute('inputmode','text');
  }
  installPlotRegionKeys(block,values,()=>edit(p=>{p.bounds=Object.fromEntries(Object.entries(values).map(([k,node])=>[k,parse3DRangeExpression(node.value)]));
   if(doc.scene3d.options.fixRegion===true)doc.scene3d.options.fixedBounds={...p.bounds};}),{parseBound:parse3DRangeExpression,conditionValue:selectedPlot.regionCondition,conditionCommit:value=>edit(p=>{p.regionCondition=value;}),dimension:3});
- root.append(block);
  if(selectedPlot.kind==='domain3d'){
-  const height=document.createElement('label');height.className='field';height.textContent='Height represents';const heightSelect=document.createElement('select');
+  const height=document.createElement('label');height.className='field';height.dataset.propertyLabel='Height represents';height.textContent='Height represents';const heightSelect=document.createElement('select');
   for(const [key,label] of [['modulus','Modulus |F(z)|'],['argument','Argument arg F(z)']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;heightSelect.append(opt);}
   heightSelect.value=selectedPlot.heightMode;heightSelect.onchange=()=>edit(p=>{const was=p.heightMode,next=heightSelect.value;p.heightMode=next;
    if(was==='modulus'&&next==='argument'&&p.bounds.zMin===0){p.bounds.zMin=-Math.PI;p.bounds.zMax=Math.PI;}
@@ -1699,26 +1699,27 @@ function renderProperties3D(root){
     }p.bounds.zMin=0;p.bounds.zMax=Math.max(4,Math.min(1e4,Math.ceil(max*1.05)));
    }
   });height.append(heightSelect);root.append(height);
-  const colors=document.createElement('label');colors.className='field';colors.textContent='Color scheme';const select=document.createElement('select');
-  for(const [key,label] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['phase-contours','Phase + contour lines'],['phase-checker','Phase + checkerboard'],['phase-sectors','Phase sectors'],['solid','Single color']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
-  select.value=selectedPlot.colorMode;select.onchange=()=>{if(edit(p=>{p.colorMode=select.value;})!==false)renderProperties();};colors.append(select);root.append(colors);
+  const colors=document.createElement('label');colors.className='field';colors.dataset.propertyLabel='Color scheme';colors.textContent='Color scheme';const select=document.createElement('select');
+  for(const [key,label] of [...DOMAIN_COLOR_SCHEMES,['solid','Single color']]){const opt=document.createElement('option');opt.value=key;opt.textContent=label;select.append(opt);}
+  select.value=selectedPlot.colorMode;select.disabled=selectedPlot.colorRange===true;select.onchange=()=>{if(edit(p=>{if(p.colorRange)throw Error('Disable Color range first.');p.colorMode=select.value;})!==false)renderProperties();};colors.append(select);root.append(colors);
  }
+ root.append(block);
  if(selectedPlot.kind==='vector3d'){
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  const label=document.createElement('label');label.className='check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
+  const label=document.createElement('label');label.className='check';label.dataset.propertyLabel='Normalize lengths';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=selectedPlot.normalized;checkbox.onchange=()=>edit(p=>{p.normalized=checkbox.checked;});label.append(checkbox,document.createTextNode(' Normalize lengths'));pair.append(label);
   field(pair,'Density',selectedPlot.density,'number',v=>edit(p=>{p.density=v;}),{min:3,max:12,step:1});
  }
  const colors=document.createElement('div');colors.className='plot-color-grid';root.append(colors);
  const colorSlot=document.createElement('div');colorSlot.className='plot-color-slot';colors.append(colorSlot);
  const solidAllowed=selectedPlot.kind!=='domain3d'||selectedPlot.colorMode==='solid';
- const solidPicker=field(colorSlot,selectedPlot.kind==='vector3d'?'Stroke':'Fill',selectedPlot.color,'color',v=>edit(p=>{p.color=v;}));
+ const solidPicker=field(colorSlot,selectedPlot.kind==='vector3d'?'Stroke':'Fill',selectedPlot.color,'color',v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('This color scheme uses automatic colors.');p.color=v;}));
  solidPicker.disabled=selectedPlot.colorRange===true||!solidAllowed;
  const swatches=appendColorSwatches(colorSlot,{scope:'plot3d',property:'color',caption:selectedPlot.kind==='vector3d'?'Stroke colors':'Fill colors',apply:v=>edit(p=>{if(p.colorRange||p.kind==='domain3d'&&p.colorMode!=='solid')throw Error('Select Single color and disable Color range first.');p.color=v;})});
  for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;
  const right=document.createElement('div');right.className='plot-color-options';colors.append(right);
- const rangeLabel=document.createElement('label');rangeLabel.className='check';const range=document.createElement('input');range.type='checkbox';range.checked=selectedPlot.colorRange===true;
- range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}solidPicker.disabled=range.checked||!solidAllowed;for(const button of swatches.querySelectorAll('button'))button.disabled=solidPicker.disabled;};rangeLabel.append(range,document.createTextNode(' Color range'));right.append(rangeLabel);
- field(right,'Opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:.05,max:1,step:.05});
+ const rangeLabel=document.createElement('label');rangeLabel.className='check';rangeLabel.dataset.propertyLabel='Color range';const range=document.createElement('input');range.type='checkbox';range.setAttribute('aria-label','Color range');range.checked=selectedPlot.colorRange===true;
+ range.onchange=()=>{if(edit(p=>{p.colorRange=range.checked;})===false){range.checked=!range.checked;return;}renderProperties();};rangeLabel.append(range,document.createTextNode(' Color range'));right.append(rangeLabel);
+ field(right,'Opacity',selectedPlot.opacity,'number',v=>edit(p=>{p.opacity=v;}),{min:0,max:1,step:.05});
  if(selectedPlot.kind==='vector3d')field(right,'Width',selectedPlot.lineWidth??1.5,'number',v=>edit(p=>{p.lineWidth=v;}),{min:.1,max:12,step:.5});
  localizeUI(root,uiPrefs.language);
 }
@@ -1832,7 +1833,7 @@ function renderProperties(){
  if(objects.length>1){renderBulkProperties(root,objects);localizeUI(root,uiPrefs.language);return;}
  const o=objects[0]||get(doc,selected);
  if(!o){if(tool==='freehand'){renderNewFreehandControls(root);localizeUI(root,uiPrefs.language);}return;}
- if(objectEffectivelyLocked(o.id)){const name=field(root,'Name',o.name,'text',()=>false);name.disabled=true;const p=document.createElement('p');p.className='subtle';p.textContent='Locked (including dependencies)';root.append(p);return;}
+ if(objectEffectivelyLocked(o.id)){const name=field(root,'Name',o.name,'text',()=>false);name.disabled=true;const p=document.createElement('p');p.className='subtle';p.textContent='Locked (including dependencies)';root.append(p);localizeUI(root,uiPrefs.language);return;}
  // IMPORTANT: never mutate a captured object. Failed validation, undo and imports
  // replace the document and make the old object reference stale. Resolve by ID in
  // every transaction, preventing false-success edits that silently do nothing.
@@ -2037,31 +2038,31 @@ function renderProperties(){
   field(root,'X(x, y)',o.xExpr,'text',v=>edit(live=>{parseVectorField(v,live.yExpr,functionSliderParameters(doc));live.xExpr=v;}));
   field(root,'Y(x, y)',o.yExpr,'text',v=>edit(live=>{parseVectorField(live.xExpr,v,functionSliderParameters(doc));live.yExpr=v;}));
   const pair=document.createElement('div');pair.className='property-check-number-pair';root.append(pair);
-  const check=document.createElement('label');check.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
-  field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Arrow density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
+  const check=document.createElement('label');check.className='check';check.dataset.propertyLabel='Normalize lengths';const input=document.createElement('input');input.type='checkbox';input.checked=o.normalized;input.onchange=()=>edit(live=>{live.normalized=input.checked;});check.append(input,document.createTextNode(' Normalize lengths'));pair.append(check);
+  field(pair,'Density',o.density,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<3||v>40)throw Error('Density must be 3–40.');live.density=v;}),{min:3,max:40,step:1});
  }
  if(o.type==='domainColoring'){
   field(root,'F(z)',o.expr,'text',v=>edit(live=>{parseComplexExpression(v,functionSliderParameters(doc));live.expr=v;}));
-  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent=translated('Color scheme',uiPrefs.language);
-  const select=document.createElement('select');for(const [value,name] of [['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['phase-contours','Phase + contour lines'],['phase-checker','Phase + checkerboard'],['phase-sectors','Phase sectors']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
+  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent='Color scheme';
+  const select=document.createElement('select');for(const [value,name] of DOMAIN_COLOR_SCHEMES){const opt=document.createElement('option');opt.value=value;opt.textContent=name;select.append(opt);}
   select.value=o.colorMode||'phase-modulus';select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
   field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
  }
  if(o.type==='implicit'){
-  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent=translated('Color scheme',uiPrefs.language);
-  const select=document.createElement('select');for(const [value,name] of [['range','Contour ramp'],['diverging','Blue–white–red'],['grayscale','Grayscale'],['heat','Heat map'],['viridis','Viridis'],['sign','Sign coloring'],['bands','Contour bands']]){const opt=document.createElement('option');opt.value=value;opt.textContent=translated(name,uiPrefs.language);select.append(opt);}
-  select.value=o.colorMode||'range';select.disabled=o.colorRange!==true;select.onchange=()=>edit(live=>{live.colorMode=select.value;});modes.append(select);root.append(modes);
-  const resolution=field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
+  const modes=document.createElement('label');modes.className='field';modes.dataset.propertyLabel='Color scheme';modes.textContent='Color scheme';
+  const select=document.createElement('select');for(const [value,name] of [...IMPLICIT_COLOR_SCHEMES,...(o.colorMode==='heat'?[['heat','Heat map (legacy)']]:[])]){const opt=document.createElement('option');opt.value=value;opt.textContent=name;select.append(opt);}
+  select.value=o.colorMode||'range';select.disabled=o.colorRange!==true;select.onchange=()=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');live.colorMode=select.value;});modes.append(select);root.append(modes);
+  const resolution=field(root,'Resolution',o.resolution??768,'number',v=>edit(live=>{if(!live.colorRange)throw Error('Enable Color range first.');if(!Number.isInteger(v)||v<32||v>MAX_DOMAIN_RESOLUTION)throw Error('Resolution must be 32–1536.');live.resolution=v;}),{min:32,max:MAX_DOMAIN_RESOLUTION,step:64});
   resolution.disabled=o.colorRange!==true;
  }
  if(['vectorField','domainColoring','implicit'].includes(o.type)){
   const bounds=o.region??visiblePlotRegion();
-  const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label',translated('Drawing region',uiPrefs.language));
+  const form=document.createElement('div');form.className='plot-region-editor';form.setAttribute('role','group');form.setAttribute('aria-label','Drawing region');
   const entries={};for(const [key,label] of [['xMin','x min'],['xMax','x max'],['yMin','y min'],['yMax','y max']]){
-   entries[key]=field(form,translated(label,uiPrefs.language),bounds[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
+   entries[key]=field(form,label,bounds[key],'text',()=>true,{hint:'Finite arithmetic expression; min must be less than max.'});
    entries[key].onchange=()=>{};
   }
-  installPlotRegionKeys(form,entries,()=>edit(live=>{const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound,conditionValue:o.regionCondition,conditionCommit:value=>edit(live=>{live.regionCondition=value;}),dimension:2});
+  installPlotRegionKeys(form,entries,()=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');const region=Object.fromEntries(Object.entries(entries).map(([k,input])=>[k,parse2DRegionBound(input.value)]));validatePlotRegion(region);live.region=region;}),{parseBound:parse2DRegionBound,conditionValue:o.regionCondition,conditionCommit:value=>edit(live=>{if(live.type==='implicit'&&!live.colorRange)throw Error('Enable Color range first.');live.regionCondition=value;}),dimension:2});
   if(o.type==='implicit'&&!o.colorRange)for(const input of form.querySelectorAll('input'))input.disabled=true;
   root.append(form);
  }
@@ -2107,14 +2108,14 @@ function renderProperties(){
  const swatches=appendColorSwatches(strokeSlot,{scope:'object',property:colorProperty,apply:v=>edit(live=>{if(isRasterPlot(live)||supportsRange&&live.colorRange)throw Error('This color scheme uses automatic colors.');live.style[colorProperty]=v;})});
  for(const button of swatches.querySelectorAll('button'))button.disabled=picker.disabled;
  if(supportsRange){
-  const mode=styleSlot('color-range'),label=document.createElement('label');label.className='check';
-  const check=document.createElement('input');check.type='checkbox';check.checked=o.colorRange===true;
+  const mode=styleSlot('color-range'),label=document.createElement('label');label.className='check';label.dataset.propertyLabel='Color range';
+  const check=document.createElement('input');check.type='checkbox';check.setAttribute('aria-label','Color range');check.checked=o.colorRange===true;
   check.onchange=()=>{
    const checked=check.checked;
    if(edit(live=>{if(live.type==='implicit'&&checked&&!live.region)live.region=validatePlotRegion(visiblePlotRegion());live.colorRange=checked;})===false){check.checked=!checked;return;}
    if(o.type==='implicit'){renderProperties();return;}
    picker.disabled=checked;for(const button of swatches.querySelectorAll('button'))button.disabled=checked;
-  };label.append(check,' '+translated('Color range',uiPrefs.language));mode.append(label);
+  };label.append(check,' Color range');mode.append(label);
  }
  if(fillableClosedShape(o,{object:id=>get(doc,id)})){
   const fillSlot=styleSlot('fill');
@@ -3913,7 +3914,7 @@ $('objects').addEventListener('scroll',()=>{closeObjectMenu();renderListWindow()
   let raisedDomainBudget=false;
   const success=update(()=>{
    let curve;
-   if(in3D()){const c=$('command-z').value.trim();if(!doc.scene3d)doc.scene3d=newScene3D();const plot=add3DPlot(doc.scene3d,mode,[value,y,c]);selected3d=plot.id;}
+   if(in3D()){const c=$('command-z').value.trim();if(!doc.scene3d)doc.scene3d=newScene3D();const plot=add3DPlot(doc.scene3d,mode,[value,y,c],undefined,doc.settings.namingConvention);selected3d=plot.id;}
    else if(mode==='parametric'){parseParametric(value,y,'t',functionSliderParameters(doc));curve=append(doc,{type:'parametric',xExpr:value,yExpr:y,parameter:'t',tMin:0,tMax:2*Math.PI});}
    else if(mode==='implicit'){parseImplicit(value,functionSliderParameters(doc));curve=append(doc,{type:'implicit',expr:value});}
    else if(mode==='vectorField'||mode==='domainColoring'){

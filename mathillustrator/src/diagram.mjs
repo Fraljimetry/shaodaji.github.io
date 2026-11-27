@@ -1,5 +1,5 @@
 /** Restricted, deterministic tikz-cd interchange. Never evaluates TeX. */
-import {newDoc, append, PRESETS} from './model.mjs?cut=round302';
+import {newDoc, append, PRESETS} from './model.mjs?cut=round303';
 const CELL_X=3.5,CELL_Y=2.4;
 // Match the 2D canvas's reference scale (48 px per world unit), while
 // keeping a 3x4 diagram within a normal LaTeX page.

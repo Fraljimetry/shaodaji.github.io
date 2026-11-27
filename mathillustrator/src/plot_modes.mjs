@@ -206,7 +206,15 @@ export function sampleVectorField(fn,region,{density=12,normalized=false,maxEval
  }
  return {arrows,limited:false,evaluations:nx*ny};
 }
-export const IMPLICIT_COLOR_MODES=Object.freeze(['range','diverging','grayscale','heat','viridis','sign','bands']);
+// Both scalar and complex rasters use the same bounded resolution contract.
+export const MAX_DOMAIN_RESOLUTION=1536;
+export const MAX_DOMAIN_PIXELS=MAX_DOMAIN_RESOLUTION*MAX_DOMAIN_RESOLUTION;
+function rasterDimensions(region,resolution){
+ const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin);
+ return {width:resolution,height:Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION))};
+}
+export const IMPLICIT_COLOR_SCHEMES=Object.freeze([['range','Red–purple–blue'],['diverging','Blue–white–red'],['viridis','Viridis'],['inferno','Inferno'],['grayscale','Grayscale'],['rainbow','Rainbow'],['sign','Sign coloring'],['bands','Contour bands']].map(Object.freeze));
+export const IMPLICIT_COLOR_MODES=Object.freeze([...IMPLICIT_COLOR_SCHEMES.map(([key])=>key),'heat']);
 function interpolateStops(stops,t){
  const scaled=clamp(t,0,1)*(stops.length-1),segment=Math.min(stops.length-2,Math.floor(scaled)),mix=scaled-segment;
  return stops[segment].map((start,index)=>Math.round(start+(stops[segment+1][index]-start)*mix));
@@ -219,18 +227,14 @@ function normalizedScalar(value,min,max){
 function divergingScalar(value,min,max){
  const blue=[59,130,246],white=[255,255,255],red=[239,68,68];
  if(!(valid(value)&&valid(min)&&valid(max)))return white;
- if(min<0&&max>0){
-  if(value<0){const t=clamp(Math.abs(value/min),0,1);return white.map((start,index)=>Math.round(start+(blue[index]-start)*t));}
-  if(value>0){const t=clamp(Math.abs(value/max),0,1);return white.map((start,index)=>Math.round(start+(red[index]-start)*t));}
-  return white;
- }
- const t=normalizedScalar(value,min,max);
- return t<=.5?white.map((start,index)=>Math.round(start+(blue[index]-start)*(1-t*2))):white.map((start,index)=>Math.round(start+(red[index]-start)*((t-.5)*2)));
+ if(value===0)return white;
+ const end=value<0?blue:red,scale=value<0?Math.abs(min):Math.abs(max);
+ const t=scale>0?clamp(Math.abs(value)/scale,0,1):1;
+ return white.map((start,index)=>Math.round(start+(end[index]-start)*t));
 }
 function signScalar(value,min,max){
  if(!(valid(value)&&valid(min)&&valid(max)))return [255,255,255];
- const scale=Math.max(Math.abs(min),Math.abs(max),1),epsilon=scale*1e-12;
- if(Math.abs(value)<=epsilon)return [255,255,255];
+ if(value===0)return [255,255,255];
  return value<0?[59,130,246]:[239,68,68];
 }
 /** Shared low/middle/high color ramp for real fields and 3D heights.
@@ -240,6 +244,8 @@ export function scalarColorRGB(value,min,max,mode='range'){
  if(mode==='diverging')return divergingScalar(value,min,max);
  if(mode==='grayscale'){const shade=Math.round(255*t);return [shade,shade,shade];}
  if(mode==='heat')return interpolateStops([[30,9,97],[180,34,86],[239,68,68],[249,115,22],[250,204,21],[255,255,191]],t);
+ if(mode==='inferno')return interpolateStops([[0,0,4],[66,10,104],[147,38,103],[221,81,58],[252,165,10],[252,255,164]],t);
+ if(mode==='rainbow')return interpolateStops([[91,33,182],[37,99,235],[6,182,212],[34,197,94],[234,179,8],[239,68,68]],t);
  if(mode==='viridis')return interpolateStops([[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]],t);
  if(mode==='sign')return signScalar(value,min,max);
  if(mode==='bands'){const steps=10;return interpolateStops([[239,68,68],[168,85,247],[59,130,246]],Math.round(t*(steps-1))/(steps-1));}
@@ -251,13 +257,12 @@ export function rangeColorRGB(value,min,max){return scalarColorRGB(value,min,max
  * Detail chooses the long side unless an explicit raster resolution is supplied. */
 export function sampleImplicitColors(fn,region,{quality='balanced',resolution=null,mode='range',maxEvaluations=80000,includes=()=>true}={}){
  validatePlotRegion(region);
- if(typeof fn!=='function'||typeof includes!=='function'||!['fast','balanced','detailed'].includes(quality)||!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>1000000||!IMPLICIT_COLOR_MODES.includes(mode))throw Error('Invalid implicit color settings.');
+ if(typeof fn!=='function'||typeof includes!=='function'||!['fast','balanced','detailed'].includes(quality)||!Number.isInteger(maxEvaluations)||maxEvaluations<100||maxEvaluations>MAX_DOMAIN_PIXELS||!IMPLICIT_COLOR_MODES.includes(mode))throw Error('Invalid implicit color settings.');
  if(resolution!==null&&(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION))throw Error('Invalid implicit color settings.');
  const dx=region.xMax-region.xMin,dy=region.yMax-region.yMin;
  let width,height,limited=false;
  if(Number.isInteger(resolution)){
-  const ratio=dy/dx;height=Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION));
-  width=resolution;
+  ({width,height}=rasterDimensions(region,resolution));
   if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,min:null,max:null,limited:true,evaluations:0};
  }else{
   const long=Math.max(dx,dy),detail={fast:128,balanced:256,detailed:512}[quality];
@@ -277,7 +282,8 @@ export function sampleImplicitColors(fn,region,{quality='balanced',resolution=nu
  for(let k=0;k<values.length;k++)if(valid(values[k])){const rgb=scalarColorRGB(values[k],min,max,mode);rgba.set(rgb,k*4);rgba[k*4+3]=255;}
  return {rgba,width,height,min:valid(min)?min:null,max:valid(max)?max:null,limited,evaluations};
 }
-export const DOMAIN_COLOR_MODES=Object.freeze(['phase-modulus','phase','contours','phase-contours','phase-checker','phase-sectors']);
+export const DOMAIN_COLOR_SCHEMES=Object.freeze([['phase-modulus','Phase + modulus'],['phase','Phase only'],['contours','Modulus bands'],['phase-contours','Phase + contour lines'],['phase-checker','Phase + checkerboard'],['phase-sectors','Phase sectors']].map(Object.freeze));
+export const DOMAIN_COLOR_MODES=Object.freeze(DOMAIN_COLOR_SCHEMES.map(([key])=>key));
 export function domainColor(re,im,mode='phase-modulus'){
  if(!valid(re)||!valid(im))return null;
  let hue=((Math.atan2(im,re)*180/Math.PI)%360+360)%360;
@@ -304,14 +310,10 @@ export function domainColor(re,im,mode='phase-modulus'){
  const f=n=>{const k=(n+hue/30)%12,a=saturation*Math.min(light,1-light);return Math.round(255*(light-a*Math.max(-1,Math.min(k-3,9-k,1))));};
  return [f(0),f(8),f(4),255];
 }
-export const MAX_DOMAIN_RESOLUTION=1536;
-export const MAX_DOMAIN_PIXELS=MAX_DOMAIN_RESOLUTION*MAX_DOMAIN_RESOLUTION;
 export function sampleDomainColors(fn,region,{resolution=128,mode='phase-modulus',maxEvaluations=80000}={}){
  validatePlotRegion(region);
  if(!Number.isInteger(resolution)||resolution<32||resolution>MAX_DOMAIN_RESOLUTION||!DOMAIN_COLOR_MODES.includes(mode))throw Error('Invalid domain coloring settings.');
- const ratio=(region.yMax-region.yMin)/(region.xMax-region.xMin);
- const height=Math.max(16,Math.min(MAX_DOMAIN_RESOLUTION,Number.isFinite(ratio)?Math.round(resolution*ratio):MAX_DOMAIN_RESOLUTION));
- const width=resolution;if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
+ const {width,height}=rasterDimensions(region,resolution);if(width*height>maxEvaluations||width*height>MAX_DOMAIN_PIXELS)return {rgba:new Uint8ClampedArray(0),width,height,limited:true,evaluations:0};
  const rgba=new Uint8ClampedArray(width*height*4);
  for(let j=0;j<height;j++)for(let i=0;i<width;i++){
   let result;try{result=fn(region.xMin+(i+.5)*(region.xMax-region.xMin)/width,region.yMax-(j+.5)*(region.yMax-region.yMin)/height);}catch{}

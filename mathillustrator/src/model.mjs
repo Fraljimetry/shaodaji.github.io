@@ -1,10 +1,12 @@
+import {formatAutomaticName,xmlTextSafe,MAX_OBJECT_NAME_LENGTH} from './object_naming.mjs?cut=round303';
+export {xmlTextSafe} from './object_naming.mjs?cut=round303';
 import {validateAlgebra,evaluateAlgebra,bindMeasurement,splitAlgebraArguments} from './algebra.mjs?cut=round254';
 import {recognizedPlotGeometry} from './plot_geometry.mjs?cut=round301';
-import {compileRegionCondition} from './region_condition.mjs?cut=round302';
+import {compileRegionCondition} from './region_condition.mjs?cut=round303';
 import {distinctPoints,independentEdges,perpendicularHeightNonzero} from './numeric_geometry.mjs?cut=round87';
 import {R50_TYPES,R50_POINT_TYPES,TRANSFORM_MODES,CENTER_KINDS,triangleCenter,circum as sharedCircum,pointOnObject,circleTangents,generalCrossings,r50SourceShape,r50Shape,hyperbolaPoints,transformPoint,PARALLEL_SINE_EPS,MAX_GENERAL_ROOTS} from './geometry_round50.mjs?cut=round147';
-import {newScene3D,validate3D} from './plot3d.mjs?cut=round302';
-import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion,DOMAIN_COLOR_MODES,IMPLICIT_COLOR_MODES,MAX_DOMAIN_RESOLUTION} from './plot_modes.mjs?cut=round302';
+import {newScene3D,validate3D} from './plot3d.mjs?cut=round303';
+import {parseCurveExpression,parseParametric,parseImplicit,parseVectorField,parseComplexExpression,validatePlotRegion,DOMAIN_COLOR_MODES,IMPLICIT_COLOR_MODES,MAX_DOMAIN_RESOLUTION} from './plot_modes.mjs?cut=round303';
 /** MathIllustrator document model, v1: deterministic, browser-independent, no eval. */
 /** Pure derived polygon vertices. Shared by the model's dynamic side segments
  * and the renderer/snapping module; never materialize virtual corners as points. */
@@ -173,16 +175,6 @@ export function circumcircle(points){
  return sharedCircum(points);
 }
 const HEX = /^#[0-9a-fA-F]{6}$/;
-/** Unicode scalar values admitted by XML 1.0; SVG exports are XML, not HTML.
- * Reject rather than silently replace NUL, C0 controls or lone UTF-16 surrogates.
- */
-export function xmlTextSafe(value){
- if(typeof value!=='string')return false;
- for(const ch of value){const c=ch.codePointAt(0);
-  if(!(c===9||c===10||c===13||(c>=32&&c<=0xd7ff)||(c>=0xe000&&c<=0xfffd)||(c>=0x10000&&c<=0x10ffff)))return false;
- }
- return true;
-}
 /** A one-time compatibility correction for browser-autorecovered old projects.
  * The original default presets shipped blue-tinted stroke/fill pairs. Since
  * they are indistinguishable from manual settings, only migrate exact known
@@ -220,12 +212,7 @@ export function byName(doc,name){return doc.objects.find(o=>o.name===name);}
 export function nextId(doc){if(!Number.isSafeInteger(doc.nextId)||doc.nextId>Number.MAX_SAFE_INTEGER-1)throw Error('Object ID capacity exceeded.');return 'o'+doc.nextId++;}
 /** Naming affects future automatic names only. Never rename references or existing objects. */
 export function automaticName(doc,type){
- const convention=doc.settings?.namingConvention??'camel'; // Older v1 documents kept their original scheme.
- if(!['pascal','camel','snake'].includes(convention))throw Error('Invalid object naming convention.');
- const label=convention==='camel'?type:(type==='arrow'?'vector':type);
- const base=convention==='pascal'?label[0].toUpperCase()+label.slice(1):
-  convention==='snake'?label.replace(/[A-Z]/g,letter=>'_'+letter.toLowerCase()):label;
- return `${base} ${doc.nextId}`;
+ return formatAutomaticName(type,doc.nextId,doc.settings?.namingConvention??'camel');
 }
 export function append(doc,obj){
  if(!SUPPORTED.includes(obj.type))throw Error('Unsupported object type: '+obj.type);
@@ -766,7 +753,7 @@ export function validateDoc(raw){
  validateAlgebra(d);
  const ids=new Set(),names=new Set(),roleObjects=new Map(d.objects.map(o=>[o?.id,o]));let max=0;
  for(const o of d.objects){
-  if(!o||typeof o!=='object'||!/^o[1-9]\d*$/.test(o.id)||ids.has(o.id)||!SUPPORTED.includes(o.type)||typeof o.name!=='string'||!o.name.trim()||o.name.length>180)throw Error('Invalid or repeated object ID/type/name.');
+  if(!o||typeof o!=='object'||!/^o[1-9]\d*$/.test(o.id)||ids.has(o.id)||!SUPPORTED.includes(o.type)||typeof o.name!=='string'||!o.name.trim()||o.name.length>MAX_OBJECT_NAME_LENGTH)throw Error('Invalid or repeated object ID/type/name.');
   if(!xmlTextSafe(o.name))throw Error('Object name contains characters illegal in SVG XML.');
   if(names.has(o.name))throw Error('Duplicate object name: '+o.name);
   if(typeof o.hidden!=='boolean'||typeof o.locked!=='boolean')throw Error('Invalid visibility or lock flag.');

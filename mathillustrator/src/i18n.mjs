@@ -1,3 +1,4 @@
+import {formatAutomaticName} from './object_naming.mjs?cut=round303';
 /** Scoped editor UI translation, never modifies mathematical object text or exported project data. */
 const zh={
  'Fill object type':'填充对象类型','Object type':'对象类型','Object':'对象','Closed Bézier':'闭合贝塞尔','Closed free curve':'闭合自由曲线','3-point circle':'三点圆','Enable fill':'启用填充','Closed curve':'闭合曲线',
@@ -334,7 +335,10 @@ export function translatedGeneratedPlotName(name,kind,language='en'){
  const prefix={surface3d:'Surface',parametric3d:'Parametric surface',implicit3d:'Implicit surface',vector3d:'Vector field',domain3d:'Domain coloring'}[kind];
  if(!prefix)return name;
  const match=/^(.*) ([1-9]\d*)$/.exec(name);
- return match&&match[1]===prefix?`${translated(prefix,language)} ${match[2]}`:name;
+ const camel=prefix[0].toLowerCase()+prefix.slice(1).replace(/ ([a-z])/g,(_,c)=>c.toUpperCase());
+ if(!match)return name;
+ const aliases=[`${prefix} ${match[2]}`,...['pascal','camel','snake'].map(convention=>formatAutomaticName(camel,match[2],convention))];
+ return aliases.includes(name)?`${translated(prefix,language)} ${match[2]}`:name;
 }
 // Region locking is a persistent 3D project option, not a camera lock.
 Object.assign(zh,{"Fix region":"固定绘图范围"});
@@ -481,3 +485,7 @@ Object.assign(zh,{
  'Pasted selected objects.':'已粘贴选中对象。',
  'Cut selected objects with dependents.':'已剪切选中对象及其依赖构造。',
 });
+
+Object.assign(zh,{'Red–purple–blue':'红紫蓝','Inferno':'Inferno（炽焰）','Rainbow':'彩虹','Heat map (legacy)':'热力图（旧版）','x(u, v)':'x(u, v)','y(u, v)':'y(u, v)','z(u, v)':'z(u, v)','Duplicate 3D plot name.':'三维图形名称重复。','Unexpected 3D plot properties.':'不适用的三维图形属性。'});
+Object.assign(zh,{'Disable Color range first.':'请先关闭色彩渐变。','Enable Color range first.':'请先启用色彩渐变。','Invalid plot name.':'无效的图形名称。'});
+Object.assign(zh,{'Density must be 3–40.':'密度必须为 3 至 40。','Resolution must be 32–1536.':'分辨率必须为 32 至 1536。','Invalid implicit color scheme.':'无效的隐式曲线着色方案。','Invalid implicit resolution.':'无效的隐式曲线分辨率。'});

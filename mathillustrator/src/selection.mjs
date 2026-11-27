@@ -1,4 +1,4 @@
-import {POINT_LIKE,pointRole} from './model.mjs?cut=round302';
+import {POINT_LIKE,pointRole} from './model.mjs?cut=round303';
 /** Transient editor selection helpers. Never serialize selection into project JSON. */
 export const FILL_TYPES=new Set(['polygon','regularPolygon','ellipse','rectangle','parallelogram','node']);
 export const POINT_TYPES=new Set(POINT_LIKE);

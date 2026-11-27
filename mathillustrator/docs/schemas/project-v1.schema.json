@@ -368,7 +368,20 @@
             "perpendicularThrough",
             "intersection",
             "circleIntersection",
-            "circleCircleIntersection"
+            "circleCircleIntersection",
+            "angleBisector",
+            "perpendicularFoot",
+            "pointOnObject",
+            "tangentCircle",
+            "circularArc",
+            "parabola",
+            "hyperbola",
+            "generalIntersection",
+            "transformCopy",
+            "locus",
+            "fixedLength",
+            "fixedAngle",
+            "triangleCenter"
           ]
         },
         "style": {
@@ -445,10 +458,19 @@
           "maxLength": 400
         },
         "parameter": {
-          "enum": [
-            "t",
-            "u",
-            "v"
+          "anyOf": [
+            {
+              "enum": [
+                "t",
+                "u",
+                "v"
+              ]
+            },
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
           ]
         },
         "region": {
@@ -508,6 +530,8 @@
             "diverging",
             "grayscale",
             "heat",
+            "inferno",
+            "rainbow",
             "viridis",
             "sign",
             "bands"
@@ -650,6 +674,13 @@
         "colorRange": {
           "type": "boolean",
           "description": "Optional vector-field magnitude ramp or implicit scalar coloring; omitted means legacy solid stroke."
+        },
+        "regionCondition": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 240
         }
       },
       "allOf": [
@@ -1116,12 +1147,273 @@
           }
         },
         {
-          "if": {"properties": {"type": {"const": "implicit"}}},
-          "then": {"properties": {"colorMode": {"enum": ["range", "diverging", "grayscale", "heat", "viridis", "sign", "bands"]}}}
+          "if": {
+            "properties": {
+              "type": {
+                "const": "implicit"
+              },
+              "colorRange": {
+                "const": true
+              }
+            },
+            "required": [
+              "colorRange"
+            ]
+          },
+          "then": {
+            "required": [
+              "region"
+            ]
+          }
         },
         {
-          "if": {"properties": {"type": {"const": "domainColoring"}}},
-          "then": {"properties": {"colorMode": {"enum": ["phase-modulus", "phase", "contours", "phase-contours", "phase-checker", "phase-sectors"]}}}
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "enum": [
+                    "implicit",
+                    "domainColoring"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "colorMode"
+                  ]
+                },
+                {
+                  "required": [
+                    "resolution"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "enum": [
+                    "implicit",
+                    "vectorField"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "colorRange"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "enum": [
+                    "implicit",
+                    "vectorField",
+                    "domainColoring"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "region"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "const": "vectorField"
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "density"
+                  ]
+                },
+                {
+                  "required": [
+                    "normalized"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "pointOnObject"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "parameter",
+              "refs"
+            ],
+            "properties": {
+              "parameter": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "refs": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "parametric"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "parameter": {
+                "enum": [
+                  "t",
+                  "u",
+                  "v"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "enum": [
+                    "pointOnObject",
+                    "parametric"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "parameter"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "transformCopy"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refs",
+              "transform"
+            ],
+            "properties": {
+              "transform": {
+                "enum": [
+                  "reflect",
+                  "rotate",
+                  "translate",
+                  "dilate",
+                  "invert"
+                ]
+              },
+              "amount": {
+                "type": "number"
+              },
+              "refs": {
+                "minItems": 2,
+                "maxItems": 3
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "implicit"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "colorMode": {
+                "enum": [
+                  "range",
+                  "diverging",
+                  "grayscale",
+                  "heat",
+                  "inferno",
+                  "rainbow",
+                  "viridis",
+                  "sign",
+                  "bands"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "domainColoring"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "colorMode": {
+                "enum": [
+                  "phase-modulus",
+                  "phase",
+                  "contours",
+                  "phase-contours",
+                  "phase-checker",
+                  "phase-sectors"
+                ]
+              }
+            }
+          }
         },
         {
           "if": {
@@ -1374,7 +1666,7 @@
             },
             "opacity": {
               "type": "number",
-              "minimum": 0.05,
+              "minimum": 0,
               "maximum": 1
             },
             "detail": {
@@ -1392,8 +1684,74 @@
             },
             "axes": {
               "type": "boolean"
+            },
+            "fixRegion": {
+              "type": "boolean"
+            },
+            "fixedBounds": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "xMin",
+                "xMax",
+                "yMin",
+                "yMax",
+                "zMin",
+                "zMax"
+              ],
+              "properties": {
+                "xMin": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "xMax": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "yMin": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "yMax": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "zMin": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "zMax": {
+                  "type": "number",
+                  "minimum": -10000,
+                  "maximum": 10000
+                }
+              }
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "fixRegion": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "fixRegion"
+                ]
+              },
+              "then": {
+                "required": [
+                  "fixedBounds"
+                ]
+              }
+            }
+          ]
         },
         "plots": {
           "type": "array",
@@ -1430,14 +1788,14 @@
               "name": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 180
               },
               "color": {
                 "$ref": "#/$defs/color"
               },
               "opacity": {
                 "type": "number",
-                "minimum": 0.05,
+                "minimum": 0,
                 "maximum": 1
               },
               "hidden": {
@@ -1550,6 +1908,18 @@
               "colorRange": {
                 "type": "boolean",
                 "description": "Optional red-purple-blue height (surfaces) or magnitude (vectors) ramp; omitted preserves old colors."
+              },
+              "regionCondition": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 240
+              },
+              "lineWidth": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 12
               }
             },
             "allOf": [
@@ -1569,6 +1939,101 @@
                     "heightMode",
                     "colorMode"
                   ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "heightMode"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "colorMode"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "vector3d"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "density",
+                    "normalized"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "density"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "normalized"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "lineWidth"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "parametric3d"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "uMin",
+                    "uMax",
+                    "vMin",
+                    "vMax"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "uMin"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "uMax"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "vMin"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "vMax"
+                        ]
+                      }
+                    ]
+                  }
                 }
               }
             ]

@@ -2,7 +2,7 @@
  * Invalid / non-simple outlines intentionally do not advertise a misleading area.
  * No rounded result is ever written back into the project model.
  */
-import {derivedShapeVertices, focalEllipse} from './model.mjs?cut=round302';
+import {derivedShapeVertices, focalEllipse} from './model.mjs?cut=round303';
 const valid=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);
 const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 function intersects(a,b,c,d){

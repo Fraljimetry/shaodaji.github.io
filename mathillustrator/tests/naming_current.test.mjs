@@ -72,3 +72,31 @@ test('invalid naming setting rejected; legacy absence is accepted only as migrat
  assert.equal(validateDoc(copy).settings.namingConvention,'camel');
  assert.equal(automaticName(copy,'point'),'point 2');
 });
+
+// 2D and 3D share the convention formatter while retaining separate scene IDs.
+import {newScene3D,add3DPlot,validate3D} from '../src/plot3d.mjs';
+import {translatedGeneratedPlotName} from '../src/i18n.mjs';
+test('3D naming follows all conventions, preserves custom and legacy names, and rejects collisions atomically',()=>{
+ const scene=newScene3D();
+ const a=add3DPlot(scene,'domain3d',['z'],undefined,'pascal');
+ const b=add3DPlot(scene,'domain3d',['z'],undefined,'camel');
+ const c=add3DPlot(scene,'domain3d',['z'],undefined,'snake');
+ assert.deepEqual([a.name,b.name,c.name],['DomainColoring 1','domainColoring 2','domain_coloring 3']);
+ for(const p of [a,b,c])assert.equal(translatedGeneratedPlotName(p.name,p.kind,'zh'),'定义域着色 '+p.id);
+ a.name='Domain coloring 1';b.name='DomainColoring 4';c.name='Custom';
+ const before=JSON.stringify(scene);assert.throws(()=>add3DPlot(scene,'domain3d',['z']),/Name already in use/);assert.equal(JSON.stringify(scene),before);
+ b.name='Long '+ 'a'.repeat(120);validate3D(scene);
+ c.name=b.name;assert.throws(()=>validate3D(scene),/Duplicate/);
+ c.name='invalid\u0000name';assert.throws(()=>validate3D(scene));c.name='Custom';
+ const doc=newDoc();doc.scene3d=scene;assert.deepEqual(validateDoc(JSON.parse(JSON.stringify(doc))),doc);
+});
+test('3D validates only kind-specific fields and allows exactly the same opacity range as 2D',()=>{
+ for(const [kind,inputs] of [['surface3d',['x+y']],['implicit3d',['x+y+z']],['parametric3d',['u','v','u+v']],['vector3d',['x','y','z']],['domain3d',['z']]]){
+  const scene=newScene3D();const p=add3DPlot(scene,kind,inputs);p.opacity=0;scene.options.opacity=0;validate3D(scene);
+  for(const opacity of [-.01,1.01,NaN]){p.opacity=opacity;assert.throws(()=>validate3D(scene));}p.opacity=1;
+  for(const [field,value,allowed] of [['colorMode','phase','domain3d'],['heightMode','argument','domain3d'],['density',4,'vector3d'],['normalized',true,'vector3d'],['lineWidth',1,'vector3d'],['uMin',0,'parametric3d'],['uMax',1,'parametric3d'],['vMin',0,'parametric3d'],['vMax',1,'parametric3d']]){
+   if(kind===allowed)continue; p[field]=value;assert.throws(()=>validate3D(scene),/Unexpected 3D plot properties/);delete p[field];
+  }
+  validate3D(scene);
+ }
+});

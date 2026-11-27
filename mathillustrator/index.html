@@ -88,7 +88,7 @@
         </section>
         <section class="controls settings-3d" id="settings-3d"><h3>3D visualization</h3>
           <label class="field">Projection <select id="scene3d-projection"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
-          <div class="compact-numeric-grid"><label class="field">Mesh detail <input id="scene3d-detail" type="number" min="8" max="96" step="1"></label><label class="field">Opacity <input id="scene3d-opacity" type="number" min="0.05" max="1" step="0.05"></label><label class="field">View yaw (°) <input id="scene3d-yaw" type="number" min="-180" max="180" step="1"></label><label class="field">View pitch (°) <input id="scene3d-pitch" type="number" min="-89" max="89" step="1"></label></div>
+          <div class="compact-numeric-grid"><label class="field">Mesh detail <input id="scene3d-detail" type="number" min="8" max="96" step="1"></label><label class="field">Opacity <input id="scene3d-opacity" type="number" min="0" max="1" step="0.05"></label><label class="field">View yaw (°) <input id="scene3d-yaw" type="number" min="-180" max="180" step="1"></label><label class="field">View pitch (°) <input id="scene3d-pitch" type="number" min="-89" max="89" step="1"></label></div>
           <div class="checks-3d"><label class="check"><input id="scene3d-cube" type="checkbox"> Reference cube</label><label class="check"><input id="scene3d-lighting" type="checkbox"> Lighting</label><label class="check"><input id="scene3d-grid" type="checkbox"> Grid</label><label class="check"><input id="scene3d-axes" type="checkbox"> Axes</label></div>
           <div class="compact-settings-grid"><label class="field">Resolution <select id="scene3d-export-scale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label class="field">Theme <select id="scene3d-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
           <div class="background-transparent-row"><label class="field">Background <input id="scene3d-background" type="color"></label><label class="check"><input id="scene3d-export-transparent" type="checkbox"> Transparent</label></div>
@@ -146,6 +146,6 @@
     },4000));
   })();
   </script>
-  <script type="module" src="./src/app.mjs?cut=round302"></script>
+  <script type="module" src="./src/app.mjs?cut=round303"></script>
 </body>
 </html>

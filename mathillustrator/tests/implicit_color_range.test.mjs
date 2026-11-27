@@ -88,3 +88,44 @@ test('scheduled finding: implicit line coefficients preserve finite anchors and 
  const diagonal=recognizedPlotGeometry({type:'implicit',expr:'1e-200*x+1e-200*y=2e-200'});assert.ok(diagonal.a.every(v=>Math.abs(v-1)<1e-14));
  assert.equal(recognizedPlotGeometry({type:'implicit',expr:'1e-300*x=1e308'}),null,'reject an unrepresentable anchor');
 });
+
+test('sign and diverging colors retain the mathematical zero at every scale',()=>{
+ for(const scale of [Number.MIN_VALUE,1e-300,1e-20,1,1e308]){
+  for(const mode of ['sign','diverging']){
+   assert.deepEqual(scalarColorRGB(-scale,-scale,scale,mode),[59,130,246]);
+   assert.deepEqual(scalarColorRGB(0,0,scale,mode),[255,255,255]);
+   assert.deepEqual(scalarColorRGB(-0,-scale,0,mode),[255,255,255]);
+   assert.deepEqual(scalarColorRGB(scale,0,scale,mode),[239,68,68]);
+   assert.deepEqual(scalarColorRGB(-scale,-scale,0,mode),[59,130,246]);
+  }
+ }
+ assert.deepEqual(scalarColorRGB(1.5,0,3,'diverging'),[247,162,162]);
+ assert.deepEqual(scalarColorRGB(3,3,3,'diverging'),[239,68,68]);
+});
+test('all approved palettes and legacy Heat map persist; scalar and complex raster maxima agree',()=>{
+ const doc=newDoc();
+ for(const mode of ['range','diverging','grayscale','inferno','rainbow','viridis','sign','bands','heat']){
+  const o=append(doc,{type:'implicit',expr:'x+y',region,colorRange:true,colorMode:mode,resolution:32});
+  const out=sampleImplicitColors(parseImplicit(o.expr),region,{mode,resolution:32});
+  assert.equal(out.rgba.length,32*16*4);assert.ok(out.rgba.every(Number.isFinite));
+ }
+ assert.deepEqual(validateDoc(JSON.parse(JSON.stringify(doc))),doc);
+ assert.deepEqual(scalarColorRGB(0,0,1,'inferno'),[0,0,4]);assert.deepEqual(scalarColorRGB(1,0,1,'inferno'),[252,255,164]);
+ assert.deepEqual(scalarColorRGB(0,0,1,'rainbow'),[91,33,182]);assert.deepEqual(scalarColorRGB(1,0,1,'rainbow'),[239,68,68]);
+ const square={xMin:-1,xMax:1,yMin:-1,yMax:1};
+ const full=sampleImplicitColors(x=>x,square,{resolution:1536,maxEvaluations:1536**2});
+ assert.equal(full.limited,false);assert.equal(full.width,1536);assert.equal(full.height,1536);assert.equal(full.evaluations,1536**2);assert.equal(full.rgba.length,4*1536**2);
+});
+
+test('UI palette catalogs and saved-project schema admit the same modes',async()=>{
+ const {IMPLICIT_COLOR_SCHEMES,IMPLICIT_COLOR_MODES,DOMAIN_COLOR_SCHEMES,DOMAIN_COLOR_MODES}=await import('../src/plot_modes.mjs');
+ const {readFileSync}=await import('node:fs');
+ const schema=JSON.parse(readFileSync(new URL('../docs/schemas/project-v1.schema.json',import.meta.url)));
+ const defs=schema.$defs.object;
+ const sorted=xs=>[...xs].sort();
+ const implicit=defs.allOf.find(a=>a.if?.properties?.type?.const==='implicit'&&a.then?.properties?.colorMode).then.properties.colorMode.enum;
+ const complex=defs.allOf.find(a=>a.if?.properties?.type?.const==='domainColoring'&&a.then?.properties?.colorMode).then.properties.colorMode.enum;
+ assert.deepEqual(sorted(implicit),sorted(IMPLICIT_COLOR_MODES));assert.deepEqual(sorted(complex),sorted(DOMAIN_COLOR_MODES));
+ assert.deepEqual(sorted(schema.$defs.scene3d.properties.plots.items.properties.colorMode.enum),sorted([...DOMAIN_COLOR_MODES,'solid']));
+ assert.equal(IMPLICIT_COLOR_SCHEMES.length,8);assert.equal(DOMAIN_COLOR_SCHEMES.length,6);
+});

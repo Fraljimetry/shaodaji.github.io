@@ -1,6 +1,6 @@
 /** Strict spatial inequality: safe arithmetic only, with bounded input.
  * Empty means no additional restriction. Boundary points are excluded. */
-import {parseCurveExpression} from './plot_modes.mjs?cut=round302';
+import {parseCurveExpression} from './plot_modes.mjs?cut=round303';
 export function compileRegionCondition(source,dimension=3){
  if(source===undefined||source===null||source==='')return null;
  if(typeof source!=='string'||source.length>240)throw Error('Region inequality must be at most 240 characters.');

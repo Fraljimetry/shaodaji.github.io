@@ -72,6 +72,7 @@ def command_specs(profile, cases):
         # Regression of quoted-label bracket typing, closing-skip and Backspace fixes.
         ('browser-recent-input-assist', [py, 'tests/browser_round246_input_assist.py'], 120, 'browser'),
         ('browser-implicit-color-range', [py, 'tests/browser_implicit_color_range.py'], 120, 'browser'),
+        ('browser-plot-control-matrix', [py, 'tests/browser_plot_control_matrix.py'], 180, 'browser'),
     ]
     if profile in ('local', 'release'):
         checks += [

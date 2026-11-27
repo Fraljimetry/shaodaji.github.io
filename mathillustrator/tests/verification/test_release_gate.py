@@ -56,6 +56,7 @@ class GateContractTests(unittest.TestCase):
         expected_common = {
             'browser-recent-input-assist': 'tests/browser_round246_input_assist.py',
             'browser-implicit-color-range': 'tests/browser_implicit_color_range.py',
+            'browser-plot-control-matrix': 'tests/browser_plot_control_matrix.py',
         }
         expected_full = {
             'browser-recent-freehand': 'tests/browser_round146_freehand_shapes.py',
@@ -84,7 +85,7 @@ class GateContractTests(unittest.TestCase):
             self.assertEqual(len(selected), len(specs), 'Duplicate verification check name')
 
     def test_recent_bug_browser_workflows_fail_closed_without_execution(self):
-        for name in ('browser-recent-input-assist', 'browser-implicit-color-range', 'browser-recent-freehand', 'browser-recent-panel-resize'):
+        for name in ('browser-recent-input-assist', 'browser-implicit-color-range', 'browser-plot-control-matrix', 'browser-recent-freehand', 'browser-recent-panel-resize'):
             self.assertEqual(self.run_fake(name, '', kind='browser')['status'], 'INCOMPLETE')
             self.assertEqual(self.run_fake(name, 'PASS', returncode=1, kind='browser')['status'], 'FAIL')
 

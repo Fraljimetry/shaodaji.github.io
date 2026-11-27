@@ -1,4 +1,4 @@
-import {append,clone,validateDoc} from './model.mjs?cut=round302';
+import {append,clone,validateDoc} from './model.mjs?cut=round303';
 
 /** In-editor 2D clipboard. Snapshot the transitive parents of each selected
  * object so copies can be moved independently of the originals. Nothing is

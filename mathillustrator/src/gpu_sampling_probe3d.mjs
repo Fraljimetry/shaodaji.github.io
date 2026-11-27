@@ -2,7 +2,7 @@
  * No production 3D mesh path calls this module. No CPU fallback is disguised
  * as GPU execution. The caller must check status before using values.
  */
-import {compileRestrictedGPUImplicit} from './gpu_expression3d.mjs?cut=round302';
+import {compileRestrictedGPUImplicit} from './gpu_expression3d.mjs?cut=round303';
 
 export const MAX_GPU_PROBE_POINTS = 256;
 export const MAX_GPU_PROBE_BATCH_POINTS = 4096;
