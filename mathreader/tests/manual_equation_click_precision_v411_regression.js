@@ -5,8 +5,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'js/20-selection-annotations.js'), 'utf8');
-const geometry = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'js/20-selection-annotations.js'), 'utf8').replace(/\r\n/g, '\n');
+const geometry = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8').replace(/\r\n/g, '\n');
 function extract(src, name) {
   const match = src.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm'));
   assert.ok(match, `${name} exists`);

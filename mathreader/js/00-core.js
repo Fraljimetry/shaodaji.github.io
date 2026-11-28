@@ -424,7 +424,7 @@ const SEARCH_PREFS_KEY = 'mathreader-search-options-v1';
 const WORKSPACE_COLLAPSE_KEY = 'mathreader-workspace-collapse-v3';
 const PANEL_ORDER_KEY = 'mathreader-panel-order-v1';
 const STRUCTURE_INDEX_VERSION = 63;
-const EQUATION_INDEX_SUMMARY_VERSION = 29;
+const EQUATION_INDEX_SUMMARY_VERSION = 30;
 // Bounded, shared limit: detection, restoration, manual edits and Undo agree.
 const MAX_INFERRED_OUTLINE_ENTRIES = 1200;
 const COMMAND_RECENT_KEY = 'mathreader-command-recent-v1';
@@ -1202,6 +1202,18 @@ function snapshotEquationIndexForPersistence(index) {
     if (rows.length >= 5000) break;
   }
   return rows.length ? { version: EQUATION_INDEX_SUMMARY_VERSION, rows } : null;
+}
+
+// Rebuild a stale portable *native automatic* index when its source text is
+// available. Preserve imported OCR/verified/manual geometry, and all portable
+// maps when the text needed to reproduce them is unavailable.
+function shouldRebuildPortableNativeEquationSnapshot(snapshot, textMode) {
+  const version = Number(snapshot?.version);
+  return textMode === 'native' && Number.isInteger(version) && version > 0
+    && version < EQUATION_INDEX_SUMMARY_VERSION && Array.isArray(snapshot.rows)
+    && !snapshot.rows.some(row => row && (row.ocrSource || row.manualReselect || row.manualAdd
+      || row.manualEditId || row.meticulousPageVerified || row.ocrGeometryMeasured
+      || row.marginLocationVerifiedV385 || row.marginLocationVerifiedV386));
 }
 
 function restoreEquationIndexFromPersistence(snapshot, { portable = false } = {}) {
@@ -3563,7 +3575,12 @@ function loadDocumentState(cachedSession = null) {
       equationIndexKnownCount = equationManualOrder.length;
     }
     const portableDetectionRequested = Boolean(session.portableContentDetection);
-    const restoredEquationIndex = restoreEquationIndexFromPersistence(session.equationIndexSnapshot, { portable: portableDetectionRequested });
+    const rebuildPortableNative = portableDetectionRequested
+      && shouldRebuildPortableNativeEquationSnapshot(session.equationIndexSnapshot, documentTextMode);
+    if (rebuildPortableNative) equationIndexKnownCount = null;
+    const restoredEquationIndex = restoreEquationIndexFromPersistence(session.equationIndexSnapshot, {
+      portable: portableDetectionRequested && !rebuildPortableNative,
+    });
     if (restoredEquationIndex && equationInitialRecoveryDone) {
       equationAutomaticLabelIndex = restoredEquationIndex;
       equationLabelIndex = applyEquationEdits(equationAutomaticLabelIndex);

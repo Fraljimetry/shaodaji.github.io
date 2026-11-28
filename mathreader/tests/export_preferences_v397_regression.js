@@ -5,9 +5,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
-const src = fs.readFileSync(path.join(root, 'js/60-notes-bookmarks-data.js'), 'utf8');
-const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
-const ui = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8');
+const src = fs.readFileSync(path.join(root, 'js/60-notes-bookmarks-data.js'), 'utf8').replace(/\r\n/g, '\n');
+const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
+const ui = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8').replace(/\r\n/g, '\n');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 let checks = 0;
 function check(test, why) {assert.ok(test,why); checks++;}
@@ -153,7 +153,7 @@ async function run(){
     const fragment=html.slice(htmlStart,htmlStop);
     check(fragment.includes('id="settings-export-group"')&&fragment.includes('id="export-include-detection"')&&fragment.includes('id="export-include-full-text"'),'both checkboxes inside Settings');
     check(ui.includes("exportDetectionOption?.addEventListener('change', persistExportPreferences)")&&ui.includes("loadExportPreferences();"),'checkbox events and startup restoration wired');
-    check(html.includes('mathreader.js?v=454')&&html.includes('mathreader.css?v=433'),'v454 browser cache invalidated');
+    check(html.includes('mathreader.js?v=455')&&html.includes('mathreader.css?v=433'),'v455 browser cache invalidated');
     check(!extract(src,'importReadingDataFile').includes('payload.fullDocumentText'),'diagnostic full text does not alter reading state during import');
   }
   console.log(`PASS | v397 independent export options | assertions=${checks}`);

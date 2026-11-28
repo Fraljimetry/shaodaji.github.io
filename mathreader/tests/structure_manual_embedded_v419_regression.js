@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const read = (name) => fs.readFileSync(path.join(__dirname,'../js',name),'utf8');
+const read = (name) => fs.readFileSync(path.join(__dirname,'../js',name),'utf8').replace(/\r\n/g, '\n');
 const select = read('20-selection-annotations.js');
 const outline = read('40-outline-structure.js');
 const refs = read('50-references-search.js');

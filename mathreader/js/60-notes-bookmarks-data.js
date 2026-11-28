@@ -1440,6 +1440,7 @@ async function importReadingDataFile(file) {
   renderBookmarks(); renderStructureIndex(); renderBibliographyIndex(); renderReferenceStack(); renderAnnotationList(); rerenderVisibleAnnotations(); updateReadingBackButton();
   updateDocumentTextAvailabilityUI();
   persistDocumentState(); scheduleAutomaticStructureIndex();
+  if (documentTextMode === 'native' && !equationLabelIndex) void ensureEquationIndexRendered();
   if (evidenceRecovery.count) showNotice(t('Saved equation-margin OCR evidence restored.', '已恢复保存的公式边缘 OCR 证据。'));
 }
 

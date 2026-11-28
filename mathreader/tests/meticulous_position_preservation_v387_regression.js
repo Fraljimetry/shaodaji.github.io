@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
+const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
 const get = (name) => {
   const hit = core.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm'));
   assert.ok(hit, `real implementation of ${name} exists`);

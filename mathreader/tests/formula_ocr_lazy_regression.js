@@ -5,10 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const root = path.join(__dirname, '..');
-const ocr = fs.readFileSync(path.join(root, 'js/10-formula-ocr.js'), 'utf8');
-const vector = fs.readFileSync(path.join(root, 'js/11-formula-vector.js'), 'utf8');
-const doc = fs.readFileSync(path.join(root, 'js/60-notes-bookmarks-data.js'), 'utf8');
-const runtime = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8');
+const ocr = fs.readFileSync(path.join(root, 'js/10-formula-ocr.js'), 'utf8').replace(/\r\n/g, '\n');
+const vector = fs.readFileSync(path.join(root, 'js/11-formula-vector.js'), 'utf8').replace(/\r\n/g, '\n');
+const doc = fs.readFileSync(path.join(root, 'js/60-notes-bookmarks-data.js'), 'utf8').replace(/\r\n/g, '\n');
+const runtime = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8').replace(/\r\n/g, '\n');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 let checks = 0;
 function check(value, label) { assert.ok(value, label); checks++; }
@@ -19,7 +19,7 @@ check(!runtime.includes('scheduleMathOcrPreload'), 'settings/reset do not preloa
 check(runtime.includes('schedulePdfCorePreload();'), 'unrelated PDF.js startup warmup preserved');
 check(vector.includes('const pipe = await ensureMathOcrPipeline();'), 'OCR inference lazily acquires the engine');
 check(vector.includes("if (formulaExtractionMode === 'vector' && vector?.latex)"), 'usable vector formula bypasses image OCR');
-check(html.includes('mathreader.js?v=454') && html.includes('mathreader.css?v=433'), 'current v454 JS cache busting');
+check(html.includes('mathreader.js?v=455') && html.includes('mathreader.css?v=433'), 'current v455 JS cache busting');
 check(html.includes('The model loads on the next image formula extraction.'), 'reset hint describes lazy behavior');
 check(runtime.includes('OCR reset · loads on next image extraction'), 'reset says it will not preload');
 check(runtime.includes('OCR engine selected · loads on first image extraction'), 'engine settings say they will not preload');

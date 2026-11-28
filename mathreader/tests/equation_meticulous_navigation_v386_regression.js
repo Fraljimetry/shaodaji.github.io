@@ -4,8 +4,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const root=path.resolve(__dirname,'..');
-const eq=fs.readFileSync(path.join(root,'js/41-equations-bibliography.js'),'utf8');
-const nav=fs.readFileSync(path.join(root,'js/30-rendering-navigation.js'),'utf8');
+const eq=fs.readFileSync(path.join(root,'js/41-equations-bibliography.js'),'utf8').replace(/\r\n/g, '\n');
+const nav=fs.readFileSync(path.join(root,'js/30-rendering-navigation.js'),'utf8').replace(/\r\n/g, '\n');
 function extract(source,name) {
  const match=source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\n)`,'m'));
  assert.ok(match,`found ${name}`);return match[0];
@@ -44,7 +44,7 @@ check(eq.includes('verifiedEquationNavigationTarget(entry); await goToMatchedLoc
 // Rescanning the same physical label replaces its obsolete measured target
 // while keeping unrelated equations and page text. Run actual merge code.
 const mergeContext=vm.createContext({});
-vm.runInContext(extract(fs.readFileSync(path.join(root,'js/00-core.js'),'utf8'),'mergePageIndexOcrEvidence'),mergeContext);
+vm.runInContext(extract(fs.readFileSync(path.join(root,'js/00-core.js'),'utf8').replace(/\r\n/g, '\n'),'mergePageIndexOcrEvidence'),mergeContext);
 mergeContext.existing={page:222,lines:[],words:[],equationMarginEvidence:[
  {page:222,label:'(17.11)',ratio:.57,marginLocationVerifiedV385:true},
  {page:222,label:'(17.12)',ratio:.35,marginLocationVerifiedV385:true}

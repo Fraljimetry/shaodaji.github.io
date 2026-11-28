@@ -12,6 +12,12 @@ def sha(b):
     return hashlib.sha256(b).hexdigest()
 
 
+def historical_bytes(path):
+    # The manifest hashes the original LF representation; Windows checkout
+    # may translate line endings. Preserve every other byte.
+    return path.read_bytes().replace(b'\r\n', b'\n')
+
+
 def verify():
     assert layout['schema'] == 1 and layout['source_version'] == 'v414'
     seen = set()
@@ -20,10 +26,10 @@ def verify():
         assert m['target'] not in seen
         seen.add(m['target'])
         assert dst.is_file(), dst
-        assert sha(dst.read_bytes()) == m['sha256'], dst
+        assert sha(historical_bytes(dst)) == m['sha256'], dst
         # A fully migrated tree must have no original root duplicates.
         assert not src.exists(), src
-    current = (ROOT / 'REGRESSION.md').read_bytes()
+    current = historical_bytes(ROOT / 'REGRESSION.md')
     marker = layout['regression_prefix_marker'].encode('utf8')
     assert marker in current
     current_record = current.split(marker,1)[1]
@@ -35,15 +41,15 @@ def verify():
         assert p['start_line'] == previous_end + 1
         previous_end = p['end_line']
         # Later release notes may append to REGRESSION.md; the migrated v414
-        # historical partition must remain byte-for-byte intact.
-        data = b''.join(current_record.splitlines(keepends=True)[:p['end_line']]) if p['path'] == 'REGRESSION.md' else (ROOT / p['path']).read_bytes()
+        # historical partition must remain byte-for-byte intact after LF normalization.
+        data = b''.join(current_record.splitlines(keepends=True)[:p['end_line']]) if p['path'] == 'REGRESSION.md' else historical_bytes(ROOT / p['path'])
         assert sha(data) == p['sha256'], p['path']
         assert len(data.splitlines()) == p['end_line'] - p['start_line'] + 1
         original.extend(data)
     assert sha(original) == layout['source_regression_sha256'], 'Regression history not losslessly preserved'
     assert len(list(ROOT.glob('*.md'))) == 1, 'Root should contain only REGRESSION.md'
     assert (ROOT / 'docs/README.md').is_file()
-    print(f'OK: docs layout; {len(seen)} moved docs; {len(parts)} regression partitions; original SHA-256 intact')
+    print(f'OK: docs layout; {len(seen)} moved docs; {len(parts)} regression partitions; original LF SHA-256 intact')
 
 
 if __name__ == '__main__':

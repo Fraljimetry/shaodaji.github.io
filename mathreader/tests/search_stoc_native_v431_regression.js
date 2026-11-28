@@ -3,7 +3,7 @@
 // heading exceptions: audit the same column projection used by Search.
 const assert=require('node:assert/strict');const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
-const read=x=>fs.readFileSync(path.join(root,x),'utf8');
+const read=x=>{const text=fs.readFileSync(path.join(root,x),'utf8');return x.endsWith('.js') ? text.replace(/\r\n/g, '\n'): text;};
 const fx=JSON.parse(read('regression/fixtures/structure_navigation_native_rows_v426.json'));
 const core=read('js/00-core.js'),equations=read('js/41-equations-bibliography.js'),outline=read('js/40-outline-structure.js'),refs=read('js/50-references-search.js');
 function slice(source,a,b){const start=source.indexOf(a);assert(start>=0,a);const end=source.indexOf(b,start+a.length);assert(end>start,b);return source.slice(start,end)}

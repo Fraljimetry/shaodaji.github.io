@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const source = fs.readFileSync(path.join(__dirname, '../js/00-core.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
 function extract(name) {
   const found = source.match(new RegExp(`async function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm'));
   assert.ok(found, `missing ${name}`);

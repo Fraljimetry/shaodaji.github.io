@@ -4,9 +4,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
-const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
-const ui = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8').replace(/\r\n/g, '\n');
+const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
+const ui = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8').replace(/\r\n/g, '\n');
 const style = fs.readFileSync(path.join(root, 'mathreader.css'), 'utf8');
 let count = 0;
 const check = (test, name) => { assert.ok(test, name); count++; };
@@ -84,7 +84,7 @@ check(/renderedRows \+ \(renderedRows === 0 \? initialBatchSize : 500\)/.test(so
 check(/equationIndex\.onscroll = \(\) =>/.test(source) && /moreButton\.addEventListener\('click', appendEquationRows\)/.test(source),
       'scroll or explicit action loads all remaining equations, not first 500 only');
 check(ui.includes("input.id === 'map-filter-equations') renderEquationIndex()"), 'filter triggers full search across indexed but unrendered rows');
-check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 29;'),'old equation summary invalidates after v415 label correction');
+check(core.includes('const EQUATION_INDEX_SUMMARY_VERSION = 30;'),'old equation summary invalidates after v415 label correction');
 check(style.includes('.equation-force-ocr:disabled'), 'OCR control has compact disabled styling');
 // Reopening the PDF must retain exact appendix identities and navigation geometry.
 const getCore = (name) => {

@@ -5,8 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
-const equationSource = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
-const editSource = fs.readFileSync(path.join(root, 'js/20-selection-annotations.js'), 'utf8');
+const equationSource = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8').replace(/\r\n/g, '\n');
+const editSource = fs.readFileSync(path.join(root, 'js/20-selection-annotations.js'), 'utf8').replace(/\r\n/g, '\n');
 function extract(source, name) {
   const match = source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm'));
   assert.ok(match, `found ${name}`);

@@ -5,6 +5,7 @@ This intentionally simulates page surfaces, NOT live PDF.js/Tesseract OCR.
 The measured Giusti 17.11 ratio is from the original 1984 PDF.
 """
 import re
+import shutil
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -16,7 +17,7 @@ fn=re.search(r'function alignReaderNavigationToSurface\([\s\S]*?\n\}(?=\n)',nav)
 assert fn, 'navigation alignment helper must exist'
 
 with sync_playwright() as pw:
-    browser=pw.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+    browser=pw.chromium.launch(headless=True,executable_path=shutil.which('chromium'),args=['--no-sandbox'])
     page=browser.new_page(viewport={'width':1360,'height':880})
     page.set_content(f'''<!doctype html><html><head><style>{css}</style><style>
     html,body{{height:100%;margin:0}}.reader-viewport{{height:880px}}#reader{{height:740px}}
@@ -88,7 +89,12 @@ with sync_playwright() as pw:
     # post-render state / frame correction overwrites the requested target.
     actual_nav=re.search(r'async function goToLocation\([\s\S]*?\n\}(?=\n)',nav)
     assert actual_nav, 'real navigation implementation must exist'
+    landing_start = nav.index('let activeReaderLanding = null;')
+    landing_end = nav.index('\nasync function renderPage(', landing_start)
+    range_start = nav.index('function ensureReaderPositionScrollRange(')
+    range_end = nav.index('\n// A newer navigation', range_start)
     page.add_script_tag(content='''
+      const continuousStack=document.getElementById('stack');
       const pdfDoc={numPages:253};
       let suppressReadingHistory=true;
       const generalPrefs={recordReadingTrail:true};
@@ -104,7 +110,7 @@ with sync_playwright() as pw:
       async function buildContinuousDocument(){return;}
       function nextFrame(){return new Promise(resolve=>requestAnimationFrame(resolve));}
       async function renderCurrentPage(){return;}
-    '''+actual_nav.group(0))
+    '''+nav[landing_start:landing_end]+'\n'+nav[range_start:range_end]+'\n'+actual_nav.group(0))
     for page_no,ratio in [(28,.245),(222,1605/1844),(229,.68)]:
         observed=page.evaluate("""async ([p,r])=>{
           await goToLocation(p,r,{contextLead:true});

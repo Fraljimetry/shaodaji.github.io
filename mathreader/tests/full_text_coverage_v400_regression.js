@@ -2,7 +2,7 @@
 // A full-text export covers every PDF page in the extraction pass, but a page
 // without native text is not thereby OCR-transcribed or certified blank.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
-const src=fs.readFileSync(path.join(__dirname,'../js/60-notes-bookmarks-data.js'),'utf8');
+const src=fs.readFileSync(path.join(__dirname,'../js/60-notes-bookmarks-data.js'),'utf8').replace(/\r\n/g, '\n');
 const re=/(?:async )?function readingDataRawDetectionSnapshot\([^]*?\n\}(?=\n)/m;
 const m=src.match(re);assert.ok(m,'snapshot must exist');
 const clone=(v,fb=null)=>{try{return JSON.parse(JSON.stringify(v));}catch{return fb}};

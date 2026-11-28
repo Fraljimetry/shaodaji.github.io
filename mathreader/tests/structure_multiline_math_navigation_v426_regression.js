@@ -5,7 +5,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const source=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const source=(file)=>{const text=fs.readFileSync(path.join(root,file),'utf8');return file.endsWith('.js') ? text.replace(/\r\n/g, '\n'): text;};
 const fixture=JSON.parse(source('regression/fixtures/structure_navigation_native_rows_v426.json'));
 const core=source('js/00-core.js'),detect=source('js/41-equations-bibliography.js'),outline=source('js/40-outline-structure.js');
 const pdfDoc={numPages:12};

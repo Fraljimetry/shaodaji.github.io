@@ -4,9 +4,9 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
-const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
-const equation = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
-const formula = fs.readFileSync(path.join(root, 'js/11-formula-vector.js'), 'utf8');
+const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
+const equation = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8').replace(/\r\n/g, '\n');
+const formula = fs.readFileSync(path.join(root, 'js/11-formula-vector.js'), 'utf8').replace(/\r\n/g, '\n');
 let assertions = 0;
 function check(value, label) { assertions += 1; assert.ok(value, label); }
 function fn(text, name) {

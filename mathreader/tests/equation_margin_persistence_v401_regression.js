@@ -2,7 +2,7 @@
 // Compatibility gate: snapshots stored by v401/v402 must remain readable in
 // v403, while a valid per-page journal entry wins over an older bulk record.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),core=fs.readFileSync(path.join(root,'js/00-core.js'),'utf8');
+const root=path.resolve(__dirname,'..'),core=fs.readFileSync(path.join(root,'js/00-core.js'),'utf8').replace(/\r\n/g, '\n');
 function fn(n){const m=core.match(new RegExp(`(?:async )?function ${n}\\([^]*?\\n\\}(?=\\n)`));assert.ok(m,n);return m[0]}
 const names=['equationMarginEvidenceCacheKey','equationMarginPagePrefix','equationMarginPageKey',
 'validEquationMarginLines','validEquationMarginPageRecord','boundedEquationMarginDbOperation','loadEquationMarginOcrEvidence'];

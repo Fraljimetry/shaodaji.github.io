@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const src = fs.readFileSync(path.join(__dirname, '../js/60-notes-bookmarks-data.js'), 'utf8');
-const core = fs.readFileSync(path.join(__dirname, '../js/00-core.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '../js/60-notes-bookmarks-data.js'), 'utf8').replace(/\r\n/g, '\n');
+const core = fs.readFileSync(path.join(__dirname, '../js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
 function extract(source, name, isAsync = true) {
   const re = new RegExp(`${isAsync ? 'async ' : ''}function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm');
   const result = source.match(re);

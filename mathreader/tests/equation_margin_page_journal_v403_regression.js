@@ -4,9 +4,9 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const root = path.join(__dirname, '..');
-const core = fs.readFileSync(path.join(root,'js/00-core.js'),'utf8');
-const eq = fs.readFileSync(path.join(root,'js/41-equations-bibliography.js'),'utf8');
-const exp = fs.readFileSync(path.join(root,'js/60-notes-bookmarks-data.js'),'utf8');
+const core = fs.readFileSync(path.join(root,'js/00-core.js'),'utf8').replace(/\r\n/g, '\n');
+const eq = fs.readFileSync(path.join(root,'js/41-equations-bibliography.js'),'utf8').replace(/\r\n/g, '\n');
+const exp = fs.readFileSync(path.join(root,'js/60-notes-bookmarks-data.js'),'utf8').replace(/\r\n/g, '\n');
 function extract(name) {
   const m = core.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm'));
   assert.ok(m, `Function missing: ${name}`);return m[0];

@@ -1120,6 +1120,7 @@ function twoColumnEquationSupplementCandidates(lines, page, side = equationNumbe
       const parsed = parsedEquationNumber(candidate.label);
       if (!parsed || isLikelyCalendarYearEquationLabel(candidate.label)) continue;
       const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
+      if (detachedNativeEquationSuperscript(lines, lineIndex, candidate, tokenGeometry)) continue;
       const record = {
         label: candidate.label,
         page,
@@ -1840,7 +1841,63 @@ function legacyBareEquationMathLead(item) {
   return mathematicalLead && visibleMath;
 }
 
+// A detached native superscript may otherwise look like a standalone tag.
+// Require positive script geometry, including a nearby actual baseline glyph;
+// neither the label's value nor a bounding box spanning blank space suffices.
+function detachedNativeEquationSuperscript(lines, lineIndex, candidate, geometry) {
+  const line = lines[lineIndex];
+  if (line.ocrSource || candidate.bare || !isStandaloneEquationTagLine(line, candidate.label)) return false;
+  const height = Number(line.heightRatio);
+  const start = Number(geometry.xStartRatio);
+  const end = Number(geometry.xEndRatio);
+  if (!(height > 0 && Number.isFinite(start) && Number.isFinite(end))) return false;
+  return lines.slice(lineIndex + 1, lineIndex + 5).some(other => {
+    const delta = Number(other.ratio) - Number(line.ratio);
+    const otherHeight = Number(other.heightRatio);
+    return !other.ocrSource && otherHeight > 0 && height <= otherHeight * 0.8
+      && delta >= otherHeight * 0.25 && delta <= otherHeight * 0.9
+      && Number(other.xStartRatio) <= start && Number(other.xEndRatio) >= end
+      && (other.parts || []).some(part => Number(part.xEndRatio) >= start - 0.008
+        && Number(part.xStartRatio) <= start + 0.003);
+  });
+}
+
 function inferEquationNumberingSide(records) {
+  // Repeated explicit labels at a common physical edge outweigh diffuse
+  // votes from inline mathematical fragments and bare section numbers.
+  const edgeEvidence = { left: [], right: [] };
+  for (const item of records || []) {
+    if (!item.explicitParenthesized || !item.numeric || item.attachedFunctionCall
+        || item.enumeratedConditionList || item.axisNumericCluster || item.tabularNumericCell
+        || item.measurementValue || item.ocrTopRunningHeader || item.nearbyHeadingContext
+        || equationReferenceProseContext(item.text)) continue;
+    if (!item.nearbyDisplayMath && !(item.mathSignals >= 1)) continue;
+    const start = Number(item.candidateXStartRatio);
+    const end = Number(item.candidateXEndRatio);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > 1 || end <= start) continue;
+    if (item.candidateAtLineStart && end <= 0.24) edgeEvidence.left.push({ x: start, label: item.label });
+    if (item.candidateAtLineEnd && start >= 0.75) edgeEvidence.right.push({ x: end, label: item.label });
+  }
+  const clusterStrength = (items) => {
+    const sorted = [...items].sort((a, b) => a.x - b.x);
+    const labels = new Map();
+    let best = 0;
+    let first = 0;
+    for (const item of sorted) {
+      labels.set(item.label, (labels.get(item.label) || 0) + 1);
+      while (item.x - sorted[first].x > 0.016) {
+        const label = sorted[first++].label;
+        const count = labels.get(label) - 1;
+        if (count) labels.set(label, count); else labels.delete(label);
+      }
+      best = Math.max(best, labels.size);
+    }
+    return best;
+  };
+  const leftCluster = clusterStrength(edgeEvidence.left);
+  const rightCluster = clusterStrength(edgeEvidence.right);
+  if (rightCluster >= 3 && rightCluster >= leftCluster * 2) return 'right';
+  if (leftCluster >= 3 && leftCluster >= rightCluster * 2) return 'left';
   let leftScore = 0;
   let rightScore = 0;
   for (const item of records || []) {
@@ -3522,6 +3579,7 @@ async function buildEquationLabelIndex({ forceImageOcr = false, initialImageOcr 
       for (const candidate of [...explicit, ...weakBare]) {
         const tokenGeometry = equationCandidateTokenGeometry(line, candidate);
         const numeric = parsedEquationNumber(candidate.label);
+        if (detachedNativeEquationSuperscript(lines, lineIndex, candidate, tokenGeometry)) continue;
         // OCR of old books can turn a running section header such as
         // "6.2  <title>  · 239 ·" into a bare dotted equation candidate.  A
         // genuine display tag may occur near the top of a page, but it should

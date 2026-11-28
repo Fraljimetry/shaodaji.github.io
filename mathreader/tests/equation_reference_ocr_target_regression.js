@@ -4,10 +4,10 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
-const eq = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8');
-const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8');
-const navigation = fs.readFileSync(path.join(root, 'js/50-references-search.js'), 'utf8');
-const palette = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8');
+const eq = fs.readFileSync(path.join(root, 'js/41-equations-bibliography.js'), 'utf8').replace(/\r\n/g, '\n');
+const core = fs.readFileSync(path.join(root, 'js/00-core.js'), 'utf8').replace(/\r\n/g, '\n');
+const navigation = fs.readFileSync(path.join(root, 'js/50-references-search.js'), 'utf8').replace(/\r\n/g, '\n');
+const palette = fs.readFileSync(path.join(root, 'js/70-command-ui-runtime.js'), 'utf8').replace(/\r\n/g, '\n');
 function extract(source, name) {
   const match = source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}(?=\\n)`, 'm'));
   assert.ok(match, `implementation found: ${name}`);
