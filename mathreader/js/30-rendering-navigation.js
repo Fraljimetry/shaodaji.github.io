@@ -91,6 +91,18 @@ function pageScale(baseViewport, wrap, kind = 'primary') {
   return Math.max(.35, Math.min(scale, 4));
 }
 
+// The last explicit semantic jump remains authoritative through PDF.js repaint
+// and fit-width reflow, until a user interacts with the reading viewport or
+// starts another navigation. Saved scroll offsets are *not* safe across zoom.
+let activeReaderLanding = null;
+function activeReaderLandingFor(page) {
+  const anchor = activeReaderLanding;
+  return anchor && anchor.doc === pdfDoc && anchor.flow === readingFlow
+    && anchor.serial === readerNavigationSerial && Number(anchor.page) === Number(page)
+    ? anchor : null;
+}
+function invalidateReaderLanding() { activeReaderLanding = null; }
+
 async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
   if (!pdfDoc) return;
   const page = await pdfDoc.getPage(pageNum);
@@ -120,6 +132,18 @@ async function renderPage(pageNum, targetCanvas, wrap, kind = 'primary') {
     const ocrLayer = kind === 'reference' ? referenceOcrLayer : primaryOcrLayer;
     ocrLayer.dataset.page = String(pageNum);
     ocrLayer.dataset.kind = kind;
+    const landing = kind === 'primary' ? activeReaderLandingFor(pageNum) : null;
+    if (landing) {
+      ensureReaderPositionScrollRange(pageNum, landing.ratio, landing.lead);
+      alignReaderNavigationToSurface(pageNum, landing.ratio, landing.lead);
+      // Defer one more correction until PDF.js text-layer and browser layout
+      // have both settled. Never let a superseded repaint move the reader.
+      requestAnimationFrame(() => {
+        if (activeReaderLandingFor(pageNum) === landing)
+          alignReaderNavigationToSurface(pageNum, landing.ratio, landing.lead);
+      });
+      return;
+    }
     const saved = (kind === 'reference' ? referenceScrollByPage : scrollByPage)[String(pageNum)];
     if (saved) {
       wrap.scrollTop = Number(saved.top) || 0;
@@ -674,6 +698,17 @@ async function buildContinuousDocument({ restore = false, anchor = null } = {}) 
   const anchorPage = Math.min(Math.max(1, Number(restoreAnchor?.page) || Number(anchor?.page) || currentPage), pdfDoc.numPages);
   await renderContinuousPage(anchorPage, generation);
   if (generation !== continuousGeneration) return;
+  // A fit-width rebuild must not replace an explicit Structure destination
+  // with an older viewport-derived anchor captured before the click.
+  const landing = activeReaderLandingFor(anchorPage);
+  if (landing) {
+    ensureReaderPositionScrollRange(anchorPage, landing.ratio, landing.lead);
+    alignReaderNavigationToSurface(anchorPage, landing.ratio, landing.lead);
+    requestAnimationFrame(() => {
+      if (activeReaderLandingFor(anchorPage) === landing)
+        alignReaderNavigationToSurface(anchorPage, landing.ratio, landing.lead);
+    });
+  }
 
   continuousObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -742,8 +777,9 @@ async function stabilizeFitWidthLayout(anchorOverride = null) {
     const suppliedAnchor = anchorOverride && Number.isFinite(Number(anchorOverride.page))
       ? { page: Number(anchorOverride.page), ratio: Math.min(1, Math.max(0, Number(anchorOverride.ratio) || 0)) }
       : null;
+    const active = activeReaderLandingFor(activeReaderLanding?.page);
     const anchor = readingFlow === 'continuous'
-      ? (suppliedAnchor || captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
+      ? (active ? { page: active.page, ratio: active.ratio } : suppliedAnchor || captureContinuousAnchor() || continuousSavedAnchor || { page: currentPage, ratio: 0 })
       : null;
     // Browser-history restores can report an intermediate grid width for one or
     // more frames. Sample it repeatedly and rebuild until rendered page widths
@@ -784,7 +820,8 @@ function scheduleReaderWidthReflow() {
     if (width < 180) return;
     if (lastObservedReaderWidth && Math.abs(width - lastObservedReaderWidth) < 2) return;
     lastObservedReaderWidth = width;
-    const anchor = readingFlow === 'continuous' ? (captureContinuousAnchor() || continuousSavedAnchor) : null;
+    const active = activeReaderLandingFor(activeReaderLanding?.page);
+    const anchor = readingFlow === 'continuous' ? (active ? { page: active.page, ratio: active.ratio } : captureContinuousAnchor() || continuousSavedAnchor) : null;
     if (readingFlow === 'continuous') await buildContinuousDocument({ restore: true, anchor });
     else await renderCurrentPage();
     await renderReferencePage();
@@ -989,6 +1026,7 @@ async function goToLocation(page, ratio = 0, { contextLead = true, recordHistory
   const sourceDoc = pdfDoc;
   const sourceFlow = readingFlow;
   const serial = ++readerNavigationSerial;
+  invalidateReaderLanding();
   const stillCurrent = () => readerNavigationSerial === serial && pdfDoc === sourceDoc && readingFlow === sourceFlow;
   if (recordHistory && !suppressReadingHistory && generalPrefs.recordReadingTrail !== false) {
     const here = readingFlow === 'continuous' ? (captureContinuousAnchor() || { page: currentPage, ratio: 0 }) : { page: currentPage, ratio: Math.min(1, Math.max(0, primaryCanvasWrap.scrollTop / Math.max(1, primaryPageSurface?.offsetHeight || 1))) };
@@ -1006,6 +1044,7 @@ async function goToLocation(page, ratio = 0, { contextLead = true, recordHistory
   const next = Math.min(Math.max(1, Math.round(Number(page) || 1)), pdfDoc.numPages);
   const localRatio = Math.min(1, Math.max(0, Number(ratio) || 0));
   const targetLead = contextLead ? navigationTargetLeadPx() : 0;
+  activeReaderLanding = { doc: sourceDoc, flow: sourceFlow, serial, page: next, ratio: localRatio, lead: targetLead };
   ensureReaderPositionScrollRange(next, localRatio, targetLead);
   const changed = next !== currentPage;
   currentPage = next;

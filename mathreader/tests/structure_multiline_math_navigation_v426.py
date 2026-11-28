@@ -62,6 +62,7 @@ source = '\n'.join([
 ])
 real_nav = '\n'.join([
     chunk(nav, 'function alignReaderNavigationToSurface(', '\n// A newer navigation'),
+    chunk(nav, 'let activeReaderLanding = null;', '\nasync function renderPage('),
     chunk(nav, 'async function goToLocation(', '\nfunction updateReadingBackButton()'),
 ])
 

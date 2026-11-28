@@ -30,7 +30,10 @@ const c = vm.createContext({
   renderReadingTrail:()=>historyUpdates.push('render'),
   showNavigationLandingCue:(p,r)=>cues.push([p,r]),
 });
-vm.runInContext(src.slice(begin,end),c);
+const helpersBegin = src.indexOf('let activeReaderLanding = null;');
+const helpersEnd = src.indexOf('async function renderPage(', helpersBegin);
+assert(helpersBegin >= 0 && helpersEnd > helpersBegin, 'landing helper source');
+vm.runInContext(src.slice(helpersBegin, helpersEnd) + '\n' + src.slice(begin,end),c);
 const call = name => vm.runInContext(name,c);
 (async()=>{
   const back = call('goBackReadingLocation()');

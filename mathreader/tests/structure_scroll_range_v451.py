@@ -21,6 +21,7 @@ js = '\n'.join([
     section('function navigationTargetLeadPx() {', '\n// Measure the *rendered* PDF page'),
     section('function alignReaderNavigationToSurface(', '\n// Page-local positions'),
     section('function ensureReaderPositionScrollRange(', '\n// A newer navigation'),
+    section('let activeReaderLanding = null;', '\nasync function renderPage('),
     section('async function goToLocation(', '\nfunction updateReadingBackButton()'),
 ])
 

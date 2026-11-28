@@ -125,6 +125,7 @@ with sync_playwright() as p:
         # destination callback. Click a page-only Structure bookmark.
         real_nav = '\n'.join([
             chunk(nav, 'function alignReaderNavigationToSurface(', '\n// A newer navigation'),
+            chunk(nav, 'let activeReaderLanding = null;', '\nasync function renderPage('),
             chunk(nav, 'async function goToLocation(', '\nfunction updateReadingBackButton()'),
         ])
         page.evaluate('''''''''() => {

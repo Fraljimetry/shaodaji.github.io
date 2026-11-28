@@ -1,0 +1,163 @@
+{
+  "source": "CZ PDF user-exported heading geometry; document content not included",
+  "schema": "mathreader-structure-heading-geometry-fixture@1",
+  "pages": 19,
+  "headings": [
+    {
+      "title": "Abstract",
+      "page": 1,
+      "ratio": 0.20567297979797983,
+      "depth": 2
+    },
+    {
+      "title": "1 What are we trying to prove?",
+      "page": 3,
+      "ratio": 0.0974734848484848,
+      "depth": 0
+    },
+    {
+      "title": "2 Preliminaries and the proof roadmap",
+      "page": 3,
+      "ratio": 0.562155303030303,
+      "depth": 0
+    },
+    {
+      "title": "2.1 Norms and three basic inequalities",
+      "page": 3,
+      "ratio": 0.5996957070707072,
+      "depth": 1
+    },
+    {
+      "title": "2.2 Foundational facts we use",
+      "page": 3,
+      "ratio": 0.7948775252525254,
+      "depth": 1
+    },
+    {
+      "title": "2.3 Roadmap",
+      "page": 4,
+      "ratio": 0.0974734848484848,
+      "depth": 1
+    },
+    {
+      "title": "3 Fundamental solutions and why the kernel appears",
+      "page": 4,
+      "ratio": 0.24858712121212118,
+      "depth": 0
+    },
+    {
+      "title": "3.1 The fundamental solution",
+      "page": 4,
+      "ratio": 0.28612626262626256,
+      "depth": 1
+    },
+    {
+      "title": "3.2 Why solving the PDE leads to a convolution",
+      "page": 4,
+      "ratio": 0.5246275252525252,
+      "depth": 1
+    },
+    {
+      "title": "3.3 Differentiate away from the singularity",
+      "page": 5,
+      "ratio": 0.0974734848484848,
+      "depth": 1
+    },
+    {
+      "title": "4 Why singular integrals are subtle",
+      "page": 5,
+      "ratio": 0.44169444444444445,
+      "depth": 0
+    },
+    {
+      "title": "4.1 Size, smoothness, and cancellation",
+      "page": 5,
+      "ratio": 0.47923484848484843,
+      "depth": 1
+    },
+    {
+      "title": "4.2 A case-by-case proof of (4.4)",
+      "page": 5,
+      "ratio": 0.8564217171717171,
+      "depth": 1
+    },
+    {
+      "title": "4.3 Principal value and subtraction",
+      "page": 6,
+      "ratio": 0.4764393939393939,
+      "depth": 1
+    },
+    {
+      "title": "4.4 The distributional correction: diagonal versus mixed",
+      "page": 6,
+      "ratio": 0.7959381313131314,
+      "depth": 1
+    },
+    {
+      "title": "6 The good–bad decomposition",
+      "page": 8,
+      "ratio": 0.0974734848484848,
+      "depth": 0
+    },
+    {
+      "title": "7 Weak type (1, 1): the key estimate",
+      "page": 8,
+      "ratio": 0.6478914141414142,
+      "depth": 0
+    },
+    {
+      "title": "8 Interpolation: 1 < p < 2",
+      "page": 9,
+      "ratio": 0.8070896464646465,
+      "depth": 0
+    },
+    {
+      "title": "10 Proof of the Calderón–Zygmund inequality",
+      "page": 10,
+      "ratio": 0.8270328282828283,
+      "depth": 0
+    },
+    {
+      "title": "11 Interior estimates: how localization works",
+      "page": 11,
+      "ratio": 0.37974621212121207,
+      "depth": 0
+    },
+    {
+      "title": "12 Variable coefficients: freezing the operator",
+      "page": 17,
+      "ratio": 0.0974734848484848,
+      "depth": 0
+    },
+    {
+      "title": "13 Boundary regularity: what changes?",
+      "page": 17,
+      "ratio": 0.6296186868686869,
+      "depth": 0
+    },
+    {
+      "title": "14 A worked PDE application",
+      "page": 18,
+      "ratio": 0.221881313131313,
+      "depth": 0
+    },
+    {
+      "title": "15 Common questions and mistakes",
+      "page": 18,
+      "ratio": 0.42170454545454544,
+      "depth": 0
+    },
+    {
+      "title": "16 Exercises with hints",
+      "page": 18,
+      "ratio": 0.8409229797979798,
+      "depth": 0
+    },
+    {
+      "title": "17 Final overview and references",
+      "page": 19,
+      "ratio": 0.31775883838383834,
+      "depth": 0
+    }
+  ]
+}

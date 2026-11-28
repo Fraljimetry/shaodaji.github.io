@@ -1381,7 +1381,7 @@ function structureHeadingMatchQuality(candidate, wanted, wantedCompact) {
   // inequalities". Strip only a LEADING hierarchical section identifier,
   // never arbitrary words or trailing TOC page numbers.
   const numbered = actual.match(/^(?:\d+(?: \d+)*[a-z]?|[ivxlcdm]+) (.+)$/u);
-  if (numbered && numbered[2] === wanted) return 98;
+  if (numbered && numbered[1] === wanted) return 98;
   if (!actual) return 0;
   if (actual === wanted) return 100;
   // An optional parenthetical subtitle or a small PDF extraction omission
@@ -1481,6 +1481,24 @@ function uniqueDetectedStructureHeadingRatio(entry) {
   return matches.length === 1 ? Number(matches[0].ratio) : null;
 }
 
+// Recover the printed heading location from MathReader's already-reviewed
+// typography index before trusting a PDF bookmark. Some generators give every
+// chapter bookmark the same (72, 36) page-margin destination. Matching a
+// unique numbered detector heading also supports bookmarks that omit the
+// printed section number; manual and genuinely precise destinations are not
+// rewritten. Never borrow a nearby prose occurrence or another page.
+function detectedStructureBookmarkRatio(entry) {
+  const page = Number(entry?.page);
+  const wanted = comparableStructureNavigationText(entry?.matchText || entry?.title);
+  const compact = compactStructureNavigationText(entry?.matchText || entry?.title);
+  if (!Number.isInteger(page) || wanted.length < 6 || typeof inferredOutline === 'undefined' || !Array.isArray(inferredOutline)) return null;
+  const candidates = inferredOutline.filter((item) => item?.userEdited !== true
+    && Number(item.page) === page && item.ratio !== null && item.ratio !== undefined
+    && Number.isFinite(Number(item.ratio)) && Number(item.ratio) >= 0 && Number(item.ratio) <= 1
+    && structureHeadingMatchQuality(item.title, wanted, compact) >= 95);
+  return candidates.length === 1 ? Number(candidates[0].ratio) : null;
+}
+
 // A heading's final on-screen geometry is the authoritative navigation target.
 // PDF bookmarks, cached OCR coordinates and PDF.js line reconstruction are
 // useful candidates, but they can disagree with the *rendered* text layer.
@@ -1565,13 +1583,20 @@ async function navigateToStructureEntry(entry) {
     && (entry.positionKnown !== true || ratio <= 0.12 || entry.coarseDestination === true);
   let headingRecovered = false;
   if (needsRecovery) {
+    // An existing detector anchor is direct page geometry, whereas the
+    // embedded PDF bookmark may encode only the page's upper text margin.
+    const indexed = detectedStructureBookmarkRatio(entry);
+    if (indexed !== null) {
+      ratio = indexed;
+      headingRecovered = true;
+    }
     try {
       const lines = await pageTextLines(page);
       // A different PDF must never receive an async position resolved for the
       // previous document, even if both happen to have the same page count.
       if (!stillCurrent()) return;
       const recovered = uniqueStructureHeadingRatio(lines, entry.matchText || entry.title);
-      if (recovered !== null) {
+      if (recovered !== null && !headingRecovered) {
         ratio = recovered;
         headingRecovered = true;
       }

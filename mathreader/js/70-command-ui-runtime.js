@@ -467,6 +467,12 @@ floatingMarginNote?.addEventListener('click', () => { addSelectionAnnotation('ma
 floatingStructure?.addEventListener('click', () => { addOrReplaceSelectionStructureItem(); hideSelectionToolbar(); });
 floatingGlossary?.addEventListener('click', () => { addSelectionToGlossary(); hideSelectionToolbar(); });
 document.addEventListener('selectionchange', capturePdfSelection);
+// An explicit user scroll supersedes the most recent semantic jump. Scroll
+// events themselves are not sufficient: programmatic navigation also fires
+// them, and would erase the anchor before asynchronous PDF.js repaint finishes.
+for (const type of ['wheel', 'touchstart', 'pointerdown']) {
+  primaryCanvasWrap.addEventListener(type, invalidateReaderLanding, { passive: true });
+}
 primaryCanvasWrap.addEventListener('scroll', () => {
   hideSelectionToolbar();
   if (!pdfDoc || continuousRebuilding) return;
