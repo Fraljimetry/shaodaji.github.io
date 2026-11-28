@@ -1572,15 +1572,21 @@ async function navigateToStructureEntry(entry) {
   const stillLanding = () => requestSerial === structureNavigationSerial
     && readerNavigationSerial === readerSerial + 1
     && pdfDoc === sourceDoc && currentFileKey === sourceKey;
-  const page = Number(entry.page) || 1;
-  let ratio = Number.isFinite(Number(entry.ratio)) ? Number(entry.ratio) : 0;
+  // Missing, out-of-range, and non-finite bookmark positions are not
+  // authoritative coordinates. In particular, Number(null) === 0 must not
+  // turn a missing bookmark destination into a deliberate page-top target.
+  const rawPage = Number(entry.page);
+  const page = Number.isInteger(rawPage) ? Math.min(Math.max(1, rawPage), pdfDoc.numPages) : 1;
+  const hasPosition = entry.ratio !== null && entry.ratio !== undefined && entry.ratio !== ''
+    && Number.isFinite(Number(entry.ratio)) && Number(entry.ratio) >= 0 && Number(entry.ratio) <= 1;
+  let ratio = hasPosition ? Number(entry.ratio) : 0;
   // Many PDF generators give EVERY bookmark on a page an identical XYZ
   // destination at the upper text margin (e.g. 36 pt), not y=0. Treat such
   // near-top locations as coarse candidates rather than authoritative heading
   // positions. Only replace them with an independently matched, unique title;
   // retain manual selections and precise destinations farther down the page.
   const needsRecovery = entry.userEdited !== true
-    && (entry.positionKnown !== true || ratio <= 0.12 || entry.coarseDestination === true);
+    && (!hasPosition || entry.positionKnown !== true || ratio <= 0.12 || entry.coarseDestination === true);
   let headingRecovered = false;
   if (needsRecovery) {
     // An existing detector anchor is direct page geometry, whereas the
@@ -1590,19 +1596,24 @@ async function navigateToStructureEntry(entry) {
       ratio = indexed;
       headingRecovered = true;
     }
-    try {
-      const lines = await pageTextLines(page);
-      // A different PDF must never receive an async position resolved for the
-      // previous document, even if both happen to have the same page count.
-      if (!stillCurrent()) return;
-      const recovered = uniqueStructureHeadingRatio(lines, entry.matchText || entry.title);
-      if (recovered !== null && !headingRecovered) {
-        ratio = recovered;
-        headingRecovered = true;
+    // Do not re-extract the whole page on every click when a unique, measured
+    // heading is already in the detector index. The rendered-text-layer pass
+    // below still corrects the final on-screen geometry after painting.
+    if (!headingRecovered) {
+      try {
+        const lines = await pageTextLines(page);
+        // A different PDF must never receive an async position resolved for the
+        // previous document, even if both happen to have the same page count.
+        if (!stillCurrent()) return;
+        const recovered = uniqueStructureHeadingRatio(lines, entry.matchText || entry.title);
+        if (recovered !== null) {
+          ratio = recovered;
+          headingRecovered = true;
+        }
+      } catch (error) {
+        if (!stillCurrent()) return;
+        console.warn('Structure heading position unavailable', error);
       }
-    } catch (error) {
-      if (!stillCurrent()) return;
-      console.warn('Structure heading position unavailable', error);
     }
   }
   if (!stillCurrent()) return;
